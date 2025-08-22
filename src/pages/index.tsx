@@ -1,21 +1,28 @@
-import React from 'react'
-import Head from 'next/head'
+import Header from "@/components/buyauto/Header";
+import HeroSection from "@/components/buyauto/HeroSection";
+import PremiumListings from "@/components/buyauto/PremiumListings";
+import BenefitsSection from "@/components/buyauto/BenefitsSection";
+import HowItWorksSection from "@/components/buyauto/HowItWorksSection";
+import TrustSection from "@/components/buyauto/TrustSection";
+import FAQSection from "@/components/buyauto/FAQSection";
+import Footer from "@/components/buyauto/Footer";
+import { getTotalListingsCount } from "@/lib/buyauto/data";
 
-export default function Home() {
+export default function HomePage() {
+  const totalListings = getTotalListingsCount();
+
   return (
-    <>
-      <Head>
-        <title>Hello World</title>
-        <meta name="description" content="Welcome to my app" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      
-      <main className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-gray-900">Hello World</h1>
-          <p className="text-lg text-gray-600">This is going to be your softgen app, start by describing your project.</p>
-        </div>
+    <div className="min-h-screen bg-white">
+      <Header />
+      <main>
+        <HeroSection totalListings={totalListings} />
+        <PremiumListings />
+        <BenefitsSection />
+        <HowItWorksSection />
+        <TrustSection />
+        <FAQSection />
       </main>
-    </>
-  )
+      <Footer />
+    </div>
+  );
 }
