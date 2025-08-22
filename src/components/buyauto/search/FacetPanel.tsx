@@ -325,7 +325,7 @@ export default function FacetPanel({
                   <Checkbox
                     id="no-deposit"
                     checked={localQuery.noDeposit || false}
-                    onCheckedChange={(checked) => updateLocalQuery({ noDeposit: checked || undefined })}
+                    onCheckedChange={(checked) => updateLocalQuery({ noDeposit: checked === true ? true : undefined })}
                     className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
                   />
                   <Label htmlFor="no-deposit" className="text-sm text-neutral-700 cursor-pointer">
@@ -337,7 +337,7 @@ export default function FacetPanel({
                   <Checkbox
                     id="premium-only"
                     checked={localQuery.premiumOnly || false}
-                    onCheckedChange={(checked) => updateLocalQuery({ premiumOnly: checked || undefined })}
+                    onCheckedChange={(checked) => updateLocalQuery({ premiumOnly: checked === true ? true : undefined })}
                     className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
                   />
                   <Label htmlFor="premium-only" className="text-sm text-neutral-700 cursor-pointer">

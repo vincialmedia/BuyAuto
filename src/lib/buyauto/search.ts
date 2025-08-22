@@ -140,7 +140,7 @@ export function searchListings(query: SearchQuery): SearchResult {
   const page = query.page || 1;
   
   // Apply filters
-  let filteredListings = allListings.filter(listing => {
+  const filteredListings = allListings.filter(listing => {
     // Brand filter
     if (query.brand && listing.brand !== query.brand) return false;
     

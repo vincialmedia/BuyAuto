@@ -24,7 +24,9 @@ export default function FilterChips({ searchQuery, onSearchQueryChange }: Filter
       // Remove specific value from array
       const arrayValue = newQuery[key] as string[];
       const updatedArray = arrayValue.filter(v => v !== value);
-      newQuery[key] = updatedArray.length > 0 ? updatedArray : undefined;
+      
+      const arrayKey = key as 'body' | 'fuel' | 'gearbox' | 'canton';
+      newQuery[arrayKey] = updatedArray.length > 0 ? updatedArray : undefined;
     } else {
       // Remove entire filter
       delete newQuery[key];
