@@ -1,98 +1,108 @@
-# BuyAuto Homepage - Implementation Plan
+# Plan: Intelligent Search Page (`/suche`)
 
-## 1. Project Structure &amp; Data
+This document outlines the strategic plan for building the vehicle search results page.
 
-### File Creation
--   `src/lib/buyauto/`: A new directory for BuyAuto-specific library code.
--   `src/lib/buyauto/types.ts`: To define the `Listing` TypeScript type.
--   `src/lib/buyauto/data.ts`: To house the mock data for car listings.
--   `src/components/buyauto/`: A new directory for all project-specific React components.
-    -   `Header.tsx`
-    -   `Footer.tsx`
-    -   `HeroSection.tsx`
-    -   `SearchForm.tsx`
-    -   `PremiumListings.tsx`
-    -   `ListingCard.tsx`
-    -   `BenefitsSection.tsx`
-    -   `HowItWorksSection.tsx`
-    -   `TrustSection.tsx`
-    -   `FaqSection.tsx`
+### **1. High-Level Goal**
 
-### Data Flow
-1.  **Type Definition (`types.ts`)**: A strict `Listing` interface will be the single source of truth for the listing data structure, ensuring type safety.
-2.  **Mock Data (`data.ts`)**: An array of `Listing` objects will be created and exported. This will include 6–8 demo listings, with at least 2 marked as `premium: true`.
-3.  **Homepage (`pages/index.tsx`)**:
-    -   This page component will statically import the mock data from `data.ts`.
-    -   It will pass the filtered list of premium listings to the `PremiumListings` component.
-    -   It will pass the total count of all listings (`listings.length`) to the `HeroSection` component for display.
+To create a fast, minimalist, and SEO-friendly vehicle search results page (`/suche`). The page will feature faceted filtering, sorting, and a vertical list layout. All filter states will be managed via URL query parameters for shareability and a predictable user experience.
 
-## 2. Component Breakdown
+### **2. Data Layer &amp; Business Logic**
 
-### `Header.tsx`
--   **Structure**: A `nav` element using Flexbox for alignment.
--   **Content**: "BuyAuto" logo, navigation links (`Fahrzeuge suchen`, `So funktioniert’s`, `Kontakt`), and two action buttons (`Inserat erstellen`, `Anmelden`).
--   **Styling**: White background, a subtle bottom border or shadow for separation.
--   **Behavior**: The header will be sticky to the top of the viewport on scroll.
+This is the foundation. We'll manage all data-related aspects in a dedicated library file.
 
-### `HeroSection.tsx`
--   **Structure**: A full-width section with a background image, a container for text, and the search form component.
--   **Content**: Main H1 headline, a supporting subheading, and the `SearchForm` component.
--   **Styling**: A high-quality, relevant car photograph will be used as the background, with a dark gradient overlay to ensure text is legible.
+*   **File:** `src/lib/buyauto/search.ts`
+*   **Core Types:**
+    *   `Listing`: Defines the structure for a single vehicle listing.
+    *   `SearchQuery`: Defines all possible filter and sort parameters.
+*   **Data Seeding:**
+    *   A `getDemoListings()` function will generate an array of 30-40 sample `Listing` objects to power the UI without a database. This will include a mix of premium/standard vehicles across different brands, prices, and locations.
+*   **Search Function:**
+    *   `searchListings(query: SearchQuery): { items: Listing[], total: number, page: number, pageSize: number }`
+    *   **Filtering:** It will apply all filters from the `SearchQuery` object (brand, price, body type, etc.).
+    *   **Sorting:** It will handle sorting logic:
+        *   `relevance`: Default sort. Will apply a subtle boost to `premium: true` listings.
+        *   Other options (`priceAsc`, `priceDesc`, etc.) will perform standard array sorting.
+    *   **Pagination:** It will slice the filtered and sorted array based on the `page` number and a fixed `pageSize` of 12.
 
-### `SearchForm.tsx`
--   **Structure**: A `form` element wrapped in a `Card` component for styling (white, rounded, subtle shadow).
--   **State Management**: It will be a client component (`"use client"`) using `useState` hooks to manage the state of all form fields (dropdowns, slider, checkboxes, and the expanded state for advanced filters).
--   **Shadcn/UI Components**:
-    -   `Select` for Marke, Jahr, and Restlaufzeit.
-    -   `Slider` for Preis pro Monat.
-    -   `Collapsible` to toggle the "Erweiterte Filter" section.
-    -   `Checkbox` for the Kaution filter.
-    -   `Button` for the main search call-to-action.
--   **Behavior**: The advanced filters will smoothly expand and collapse. The form will be fully interactive, but the actual filtering logic will be implemented later.
+### **3. Routing &amp; Page Structure**
 
-### `PremiumListings.tsx`
--   **Structure**: A section with a title (e.g., `H2: Unsere Premium Inserate`). It will use a responsive grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`).
--   **Logic**: It will receive a list of listings as a prop, map over them, and render a `ListingCard` for each one.
+*   **Primary Route:** A new page will be created at `src/pages/suche.tsx`.
+*   **Alias:** We will configure a rewrite in `next.config.mjs` to allow `/fahrzeuge` to serve the `/suche` page content, improving the user-facing URL.
+    ```javascript
+    // next.config.mjs
+    async rewrites() {
+      return [
+        {
+          source: '/fahrzeuge',
+          destination: '/suche',
+        },
+      ];
+    }
+    ```
 
-### `ListingCard.tsx`
--   **Structure**: A `Card` component containing an `Image`, and sections for car details.
--   **Content**: Displays key fields from the `Listing` object: brand, model, year, price, remaining months, location, and mileage.
--   **Conditional UI**: If `listing.premium` is `true`, a "Premium" `Badge` will be prominently displayed, and the card will have a subtle highlight (e.g., a colored border or shadow) to distinguish it.
--   **CTA**: A "Details ansehen" button.
+### **4. Component Architecture**
 
-### `BenefitsSection.tsx`
--   **Structure**: A section with a 4-column responsive grid.
--   **Content**: Each grid item will feature a `lucide-react` icon, a bolded title, and a short description of a key benefit.
--   **Styling**: A light grey background (`bg-slate-50`) to visually separate it from adjacent white sections.
+We'll use a modular, component-based approach.
 
-### `HowItWorksSection.tsx`
--   **Structure**: A section with a 3-step horizontal layout, likely using Flexbox or Grid.
--   **Content**: Each step will consist of an icon, a title (`Schritt 1`, `Schritt 2`, etc.), and a brief explanation.
--   **Styling**: Clean white background.
+*   **Page Component (`SuchePage`):** `src/pages/suche.tsx`
+    *   **Role:** The main container.
+    *   **Responsibilities:**
+        *   Parses URL query params (`useRouter`).
+        *   Manages the `SearchQuery` state.
+        *   Calls `searchListings` to fetch and update results.
+        *   Handles debounced URL updates when filters change.
+        *   Renders the main layout and passes data down to child components.
 
-### `TrustSection.tsx`
--   **Structure**: A section with a headline, a 3-column grid for trust tiles, and a distinctively styled box for the customer testimonial.
--   **Content**: Icons and text for trust signals (e.g., "Geprüfte Inserate"). The testimonial will include the quote and the author's name/location.
+*   **Layout (`SearchLayout`):** `src/components/buyauto/search/SearchLayout.tsx`
+    *   **Role:** Defines the responsive 2-column (desktop) or single-column (mobile) structure.
+    *   **Contains:** Slots for the `FacetPanel` and `ResultsList`.
 
-### `FaqSection.tsx`
--   **Structure**: It will use the `Accordion` component from shadcn/ui.
--   **Content**: A list of questions and their corresponding answers.
--   **SEO**: A `<script type="application/ld+json">` tag will be embedded within the component, containing valid `FAQPage` schema markup dynamically generated from the FAQ content to improve search engine visibility.
+*   **Filters (`FacetPanel`):** `src/components/buyauto/search/FacetPanel.tsx`
+    *   **Role:** The left-hand sidebar for filtering.
+    *   **Features:**
+        *   Uses `shadcn/ui` components (`Accordion`, `Select`, `Slider`, `Checkbox`) for filter controls.
+        *   On mobile, it will be rendered inside a `Sheet` (drawer).
+        *   Receives the current `SearchQuery` to display active filters.
+        *   Emits filter change events up to the `SuchePage`.
 
-### `Footer.tsx`
--   **Structure**: A multi-column layout using Grid for organized link sections.
--   **Content**: Columns for Services, Company, and Legal links, plus a contact block and copyright notice.
--   **Styling**: A dark grey (`slate-900`) background with light-colored text.
+*   **Results (`ResultsList`):** `src/components/buyauto/search/ResultsList.tsx`
+    *   **Role:** The right-hand section displaying search results.
+    *   **Features:**
+        *   Displays the result count ("Treffer: 128 Fahrzeuge").
+        *   Contains the sorting dropdown.
+        *   Renders a list of `SearchResultCard` components.
+        *   Includes `Pagination` controls.
+        *   Shows skeleton loaders during data fetching.
+        *   Displays the `EmptyState` component when there are no results.
 
-## 3. Styling &amp; Theming
+*   **Result Item (`SearchResultCard`):** `src/components/buyauto/search/SearchResultCard.tsx`
+    *   **Role:** Displays a single vehicle listing in a stacked, row-based format.
+    *   **Features:**
+        *   Image on the left, details in the middle, price/CTA on the right.
+        *   Displays a "Premium" badge and has a subtle glow if `listing.premium` is true.
+        *   Links to `/fahrzeug/[id]` (placeholder route).
 
--   **Primary Color (Red)**: `hsl(0 84.2% 60.2%)` which corresponds to Tailwind's `red-600`. This will be used for primary buttons, active links, and other key highlights.
--   **Backgrounds**:
-    -   Default: `white`
-    -   Subtle Contrast: `hsl(210 40% 96.1%)` (`slate-100`) for sections like "Benefits".
-    -   Footer: `hsl(222.2 47.4% 11.2%)` (`slate-900`).
--   **Fonts**: The project's default `sans` font family defined in `tailwind.config.ts` will be used for a clean, modern aesthetic.
--   **Sizing & Spacing**: Tailwind's default spacing scale will be used for all padding, margins, and gaps to ensure consistency. A `max-w-7xl` class will constrain the main page content width.
--   **Icons**: The `lucide-react` library will be the sole source for icons to maintain a uniform visual style.
+*   **Active Filters (`ActiveFilters`):** `src/components/buyauto/search/ActiveFilters.tsx`
+    *   **Role:** Displays active filters as dismissible chips below the top bar.
+    *   **Features:**
+        *   Each chip's "x" button removes the corresponding query param from the URL.
+        *   Includes a "Alle zurücksetzen" link.
 
-This plan provides a clear roadmap. The next step is to switch to Creative Mode and begin implementation.
+*   **SEO (`SeoHead`):** `src/components/buyauto/search/SeoHead.tsx`
+    *   **Role:** Manages all `<head>` content.
+    *   **Features:**
+        *   Sets the page `title` and `meta description`.
+        *   Dynamically generates the `ItemList` JSON-LD `<script>` tag based on the visible results for the current page.
+
+### **5. State Management &amp; Data Flow**
+
+The URL is the single source of truth.
+
+1.  **Init:** `SuchePage` loads and reads filters from `useRouter().query`.
+2.  **State Sync:** The raw query object is parsed into a structured `SearchQuery` state object.
+3.  **Data Fetch:** The `SearchQuery` is passed to the `searchListings` function.
+4.  **Render:** The UI renders based on the search results and the `SearchQuery` state.
+5.  **User Action:** A user changes a filter (e.g., checks a "Body Type" box).
+6.  **State Update:** An event handler updates the local `SearchQuery` state object.
+7.  **Debounce &amp; Push:** The change is debounced (300ms). After the delay, `router.push` is called with the new, updated URL query string.
+8.  **Loop:** The URL change triggers a re-render, and the cycle repeats from Step 1.
