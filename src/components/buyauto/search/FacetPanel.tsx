@@ -129,14 +129,14 @@ export default function FacetPanel({
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-neutral-600 uppercase tracking-wide">Marke</Label>
                 <Select 
-                  value={localQuery.brand || ""} 
-                  onValueChange={(value) => updateLocalQuery({ brand: value || undefined })}
+                  value={localQuery.brand || "all"} 
+                  onValueChange={(value) => updateLocalQuery({ brand: value === "all" ? undefined : value })}
                 >
                   <SelectTrigger className="bg-white border-neutral-300 text-neutral-900">
                     <SelectValue placeholder="Alle Marken" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle Marken</SelectItem>
+                    <SelectItem value="all">Alle Marken</SelectItem>
                     {brands.map(brand => (
                       <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                     ))}
@@ -148,14 +148,14 @@ export default function FacetPanel({
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-neutral-600 uppercase tracking-wide">Modell</Label>
                   <Select 
-                    value={localQuery.model || ""} 
-                    onValueChange={(value) => updateLocalQuery({ model: value || undefined })}
+                    value={localQuery.model || "all"} 
+                    onValueChange={(value) => updateLocalQuery({ model: value === "all" ? undefined : value })}
                   >
                     <SelectTrigger className="bg-white border-neutral-300 text-neutral-900">
                       <SelectValue placeholder="Alle Modelle" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle Modelle</SelectItem>
+                      <SelectItem value="all">Alle Modelle</SelectItem>
                       {availableModels.map(model => (
                         <SelectItem key={model} value={model}>{model}</SelectItem>
                       ))}
@@ -167,14 +167,14 @@ export default function FacetPanel({
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-neutral-600 uppercase tracking-wide">Baujahr</Label>
                 <Select 
-                  value={localQuery.yearMin?.toString() || ""} 
-                  onValueChange={(value) => updateLocalQuery({ yearMin: value ? parseInt(value) : undefined })}
+                  value={localQuery.yearMin?.toString() || "all"} 
+                  onValueChange={(value) => updateLocalQuery({ yearMin: value === "all" ? undefined : parseInt(value) })}
                 >
                   <SelectTrigger className="bg-white border-neutral-300 text-neutral-900">
                     <SelectValue placeholder="Beliebig" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Beliebig</SelectItem>
+                    <SelectItem value="all">Beliebig</SelectItem>
                     {YEAR_OPTIONS.map(year => (
                       <SelectItem key={year.value} value={year.value.toString()}>{year.label}</SelectItem>
                     ))}
@@ -305,14 +305,14 @@ export default function FacetPanel({
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-neutral-600 uppercase tracking-wide">Kanton</Label>
                 <Select 
-                  value={localQuery.canton?.[0] || ""} 
-                  onValueChange={(value) => updateLocalQuery({ canton: value ? [value] : undefined })}
+                  value={localQuery.canton?.[0] || "all"} 
+                  onValueChange={(value) => updateLocalQuery({ canton: value === "all" ? undefined : [value] })}
                 >
                   <SelectTrigger className="bg-white border-neutral-300 text-neutral-900">
                     <SelectValue placeholder="Alle Kantone" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle Kantone</SelectItem>
+                    <SelectItem value="all">Alle Kantone</SelectItem>
                     {cantons.map(canton => (
                       <SelectItem key={canton} value={canton}>{canton}</SelectItem>
                     ))}
