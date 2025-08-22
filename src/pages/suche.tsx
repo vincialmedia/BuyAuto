@@ -91,8 +91,6 @@ export default function SuchePage() {
 
   // Perform search when query changes
   useEffect(() => {
-    if (Object.keys(searchQuery).length === 0) return;
-    
     setIsLoading(true);
     
     // Simulate async search with timeout for better UX
