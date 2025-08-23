@@ -1,7 +1,8 @@
 import Head from "next/head";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import { SearchQuery, SearchResult, searchListings } from "@/lib/buyauto/search";
+import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
+import { searchListings } from "@/services/listingsService";
 import Header from "@/components/buyauto/Header";
 import SearchLayout from "@/components/buyauto/search/SearchLayout";
 import { debounce } from "@/lib/utils";
@@ -91,16 +92,28 @@ export default function SuchePage() {
 
   // Perform search when query changes
   useEffect(() => {
-    setIsLoading(true);
-    
-    // Simulate async search with timeout for better UX
-    const searchTimeout = setTimeout(() => {
-      const results = searchListings(searchQuery);
-      setSearchResults(results);
-      setIsLoading(false);
-    }, 150);
+    const performSearch = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Use real Supabase service
+        const results = await searchListings(searchQuery);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Search failed:', error);
+        // Set empty results on error
+        setSearchResults({
+          items: [],
+          total: 0,
+          page: searchQuery.page || 1,
+          pageSize: 12
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(searchTimeout);
+    performSearch();
   }, [searchQuery]);
 
   // Initial load: parse URL params
@@ -115,7 +128,7 @@ export default function SuchePage() {
     ? `Fahrzeuge suchen (${searchResults.total} Treffer) | BuyAuto`
     : "Fahrzeuge suchen | Leasingübernahme Schweiz | BuyAuto";
 
-  const metaDescription = "Finden Sie Ihr perfektes Leasingfahrzeug zur Übernahme in der Schweiz. BMW, Mercedes, Audi und mehr. Transparente Preise, keine versteckten Kosten.";
+  const metaDescription = "Durchstöbere aktuelle Leasingangebote und übernimm dein nächstes Auto-Leasing in der Schweiz – schnell und transparent.";
 
   return (
     <>
