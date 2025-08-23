@@ -119,26 +119,34 @@ export default function SuchePage() {
     performSearch();
   }, [searchQuery]);
 
-  // Initial load: parse URL params
+  // Initial load: parse URL params and load results
   useEffect(() => {
     if (!router.isReady) return;
     
+    // Parse URL query parameters
     const parsedQuery = parseQueryFromUrl(router.query);
     setSearchQuery(parsedQuery);
-  }, [router.isReady, router.query, parseQueryFromUrl]);
-
-  // Load all listings on first visit if no filters
-  useEffect(() => {
-    if (!router.isReady) return;
     
-    // If there are no query parameters at all, perform an empty search to show all listings
-    if (Object.keys(router.query).length === 0) {
-      const emptyQuery: SearchQuery = {};
-      setSearchQuery(emptyQuery);
-    } else {
-      const parsedQuery = parseQueryFromUrl(router.query);
-      setSearchQuery(parsedQuery);
-    }
+    // Immediately set loading state and perform search
+    setIsLoading(true);
+    const performInitialSearch = async () => {
+      try {
+        const results = await searchListings(parsedQuery);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Initial search failed:', error);
+        setSearchResults({
+          items: [],
+          total: 0,
+          page: parsedQuery.page || 1,
+          pageSize: 12
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    performInitialSearch();
   }, [router.isReady, router.query, parseQueryFromUrl]);
 
   const pageTitle = searchResults 
