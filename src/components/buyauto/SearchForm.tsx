@@ -1,6 +1,8 @@
+
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,10 +13,16 @@ import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 import { getBrands, getModelsByBrand } from "@/lib/buyauto/data";
 
 export default function SearchForm() {
+  const router = useRouter();
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedRestlaufzeit, setSelectedRestlaufzeit] = useState<string>("");
   const [priceRange, setPriceRange] = useState([1000]);
   const [expandedFilters, setExpandedFilters] = useState(false);
+  const [selectedBody, setSelectedBody] = useState<string>("");
+  const [selectedFuel, setSelectedFuel] = useState<string>("");
+  const [selectedGearbox, setSelectedGearbox] = useState<string>("");
   const [requiresDeposit, setRequiresDeposit] = useState(false);
 
   const brands = getBrands();
@@ -22,8 +30,75 @@ export default function SearchForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement search functionality
-    console.log("Search submitted");
+    
+    // Build query parameters based on form values
+    const queryParams: Record<string, string | string[]> = {};
+    
+    // Basic filters
+    if (selectedBrand) {
+      queryParams.brand = selectedBrand;
+    }
+    
+    if (selectedModel) {
+      queryParams.model = selectedModel;
+    }
+    
+    // Year mapping
+    if (selectedYear) {
+      const yearMap: Record<string, number> = {
+        "2018": 2018,
+        "2020": 2020,
+        "2022": 2022,
+        "2023": 2023
+      };
+      if (yearMap[selectedYear]) {
+        queryParams.yearMin = yearMap[selectedYear].toString();
+      }
+    }
+    
+    // Restlaufzeit (remaining months) mapping
+    if (selectedRestlaufzeit) {
+      const monthsMap: Record<string, { min?: number, max?: number }> = {
+        "0-6": { max: 6 },
+        "7-12": { min: 7, max: 12 },
+        "13-24": { min: 13, max: 24 },
+        "24+": { min: 24 }
+      };
+      const monthsFilter = monthsMap[selectedRestlaufzeit];
+      if (monthsFilter) {
+        if (monthsFilter.min) queryParams.monthsMin = monthsFilter.min.toString();
+        if (monthsFilter.max) queryParams.monthsMax = monthsFilter.max.toString();
+      }
+    }
+    
+    // Price filter
+    if (priceRange[0] > 200) {
+      queryParams.priceMax = priceRange[0].toString();
+    }
+    
+    // Advanced filters
+    if (selectedBody) {
+      queryParams.body = selectedBody;
+    }
+    
+    if (selectedFuel) {
+      queryParams.fuel = selectedFuel;
+    }
+    
+    if (selectedGearbox) {
+      queryParams.gearbox = selectedGearbox;
+    }
+    
+    // Deposit filter (inverted logic - if requiresDeposit is false, we want noDeposit to be true)
+    if (!requiresDeposit) {
+      queryParams.noDeposit = "true";
+    }
+    
+    // Navigate to search page with query parameters
+    router.push({
+      pathname: '/suche',
+      query: queryParams
+    });
   };
 
   return (
@@ -40,6 +115,7 @@ export default function SearchForm() {
                 <SelectValue placeholder="Alle Marken" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Alle Marken</SelectItem>
                 {brands.map((brand) => (
                   <SelectItem key={brand} value={brand}>
                     {brand}
@@ -62,6 +138,7 @@ export default function SearchForm() {
                 <SelectValue placeholder="Alle Modelle" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Alle Modelle</SelectItem>
                 {models.map((model) => (
                   <SelectItem key={model} value={model}>
                     {model}
@@ -75,11 +152,12 @@ export default function SearchForm() {
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Jahr
             </label>
-            <Select>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="Alle Jahre" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Alle Jahre</SelectItem>
                 <SelectItem value="2018">ab 2018</SelectItem>
                 <SelectItem value="2020">ab 2020</SelectItem>
                 <SelectItem value="2022">ab 2022</SelectItem>
@@ -92,11 +170,12 @@ export default function SearchForm() {
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Restlaufzeit
             </label>
-            <Select>
+            <Select value={selectedRestlaufzeit} onValueChange={setSelectedRestlaufzeit}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="Alle" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Alle</SelectItem>
                 <SelectItem value="0-6">≤ 6 Monate</SelectItem>
                 <SelectItem value="7-12">7-12 Monate</SelectItem>
                 <SelectItem value="13-24">13-24 Monate</SelectItem>
@@ -109,7 +188,7 @@ export default function SearchForm() {
         {/* Price Slider */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Preis pro Monat: CHF {priceRange[0].toLocaleString("de-CH")}
+            Maximaler Preis pro Monat: CHF {priceRange[0].toLocaleString("de-CH")}
           </label>
           <Slider
             value={priceRange}
@@ -146,11 +225,12 @@ export default function SearchForm() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Karosserie
                 </label>
-                <Select>
+                <Select value={selectedBody} onValueChange={setSelectedBody}>
                   <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Alle" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">Alle</SelectItem>
                     <SelectItem value="Limousine">Limousine</SelectItem>
                     <SelectItem value="Kombi">Kombi</SelectItem>
                     <SelectItem value="SUV">SUV</SelectItem>
@@ -163,11 +243,12 @@ export default function SearchForm() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Antrieb
                 </label>
-                <Select>
+                <Select value={selectedFuel} onValueChange={setSelectedFuel}>
                   <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Alle" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">Alle</SelectItem>
                     <SelectItem value="Benzin">Benzin</SelectItem>
                     <SelectItem value="Diesel">Diesel</SelectItem>
                     <SelectItem value="Hybrid">Hybrid</SelectItem>
@@ -180,11 +261,12 @@ export default function SearchForm() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Getriebe
                 </label>
-                <Select>
+                <Select value={selectedGearbox} onValueChange={setSelectedGearbox}>
                   <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Alle" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">Alle</SelectItem>
                     <SelectItem value="Automatik">Automatik</SelectItem>
                     <SelectItem value="Manuell">Manuell</SelectItem>
                   </SelectContent>
