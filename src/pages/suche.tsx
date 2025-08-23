@@ -30,13 +30,16 @@ export default function SuchePage() {
     
     // Parse array filters
     if (query.body) {
-      searchQuery.body = Array.isArray(query.body) ? query.body as string[] : [query.body as string];
+      const values = Array.isArray(query.body) ? query.body : [query.body];
+      searchQuery.body = values as ("Limousine" | "Kombi" | "SUV" | "Cabrio")[];
     }
     if (query.fuel) {
-      searchQuery.fuel = Array.isArray(query.fuel) ? query.fuel as string[] : [query.fuel as string];
+      const values = Array.isArray(query.fuel) ? query.fuel : [query.fuel];
+      searchQuery.fuel = values as ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[];
     }
     if (query.gearbox) {
-      searchQuery.gearbox = Array.isArray(query.gearbox) ? query.gearbox as string[] : [query.gearbox as string];
+      const values = Array.isArray(query.gearbox) ? query.gearbox : [query.gearbox];
+      searchQuery.gearbox = values as ("Automatik" | "Manuell")[];
     }
     if (query.canton) {
       searchQuery.canton = Array.isArray(query.canton) ? query.canton as string[] : [query.canton as string];

@@ -6,9 +6,9 @@ export type SearchQuery = {
   priceMax?: number;
   monthsMin?: number;
   monthsMax?: number;
-  body?: string[];
-  fuel?: string[];
-  gearbox?: string[];
+  body?: ("Limousine" | "Kombi" | "SUV" | "Cabrio")[];
+  fuel?: ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[];
+  gearbox?: ("Automatik" | "Manuell")[];
   kmMax?: number;
   canton?: string[];
   noDeposit?: boolean;
