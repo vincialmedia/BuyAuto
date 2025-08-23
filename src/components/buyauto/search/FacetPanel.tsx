@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { X, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 
 interface FacetPanelProps {
@@ -17,9 +17,9 @@ interface FacetPanelProps {
   isMobile?: boolean;
 }
 
-const BODY_TYPES = ["Limousine", "Kombi", "SUV", "Cabrio"];
-const FUEL_TYPES = ["Benzin", "Diesel", "Hybrid", "Elektro"];
-const GEARBOX_TYPES = ["Automatik", "Manuell"];
+const BODY_TYPES: ("Limousine" | "Kombi" | "SUV" | "Cabrio")[] = ["Limousine", "Kombi", "SUV", "Cabrio"];
+const FUEL_TYPES: ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[] = ["Benzin", "Diesel", "Hybrid", "Elektro"];
+const GEARBOX_TYPES: ("Automatik" | "Manuell")[] = ["Automatik", "Manuell"];
 const YEAR_OPTIONS = [
   { value: 2018, label: "ab 2018" },
   { value: 2019, label: "ab 2019" },
@@ -81,9 +81,22 @@ export default function FacetPanel({
     onSearchQueryChange(resetQuery);
   };
 
-  const isArrayFieldChecked = (field: keyof SearchQuery, value: string) => {
+  const isArrayFieldChecked = (field: keyof SearchQuery, value: string): boolean => {
     const fieldValue = localQuery[field];
-    return Array.isArray(fieldValue) && fieldValue.includes(value);
+    if (!Array.isArray(fieldValue)) return false;
+    
+    // Type guard for different array types
+    if (field === 'body') {
+      return (fieldValue as ("Limousine" | "Kombi" | "SUV" | "Cabrio")[]).includes(value as "Limousine" | "Kombi" | "SUV" | "Cabrio");
+    } else if (field === 'fuel') {
+      return (fieldValue as ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[]).includes(value as "Benzin" | "Diesel" | "Hybrid" | "Elektro");
+    } else if (field === 'gearbox') {
+      return (fieldValue as ("Automatik" | "Manuell")[]).includes(value as "Automatik" | "Manuell");
+    } else if (field === 'canton') {
+      return (fieldValue as string[]).includes(value);
+    }
+    
+    return false;
   };
 
   const toggleArrayField = (field: keyof SearchQuery, value: string) => {
