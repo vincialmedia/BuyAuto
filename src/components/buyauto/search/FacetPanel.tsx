@@ -87,16 +87,35 @@ export default function FacetPanel({
   };
 
   const toggleArrayField = (field: keyof SearchQuery, value: string) => {
-    const fieldValue = localQuery[field] as string[] | undefined;
-    const currentValues = fieldValue || [];
+    const fieldValue = localQuery[field];
+    let currentValues: string[] = [];
+    
+    if (Array.isArray(fieldValue)) {
+      currentValues = fieldValue as string[];
+    }
     
     const newValues = currentValues.includes(value)
       ? currentValues.filter(v => v !== value)
       : [...currentValues, value];
     
-    updateLocalQuery({
-      [field]: newValues.length > 0 ? newValues : undefined
-    });
+    // Handle different array field types properly
+    if (field === 'body') {
+      updateLocalQuery({
+        [field]: newValues.length > 0 ? newValues as ("Limousine" | "Kombi" | "SUV" | "Cabrio")[] : undefined
+      });
+    } else if (field === 'fuel') {
+      updateLocalQuery({
+        [field]: newValues.length > 0 ? newValues as ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[] : undefined
+      });
+    } else if (field === 'gearbox') {
+      updateLocalQuery({
+        [field]: newValues.length > 0 ? newValues as ("Automatik" | "Manuell")[] : undefined
+      });
+    } else if (field === 'canton') {
+      updateLocalQuery({
+        [field]: newValues.length > 0 ? newValues : undefined
+      });
+    }
   };
 
   const CardWrapper = isMobile ? 'div' : Card;

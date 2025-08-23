@@ -25,8 +25,16 @@ export default function FilterChips({ searchQuery, onSearchQueryChange }: Filter
       const arrayValue = newQuery[key] as string[];
       const updatedArray = arrayValue.filter(v => v !== value);
       
-      const arrayKey = key as 'body' | 'fuel' | 'gearbox' | 'canton';
-      newQuery[arrayKey] = updatedArray.length > 0 ? updatedArray : undefined;
+      // Handle different array field types properly
+      if (key === 'body') {
+        newQuery[key] = updatedArray.length > 0 ? updatedArray as ("Limousine" | "Kombi" | "SUV" | "Cabrio")[] : undefined;
+      } else if (key === 'fuel') {
+        newQuery[key] = updatedArray.length > 0 ? updatedArray as ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[] : undefined;
+      } else if (key === 'gearbox') {
+        newQuery[key] = updatedArray.length > 0 ? updatedArray as ("Automatik" | "Manuell")[] : undefined;
+      } else if (key === 'canton') {
+        newQuery[key] = updatedArray.length > 0 ? updatedArray : undefined;
+      }
     } else {
       // Remove entire filter
       delete newQuery[key];
