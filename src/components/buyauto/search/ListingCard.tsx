@@ -7,6 +7,18 @@ import Image from "next/image";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+// Utility functions
+const formatPrice = (price: number): string => {
+  return `CHF ${price.toLocaleString('de-CH')}`;
+};
+
+const formatMileage = (mileage: number): string => {
+  if (mileage >= 1000) {
+    return `${(mileage / 1000).toFixed(0)}'${(mileage % 1000).toString().padStart(3, '0')} km`;
+  }
+  return `${mileage} km`;
+};
+
 interface ListingCardProps {
   listing: Listing;
   className?: string;
