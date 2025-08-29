@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Car, Menu, X } from "lucide-react";
 import { useState } from "react";
@@ -8,76 +10,102 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-neutral-200/60 shadow-sm">
-      <div className="max-w-[2000px] mx-auto px-4 md:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14">
-          {/* Logo - Smaller and more refined */}
-          <div className="flex items-center space-x-2">
-            <Car className="h-6 w-6 text-red-500" />
-            <span className="text-lg font-semibold text-neutral-900 tracking-tight">BuyAuto</span>
-          </div>
+    <header className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-neutral-200/40 shadow-sm h-14 max-h-14">
+      <div className="max-w-[2000px] mx-auto px-4 md:px-6 lg:px-8 h-full">
+        <div className="flex justify-between items-center h-full">
+          {/* Logo - Swiss minimalist */}
+          <Link href="/" className="flex items-center space-x-2 group">
+            <Car className="h-5 w-5 text-red-500 group-hover:text-red-600 transition-colors" />
+            <span className="text-lg font-light text-neutral-900 tracking-tight">
+              <span className="font-semibold">Buy</span>Auto
+            </span>
+          </Link>
 
-          {/* Desktop Navigation - Lighter typography */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/suche" className="text-sm text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200">
+          {/* Desktop Navigation - Ultra light */}
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link 
+              href="/suche" 
+              className="text-sm text-neutral-600 hover:text-red-500 font-normal transition-colors duration-200 tracking-wide"
+            >
               Fahrzeuge suchen
             </Link>
-            <a href="#funktioniert" className="text-sm text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200">
+            <a 
+              href="#funktioniert" 
+              className="text-sm text-neutral-600 hover:text-red-500 font-normal transition-colors duration-200 tracking-wide"
+            >
               So funktioniert's
             </a>
-            <a href="#kontakt" className="text-sm text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200">
+            <a 
+              href="#kontakt" 
+              className="text-sm text-neutral-600 hover:text-red-500 font-normal transition-colors duration-200 tracking-wide"
+            >
               Kontakt
             </a>
           </nav>
 
-          {/* Desktop Action Buttons - More refined */}
+          {/* Desktop Action Buttons - Swiss refined */}
           <div className="hidden md:flex items-center space-x-3">
             <Button 
-              variant="outline" 
-              className="bg-transparent hover:bg-transparent border-neutral-300 text-neutral-700 hover:border-red-500 hover:text-red-500 text-sm font-medium h-8 px-4"
+              variant="ghost" 
+              className="text-neutral-700 hover:text-red-500 hover:bg-transparent text-sm font-normal h-8 px-3 tracking-wide"
             >
               Anmelden
             </Button>
-            <Button className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium h-8 px-4 shadow-sm">
+            <Button 
+              className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium h-8 px-4 rounded-lg shadow-none hover:shadow-sm transition-all duration-200"
+            >
               Inserat erstellen
             </Button>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - Minimal */}
           <button
-            className="md:hidden p-2 -mr-2"
+            className="md:hidden p-1 -mr-1 rounded-md hover:bg-neutral-100/60 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
-              <X className="h-5 w-5 text-neutral-700" />
+              <X className="h-5 w-5 text-neutral-600" />
             ) : (
-              <Menu className="h-5 w-5 text-neutral-700" />
+              <Menu className="h-5 w-5 text-neutral-600" />
             )}
           </button>
         </div>
 
-        {/* Mobile Menu - Cleaner design */}
+        {/* Mobile Menu - Swiss clean */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-neutral-200/60">
-            <nav className="flex flex-col space-y-3">
-              <Link href="/suche" className="text-neutral-700 hover:text-red-500 font-medium text-sm py-1">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white/98 backdrop-blur-md border-b border-neutral-200/40 shadow-lg">
+            <nav className="px-4 py-4 space-y-4">
+              <Link 
+                href="/suche" 
+                className="block text-neutral-700 hover:text-red-500 font-normal text-sm py-1 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Fahrzeuge suchen
               </Link>
-              <a href="#funktioniert" className="text-neutral-700 hover:text-red-500 font-medium text-sm py-1">
+              <a 
+                href="#funktioniert" 
+                className="block text-neutral-700 hover:text-red-500 font-normal text-sm py-1 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 So funktioniert's
               </a>
-              <a href="#kontakt" className="text-neutral-700 hover:text-red-500 font-medium text-sm py-1">
+              <a 
+                href="#kontakt" 
+                className="block text-neutral-700 hover:text-red-500 font-normal text-sm py-1 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Kontakt
               </a>
-              <div className="flex flex-col space-y-2 pt-3 border-t border-neutral-200/60">
+              
+              <div className="flex flex-col space-y-2 pt-3 border-t border-neutral-200/40">
                 <Button 
-                  variant="outline" 
-                  className="bg-transparent border-neutral-300 text-neutral-700 text-sm h-9"
+                  variant="ghost" 
+                  className="justify-start text-neutral-700 hover:text-red-500 hover:bg-transparent font-normal text-sm h-9"
                 >
                   Anmelden
                 </Button>
-                <Button className="bg-red-500 hover:bg-red-600 text-white text-sm h-9">
+                <Button className="justify-start bg-red-500 hover:bg-red-600 text-white font-medium text-sm h-9">
                   Inserat erstellen
                 </Button>
               </div>
