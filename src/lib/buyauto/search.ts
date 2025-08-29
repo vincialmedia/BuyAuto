@@ -1,3 +1,6 @@
+
+import { Listing } from "./types";
+
 export type SearchQuery = {
   brand?: string;
   model?: string;
@@ -15,25 +18,6 @@ export type SearchQuery = {
   premiumOnly?: boolean;
   page?: number;
   sort?: "relevance" | "priceAsc" | "priceDesc" | "monthsAsc" | "monthsDesc" | "yearDesc" | "kmAsc";
-};
-
-export type Listing = {
-  id: string;
-  brand: string;
-  model: string;
-  title?: string;
-  year: number;
-  pricePerMonthCHF: number;
-  remainingMonths: number;
-  location: string;
-  cantonCode: string;
-  mileageKm: number;
-  fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
-  gearbox: "Automatik" | "Manuell";
-  body: "Limousine" | "Kombi" | "SUV" | "Cabrio";
-  premium: boolean;
-  depositCHF?: number | null;
-  images: string[];
 };
 
 export type SearchResult = {
@@ -127,14 +111,18 @@ export function getDemoListings(): Listing[] {
       body,
       premium: isPremium,
       depositCHF,
-      images
+      images,
+      imageUrl: images[0] // Add the primary image URL
     });
   }
   
   return listings;
 }
 
-export function searchListings(query: SearchQuery): SearchResult {
+export async function searchListings(query: SearchQuery): Promise<SearchResult> {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
   const allListings = getDemoListings();
   const pageSize = 12;
   const page = query.page || 1;

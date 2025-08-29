@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Car, Menu, X } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,9 +19,9 @@ export default function Header() {
 
           {/* Desktop Navigation - Lighter typography */}
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="/suche" className="text-sm text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200">
+            <Link href="/suche" className="text-sm text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200">
               Fahrzeuge suchen
-            </a>
+            </Link>
             <a href="#funktioniert" className="text-sm text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200">
               So funktioniert's
             </a>
@@ -60,9 +61,9 @@ export default function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-neutral-200/60">
             <nav className="flex flex-col space-y-3">
-              <a href="/suche" className="text-neutral-700 hover:text-red-500 font-medium text-sm py-1">
+              <Link href="/suche" className="text-neutral-700 hover:text-red-500 font-medium text-sm py-1">
                 Fahrzeuge suchen
-              </a>
+              </Link>
               <a href="#funktioniert" className="text-neutral-700 hover:text-red-500 font-medium text-sm py-1">
                 So funktioniert's
               </a>

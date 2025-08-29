@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Car, Menu, X } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function SlimHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,9 +19,9 @@ export default function SlimHeader() {
 
           {/* Desktop Navigation - Ultra minimal */}
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="/suche" className="text-xs text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200 uppercase tracking-wide">
+            <Link href="/suche" className="text-xs text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200 uppercase tracking-wide">
               Fahrzeuge suchen
-            </a>
+            </Link>
             <a href="#funktioniert" className="text-xs text-neutral-600 hover:text-red-500 font-medium transition-colors duration-200 uppercase tracking-wide">
               So funktioniert's
             </a>
@@ -60,9 +61,9 @@ export default function SlimHeader() {
         {mobileMenuOpen && (
           <div className="md:hidden py-3 border-t border-neutral-200/40">
             <nav className="flex flex-col space-y-2">
-              <a href="/suche" className="text-neutral-700 hover:text-red-500 font-medium text-xs py-1 uppercase tracking-wide">
+              <Link href="/suche" className="text-neutral-700 hover:text-red-500 font-medium text-xs py-1 uppercase tracking-wide">
                 Fahrzeuge suchen
-              </a>
+              </Link>
               <a href="#funktioniert" className="text-neutral-700 hover:text-red-500 font-medium text-xs py-1 uppercase tracking-wide">
                 So funktioniert's
               </a>

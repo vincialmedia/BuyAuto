@@ -1,10 +1,13 @@
+
 import Head from "next/head";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { searchListings } from "@/services/listingsService";
-import Header from "@/components/buyauto/Header";
-import SearchLayout from "@/components/buyauto/search/SearchLayout";
+import SlimHeader from "@/components/buyauto/search/SlimHeader";
+import DynamicFilterBar from "@/components/buyauto/search/DynamicFilterBar";
+import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
+import MinimalPagination from "@/components/buyauto/search/MinimalPagination";
 import { debounce } from "@/lib/utils";
 
 export default function SuchePage() {
@@ -12,6 +15,7 @@ export default function SuchePage() {
   const [searchQuery, setSearchQuery] = useState<SearchQuery>({});
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [filterBarSticky, setFilterBarSticky] = useState(false);
 
   // Parse URL query params into SearchQuery
   const parseQueryFromUrl = useCallback((query: any): SearchQuery => {
@@ -89,9 +93,47 @@ export default function SuchePage() {
 
   // Handle filter changes from child components
   const handleSearchQueryChange = useCallback((newSearchQuery: SearchQuery) => {
-    setSearchQuery(newSearchQuery);
-    debouncedUpdateUrl(newSearchQuery);
+    // Reset to page 1 when filters change (except for pagination)
+    const resetPageQuery = { ...newSearchQuery };
+    if (!newSearchQuery.page) {
+      resetPageQuery.page = 1;
+    }
+    
+    setSearchQuery(resetPageQuery);
+    debouncedUpdateUrl(resetPageQuery);
   }, [debouncedUpdateUrl]);
+
+  // Handle page changes
+  const handlePageChange = useCallback((page: number) => {
+    const newQuery = { ...searchQuery, page };
+    setSearchQuery(newQuery);
+    
+    // Immediately update URL for pagination
+    const urlQuery = buildUrlQuery(newQuery);
+    router.push(
+      {
+        pathname: router.pathname,
+        query: urlQuery,
+      },
+      undefined,
+      { shallow: true }
+    );
+  }, [searchQuery, router, buildUrlQuery]);
+
+  // Handle reset filters
+  const handleResetFilters = useCallback(() => {
+    const resetQuery: SearchQuery = { page: 1 };
+    setSearchQuery(resetQuery);
+    router.push({
+      pathname: router.pathname,
+      query: {},
+    }, undefined, { shallow: true });
+  }, [router]);
+
+  // Handle show all listings
+  const handleShowAllListings = useCallback(() => {
+    handleResetFilters();
+  }, [handleResetFilters]);
 
   // Perform search when query changes
   useEffect(() => {
@@ -149,11 +191,67 @@ export default function SuchePage() {
     performInitialSearch();
   }, [router.isReady, router.query, parseQueryFromUrl]);
 
-  const pageTitle = searchResults 
-    ? `Fahrzeuge suchen (${searchResults.total} Treffer) | BuyAuto`
-    : "Fahrzeuge suchen | Leasingübernahme Schweiz | BuyAuto";
+  // Handle scroll for sticky filter bar
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      setFilterBarSticky(scrollY > 120);
+    };
 
-  const metaDescription = "Durchstöbere aktuelle Leasingangebote und übernimm dein nächstes Auto-Leasing in der Schweiz – schnell und transparent.";
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // SEO and meta information
+  const totalResults = searchResults?.total || 0;
+  const currentPage = searchResults?.page || 1;
+  const totalPages = Math.ceil(totalResults / (searchResults?.pageSize || 12));
+
+  const pageTitle = totalResults > 0 
+    ? `Auto Leasingübernahme – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz`
+    : "Auto Leasingübernahme – Fahrzeuge suchen | BuyAuto Schweiz";
+
+  const metaDescription = "Minimalistische Suche für Auto-Leasingübernahmen in der Schweiz. Finde dein nächstes Fahrzeug nach Preis, Marke und Restlaufzeit.";
+
+  // Generate JSON-LD schema for search results
+  const generateJsonLd = () => {
+    if (!searchResults || searchResults.items.length === 0) return null;
+
+    return {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "Auto Leasingübernahme Suchresultate",
+      "description": metaDescription,
+      "numberOfItems": totalResults,
+      "itemListElement": searchResults.items.map((listing, index) => ({
+        "@type": "ListItem",
+        "position": index + 1,
+        "item": {
+          "@type": "Car",
+          "name": `${listing.brand} ${listing.model}`,
+          "brand": listing.brand,
+          "model": listing.model,
+          "vehicleModelDate": listing.year,
+          "mileageFromOdometer": listing.mileageKm,
+          "fuelType": listing.fuel,
+          "vehicleTransmission": listing.gearbox,
+          "offers": {
+            "@type": "Offer",
+            "price": listing.pricePerMonthCHF,
+            "priceCurrency": "CHF",
+            "priceSpecification": {
+              "@type": "UnitPriceSpecification",
+              "price": listing.pricePerMonthCHF,
+              "priceCurrency": "CHF",
+              "unitText": "MONTH"
+            }
+          }
+        }
+      }))
+    };
+  };
+
+  const jsonLd = generateJsonLd();
 
   return (
     <>
@@ -162,17 +260,82 @@ export default function SuchePage() {
         <meta name="description" content={metaDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:type" content="website" />
+        
+        {/* JSON-LD */}
+        {jsonLd && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+        )}
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
-        <Header />
-        
-        <SearchLayout
+      {/* Swiss Clean Design - Minimal Layout */}
+      <div className="min-h-screen bg-white">
+        {/* Slim Header */}
+        <SlimHeader />
+
+        {/* Dynamic Filter Bar */}
+        <DynamicFilterBar
           searchQuery={searchQuery}
-          searchResults={searchResults}
-          isLoading={isLoading}
           onSearchQueryChange={handleSearchQueryChange}
+          className={filterBarSticky ? "fixed top-14 left-0 right-0 z-40" : "sticky top-14 z-40"}
         />
+
+        {/* Main Content */}
+        <main className="max-w-[2000px] mx-auto px-4 md:px-6 lg:px-8">
+          {/* Content padding to account for fixed header and filter bar */}
+          <div className={filterBarSticky ? "pt-20" : "pt-6"}>
+            
+            {/* Results Summary */}
+            {!isLoading && searchResults && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-neutral-600">
+                    {totalResults > 0 ? (
+                      <>
+                        <span className="font-semibold text-neutral-900">{totalResults.toLocaleString()}</span> Fahrzeuge gefunden
+                        {currentPage > 1 && (
+                          <span className="ml-2">– Seite {currentPage} von {totalPages}</span>
+                        )}
+                      </>
+                    ) : (
+                      "Keine Fahrzeuge gefunden"
+                    )}
+                  </div>
+                </div>
+                {/* Thin divider */}
+                <div className="mt-3 h-px bg-gradient-to-r from-neutral-200 via-neutral-300 to-neutral-200"></div>
+              </div>
+            )}
+
+            {/* Vertical Results List */}
+            <div className="mb-12">
+              <VerticalResultsList
+                searchResults={searchResults}
+                isLoading={isLoading}
+                onResetFilters={handleResetFilters}
+                onShowAllListings={handleShowAllListings}
+              />
+            </div>
+
+            {/* Pagination */}
+            {!isLoading && searchResults && totalPages > 1 && (
+              <div className="pb-12">
+                <MinimalPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </div>
+        </main>
       </div>
     </>
   );
