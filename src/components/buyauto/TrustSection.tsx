@@ -25,8 +25,8 @@ export default function TrustSection() {
     <section className="py-20 bg-gradient-to-br from-neutral-50/80 via-white to-neutral-50/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Swiss clean section header */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-light text-neutral-900 mb-4 tracking-tight">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-light text-neutral-900 mb-3 tracking-tight">
             Sicher & <span className="font-semibold text-red-500">Transparent</span>
           </h2>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto font-light leading-relaxed">
