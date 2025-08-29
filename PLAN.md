@@ -1,108 +1,86 @@
-# Plan: Intelligent Search Page (`/suche`)
+# Plan: Redesign /suche Page
 
-This document outlines the strategic plan for building the vehicle search results page.
+## 1. Goal
+Redesign the `/suche` page into a sleek, minimalistic, and dynamic experience.
 
-### **1. High-Level Goal**
+- **Design Philosophy**: Swiss clean design (white, light grey, thin dividers, red as a highlight).
+- **Focus**: Results dominate the viewport in a vertical list; filters are light and interactive.
+- **Dynamic Effects**: Subtle animations like a background color shift on the price slider.
+- **Out of Scope**: Vehicle detail pages, dealer dashboards.
 
-To create a fast, minimalist, and SEO-friendly vehicle search results page (`/suche`). The page will feature faceted filtering, sorting, and a vertical list layout. All filter states will be managed via URL query parameters for shareability and a predictable user experience.
+## 2. Route & Data
+- **Route**: `/suche`
+- **Default State**: Always shows all listings if no filters are applied.
+- **Data Source**: Supabase `public_listings` table or `search_listings` RPC.
+- **Pagination**: 12 results per page, controlled by a `page` URL parameter.
 
-### **2. Data Layer &amp; Business Logic**
+## 3. UI/UX Flow
 
-This is the foundation. We'll manage all data-related aspects in a dedicated library file.
+### Header (Slim, Fixed)
+- **Dimensions**: Max height of 60px.
+- **Style**: White background, thin bottom shadow.
+- **Content**:
+  - Left: Small logo.
+  - Right: "Fahrzeuge suchen", "So funktioniert’s", "Kontakt", "Inserat erstellen" (red button), "Anmelden".
+- **Responsive**: Collapses into a hamburger menu on mobile.
 
-*   **File:** `src/lib/buyauto/search.ts`
-*   **Core Types:**
-    *   `Listing`: Defines the structure for a single vehicle listing.
-    *   `SearchQuery`: Defines all possible filter and sort parameters.
-*   **Data Seeding:**
-    *   A `getDemoListings()` function will generate an array of 30-40 sample `Listing` objects to power the UI without a database. This will include a mix of premium/standard vehicles across different brands, prices, and locations.
-*   **Search Function:**
-    *   `searchListings(query: SearchQuery): { items: Listing[], total: number, page: number, pageSize: number }`
-    *   **Filtering:** It will apply all filters from the `SearchQuery` object (brand, price, body type, etc.).
-    *   **Sorting:** It will handle sorting logic:
-        *   `relevance`: Default sort. Will apply a subtle boost to `premium: true` listings.
-        *   Other options (`priceAsc`, `priceDesc`, etc.) will perform standard array sorting.
-    *   **Pagination:** It will slice the filtered and sorted array based on the `page` number and a fixed `pageSize` of 12.
+### Search/Filters Section (Dynamic, Sticky)
+- **Layout**: Compact, 1-line filter bar.
+- **Filters**: Brand, Model, Year, Price Slider, Restlaufzeit (remaining term), Sort.
+- **Behavior**: Sticks to the top just below the header on scroll.
+- **Responsive**: Collapses into a "Filter" button on mobile, which opens a drawer.
 
-### **3. Routing &amp; Page Structure**
+### Dynamic Interactions
+- **Price Slider**: The track background behind the slider thumb fills with a gradient (grey → light red → deep red) as the max price increases.
+- **Restlaufzeit Selector**: Options show a subtle animation on hover (e.g., underline or fade).
+- **Filter Chips**: Applied filters appear as small, elegant chips below the filter bar, each with an "x" to remove it.
 
-*   **Primary Route:** A new page will be created at `src/pages/suche.tsx`.
-*   **Alias:** We will configure a rewrite in `next.config.mjs` to allow `/fahrzeuge` to serve the `/suche` page content, improving the user-facing URL.
-    ```javascript
-    // next.config.mjs
-    async rewrites() {
-      return [
-        {
-          source: '/fahrzeuge',
-          destination: '/suche',
-        },
-      ];
-    }
-    ```
+### Results List (Vertical Stack)
+- **Layout**: Clean vertical stack of cards, 1 per row, full-width with padding.
+- **Loading State**: Skeleton loading components will be shown while fetching data.
+- **Card Design**:
+  - **Left**: Car image (16:9 aspect ratio, object-fit: cover).
+  - **Middle**:
+    - **Title**: `Brand Model · Year`
+    - **Subline Pills**: `CHF X / Monat`, `Restlaufzeit Y Mon.`, `Km`, `Antrieb`, `Getriebe`, `Kanton`.
+  - **Right**:
+    - **Price**: Emphasized, bold, and red (e.g., `CHF 1’290 / Monat`).
+    - **Premium Badge**: A badge and a subtle glow effect on the card border if `is_premium` is true.
+    - **CTA**: "Details ansehen" (minimalist outline style button).
+- **Micro-interactions**: On hover, the card raises slightly (transform) and its background fades to a soft grey.
 
-### **4. Component Architecture**
+### Pagination
+- **Style**: Centered, minimal controls: "‹ Zurück" | page numbers | "Weiter ›".
+- **Functionality**: Updates the `page` URL parameter and fetches the corresponding result set.
 
-We'll use a modular, component-based approach.
+### Empty State
+- **Message**: "Keine Fahrzeuge gefunden."
+- **Actions**: Buttons for "Filter zurücksetzen" and "Alle Anzeigen".
 
-*   **Page Component (`SuchePage`):** `src/pages/suche.tsx`
-    *   **Role:** The main container.
-    *   **Responsibilities:**
-        *   Parses URL query params (`useRouter`).
-        *   Manages the `SearchQuery` state.
-        *   Calls `searchListings` to fetch and update results.
-        *   Handles debounced URL updates when filters change.
-        *   Renders the main layout and passes data down to child components.
+## 4. SEO & Copy
 
-*   **Layout (`SearchLayout`):** `src/components/buyauto/search/SearchLayout.tsx`
-    *   **Role:** Defines the responsive 2-column (desktop) or single-column (mobile) structure.
-    *   **Contains:** Slots for the `FacetPanel` and `ResultsList`.
+### SEO
+- **Title**: "Auto Leasingübernahme – Fahrzeuge suchen | BuyAuto Schweiz"
+- **Meta Description**: "Minimalistische Suche für Auto-Leasingübernahmen in der Schweiz. Finde dein nächstes Fahrzeug nach Preis, Marke und Restlaufzeit."
+- **Structured Data**: Implement JSON-LD `ItemList` schema for the search results.
 
-*   **Filters (`FacetPanel`):** `src/components/buyauto/search/FacetPanel.tsx`
-    *   **Role:** The left-hand sidebar for filtering.
-    *   **Features:**
-        *   Uses `shadcn/ui` components (`Accordion`, `Select`, `Slider`, `Checkbox`) for filter controls.
-        *   On mobile, it will be rendered inside a `Sheet` (drawer).
-        *   Receives the current `SearchQuery` to display active filters.
-        *   Emits filter change events up to the `SuchePage`.
+### Copy (DE-CH)
+- **Price**: `CHF 1’290 / Monat`
+- **Remaining Term**: `14 Mon.`
+- **Buttons**: "Filter anwenden", "Zurücksetzen", "Details ansehen".
 
-*   **Results (`ResultsList`):** `src/components/buyauto/search/ResultsList.tsx`
-    *   **Role:** The right-hand section displaying search results.
-    *   **Features:**
-        *   Displays the result count ("Treffer: 128 Fahrzeuge").
-        *   Contains the sorting dropdown.
-        *   Renders a list of `SearchResultCard` components.
-        *   Includes `Pagination` controls.
-        *   Shows skeleton loaders during data fetching.
-        *   Displays the `EmptyState` component when there are no results.
+## 5. Acceptance Criteria
+- [ ] Header height is ≤ 60px and does not dominate the viewport.
+- [ ] Adjusting the price slider dynamically changes the gradient background.
+- [ ] Active filters are displayed as removable chips.
+- [ ] Premium listings are visually distinct with a badge and glow.
+- [ ] Results are in a vertical stack, not a grid.
+- [ ] Pagination correctly updates results and URL state.
+- [ ] The empty state provides clear actions to the user.
+- [ ] The page is fully responsive and touch-friendly.
 
-*   **Result Item (`SearchResultCard`):** `src/components/buyauto/search/SearchResultCard.tsx`
-    *   **Role:** Displays a single vehicle listing in a stacked, row-based format.
-    *   **Features:**
-        *   Image on the left, details in the middle, price/CTA on the right.
-        *   Displays a "Premium" badge and has a subtle glow if `listing.premium` is true.
-        *   Links to `/fahrzeug/[id]` (placeholder route).
-
-*   **Active Filters (`ActiveFilters`):** `src/components/buyauto/search/ActiveFilters.tsx`
-    *   **Role:** Displays active filters as dismissible chips below the top bar.
-    *   **Features:**
-        *   Each chip's "x" button removes the corresponding query param from the URL.
-        *   Includes a "Alle zurücksetzen" link.
-
-*   **SEO (`SeoHead`):** `src/components/buyauto/search/SeoHead.tsx`
-    *   **Role:** Manages all `<head>` content.
-    *   **Features:**
-        *   Sets the page `title` and `meta description`.
-        *   Dynamically generates the `ItemList` JSON-LD `<script>` tag based on the visible results for the current page.
-
-### **5. State Management &amp; Data Flow**
-
-The URL is the single source of truth.
-
-1.  **Init:** `SuchePage` loads and reads filters from `useRouter().query`.
-2.  **State Sync:** The raw query object is parsed into a structured `SearchQuery` state object.
-3.  **Data Fetch:** The `SearchQuery` is passed to the `searchListings` function.
-4.  **Render:** The UI renders based on the search results and the `SearchQuery` state.
-5.  **User Action:** A user changes a filter (e.g., checks a "Body Type" box).
-6.  **State Update:** An event handler updates the local `SearchQuery` state object.
-7.  **Debounce &amp; Push:** The change is debounced (300ms). After the delay, `router.push` is called with the new, updated URL query string.
-8.  **Loop:** The URL change triggers a re-render, and the cycle repeats from Step 1.
+## 6. Constraints
+- The design must be minimalistic (no heavy borders, no large color blocks).
+- All dynamic interactions must be subtle and performant (using CSS transforms and gradients).
+- No fake statistics or logos.
+- The primary focus is on readability and elegance.
