@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -54,28 +55,30 @@ export default function FAQSection() {
         />
       </Head>
       
-      <section className="py-16 bg-white">
+      <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Häufig gestellte Fragen
+          {/* Swiss clean section header */}
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-light text-neutral-900 mb-4 tracking-tight">
+              Häufig gestellte <span className="font-semibold text-red-500">Fragen</span>
             </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            <p className="text-lg text-neutral-600 max-w-2xl mx-auto font-light leading-relaxed">
               Alles was du über Leasingübernahmen wissen musst
             </p>
           </div>
 
+          {/* Swiss minimalist accordion */}
           <Accordion type="single" collapsible className="w-full space-y-4">
-            {faqs.map((faq) => (
+            {faqs.map((faq, index) => (
               <AccordionItem 
                 key={faq.id} 
                 value={faq.id}
-                className="bg-slate-50 rounded-2xl border-0 px-6"
+                className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-8 hover:border-neutral-300/60"
               >
-                <AccordionTrigger className="text-left font-semibold text-slate-900 hover:no-underline py-6">
+                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-8 hover:text-red-600 transition-colors duration-200 text-base md:text-lg leading-relaxed">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-slate-600 leading-relaxed pb-6">
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-8 font-light">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
