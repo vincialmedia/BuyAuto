@@ -7,7 +7,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ totalListings }: HeroSectionProps) {
   return (
-    <section className="relative h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden pt-16">
+    <section className="relative h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden pt-20">
       {/* Background Image with Refined Overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
@@ -27,8 +27,8 @@ export default function HeroSection({ totalListings }: HeroSectionProps) {
       {/* Content */}
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Swiss typography hierarchy - more compact */}
-        <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-light text-white mb-4 leading-[1.1] tracking-tight">
+        <div className="mb-4">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-light text-white mb-3 leading-[1.1] tracking-tight">
             Leasingübernahme in der Schweiz –{" "}
             <br className="hidden md:block" />
             <span className="font-semibold text-red-400">Einfach & Schnell</span>
@@ -45,7 +45,7 @@ export default function HeroSection({ totalListings }: HeroSectionProps) {
         </div>
 
         {/* Search Form with better spacing - more compact */}
-        <div className="mb-6">
+        <div className="mb-4">
           <SearchForm />
         </div>
 
