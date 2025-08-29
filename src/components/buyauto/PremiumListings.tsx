@@ -7,22 +7,8 @@ import { ArrowRight, Crown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { searchListings } from "@/services/listingsService";
-
-interface Listing {
-  id: string;
-  brand: string;
-  model: string;
-  year: number;
-  price_per_month: number;
-  remaining_lease_months: number;
-  canton: string;
-  mileage: number;
-  fuel_type: string;
-  transmission: string;
-  premium: boolean;
-  cover_image?: string;
-}
+import { searchListings, formatPrice, formatMileage } from "@/lib/buyauto/search";
+import { Listing } from "@/lib/buyauto/types";
 
 export default function PremiumListings() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -32,15 +18,16 @@ export default function PremiumListings() {
     const fetchPremiumListings = async () => {
       try {
         setLoading(true);
-        // Fetch premium listings from Supabase
+        // Fetch premium listings using correct query structure
         const result = await searchListings({
-          premium: true,
-          limit: 6
+          premiumOnly: true,
+          page: 1
         });
-        setListings(result.listings);
+        // Take only first 6 items for homepage display
+        setListings(result.items.slice(0, 6));
       } catch (error) {
         console.error("Error fetching premium listings:", error);
-        // Fallback to mock data if Supabase fails
+        // Fallback to empty array if search fails
         setListings([]);
       } finally {
         setLoading(false);
@@ -49,14 +36,6 @@ export default function PremiumListings() {
 
     fetchPremiumListings();
   }, []);
-
-  const formatPrice = (price: number) => {
-    return `CHF ${price.toLocaleString("de-CH")}`;
-  };
-
-  const formatMileage = (mileage: number) => {
-    return `${mileage.toLocaleString("de-CH")} km`;
-  };
 
   if (loading) {
     return (
@@ -116,9 +95,9 @@ export default function PremiumListings() {
             >
               {/* Image with premium badge overlay */}
               <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
-                {listing.cover_image ? (
+                {listing.imageUrl ? (
                   <img 
-                    src={listing.cover_image} 
+                    src={listing.imageUrl} 
                     alt={`${listing.brand} ${listing.model}`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
@@ -150,19 +129,19 @@ export default function PremiumListings() {
                 {/* Specification pills */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {listing.remaining_lease_months} Mon.
+                    {listing.remainingMonths} Mon.
                   </span>
                   <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {formatMileage(listing.mileage)}
+                    {formatMileage(listing.mileageKm)}
                   </span>
                   <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {listing.fuel_type}
+                    {listing.fuel}
                   </span>
                   <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {listing.transmission}
+                    {listing.gearbox}
                   </span>
                   <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {listing.canton}
+                    {listing.cantonCode}
                   </span>
                 </div>
 
@@ -170,7 +149,7 @@ export default function PremiumListings() {
                 <div className="flex justify-between items-end">
                   <div>
                     <p className="text-2xl font-bold text-red-500 mb-1">
-                      {formatPrice(listing.price_per_month)} / Monat
+                      {formatPrice(listing.pricePerMonthCHF)} / Monat
                     </p>
                   </div>
                   <Button 
