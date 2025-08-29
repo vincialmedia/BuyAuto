@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { SearchQuery, SearchResult, Listing } from "@/lib/buyauto/search";
+import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
+import { Listing } from "@/lib/buyauto/types";
 
 // Database row type (matches Supabase schema)
 type ListingRow = {
@@ -42,7 +43,8 @@ function transformDbRowToListing(row: ListingRow): Listing {
     premium: row.premium,
     depositCHF: row.deposit_chf || null,
     // For now, use cover_image_url as single image, can extend to multiple images later
-    images: row.cover_image_url ? [row.cover_image_url] : []
+    images: row.cover_image_url ? [row.cover_image_url] : [],
+    imageUrl: row.cover_image_url || ""
   };
 }
 

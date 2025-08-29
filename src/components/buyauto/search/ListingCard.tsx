@@ -1,4 +1,4 @@
-import { Listing, formatPrice, formatMileage } from "@/lib/buyauto/search";
+import { Listing } from "@/lib/buyauto/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
