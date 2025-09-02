@@ -73,7 +73,8 @@ const mapGearboxType = (gearbox: string): string => {
 
 export async function createListing(listingData: CreateListingData) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData?.user;
 
     // Prepare the insert data
     const insertPayload = {
@@ -104,7 +105,7 @@ export async function createListing(listingData: CreateListingData) {
 
     const { data, error } = await supabase
       .from('listings')
-      .insert(insertPayload as any)
+      .insert([insertPayload])
       .select()
       .single();
 
@@ -130,9 +131,7 @@ export async function getListings(filters?: {
   offset?: number;
 }) {
   try {
-    let query = supabase
-      .from('listings')
-      .select('*');
+    let query = supabase.from('listings').select('*');
 
     if (filters?.brand) {
       query = query.eq('brand', filters.brand);
@@ -153,14 +152,14 @@ export async function getListings(filters?: {
       query = query.eq('status', 'active');
     }
 
-    query = query.order('is_premium', { ascending: false })
-                 .order('created_at', { ascending: false });
+    query = query.order('is_premium', { ascending: false });
+    query = query.order('created_at', { ascending: false });
 
     if (filters?.limit) {
       query = query.limit(filters.limit);
     }
-    if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1);
+    if (filters?.offset && filters?.limit) {
+      query = query.range(filters.offset, filters.offset + filters.limit - 1);
     }
 
     const { data, error } = await query;
@@ -170,7 +169,7 @@ export async function getListings(filters?: {
       throw error;
     }
 
-    return data;
+    return data || [];
   } catch (error) {
     console.error('Error in getListings:', error);
     throw error;
@@ -198,11 +197,11 @@ export async function getListingById(id: string) {
   }
 }
 
-export async function updateListingStatus(id: string, status: 'pending' | 'active' | 'expired' | 'rejected') {
+export async function updateListingStatus(id: string, status: string) {
   try {
     const { data, error } = await supabase
       .from('listings')
-      .update({ status } as any)
+      .update({ status })
       .eq('id', id)
       .select()
       .single();
@@ -225,7 +224,7 @@ export async function checkExpiredListings() {
 
     const { data, error } = await supabase
       .from('listings')
-      .update({ status: 'expired' } as any)
+      .update({ status: 'expired' })
       .eq('status', 'active')
       .not('expires_at', 'is', null)
       .lt('expires_at', now)
@@ -236,7 +235,7 @@ export async function checkExpiredListings() {
       throw error;
     }
 
-    return data;
+    return data || [];
   } catch (error) {
     console.error('Error in checkExpiredListings:', error);
     throw error;
@@ -267,7 +266,7 @@ export interface Listing {
   duration_days?: number;
   price_plan?: string;
   expires_at?: string;
-  status?: 'pending' | 'active' | 'expired' | 'rejected';
+  status?: string;
   user_id?: string;
   images?: string[];
   cover_image_index?: number;
