@@ -31,8 +31,8 @@ export interface CreateListingData {
 }
 
 // Map form values to database enum values
-const mapBodyType = (body: string): "Limousine" | "Kombi" | "SUV" | "Cabrio" => {
-  const mapping: Record<string, "Limousine" | "Kombi" | "SUV" | "Cabrio"> = {
+const mapBodyType = (body: string): string => {
+  const mapping: Record<string, string> = {
     "Limousine": "Limousine",
     "Kombi": "Kombi", 
     "SUV": "SUV",
@@ -47,8 +47,8 @@ const mapBodyType = (body: string): "Limousine" | "Kombi" | "SUV" | "Cabrio" => 
   return mapping[body] || "Limousine";
 };
 
-const mapFuelType = (fuel: string): "Benzin" | "Diesel" | "Hybrid" | "Elektro" => {
-  const mapping: Record<string, "Benzin" | "Diesel" | "Hybrid" | "Elektro"> = {
+const mapFuelType = (fuel: string): string => {
+  const mapping: Record<string, string> = {
     "Benzin": "Benzin",
     "Diesel": "Diesel",
     "Elektro": "Elektro",
@@ -61,8 +61,8 @@ const mapFuelType = (fuel: string): "Benzin" | "Diesel" | "Hybrid" | "Elektro" =
   return mapping[fuel] || "Benzin";
 };
 
-const mapGearboxType = (gearbox: string): "Automatik" | "Manuell" => {
-  const mapping: Record<string, "Automatik" | "Manuell"> = {
+const mapGearboxType = (gearbox: string): string => {
+  const mapping: Record<string, string> = {
     "Manuell": "Manuell",
     "Automatik": "Automatik",
     "Halbautomatik": "Automatik",
@@ -75,13 +75,13 @@ export async function createListing(listingData: CreateListingData) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Prepare the insert data using raw SQL approach to avoid type constraints
+    // Prepare the insert data
     const insertPayload = {
       brand: listingData.brand,
       model: listingData.model,
       year: listingData.year,
       mileage_km: listingData.km,
-      km: listingData.km, // Also populate the km field
+      km: listingData.km,
       body: mapBodyType(listingData.body),
       fuel: mapFuelType(listingData.fuel), 
       gearbox: mapGearboxType(listingData.gearbox),
@@ -98,14 +98,13 @@ export async function createListing(listingData: CreateListingData) {
       premium: listingData.is_premium || false,
       duration_days: listingData.duration_days,
       expires_at: listingData.expires_at,
-      status: listingData.status || 'pending',
       title: `${listingData.brand} ${listingData.model} (${listingData.year})`,
       user_id: user?.id || null,
     };
 
     const { data, error } = await supabase
       .from('listings')
-      .insert(insertPayload)
+      .insert(insertPayload as any)
       .select()
       .single();
 
@@ -203,7 +202,7 @@ export async function updateListingStatus(id: string, status: 'pending' | 'activ
   try {
     const { data, error } = await supabase
       .from('listings')
-      .update({ status: status })
+      .update({ status } as any)
       .eq('id', id)
       .select()
       .single();
@@ -226,7 +225,7 @@ export async function checkExpiredListings() {
 
     const { data, error } = await supabase
       .from('listings')
-      .update({ status: 'expired' })
+      .update({ status: 'expired' } as any)
       .eq('status', 'active')
       .not('expires_at', 'is', null)
       .lt('expires_at', now)
