@@ -51,11 +51,13 @@ export default function Header() {
             >
               Anmelden
             </Button>
-            <Button 
-              className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium h-8 px-4 rounded-lg shadow-none hover:shadow-sm transition-all duration-200"
-            >
-              Inserat erstellen
-            </Button>
+            <Link href="/inserat-erstellen">
+              <Button 
+                className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium h-8 px-4 rounded-lg shadow-none hover:shadow-sm transition-all duration-200"
+              >
+                Inserat erstellen
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button - Minimal */}
@@ -105,9 +107,11 @@ export default function Header() {
                 >
                   Anmelden
                 </Button>
-                <Button className="justify-start bg-red-500 hover:bg-red-600 text-white font-medium text-sm h-9">
-                  Inserat erstellen
-                </Button>
+                <Link href="/inserat-erstellen" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="justify-start bg-red-500 hover:bg-red-600 text-white font-medium text-sm h-9 w-full">
+                    Inserat erstellen
+                  </Button>
+                </Link>
               </div>
             </nav>
           </div>
