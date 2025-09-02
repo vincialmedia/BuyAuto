@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useWizard } from "./ListingWizard";
 import { ChevronLeft, Check, Star, MapPin, Calendar, Settings, Image as ImageIcon, CreditCard } from "lucide-react";
 import Image from "next/image";
-import { createListing } from "@/services/listingService";
+import { createListing } from "@/services/createListingService";
 
 export default function Step5_Preview() {
   const { data, prevStep, setIsComplete } = useWizard();
