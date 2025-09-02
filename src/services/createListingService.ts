@@ -76,48 +76,37 @@ export async function createListing(listingData: CreateListingData) {
     const { data: authData } = await supabase.auth.getUser();
     const user = authData?.user;
 
-    // Use raw SQL to insert the listing to avoid TypeScript issues
-    const query = `
-      INSERT INTO listings (
-        brand, model, year, mileage_km, km, body, fuel, gearbox, 
-        price_per_month_chf, remaining_months, deposit_chf, 
-        location, canton_code, images, cover_image_index, cover_image_url,
-        price_plan, is_premium, premium, duration_days, expires_at, 
-        title, user_id, status
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 
-        $17, $18, $19, $20, $21, $22, $23, 'pending'::listing_status
-      ) RETURNING *;
-    `;
+    // Prepare the insert data with proper type mapping
+    const insertData: any = {
+      brand: listingData.brand,
+      model: listingData.model,
+      year: listingData.year,
+      mileage_km: listingData.km,
+      body: mapBodyType(listingData.body),
+      fuel: mapFuelType(listingData.fuel),
+      gearbox: mapGearboxType(listingData.gearbox),
+      price_per_month_chf: listingData.price_per_month_chf,
+      remaining_months: listingData.remaining_months,
+      deposit_chf: listingData.deposit_chf || 0,
+      location: listingData.location,
+      canton_code: listingData.canton_code,
+      images: listingData.images || [],
+      cover_image_index: listingData.cover_image_index || 0,
+      cover_image_url: listingData.images?.[listingData.cover_image_index || 0] || null,
+      price_plan: listingData.price_plan,
+      is_premium: listingData.is_premium || false,
+      duration_days: listingData.duration_days,
+      expires_at: listingData.expires_at,
+      title: `${listingData.brand} ${listingData.model} (${listingData.year})`,
+      user_id: user?.id || null,
+      status: 'pending'
+    };
 
-    const { data, error } = await supabase.rpc('execute_sql', {
-      query_text: query,
-      params: [
-        listingData.brand,
-        listingData.model,
-        listingData.year,
-        listingData.km,
-        listingData.km,
-        mapBodyType(listingData.body),
-        mapFuelType(listingData.fuel),
-        mapGearboxType(listingData.gearbox),
-        listingData.price_per_month_chf,
-        listingData.remaining_months,
-        listingData.deposit_chf || 0,
-        listingData.location,
-        listingData.canton_code,
-        JSON.stringify(listingData.images || []),
-        listingData.cover_image_index || 0,
-        listingData.images?.[listingData.cover_image_index || 0] || null,
-        listingData.price_plan,
-        listingData.is_premium || false,
-        listingData.is_premium || false,
-        listingData.duration_days,
-        listingData.expires_at,
-        `${listingData.brand} ${listingData.model} (${listingData.year})`,
-        user?.id || null
-      ]
-    });
+    const { data, error } = await supabase
+      .from('listings')
+      .insert(insertData)
+      .select()
+      .single();
 
     if (error) {
       console.error('Supabase insert error:', error);
