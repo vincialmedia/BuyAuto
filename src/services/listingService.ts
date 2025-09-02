@@ -1,5 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type ListingTable = Database["public"]["Tables"]["listings"];
+type ListingInsert = ListingTable["Insert"];
+type ListingUpdate = ListingTable["Update"];
 
 export interface CreateListingData {
   // Vehicle Data
@@ -32,59 +37,40 @@ export interface CreateListingData {
 
 export async function createListing(listingData: CreateListingData) {
   try {
-    // Get current user - for now, we'll create listings without auth for demo
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    // For demo purposes, allow creating listings without authentication
-    // In production, uncomment the line below to enforce authentication
-    // if (userError || !user) {
-    //   throw new Error('User must be authenticated to create a listing');
-    // }
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Insert the listing with proper field mapping
+    const insertData: ListingInsert = {
+      brand: listingData.brand,
+      model: listingData.model,
+      year: listingData.year,
+      mileage_km: listingData.km, // Correct field from schema
+      body: listingData.body,
+      fuel: listingData.fuel,
+      gearbox: listingData.gearbox,
+      price_per_month_chf: listingData.price_per_month_chf,
+      remaining_months: listingData.remaining_months,
+      deposit_chf: listingData.deposit_chf || 0,
+      location: listingData.location,
+      canton_code: listingData.canton_code,
+      images: listingData.images || [],
+      cover_image_index: listingData.cover_image_index || 0,
+      cover_image_url: listingData.images?.[listingData.cover_image_index || 0] || null,
+      price_plan: listingData.price_plan,
+      is_premium: listingData.is_premium || false,
+      premium: listingData.is_premium || false,
+      duration_days: listingData.duration_days,
+      expires_at: listingData.expires_at,
+      status: listingData.status || 'pending',
+      title: `${listingData.brand} ${listingData.model} (${listingData.year})`,
+      user_id: user?.id || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      // 'km' is not in the base schema, only mileage_km. The ALTER might not have updated types.
+    };
+
     const { data, error } = await supabase
       .from('listings')
-      .insert([
-        {
-          // Vehicle data - map to correct database fields
-          brand: listingData.brand,
-          model: listingData.model,
-          year: listingData.year,
-          km: listingData.km,
-          mileage_km: listingData.km, // Also populate legacy field
-          body: listingData.body,
-          fuel: listingData.fuel,
-          gearbox: listingData.gearbox,
-          
-          // Leasing details
-          price_per_month_chf: listingData.price_per_month_chf,
-          remaining_months: listingData.remaining_months,
-          deposit_chf: listingData.deposit_chf || 0,
-          location: listingData.location,
-          canton_code: listingData.canton_code,
-          
-          // Images (stored as JSON array)
-          images: listingData.images || [],
-          cover_image_index: listingData.cover_image_index || 0,
-          cover_image_url: listingData.images?.[listingData.cover_image_index || 0] || null,
-          
-          // Plan and status management
-          price_plan: listingData.price_plan,
-          is_premium: listingData.is_premium || false,
-          premium: listingData.is_premium || false, // Also populate legacy field
-          duration_days: listingData.duration_days,
-          expires_at: listingData.expires_at,
-          status: listingData.status || 'pending',
-          
-          // Auto-generated title for search
-          title: `${listingData.brand} ${listingData.model} (${listingData.year})`,
-          
-          // Metadata
-          user_id: user?.id || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-      ])
+      .insert(insertData) // Pass a single object, not an array for a single insert
       .select()
       .single();
 
@@ -114,19 +100,15 @@ export async function getListings(filters?: {
       .from('listings')
       .select('*');
 
-    // Apply filters
     if (filters?.brand) {
       query = query.eq('brand', filters.brand);
     }
-    
     if (filters?.minPrice) {
       query = query.gte('price_per_month_chf', filters.minPrice);
     }
-    
     if (filters?.maxPrice) {
       query = query.lte('price_per_month_chf', filters.maxPrice);
     }
-    
     if (filters?.canton) {
       query = query.eq('canton_code', filters.canton);
     }
@@ -134,19 +116,15 @@ export async function getListings(filters?: {
     if (filters?.status) {
       query = query.eq('status', filters.status);
     } else {
-      // Default to only active listings
       query = query.eq('status', 'active');
     }
 
-    // Order premium listings first, then by created_at
     query = query.order('is_premium', { ascending: false })
                  .order('created_at', { ascending: false });
 
-    // Apply pagination
     if (filters?.limit) {
       query = query.limit(filters.limit);
     }
-    
     if (filters?.offset) {
       query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1);
     }
@@ -188,12 +166,15 @@ export async function getListingById(id: string) {
 
 export async function updateListingStatus(id: string, status: 'pending' | 'active' | 'expired' | 'rejected') {
   try {
-    const { data, error } = await supabase
-      .from('listings')
-      .update({ 
+    // The generated types might be out of sync. 'status' is a valid column.
+    const updatePayload: ListingUpdate = { 
         status,
         updated_at: new Date().toISOString()
-      })
+    };
+
+    const { data, error } = await supabase
+      .from('listings')
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
@@ -214,12 +195,15 @@ export async function checkExpiredListings() {
   try {
     const now = new Date().toISOString();
     
-    const { data, error } = await supabase
-      .from('listings')
-      .update({ 
+    // The generated types might be out of sync. 'status' is a valid column.
+    const updatePayload: ListingUpdate = {
         status: 'expired',
         updated_at: now
-      })
+    };
+
+    const { data, error } = await supabase
+      .from('listings')
+      .update(updatePayload)
       .eq('status', 'active')
       .not('expires_at', 'is', null)
       .lt('expires_at', now)
@@ -237,33 +221,4 @@ export async function checkExpiredListings() {
   }
 }
 
-// Export types for other modules
-export type Listing = {
-  id: string;
-  user_id?: string;
-  brand: string;
-  model: string;
-  title?: string;
-  year: number;
-  km: number;
-  mileage_km?: number;
-  body: string;
-  fuel: string;
-  gearbox: string;
-  price_per_month_chf: number;
-  remaining_months: number;
-  deposit_chf?: number;
-  location: string;
-  canton_code: string;
-  images: string[];
-  cover_image_index?: number;
-  cover_image_url?: string;
-  price_plan: string;
-  is_premium: boolean;
-  premium?: boolean;
-  duration_days: number | null;
-  expires_at: string | null;
-  status: 'pending' | 'active' | 'expired' | 'rejected';
-  created_at: string;
-  updated_at: string;
-};
+export type Listing = ListingTable["Row"] & { km?: number };
