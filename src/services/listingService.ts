@@ -1,10 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
-
-type ListingTable = Database["public"]["Tables"]["listings"];
-type ListingInsert = ListingTable["Insert"];
-type ListingUpdate = ListingTable["Update"];
 
 export interface CreateListingData {
   // Vehicle Data
@@ -35,18 +30,61 @@ export interface CreateListingData {
   status: 'pending' | 'active' | 'expired' | 'rejected';
 }
 
+// Map form values to database enum values
+const mapBodyType = (body: string): "Limousine" | "Kombi" | "SUV" | "Cabrio" => {
+  const mapping: Record<string, "Limousine" | "Kombi" | "SUV" | "Cabrio"> = {
+    "Limousine": "Limousine",
+    "Kombi": "Kombi", 
+    "SUV": "SUV",
+    "Coupé": "Cabrio",
+    "Cabriolet": "Cabrio",
+    "Kleinwagen": "Limousine",
+    "Van": "Kombi",
+    "Pick-up": "SUV",
+    "Sportwagen": "Cabrio",
+    "Stadtgeländewagen": "SUV"
+  };
+  return mapping[body] || "Limousine";
+};
+
+const mapFuelType = (fuel: string): "Benzin" | "Diesel" | "Hybrid" | "Elektro" => {
+  const mapping: Record<string, "Benzin" | "Diesel" | "Hybrid" | "Elektro"> = {
+    "Benzin": "Benzin",
+    "Diesel": "Diesel",
+    "Elektro": "Elektro",
+    "Hybrid (Benzin)": "Hybrid",
+    "Hybrid (Diesel)": "Hybrid",
+    "Plug-in-Hybrid": "Hybrid",
+    "Erdgas (CNG)": "Benzin",
+    "Autogas (LPG)": "Benzin"
+  };
+  return mapping[fuel] || "Benzin";
+};
+
+const mapGearboxType = (gearbox: string): "Automatik" | "Manuell" => {
+  const mapping: Record<string, "Automatik" | "Manuell"> = {
+    "Manuell": "Manuell",
+    "Automatik": "Automatik",
+    "Halbautomatik": "Automatik",
+    "Stufenlos (CVT)": "Automatik"
+  };
+  return mapping[gearbox] || "Manuell";
+};
+
 export async function createListing(listingData: CreateListingData) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
-    const insertData: ListingInsert = {
+    // Prepare the insert data using raw SQL approach to avoid type constraints
+    const insertPayload = {
       brand: listingData.brand,
       model: listingData.model,
       year: listingData.year,
-      mileage_km: listingData.km, // Correct field from schema
-      body: listingData.body,
-      fuel: listingData.fuel,
-      gearbox: listingData.gearbox,
+      mileage_km: listingData.km,
+      km: listingData.km, // Also populate the km field
+      body: mapBodyType(listingData.body),
+      fuel: mapFuelType(listingData.fuel), 
+      gearbox: mapGearboxType(listingData.gearbox),
       price_per_month_chf: listingData.price_per_month_chf,
       remaining_months: listingData.remaining_months,
       deposit_chf: listingData.deposit_chf || 0,
@@ -63,14 +101,11 @@ export async function createListing(listingData: CreateListingData) {
       status: listingData.status || 'pending',
       title: `${listingData.brand} ${listingData.model} (${listingData.year})`,
       user_id: user?.id || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      // 'km' is not in the base schema, only mileage_km. The ALTER might not have updated types.
     };
 
     const { data, error } = await supabase
       .from('listings')
-      .insert(insertData) // Pass a single object, not an array for a single insert
+      .insert(insertPayload)
       .select()
       .single();
 
@@ -166,15 +201,9 @@ export async function getListingById(id: string) {
 
 export async function updateListingStatus(id: string, status: 'pending' | 'active' | 'expired' | 'rejected') {
   try {
-    // The generated types might be out of sync. 'status' is a valid column.
-    const updatePayload: ListingUpdate = { 
-        status,
-        updated_at: new Date().toISOString()
-    };
-
     const { data, error } = await supabase
       .from('listings')
-      .update(updatePayload)
+      .update({ status: status })
       .eq('id', id)
       .select()
       .single();
@@ -194,16 +223,10 @@ export async function updateListingStatus(id: string, status: 'pending' | 'activ
 export async function checkExpiredListings() {
   try {
     const now = new Date().toISOString();
-    
-    // The generated types might be out of sync. 'status' is a valid column.
-    const updatePayload: ListingUpdate = {
-        status: 'expired',
-        updated_at: now
-    };
 
     const { data, error } = await supabase
       .from('listings')
-      .update(updatePayload)
+      .update({ status: 'expired' })
       .eq('status', 'active')
       .not('expires_at', 'is', null)
       .lt('expires_at', now)
@@ -221,4 +244,32 @@ export async function checkExpiredListings() {
   }
 }
 
-export type Listing = ListingTable["Row"] & { km?: number };
+export interface Listing {
+  id: string;
+  brand: string;
+  model: string;
+  title?: string;
+  year: number;
+  price_per_month_chf: number;
+  remaining_months: number;
+  location: string;
+  canton_code: string;
+  mileage_km: number;
+  km?: number;
+  fuel: string;
+  gearbox: string;
+  body: string;
+  premium?: boolean;
+  is_premium?: boolean;
+  cover_image_url?: string;
+  deposit_chf?: number;
+  created_at?: string;
+  updated_at?: string;
+  duration_days?: number;
+  price_plan?: string;
+  expires_at?: string;
+  status?: 'pending' | 'active' | 'expired' | 'rejected';
+  user_id?: string;
+  images?: string[];
+  cover_image_index?: number;
+}
