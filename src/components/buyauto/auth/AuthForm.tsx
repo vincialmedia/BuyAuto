@@ -15,7 +15,8 @@ import {
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import ResetPasswordForm from "./ResetPasswordForm";
-import { Card, CardContent, CardHeader, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type AuthView = "login" | "register" | "reset-password";
 
