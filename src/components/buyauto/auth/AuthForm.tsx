@@ -29,13 +29,21 @@ export default function AuthForm() {
     setIsLoading(true);
     try {
       // Ensure data has required fields for the auth service
-      await authService.signIn({
+      const result = await authService.signIn({
         email: data.email,
         password: data.password
       });
+      
+      console.log("Login successful:", result);
       toast.success("Erfolgreich angemeldet!");
-      const callbackUrl = router.query.callback as string || "/dashboard";
-      router.push(callbackUrl);
+      
+      // Give the AuthContext time to update before redirecting
+      setTimeout(() => {
+        const callbackUrl = router.query.callback as string || "/dashboard";
+        console.log("Redirecting to:", callbackUrl);
+        router.push(callbackUrl);
+      }, 100);
+      
     } catch (error: any) {
       console.error("Login error:", error);
       if (error?.message?.includes("Invalid login credentials")) {

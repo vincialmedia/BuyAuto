@@ -16,7 +16,10 @@ export default function DashboardPage() {
   const [currentSection, setCurrentSection] = useState<DashboardSection>("overview");
 
   useEffect(() => {
+    console.log("Dashboard - user:", user, "loading:", loading);
+    
     if (!loading && !user) {
+      console.log("No user found, redirecting to auth");
       router.push('/auth');
       return;
     }
