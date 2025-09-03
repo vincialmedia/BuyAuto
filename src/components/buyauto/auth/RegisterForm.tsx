@@ -11,15 +11,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { registerSchema, type RegisterFormData } from "@/lib/buyauto/schemas";
 
 interface RegisterFormProps {
-  onRegisterSuccess: () => void;
-  onRegisterError: (error: any) => void;
+  onRegister: (data: RegisterFormData) => void;
   onShowLogin: () => void;
   isLoading: boolean;
 }
 
 export default function RegisterForm({ 
-  onRegisterSuccess, 
-  onRegisterError,
+  onRegister, 
   onShowLogin, 
   isLoading 
 }: RegisterFormProps) {
@@ -35,13 +33,8 @@ export default function RegisterForm({
     },
   });
 
-  const onSubmit = async (data: RegisterFormData) => {
-    try {
-      // Parent will handle the service call
-      onRegisterSuccess();
-    } catch (error) {
-      onRegisterError(error);
-    }
+  const onSubmit = (data: RegisterFormData) => {
+    onRegister(data);
   };
 
   return (

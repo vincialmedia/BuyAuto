@@ -12,15 +12,13 @@ import { resetPasswordSchema, type ResetPasswordFormData } from "@/lib/buyauto/s
 import { motion } from "framer-motion";
 
 interface ResetPasswordFormProps {
-  onResetPasswordSuccess: () => void;
-  onResetPasswordError: (error: any) => void;
+  onResetPassword: (data: ResetPasswordFormData) => void;
   onBack: () => void;
   isLoading: boolean;
 }
 
 export default function ResetPasswordForm({
-  onResetPasswordSuccess,
-  onResetPasswordError,
+  onResetPassword,
   onBack,
   isLoading
 }: ResetPasswordFormProps) {
@@ -31,13 +29,8 @@ export default function ResetPasswordForm({
     },
   });
   
-  const onSubmit = async (data: ResetPasswordFormData) => {
-    try {
-      // Parent will call the service
-      onResetPasswordSuccess();
-    } catch(error) {
-      onResetPasswordError(error);
-    }
+  const onSubmit = (data: ResetPasswordFormData) => {
+    onResetPassword(data);
   };
 
   return (

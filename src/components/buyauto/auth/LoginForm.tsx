@@ -11,16 +11,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { loginSchema, type LoginFormData } from "@/lib/buyauto/schemas";
 
 interface LoginFormProps {
-  onLoginSuccess: () => void;
-  onLoginError: (error: any) => void;
+  onLogin: (data: LoginFormData) => void;
   onShowRegister: () => void;
   onShowResetPassword: () => void;
   isLoading: boolean;
 }
 
 export default function LoginForm({ 
-  onLoginSuccess,
-  onLoginError,
+  onLogin,
   onShowRegister, 
   onShowResetPassword,
   isLoading 
@@ -35,13 +33,8 @@ export default function LoginForm({
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    try {
-      // The parent component will handle the service call
-      onLoginSuccess();
-    } catch (error) {
-      onLoginError(error);
-    }
+  const onSubmit = (data: LoginFormData) => {
+    onLogin(data);
   };
 
   return (
