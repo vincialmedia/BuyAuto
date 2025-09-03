@@ -56,11 +56,11 @@ export default function Step1_VehicleData() {
   const handleVehicleDataSubmit = (formData: VehicleDataForm) => {
     console.log("Step1 handleVehicleDataSubmit:", formData);
     
-    // Schema now handles conversion, so data is already in the correct format.
-    // We just need to map km to mileage for backend consistency.
+    // Ensure km is properly converted to number and mapped to mileage
     const processedData = {
       ...formData,
-      mileage: formData.km
+      km: formData.km ? Number(formData.km) : undefined,
+      mileage: formData.km ? Number(formData.km) : undefined
     };
     
     console.log("Processed vehicle data:", processedData);

@@ -32,14 +32,9 @@ export const vehicleDataSchema = z.object({
   model: z.string().optional(),
   year: z.number().optional(),
   mileage: z.number().optional(),
-  km: z.preprocess(
-    (val) => {
-      if (val === "" || val === null || val === undefined) return undefined;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? undefined : num;
-    },
-    z.number({ invalid_type_error: "Kilometerstand muss eine Zahl sein." }).optional()
-  ),
+  km: z.coerce.number({
+    invalid_type_error: "Kilometerstand muss eine Zahl sein."
+  }).optional(),
   fuel: z.string().optional(),
   transmission: z.string().optional(),
   gearbox: z.string().optional(),
