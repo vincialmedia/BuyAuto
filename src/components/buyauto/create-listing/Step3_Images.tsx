@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -101,10 +102,10 @@ export default function Step3_Images() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl font-light text-neutral-900 mb-2">
+        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
           Bilder hochladen
         </h2>
-        <p className="text-neutral-600">
+        <p className="text-neutral-600 font-light leading-relaxed">
           Laden Sie hochwertige Fotos Ihres Fahrzeugs hoch
         </p>
       </div>
@@ -113,10 +114,10 @@ export default function Step3_Images() {
         {/* Upload Area */}
         <div
           className={`
-            relative border-2 border-dashed rounded-3xl p-8 text-center transition-all duration-300
+            relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300
             ${dragActive 
-              ? 'border-amber-400 bg-amber-50/50 scale-[1.02]' 
-              : 'border-neutral-300 hover:border-amber-300 bg-neutral-50/50'
+              ? 'border-red-500 bg-red-50/50 scale-[1.01]' 
+              : 'border-neutral-300 hover:border-red-300 bg-neutral-50/30'
             }
           `}
           onDragEnter={handleDrag}
@@ -133,23 +134,23 @@ export default function Step3_Images() {
           />
           
           <div className="space-y-4">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-amber-100 to-orange-100 rounded-2xl flex items-center justify-center">
-              <Upload className="w-8 h-8 text-amber-600" />
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
+              <Upload className="w-8 h-8 text-red-500" />
             </div>
             
             <div>
-              <p className="text-lg font-medium text-neutral-900 mb-2">
+              <p className="text-lg font-medium text-neutral-900 mb-2 tracking-tight">
                 Bilder hier ablegen oder klicken
               </p>
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-neutral-500 font-light">
                 JPG, PNG oder WEBP bis 10MB pro Bild
               </p>
             </div>
             
             {uploading && (
               <div className="flex items-center justify-center space-x-2">
-                <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-sm text-amber-600">Wird hochgeladen...</span>
+                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm text-red-600 font-light">Wird hochgeladen...</span>
               </div>
             )}
           </div>
@@ -159,17 +160,17 @@ export default function Step3_Images() {
         {images.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-neutral-900">
+              <h3 className="text-lg font-medium text-neutral-900 tracking-tight">
                 Hochgeladene Bilder ({images.length})
               </h3>
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-neutral-500 font-light">
                 Klicken Sie auf den Stern, um das Titelbild festzulegen
               </p>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {images.map((image, index) => (
-                <Card key={index} className="relative group overflow-hidden rounded-2xl border-2 border-transparent hover:border-amber-200 transition-all duration-200">
+                <Card key={index} className="relative group overflow-hidden rounded-lg border border-neutral-200/40 hover:border-red-200 transition-all duration-200 shadow-sm hover:shadow-md">
                   <div className="relative aspect-[4/3] bg-neutral-100">
                     <Image
                       src={image}
@@ -184,7 +185,7 @@ export default function Step3_Images() {
                     
                     {/* Cover Image Badge */}
                     {coverImageIndex === index && (
-                      <div className="absolute top-2 left-2 bg-amber-500 text-white px-2 py-1 rounded-lg text-xs font-medium flex items-center space-x-1">
+                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 shadow-sm">
                         <Star className="w-3 h-3 fill-current" />
                         <span>Titelbild</span>
                       </div>
@@ -197,10 +198,10 @@ export default function Step3_Images() {
                         size="sm"
                         onClick={() => setCoverImage(index)}
                         className={`
-                          w-8 h-8 p-0 rounded-lg
+                          w-8 h-8 p-0 rounded shadow-sm
                           ${coverImageIndex === index 
-                            ? 'bg-amber-500 hover:bg-amber-600' 
-                            : 'bg-white/90 hover:bg-white text-neutral-600 hover:text-neutral-900'
+                            ? 'bg-red-500 hover:bg-red-600 text-white' 
+                            : 'bg-white/90 hover:bg-white text-neutral-600 hover:text-neutral-900 border border-neutral-200/60'
                           }
                         `}
                       >
@@ -210,7 +211,7 @@ export default function Step3_Images() {
                         type="button"
                         size="sm"
                         onClick={() => removeImage(index)}
-                        className="w-8 h-8 p-0 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                        className="w-8 h-8 p-0 bg-red-500 hover:bg-red-600 text-white rounded shadow-sm"
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -224,8 +225,8 @@ export default function Step3_Images() {
 
         {/* Error Message */}
         {errors.images && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-sm text-red-600 flex items-center">
+          <div className="p-4 bg-red-50 border border-red-200/60 rounded-lg">
+            <p className="text-sm text-red-600 flex items-center font-light">
               <ImageIcon className="w-4 h-4 mr-2" />
               {errors.images.message}
             </p>
@@ -238,7 +239,7 @@ export default function Step3_Images() {
             type="button"
             onClick={prevStep}
             variant="outline"
-            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-300 text-neutral-600 rounded-xl transition-all duration-200"
+            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Zurück
@@ -246,7 +247,7 @@ export default function Step3_Images() {
           
           <Button
             type="submit"
-            className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-medium rounded-xl shadow-lg shadow-amber-200 transition-all duration-200 hover:shadow-xl hover:scale-[1.02]"
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
           >
             Weiter zur Plan-Auswahl
           </Button>

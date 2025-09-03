@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -155,10 +156,10 @@ export default function Step4_PlanSelection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl font-light text-neutral-900 mb-2">
+        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
           Inseratsdauer & Sichtbarkeit wählen
         </h2>
-        <p className="text-neutral-600">
+        <p className="text-neutral-600 font-light leading-relaxed">
           Wählen Sie die optimale Laufzeit für Ihr Inserat
         </p>
       </div>
@@ -170,27 +171,27 @@ export default function Step4_PlanSelection() {
             const Icon = plan.icon;
             const isSelected = selectedPlan === plan.id;
             const colorClasses = {
-              neutral: "border-neutral-200 hover:border-neutral-300",
-              red: "border-red-200 hover:border-red-300 bg-gradient-to-br from-red-50/50 to-orange-50/30",
-              blue: "border-blue-200 hover:border-blue-300 bg-gradient-to-br from-blue-50/50 to-cyan-50/30",
-              purple: "border-purple-200 hover:border-purple-300 bg-gradient-to-br from-purple-50/50 to-indigo-50/30"
+              neutral: "border-neutral-200/40 hover:border-neutral-300",
+              red: "border-red-200/40 hover:border-red-300 bg-gradient-to-br from-red-50/30 to-white",
+              blue: "border-blue-200/40 hover:border-blue-300 bg-gradient-to-br from-blue-50/30 to-white",
+              purple: "border-purple-200/40 hover:border-purple-300 bg-gradient-to-br from-purple-50/30 to-white"
             };
             
             const selectedClasses = {
-              neutral: "border-neutral-400 shadow-lg shadow-neutral-200",
-              red: "border-red-400 shadow-lg shadow-red-200/50",
-              blue: "border-blue-400 shadow-lg shadow-blue-200/50",
-              purple: "border-purple-400 shadow-lg shadow-purple-200/50"
+              neutral: "border-neutral-400 shadow-md shadow-neutral-200/50",
+              red: "border-red-500 shadow-md shadow-red-200/50",
+              blue: "border-blue-500 shadow-md shadow-blue-200/50",
+              purple: "border-purple-500 shadow-md shadow-purple-200/50"
             };
 
             return (
               <Card
                 key={plan.id}
                 className={`
-                  relative cursor-pointer transition-all duration-300 rounded-2xl overflow-hidden
+                  relative cursor-pointer transition-all duration-300 rounded-lg overflow-hidden bg-white
                   ${isSelected 
-                    ? `${selectedClasses[plan.color as keyof typeof selectedClasses]} scale-[1.02]` 
-                    : `${colorClasses[plan.color as keyof typeof colorClasses]} hover:scale-[1.01] hover:shadow-md`
+                    ? `${selectedClasses[plan.color as keyof typeof selectedClasses]} scale-[1.01]` 
+                    : `${colorClasses[plan.color as keyof typeof colorClasses]} hover:scale-[1.005] shadow-sm hover:shadow-md`
                   }
                   ${plan.popular ? 'ring-2 ring-red-200 ring-offset-2' : ''}
                 `}
@@ -199,7 +200,7 @@ export default function Step4_PlanSelection() {
                 {/* Popular Badge */}
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                    <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-medium shadow-lg">
+                    <Badge className="bg-red-500 hover:bg-red-500 text-white px-3 py-1 text-xs font-medium shadow-sm">
                       {plan.subtitle}
                     </Badge>
                   </div>
@@ -209,7 +210,7 @@ export default function Step4_PlanSelection() {
                   {/* Header */}
                   <div className="text-center space-y-2">
                     <div className={`
-                      w-12 h-12 mx-auto rounded-2xl flex items-center justify-center
+                      w-12 h-12 mx-auto rounded-lg flex items-center justify-center
                       ${plan.color === 'red' ? 'bg-red-100 text-red-600' :
                         plan.color === 'blue' ? 'bg-blue-100 text-blue-600' :
                         plan.color === 'purple' ? 'bg-purple-100 text-purple-600' :
@@ -219,12 +220,12 @@ export default function Step4_PlanSelection() {
                       <Icon className="w-6 h-6" />
                     </div>
                     
-                    <h3 className="text-lg font-semibold text-neutral-900">
+                    <h3 className="text-lg font-semibold text-neutral-900 tracking-tight">
                       {plan.name}
                     </h3>
                     
                     {!plan.popular && (
-                      <p className="text-sm text-neutral-500">
+                      <p className="text-sm text-neutral-500 font-light">
                         {plan.subtitle}
                       </p>
                     )}
@@ -235,7 +236,7 @@ export default function Step4_PlanSelection() {
                     <div className="text-3xl font-bold text-neutral-900">
                       CHF {formatPrice(plan.price)}
                     </div>
-                    <div className="text-sm text-neutral-500 mt-1">
+                    <div className="text-sm text-neutral-500 mt-1 font-light">
                       {plan.duration ? `${plan.duration} Tage` : "Unlimitiert"}
                     </div>
                   </div>
@@ -245,13 +246,13 @@ export default function Step4_PlanSelection() {
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start text-sm text-neutral-700">
                         <Check className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
-                        <span>{feature}</span>
+                        <span className="font-light">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
                   {/* Description */}
-                  <p className="text-xs text-neutral-500 text-center pt-2 border-t border-neutral-100">
+                  <p className="text-xs text-neutral-500 text-center pt-2 border-t border-neutral-100 font-light">
                     {plan.description}
                   </p>
 
@@ -276,8 +277,8 @@ export default function Step4_PlanSelection() {
 
         {/* Error Message */}
         {errors.price_plan && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-sm text-red-600 flex items-center">
+          <div className="p-4 bg-red-50 border border-red-200/60 rounded-lg">
+            <p className="text-sm text-red-600 flex items-center font-light">
               <Zap className="w-4 h-4 mr-2" />
               {errors.price_plan.message}
             </p>
@@ -286,15 +287,15 @@ export default function Step4_PlanSelection() {
 
         {/* Selected Plan Summary */}
         {selectedPlan && (
-          <div className="bg-gradient-to-br from-amber-50/50 to-orange-50/50 rounded-2xl p-6 border border-amber-200/30">
-            <h3 className="text-lg font-medium text-neutral-900 mb-4">Gewählter Plan</h3>
+          <div className="bg-gradient-to-br from-neutral-50 to-red-50/20 rounded-lg p-6 border border-neutral-200/40">
+            <h3 className="text-lg font-medium text-neutral-900 mb-4 tracking-tight">Gewählter Plan</h3>
             {(() => {
               const plan = pricingPlans.find(p => p.id === selectedPlan);
               return plan ? (
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-neutral-900">{plan.name}</p>
-                    <p className="text-sm text-neutral-600">
+                    <p className="text-sm text-neutral-600 font-light">
                       {plan.duration ? `${plan.duration} Tage Laufzeit` : "Unbegrenzte Laufzeit"}
                       {plan.is_premium && " • Premium-Platzierung"}
                     </p>
@@ -304,7 +305,7 @@ export default function Step4_PlanSelection() {
                       CHF {formatPrice(plan.price)}
                     </p>
                     {plan.price > 0 && (
-                      <p className="text-sm text-neutral-500">einmalig</p>
+                      <p className="text-sm text-neutral-500 font-light">einmalig</p>
                     )}
                   </div>
                 </div>
@@ -319,7 +320,7 @@ export default function Step4_PlanSelection() {
             type="button"
             onClick={prevStep}
             variant="outline"
-            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-300 text-neutral-600 rounded-xl transition-all duration-200"
+            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
             disabled={processingPayment}
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
@@ -329,7 +330,7 @@ export default function Step4_PlanSelection() {
           <Button
             type="submit"
             disabled={!selectedPlan || processingPayment}
-            className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-medium rounded-xl shadow-lg shadow-amber-200 transition-all duration-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm"
           >
             {processingPayment ? (
               <div className="flex items-center">
