@@ -42,7 +42,7 @@ export default function Step1_VehicleData() {
     defaultValues: {
       brand: data.brand,
       model: data.model,
-      year: data.year || new Date().getFullYear(),
+      year: data.year ? (typeof data.year === 'string' ? parseInt(data.year) : data.year) : new Date().getFullYear(),
       km: data.km ? data.km.toString() : "0", // Convert number to string for form
       body: data.body,
       fuel: data.fuel,
