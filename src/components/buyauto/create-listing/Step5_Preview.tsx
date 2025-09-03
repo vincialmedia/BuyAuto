@@ -75,10 +75,10 @@ export default function Step5_Preview() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl font-light text-neutral-900 mb-2">
+        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
           Vorschau & Bestätigung
         </h2>
-        <p className="text-neutral-600">
+        <p className="text-neutral-600 font-light leading-relaxed">
           Überprüfen Sie Ihre Angaben vor der Veröffentlichung
         </p>
       </div>
@@ -87,8 +87,8 @@ export default function Step5_Preview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Listing Preview */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="overflow-hidden rounded-2xl border-neutral-200/60 shadow-lg">
-            <div className="relative aspect-[16/9] bg-neutral-100">
+          <Card className="overflow-hidden rounded-lg border border-neutral-200/40 shadow-sm hover:shadow-md transition-shadow duration-200 bg-white">
+            <div className="relative aspect-[16/9] bg-neutral-50">
               {data.images && data.images.length > 0 ? (
                 <Image
                   src={data.images[data.cover_image_index || 0]}
@@ -106,7 +106,7 @@ export default function Step5_Preview() {
               {/* Premium Badge */}
               {data.is_premium && (
                 <div className="absolute top-4 left-4">
-                  <Badge className="bg-red-500 text-white px-3 py-1 text-sm font-medium">
+                  <Badge className="bg-red-500 hover:bg-red-500 text-white px-3 py-1 text-sm font-medium shadow-sm">
                     <Star className="w-3 h-3 mr-1 fill-current" />
                     Premium
                   </Badge>
@@ -115,7 +115,7 @@ export default function Step5_Preview() {
 
               {/* Image Count */}
               {data.images && data.images.length > 1 && (
-                <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1 rounded-lg text-sm">
+                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-lg text-sm backdrop-blur-sm">
                   <ImageIcon className="w-4 h-4 inline mr-1" />
                   {data.images.length}
                 </div>
@@ -125,56 +125,56 @@ export default function Step5_Preview() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-2xl font-bold text-neutral-900">
+                  <h3 className="text-2xl font-semibold text-neutral-900 tracking-tight">
                     {data.brand} {data.model}
                   </h3>
-                  <p className="text-neutral-600 flex items-center mt-1">
+                  <p className="text-neutral-600 flex items-center mt-1 font-light">
                     <MapPin className="w-4 h-4 mr-1" />
                     {data.location}, {data.canton_code}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold text-amber-600">
+                  <p className="text-3xl font-bold text-red-600">
                     CHF {formatPrice(data.price_per_month_chf)}
                   </p>
-                  <p className="text-sm text-neutral-500">pro Monat</p>
+                  <p className="text-sm text-neutral-500 font-light">pro Monat</p>
                 </div>
               </div>
 
               {/* Vehicle Details */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-neutral-500">Baujahr</p>
+                  <p className="text-neutral-500 font-light">Baujahr</p>
                   <p className="font-semibold text-neutral-900">{data.year}</p>
                 </div>
                 <div>
-                  <p className="text-neutral-500">Kilometer</p>
+                  <p className="text-neutral-500 font-light">Kilometer</p>
                   <p className="font-semibold text-neutral-900">{formatPrice(data.km)} km</p>
                 </div>
                 <div>
-                  <p className="text-neutral-500">Karosserie</p>
+                  <p className="text-neutral-500 font-light">Karosserie</p>
                   <p className="font-semibold text-neutral-900">{data.body}</p>
                 </div>
                 <div>
-                  <p className="text-neutral-500">Antrieb</p>
+                  <p className="text-neutral-500 font-light">Antrieb</p>
                   <p className="font-semibold text-neutral-900">{data.fuel}</p>
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-neutral-200">
+              <div className="mt-4 pt-4 border-t border-neutral-200/60">
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500">Restlaufzeit:</span>
-                  <span className="font-semibold">{data.remaining_months} Monate</span>
+                  <span className="text-neutral-500 font-light">Restlaufzeit:</span>
+                  <span className="font-semibold text-neutral-900">{data.remaining_months} Monate</span>
                 </div>
                 {data.deposit_chf > 0 && (
                   <div className="flex justify-between text-sm mt-2">
-                    <span className="text-neutral-500">Kaution:</span>
-                    <span className="font-semibold">CHF {formatPrice(data.deposit_chf)}</span>
+                    <span className="text-neutral-500 font-light">Kaution:</span>
+                    <span className="font-semibold text-neutral-900">CHF {formatPrice(data.deposit_chf)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm mt-2">
-                  <span className="text-neutral-500">Getriebe:</span>
-                  <span className="font-semibold">{data.gearbox}</span>
+                  <span className="text-neutral-500 font-light">Getriebe:</span>
+                  <span className="font-semibold text-neutral-900">{data.gearbox}</span>
                 </div>
               </div>
             </CardContent>
@@ -182,16 +182,16 @@ export default function Step5_Preview() {
 
           {/* Image Gallery Preview */}
           {data.images && data.images.length > 1 && (
-            <Card className="rounded-2xl border-neutral-200/60">
-              <CardHeader>
-                <CardTitle className="text-lg font-medium">
+            <Card className="rounded-lg border border-neutral-200/40 shadow-sm bg-white">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-medium text-neutral-900 tracking-tight">
                   Bilder ({data.images.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
                   {data.images.slice(0, 12).map((image, index) => (
-                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent">
+                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-neutral-200/40">
                       <Image
                         src={image}
                         alt={`Bild ${index + 1}`}
@@ -200,7 +200,7 @@ export default function Step5_Preview() {
                         sizes="(max-width: 768px) 25vw, 16vw"
                       />
                       {index === data.cover_image_index && (
-                        <div className="absolute top-1 left-1 bg-amber-500 rounded-full p-1">
+                        <div className="absolute top-1 left-1 bg-red-500 rounded-full p-1">
                           <Star className="w-3 h-3 text-white fill-current" />
                         </div>
                       )}
@@ -208,7 +208,7 @@ export default function Step5_Preview() {
                   ))}
                 </div>
                 {data.images.length > 12 && (
-                  <p className="text-sm text-neutral-500 mt-3 text-center">
+                  <p className="text-sm text-neutral-500 mt-3 text-center font-light">
                     ... und {data.images.length - 12} weitere Bilder
                   </p>
                 )}
@@ -220,9 +220,9 @@ export default function Step5_Preview() {
         {/* Right Column - Summary & Actions */}
         <div className="space-y-6">
           {/* Plan Summary */}
-          <Card className="rounded-2xl border-neutral-200/60 shadow-lg">
+          <Card className="rounded-lg border border-neutral-200/40 shadow-sm bg-white">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center text-lg font-medium">
+              <CardTitle className="flex items-center text-lg font-medium text-neutral-900 tracking-tight">
                 <Settings className="w-5 h-5 mr-2" />
                 Gewählter Plan
               </CardTitle>
@@ -231,36 +231,36 @@ export default function Step5_Preview() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="font-semibold text-neutral-900">{planInfo.name}</p>
-                  <p className="text-sm text-neutral-600">{planInfo.duration}</p>
+                  <p className="text-sm text-neutral-600 font-light">{planInfo.duration}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-neutral-900">
                     CHF {formatPrice(planInfo.price)}
                   </p>
                   {planInfo.price > 0 && (
-                    <p className="text-xs text-neutral-500">einmalig</p>
+                    <p className="text-xs text-neutral-500 font-light">einmalig</p>
                   )}
                 </div>
               </div>
 
               {data.is_premium && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <div className="p-3 bg-red-50 border border-red-200/60 rounded-lg">
                   <p className="text-sm text-red-700 font-medium flex items-center">
                     <Star className="w-4 h-4 mr-2 fill-current" />
                     Premium-Platzierung aktiviert
                   </p>
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-xs text-red-600 mt-1 font-light">
                     Ihr Inserat erscheint oben in den Suchergebnissen
                   </p>
                 </div>
               )}
 
-              <div className="pt-3 border-t border-neutral-200">
-                <div className="flex items-center text-sm text-neutral-600 mb-2">
+              <div className="pt-3 border-t border-neutral-200/60">
+                <div className="flex items-center text-sm text-neutral-600 mb-2 font-light">
                   <Calendar className="w-4 h-4 mr-2" />
                   Laufzeit
                 </div>
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium text-neutral-900">
                   {data.duration_days 
                     ? `${data.duration_days} Tage ab Veröffentlichung`
                     : "Unbegrenzt bis zum Verkauf"
@@ -271,14 +271,14 @@ export default function Step5_Preview() {
           </Card>
 
           {/* Review Process */}
-          <Card className="rounded-2xl border-neutral-200/60">
+          <Card className="rounded-lg border border-neutral-200/40 bg-white">
             <CardContent className="p-6">
               <div className="space-y-4">
-                <div className="flex items-center text-amber-600">
+                <div className="flex items-center text-red-600">
                   <Check className="w-5 h-5 mr-2" />
                   <span className="font-medium">Bereit zur Überprüfung</span>
                 </div>
-                <div className="text-sm text-neutral-600 space-y-2">
+                <div className="text-sm text-neutral-600 space-y-2 font-light">
                   <p>• Alle Angaben werden von unserem Team überprüft</p>
                   <p>• Sie erhalten eine Benachrichtigung sobald Ihr Inserat live ist</p>
                   <p>• Dies dauert in der Regel 2-4 Stunden</p>
@@ -289,9 +289,9 @@ export default function Step5_Preview() {
 
           {/* Error Message */}
           {error && (
-            <Card className="rounded-2xl border-red-200 bg-red-50">
+            <Card className="rounded-lg border-red-200/60 bg-red-50">
               <CardContent className="p-6">
-                <p className="text-red-600 text-sm">{error}</p>
+                <p className="text-red-600 text-sm font-light">{error}</p>
               </CardContent>
             </Card>
           )}
@@ -301,7 +301,7 @@ export default function Step5_Preview() {
             <Button
               onClick={handleSubmit}
               disabled={submitting}
-              className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-medium rounded-xl shadow-lg shadow-amber-200 transition-all duration-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <div className="flex items-center justify-center">
@@ -330,7 +330,7 @@ export default function Step5_Preview() {
               onClick={prevStep}
               variant="outline"
               disabled={submitting}
-              className="w-full py-4 bg-transparent hover:bg-neutral-50 border-neutral-300 text-neutral-600 rounded-xl transition-all duration-200"
+              className="w-full py-4 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
             >
               <ChevronLeft className="w-4 h-4 mr-2" />
               Zurück zur Plan-Auswahl
