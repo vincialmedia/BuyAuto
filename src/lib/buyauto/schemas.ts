@@ -26,25 +26,33 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-// Vehicle schemas (for create listing)
+// Vehicle schemas (for create listing) - match actual field names used in components
 export const vehicleDataSchema = z.object({
-  brand: z.string().min(1, "Marke ist erforderlich"),
-  model: z.string().min(1, "Modell ist erforderlich"),
-  year: z.number().min(1900, "Ungültiges Jahr").max(new Date().getFullYear() + 2, "Jahr liegt in der Zukunft"),
-  mileage: z.number().min(0, "Kilometerstand muss positiv sein"),
-  fuel: z.string().min(1, "Kraftstoffart ist erforderlich"),
-  transmission: z.string().min(1, "Getriebe ist erforderlich"),
-  power: z.number().min(1, "Leistung ist erforderlich"),
-  color: z.string().min(1, "Farbe ist erforderlich"),
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  year: z.number().optional(),
+  mileage: z.number().optional(),
+  km: z.string().optional(),
+  fuel: z.string().optional(),
+  transmission: z.string().optional(),
+  gearbox: z.string().optional(),
+  power: z.number().optional(),
+  color: z.string().optional(),
+  body: z.string().optional(),
 });
 
 export const planSelectionSchema = z.object({
-  plan: z.string().min(1, "Plan ist erforderlich"),
-  price: z.number().min(0, "Preis muss positiv sein"),
+  plan: z.string().optional(),
+  price: z.number().optional(),
+  price_plan: z.string().optional(),
+  duration_days: z.number().optional(),
+  plan_price: z.number().optional(),
+  is_premium: z.boolean().optional(),
 });
 
 export const imagesSchema = z.object({
-  images: z.array(z.string()).min(1, "Mindestens ein Bild ist erforderlich"),
+  images: z.array(z.string()).optional(),
+  cover_image_index: z.number().optional(),
 });
 
 export type VehicleDataForm = z.infer<typeof vehicleDataSchema>;
