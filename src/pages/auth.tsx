@@ -8,32 +8,37 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function AuthPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [redirecting, setRedirecting] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    console.log("Auth page - user:", user, "loading:", loading, "redirecting:", redirecting);
+    console.log("Auth page - user:", user, "loading:", loading, "hasRedirected:", hasRedirected);
     
-    // Redirect authenticated users to dashboard
-    if (user && !loading && !redirecting) {
-      console.log("User is authenticated, redirecting to dashboard");
-      setRedirecting(true);
+    // Only redirect if we have a user, auth is not loading, and we haven't already redirected
+    if (user && !loading && !hasRedirected) {
+      console.log("User is authenticated, initiating redirect to dashboard");
+      setHasRedirected(true);
       
-      // Use replace to avoid history issues
-      const callbackUrl = router.query.callback as string || "/dashboard";
-      router.replace(callbackUrl);
+      // Get callback URL from query params or default to dashboard
+      const callbackUrl = (router.query.callback as string) || "/dashboard";
+      console.log("Redirecting to:", callbackUrl);
+      
+      // Use window.location.href for a clean redirect that refreshes the page state
+      // This ensures the middleware and auth state are properly synchronized
+      setTimeout(() => {
+        window.location.href = callbackUrl;
+      }, 500); // Small delay to ensure auth state is fully updated
     }
-  }, [user, loading, router, redirecting]);
+  }, [user, loading, router.query.callback, hasRedirected]);
 
-  // Show loading state while checking auth or redirecting
-  if (loading || redirecting) {
-    console.log("Auth loading state - loading:", loading, "redirecting:", redirecting);
+  // Show loading state while checking auth or if we're about to redirect
+  if (loading || (user && !hasRedirected)) {
     return (
       <AuthLayout>
         <div className="flex items-center justify-center py-12">
           <div className="text-center space-y-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
             <p className="text-neutral-600 text-sm">
-              {redirecting ? "Weiterleitung..." : "Wird geladen..."}
+              {user ? "Weiterleitung zum Dashboard..." : "Wird geladen..."}
             </p>
           </div>
         </div>
@@ -41,9 +46,8 @@ export default function AuthPage() {
     );
   }
 
-  // Don't render form if user is authenticated (will redirect)
-  if (user) {
-    console.log("User exists, should redirect");
+  // Don't render form if user is authenticated and we've initiated redirect
+  if (user && hasRedirected) {
     return null;
   }
 

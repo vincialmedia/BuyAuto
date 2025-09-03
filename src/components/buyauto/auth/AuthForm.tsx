@@ -39,13 +39,9 @@ export default function AuthForm() {
       if (result.session) {
         toast.success("Erfolgreich angemeldet!");
         
-        // Wait a bit longer for session to be fully established
-        // and then use window.location for full page reload
-        setTimeout(() => {
-          const callbackUrl = router.query.callback as string || "/dashboard";
-          console.log("Redirecting to:", callbackUrl);
-          window.location.href = callbackUrl;
-        }, 1500); // Increased wait time
+        // Don't redirect here - let the auth page handle it
+        // The AuthContext will update and trigger the redirect
+        console.log("Login successful, waiting for auth context to update");
       } else {
         throw new Error("No session returned from login");
       }
@@ -59,9 +55,9 @@ export default function AuthForm() {
       } else {
         toast.error("Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.");
       }
-      setIsLoading(false); // Only set loading false on error
+    } finally {
+      setIsLoading(false);
     }
-    // Note: Don't set loading false on success to maintain loading state during redirect
   };
 
   const handleRegister = async (data: RegisterFormData) => {
