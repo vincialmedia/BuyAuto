@@ -140,9 +140,6 @@ export default function PremiumListings() {
                   <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
                     {listing.gearbox}
                   </span>
-                  <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {listing.cantonCode}
-                  </span>
                 </div>
 
                 {/* Price and CTA */}

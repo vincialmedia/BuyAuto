@@ -104,7 +104,6 @@ export function getDemoListings(): Listing[] {
       pricePerMonthCHF: pricePerMonth,
       remainingMonths,
       location: `${location.city} (${location.canton})`,
-      cantonCode: location.canton,
       mileageKm,
       fuel,
       gearbox,
@@ -112,7 +111,7 @@ export function getDemoListings(): Listing[] {
       premium: isPremium,
       depositCHF,
       images,
-      imageUrl: images[0] // Add the primary image URL
+      imageUrl: images[0]
     });
   }
   
@@ -158,8 +157,13 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
     // Mileage filter
     if (query.kmMax && listing.mileageKm > query.kmMax) return false;
     
-    // Canton filter
-    if (query.canton && query.canton.length > 0 && !query.canton.includes(listing.cantonCode)) return false;
+    // Canton filter - extract canton from location string
+    if (query.canton && query.canton.length > 0) {
+      const locationHasCanton = query.canton.some(canton => 
+        listing.location.includes(`(${canton})`) || listing.location.includes(`, ${canton}`)
+      );
+      if (!locationHasCanton) return false;
+    }
     
     // No deposit filter
     if (query.noDeposit && listing.depositCHF !== null) return false;
