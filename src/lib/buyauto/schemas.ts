@@ -26,8 +26,8 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-// Vehicle schemas
-export const vehicleFormSchema = z.object({
+// Vehicle schemas (for create listing)
+export const vehicleDataSchema = z.object({
   brand: z.string().min(1, "Marke ist erforderlich"),
   model: z.string().min(1, "Modell ist erforderlich"),
   year: z.number().min(1900, "Ungültiges Jahr").max(new Date().getFullYear() + 2, "Jahr liegt in der Zukunft"),
@@ -38,4 +38,19 @@ export const vehicleFormSchema = z.object({
   color: z.string().min(1, "Farbe ist erforderlich"),
 });
 
-export type VehicleFormData = z.infer<typeof vehicleFormSchema>;
+export const planSelectionSchema = z.object({
+  plan: z.string().min(1, "Plan ist erforderlich"),
+  price: z.number().min(0, "Preis muss positiv sein"),
+});
+
+export const imagesSchema = z.object({
+  images: z.array(z.string()).min(1, "Mindestens ein Bild ist erforderlich"),
+});
+
+export type VehicleDataForm = z.infer<typeof vehicleDataSchema>;
+export type PlanSelectionForm = z.infer<typeof planSelectionSchema>;
+export type ImagesForm = z.infer<typeof imagesSchema>;
+
+// Keep the old name for backward compatibility
+export const vehicleFormSchema = vehicleDataSchema;
+export type VehicleFormData = VehicleDataForm;

@@ -22,7 +22,13 @@ export default function AuthForm() {
       setIsLoading(true);
       console.log("AuthForm: Starting login process");
       
-      await authService.signIn(data);
+      // Ensure data matches SignInData interface
+      const signInData = {
+        email: data.email,
+        password: data.password,
+      };
+      
+      await authService.signIn(signInData);
       console.log("AuthForm: Login successful");
       
       toast.success("Erfolgreich angemeldet!");
@@ -53,7 +59,15 @@ export default function AuthForm() {
       setIsLoading(true);
       console.log("AuthForm: Starting registration process");
       
-      await authService.signUp(data);
+      // Ensure data matches SignUpData interface
+      const signUpData = {
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      };
+      
+      await authService.signUp(signUpData);
       console.log("AuthForm: Registration successful");
       
       toast.success("Registrierung erfolgreich! Überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen.");
