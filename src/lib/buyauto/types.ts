@@ -24,7 +24,7 @@ export interface ListingData {
   model?: string;
   year?: number;
   mileage?: number;
-  km?: string; // Keep as string to match form input
+  km?: string; // Keep as string to match form input and schema
   fuel?: string;
   transmission?: string;
   gearbox?: string;

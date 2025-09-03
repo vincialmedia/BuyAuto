@@ -50,9 +50,20 @@ export default function Step1_VehicleData() {
     },
   });
 
-  const onSubmit = (formData: VehicleDataForm) => {
-    // The km field is already transformed by Zod schema, so just pass it through
-    updateData(formData);
+  const handleVehicleDataSubmit = (data: VehicleDataForm) => {
+    console.log("Step1 handleVehicleDataSubmit:", data);
+    
+    // Convert form data to match ListingData interface expectations
+    const processedData = {
+      ...data,
+      // Ensure km is always a string for consistency
+      km: data.km ? String(data.km) : "0",
+      // Convert km to number for mileage field if needed
+      mileage: data.km ? parseInt(String(data.km).replace(/\D/g, ''), 10) || 0 : undefined
+    };
+    
+    console.log("Processed vehicle data:", processedData);
+    updateData(processedData);
     nextStep();
   };
 
@@ -73,7 +84,7 @@ export default function Step1_VehicleData() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(handleVehicleDataSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Brand */}
           <div className="space-y-2">
