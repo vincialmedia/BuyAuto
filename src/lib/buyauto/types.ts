@@ -8,7 +8,6 @@ export interface Listing {
   pricePerMonthCHF: number;
   remainingMonths: number;
   location: string;
-  cantonCode: string;
   mileageKm: number;
   fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
   gearbox: "Automatik" | "Manuell";
