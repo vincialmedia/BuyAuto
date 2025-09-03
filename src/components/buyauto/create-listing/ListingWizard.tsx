@@ -1,3 +1,4 @@
+
 import { useState, createContext, useContext, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import ProgressBar from "./ProgressBar";
@@ -114,28 +115,31 @@ export default function ListingWizard() {
 
   return (
     <WizardContext.Provider value={contextValue}>
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-light text-neutral-900 mb-2 tracking-wide">
-            Inserat erstellen
-          </h1>
-          <p className="text-neutral-600 font-light">
-            Erstelle dein Auto-Leasing-Inserat in wenigen Schritten
-          </p>
-        </div>
+      <div className="min-h-screen bg-white">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+          {/* Swiss minimalist header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-light text-neutral-900 mb-3 tracking-tight">
+              Inserat erstellen
+            </h1>
+            <p className="text-neutral-600 font-light leading-relaxed">
+              Erstelle dein Auto-Leasing-Inserat in wenigen Schritten
+            </p>
+          </div>
 
-        <ProgressBar />
+          <ProgressBar />
 
-        <div className="mt-8">
-          <Card className="bg-white/60 backdrop-blur-sm border-neutral-200/60 shadow-xl shadow-neutral-900/5 rounded-3xl overflow-hidden">
-            <div className="p-8 md:p-12">
-              {currentStep === 1 && <Step1_VehicleData />}
-              {currentStep === 2 && <Step2_LeasingDetails />}
-              {currentStep === 3 && <Step3_Images />}
-              {currentStep === 4 && <Step4_PlanSelection />}
-              {currentStep === 5 && <Step5_Preview />}
-            </div>
-          </Card>
+          <div className="mt-8">
+            <Card className="bg-white border border-neutral-200/40 shadow-sm rounded-lg overflow-hidden">
+              <div className="p-6 md:p-8">
+                {currentStep === 1 && <Step1_VehicleData />}
+                {currentStep === 2 && <Step2_LeasingDetails />}
+                {currentStep === 3 && <Step3_Images />}
+                {currentStep === 4 && <Step4_PlanSelection />}
+                {currentStep === 5 && <Step5_Preview />}
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     </WizardContext.Provider>
