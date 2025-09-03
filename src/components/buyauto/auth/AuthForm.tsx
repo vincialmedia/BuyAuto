@@ -28,7 +28,7 @@ export default function AuthForm() {
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // Sign in with Supabase
+      // Sign in with improved auth service
       const result = await authService.signIn({
         email: data.email,
         password: data.password
@@ -39,13 +39,13 @@ export default function AuthForm() {
       if (result.session) {
         toast.success("Erfolgreich angemeldet!");
         
-        // Wait for the session to be established and cookies to be set
-        // Then do a full page redirect to ensure middleware sees the session
+        // Wait a bit longer for session to be fully established
+        // and then use window.location for full page reload
         setTimeout(() => {
           const callbackUrl = router.query.callback as string || "/dashboard";
           console.log("Redirecting to:", callbackUrl);
           window.location.href = callbackUrl;
-        }, 1000); // Increased wait time for session establishment
+        }, 1500); // Increased wait time
       } else {
         throw new Error("No session returned from login");
       }
@@ -54,6 +54,8 @@ export default function AuthForm() {
       console.error("Login error:", error);
       if (error?.message?.includes("Invalid login credentials")) {
         toast.error("Ungültige E-Mail oder Passwort");
+      } else if (error?.message?.includes("Email not confirmed")) {
+        toast.error("Bitte bestätigen Sie Ihre E-Mail-Adresse erst");
       } else {
         toast.error("Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.");
       }
