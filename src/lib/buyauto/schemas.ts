@@ -18,7 +18,6 @@ export const leasingDetailsSchema = z.object({
   remaining_months: z.number().min(1, "Restlaufzeit muss mindestens 1 Monat betragen"),
   deposit_chf: z.number().min(0, "Kaution muss positiv sein"),
   location: z.string().min(1, "Standort ist erforderlich"),
-  canton_code: z.string().min(1, "Kanton ist erforderlich"),
 });
 
 export const imagesSchema = z.object({

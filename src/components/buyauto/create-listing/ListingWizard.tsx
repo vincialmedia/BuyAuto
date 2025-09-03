@@ -19,12 +19,11 @@ export interface ListingData {
   fuel: string;
   gearbox: string;
   
-  // Leasing Details
+  // Leasing Details (canton_code removed)
   price_per_month_chf: number;
   remaining_months: number;
   deposit_chf: number;
   location: string;
-  canton_code: string;
   
   // Plan Selection (before images now)
   price_plan: string;
@@ -74,7 +73,6 @@ export default function ListingWizard() {
     remaining_months: 12,
     deposit_chf: 0,
     location: "",
-    canton_code: "",
     price_plan: "",
     is_premium: false,
     duration_days: 30,

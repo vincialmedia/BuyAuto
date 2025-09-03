@@ -16,7 +16,6 @@ export interface CreateListingData {
   remaining_months: number;
   deposit_chf: number;
   location: string;
-  canton_code: string;
   
   // Images
   images: string[];
@@ -89,7 +88,6 @@ export async function createListing(listingData: CreateListingData) {
       remaining_months: listingData.remaining_months,
       deposit_chf: listingData.deposit_chf || 0,
       location: listingData.location,
-      canton_code: listingData.canton_code,
       images: listingData.images || [],
       cover_image_index: listingData.cover_image_index || 0,
       cover_image_url: listingData.images?.[listingData.cover_image_index || 0] || null,
@@ -129,7 +127,6 @@ export interface Listing {
   price_per_month_chf: number;
   remaining_months: number;
   location: string;
-  canton_code: string;
   mileage_km: number;
   km?: number;
   fuel: string;

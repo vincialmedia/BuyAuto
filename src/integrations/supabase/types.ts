@@ -21,7 +21,6 @@ export type Database = {
           price_per_month_chf: number
           remaining_months: number
           location: string
-          canton_code: string
           mileage_km: number
           fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro"
           gearbox: "Automatik" | "Manuell"
@@ -40,7 +39,6 @@ export type Database = {
           price_per_month_chf: number
           remaining_months: number
           location: string
-          canton_code: string
           mileage_km: number
           fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro"
           gearbox: "Automatik" | "Manuell"
@@ -59,7 +57,6 @@ export type Database = {
           price_per_month_chf?: number
           remaining_months?: number
           location?: string
-          canton_code?: string
           mileage_km?: number
           fuel?: "Benzin" | "Diesel" | "Hybrid" | "Elektro"
           gearbox?: "Automatik" | "Manuell"

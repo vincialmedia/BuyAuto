@@ -35,7 +35,6 @@ export default function Step5_Preview() {
         remaining_months: data.remaining_months,
         deposit_chf: data.deposit_chf,
         location: data.location,
-        canton_code: data.canton_code,
         images: data.images,
         cover_image_index: data.cover_image_index,
         price_plan: data.price_plan,
@@ -130,7 +129,7 @@ export default function Step5_Preview() {
                   </h3>
                   <p className="text-neutral-600 flex items-center mt-1 font-light">
                     <MapPin className="w-4 h-4 mr-1" />
-                    {data.location}, {data.canton_code}
+                    {data.location}
                   </p>
                 </div>
                 <div className="text-right">
