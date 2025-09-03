@@ -17,7 +17,7 @@ import authService from "@/services/authService";
 import { toast } from "sonner";
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -61,9 +61,15 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Auth Section */}
+          {/* Auth Section - Handle loading state properly */}
           <div className="flex items-center space-x-4">
-            {user ? (
+            {loading ? (
+              /* Show loading state instead of login buttons */
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-neutral-200 rounded-full animate-pulse"></div>
+                <div className="hidden sm:block w-20 h-4 bg-neutral-200 rounded animate-pulse"></div>
+              </div>
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -154,7 +160,12 @@ export default function Header() {
             >
               Inserat erstellen
             </Link>
-            {user ? (
+            {loading ? (
+              /* Mobile loading state */
+              <div className="px-4 py-2">
+                <div className="w-20 h-4 bg-neutral-200 rounded animate-pulse"></div>
+              </div>
+            ) : user ? (
               <>
                 <Link 
                   href="/dashboard" 
