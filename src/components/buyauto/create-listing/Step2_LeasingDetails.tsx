@@ -4,9 +4,39 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWizard } from "./ListingWizard";
 import { ChevronLeft } from "lucide-react";
 import { z } from "zod";
+
+const swissCantons = [
+  { value: "AG", label: "Aargau (AG)" },
+  { value: "AI", label: "Appenzell Innerrhoden (AI)" },
+  { value: "AR", label: "Appenzell Ausserrhoden (AR)" },
+  { value: "BS", label: "Basel-Stadt (BS)" },
+  { value: "BL", label: "Basel-Landschaft (BL)" },
+  { value: "BE", label: "Bern (BE)" },
+  { value: "FR", label: "Freiburg (FR)" },
+  { value: "GE", label: "Genf (GE)" },
+  { value: "GL", label: "Glarus (GL)" },
+  { value: "GR", label: "Graubünden (GR)" },
+  { value: "JU", label: "Jura (JU)" },
+  { value: "LU", label: "Luzern (LU)" },
+  { value: "NE", label: "Neuenburg (NE)" },
+  { value: "NW", label: "Nidwalden (NW)" },
+  { value: "OW", label: "Obwalden (OW)" },
+  { value: "SH", label: "Schaffhausen (SH)" },
+  { value: "SZ", label: "Schwyz (SZ)" },
+  { value: "SO", label: "Solothurn (SO)" },
+  { value: "SG", label: "St. Gallen (SG)" },
+  { value: "TI", label: "Tessin (TI)" },
+  { value: "TG", label: "Thurgau (TG)" },
+  { value: "UR", label: "Uri (UR)" },
+  { value: "VS", label: "Wallis (VS)" },
+  { value: "VD", label: "Waadt (VD)" },
+  { value: "ZG", label: "Zug (ZG)" },
+  { value: "ZH", label: "Zürich (ZH)" }
+];
 
 const leasingDetailsSchema = z.object({
   price_per_month_chf: z.number().min(1, "Monatliche Rate ist erforderlich"),
@@ -25,13 +55,15 @@ export default function Step2_LeasingDetails() {
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
+    control,
   } = useForm<LeasingDetailsForm>({
     resolver: zodResolver(leasingDetailsSchema),
     defaultValues: {
       price_per_month_chf: data.price_per_month_chf || 0,
       remaining_months: data.remaining_months || 12,
       deposit_chf: data.deposit_chf || 0,
-      location: data.location,
+      location: data.location || "",
     },
   });
 
@@ -43,6 +75,10 @@ export default function Step2_LeasingDetails() {
   const formatCurrency = (value: string) => {
     const numericValue = value.replace(/[^\d]/g, '');
     return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  };
+
+  const handleCantonSelect = (value: string) => {
+    setValue("location", value);
   };
 
   return (
@@ -127,19 +163,25 @@ export default function Step2_LeasingDetails() {
             )}
           </div>
 
-          {/* Location - Now spans single column */}
+          {/* Location - Swiss Cantons Dropdown */}
           <div className="space-y-2">
             <Label htmlFor="location" className="text-sm font-medium text-neutral-700">
               Standort *
             </Label>
-            <Input
-              id="location"
-              {...register("location")}
-              placeholder="z.B. Zürich, Basel, Genf, Bern"
-              className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-            />
+            <Select onValueChange={handleCantonSelect} value={watch("location")}>
+              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectValue placeholder="Kanton auswählen..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {swissCantons.map((canton) => (
+                  <SelectItem key={canton.value} value={canton.value}>
+                    {canton.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-neutral-500 font-light">
-              Geben Sie den Ort oder die Region an, wo das Fahrzeug abgeholt werden kann
+              Wählen Sie den Kanton, in dem das Fahrzeug abgeholt werden kann
             </p>
             {errors.location && (
               <p className="text-sm text-red-500 font-light">{errors.location.message}</p>
@@ -164,9 +206,12 @@ export default function Step2_LeasingDetails() {
               </p>
             </div>
             <div className="text-center p-3 bg-white/60 rounded-lg border border-neutral-200/30">
-              <p className="text-neutral-500 mb-1 font-light">Kaution</p>
-              <p className="text-xl font-semibold text-neutral-900">
-                CHF {watch("deposit_chf") ? formatCurrency(watch("deposit_chf").toString()) : "0"}
+              <p className="text-neutral-500 mb-1 font-light">Standort</p>
+              <p className="text-lg font-semibold text-neutral-900">
+                {watch("location") ? 
+                  swissCantons.find(c => c.value === watch("location"))?.label.split(" (")[0] || watch("location")
+                  : "Nicht ausgewählt"
+                }
               </p>
             </div>
           </div>
