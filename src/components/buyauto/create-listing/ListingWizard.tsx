@@ -4,8 +4,8 @@ import { Card } from "@/components/ui/card";
 import ProgressBar from "./ProgressBar";
 import Step1_VehicleData from "./Step1_VehicleData";
 import Step2_LeasingDetails from "./Step2_LeasingDetails";
-import Step3_Images from "./Step3_Images";
-import Step4_PlanSelection from "./Step4_PlanSelection";
+import Step3_PlanSelection from "./Step3_PlanSelection";
+import Step4_Images from "./Step4_Images";
 import Step5_Preview from "./Step5_Preview";
 import SuccessScreen from "./SuccessScreen";
 
@@ -26,15 +26,15 @@ export interface ListingData {
   location: string;
   canton_code: string;
   
-  // Images
-  images: string[];
-  cover_image_index: number;
-  
-  // Plan Selection
+  // Plan Selection (before images now)
   price_plan: string;
   is_premium: boolean;
   duration_days: number | null;
   plan_price: number;
+  
+  // Images (now step 4)
+  images: string[];
+  cover_image_index: number;
 }
 
 interface WizardContextType {
@@ -46,6 +46,7 @@ interface WizardContextType {
   prevStep: () => void;
   isComplete: boolean;
   setIsComplete: (complete: boolean) => void;
+  getMaxPhotos: () => number;
 }
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined);
@@ -74,17 +75,30 @@ export default function ListingWizard() {
     deposit_chf: 0,
     location: "",
     canton_code: "",
-    images: [],
-    cover_image_index: 0,
     price_plan: "",
     is_premium: false,
     duration_days: 30,
     plan_price: 0,
+    images: [],
+    cover_image_index: 0,
   });
 
   const updateData = useCallback((updates: Partial<ListingData>) => {
     setData(prev => ({ ...prev, ...updates }));
   }, []);
+
+  const getMaxPhotos = useCallback(() => {
+    // Free plan gets 5 photos, paid plans get 15 photos
+    if (data.price_plan === 'free30') {
+      return 5;
+    }
+    // Extended, Unlimited plans get 15 photos
+    if (data.price_plan === 'paid90' || data.price_plan === 'unlimited') {
+      return 15;
+    }
+    // Default to 5 if no plan selected yet
+    return 5;
+  }, [data.price_plan]);
 
   const nextStep = useCallback(() => {
     if (currentStep < 5) {
@@ -107,6 +121,7 @@ export default function ListingWizard() {
     prevStep,
     isComplete,
     setIsComplete,
+    getMaxPhotos,
   };
 
   if (isComplete) {
@@ -134,8 +149,8 @@ export default function ListingWizard() {
               <div className="p-6 md:p-8">
                 {currentStep === 1 && <Step1_VehicleData />}
                 {currentStep === 2 && <Step2_LeasingDetails />}
-                {currentStep === 3 && <Step3_Images />}
-                {currentStep === 4 && <Step4_PlanSelection />}
+                {currentStep === 3 && <Step3_PlanSelection />}
+                {currentStep === 4 && <Step4_Images />}
                 {currentStep === 5 && <Step5_Preview />}
               </div>
             </Card>

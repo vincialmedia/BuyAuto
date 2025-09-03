@@ -4,39 +4,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWizard } from "./ListingWizard";
-import { leasingDetailsSchema, type LeasingDetailsForm } from "@/lib/buyauto/schemas";
 import { ChevronLeft } from "lucide-react";
+import { z } from "zod";
 
-const swissCantons = [
-  { code: "AG", name: "Aargau" },
-  { code: "AI", name: "Appenzell Innerrhoden" },
-  { code: "AR", name: "Appenzell Ausserrhoden" },
-  { code: "BE", name: "Bern" },
-  { code: "BL", name: "Basel-Landschaft" },
-  { code: "BS", name: "Basel-Stadt" },
-  { code: "FR", name: "Fribourg" },
-  { code: "GE", name: "Genève" },
-  { code: "GL", name: "Glarus" },
-  { code: "GR", name: "Graubünden" },
-  { code: "JU", name: "Jura" },
-  { code: "LU", name: "Luzern" },
-  { code: "NE", name: "Neuchâtel" },
-  { code: "NW", name: "Nidwalden" },
-  { code: "OW", name: "Obwalden" },
-  { code: "SG", name: "St. Gallen" },
-  { code: "SH", name: "Schaffhausen" },
-  { code: "SO", name: "Solothurn" },
-  { code: "SZ", name: "Schwyz" },
-  { code: "TG", name: "Thurgau" },
-  { code: "TI", name: "Ticino" },
-  { code: "UR", name: "Uri" },
-  { code: "VD", name: "Vaud" },
-  { code: "VS", name: "Valais" },
-  { code: "ZG", name: "Zug" },
-  { code: "ZH", name: "Zürich" },
-];
+const leasingDetailsSchema = z.object({
+  price_per_month_chf: z.number().min(1, "Monatliche Rate ist erforderlich"),
+  remaining_months: z.number().min(1, "Restlaufzeit muss mindestens 1 Monat betragen"),
+  deposit_chf: z.number().min(0, "Kaution kann nicht negativ sein"),
+  location: z.string().min(1, "Standort ist erforderlich"),
+});
+
+type LeasingDetailsForm = z.infer<typeof leasingDetailsSchema>;
 
 export default function Step2_LeasingDetails() {
   const { data, updateData, nextStep, prevStep } = useWizard();
@@ -45,7 +24,6 @@ export default function Step2_LeasingDetails() {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
     watch,
   } = useForm<LeasingDetailsForm>({
     resolver: zodResolver(leasingDetailsSchema),
@@ -54,7 +32,6 @@ export default function Step2_LeasingDetails() {
       remaining_months: data.remaining_months || 12,
       deposit_chf: data.deposit_chf || 0,
       location: data.location,
-      canton_code: data.canton_code,
     },
   });
 
@@ -150,46 +127,21 @@ export default function Step2_LeasingDetails() {
             )}
           </div>
 
-          {/* Canton */}
+          {/* Location - Now spans single column to maintain grid balance */}
           <div className="space-y-2">
-            <Label htmlFor="canton_code" className="text-sm font-medium text-neutral-700">
-              Kanton *
+            <Label htmlFor="location" className="text-sm font-medium text-neutral-700">
+              Standort *
             </Label>
-            <Select
-              value={watch("canton_code")}
-              onValueChange={(value) => setValue("canton_code", value, { shouldValidate: true })}
-            >
-              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-                <SelectValue placeholder="Kanton auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                {swissCantons.map((canton) => (
-                  <SelectItem key={canton.code} value={canton.code}>
-                    {canton.name} ({canton.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.canton_code && (
-              <p className="text-sm text-red-500 font-light">{errors.canton_code.message}</p>
+            <Input
+              id="location"
+              {...register("location")}
+              placeholder="z.B. Zürich, Basel, Genf"
+              className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+            />
+            {errors.location && (
+              <p className="text-sm text-red-500 font-light">{errors.location.message}</p>
             )}
           </div>
-        </div>
-
-        {/* Location - Full Width */}
-        <div className="space-y-2">
-          <Label htmlFor="location" className="text-sm font-medium text-neutral-700">
-            Standort *
-          </Label>
-          <Input
-            id="location"
-            {...register("location")}
-            placeholder="z.B. Zürich, Basel, Genf"
-            className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-          />
-          {errors.location && (
-            <p className="text-sm text-red-500 font-light">{errors.location.message}</p>
-          )}
         </div>
 
         {/* Preview Card */}
@@ -233,7 +185,7 @@ export default function Step2_LeasingDetails() {
             type="submit"
             className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
           >
-            Weiter zu Bildern
+            Weiter zu Plan-Auswahl
           </Button>
         </div>
       </form>
