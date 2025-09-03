@@ -127,7 +127,7 @@ export default function Step2_LeasingDetails() {
             )}
           </div>
 
-          {/* Location - Now spans single column to maintain grid balance */}
+          {/* Location - Now spans single column */}
           <div className="space-y-2">
             <Label htmlFor="location" className="text-sm font-medium text-neutral-700">
               Standort *
@@ -135,9 +135,12 @@ export default function Step2_LeasingDetails() {
             <Input
               id="location"
               {...register("location")}
-              placeholder="z.B. Zürich, Basel, Genf"
+              placeholder="z.B. Zürich, Basel, Genf, Bern"
               className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
             />
+            <p className="text-xs text-neutral-500 font-light">
+              Geben Sie den Ort oder die Region an, wo das Fahrzeug abgeholt werden kann
+            </p>
             {errors.location && (
               <p className="text-sm text-red-500 font-light">{errors.location.message}</p>
             )}
