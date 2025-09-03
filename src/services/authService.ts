@@ -29,10 +29,9 @@ const authService = {
 
     console.log("Sign in successful, session:", data.session);
 
-    // Force session refresh to ensure cookies are set properly
+    // Wait a moment to ensure session is properly set on server
     if (data.session) {
-      console.log("Refreshing session to ensure proper cookie setup");
-      await supabase.auth.refreshSession();
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     return data;

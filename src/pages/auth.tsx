@@ -22,13 +22,12 @@ export default function AuthPage() {
       const callbackUrl = (router.query.callback as string) || "/dashboard";
       console.log("Redirecting to:", callbackUrl);
       
-      // Use window.location.href for a clean redirect that refreshes the page state
-      // This ensures the middleware and auth state are properly synchronized
+      // Use router.push with longer delay to ensure cookies are set
       setTimeout(() => {
-        window.location.href = callbackUrl;
-      }, 500); // Small delay to ensure auth state is fully updated
+        router.push(callbackUrl);
+      }, 1500); // Increased delay to ensure server-side session is synced
     }
-  }, [user, loading, router.query.callback, hasRedirected]);
+  }, [user, loading, router, hasRedirected]);
 
   // Show loading state while checking auth or if we're about to redirect
   if (loading || (user && !hasRedirected)) {
