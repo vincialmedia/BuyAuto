@@ -35,11 +35,12 @@ export default function SlimHeader() {
             <Button 
               variant="outline" 
               className="bg-transparent hover:bg-transparent border-neutral-300/60 text-neutral-700 hover:border-red-500 hover:text-red-500 text-xs font-medium h-7 px-3"
+              asChild
             >
-              Anmelden
+              <Link href="/auth">Anmelden</Link>
             </Button>
-            <Button className="bg-red-500 hover:bg-red-600 text-white text-xs font-medium h-7 px-3 shadow-sm">
-              Inserat erstellen
+            <Button className="bg-red-500 hover:bg-red-600 text-white text-xs font-medium h-7 px-3 shadow-sm" asChild>
+              <Link href="/inserat-erstellen">Inserat erstellen</Link>
             </Button>
           </div>
 
@@ -74,11 +75,12 @@ export default function SlimHeader() {
                 <Button 
                   variant="outline" 
                   className="bg-transparent border-neutral-300 text-neutral-700 text-xs h-7 flex-1"
+                  asChild
                 >
-                  Anmelden
+                  <Link href="/auth">Anmelden</Link>
                 </Button>
-                <Button className="bg-red-500 hover:bg-red-600 text-white text-xs h-7 flex-1">
-                  Inserat erstellen
+                <Button className="bg-red-500 hover:bg-red-600 text-white text-xs h-7 flex-1" asChild>
+                  <Link href="/inserat-erstellen">Inserat erstellen</Link>
                 </Button>
               </div>
             </nav>

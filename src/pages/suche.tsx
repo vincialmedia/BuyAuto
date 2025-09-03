@@ -1,16 +1,12 @@
 
 import Head from "next/head";
-import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
-import { searchListings } from "@/services/listingsService";
-import SlimHeader from "@/components/buyauto/search/SlimHeader";
-import DynamicFilterBar from "@/components/buyauto/search/DynamicFilterBar";
-import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
-import MinimalPagination from "@/components/buyauto/search/MinimalPagination";
-import { debounce } from "@/lib/utils";
+import { useCallback, useEffect, useState } from "react";
+import { searchListings, parseQueryFromUrl, type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
+import SearchLayout from "@/components/buyauto/search/SearchLayout";
+import Header from "@/components/buyauto/Header";
 
-export default function SuchePage() {
+export default function SearchPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<SearchQuery>({});
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
@@ -278,7 +274,7 @@ export default function SuchePage() {
       {/* Swiss Clean Design - Minimal Layout */}
       <div className="min-h-screen bg-white">
         {/* Slim Header */}
-        <SlimHeader />
+        <Header />
 
         {/* Dynamic Filter Bar */}
         <DynamicFilterBar
