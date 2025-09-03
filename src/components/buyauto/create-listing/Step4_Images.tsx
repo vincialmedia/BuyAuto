@@ -4,15 +4,30 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizard } from "./ListingWizard";
 import { imagesSchema, type ImagesForm } from "@/lib/buyauto/schemas";
-import { ChevronLeft, Upload, X, Star, Image as ImageIcon } from "lucide-react";
+import { ChevronLeft, Upload, X, Star, Image as ImageIcon, Info } from "lucide-react";
 import Image from "next/image";
 
-export default function Step3_Images() {
+export default function Step4_Images() {
   const { data, updateData, nextStep, prevStep } = useWizard();
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // Determine photo limit based on selected plan
+  const getPhotoLimit = () => {
+    const selectedPlan = data.price_plan;
+    // Free plan gets 5 photos, Extended and Unlimited get 15 photos
+    if (selectedPlan === "free30") {
+      return 5;
+    } else if (selectedPlan === "paid90" || selectedPlan === "unlimited") {
+      return 15;
+    }
+    return 5; // Default to 5 if no plan selected
+  };
+
+  const photoLimit = getPhotoLimit();
   
   const {
     handleSubmit,
@@ -38,12 +53,21 @@ export default function Step3_Images() {
   const handleFileUpload = useCallback(async (files: FileList) => {
     if (!files || files.length === 0) return;
     
+    // Check if adding these files would exceed the limit
+    const remainingSlots = photoLimit - images.length;
+    if (remainingSlots <= 0) {
+      alert(`Sie haben bereits das Maximum von ${photoLimit} Bildern erreicht.`);
+      return;
+    }
+    
+    const filesToUpload = Math.min(files.length, remainingSlots);
+    
     setUploading(true);
     
     try {
       const newImages = [...images];
       
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < filesToUpload; i++) {
         const file = files[i];
         
         // Create a data URL for preview (in real app, upload to Supabase Storage)
@@ -56,12 +80,16 @@ export default function Step3_Images() {
         };
         reader.readAsDataURL(file);
       }
+      
+      if (files.length > filesToUpload) {
+        alert(`Nur ${filesToUpload} Bilder wurden hochgeladen. Limit von ${photoLimit} Bildern erreicht.`);
+      }
     } catch (error) {
       console.error("Upload failed:", error);
     } finally {
       setUploading(false);
     }
-  }, [images, setValue]);
+  }, [images, setValue, photoLimit]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -99,6 +127,21 @@ export default function Step3_Images() {
     setValue("cover_image_index", index);
   };
 
+  const getPlanDisplayName = () => {
+    switch (data.price_plan) {
+      case "free30":
+        return "Standard (Gratis)";
+      case "paid90":
+        return "Verlängert (90 Tage)";
+      case "unlimited":
+        return "Unlimitiert";
+      default:
+        return "Standard";
+    }
+  };
+
+  const canUploadMore = images.length < photoLimit;
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -111,57 +154,96 @@ export default function Step3_Images() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Plan Info & Photo Limit */}
+        <Alert className="bg-gradient-to-r from-neutral-50 to-red-50/30 border-neutral-200/40">
+          <Info className="h-4 w-4 text-neutral-600" />
+          <AlertDescription className="text-sm text-neutral-700 font-light">
+            <strong>Gewählter Plan:</strong> {getPlanDisplayName()}
+            {data.is_premium && <span className="text-red-600 ml-1">+ Premium</span>}
+            <br />
+            <strong>Bilderlimit:</strong> {images.length}/{photoLimit} Fotos
+            {!canUploadMore && (
+              <span className="text-red-600 ml-2">• Limit erreicht</span>
+            )}
+          </AlertDescription>
+        </Alert>
+
         {/* Upload Area */}
-        <div
-          className={`
-            relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300
-            ${dragActive 
-              ? 'border-red-500 bg-red-50/50 scale-[1.01]' 
-              : 'border-neutral-300 hover:border-red-300 bg-neutral-50/30'
-            }
-          `}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-          />
-          
-          <div className="space-y-4">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
-              <Upload className="w-8 h-8 text-red-500" />
-            </div>
+        {canUploadMore && (
+          <div
+            className={`
+              relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300
+              ${dragActive 
+                ? 'border-red-500 bg-red-50/50 scale-[1.01]' 
+                : 'border-neutral-300 hover:border-red-300 bg-neutral-50/30'
+              }
+            `}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
             
-            <div>
-              <p className="text-lg font-medium text-neutral-900 mb-2 tracking-tight">
-                Bilder hier ablegen oder klicken
-              </p>
-              <p className="text-sm text-neutral-500 font-light">
-                JPG, PNG oder WEBP bis 10MB pro Bild
-              </p>
-            </div>
-            
-            {uploading && (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-sm text-red-600 font-light">Wird hochgeladen...</span>
+            <div className="space-y-4">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
+                <Upload className="w-8 h-8 text-red-500" />
               </div>
+              
+              <div>
+                <p className="text-lg font-medium text-neutral-900 mb-2 tracking-tight">
+                  Bilder hier ablegen oder klicken
+                </p>
+                <p className="text-sm text-neutral-500 font-light">
+                  JPG, PNG oder WEBP bis 10MB pro Bild
+                </p>
+                <p className="text-sm text-red-600 font-medium mt-1">
+                  Noch {photoLimit - images.length} Bilder möglich
+                </p>
+              </div>
+              
+              {uploading && (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm text-red-600 font-light">Wird hochgeladen...</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Photo Limit Reached Message */}
+        {!canUploadMore && images.length > 0 && (
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-200/40 rounded-lg p-6 text-center">
+            <div className="w-12 h-12 mx-auto bg-amber-100 rounded-lg flex items-center justify-center mb-4">
+              <ImageIcon className="w-6 h-6 text-amber-600" />
+            </div>
+            <p className="text-lg font-medium text-amber-900 mb-2 tracking-tight">
+              Bilderlimit erreicht
+            </p>
+            <p className="text-sm text-amber-700 font-light">
+              Sie haben das Maximum von {photoLimit} Bildern für Ihren {getPlanDisplayName()}-Plan erreicht.
+            </p>
+            {data.price_plan === "free30" && (
+              <p className="text-sm text-amber-700 font-light mt-2">
+                <strong>Tipp:</strong> Mit den Plänen "Verlängert" oder "Unlimitiert" können Sie bis zu 15 Bilder hochladen.
+              </p>
             )}
           </div>
-        </div>
+        )}
 
         {/* Image Grid */}
         {images.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-neutral-900 tracking-tight">
-                Hochgeladene Bilder ({images.length})
+                Hochgeladene Bilder ({images.length}/{photoLimit})
               </h3>
               <p className="text-sm text-neutral-500 font-light">
                 Klicken Sie auf den Stern, um das Titelbild festzulegen
@@ -248,8 +330,9 @@ export default function Step3_Images() {
           <Button
             type="submit"
             className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+            disabled={images.length === 0}
           >
-            Weiter zur Plan-Auswahl
+            Weiter zur Vorschau
           </Button>
         </div>
       </form>
