@@ -32,6 +32,33 @@ export const planSelectionSchema = z.object({
   plan_price: z.number().min(0),
 });
 
+// Auth form schemas
+export const loginSchema = z.object({
+  email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein"),
+  password: z.string().min(1, "Passwort ist erforderlich"),
+});
+
+export const registerSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein"),
+  password: z
+    .string()
+    .min(8, "Passwort muss mindestens 8 Zeichen lang sein")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Passwort muss mindestens einen Gross- und Kleinbuchstaben sowie eine Zahl enthalten"
+    ),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein"),
+});
+
+export type LoginFormData = z.infer<typeof loginSchema>;
+export type RegisterFormData = z.infer<typeof registerSchema>;
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
 export type VehicleDataForm = z.infer<typeof vehicleDataSchema>;
 export type LeasingDetailsForm = z.infer<typeof leasingDetailsSchema>;
 export type ImagesForm = z.infer<typeof imagesSchema>;
