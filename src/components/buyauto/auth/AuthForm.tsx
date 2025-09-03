@@ -28,7 +28,11 @@ export default function AuthForm() {
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await authService.signIn(data);
+      // Ensure data has required fields for the auth service
+      await authService.signIn({
+        email: data.email,
+        password: data.password
+      });
       toast.success("Erfolgreich angemeldet!");
       const callbackUrl = router.query.callback as string || "/dashboard";
       router.push(callbackUrl);
