@@ -37,12 +37,14 @@ export default function AuthForm() {
       console.log("Login successful:", result);
       toast.success("Erfolgreich angemeldet!");
       
-      // Give the AuthContext time to update before redirecting
+      // Wait longer for the auth state to fully update
+      // Also force a page reload to ensure middleware sees the new session
       setTimeout(() => {
         const callbackUrl = router.query.callback as string || "/dashboard";
         console.log("Redirecting to:", callbackUrl);
-        router.push(callbackUrl);
-      }, 100);
+        // Use window.location instead of router.push to ensure a full page load
+        window.location.href = callbackUrl;
+      }, 500);
       
     } catch (error: any) {
       console.error("Login error:", error);
