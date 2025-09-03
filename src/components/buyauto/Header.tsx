@@ -1,121 +1,198 @@
 
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Car, Menu, X } from "lucide-react";
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
+import { User, LogOut, Settings, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import authService from "@/services/authService";
+import { toast } from "sonner";
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      await authService.signOut();
+      toast.success("Erfolgreich abgemeldet!");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast.error("Fehler beim Abmelden");
+    }
+  };
+
+  const firstName = user?.user_metadata?.first_name;
+  const displayName = firstName || user?.email?.split('@')[0] || 'Benutzer';
 
   return (
-    <header className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-neutral-200/40 shadow-sm h-14 max-h-14">
-      <div className="max-w-[2000px] mx-auto px-4 md:px-6 lg:px-8 h-full">
-        <div className="flex justify-between items-center h-full">
-          {/* Logo - Swiss minimalist */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <Car className="h-5 w-5 text-red-500 group-hover:text-red-600 transition-colors" />
-            <span className="text-lg font-light text-neutral-900 tracking-tight">
-              <span className="font-semibold">Buy</span>Auto
-            </span>
+    <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-neutral-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/25">
+              <span className="text-white font-bold text-lg">BA</span>
+            </div>
+            <span className="text-2xl font-bold text-neutral-900 tracking-tight">BuyAuto</span>
           </Link>
 
-          {/* Desktop Navigation - Ultra light */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
               href="/suche" 
-              className="text-sm text-neutral-600 hover:text-red-500 font-normal transition-colors duration-200 tracking-wide"
+              className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
             >
               Fahrzeuge suchen
             </Link>
-            <a 
-              href="#funktioniert" 
-              className="text-sm text-neutral-600 hover:text-red-500 font-normal transition-colors duration-200 tracking-wide"
+            <Link 
+              href="/inserat-erstellen" 
+              className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
             >
-              So funktioniert's
-            </a>
-            <a 
-              href="#kontakt" 
-              className="text-sm text-neutral-600 hover:text-red-500 font-normal transition-colors duration-200 tracking-wide"
-            >
-              Kontakt
-            </a>
+              Inserat erstellen
+            </Link>
           </nav>
 
-          {/* Desktop Action Buttons - Swiss refined */}
-          <div className="hidden md:flex items-center space-x-3">
-            <Button 
-              variant="ghost" 
-              className="text-neutral-700 hover:text-red-500 hover:bg-transparent text-sm font-normal h-8 px-3 tracking-wide"
-            >
-              Anmelden
-            </Button>
-            <Link href="/inserat-erstellen">
-              <Button 
-                className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium h-8 px-4 rounded-lg shadow-none hover:shadow-sm transition-all duration-200"
-              >
-                Inserat erstellen
-              </Button>
-            </Link>
+          {/* Auth Section */}
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center space-x-2 hover:bg-neutral-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-br from-neutral-500 to-neutral-600 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="hidden sm:block text-sm font-medium text-neutral-700">
+                      {displayName}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="cursor-pointer">
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Einstellungen
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Abmelden
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Button
+                  variant="ghost"
+                  asChild
+                  className="text-neutral-600 hover:text-red-500 hover:bg-transparent transition-colors"
+                >
+                  <Link href="/auth">Anmelden</Link>
+                </Button>
+                <Button
+                  asChild
+                  className="bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
+                >
+                  <Link href="/auth">Registrieren</Link>
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Mobile Menu Button - Minimal */}
-          <button
-            className="md:hidden p-1 -mr-1 rounded-md hover:bg-neutral-100/60 transition-colors"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5 text-neutral-600" />
-            ) : (
-              <Menu className="h-5 w-5 text-neutral-600" />
-            )}
-          </button>
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2"
+            >
+              <div className="w-6 h-6 flex flex-col justify-center items-center">
+                <span className={`bg-neutral-600 block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm ${isMenuOpen ? 'rotate-45 translate-y-1' : '-translate-y-0.5'}`}></span>
+                <span className={`bg-neutral-600 block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm my-0.5 ${isMenuOpen ? 'opacity-0' : 'opacity-100'}`}></span>
+                <span className={`bg-neutral-600 block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm ${isMenuOpen ? '-rotate-45 -translate-y-1' : 'translate-y-0.5'}`}></span>
+              </div>
+            </Button>
+          </div>
         </div>
 
-        {/* Mobile Menu - Swiss clean */}
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white/98 backdrop-blur-md border-b border-neutral-200/40 shadow-lg">
-            <nav className="px-4 py-4 space-y-4">
-              <Link 
-                href="/suche" 
-                className="block text-neutral-700 hover:text-red-500 font-normal text-sm py-1 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Fahrzeuge suchen
-              </Link>
-              <a 
-                href="#funktioniert" 
-                className="block text-neutral-700 hover:text-red-500 font-normal text-sm py-1 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                So funktioniert's
-              </a>
-              <a 
-                href="#kontakt" 
-                className="block text-neutral-700 hover:text-red-500 font-normal text-sm py-1 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Kontakt
-              </a>
-              
-              <div className="flex flex-col space-y-2 pt-3 border-t border-neutral-200/40">
-                <Button 
-                  variant="ghost" 
-                  className="justify-start text-neutral-700 hover:text-red-500 hover:bg-transparent font-normal text-sm h-9"
+        {/* Mobile Navigation Menu */}
+        <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+          <nav className="pb-4 pt-2 space-y-2 border-t border-neutral-200">
+            <Link 
+              href="/suche" 
+              className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Fahrzeuge suchen
+            </Link>
+            <Link 
+              href="/inserat-erstellen" 
+              className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Inserat erstellen
+            </Link>
+            {user ? (
+              <>
+                <Link 
+                  href="/dashboard" 
+                  className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button 
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  Abmelden
+                </button>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/auth" 
+                  className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   Anmelden
-                </Button>
-                <Link href="/inserat-erstellen" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="justify-start bg-red-500 hover:bg-red-600 text-white font-medium text-sm h-9 w-full">
-                    Inserat erstellen
-                  </Button>
                 </Link>
-              </div>
-            </nav>
-          </div>
-        )}
+                <Link 
+                  href="/auth" 
+                  className="block px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors text-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Registrieren
+                </Link>
+              </>
+            )}
+          </nav>
+        </div>
       </div>
     </header>
   );
