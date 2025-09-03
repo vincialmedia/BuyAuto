@@ -72,7 +72,7 @@ export default function AuthForm() {
       await authService.resetPassword(data.email);
       toast.success("Passwort-Reset-Link wurde gesendet! Überprüfe deine E-Mails.");
       setView("login");
-    } catch (error: any)
+    } catch (error: any) {
       console.error("Reset password error:", error);
       toast.error("Fehler beim Senden des Reset-Links. Bitte versuchen Sie es erneut.");
     } finally {
