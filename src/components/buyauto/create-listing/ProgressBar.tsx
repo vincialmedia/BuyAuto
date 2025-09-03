@@ -4,8 +4,8 @@ import { useWizard } from "./ListingWizard";
 const steps = [
   { number: 1, label: "Fahrzeugdaten", description: "Grundlegende Fahrzeuginformationen" },
   { number: 2, label: "Leasingdetails", description: "Konditionen und Standort" },
-  { number: 3, label: "Bilder", description: "Fotos hochladen" },
-  { number: 4, label: "Plan wählen", description: "Inseratsdauer & Sichtbarkeit" },
+  { number: 3, label: "Plan wählen", description: "Inseratsdauer & Sichtbarkeit" },
+  { number: 4, label: "Bilder", description: "Fotos hochladen" },
   { number: 5, label: "Vorschau", description: "Bestätigung und Veröffentlichung" },
 ];
 
