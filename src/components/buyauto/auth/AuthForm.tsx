@@ -2,183 +2,161 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/router";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import authService from "@/services/authService";
-import { 
-  type LoginFormData, 
-  type RegisterFormData, 
-  type ResetPasswordFormData 
-} from "@/lib/buyauto/schemas";
-
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import ResetPasswordForm from "./ResetPasswordForm";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import authService from "@/services/authService";
+import type { LoginFormData, RegisterFormData } from "@/lib/buyauto/schemas";
 
 type AuthView = "login" | "register" | "reset-password";
 
 export default function AuthForm() {
-  const router = useRouter();
-  const [view, setView] = useState<AuthView>("login");
+  const [currentView, setCurrentView] = useState<AuthView>("login");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (data: LoginFormData) => {
-    setIsLoading(true);
     try {
-      // Sign in with improved auth service
-      const result = await authService.signIn({
-        email: data.email,
-        password: data.password
-      });
+      setIsLoading(true);
+      console.log("AuthForm: Starting login process");
       
-      console.log("Login successful:", result);
+      await authService.signIn(data);
+      console.log("AuthForm: Login successful");
       
-      if (result.session) {
-        toast.success("Erfolgreich angemeldet!");
-        
-        // Don't redirect here - let the auth page handle it
-        // The AuthContext will update and trigger the redirect
-        console.log("Login successful, waiting for auth context to update");
-      } else {
-        throw new Error("No session returned from login");
-      }
+      toast.success("Erfolgreich angemeldet!");
+      
+      // Don't redirect here - let the auth page handle it
+      console.log("AuthForm: Login completed, waiting for auth context update");
       
     } catch (error: any) {
       console.error("Login error:", error);
+      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      
       if (error?.message?.includes("Invalid login credentials")) {
-        toast.error("Ungültige E-Mail oder Passwort");
+        errorMessage = "Ungültige E-Mail oder Passwort.";
       } else if (error?.message?.includes("Email not confirmed")) {
-        toast.error("Bitte bestätigen Sie Ihre E-Mail-Adresse erst");
-      } else {
-        toast.error("Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.");
+        errorMessage = "Bitte bestätigen Sie Ihre E-Mail-Adresse.";
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRegister = async (data: RegisterFormData) => {
-    setIsLoading(true);
     try {
-      await authService.signUp({
-        email: data.email,
-        password: data.password,
-        firstName: data.firstName,
-        lastName: data.lastName,
-      });
-      toast.success("Konto erstellt! Überprüfe deine E-Mails, um dein Konto zu bestätigen.");
-      setView("login");
+      setIsLoading(true);
+      console.log("AuthForm: Starting registration process");
+      
+      await authService.signUp(data);
+      console.log("AuthForm: Registration successful");
+      
+      toast.success("Registrierung erfolgreich! Überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen.");
+      setCurrentView("login");
+      
     } catch (error: any) {
       console.error("Registration error:", error);
+      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      
       if (error?.message?.includes("User already registered")) {
-        toast.error("Diese E-Mail-Adresse ist bereits registriert");
-      } else {
-        toast.error("Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.");
+        errorMessage = "Ein Konto mit dieser E-Mail-Adresse existiert bereits.";
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResetPassword = async (data: ResetPasswordFormData) => {
-    setIsLoading(true);
+  const handleResetPassword = async (email: string) => {
     try {
-      await authService.resetPassword(data.email);
-      toast.success("Passwort-Reset-Link wurde gesendet! Überprüfe deine E-Mails.");
-      setView("login");
+      setIsLoading(true);
+      console.log("AuthForm: Starting password reset");
+      
+      await authService.resetPassword(email);
+      console.log("AuthForm: Password reset email sent");
+      
+      toast.success("Passwort-Reset-Link wurde an Ihre E-Mail-Adresse gesendet.");
+      setCurrentView("login");
+      
     } catch (error: any) {
       console.error("Reset password error:", error);
-      toast.error("Fehler beim Senden des Reset-Links. Bitte versuchen Sie es erneut.");
+      toast.error("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (view === "reset-password") {
+  if (currentView === "reset-password") {
     return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key="reset"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
-          transition={{ duration: 0.3 }}
-        >
+      <Card className="w-full max-w-md mx-auto shadow-xl shadow-neutral-900/5 border-neutral-200/60">
+        <CardHeader className="space-y-1 text-center pb-4">
+          <h1 className="text-2xl font-semibold text-neutral-900">Passwort zurücksetzen</h1>
+          <p className="text-sm text-neutral-600">
+            Geben Sie Ihre E-Mail-Adresse ein, um ein neues Passwort zu erhalten.
+          </p>
+        </CardHeader>
+        <CardContent className="pt-0">
           <ResetPasswordForm
             onResetPassword={handleResetPassword}
-            onBack={() => setView("login")}
+            onShowLogin={() => setCurrentView("login")}
             isLoading={isLoading}
           />
-        </motion.div>
-      </AnimatePresence>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <Card className="bg-white/90 backdrop-blur-sm border-neutral-200/60 shadow-xl shadow-neutral-900/5">
-      <CardHeader className="text-center space-y-4">
-        <motion.h1 
-          className="text-2xl font-bold text-neutral-900 tracking-tight"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          Willkommen bei BuyAuto
-        </motion.h1>
+    <Card className="w-full max-w-md mx-auto shadow-xl shadow-neutral-900/5 border-neutral-200/60">
+      <CardHeader className="space-y-1 text-center pb-4">
+        <h1 className="text-2xl font-semibold text-neutral-900">BuyAuto</h1>
+        <p className="text-sm text-neutral-600">
+          Verwalten Sie Ihre Auto-Leasing-Inserate
+        </p>
       </CardHeader>
-      
-      <CardContent>
-        <Tabs value={view} onValueChange={(v) => setView(v as AuthView)}>
-          <TabsList className="grid w-full grid-cols-2 mb-8 bg-neutral-100 p-1 rounded-lg">
+      <CardContent className="pt-0">
+        <Tabs value={currentView} onValueChange={(value) => setCurrentView(value as AuthView)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6 bg-neutral-100 p-1">
             <TabsTrigger 
-              value="login"
-              className="data-[state=active]:bg-white data-[state=active]:text-neutral-900 data-[state=active]:shadow-sm transition-all duration-200"
+              value="login" 
+              className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-red-500 data-[state=active]:shadow-sm"
+              disabled={isLoading}
             >
               Anmelden
             </TabsTrigger>
             <TabsTrigger 
-              value="register"
-              className="data-[state=active]:bg-white data-[state=active]:text-neutral-900 data-[state=active]:shadow-sm transition-all duration-200"
+              value="register" 
+              className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-red-500 data-[state=active]:shadow-sm"
+              disabled={isLoading}
             >
               Registrieren
             </TabsTrigger>
           </TabsList>
 
-          <AnimatePresence mode="wait">
-            {view === "login" && (
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <LoginForm
-                  onLogin={handleLogin}
-                  onShowRegister={() => setView("register")}
-                  onShowResetPassword={() => setView("reset-password")}
-                  isLoading={isLoading}
-                />
-              </motion.div>
-            )}
-            {view === "register" && (
-              <motion.div
-                key="register"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <RegisterForm
-                  onRegister={handleRegister}
-                  onShowLogin={() => setView("login")}
-                  isLoading={isLoading}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <TabsContent value="login" className="space-y-4 mt-0">
+            <LoginForm
+              onLogin={handleLogin}
+              onShowRegister={() => setCurrentView("register")}
+              onShowResetPassword={() => setCurrentView("reset-password")}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+
+          <TabsContent value="register" className="space-y-4 mt-0">
+            <RegisterForm
+              onRegister={handleRegister}
+              onShowLogin={() => setCurrentView("login")}
+              isLoading={isLoading}
+            />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
