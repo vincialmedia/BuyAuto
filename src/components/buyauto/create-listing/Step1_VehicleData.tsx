@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWizard } from "./ListingWizard";
 import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
+import { useEffect } from "react";
 
 const brands = [
   "Audi", "BMW", "Mercedes-Benz", "Volkswagen", "Toyota", "Honda", "Ford", 
@@ -34,32 +35,32 @@ export default function Step1_VehicleData() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors },
     setValue,
     watch,
+    trigger,
   } = useForm<VehicleDataForm>({
     resolver: zodResolver(vehicleDataSchema),
     defaultValues: {
       brand: data.brand,
       model: data.model,
-      year: data.year ? (typeof data.year === 'string' ? parseInt(data.year) : data.year) : new Date().getFullYear(),
-      km: data.km || "0", // Handle both string and number types
+      year: data.year ? Number(data.year) : new Date().getFullYear(),
+      km: data.km ? Number(data.km) : undefined,
       body: data.body,
       fuel: data.fuel,
       gearbox: data.gearbox,
     },
+    mode: "onBlur"
   });
 
-  const handleVehicleDataSubmit = (data: VehicleDataForm) => {
-    console.log("Step1 handleVehicleDataSubmit:", data);
+  const handleVehicleDataSubmit = (formData: VehicleDataForm) => {
+    console.log("Step1 handleVehicleDataSubmit:", formData);
     
-    // Convert form data to match ListingData interface expectations
+    // Schema now handles conversion, so data is already in the correct format.
+    // We just need to map km to mileage for backend consistency.
     const processedData = {
-      ...data,
-      // Ensure km is always a string for consistency
-      km: data.km ? String(data.km) : "0",
-      // Convert km to number for mileage field if needed
-      mileage: data.km ? parseInt(String(data.km).replace(/\D/g, ''), 10) || 0 : undefined
+      ...formData,
+      mileage: formData.km
     };
     
     console.log("Processed vehicle data:", processedData);
@@ -72,6 +73,19 @@ export default function Step1_VehicleData() {
     { length: currentYear - 1989 }, 
     (_, i) => currentYear - i
   );
+  
+  const watchedKm = watch("km");
+
+  useEffect(() => {
+    // Format the displayed value
+    const input = document.getElementById('km') as HTMLInputElement;
+    if (input && document.activeElement !== input) {
+        if (watchedKm) {
+            input.value = new Intl.NumberFormat('de-CH').format(watchedKm);
+        }
+    }
+  }, [watchedKm]);
+
 
   return (
     <div className="space-y-8">
@@ -160,10 +174,26 @@ export default function Step1_VehicleData() {
             <div className="relative">
               <Input
                 id="km"
-                type="number"
                 {...register("km")}
-                placeholder="z.B. 35000"
+                type="text"
+                inputMode="numeric"
+                placeholder="z.B. 35'000"
                 className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
+                onFocus={(e) => {
+                    if (e.target.value) {
+                        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                    }
+                }}
+                onBlur={(e) => {
+                    trigger("km");
+                    const value = e.target.value;
+                    if (value) {
+                        const num = parseInt(value.replace(/[^0-9]/g, ''), 10);
+                        if (!isNaN(num)) {
+                            e.target.value = new Intl.NumberFormat('de-CH').format(num);
+                        }
+                    }
+                }}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">
                 km
