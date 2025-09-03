@@ -73,12 +73,12 @@ export default function HowItWorksSection() {
 
         {/* Swiss minimal CTA */}
         <div className="text-center mt-16">
-          <Link href="/suche">
+          <Link href="/inserat-erstellen">
             <Button 
               size="lg"
               className="bg-red-500 hover:bg-red-600 text-white px-8 font-medium rounded-2xl shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5"
             >
-              Jetzt Fahrzeuge entdecken
+              Jetzt Inserat erstellen
             </Button>
           </Link>
         </div>
