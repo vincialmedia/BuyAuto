@@ -1,86 +1,97 @@
-# Plan: Redesign /suche Page
+# Listing Detail Page - Implementation Plan
 
-## 1. Goal
-Redesign the `/suche` page into a sleek, minimalistic, and dynamic experience.
+This document outlines the plan to build the vehicle listing detail page as per the user's request.
 
-- **Design Philosophy**: Swiss clean design (white, light grey, thin dividers, red as a highlight).
-- **Focus**: Results dominate the viewport in a vertical list; filters are light and interactive.
-- **Dynamic Effects**: Subtle animations like a background color shift on the price slider.
-- **Out of Scope**: Vehicle detail pages, dealer dashboards.
+## 1. Route & Data Fetching
 
-## 2. Route & Data
-- **Route**: `/suche`
-- **Default State**: Always shows all listings if no filters are applied.
-- **Data Source**: Supabase `public_listings` table or `search_listings` RPC.
-- **Pagination**: 12 results per page, controlled by a `page` URL parameter.
+### Route
+-   **File:** `src/pages/fahrzeug/[id].tsx`
+-   **Logic:** This will be a new dynamic page using Next.js's pages router.
 
-## 3. UI/UX Flow
+### Data Fetching (`getServerSideProps`)
+-   The page will use `getServerSideProps` to fetch data on the server for each request. This is crucial for SEO and for ensuring fresh data.
+-   **Primary Fetch:**
+    -   It will extract the `id` from the URL query parameters.
+    -   It will call a new service function, `listingsService.getPublishedListingById(id)`, which fetches a single record from a Supabase view (`public_listings`).
+    -   The service will explicitly select all required fields and filter by `id` and `status = 'published'`.
+    -   If no listing is found, `getServerSideProps` will return `{ notFound: true }`, triggering a 404 page.
+-   **Secondary Fetch (Similar Listings):**
+    -   A second service function, `listingsService.getSimilarListings(listing)`, will be called.
+    -   This function will fetch 3-6 other listings from the `public_listings` view.
+    -   The query will match by `brand` or `body` and will exclude the current listing's `id`.
+    -   The results will be passed as a prop to the page component.
 
-### Header (Slim, Fixed)
-- **Dimensions**: Max height of 60px.
-- **Style**: White background, thin bottom shadow.
-- **Content**:
-  - Left: Small logo.
-  - Right: "Fahrzeuge suchen", "So funktioniert’s", "Kontakt", "Inserat erstellen" (red button), "Anmelden".
-- **Responsive**: Collapses into a hamburger menu on mobile.
+## 2. Database Schema (`listing_inquiries`)
 
-### Search/Filters Section (Dynamic, Sticky)
-- **Layout**: Compact, 1-line filter bar.
-- **Filters**: Brand, Model, Year, Price Slider, Restlaufzeit (remaining term), Sort.
-- **Behavior**: Sticks to the top just below the header on scroll.
-- **Responsive**: Collapses into a "Filter" button on mobile, which opens a drawer.
+-   A new table will be created in Supabase to store inquiries.
+-   **SQL for Table Creation:**
+    ```sql
+    -- Create the table for listing inquiries
+    CREATE TABLE IF NOT EXISTS public.listing_inquiries (
+        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        listing_id uuid NOT NULL REFERENCES public.listings(id),
+        name text NOT NULL,
+        email text NOT NULL,
+        phone text,
+        message text NOT NULL,
+        created_at timestamptz DEFAULT now() NOT NULL
+    );
 
-### Dynamic Interactions
-- **Price Slider**: The track background behind the slider thumb fills with a gradient (grey → light red → deep red) as the max price increases.
-- **Restlaufzeit Selector**: Options show a subtle animation on hover (e.g., underline or fade).
-- **Filter Chips**: Applied filters appear as small, elegant chips below the filter bar, each with an "x" to remove it.
+    -- Enable Row Level Security
+    ALTER TABLE public.listing_inquiries ENABLE ROW LEVEL SECURITY;
 
-### Results List (Vertical Stack)
-- **Layout**: Clean vertical stack of cards, 1 per row, full-width with padding.
-- **Loading State**: Skeleton loading components will be shown while fetching data.
-- **Card Design**:
-  - **Left**: Car image (16:9 aspect ratio, object-fit: cover).
-  - **Middle**:
-    - **Title**: `Brand Model · Year`
-    - **Subline Pills**: `CHF X / Monat`, `Restlaufzeit Y Mon.`, `Km`, `Antrieb`, `Getriebe`, `Kanton`.
-  - **Right**:
-    - **Price**: Emphasized, bold, and red (e.g., `CHF 1’290 / Monat`).
-    - **Premium Badge**: A badge and a subtle glow effect on the card border if `is_premium` is true.
-    - **CTA**: "Details ansehen" (minimalist outline style button).
-- **Micro-interactions**: On hover, the card raises slightly (transform) and its background fades to a soft grey.
+    -- Create Policy: Allow anyone to insert an inquiry.
+    -- This is safe because it's an append-only action for anonymous users.
+    -- The table should not be readable by the public.
+    CREATE POLICY "Allow public insert for inquiries"
+    ON public.listing_inquiries
+    FOR INSERT
+    WITH CHECK (true);
+    ```
 
-### Pagination
-- **Style**: Centered, minimal controls: "‹ Zurück" | page numbers | "Weiter ›".
-- **Functionality**: Updates the `page` URL parameter and fetches the corresponding result set.
+## 3. Component Structure
 
-### Empty State
-- **Message**: "Keine Fahrzeuge gefunden."
-- **Actions**: Buttons for "Filter zurücksetzen" and "Alle Anzeigen".
+The UI will be broken down into a set of new, reusable components located in `src/components/buyauto/listing-detail/`.
 
-## 4. SEO & Copy
+-   `ListingPage.tsx`: The main component in `src/pages/fahrzeug/[id].tsx`. It will receive `listing` and `similarListings` as props and assemble the layout.
+-   `ListingHeader.tsx`: Renders the `H1` title, subline pills (`price`, `mileage`, etc.), and a conditional premium badge with a subtle glow animation.
+-   `MediaGallery.tsx`:
+    -   **Desktop:** A two-column layout with a large main image and thumbnails below or on the side.
+    -   **Mobile:** Uses `shadcn/ui/carousel` for a swipeable gallery.
+    -   Will include a simple, accessible lightbox modal (`shadcn/ui/dialog`) for viewing full-size images.
+-   `KeyActionsPanel.tsx`: The right-hand column on desktop, containing the emphasized price, key facts (`Restlaufzeit`, `Kaution`), and the main CTAs.
+-   `InquiryForm.tsx`: A form built with `react-hook-form` and `zod` for validation. It will handle its own state and call a service to submit the data. It can be displayed in a modal or as an anchored block.
+-   `ListingDetailsSection.tsx`: An accordion (`shadcn/ui/accordion`) to neatly display "Leasingdetails", "Fahrzeugdaten", and "Inserats-Infos".
+-   `TrustBox.tsx`: A simple, static component displaying trust-building points.
+-   `SimilarListings.tsx`: A section displaying the related listings in a horizontally scrolling container on mobile and a grid on desktop.
+-   `ListingSchema.tsx`: A dedicated client component to inject `JSON-LD` structured data (`Vehicle`, `Offer`, `BreadcrumbList`) into the page's `<head>` using a `script` tag. This keeps SEO logic clean and separate.
 
-### SEO
-- **Title**: "Auto Leasingübernahme – Fahrzeuge suchen | BuyAuto Schweiz"
-- **Meta Description**: "Minimalistische Suche für Auto-Leasingübernahmen in der Schweiz. Finde dein nächstes Fahrzeug nach Preis, Marke und Restlaufzeit."
-- **Structured Data**: Implement JSON-LD `ItemList` schema for the search results.
+## 4. Services & Types
 
-### Copy (DE-CH)
-- **Price**: `CHF 1’290 / Monat`
-- **Remaining Term**: `14 Mon.`
-- **Buttons**: "Filter anwenden", "Zurücksetzen", "Details ansehen".
+-   **`src/services/listingsService.ts`:**
+    -   `getPublishedListingById(id: string)`: New function to fetch a single, published listing.
+    -   `getSimilarListings(listing: Listing)`: New function to fetch related listings.
+-   **`src/services/inquiryService.ts` (New File):**
+    -   `submitInquiry(formData)`: A function that validates and inserts data into the `public.listing_inquiries` table using the Supabase client.
+-   **`src/lib/buyauto/types.ts`:**
+    -   Define a new `ListingDetail` type that includes all fields for the detail page.
+    -   Define a new `Inquiry` type for the form data.
 
-## 5. Acceptance Criteria
-- [ ] Header height is ≤ 60px and does not dominate the viewport.
-- [ ] Adjusting the price slider dynamically changes the gradient background.
-- [ ] Active filters are displayed as removable chips.
-- [ ] Premium listings are visually distinct with a badge and glow.
-- [ ] Results are in a vertical stack, not a grid.
-- [ ] Pagination correctly updates results and URL state.
-- [ ] The empty state provides clear actions to the user.
-- [ ] The page is fully responsive and touch-friendly.
+## 5. SEO & Structured Data
 
-## 6. Constraints
-- The design must be minimalistic (no heavy borders, no large color blocks).
-- All dynamic interactions must be subtle and performant (using CSS transforms and gradients).
-- No fake statistics or logos.
-- The primary focus is on readability and elegance.
+-   **Page Metadata:** The main page component will use `next/head` to set the page `title`, `meta description`, and OpenGraph tags dynamically based on the listing data.
+-   **JSON-LD:** The `ListingSchema.tsx` component will handle all structured data, ensuring that only non-null values are included in the output to produce valid schema markup.
+
+## 6. Implementation Steps
+
+1.  **Start in Plan Mode (This Step):** Define the architecture and component plan.
+2.  **Switch to Creative Mode.**
+3.  **Database:** Execute the SQL query to create the `listing_inquiries` table and its RLS policy.
+4.  **Backend Services:** Create/update the service files (`listingsService.ts`, `inquiryService.ts`) and `types.ts`.
+5.  **Page & Layout:** Create the `src/pages/fahrzeug/[id].tsx` file and implement `getServerSideProps`. Build the main page layout using placeholder components.
+6.  **Component Development:** Build each component one by one, starting with the simplest ones.
+7.  **Styling & Interactivity:** Apply CSS, responsive design, and animations.
+8.  **Final Integration:** Connect the inquiry form, and ensure all data flows correctly.
+9.  **Review:** Check against acceptance tests.
+
+This plan establishes a clear path forward. I'm ready to move to **Creative Mode** to begin implementation when you are.
