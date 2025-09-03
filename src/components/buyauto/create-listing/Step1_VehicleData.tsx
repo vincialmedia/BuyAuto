@@ -43,7 +43,7 @@ export default function Step1_VehicleData() {
       brand: data.brand,
       model: data.model,
       year: data.year || new Date().getFullYear(),
-      km: data.km || 0,
+      km: data.km || "0",
       body: data.body,
       fuel: data.fuel,
       gearbox: data.gearbox,
@@ -149,7 +149,7 @@ export default function Step1_VehicleData() {
               <Input
                 id="km"
                 type="number"
-                {...register("km", { valueAsNumber: true })}
+                {...register("km")}
                 placeholder="z.B. 35000"
                 className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
               />
