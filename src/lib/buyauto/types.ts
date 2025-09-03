@@ -18,6 +18,31 @@ export interface Listing {
   imageUrl: string; // Ensure this is present and used as the primary image
 }
 
+// Type for create listing form data - matches what the components actually use
+export interface ListingData {
+  brand?: string;
+  model?: string;
+  year?: number;
+  mileage?: number;
+  km?: number; // Matches Step1 component usage
+  fuel?: string;
+  transmission?: string;
+  gearbox?: string;
+  power?: number;
+  color?: string;
+  body?: string;
+  // Step3 fields
+  price_plan?: string;
+  duration_days?: number;
+  plan_price?: number;
+  is_premium?: boolean;
+  plan?: string;
+  price?: number;
+  // Step4 fields
+  images?: string[];
+  cover_image_index?: number;
+}
+
 // Extended listing type for detail page with additional fields
 export interface ListingDetail extends Listing {
   canton_code?: string;
