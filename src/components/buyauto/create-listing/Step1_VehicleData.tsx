@@ -43,7 +43,7 @@ export default function Step1_VehicleData() {
       brand: data.brand,
       model: data.model,
       year: data.year || new Date().getFullYear(),
-      km: data.km || "0",
+      km: data.km ? data.km.toString() : "0", // Convert number to string for form
       body: data.body,
       fuel: data.fuel,
       gearbox: data.gearbox,
@@ -51,6 +51,7 @@ export default function Step1_VehicleData() {
   });
 
   const onSubmit = (formData: VehicleDataForm) => {
+    // The km field is already transformed by Zod schema, so just pass it through
     updateData(formData);
     nextStep();
   };

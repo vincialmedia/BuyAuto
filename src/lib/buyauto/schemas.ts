@@ -32,7 +32,7 @@ export const vehicleDataSchema = z.object({
   model: z.string().optional(),
   year: z.number().optional(),
   mileage: z.number().optional(),
-  km: z.string().optional(),
+  km: z.string().transform((val) => val ? parseInt(val) : 0).optional(), // Transform string input to number
   fuel: z.string().optional(),
   transmission: z.string().optional(),
   gearbox: z.string().optional(),

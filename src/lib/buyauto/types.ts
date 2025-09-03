@@ -24,7 +24,7 @@ export interface ListingData {
   model?: string;
   year?: number;
   mileage?: number;
-  km?: string; // Changed to string to match Step1 component usage  
+  km?: number; // Changed back to number for consistency with database 
   fuel?: string;
   transmission?: string;
   gearbox?: string;
