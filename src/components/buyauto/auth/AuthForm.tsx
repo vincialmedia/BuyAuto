@@ -28,23 +28,27 @@ export default function AuthForm() {
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // Ensure data has required fields for the auth service
+      // Sign in with Supabase
       const result = await authService.signIn({
         email: data.email,
         password: data.password
       });
       
       console.log("Login successful:", result);
-      toast.success("Erfolgreich angemeldet!");
       
-      // Wait longer for the auth state to fully update
-      // Also force a page reload to ensure middleware sees the new session
-      setTimeout(() => {
-        const callbackUrl = router.query.callback as string || "/dashboard";
-        console.log("Redirecting to:", callbackUrl);
-        // Use window.location instead of router.push to ensure a full page load
-        window.location.href = callbackUrl;
-      }, 500);
+      if (result.session) {
+        toast.success("Erfolgreich angemeldet!");
+        
+        // Wait for the session to be established and cookies to be set
+        // Then do a full page redirect to ensure middleware sees the session
+        setTimeout(() => {
+          const callbackUrl = router.query.callback as string || "/dashboard";
+          console.log("Redirecting to:", callbackUrl);
+          window.location.href = callbackUrl;
+        }, 1000); // Increased wait time for session establishment
+      } else {
+        throw new Error("No session returned from login");
+      }
       
     } catch (error: any) {
       console.error("Login error:", error);
@@ -53,9 +57,9 @@ export default function AuthForm() {
       } else {
         toast.error("Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.");
       }
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Only set loading false on error
     }
+    // Note: Don't set loading false on success to maintain loading state during redirect
   };
 
   const handleRegister = async (data: RegisterFormData) => {
