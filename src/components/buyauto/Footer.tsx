@@ -7,7 +7,7 @@ const footerSections = [
     title: "Services",
     links: [
       { label: "Fahrzeuge suchen", href: "/suche" },
-      { label: "Inserat erstellen", href: "#" },
+      { label: "Inserat erstellen", href: "/inserat-erstellen" },
       { label: "So funktioniert's", href: "#funktioniert" },
       { label: "Finanzierung", href: "#" }
     ]
