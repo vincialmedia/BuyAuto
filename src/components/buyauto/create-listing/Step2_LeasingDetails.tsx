@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -70,10 +71,10 @@ export default function Step2_LeasingDetails() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl font-light text-neutral-900 mb-2">
+        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
           Leasingdetails
         </h2>
-        <p className="text-neutral-600">
+        <p className="text-neutral-600 font-light leading-relaxed">
           Konditionen und Standort Ihres Fahrzeugs
         </p>
       </div>
@@ -92,14 +93,14 @@ export default function Step2_LeasingDetails() {
                 step="0.01"
                 {...register("price_per_month_chf", { valueAsNumber: true })}
                 placeholder="z.B. 599"
-                className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors pl-12"
+                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pl-12"
               />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-medium">
                 CHF
               </span>
             </div>
             {errors.price_per_month_chf && (
-              <p className="text-sm text-red-500">{errors.price_per_month_chf.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.price_per_month_chf.message}</p>
             )}
           </div>
 
@@ -115,14 +116,14 @@ export default function Step2_LeasingDetails() {
                 min="1"
                 {...register("remaining_months", { valueAsNumber: true })}
                 placeholder="z.B. 24"
-                className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors pr-16"
+                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-16"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">
                 Monate
               </span>
             </div>
             {errors.remaining_months && (
-              <p className="text-sm text-red-500">{errors.remaining_months.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.remaining_months.message}</p>
             )}
           </div>
 
@@ -138,14 +139,14 @@ export default function Step2_LeasingDetails() {
                 step="0.01"
                 {...register("deposit_chf", { valueAsNumber: true })}
                 placeholder="z.B. 2000 (optional)"
-                className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors pl-12"
+                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pl-12"
               />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-medium">
                 CHF
               </span>
             </div>
             {errors.deposit_chf && (
-              <p className="text-sm text-red-500">{errors.deposit_chf.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.deposit_chf.message}</p>
             )}
           </div>
 
@@ -158,7 +159,7 @@ export default function Step2_LeasingDetails() {
               value={watch("canton_code")}
               onValueChange={(value) => setValue("canton_code", value, { shouldValidate: true })}
             >
-              <SelectTrigger className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors">
+              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                 <SelectValue placeholder="Kanton auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -170,7 +171,7 @@ export default function Step2_LeasingDetails() {
               </SelectContent>
             </Select>
             {errors.canton_code && (
-              <p className="text-sm text-red-500">{errors.canton_code.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.canton_code.message}</p>
             )}
           </div>
         </div>
@@ -184,31 +185,31 @@ export default function Step2_LeasingDetails() {
             id="location"
             {...register("location")}
             placeholder="z.B. Zürich, Basel, Genf"
-            className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors"
+            className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
           />
           {errors.location && (
-            <p className="text-sm text-red-500">{errors.location.message}</p>
+            <p className="text-sm text-red-500 font-light">{errors.location.message}</p>
           )}
         </div>
 
         {/* Preview Card */}
-        <div className="bg-gradient-to-br from-amber-50/50 to-orange-50/50 rounded-2xl p-6 border border-amber-200/30">
-          <h3 className="text-lg font-medium text-neutral-900 mb-4">Übersicht</h3>
+        <div className="bg-gradient-to-br from-neutral-50 to-red-50/30 rounded-lg p-6 border border-neutral-200/40">
+          <h3 className="text-lg font-medium text-neutral-900 mb-4 tracking-tight">Übersicht</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="text-center p-3 bg-white/60 rounded-xl">
-              <p className="text-neutral-500 mb-1">Monatlich</p>
+            <div className="text-center p-3 bg-white/60 rounded-lg border border-neutral-200/30">
+              <p className="text-neutral-500 mb-1 font-light">Monatlich</p>
               <p className="text-xl font-semibold text-neutral-900">
                 CHF {watch("price_per_month_chf") ? formatCurrency(watch("price_per_month_chf").toString()) : "0"}
               </p>
             </div>
-            <div className="text-center p-3 bg-white/60 rounded-xl">
-              <p className="text-neutral-500 mb-1">Restlaufzeit</p>
+            <div className="text-center p-3 bg-white/60 rounded-lg border border-neutral-200/30">
+              <p className="text-neutral-500 mb-1 font-light">Restlaufzeit</p>
               <p className="text-xl font-semibold text-neutral-900">
                 {watch("remaining_months") || 0} Monate
               </p>
             </div>
-            <div className="text-center p-3 bg-white/60 rounded-xl">
-              <p className="text-neutral-500 mb-1">Kaution</p>
+            <div className="text-center p-3 bg-white/60 rounded-lg border border-neutral-200/30">
+              <p className="text-neutral-500 mb-1 font-light">Kaution</p>
               <p className="text-xl font-semibold text-neutral-900">
                 CHF {watch("deposit_chf") ? formatCurrency(watch("deposit_chf").toString()) : "0"}
               </p>
@@ -222,7 +223,7 @@ export default function Step2_LeasingDetails() {
             type="button"
             onClick={prevStep}
             variant="outline"
-            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-300 text-neutral-600 rounded-xl transition-all duration-200"
+            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Zurück
@@ -230,7 +231,7 @@ export default function Step2_LeasingDetails() {
           
           <Button
             type="submit"
-            className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-medium rounded-xl shadow-lg shadow-amber-200 transition-all duration-200 hover:shadow-xl hover:scale-[1.02]"
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
           >
             Weiter zu Bildern
           </Button>

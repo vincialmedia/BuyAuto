@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
 import { useWizard } from "./ListingWizard";
 import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
 
@@ -65,10 +64,10 @@ export default function Step1_VehicleData() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl font-light text-neutral-900 mb-2">
+        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
           Fahrzeugdaten
         </h2>
-        <p className="text-neutral-600">
+        <p className="text-neutral-600 font-light leading-relaxed">
           Grundlegende Informationen zu Ihrem Fahrzeug
         </p>
       </div>
@@ -84,7 +83,7 @@ export default function Step1_VehicleData() {
               value={watch("brand")}
               onValueChange={(value) => setValue("brand", value, { shouldValidate: true })}
             >
-              <SelectTrigger className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors">
+              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                 <SelectValue placeholder="Marke auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -96,7 +95,7 @@ export default function Step1_VehicleData() {
               </SelectContent>
             </Select>
             {errors.brand && (
-              <p className="text-sm text-red-500">{errors.brand.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.brand.message}</p>
             )}
           </div>
 
@@ -109,10 +108,10 @@ export default function Step1_VehicleData() {
               id="model"
               {...register("model")}
               placeholder="z.B. A4, 320i, C-Klasse"
-              className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors"
+              className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
             />
             {errors.model && (
-              <p className="text-sm text-red-500">{errors.model.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.model.message}</p>
             )}
           </div>
 
@@ -125,7 +124,7 @@ export default function Step1_VehicleData() {
               value={watch("year")?.toString()}
               onValueChange={(value) => setValue("year", parseInt(value), { shouldValidate: true })}
             >
-              <SelectTrigger className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors">
+              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                 <SelectValue placeholder="Jahr auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -137,7 +136,7 @@ export default function Step1_VehicleData() {
               </SelectContent>
             </Select>
             {errors.year && (
-              <p className="text-sm text-red-500">{errors.year.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.year.message}</p>
             )}
           </div>
 
@@ -152,14 +151,14 @@ export default function Step1_VehicleData() {
                 type="number"
                 {...register("km", { valueAsNumber: true })}
                 placeholder="z.B. 35000"
-                className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors pr-12"
+                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">
                 km
               </span>
             </div>
             {errors.km && (
-              <p className="text-sm text-red-500">{errors.km.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.km.message}</p>
             )}
           </div>
 
@@ -172,7 +171,7 @@ export default function Step1_VehicleData() {
               value={watch("body")}
               onValueChange={(value) => setValue("body", value, { shouldValidate: true })}
             >
-              <SelectTrigger className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors">
+              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                 <SelectValue placeholder="Karosserie auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -184,7 +183,7 @@ export default function Step1_VehicleData() {
               </SelectContent>
             </Select>
             {errors.body && (
-              <p className="text-sm text-red-500">{errors.body.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.body.message}</p>
             )}
           </div>
 
@@ -197,7 +196,7 @@ export default function Step1_VehicleData() {
               value={watch("fuel")}
               onValueChange={(value) => setValue("fuel", value, { shouldValidate: true })}
             >
-              <SelectTrigger className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors">
+              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                 <SelectValue placeholder="Antrieb auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -209,7 +208,7 @@ export default function Step1_VehicleData() {
               </SelectContent>
             </Select>
             {errors.fuel && (
-              <p className="text-sm text-red-500">{errors.fuel.message}</p>
+              <p className="text-sm text-red-500 font-light">{errors.fuel.message}</p>
             )}
           </div>
         </div>
@@ -223,7 +222,7 @@ export default function Step1_VehicleData() {
             value={watch("gearbox")}
             onValueChange={(value) => setValue("gearbox", value, { shouldValidate: true })}
           >
-            <SelectTrigger className="bg-white/80 border-neutral-200 hover:border-neutral-300 focus:border-amber-400 transition-colors">
+            <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
               <SelectValue placeholder="Getriebe auswählen" />
             </SelectTrigger>
             <SelectContent>
@@ -235,7 +234,7 @@ export default function Step1_VehicleData() {
             </SelectContent>
           </Select>
           {errors.gearbox && (
-            <p className="text-sm text-red-500">{errors.gearbox.message}</p>
+            <p className="text-sm text-red-500 font-light">{errors.gearbox.message}</p>
           )}
         </div>
 
@@ -243,7 +242,7 @@ export default function Step1_VehicleData() {
         <div className="flex justify-end pt-6">
           <Button
             type="submit"
-            className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-medium rounded-xl shadow-lg shadow-amber-200 transition-all duration-200 hover:shadow-xl hover:scale-[1.02]"
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
           >
             Weiter zu Leasingdetails
           </Button>
