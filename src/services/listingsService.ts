@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing } from "@/lib/buyauto/types";
 
-// Database row type (matches Supabase schema)
+// Database row type (matches Supabase schema without canton_code)
 type ListingRow = {
   id: string;
   brand: string;
@@ -13,7 +13,6 @@ type ListingRow = {
   price_per_month_chf: number;
   remaining_months: number;
   location: string;
-  canton_code: string;
   mileage_km: number;
   fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
   gearbox: "Automatik" | "Manuell";
@@ -35,7 +34,6 @@ function transformDbRowToListing(row: ListingRow): Listing {
     pricePerMonthCHF: row.price_per_month_chf,
     remainingMonths: row.remaining_months,
     location: row.location,
-    cantonCode: row.canton_code,
     mileageKm: row.mileage_km,
     fuel: row.fuel,
     gearbox: row.gearbox,
@@ -102,10 +100,6 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
 
     if (query.kmMax) {
       supabaseQuery = supabaseQuery.lte('mileage_km', query.kmMax);
-    }
-
-    if (query.canton && query.canton.length > 0) {
-      supabaseQuery = supabaseQuery.in('canton_code', query.canton);
     }
 
     if (query.noDeposit) {
@@ -222,29 +216,6 @@ export async function getModelsForBrand(brand: string): Promise<string[]> {
 
   } catch (error) {
     console.error('Get models error:', error);
-    return [];
-  }
-}
-
-// Get unique cantons from database for filter options
-export async function getCantons(): Promise<string[]> {
-  try {
-    const { data, error } = await supabase
-      .from('listings')
-      .select('canton_code')
-      .order('canton_code');
-
-    if (error) {
-      console.error('Error fetching cantons:', error);
-      return [];
-    }
-
-    // Get unique cantons
-    const uniqueCantons = [...new Set(data.map(row => row.canton_code))];
-    return uniqueCantons;
-
-  } catch (error) {
-    console.error('Get cantons error:', error);
     return [];
   }
 }
