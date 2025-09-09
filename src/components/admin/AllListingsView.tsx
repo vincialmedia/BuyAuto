@@ -248,14 +248,14 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
           <div>
             <label className="text-sm font-medium mb-2 block">Kanton</label>
             <Select
-              value={filters.canton || ''}
-              onValueChange={(value) => setFilters({ ...filters, canton: value || undefined, page: 1 })}
+              value={filters.canton || 'all'}
+              onValueChange={(value) => setFilters({ ...filters, canton: value === 'all' ? undefined : value, page: 1 })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Alle Kantone" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle Kantone</SelectItem>
+                <SelectItem value="all">Alle Kantone</SelectItem>
                 {cantons.map((canton) => (
                   <SelectItem key={canton.value} value={canton.value}>
                     {canton.label}
