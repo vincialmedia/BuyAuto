@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -9,18 +8,48 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
+  adminLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  isAdmin: false,
+  adminLoading: true,
 });
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(true);
+
+  // Check if user is admin
+  const checkAdminRole = async (userId: string) => {
+    try {
+      setAdminLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(data?.role === 'admin');
+      }
+    } catch (error) {
+      console.error('Error checking admin role:', error);
+      setIsAdmin(false);
+    } finally {
+      setAdminLoading(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -36,6 +65,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Check admin role if user exists
+        if (session?.user) {
+          checkAdminRole(session.user.id);
+        } else {
+          setIsAdmin(false);
+          setAdminLoading(false);
+        }
       }
     });
 
@@ -49,6 +86,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Check admin role on auth changes
+        if (session?.user) {
+          checkAdminRole(session.user.id);
+        } else {
+          setIsAdmin(false);
+          setAdminLoading(false);
+        }
       }
     });
 
@@ -59,7 +104,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      isAdmin, 
+      adminLoading 
+    }}>
       {children}
     </AuthContext.Provider>
   );
