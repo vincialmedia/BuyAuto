@@ -1,74 +1,76 @@
-
+import { GetServerSideProps } from "next";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
 import Head from "next/head";
-import Link from "next/link";
-import { ChevronRight, Heart, MessageSquare, MapPin, Clock, Fuel, Gauge, Settings, Calendar, Shield, CheckCircle } from "lucide-react";
+import { useRouter } from "next/router";
+import { ArrowLeft, MapPin, Calendar, Settings, Fuel, Users, Shield, Award, Phone, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getSimilarListings } from "@/services/listingsService";
-import { ListingDetail, Listing } from "@/lib/buyauto/types";
-import Header from "@/components/buyauto/Header";
-import Footer from "@/components/buyauto/Footer";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
+import TrustBadges from "@/components/buyauto/detail/TrustBadges";
 import InquiryForm from "@/components/buyauto/detail/InquiryForm";
 import SimilarListings from "@/components/buyauto/detail/SimilarListings";
-import TrustBadges from "@/components/buyauto/detail/TrustBadges";
 
-export default function ListingDetailPage() {
+interface ListingDetailPageProps {
+  listing: ListingDetail | null;
+  notFound?: boolean;
+}
+
+export default function ListingDetailPage({ listing: initialListing, notFound }: ListingDetailPageProps) {
+  const [listing, setListing] = useState<ListingDetail | null>(initialListing);
+  const [isLoading, setIsLoading] = useState(!initialListing && !notFound);
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
   const router = useRouter();
   const { id } = router.query;
-  const [listing, setListing] = useState<ListingDetail | null>(null);
-  const [similarListings, setSimilarListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [showInquiryForm, setShowInquiryForm] = useState(false);
 
+  // Client-side fetch if SSR failed
   useEffect(() => {
-    if (!id || typeof id !== "string") return;
-
-    const loadListing = async () => {
-      setLoading(true);
-      setNotFound(false);
-
-      try {
-        const data = await getPublishedListingById(id);
-        if (!data) {
-          setNotFound(true);
-          return;
+    if (!listing && !notFound && id && typeof id === 'string') {
+      const fetchListing = async () => {
+        try {
+          const fetchedListing = await getPublishedListingById(id);
+          setListing(fetchedListing);
+        } catch (error) {
+          console.error('Error fetching listing:', error);
+        } finally {
+          setIsLoading(false);
         }
+      };
 
-        setListing(data);
+      fetchListing();
+    }
+  }, [id, listing, notFound]);
 
-        // Load similar listings
-        const similar = await getSimilarListings(data, 6);
-        setSimilarListings(similar);
-      } catch (error) {
-        console.error("Error loading listing:", error);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadListing();
-  }, [id]);
-
-  if (loading) {
+  if (notFound) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
-        <Header />
-        <div className="container mx-auto px-4 py-16">
-          <div className="animate-pulse space-y-8">
-            <div className="h-8 bg-neutral-200 rounded-xl w-2/3"></div>
-            <div className="grid lg:grid-cols-2 gap-8">
-              <div className="aspect-video bg-neutral-200 rounded-3xl"></div>
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-neutral-900 mb-4">Inserat nicht gefunden</h1>
+          <p className="text-neutral-600 mb-6">
+            Das gewünschte Inserat existiert nicht oder ist nicht mehr verfügbar.
+          </p>
+          <Button onClick={() => router.push('/suche')} className="bg-red-500 hover:bg-red-600 text-white">
+            Zurück zur Suche
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || !listing) {
+    return (
+      <div className="min-h-screen bg-neutral-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="w-32 h-10 bg-neutral-200 rounded"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="aspect-[4/3] bg-neutral-200 rounded-lg"></div>
               <div className="space-y-4">
-                <div className="h-12 bg-neutral-200 rounded-xl"></div>
-                <div className="h-6 bg-neutral-200 rounded-lg w-3/4"></div>
-                <div className="h-16 bg-neutral-200 rounded-xl"></div>
+                <div className="w-3/4 h-8 bg-neutral-200 rounded"></div>
+                <div className="w-1/2 h-6 bg-neutral-200 rounded"></div>
+                <div className="w-1/3 h-10 bg-neutral-200 rounded"></div>
               </div>
             </div>
           </div>
@@ -77,377 +79,282 @@ export default function ListingDetailPage() {
     );
   }
 
-  if (notFound || !listing) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
-        <Header />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="max-w-md mx-auto space-y-6">
-            <div className="text-6xl">🚗</div>
-            <h1 className="text-2xl font-bold text-neutral-900">
-              Fahrzeug nicht gefunden
-            </h1>
-            <p className="text-neutral-600">
-              Dieses Inserat ist nicht mehr verfügbar oder wurde noch nicht freigeschaltet.
-            </p>
-            <Button asChild className="bg-red-600 hover:bg-red-700">
-              <Link href="/suche">Alle Fahrzeuge ansehen</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const formatPrice = (price: number) => `CHF ${price.toLocaleString("de-CH")}`;
-  const formatMileage = (km: number) => `${km.toLocaleString("de-CH")} km`;
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("de-CH", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    });
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('de-CH', {
+      style: 'currency',
+      currency: 'CHF',
+      minimumFractionDigits: 0
+    }).format(price);
   };
 
-  const getPlanLabel = (plan?: string) => {
-    switch (plan) {
-      case "free30": return "Standard 30 Tage (Gratis)";
-      case "premium30": return "Premium 30 Tage (CHF 30)";
-      case "paid90": return "90 Tage (CHF 50)";
-      case "unlimited": return "Unlimitiert (CHF 190)";
-      default: return "Standard";
-    }
+  const formatMileage = (km: number) => {
+    return new Intl.NumberFormat('de-CH').format(km);
   };
 
-  const seoTitle = `${listing.brand} ${listing.model} ${listing.year} – Leasingübernahme Schweiz | BuyAuto`;
-  const seoDescription = `${listing.brand} ${listing.model} ${listing.year} ab ${formatPrice(listing.pricePerMonthCHF)} pro Monat. ${listing.remainingMonths} Monate Restlaufzeit. ${formatMileage(listing.mileageKm)} in ${listing.location}.`;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://buyauto.ch"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Fahrzeuge",
-            "item": "https://buyauto.ch/suche"
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "name": `${listing.brand} ${listing.model} ${listing.year}`,
-            "item": `https://buyauto.ch/fahrzeug/${listing.id}`
-          }
-        ]
-      },
-      {
-        "@type": "Vehicle",
-        "name": `${listing.brand} ${listing.model}`,
-        "brand": listing.brand,
-        "model": listing.model,
-        "vehicleModelDate": listing.year.toString(),
-        "bodyType": listing.body,
-        "fuelType": listing.fuel,
-        "vehicleTransmission": listing.gearbox,
-        "mileageFromOdometer": {
-          "@type": "QuantitativeValue",
-          "value": listing.mileageKm,
-          "unitCode": "KMT"
-        },
-        "image": listing.cover_image_url || listing.imageUrl
-      },
-      {
-        "@type": "Offer",
-        "name": `Leasingübernahme ${listing.brand} ${listing.model}`,
-        "description": `${listing.brand} ${listing.model} ${listing.year} Leasingübernahme`,
-        "price": listing.pricePerMonthCHF,
-        "priceCurrency": "CHF",
-        "priceSpecification": {
-          "@type": "UnitPriceSpecification",
-          "price": listing.pricePerMonthCHF,
-          "priceCurrency": "CHF",
-          "unitText": "Monat"
-        },
-        "availability": "https://schema.org/InStock",
-        "itemOffered": {
-          "@type": "Vehicle",
-          "name": `${listing.brand} ${listing.model}`,
-          "brand": listing.brand,
-          "model": listing.model,
-          "vehicleModelDate": listing.year.toString(),
-          "bodyType": listing.body,
-          "fuelType": listing.fuel,
-          "vehicleTransmission": listing.gearbox,
-          "mileageFromOdometer": {
-            "@type": "QuantitativeValue",
-            "value": listing.mileageKm,
-            "unitCode": "KMT"
-          }
-        },
-        "areaServed": "CH",
-        "url": `https://buyauto.ch/fahrzeug/${listing.id}`
-      }
-    ]
+  const getFuelIcon = (fuel: string) => {
+    return <Fuel className="w-4 h-4" />;
   };
+
+  const getGearboxIcon = (gearbox: string) => {
+    return <Settings className="w-4 h-4" />;
+  };
+
+  const images = listing.images && listing.images.length > 0 ? listing.images : [];
+  const hasImages = images.length > 0;
 
   return (
     <>
       <Head>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:image" content={listing.cover_image_url || listing.imageUrl} />
-        <meta property="og:url" content={`https://buyauto.ch/fahrzeug/${listing.id}`} />
-        <meta property="og:type" content="product" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta name="twitter:description" content={seoDescription} />
-        <meta name="twitter:image" content={listing.cover_image_url || listing.imageUrl} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        <title>{`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`}</title>
+        <meta name="description" content={`${listing.brand} ${listing.model} ${listing.year} für ${formatPrice(listing.pricePerMonthCHF)}/Monat in ${listing.location}. Jetzt Auto-Leasing übernehmen!`} />
+        <meta property="og:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
+        <meta property="og:description" content={`${listing.brand} ${listing.model} ${listing.year} für ${formatPrice(listing.pricePerMonthCHF)}/Monat in ${listing.location}. Jetzt Auto-Leasing übernehmen!`} />
+        {listing.imageUrl && <meta property="og:image" content={listing.imageUrl} />}
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
-        <Header />
-
-        {/* Breadcrumbs */}
-        <div className="border-b border-neutral-200/60 bg-white/80 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-3">
-            <nav className="flex items-center space-x-2 text-sm text-neutral-600">
-              <Link href="/" className="hover:text-red-600 transition-colors">
-                Home
-              </Link>
-              <ChevronRight className="w-4 h-4" />
-              <Link href="/suche" className="hover:text-red-600 transition-colors">
-                Fahrzeuge
-              </Link>
-              <ChevronRight className="w-4 h-4" />
-              <span className="text-neutral-900 font-medium">
-                {listing.brand} {listing.model} {listing.year}
-              </span>
-            </nav>
+      <div className="min-h-screen bg-neutral-50">
+        {/* Header */}
+        <div className="bg-white border-b border-neutral-200 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <Button
+                variant="ghost"
+                onClick={() => router.back()}
+                className="flex items-center gap-2 hover:bg-neutral-100"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Zurück
+              </Button>
+              <div className="text-sm text-neutral-600">
+                ID: {listing.id.slice(0, 8)}...
+              </div>
+            </div>
           </div>
         </div>
 
-        <main className="container mx-auto px-4 py-8 space-y-12">
-          {/* Title & Key Info */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl lg:text-4xl font-bold text-neutral-900">
-                {listing.brand} {listing.model} · {listing.year}
-              </h1>
-              {listing.premium && (
-                <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white border-0 shadow-lg shadow-red-500/20 animate-pulse">
-                  Premium
-                </Badge>
-              )}
-            </div>
-            
-            <div className="flex flex-wrap gap-3">
-              <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700 font-semibold text-base px-4 py-2">
-                {formatPrice(listing.pricePerMonthCHF)} / Monat
-              </Badge>
-              <Badge variant="outline" className="bg-neutral-50 border-neutral-200 text-neutral-700">
-                Restlaufzeit {listing.remainingMonths} Mon.
-              </Badge>
-              <Badge variant="outline" className="bg-neutral-50 border-neutral-200 text-neutral-700">
-                {formatMileage(listing.mileageKm)}
-              </Badge>
-              <Badge variant="outline" className="bg-neutral-50 border-neutral-200 text-neutral-700">
-                {listing.fuel} · {listing.gearbox} · {listing.body}
-              </Badge>
-              <Badge variant="outline" className="bg-neutral-50 border-neutral-200 text-neutral-700">
-                <MapPin className="w-3 h-3 mr-1" />
-                {listing.location} ({listing.canton_code})
-              </Badge>
-            </div>
-          </div>
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Images and Details */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Image Gallery */}
+              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden">
+                <ImageGallery 
+                  images={images}
+                  brand={listing.brand}
+                  model={listing.model}
+                  premium={listing.premium}
+                />
+              </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left Column - Gallery */}
-            <div className="lg:col-span-2">
-              <ImageGallery 
-                images={listing.image_urls.length > 0 ? listing.image_urls : [listing.cover_image_url || listing.imageUrl]}
-                alt={`${listing.brand} ${listing.model} ${listing.year}`}
-              />
+              {/* Vehicle Details */}
+              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
+                <h2 className="text-2xl font-bold text-neutral-900 mb-6">Fahrzeugdetails</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-600">Baujahr</p>
+                      <p className="font-semibold text-neutral-900">{listing.year}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                      <Settings className="w-5 h-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-600">Kilometerstand</p>
+                      <p className="font-semibold text-neutral-900">{formatMileage(listing.mileageKm)} km</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                      {getFuelIcon(listing.fuel)}
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-600">Treibstoff</p>
+                      <p className="font-semibold text-neutral-900">{listing.fuel}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                      {getGearboxIcon(listing.gearbox)}
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-600">Getriebe</p>
+                      <p className="font-semibold text-neutral-900">{listing.gearbox}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                      <Users className="w-5 h-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-600">Karosserie</p>
+                      <p className="font-semibold text-neutral-900">{listing.body}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                      <MapPin className="w-5 h-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-600">Standort</p>
+                      <p className="font-semibold text-neutral-900">{listing.location}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trust Section */}
+              <TrustBadges />
             </div>
 
-            {/* Right Column - Actions & Details */}
+            {/* Right Column - Pricing and Contact */}
             <div className="space-y-6">
-              {/* Price & Actions Card */}
-              <Card className="border-0 shadow-xl shadow-neutral-900/5 bg-gradient-to-br from-white to-neutral-50 rounded-3xl overflow-hidden">
-                <CardContent className="p-8 space-y-6">
-                  <div className="text-center space-y-2">
-                    <div className="text-3xl font-bold text-neutral-900">
+              {/* Pricing Card */}
+              <Card className="border-neutral-200/60 shadow-sm bg-white">
+                <CardContent className="p-8">
+                  <div className="text-center mb-6">
+                    <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+                      {listing.brand} {listing.model}
+                    </h1>
+                    <p className="text-neutral-600">{listing.year}</p>
+                  </div>
+
+                  <div className="text-center mb-6">
+                    <div className="text-4xl font-bold text-red-500 mb-1">
                       {formatPrice(listing.pricePerMonthCHF)}
                     </div>
-                    <div className="text-neutral-600 font-medium">pro Monat</div>
+                    <p className="text-neutral-600">pro Monat</p>
                   </div>
 
-                  <Separator className="bg-gradient-to-r from-transparent via-neutral-200 to-transparent" />
-
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Restlaufzeit:</span>
+                  <div className="space-y-4 mb-6">
+                    <div className="flex justify-between items-center py-2 border-b border-neutral-100">
+                      <span className="text-neutral-600">Restlaufzeit</span>
                       <span className="font-semibold">{listing.remainingMonths} Monate</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Kaution:</span>
-                      <span className="font-semibold">
-                        {listing.depositCHF ? formatPrice(listing.depositCHF) : "Keine Kaution"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Kanton:</span>
-                      <span className="font-semibold">{listing.canton_code}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Erstellt:</span>
-                      <span className="font-semibold">{formatDate(listing.created_at)}</span>
-                    </div>
-                    {listing.expires_at && (
-                      <div className="flex justify-between">
-                        <span className="text-neutral-600">Läuft ab:</span>
-                        <span className="font-semibold">{formatDate(listing.expires_at)}</span>
-                      </div>
-                    )}
-                    {!listing.expires_at && (
-                      <div className="flex justify-between">
-                        <span className="text-neutral-600">Gültigk.:</span>
-                        <span className="font-semibold">Unlimitiert</span>
+                    {listing.depositCHF && (
+                      <div className="flex justify-between items-center py-2 border-b border-neutral-100">
+                        <span className="text-neutral-600">Kaution</span>
+                        <span className="font-semibold">{formatPrice(listing.depositCHF)}</span>
                       </div>
                     )}
                   </div>
-
-                  <Separator className="bg-gradient-to-r from-transparent via-neutral-200 to-transparent" />
 
                   <div className="space-y-3">
                     <Button
                       onClick={() => setShowInquiryForm(true)}
-                      className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                       size="lg"
+                      className="w-full bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all"
                     >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Anfrage senden
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      Jetzt anfragen
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full bg-transparent hover:bg-neutral-50 border-neutral-300 hover:border-red-300 hover:text-red-600 transition-all duration-200"
                       size="lg"
+                      className="w-full bg-transparent hover:bg-neutral-50 border-neutral-300"
+                      onClick={() => {
+                        const subject = encodeURIComponent(`Interesse an ${listing.brand} ${listing.model} ${listing.year}`);
+                        const body = encodeURIComponent(`Hallo,\n\nIch interessiere mich für das Fahrzeug:\n\n${listing.brand} ${listing.model} ${listing.year}\nPreis: ${formatPrice(listing.pricePerMonthCHF)}/Monat\nInserat-ID: ${listing.id}\n\nBitte kontaktieren Sie mich für weitere Informationen.\n\nFreundliche Grüße`);
+                        window.location.href = `mailto:kontakt@buyauto.ch?subject=${subject}&body=${body}`;
+                      }}
                     >
-                      <Heart className="w-4 h-4 mr-2" />
-                      Merken
+                      <Mail className="w-5 h-5 mr-2" />
+                      E-Mail senden
                     </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Trust Badges */}
-              <TrustBadges />
+              {/* Premium Badge */}
+              {listing.premium && (
+                <Card className="border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-white shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Award className="w-6 h-6 text-amber-500" />
+                      <h3 className="text-lg font-semibold text-amber-900">Premium Inserat</h3>
+                    </div>
+                    <ul className="text-sm text-amber-800 space-y-1">
+                      <li>• Geprüfte Qualität</li>
+                      <li>• Prioritäre Sichtbarkeit</li>
+                      <li>• Erweiterte Garantie</li>
+                      <li>• Schnelle Bearbeitung</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Contact Info */}
+              <Card className="border-neutral-200/60 shadow-sm bg-white">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Kontakt & Support</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-4 h-4 text-neutral-600" />
+                      <span className="text-sm text-neutral-600">+41 44 123 45 67</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-4 h-4 text-neutral-600" />
+                      <span className="text-sm text-neutral-600">kontakt@buyauto.ch</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-4 h-4 text-neutral-600" />
+                      <span className="text-sm text-neutral-600">Sicher & Vertrauenswürdig</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          {/* Details Sections */}
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Leasing Details */}
-            <Card className="border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-lg text-neutral-900">Leasingdetails</h3>
-                </div>
-                <div className="space-y-3">
-                  <DetailRow label="Monatliche Rate" value={formatPrice(listing.pricePerMonthCHF)} />
-                  <DetailRow label="Restlaufzeit" value={`${listing.remainingMonths} Monate`} />
-                  <DetailRow 
-                    label="Kaution" 
-                    value={listing.depositCHF ? formatPrice(listing.depositCHF) : "Keine Kaution"} 
-                  />
-                  <DetailRow label="Standort" value={`${listing.location}, ${listing.canton_code}`} />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Vehicle Details */}
-            <Card className="border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-                    <Gauge className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-lg text-neutral-900">Fahrzeugdaten</h3>
-                </div>
-                <div className="space-y-3">
-                  <DetailRow label="Marke" value={listing.brand} />
-                  <DetailRow label="Modell" value={listing.model} />
-                  <DetailRow label="Jahr" value={listing.year.toString()} />
-                  <DetailRow label="Kilometerstand" value={formatMileage(listing.mileageKm)} />
-                  <DetailRow label="Karosserie" value={listing.body} />
-                  <DetailRow label="Antrieb" value={listing.fuel} />
-                  <DetailRow label="Getriebe" value={listing.gearbox} />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Listing Info */}
-            <Card className="border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-                    <Settings className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-lg text-neutral-900">Inserats-Infos</h3>
-                </div>
-                <div className="space-y-3">
-                  <DetailRow label="Plan" value={getPlanLabel(listing.price_plan)} />
-                  <DetailRow label="Premium aktiv" value={listing.premium ? "Ja" : "Nein"} />
-                  <DetailRow label="Erstellt" value={formatDate(listing.created_at)} />
-                  <DetailRow 
-                    label="Ablauf" 
-                    value={listing.expires_at ? formatDate(listing.expires_at) : "Unlimitiert"} 
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Similar Listings */}
-          {similarListings.length > 0 && (
-            <SimilarListings listings={similarListings} />
-          )}
-        </main>
-
-        <Footer />
+          <div className="mt-16">
+            <SimilarListings listing={listing} />
+          </div>
+        </div>
 
         {/* Inquiry Form Modal */}
         <InquiryForm
-          listing={listing}
-          isOpen={showInquiryForm}
-          onClose={() => setShowInquiryForm(false)}
+          listingId={listing.id}
+          listingTitle={`${listing.brand} ${listing.model} ${listing.year}`}
+          open={showInquiryForm}
+          onOpenChange={setShowInquiryForm}
         />
       </div>
     </>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between items-center py-1">
-      <span className="text-neutral-600 text-sm">{label}:</span>
-      <span className="font-semibold text-sm text-neutral-900">{value}</span>
-    </div>
-  );
-}
+export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = async (context) => {
+  const { id } = context.params!;
+
+  if (!id || typeof id !== 'string') {
+    return {
+      notFound: true,
+    };
+  }
+
+  try {
+    // Use the secure published listings function - only shows published listings
+    const listing = await getPublishedListingById(id);
+    
+    if (!listing) {
+      return {
+        props: { listing: null, notFound: true },
+      };
+    }
+
+    return {
+      props: { listing },
+    };
+  } catch (error) {
+    console.error('Error in getServerSideProps:', error);
+    return {
+      props: { listing: null, notFound: true },
+    };
+  }
+};
