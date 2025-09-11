@@ -2,65 +2,72 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Crown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Crown, MapPin, Calendar, Fuel } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { searchListings, formatPrice, formatMileage } from "@/lib/buyauto/search";
+import Image from "next/image";
+import { searchListings } from "@/services/listingsService";
 import { Listing } from "@/lib/buyauto/types";
 
 export default function PremiumListings() {
   const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPremiumListings = async () => {
+    const loadPremiumListings = async () => {
       try {
-        setLoading(true);
-        // Fetch premium listings using correct query structure
-        const result = await searchListings({
-          premiumOnly: true,
-          page: 1
+        // Use secure search function with premium filter
+        const result = await searchListings({ 
+          page: 1, 
+          premiumOnly: true 
         });
-        // Take only first 6 items for homepage display
-        setListings(result.items.slice(0, 6));
+        setListings(result.items);
       } catch (error) {
-        console.error("Error fetching premium listings:", error);
-        // Fallback to empty array if search fails
-        setListings([]);
+        console.error("Error loading premium listings:", error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    fetchPremiumListings();
+    loadPremiumListings();
   }, []);
 
-  if (loading) {
-    return (
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-light text-neutral-900 mb-4 tracking-tight">
-              Premium <span className="font-semibold text-red-500">Fahrzeuge</span>
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-2xl mx-auto font-light leading-relaxed">
-              Handverlesene Fahrzeuge mit besonders attraktiven Konditionen
-            </p>
-          </div>
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('de-CH', {
+      style: 'currency',
+      currency: 'CHF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price).replace('CHF', 'CHF');
+  };
 
-          {/* Loading skeletons */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <Card key={index} className="border-neutral-200/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-3xl overflow-hidden">
-                <div className="aspect-[4/3] bg-neutral-100 animate-pulse" />
-                <CardContent className="p-6">
-                  <div className="h-4 bg-neutral-200 rounded animate-pulse mb-3" />
-                  <div className="h-3 bg-neutral-100 rounded animate-pulse mb-4 w-2/3" />
-                  <div className="flex justify-between items-end">
-                    <div className="h-6 bg-neutral-200 rounded animate-pulse w-20" />
-                    <div className="h-8 bg-neutral-100 rounded animate-pulse w-24" />
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % Math.max(1, listings.length - 2));
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + Math.max(1, listings.length - 2)) % Math.max(1, listings.length - 2));
+  };
+
+  if (isLoading) {
+    return (
+      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="w-48 h-8 bg-neutral-200 rounded animate-pulse mx-auto mb-4"></div>
+            <div className="w-96 h-6 bg-neutral-200 rounded animate-pulse mx-auto"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-0">
+                  <div className="w-full h-48 bg-neutral-200 rounded-t-lg"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="w-32 h-4 bg-neutral-200 rounded"></div>
+                    <div className="w-24 h-4 bg-neutral-200 rounded"></div>
                   </div>
                 </CardContent>
               </Card>
@@ -71,109 +78,181 @@ export default function PremiumListings() {
     );
   }
 
+  if (listings.length === 0) {
+    return (
+      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-6 py-2 mb-6">
+              <Crown className="w-5 h-5 text-amber-600" />
+              <span className="text-amber-700 font-medium">Premium Inserate</span>
+            </div>
+            <h2 className="text-3xl font-bold text-neutral-900 mb-4">
+              Derzeit keine Premium-Angebote verfügbar
+            </h2>
+            <p className="text-neutral-600 text-lg leading-relaxed max-w-2xl mx-auto">
+              Schauen Sie bald wieder vorbei für exklusive Premium-Fahrzeuge.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const visibleListings = listings.slice(currentIndex, currentIndex + 3);
+
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Swiss clean section header */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-light text-neutral-900 mb-3 tracking-tight">
-            Premium <span className="font-semibold text-red-500">Fahrzeuge</span>
+          <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-6 py-2 mb-6">
+            <Crown className="w-5 h-5 text-amber-600" />
+            <span className="text-amber-700 font-medium">Premium Inserate</span>
+          </div>
+          <h2 className="text-3xl font-bold text-neutral-900 mb-4">
+            Exklusive Premium-Fahrzeuge
           </h2>
-          <p className="text-lg text-neutral-600 max-w-2xl mx-auto font-light leading-relaxed">
-            Handverlesene Fahrzeuge mit besonders attraktiven Konditionen
+          <p className="text-neutral-600 text-lg leading-relaxed max-w-2xl mx-auto">
+            Entdecken Sie unsere handverlesenen Premium-Angebote mit besonderen Vorteilen und erstklassigem Service.
           </p>
         </div>
 
-        {/* Swiss grid layout with premium cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {listings.map((listing) => (
-            <Card 
-              key={listing.id} 
-              className={`group border-neutral-200/60 shadow-sm hover:shadow-xl transition-all duration-500 rounded-3xl overflow-hidden hover:-translate-y-1 ${
-                listing.premium ? 'ring-1 ring-red-100 shadow-lg shadow-red-500/5 hover:shadow-red-500/10' : ''
-              }`}
-            >
-              {/* Image with premium badge overlay */}
-              <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
-                {listing.imageUrl ? (
-                  <img 
-                    src={listing.imageUrl} 
-                    alt={`${listing.brand} ${listing.model}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-neutral-200 via-neutral-100 to-neutral-50 flex items-center justify-center">
-                    <div className="text-neutral-400 text-lg font-light">
-                      {listing.brand} {listing.model}
+        <div className="relative">
+          {/* Navigation Arrows */}
+          {listings.length > 3 && (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white/90 backdrop-blur-sm border-neutral-200 hover:bg-white shadow-lg"
+                onClick={prevSlide}
+                disabled={currentIndex === 0}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white/90 backdrop-blur-sm border-neutral-200 hover:bg-white shadow-lg"
+                onClick={nextSlide}
+                disabled={currentIndex >= listings.length - 3}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            </>
+          )}
+
+          {/* Listings Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {visibleListings.map((listing) => (
+              <Link key={listing.id} href={`/fahrzeug/${listing.id}`}>
+                <Card className="group cursor-pointer border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-500 hover:-translate-y-2 ring-2 ring-amber-200/20">
+                  <CardContent className="p-0 relative overflow-hidden">
+                    {/* Premium Badge */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-lg">
+                        <Crown className="w-3 h-3 mr-1" />
+                        Premium
+                      </Badge>
                     </div>
-                  </div>
-                )}
-                
-                {/* Premium badge with subtle glow */}
-                {listing.premium && (
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-900 border-0 shadow-lg shadow-amber-500/30 font-medium px-3 py-1">
-                      <Crown className="h-3 w-3 mr-1" />
-                      Premium
-                    </Badge>
-                  </div>
-                )}
-              </div>
+                    
+                    {/* Image */}
+                    <div className="relative w-full h-56 overflow-hidden rounded-t-lg">
+                      {listing.imageUrl ? (
+                        <Image
+                          src={listing.imageUrl}
+                          alt={`${listing.brand} ${listing.model}`}
+                          fill
+                          className="object-cover group-hover:scale-110 transition-transform duration-700"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
+                          <span className="text-neutral-400 font-medium">
+                            {listing.brand} {listing.model}
+                          </span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-6 bg-gradient-to-br from-white to-amber-50/20">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-bold text-lg text-neutral-900 group-hover:text-amber-700 transition-colors">
+                            {listing.brand} {listing.model}
+                          </h3>
+                          <p className="text-neutral-600 font-medium">{listing.year}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-amber-600">
+                            {formatPrice(listing.pricePerMonthCHF)}
+                          </div>
+                          <div className="text-sm text-neutral-500">/ Monat</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm text-neutral-600 mb-4">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>{listing.location}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          <span>{listing.remainingMonths}M</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Fuel className="w-4 h-4" />
+                          <span>{listing.fuel}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-3 border-t border-amber-200/50">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-neutral-500">
+                            {(listing.mileageKm || 0).toLocaleString('de-CH')} km
+                          </div>
+                          <div className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                            Premium Vorteile
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
 
-              <CardContent className="p-6">
-                {/* Vehicle title */}
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2 group-hover:text-red-600 transition-colors duration-200">
-                  {listing.brand} {listing.model} · {listing.year}
-                </h3>
-
-                {/* Specification pills */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {listing.remainingMonths} Mon.
-                  </span>
-                  <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {formatMileage(listing.mileageKm)}
-                  </span>
-                  <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {listing.fuel}
-                  </span>
-                  <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
-                    {listing.gearbox}
-                  </span>
-                </div>
-
-                {/* Price and CTA */}
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="text-2xl font-bold text-red-500 mb-1">
-                      {formatPrice(listing.pricePerMonthCHF)} / Monat
-                    </p>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-transparent hover:bg-transparent border-neutral-300 text-neutral-700 hover:border-red-500 hover:text-red-500 transition-all duration-200 font-medium"
-                  >
-                    Details ansehen
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {/* Dots Indicator */}
+          {listings.length > 3 && (
+            <div className="flex justify-center mt-8 gap-2">
+              {Array.from({ length: Math.ceil(listings.length / 3) }).map((_, i) => (
+                <button
+                  key={i}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    Math.floor(currentIndex / 3) === i 
+                      ? 'bg-amber-500 w-6' 
+                      : 'bg-neutral-300 hover:bg-neutral-400'
+                  }`}
+                  onClick={() => setCurrentIndex(i * 3)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* View all button - Swiss minimal style */}
-        <div className="text-center">
-          <Link href="/suche">
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="bg-transparent border-neutral-300 text-neutral-700 hover:bg-neutral-50 hover:border-red-500 hover:text-red-500 px-8 font-medium transition-all duration-200 rounded-2xl"
-            >
-              Alle Fahrzeuge ansehen
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
+        <div className="text-center mt-12">
+          <Button
+            asChild
+            size="lg"
+            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl transition-all"
+          >
+            <Link href="/suche?premium=true">
+              Alle Premium-Angebote ansehen
+            </Link>
+          </Button>
         </div>
       </div>
     </section>
