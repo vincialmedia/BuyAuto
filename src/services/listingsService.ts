@@ -190,6 +190,8 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
     if (query.priceMin) queryBuilder = queryBuilder.gte('price_per_month_chf', query.priceMin);
     if (query.priceMax) queryBuilder = queryBuilder.lte('price_per_month_chf', query.priceMax);
     if (query.kmMax) queryBuilder = queryBuilder.lte('mileage_km', query.kmMax);
+    if (query.monthsMin) queryBuilder = queryBuilder.gte('remaining_months', query.monthsMin);
+    if (query.monthsMax) queryBuilder = queryBuilder.lte('remaining_months', query.monthsMax);
     if (query.canton && query.canton.length > 0) queryBuilder = queryBuilder.in('canton_code', query.canton);
     if (query.fuel && query.fuel.length > 0) queryBuilder = queryBuilder.in('fuel', query.fuel);
     if (query.gearbox && query.gearbox.length > 0) queryBuilder = queryBuilder.in('gearbox', query.gearbox);

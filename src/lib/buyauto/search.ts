@@ -9,6 +9,8 @@ export type SearchQuery = {
   priceMin?: number;
   priceMax?: number;
   kmMax?: number;
+  monthsMin?: number;
+  monthsMax?: number;
   canton?: string[];
   fuel?: string[];
   gearbox?: string[];
