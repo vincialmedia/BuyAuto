@@ -1,8 +1,8 @@
-
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
-import { searchListings, type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
+import { searchListings } from "@/services/listingsService";
+import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import Header from "@/components/buyauto/Header";
 import { debounce } from "@/lib/utils";
 import DynamicFilterBar from "@/components/buyauto/search/DynamicFilterBar";

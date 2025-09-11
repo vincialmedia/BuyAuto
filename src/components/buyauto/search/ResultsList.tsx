@@ -1,4 +1,5 @@
-import { SearchQuery, SearchResult, formatPrice, formatMileage } from "@/lib/buyauto/search";
+import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
+import { formatPrice, formatMileage } from "@/lib/buyauto/search";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
