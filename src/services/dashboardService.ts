@@ -33,259 +33,188 @@ export interface DashboardStats {
   total: number;
 }
 
-export const dashboardService = {
-  /**
-   * Get listings for the current user only.
-   * RLS policy "owner_select" ensures users can only see their own listings.
-   */
-  async getUserListings(): Promise<DashboardListing[]> {
-    try {
-      const { data, error } = await supabase
-        .from('listings')
-        .select(`
-          id, brand, model, year, price_per_month_chf, remaining_months,
-          location, premium, is_premium, premium_until, expires_at,
-          status, created_at, duration_days, price_plan, cover_image_url,
-          images, cover_image_index, moderation_note, created_by, user_id
-        `)
-        .order('created_at', { ascending: false });
+export async function getUserListings(): Promise<DashboardListing[]> {
+  try {
+    // Query the full listings table - RLS ensures users only see their own listings
+    const { data, error } = await supabase
+      .from('listings')
+      .select(`
+        id, brand, model, title, year, price_per_month_chf, remaining_months,
+        location, canton_code, mileage_km, fuel, gearbox, body, premium, 
+        cover_image_url, images, cover_image_index, deposit_chf, created_at,
+        status, expires_at, duration_days, price_plan, premium_until,
+        created_by, user_id, moderation_note, updated_at
+      `)
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching user listings:', error);
-        throw new Error('Failed to fetch your listings');
-      }
-
-      // RLS ensures this data only contains the current user's listings
-      return data || [];
-    } catch (error) {
-      console.error('Get user listings error:', error);
-      throw error;
+    if (error) {
+      console.error('Dashboard getUserListings error:', error);
+      return [];
     }
-  },
 
-  /**
-   * Calculate dashboard statistics from user's own listings only.
-   */
-  async getDashboardStats(): Promise<DashboardStats> {
-    try {
-      const listings = await this.getUserListings();
-      const now = new Date();
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      brand: row.brand,
+      model: row.model,
+      title: row.title,
+      year: row.year,
+      price_per_month_chf: row.price_per_month_chf,
+      remaining_months: row.remaining_months,
+      location: row.location,
+      canton_code: row.canton_code,
+      mileage_km: row.mileage_km,
+      fuel: row.fuel,
+      gearbox: row.gearbox,
+      body: row.body,
+      premium: row.premium || false,
+      is_premium: row.premium || false, // Backward compatibility
+      premium_until: row.premium_until,
+      cover_image_url: row.cover_image_url,
+      images: row.images || [],
+      cover_image_index: row.cover_image_index || 0,
+      deposit_chf: row.deposit_chf,
+      status: row.status as DashboardListingStatus,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      expires_at: row.expires_at,
+      duration_days: row.duration_days,
+      price_plan: row.price_plan,
+      created_by: row.created_by,
+      user_id: row.user_id || row.created_by, // Handle both fields
+      moderation_note: row.moderation_note
+    }));
 
-      const stats = listings.reduce((acc, listing) => {
-        acc.total++;
-        
+  } catch (error) {
+    console.error('Dashboard getUserListings unexpected error:', error);
+    return [];
+  }
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  try {
+    // Query the full listings table - RLS ensures users only see their own listings
+    const { data, error } = await supabase
+      .from('listings')
+      .select('status, expires_at')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Dashboard stats error:', error);
+      return { active: 0, pending: 0, expired: 0, rejected: 0, total: 0 };
+    }
+
+    const now = new Date();
+    const stats = {
+      active: 0,
+      pending: 0,
+      expired: 0,
+      rejected: 0,
+      total: data.length
+    };
+
+    data.forEach((listing) => {
+      // Check if listing is expired based on expires_at date
+      if (listing.expires_at && new Date(listing.expires_at) <= now) {
+        stats.expired += 1;
+      } else {
         switch (listing.status) {
-          case 'pending':
-            acc.pending++;
-            break;
           case 'published':
-            // Check if listing has expired
-            if (!listing.expires_at || new Date(listing.expires_at) > now) {
-              acc.active++;
-            } else {
-              acc.expired++;
-            }
+            stats.active += 1;
+            break;
+          case 'pending':
+            stats.pending += 1;
             break;
           case 'rejected':
-            acc.rejected++;
+            stats.rejected += 1;
             break;
           case 'expired':
-            acc.expired++;
+            stats.expired += 1;
             break;
         }
-
-        return acc;
-      }, { active: 0, pending: 0, rejected: 0, expired: 0, total: 0 });
-
-      return stats;
-    } catch (error) {
-      console.error('Get dashboard stats error:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Delete a user's listing.
-   * RLS policy "owner_delete" ensures users can only delete their own listings.
-   */
-  async deleteListing(listingId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('listings')
-        .delete()
-        .eq('id', listingId);
-
-      if (error) {
-        console.error('Error deleting listing:', error);
-        throw new Error('Failed to delete listing');
       }
-    } catch (error) {
-      console.error('Delete listing error:', error);
-      throw error;
-    }
-  },
+    });
 
-  /**
-   * Update a user's listing status.
-   * RLS policy "owner_update" ensures users can only update their own listings.
-   */
-  async updateListingStatus(listingId: string, status: "pending" | "published" | "rejected" | "expired"): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('listings')
-        .update({ 
-          status, 
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', listingId);
+    return stats;
 
-      if (error) {
-        console.error('Error updating listing status:', error);
-        throw new Error('Failed to update listing status');
-      }
-    } catch (error) {
-      console.error('Update listing status error:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Upgrade a user's listing to premium.
-   * RLS policy "owner_update" ensures users can only upgrade their own listings.
-   */
-  async upgradeToPremium(listingId: string): Promise<void> {
-    try {
-      const premiumUntil = new Date();
-      premiumUntil.setDate(premiumUntil.getDate() + 30); // 30 days premium
-
-      const { error } = await supabase
-        .from('listings')
-        .update({ 
-          premium: true,
-          is_premium: true,
-          premium_until: premiumUntil.toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', listingId);
-
-      if (error) {
-        console.error('Error upgrading listing to premium:', error);
-        throw new Error('Failed to upgrade listing to premium');
-      }
-    } catch (error) {
-      console.error('Upgrade to premium error:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Extend a user's listing duration.
-   * RLS policy "owner_update" ensures users can only extend their own listings.
-   */
-  async extendListing(listingId: string, additionalDays: number = 90): Promise<void> {
-    try {
-      // First get the current listing data (RLS ensures user can only access their own)
-      const { data: listing, error: fetchError } = await supabase
-        .from('listings')
-        .select('expires_at, duration_days, status')
-        .eq('id', listingId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching listing for extension:', fetchError);
-        throw new Error('Listing not found or access denied');
-      }
-
-      if (!listing) {
-        throw new Error('Listing not found');
-      }
-
-      // Calculate new expiry date
-      const currentExpiry = listing.expires_at ? new Date(listing.expires_at) : new Date();
-      const newExpiry = new Date(currentExpiry);
-      newExpiry.setDate(newExpiry.getDate() + additionalDays);
-
-      const newDurationDays = (listing.duration_days || 30) + additionalDays;
-
-      // Update the listing
-      const { error } = await supabase
-        .from('listings')
-        .update({ 
-          expires_at: newExpiry.toISOString(),
-          duration_days: newDurationDays,
-          status: listing.status === 'expired' ? 'published' : listing.status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', listingId);
-
-      if (error) {
-        console.error('Error extending listing:', error);
-        throw new Error('Failed to extend listing');
-      }
-    } catch (error) {
-      console.error('Extend listing error:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Get a specific listing by ID for the current user.
-   * RLS policy "owner_select" ensures users can only access their own listings.
-   */
-  async getUserListingById(listingId: string): Promise<DashboardListing | null> {
-    try {
-      const { data, error } = await supabase
-        .from('listings')
-        .select(`
-          id, brand, model, year, price_per_month_chf, remaining_months,
-          location, premium, is_premium, premium_until, expires_at,
-          status, created_at, duration_days, price_plan, cover_image_url,
-          images, cover_image_index, moderation_note, created_by, user_id
-        `)
-        .eq('id', listingId)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No rows returned - either doesn't exist or user doesn't own it
-          return null;
-        }
-        console.error('Error fetching user listing by ID:', error);
-        throw new Error('Failed to fetch listing');
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Get user listing by ID error:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Resubmit a rejected listing (change status from rejected to pending).
-   * RLS policy "owner_update" ensures users can only resubmit their own listings.
-   */
-  async resubmitListing(listingId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('listings')
-        .update({ 
-          status: 'pending',
-          moderation_note: null, // Clear previous moderation note
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', listingId)
-        .eq('status', 'rejected'); // Only allow resubmission of rejected listings
-
-      if (error) {
-        console.error('Error resubmitting listing:', error);
-        throw new Error('Failed to resubmit listing');
-      }
-    } catch (error) {
-      console.error('Resubmit listing error:', error);
-      throw error;
-    }
+  } catch (error) {
+    console.error('Dashboard stats unexpected error:', error);
+    return { active: 0, pending: 0, expired: 0, rejected: 0, total: 0 };
   }
-};
+}
 
-export default dashboardService;
+export async function deleteListing(listingId: string): Promise<boolean> {
+  try {
+    // RLS ensures users can only delete their own listings
+    const { error } = await supabase
+      .from('listings')
+      .delete()
+      .eq('id', listingId);
+
+    if (error) {
+      console.error('Delete listing error:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Delete listing unexpected error:', error);
+    return false;
+  }
+}
+
+export async function upgradeToPremium(listingId: string): Promise<boolean> {
+  try {
+    // Set premium until 30 days from now
+    const premiumUntil = new Date();
+    premiumUntil.setDate(premiumUntil.getDate() + 30);
+
+    // RLS ensures users can only update their own listings
+    const { error } = await supabase
+      .from('listings')
+      .update({
+        premium: true,
+        is_premium: true,
+        premium_until: premiumUntil.toISOString(),
+        price_plan: 'premium30'
+      })
+      .eq('id', listingId);
+
+    if (error) {
+      console.error('Upgrade to premium error:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Upgrade to premium unexpected error:', error);
+    return false;
+  }
+}
+
+export async function extendListing(listingId: string, days: number): Promise<boolean> {
+  try {
+    // Extend the expiry date by the specified number of days
+    const newExpiryDate = new Date();
+    newExpiryDate.setDate(newExpiryDate.getDate() + days);
+
+    // RLS ensures users can only update their own listings
+    const { error } = await supabase
+      .from('listings')
+      .update({
+        expires_at: newExpiryDate.toISOString(),
+        duration_days: days,
+        status: 'published' // Reactivate if expired
+      })
+      .eq('id', listingId);
+
+    if (error) {
+      console.error('Extend listing error:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Extend listing unexpected error:', error);
+    return false;
+  }
+}
