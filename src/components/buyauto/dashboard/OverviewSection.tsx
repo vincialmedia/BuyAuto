@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, ArrowRight, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import dashboardService, { DashboardStats } from "@/services/dashboardService";
+import { getDashboardStats, DashboardStats } from "@/services/dashboardService";
 import StatsCards from "./StatsCards";
 
 export default function OverviewSection() {
@@ -16,7 +15,7 @@ export default function OverviewSection() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const dashboardStats = await dashboardService.getDashboardStats();
+        const dashboardStats = await getDashboardStats();
         setStats(dashboardStats);
       } catch (error) {
         console.error('Error loading dashboard stats:', error);

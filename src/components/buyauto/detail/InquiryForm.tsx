@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { X, Send, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,15 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { submitInquiry } from "@/services/inquiryService";
-import { ListingDetail, InquiryFormData } from "@/lib/buyauto/types";
+import { InquiryFormData } from "@/lib/buyauto/types";
 
 interface InquiryFormProps {
-  listing: ListingDetail;
-  isOpen: boolean;
-  onClose: () => void;
+  listingId: string;
+  listingTitle: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export default function InquiryForm({ listing, isOpen, onClose }: InquiryFormProps) {
+export default function InquiryForm({ listingId, listingTitle, open, onOpenChange }: InquiryFormProps) {
   const [formData, setFormData] = useState<InquiryFormData>({
     name: "",
     email: "",
@@ -60,7 +60,7 @@ export default function InquiryForm({ listing, isOpen, onClose }: InquiryFormPro
     setIsSubmitting(true);
 
     try {
-      const success = await submitInquiry(formData, listing.id);
+      const success = await submitInquiry(formData, listingId);
       
       if (success) {
         setSubmitted(true);
@@ -69,7 +69,7 @@ export default function InquiryForm({ listing, isOpen, onClose }: InquiryFormPro
           setSubmitted(false);
           setFormData({ name: "", email: "", phone: "", message: "" });
           setErrors({});
-          onClose();
+          onOpenChange(false);
         }, 3000);
       } else {
         alert("Es gab einen Fehler beim Senden Ihrer Anfrage. Bitte versuchen Sie es später erneut.");
@@ -95,13 +95,13 @@ export default function InquiryForm({ listing, isOpen, onClose }: InquiryFormPro
       setSubmitted(false);
       setFormData({ name: "", email: "", phone: "", message: "" });
       setErrors({});
-      onClose();
+      onOpenChange(false);
     }
   };
 
   if (submitted) {
     return (
-      <Dialog open={isOpen} onOpenChange={handleClose}>
+      <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
           <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-green-50 rounded-3xl overflow-hidden">
             <CardContent className="p-8 text-center space-y-6">
@@ -125,7 +125,7 @@ export default function InquiryForm({ listing, isOpen, onClose }: InquiryFormPro
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-0 bg-transparent shadow-none">
         <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-neutral-50 rounded-3xl overflow-hidden">
           <DialogHeader className="p-8 pb-0">
@@ -150,10 +150,10 @@ export default function InquiryForm({ listing, isOpen, onClose }: InquiryFormPro
                 </div>
                 <div>
                   <h4 className="font-semibold text-neutral-900">
-                    {listing.brand} {listing.model} {listing.year}
+                    {listingTitle}
                   </h4>
                   <p className="text-sm text-neutral-600">
-                    CHF {listing.pricePerMonthCHF.toLocaleString("de-CH")} / Monat
+                    Leasing-Übernahme anfragen
                   </p>
                 </div>
               </div>

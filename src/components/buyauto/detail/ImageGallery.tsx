@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
@@ -7,15 +6,18 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface ImageGalleryProps {
   images: string[];
-  alt: string;
+  brand?: string;
+  model?: string;
+  premium?: boolean;
 }
 
-export default function ImageGallery({ images, alt }: ImageGalleryProps) {
+export default function ImageGallery({ images, brand = "", model = "", premium = false }: ImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const validImages = images.filter(Boolean);
+  const alt = `${brand} ${model}`;
   
   if (validImages.length === 0) {
     return (

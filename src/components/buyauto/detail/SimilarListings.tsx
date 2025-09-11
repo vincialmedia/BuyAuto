@@ -1,17 +1,62 @@
-
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Listing } from "@/lib/buyauto/types";
+import { Listing, ListingDetail } from "@/lib/buyauto/types";
+import { getSimilarListings } from "@/services/listingsService";
 
 interface SimilarListingsProps {
-  listings: Listing[];
+  listing: ListingDetail;
 }
 
-export default function SimilarListings({ listings }: SimilarListingsProps) {
+export default function SimilarListings({ listing }: SimilarListingsProps) {
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSimilarListings = async () => {
+      try {
+        const similarListings = await getSimilarListings(listing, 6);
+        setListings(similarListings);
+      } catch (error) {
+        console.error("Error loading similar listings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSimilarListings();
+  }, [listing]);
+
+  if (isLoading) {
+    return (
+      <section className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div className="w-48 h-8 bg-neutral-200 rounded animate-pulse"></div>
+          <div className="w-32 h-10 bg-neutral-200 rounded animate-pulse"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <div className="aspect-video bg-neutral-200 rounded-t-2xl"></div>
+              <CardContent className="p-4 space-y-3">
+                <div className="w-3/4 h-5 bg-neutral-200 rounded"></div>
+                <div className="w-1/2 h-4 bg-neutral-200 rounded"></div>
+                <div className="flex justify-between">
+                  <div className="w-20 h-5 bg-neutral-200 rounded"></div>
+                  <div className="w-16 h-4 bg-neutral-200 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   if (listings.length === 0) {
     return null;
   }
@@ -36,16 +81,16 @@ export default function SimilarListings({ listings }: SimilarListingsProps) {
       {/* Mobile: Horizontal scroll */}
       <div className="md:hidden">
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory">
-          {listings.map((listing) => (
-            <SimilarListingCardMobile key={listing.id} listing={listing} />
+          {listings.map((listingItem) => (
+            <SimilarListingCardMobile key={listingItem.id} listing={listingItem} />
           ))}
         </div>
       </div>
 
       {/* Desktop: Grid */}
       <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
-        {listings.slice(0, 6).map((listing) => (
-          <SimilarListingCard key={listing.id} listing={listing} />
+        {listings.slice(0, 6).map((listingItem) => (
+          <SimilarListingCard key={listingItem.id} listing={listingItem} />
         ))}
       </div>
     </section>

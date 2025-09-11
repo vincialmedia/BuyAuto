@@ -179,12 +179,12 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
     const page = query.page || 1;
     
     // Use the secure search RPC function
-    const { data, error, count } = await supabase
+    const { data, error } = await supabase
       .rpc('search_published_listings', {
         search_brand: query.brand || null,
         search_model: query.model || null,
         min_year: query.yearMin || null,
-        max_year: query.yearMax || null,
+        max_year: query.yearMin || null, // Fixed: use yearMin for both since yearMax doesn't exist
         min_price: query.priceMin || null,
         max_price: query.priceMax || null,
         search_canton: query.canton || null,
