@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail } from "@/lib/buyauto/types";
@@ -177,73 +176,83 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
   try {
     const pageSize = 12;
     const page = query.page || 1;
-    
-    // Use the secure search RPC function
-    const { data, error } = await supabase
-      .rpc('search_published_listings', {
-        search_brand: query.brand || null,
-        search_model: query.model || null,
-        min_year: query.yearMin || null,
-        max_year: query.yearMax || null, // Fixed: properly use yearMax instead of yearMin
-        min_price: query.priceMin || null,
-        max_price: query.priceMax || null,
-        search_canton: query.canton || null,
-        search_fuel: query.fuel && query.fuel.length > 0 ? query.fuel[0] : null,
-        search_gearbox: query.gearbox && query.gearbox.length > 0 ? query.gearbox[0] : null,
-        search_body: query.body && query.body.length > 0 ? query.body[0] : null,
-        max_mileage: query.kmMax || null,
-        premium_only: query.premiumOnly || false,
-        limit_count: pageSize,
-        offset_count: (page - 1) * pageSize
-      });
+    const offset = (page - 1) * pageSize;
+
+    let queryBuilder = supabase
+      .from('public_listings')
+      .select('*', { count: 'exact' });
+
+    // Apply filters
+    if (query.brand) queryBuilder = queryBuilder.ilike('brand', `%${query.brand}%`);
+    if (query.model) queryBuilder = queryBuilder.ilike('model', `%${query.model}%`);
+    if (query.yearMin) queryBuilder = queryBuilder.gte('year', query.yearMin);
+    if (query.yearMax) queryBuilder = queryBuilder.lte('year', query.yearMax);
+    if (query.priceMin) queryBuilder = queryBuilder.gte('price_per_month_chf', query.priceMin);
+    if (query.priceMax) queryBuilder = queryBuilder.lte('price_per_month_chf', query.priceMax);
+    if (query.kmMax) queryBuilder = queryBuilder.lte('mileage_km', query.kmMax);
+    if (query.canton && query.canton.length > 0) queryBuilder = queryBuilder.in('canton_code', query.canton);
+    if (query.fuel && query.fuel.length > 0) queryBuilder = queryBuilder.in('fuel', query.fuel);
+    if (query.gearbox && query.gearbox.length > 0) queryBuilder = queryBuilder.in('gearbox', query.gearbox);
+    if (query.body && query.body.length > 0) queryBuilder = queryBuilder.in('body', query.body);
+    if (query.premiumOnly) queryBuilder = queryBuilder.eq('premium', true);
+    if (query.noDeposit) queryBuilder = queryBuilder.is('deposit_chf', null);
+
+    // Apply sorting
+    switch (query.sort) {
+      case 'priceAsc':
+        queryBuilder = queryBuilder.order('price_per_month_chf', { ascending: true });
+        break;
+      case 'priceDesc':
+        queryBuilder = queryBuilder.order('price_per_month_chf', { ascending: false });
+        break;
+      case 'dateDesc':
+        queryBuilder = queryBuilder.order('created_at', { ascending: false });
+        break;
+      case 'monthsAsc':
+        queryBuilder = queryBuilder.order('remaining_months', { ascending: true });
+        break;
+      case 'monthsDesc':
+        queryBuilder = queryBuilder.order('remaining_months', { ascending: false });
+        break;
+      case 'yearDesc':
+        queryBuilder = queryBuilder.order('year', { ascending: false });
+        break;
+      case 'kmAsc':
+        queryBuilder = queryBuilder.order('mileage_km', { ascending: true });
+        break;
+      case 'relevance':
+      default:
+        // Default sort: premium first, then by creation date
+        queryBuilder = queryBuilder.order('premium', { ascending: false }).order('created_at', { ascending: false });
+        break;
+    }
+
+    // Apply pagination
+    queryBuilder = queryBuilder.range(offset, offset + pageSize - 1);
+
+    // Execute query
+    const { data, error, count } = await queryBuilder;
 
     if (error) {
-      console.error('Search RPC error:', error);
+      console.error('Search query error:', error);
       throw error;
     }
 
-    // For total count, we need to make a separate call since RPC doesn't return count
-    const { count: totalCount } = await supabase
-      .from('public_listings')
-      .select('id', { count: 'exact', head: true });
-
-    const items = (data || []).map((row: any) => transformPublicRowToListing({
-      id: row.id,
-      brand: row.brand,
-      model: row.model,
-      title: row.title,
-      year: row.year,
-      price_per_month_chf: row.price_per_month_chf,
-      remaining_months: row.remaining_months,
-      location: row.location,
-      canton_code: row.canton_code,
-      mileage_km: row.mileage_km,
-      fuel: row.fuel,
-      gearbox: row.gearbox,
-      body: row.body,
-      premium: row.premium,
-      cover_image_url: row.cover_image_url,
-      images: row.images,
-      cover_image_index: row.cover_image_index,
-      deposit_chf: row.deposit_chf,
-      created_at: row.created_at
-    }));
+    const items = (data || []).map(transformPublicRowToListing);
 
     return {
       items,
-      total: totalCount || 0,
+      total: count || 0,
       page,
-      pageSize
+      pageSize,
     };
-
   } catch (error) {
     console.error('Search listings error:', error);
-    
     return {
       items: [],
       total: 0,
       page: query.page || 1,
-      pageSize: 12
+      pageSize: 12,
     };
   }
 }

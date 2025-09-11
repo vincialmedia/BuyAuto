@@ -8,17 +8,15 @@ export type SearchQuery = {
   yearMax?: number;
   priceMin?: number;
   priceMax?: number;
-  monthsMin?: number;
-  monthsMax?: number;
-  body?: ("Limousine" | "Kombi" | "SUV" | "Cabrio")[];
-  fuel?: ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[];
-  gearbox?: ("Automatik" | "Manuell")[];
   kmMax?: number;
   canton?: string[];
-  noDeposit?: boolean;
-  premiumOnly?: boolean;
+  fuel?: string[];
+  gearbox?: string[];
+  body?: string[];
+  sort?: "relevance" | "priceAsc" | "priceDesc" | "dateDesc" | "monthsAsc" | "monthsDesc" | "yearDesc" | "kmAsc";
   page?: number;
-  sort?: "relevance" | "priceAsc" | "priceDesc" | "monthsAsc" | "monthsDesc" | "yearDesc" | "kmAsc";
+  premiumOnly?: boolean;
+  noDeposit?: boolean;
 };
 
 export type SearchResult = {
@@ -141,10 +139,6 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
     // Price filters
     if (query.priceMin && listing.pricePerMonthCHF < query.priceMin) return false;
     if (query.priceMax && listing.pricePerMonthCHF > query.priceMax) return false;
-    
-    // Remaining months filters
-    if (query.monthsMin && listing.remainingMonths < query.monthsMin) return false;
-    if (query.monthsMax && listing.remainingMonths > query.monthsMax) return false;
     
     // Body type filter
     if (query.body && query.body.length > 0 && !query.body.includes(listing.body)) return false;
