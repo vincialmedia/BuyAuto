@@ -114,7 +114,7 @@ function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
     image_urls: [], // Extract from images jsonb if needed
-    status: (row.status as "published" | "pending" | "rejected" | "expired") || "published",
+    status: row.status as "pending" | "published" | "rejected" | "expired",
     created_at: row.created_at,
     expires_at: row.expires_at,
     duration_days: row.duration_days,

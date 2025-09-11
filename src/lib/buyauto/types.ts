@@ -48,7 +48,7 @@ export interface ListingDetail extends Listing {
   canton_code?: string;
   cover_image_url?: string;
   image_urls: string[];
-  status: "published" | "draft" | "expired";
+  status: "pending" | "published" | "rejected" | "expired";
   created_at: string;
   expires_at?: string;
   duration_days?: number;

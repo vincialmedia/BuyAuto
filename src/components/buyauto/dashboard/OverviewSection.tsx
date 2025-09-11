@@ -9,7 +9,7 @@ import dashboardService, { DashboardStats } from "@/services/dashboardService";
 import StatsCards from "./StatsCards";
 
 export default function OverviewSection() {
-  const [stats, setStats] = useState<DashboardStats>({ active: 0, pending: 0, expired: 0, total: 0 });
+  const [stats, setStats] = useState<DashboardStats>({ active: 0, pending: 0, expired: 0, rejected: 0, total: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
