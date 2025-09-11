@@ -179,15 +179,15 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
     const page = query.page || 1;
     
     // Use the secure search RPC function
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .rpc('search_published_listings', {
         search_brand: query.brand || null,
         search_model: query.model || null,
         min_year: query.yearMin || null,
-        max_year: null, // Add if needed
+        max_year: query.yearMax || null,
         min_price: query.priceMin || null,
         max_price: query.priceMax || null,
-        search_canton: null, // Add canton filter if needed
+        search_canton: query.canton || null,
         search_fuel: query.fuel && query.fuel.length > 0 ? query.fuel[0] : null,
         search_gearbox: query.gearbox && query.gearbox.length > 0 ? query.gearbox[0] : null,
         search_body: query.body && query.body.length > 0 ? query.body[0] : null,
@@ -202,16 +202,36 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
       throw error;
     }
 
-    // Get total count with a separate query for simplicity
-    const { count } = await supabase
+    // For total count, we need to make a separate call since RPC doesn't return count
+    const { count: totalCount } = await supabase
       .from('public_listings')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
 
-    const items = (data || []).map(transformPublicRowToListing);
+    const items = (data || []).map((row: any) => transformPublicRowToListing({
+      id: row.id,
+      brand: row.brand,
+      model: row.model,
+      title: row.title,
+      year: row.year,
+      price_per_month_chf: row.price_per_month_chf,
+      remaining_months: row.remaining_months,
+      location: row.location,
+      canton_code: row.canton_code,
+      mileage_km: row.mileage_km,
+      fuel: row.fuel,
+      gearbox: row.gearbox,
+      body: row.body,
+      premium: row.premium,
+      cover_image_url: row.cover_image_url,
+      images: row.images,
+      cover_image_index: row.cover_image_index,
+      deposit_chf: row.deposit_chf,
+      created_at: row.created_at
+    }));
 
     return {
       items,
-      total: count || 0,
+      total: totalCount || 0,
       page,
       pageSize
     };
