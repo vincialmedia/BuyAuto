@@ -2,7 +2,7 @@
 import { cn } from "@/lib/utils";
 
 interface StatusBadgeProps {
-  status: "pending" | "published" | "expired";
+  status: "pending" | "published" | "rejected" | "expired";
   expiresAt?: string | null;
   className?: string;
 }
@@ -22,6 +22,8 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
         return { text: "Ausstehend", variant: "pending" as const };
       case "published":
         return { text: "Veröffentlicht", variant: "published" as const };
+      case "rejected":
+        return { text: "Abgelehnt", variant: "rejected" as const };
       case "expired":
         return { text: "Abgelaufen", variant: "expired" as const };
       default:
@@ -34,6 +36,7 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
   const variants = {
     pending: "bg-neutral-100 text-neutral-600 border-neutral-200",
     published: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    rejected: "bg-red-50 text-red-600 border-red-200",
     expired: "bg-red-50 text-red-600 border-red-200"
   };
 
