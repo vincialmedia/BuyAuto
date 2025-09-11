@@ -5,6 +5,7 @@ export type SearchQuery = {
   brand?: string;
   model?: string;
   yearMin?: number;
+  yearMax?: number;
   priceMin?: number;
   priceMax?: number;
   monthsMin?: number;

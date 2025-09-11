@@ -184,7 +184,7 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
         search_brand: query.brand || null,
         search_model: query.model || null,
         min_year: query.yearMin || null,
-        max_year: query.yearMin || null, // Fixed: use yearMin for both since yearMax doesn't exist
+        max_year: query.yearMax || null, // Fixed: properly use yearMax instead of yearMin
         min_price: query.priceMin || null,
         max_price: query.priceMax || null,
         search_canton: query.canton || null,
