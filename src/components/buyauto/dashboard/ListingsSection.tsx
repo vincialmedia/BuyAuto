@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
@@ -34,7 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
-import dashboardService, { DashboardListing } from "@/services/dashboardService";
+import { getUserListings, deleteListing, upgradeToPremium, extendListing, DashboardListing } from "@/services/dashboardService";
 import StatusBadge from "./StatusBadge";
 
 export default function ListingsSection() {
@@ -49,7 +48,7 @@ export default function ListingsSection() {
   useEffect(() => {
     const loadListings = async () => {
       try {
-        const userListings = await dashboardService.getUserListings();
+        const userListings = await getUserListings();
         setListings(userListings);
       } catch (error) {
         console.error('Error loading listings:', error);
@@ -70,7 +69,7 @@ export default function ListingsSection() {
   const handleDelete = async (listingId: string) => {
     try {
       setActionLoading(listingId);
-      await dashboardService.deleteListing(listingId);
+      await deleteListing(listingId);
       setListings(listings.filter(l => l.id !== listingId));
       setDeleteDialogOpen(false);
       setListingToDelete(null);
@@ -87,7 +86,7 @@ export default function ListingsSection() {
       setActionLoading(listingId);
       // In a real app, this would open Stripe checkout
       // For now, we'll just call the service
-      await dashboardService.upgradeToPremium(listingId);
+      await upgradeToPremium(listingId);
       
       // Update the listing in state
       setListings(listings.map(l => 
@@ -109,10 +108,10 @@ export default function ListingsSection() {
     try {
       setActionLoading(listingId);
       // In a real app, this would open Stripe checkout
-      await dashboardService.extendListing(listingId, 90);
+      await extendListing(listingId, 90);
       
       // Reload listings to get updated expiry dates
-      const updatedListings = await dashboardService.getUserListings();
+      const updatedListings = await getUserListings();
       setListings(updatedListings);
       
       alert('Inserat erfolgreich um 90 Tage verlängert!');

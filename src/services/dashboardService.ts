@@ -1,20 +1,28 @@
-
 import { supabase } from "@/integrations/supabase/client";
+
+export type DashboardListingStatus = "pending" | "published" | "rejected" | "expired";
 
 export interface DashboardListing {
   id: string;
   brand: string;
   model: string;
+  title?: string;
   year: number;
   price_per_month_chf: number;
   remaining_months: number;
   location: string;
+  canton_code: string;
+  mileage_km: number;
+  fuel: string;
+  gearbox: string;
+  body: string;
   premium: boolean;
   is_premium: boolean;
   premium_until: string | null;
   expires_at: string | null;
-  status: "pending" | "published" | "rejected" | "expired";
+  status: DashboardListingStatus;
   created_at: string;
+  updated_at?: string;
   duration_days: number | null;
   price_plan: string | null;
   cover_image_url: string | null;
@@ -23,6 +31,7 @@ export interface DashboardListing {
   moderation_note: string | null;
   created_by: string | null;
   user_id: string | null;
+  deposit_chf: number | null;
 }
 
 export interface DashboardStats {
