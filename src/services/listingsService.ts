@@ -174,6 +174,9 @@ export async function getSimilarListings(listing: ListingDetail, limit: number =
 
 export async function searchListings(query: SearchQuery): Promise<SearchResult> {
   try {
+    // DEBUG: Log the incoming search query
+    console.log('🔍 Search Query Received:', JSON.stringify(query, null, 2));
+
     const pageSize = 12;
     const page = query.page || 1;
     const offset = (page - 1) * pageSize;
@@ -183,8 +186,14 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
       .select('*', { count: 'exact' });
 
     // Apply filters
-    if (query.brand) queryBuilder = queryBuilder.ilike('brand', `%${query.brand}%`);
-    if (query.model) queryBuilder = queryBuilder.ilike('model', `%${query.model}%`);
+    if (query.brand) {
+      console.log('🏷️ Applying brand filter:', query.brand);
+      queryBuilder = queryBuilder.eq('brand', query.brand);
+    }
+    if (query.model) {
+      console.log('🚗 Applying model filter:', query.model);
+      queryBuilder = queryBuilder.eq('model', query.model);
+    }
     if (query.yearMin) queryBuilder = queryBuilder.gte('year', query.yearMin);
     if (query.yearMax) queryBuilder = queryBuilder.lte('year', query.yearMax);
     if (query.priceMin) queryBuilder = queryBuilder.gte('price_per_month_chf', query.priceMin);
@@ -234,6 +243,13 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
 
     // Execute query
     const { data, error, count } = await queryBuilder;
+
+    // DEBUG: Log the results
+    console.log('📊 Search Results:', {
+      count: count,
+      dataLength: data?.length,
+      brands: data?.map(d => d.brand)
+    });
 
     if (error) {
       console.error('Search query error:', error);
