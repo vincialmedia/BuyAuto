@@ -24,7 +24,7 @@ export default function SearchForm() {
   const [selectedBody, setSelectedBody] = useState("");
   const [selectedFuel, setSelectedFuel] = useState("");
   const [selectedGearbox, setSelectedGearbox] = useState("");
-  const [noDeposit, setNoDeposit] = useState(true);
+  const [noDeposit, setNoDeposit] = useState(false);
 
   // State for dynamic dropdowns
   const [brands, setBrands] = useState<string[]>([]);
@@ -77,7 +77,9 @@ export default function SearchForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const queryParams: Record<string, string | string[]> = {};
+    const queryParams: Record<string, string | string[]> = {
+      page: '1'
+    };
     
     if (selectedBrand) queryParams.brand = selectedBrand;
     if (selectedModel) queryParams.model = selectedModel;

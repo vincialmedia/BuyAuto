@@ -34,6 +34,7 @@ export default function SearchPage() {
     if (query.canton) newQuery.canton = Array.isArray(query.canton) ? query.canton : [query.canton];
     if (query.noDeposit) newQuery.noDeposit = query.noDeposit === "true";
     if (query.premiumOnly) newQuery.premiumOnly = query.premiumOnly === "true";
+
     return newQuery;
   }, []);
 
@@ -77,9 +78,14 @@ export default function SearchPage() {
   useEffect(() => {
     if (router.isReady) {
       const parsedQuery = parseQueryFromUrl(router.query);
-      setSearchQuery(parsedQuery);
+      
+      // Check if the parsed query is different from the current state
+      // This prevents unnecessary re-renders and re-fetches
+      if (JSON.stringify(parsedQuery) !== JSON.stringify(searchQuery)) {
+        setSearchQuery(parsedQuery);
+      }
     }
-  }, [router.isReady, router.query, parseQueryFromUrl]);
+  }, [router.isReady, router.query, parseQueryFromUrl]); // Removed searchQuery from dependency array to prevent infinite loop
 
   useEffect(() => {
     const performSearch = async () => {
