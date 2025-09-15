@@ -79,13 +79,25 @@ export default function SearchPage() {
     if (router.isReady) {
       const parsedQuery = parseQueryFromUrl(router.query);
       
-      // Check if the parsed query is different from the current state
-      // This prevents unnecessary re-renders and re-fetches
-      if (JSON.stringify(parsedQuery) !== JSON.stringify(searchQuery)) {
+      // Only update state if this is actually different from current state
+      // Use a more stable comparison that handles the initial empty state
+      const isInitialState = Object.keys(searchQuery).length === 0;
+      const hasUrlParams = Object.keys(parsedQuery).length > 0;
+      
+      if (isInitialState && hasUrlParams) {
+        // Initial load with URL params - set state immediately
         setSearchQuery(parsedQuery);
+      } else if (!isInitialState) {
+        // Subsequent updates - only if actually different
+        const currentQueryString = JSON.stringify(searchQuery);
+        const newQueryString = JSON.stringify(parsedQuery);
+        
+        if (currentQueryString !== newQueryString) {
+          setSearchQuery(parsedQuery);
+        }
       }
     }
-  }, [router.isReady, router.query, parseQueryFromUrl]); // Removed searchQuery from dependency array to prevent infinite loop
+  }, [router.isReady, router.query, parseQueryFromUrl]); // Keep searchQuery out to prevent loops
 
   useEffect(() => {
     const performSearch = async () => {

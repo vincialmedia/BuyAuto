@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,12 +28,51 @@ export default function DynamicFilterBar({
   const [priceValue, setPriceValue] = useState(searchQuery.priceMax || 3000);
   const sliderRef = useRef<HTMLInputElement>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const isInitialMount = useRef(true);
   
   // State for dynamic dropdowns
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
+
+  // This effect synchronizes the component's state with the URL.
+  // We use multiple safeguards to prevent race conditions and unnecessary updates.
+  useEffect(() => {
+    // Skip on initial mount to prevent clearing URL params
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Don't update URL while brands are still loading
+    if (loadingBrands) {
+      return;
+    }
+
+    // If we have a brand in the URL but it's not in our loaded brands list yet,
+    // wait for the brands to fully load before making any URL changes
+    if (searchQuery.brand && brands.length > 0 && !brands.includes(searchQuery.brand)) {
+      // Brand not found in loaded brands - this might be an invalid brand
+      // Let the parent component handle this case
+      return;
+    }
+
+    // Only trigger the callback if we're confident the state is stable
+    onSearchQueryChange(searchQuery);
+  }, [
+    searchQuery.brand, 
+    searchQuery.model, 
+    searchQuery.yearMin, 
+    searchQuery.priceMax, 
+    searchQuery.monthsMax, 
+    searchQuery.sort,
+    searchQuery.noDeposit,
+    brands, 
+    loadingBrands,
+    onSearchQueryChange
+  ]);
+
 
   // Update local price state when searchQuery changes
   useEffect(() => {
