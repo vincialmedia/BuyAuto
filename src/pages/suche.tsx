@@ -15,6 +15,7 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filterBarSticky, setFilterBarSticky] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const parseQueryFromUrl = useCallback((query: any): SearchQuery => {
     const newQuery: SearchQuery = {};
@@ -75,31 +76,21 @@ export default function SearchPage() {
     router.push({ pathname: router.pathname, query: {} }, undefined, { shallow: true });
   }, [router]);
 
+  // FIXED: Only initialize from URL once when the router is ready
   useEffect(() => {
-    if (router.isReady) {
+    if (router.isReady && !isInitialized) {
       const parsedQuery = parseQueryFromUrl(router.query);
-      
-      // Only update state if this is actually different from current state
-      // Use a more stable comparison that handles the initial empty state
-      const isInitialState = Object.keys(searchQuery).length === 0;
-      const hasUrlParams = Object.keys(parsedQuery).length > 0;
-      
-      if (isInitialState && hasUrlParams) {
-        // Initial load with URL params - set state immediately
-        setSearchQuery(parsedQuery);
-      } else if (!isInitialState) {
-        // Subsequent updates - only if actually different
-        const currentQueryString = JSON.stringify(searchQuery);
-        const newQueryString = JSON.stringify(parsedQuery);
-        
-        if (currentQueryString !== newQueryString) {
-          setSearchQuery(parsedQuery);
-        }
-      }
+      setSearchQuery(parsedQuery);
+      setIsInitialized(true);
     }
-  }, [router.isReady, router.query, parseQueryFromUrl]); // Keep searchQuery out to prevent loops
+  }, [router.isReady, isInitialized, parseQueryFromUrl]);
 
+  // REMOVED: The problematic useEffect that was constantly checking router.query changes
+
+  // Search effect - only triggers when searchQuery changes
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const performSearch = async () => {
       setIsLoading(true);
       try {
@@ -112,10 +103,9 @@ export default function SearchPage() {
         setIsLoading(false);
       }
     };
-    if (router.isReady) {
-        performSearch();
-    }
-  }, [searchQuery, router.isReady]);
+    
+    performSearch();
+  }, [searchQuery, isInitialized]);
 
   useEffect(() => {
     const handleScroll = () => setFilterBarSticky(window.scrollY > 120);
