@@ -186,7 +186,7 @@ export default function DynamicFilterBar({
           </Select>
         </div>
 
-        {/* Price Slider - Enhanced for better drag functionality */}
+        {/* Price Slider - Enhanced for smooth dragging without stepping */}
         <div className="col-span-2">
           <div className="px-1">
             <div className="flex items-center justify-between mb-1">
@@ -198,16 +198,16 @@ export default function DynamicFilterBar({
               onValueChange={(value) => setLocalPrice(value[0])}
               max={3000}
               min={100}
-              step={50}
+              step={1}
               className="w-full"
             />
           </div>
         </div>
 
-        {/* Restlaufzeit - Fixed: Changed default placeholder to "Max. Laufzeit" */}
+        {/* Restlaufzeit - Fixed: Show placeholder instead of "Alle" when no selection */}
         <div className="col-span-1">
           <Select
-            value={searchQuery.monthsMax ? `${searchQuery.monthsMax}` : "all"}
+            value={searchQuery.monthsMax ? `${searchQuery.monthsMax}` : undefined}
             onValueChange={(value) => onSearchQueryChange({ ...searchQuery, monthsMax: value === "all" ? undefined : parseInt(value)})}
           >
             <SelectTrigger className="h-8 text-xs">
