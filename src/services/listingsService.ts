@@ -134,10 +134,7 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned
-        return null;
-      }
+      if (error.code === 'PGRST116') return null; // No rows returned
       console.error('Error fetching published listing by ID:', error);
       return null;
     }
@@ -174,9 +171,6 @@ export async function getSimilarListings(listing: ListingDetail, limit: number =
 
 export async function searchListings(query: SearchQuery): Promise<SearchResult> {
   try {
-    // DEBUG: Log the incoming search query
-    console.log('🔍 Search Query Received:', JSON.stringify(query, null, 2));
-
     const pageSize = 12;
     const page = query.page || 1;
     const offset = (page - 1) * pageSize;
@@ -186,25 +180,19 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
       .select('*', { count: 'exact' });
 
     // Apply filters
-    if (query.brand) {
-      console.log('🏷️ Applying brand filter:', query.brand);
-      queryBuilder = queryBuilder.eq('brand', query.brand);
-    }
-    if (query.model) {
-      console.log('🚗 Applying model filter:', query.model);
-      queryBuilder = queryBuilder.eq('model', query.model);
-    }
-    if (query.yearMin) queryBuilder = queryBuilder.gte('year', query.yearMin);
-    if (query.yearMax) queryBuilder = queryBuilder.lte('year', query.yearMax);
-    if (query.priceMin) queryBuilder = queryBuilder.gte('price_per_month_chf', query.priceMin);
-    if (query.priceMax) queryBuilder = queryBuilder.lte('price_per_month_chf', query.priceMax);
-    if (query.kmMax) queryBuilder = queryBuilder.lte('mileage_km', query.kmMax);
-    if (query.monthsMin) queryBuilder = queryBuilder.gte('remaining_months', query.monthsMin);
-    if (query.monthsMax) queryBuilder = queryBuilder.lte('remaining_months', query.monthsMax);
-    if (query.canton && query.canton.length > 0) queryBuilder = queryBuilder.in('canton_code', query.canton);
-    if (query.fuel && query.fuel.length > 0) queryBuilder = queryBuilder.in('fuel', query.fuel);
-    if (query.gearbox && query.gearbox.length > 0) queryBuilder = queryBuilder.in('gearbox', query.gearbox);
-    if (query.body && query.body.length > 0) queryBuilder = queryBuilder.in('body', query.body);
+    if (query.brand) queryBuilder = queryBuilder.eq('brand', query.brand);
+    if (query.model) queryBuilder = queryBuilder.eq('model', query.model);
+    if (typeof query.yearMin === 'number') queryBuilder = queryBuilder.gte('year', query.yearMin);
+    if (typeof query.yearMax === 'number') queryBuilder = queryBuilder.lte('year', query.yearMax);
+    if (typeof query.priceMin === 'number') queryBuilder = queryBuilder.gte('price_per_month_chf', query.priceMin);
+    if (typeof query.priceMax === 'number') queryBuilder = queryBuilder.lte('price_per_month_chf', query.priceMax);
+    if (typeof query.kmMax === 'number') queryBuilder = queryBuilder.lte('mileage_km', query.kmMax);
+    if (typeof query.monthsMin === 'number') queryBuilder = queryBuilder.gte('remaining_months', query.monthsMin);
+    if (typeof query.monthsMax === 'number') queryBuilder = queryBuilder.lte('remaining_months', query.monthsMax);
+    if (query.canton?.length) queryBuilder = queryBuilder.in('canton_code', query.canton);
+    if (query.fuel?.length) queryBuilder = queryBuilder.in('fuel', query.fuel);
+    if (query.gearbox?.length) queryBuilder = queryBuilder.in('gearbox', query.gearbox);
+    if (query.body?.length) queryBuilder = queryBuilder.in('body', query.body);
     if (query.premiumOnly) queryBuilder = queryBuilder.eq('premium', true);
     if (query.noDeposit) queryBuilder = queryBuilder.is('deposit_chf', null);
 
@@ -233,7 +221,6 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
         break;
       case 'relevance':
       default:
-        // Default sort: premium first, then by creation date
         queryBuilder = queryBuilder.order('premium', { ascending: false }).order('created_at', { ascending: false });
         break;
     }
@@ -241,15 +228,7 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
     // Apply pagination
     queryBuilder = queryBuilder.range(offset, offset + pageSize - 1);
 
-    // Execute query
     const { data, error, count } = await queryBuilder;
-
-    // DEBUG: Log the results
-    console.log('📊 Search Results:', {
-      count: count,
-      dataLength: data?.length,
-      brands: data?.map(d => d.brand)
-    });
 
     if (error) {
       console.error('Search query error:', error);
@@ -277,19 +256,13 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
 
 export async function getBrands(): Promise<string[]> {
   try {
-    const { data, error } = await supabase
-      .from('public_listings')
-      .select('brand')
-      .order('brand');
+    const { data, error } = await supabase.rpc('get_distinct_brands');
 
     if (error) {
       console.error('Error fetching brands:', error);
       return [];
     }
-
-    const uniqueBrands = [...new Set(data.map(row => row.brand))];
-    return uniqueBrands;
-
+    return data;
   } catch (error) {
     console.error('Get brands error:', error);
     return [];
@@ -298,20 +271,13 @@ export async function getBrands(): Promise<string[]> {
 
 export async function getModelsForBrand(brand: string): Promise<string[]> {
   try {
-    const { data, error } = await supabase
-      .from('public_listings')
-      .select('model')
-      .eq('brand', brand)
-      .order('model');
+     const { data, error } = await supabase.rpc('get_models_for_brand', { p_brand: brand });
 
     if (error) {
       console.error('Error fetching models:', error);
       return [];
     }
-
-    const uniqueModels = [...new Set(data.map(row => row.model))];
-    return uniqueModels;
-
+    return data;
   } catch (error) {
     console.error('Get models error:', error);
     return [];
@@ -325,13 +291,7 @@ export async function getUserListings(): Promise<ListingDetail[]> {
   try {
     const { data, error } = await supabase
       .from('listings')
-      .select(`
-        id, brand, model, title, year, price_per_month_chf, remaining_months,
-        location, canton_code, mileage_km, fuel, gearbox, body, premium, 
-        cover_image_url, images, cover_image_index, deposit_chf, created_at,
-        status, expires_at, duration_days, price_plan, premium_until,
-        created_by, user_id, moderation_note, updated_at
-      `)
+      .select(`*`)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -350,20 +310,12 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
   try {
     const { data, error } = await supabase
       .from('listings')
-      .select(`
-        id, brand, model, title, year, price_per_month_chf, remaining_months,
-        location, canton_code, mileage_km, fuel, gearbox, body, premium, 
-        cover_image_url, images, cover_image_index, deposit_chf, created_at,
-        status, expires_at, duration_days, price_plan, premium_until,
-        created_by, user_id, moderation_note, updated_at
-      `)
+      .select(`*`)
       .eq('id', id)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return null;
-      }
+      if (error.code === 'PGRST116') return null;
       console.error('Error fetching user listing by ID:', error);
       return null;
     }
@@ -382,13 +334,7 @@ export async function getAllListings(): Promise<ListingDetail[]> {
   try {
     const { data, error } = await supabase
       .from('listings')
-      .select(`
-        id, brand, model, title, year, price_per_month_chf, remaining_months,
-        location, canton_code, mileage_km, fuel, gearbox, body, premium, 
-        cover_image_url, images, cover_image_index, deposit_chf, created_at,
-        status, expires_at, duration_days, price_plan, premium_until,
-        created_by, user_id, moderation_note, updated_at
-      `)
+      .select(`*`)
       .order('created_at', { ascending: false });
 
     if (error) {
