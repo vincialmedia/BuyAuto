@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { useDebounce } from 'use-debounce';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,9 +32,15 @@ export default function DynamicFilterBar({
 }: DynamicFilterBarProps) {
   // Local state for immediate UI feedback
   const [localPrice, setLocalPrice] = useState(searchQuery.priceMax ?? 3000);
-  
-  // Debounce the local price value before pushing to URL
-  const [debouncedPrice] = useDebounce(localPrice, 300);
+
+  const commitPriceChange = (newPrice: number) => {
+    if (newPrice < 3000) {
+      onSearchQueryChange({ ...searchQuery, priceMax: newPrice });
+    } else {
+      const { priceMax, ...rest } = searchQuery;
+      onSearchQueryChange(rest as SearchQuery);
+    }
+  };
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   
@@ -48,61 +53,6 @@ export default function DynamicFilterBar({
   // Generate year options from 1990 to current year + 1
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: currentYear - 1989 }, (_, i) => currentYear + 1 - i);
-
-  // Effect to update search query when debounced price changes
-  useEffect(() => {
-    // Avoid triggering a search on initial component mount if price hasn't changed
-    if (debouncedPrice === (searchQuery.priceMax ?? 3000)) {
-      return;
-    }
-
-    if (debouncedPrice < 3000) {
-      onSearchQueryChange({
-        ...searchQuery,
-        priceMax: debouncedPrice
-      });
-    } else {
-      // Remove priceMax filter if set to maximum
-      const { priceMax, ...rest } = searchQuery;
-      onSearchQueryChange(rest);
-    }
-  }, [debouncedPrice]);
-
-  // Fetch brands on mount
-  useEffect(() => {
-    const fetchBrands = async () => {
-      setLoadingBrands(true);
-      try {
-        const brandsData = await getBrands();
-        setBrands(brandsData);
-      } catch (error) {
-        console.error('Error fetching brands:', error);
-      } finally {
-        setLoadingBrands(false);
-      }
-    };
-    fetchBrands();
-  }, []);
-
-  // Fetch models for brand when brand is selected
-  useEffect(() => {
-    if (searchQuery.brand) {
-      const fetchModels = async () => {
-        setLoadingModels(true);
-        try {
-          const modelsData = await getModelsForBrand(searchQuery.brand!);
-          setModels(modelsData);
-        } catch (error) {
-          console.error('Error fetching models:', error);
-        } finally {
-          setLoadingModels(false);
-        }
-      };
-      fetchModels();
-    } else {
-      setModels([]);
-    }
-  }, [searchQuery.brand]);
 
   const handleBrandChange = (brand: string | undefined) => {
     const newBrand = brand === "all" ? undefined : brand;
@@ -196,6 +146,7 @@ export default function DynamicFilterBar({
             <Slider
               value={[localPrice]}
               onValueChange={(value) => setLocalPrice(value[0])}
+              onValueCommit={(value) => commitPriceChange(value[0])}
               max={3000}
               min={100}
               step={1}
@@ -207,7 +158,7 @@ export default function DynamicFilterBar({
         {/* Restlaufzeit - Fixed: Show placeholder instead of "Alle" when no selection */}
         <div className="col-span-1">
           <Select
-            value={searchQuery.monthsMax ? `${searchQuery.monthsMax}` : undefined}
+            value={searchQuery.monthsMax !== undefined ? `${searchQuery.monthsMax}` : undefined}
             onValueChange={(value) => onSearchQueryChange({ ...searchQuery, monthsMax: value === "all" ? undefined : parseInt(value)})}
           >
             <SelectTrigger className="h-8 text-xs">
@@ -260,6 +211,42 @@ export default function DynamicFilterBar({
       )}
     </div>
   );
+
+  // Fetch brands on mount
+  useEffect(() => {
+    const fetchBrands = async () => {
+      setLoadingBrands(true);
+      try {
+        const brandsData = await getBrands();
+        setBrands(brandsData);
+      } catch (error) {
+        console.error('Error fetching brands:', error);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+    fetchBrands();
+  }, []);
+
+  // Fetch models for brand when brand is selected
+  useEffect(() => {
+    if (searchQuery.brand) {
+      const fetchModels = async () => {
+        setLoadingModels(true);
+        try {
+          const modelsData = await getModelsForBrand(searchQuery.brand!);
+          setModels(modelsData);
+        } catch (error) {
+          console.error('Error fetching models:', error);
+        } finally {
+          setLoadingModels(false);
+        }
+      };
+      fetchModels();
+    } else {
+      setModels([]);
+    }
+  }, [searchQuery.brand]);
 
   return (
     <div className={cn("bg-white/90 backdrop-blur-sm border-b border-neutral-200/60 shadow-sm", className)}>
