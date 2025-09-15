@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { SearchQuery } from "@/lib/buyauto/search";
-import { Filter, X, ChevronDown } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBrands, getModelsForBrand } from "@/services/listingsService";
 
@@ -28,7 +28,6 @@ export default function DynamicFilterBar({
   const [priceValue, setPriceValue] = useState(searchQuery.priceMax || 3000);
   const sliderRef = useRef<HTMLInputElement>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const isInitialMount = useRef(true);
   
   // State for dynamic dropdowns
   const [brands, setBrands] = useState<string[]>([]);
@@ -36,12 +35,9 @@ export default function DynamicFilterBar({
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
 
-  // Update local price state when searchQuery changes
-  useEffect(() => {
-    setPriceValue(searchQuery.priceMax || 3000);
-  }, [searchQuery.priceMax]);
+  // REMOVED: All automatic synchronization useEffects that were causing circular dependencies
 
-  // Fetch brands on mount
+  // Fetch brands on mount ONLY - no automatic re-fetching
   useEffect(() => {
     const fetchBrands = async () => {
       setLoadingBrands(true);
@@ -57,13 +53,23 @@ export default function DynamicFilterBar({
     fetchBrands();
   }, []);
 
-  // Fetch models when brand changes
-  useEffect(() => {
-    if (searchQuery.brand) {
+  // Fetch models when brand changes - but only when user explicitly changes brand
+  const handleBrandChange = (brand: string | undefined) => {
+    const newBrand = brand === "all" ? undefined : brand;
+    
+    // Update search query immediately
+    onSearchQueryChange({ 
+      ...searchQuery, 
+      brand: newBrand,
+      model: undefined // Reset model when brand changes
+    });
+
+    // Fetch models for the new brand
+    if (newBrand) {
       const fetchModels = async () => {
         setLoadingModels(true);
         try {
-          const modelsData = await getModelsForBrand(searchQuery.brand);
+          const modelsData = await getModelsForBrand(newBrand);
           setModels(modelsData);
         } catch (error) {
           console.error('Error fetching models:', error);
@@ -75,14 +81,6 @@ export default function DynamicFilterBar({
     } else {
       setModels([]);
     }
-  }, [searchQuery.brand]);
-
-  const handleBrandChange = (brand: string | undefined) => {
-    onSearchQueryChange({ 
-      ...searchQuery, 
-      brand: brand === "all" ? undefined : brand,
-      model: undefined // Reset model when brand changes
-    });
   };
 
   const handleModelChange = (model: string | undefined) => {
@@ -152,6 +150,7 @@ export default function DynamicFilterBar({
       case "brand":
         delete updatedQuery.brand;
         delete updatedQuery.model; // Also clear model when clearing brand
+        setModels([]); // Clear models list
         break;
       case "model":
         delete updatedQuery.model;
@@ -179,7 +178,7 @@ export default function DynamicFilterBar({
     <div className="space-y-3">
       {/* Main filter row */}
       <div className="flex items-center space-x-4">
-        {/* Brand - Now using Select dropdown */}
+        {/* Brand - Using Select dropdown */}
         <div className="min-w-0 flex-1">
           <Select 
             value={searchQuery.brand || "all"} 
@@ -200,7 +199,7 @@ export default function DynamicFilterBar({
           </Select>
         </div>
 
-        {/* Model - Now using Select dropdown */}
+        {/* Model - Using Select dropdown */}
         <div className="min-w-0 flex-1">
           <Select 
             value={searchQuery.model || "all"} 
@@ -366,7 +365,6 @@ export default function DynamicFilterBar({
                   <SheetTitle>Fahrzeuge filtern</SheetTitle>
                 </SheetHeader>
                 <div className="py-4 space-y-4">
-                  {/* Mobile version of filters would go here */}
                   <p className="text-sm text-neutral-600">Mobile filter interface coming soon...</p>
                 </div>
               </SheetContent>
