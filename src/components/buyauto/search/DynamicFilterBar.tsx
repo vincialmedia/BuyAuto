@@ -33,11 +33,9 @@ export default function DynamicFilterBar({
 }: DynamicFilterBarProps) {
   // Local state for immediate UI feedback
   const [localPrice, setLocalPrice] = useState(searchQuery.priceMax ?? 3000);
-  const [localYear, setLocalYear] = useState(searchQuery.yearMin ?? '');
   
-  // Debounce the local values before pushing to URL
+  // Debounce the local price value before pushing to URL
   const [debouncedPrice] = useDebounce(localPrice, 300);
-  const [debouncedYear] = useDebounce(localYear, 500);
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   
@@ -46,6 +44,10 @@ export default function DynamicFilterBar({
   const [models, setModels] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
+
+  // Generate year options from 1990 to current year + 1
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: currentYear - 1989 }, (_, i) => currentYear + 1 - i);
 
   // Effect to update search query when debounced price changes
   useEffect(() => {
@@ -65,26 +67,6 @@ export default function DynamicFilterBar({
       onSearchQueryChange(rest);
     }
   }, [debouncedPrice]);
-
-  // Effect to update search query when debounced year changes
-  useEffect(() => {
-    // Avoid triggering a search on initial component mount if year hasn't changed
-    if (debouncedYear === (searchQuery.yearMin ?? '')) {
-        return;
-    }
-    
-    const yearAsNumber = debouncedYear ? parseInt(String(debouncedYear), 10) : undefined;
-    if (yearAsNumber && yearAsNumber > 1900) {
-        onSearchQueryChange({
-            ...searchQuery,
-            yearMin: yearAsNumber
-        });
-    } else {
-        const { yearMin, ...rest } = searchQuery;
-        onSearchQueryChange(rest);
-    }
-  }, [debouncedYear]);
-
 
   // Fetch brands on mount
   useEffect(() => {
@@ -122,7 +104,6 @@ export default function DynamicFilterBar({
     }
   }, [searchQuery.brand]);
 
-
   const handleBrandChange = (brand: string | undefined) => {
     const newBrand = brand === "all" ? undefined : brand;
     onSearchQueryChange({ ...searchQuery, brand: newBrand, model: undefined });
@@ -130,6 +111,11 @@ export default function DynamicFilterBar({
 
   const handleModelChange = (model: string | undefined) => {
     onSearchQueryChange({ ...searchQuery, model: model === "all" ? undefined : model });
+  };
+
+  const handleYearChange = (year: string | undefined) => {
+    const yearAsNumber = year === "all" ? undefined : (year ? parseInt(year, 10) : undefined);
+    onSearchQueryChange({ ...searchQuery, yearMin: yearAsNumber });
   };
   
   // Generate filter chips from active filters
@@ -155,9 +141,6 @@ export default function DynamicFilterBar({
     
     if (chipKey === "priceMax") {
       setLocalPrice(3000);
-    }
-    if (chipKey === "yearMin") {
-      setLocalYear("");
     }
 
     onSearchQueryChange(newQuery as SearchQuery);
@@ -192,41 +175,44 @@ export default function DynamicFilterBar({
           </Select>
         </div>
 
-        {/* Year */}
+        {/* Year - Fixed: Now a dropdown instead of text input */}
         <div className="col-span-1">
-          <Input
-            type="number"
-            placeholder="Jahr"
-            value={localYear}
-            onChange={(e) => setLocalYear(e.target.value)}
-            className="h-8 text-xs"
-          />
+          <Select value={searchQuery.yearMin ? searchQuery.yearMin.toString() : "all"} onValueChange={handleYearChange}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jahr" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Jahre</SelectItem>
+              {yearOptions.map((year) => <SelectItem key={year} value={year.toString()}>{year}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Price Slider */}
+        {/* Price Slider - Enhanced for better drag functionality */}
         <div className="col-span-2">
-            <div className="px-1">
-                <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-neutral-600 font-medium">Max. Preis</span>
-                    <span className="text-xs font-semibold text-red-600">CHF {localPrice}</span>
-                </div>
-                <Slider
-                    value={[localPrice]}
-                    onValueChange={(value) => setLocalPrice(value[0])}
-                    max={3000}
-                    step={50}
-                    className="h-8"
-                />
+          <div className="px-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-neutral-600 font-medium">Max. Preis</span>
+              <span className="text-xs font-semibold text-red-600">CHF {localPrice}</span>
             </div>
+            <Slider
+              value={[localPrice]}
+              onValueChange={(value) => setLocalPrice(value[0])}
+              max={3000}
+              min={100}
+              step={50}
+              className="w-full cursor-pointer"
+            />
+          </div>
         </div>
 
-        {/* Restlaufzeit */}
+        {/* Restlaufzeit - Fixed: Changed default placeholder to "Max. Laufzeit" */}
         <div className="col-span-1">
           <Select
             value={searchQuery.monthsMax ? `${searchQuery.monthsMax}` : "all"}
             onValueChange={(value) => onSearchQueryChange({ ...searchQuery, monthsMax: value === "all" ? undefined : parseInt(value)})}
           >
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Restlaufzeit" /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Max. Laufzeit" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle</SelectItem>
               <SelectItem value="6">bis 6 Mon.</SelectItem>
