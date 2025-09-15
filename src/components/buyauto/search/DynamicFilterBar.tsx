@@ -199,7 +199,7 @@ export default function DynamicFilterBar({
               max={3000}
               min={100}
               step={50}
-              className="w-full cursor-pointer"
+              className="w-full"
             />
           </div>
         </div>
