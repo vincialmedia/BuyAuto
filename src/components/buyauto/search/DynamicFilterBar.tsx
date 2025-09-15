@@ -25,7 +25,7 @@ export default function DynamicFilterBar({
   onSearchQueryChange, 
   className 
 }: DynamicFilterBarProps) {
-  const [priceValue, setPriceValue] = useState(searchQuery.priceMax || 2000);
+  const [priceValue, setPriceValue] = useState(searchQuery.priceMax || 3000);
   const sliderRef = useRef<HTMLInputElement>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   
@@ -34,6 +34,11 @@ export default function DynamicFilterBar({
   const [models, setModels] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
+
+  // Update local price state when searchQuery changes
+  useEffect(() => {
+    setPriceValue(searchQuery.priceMax || 3000);
+  }, [searchQuery.priceMax]);
 
   // Fetch brands on mount
   useEffect(() => {
@@ -100,10 +105,18 @@ export default function DynamicFilterBar({
 
   const handlePriceChange = (value: number) => {
     setPriceValue(value);
-    onSearchQueryChange({
-      ...searchQuery,
-      priceMax: value
-    });
+    // Only set priceMax if it's not the default max value
+    if (value < maxPrice) {
+      onSearchQueryChange({
+        ...searchQuery,
+        priceMax: value
+      });
+    } else {
+      // Remove priceMax filter if set to maximum
+      const updatedQuery = { ...searchQuery };
+      delete updatedQuery.priceMax;
+      onSearchQueryChange(updatedQuery);
+    }
   };
 
   // Generate filter chips from active filters
