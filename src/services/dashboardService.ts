@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export type DashboardListingStatus = "pending" | "published" | "rejected" | "expired";
@@ -42,37 +43,16 @@ export interface DashboardStats {
   total: number;
 }
 
-// Helper function to get auth token from the current session
-async function getAuthToken(): Promise<string | null> {
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session) {
-      console.error('No valid session found:', error);
-      return null;
-    }
-    return session.access_token;
-  } catch (error) {
-    console.error('Error getting auth token:', error);
-    return null;
-  }
-}
-
 export async function getUserListings(): Promise<DashboardListing[]> {
   try {
-    // Get auth token for API call
-    const token = await getAuthToken();
-    if (!token) {
-      console.error('No auth token available for getUserListings');
-      return [];
-    }
-
-    // Call our secure API endpoint
+    // Make a fetch request to our secure API endpoint
+    // No need to pass auth headers - cookies will handle authentication
     const response = await fetch('/api/listings/my', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // Include cookies for authentication
     });
 
     if (!response.ok) {
