@@ -30,6 +30,7 @@ export default function RegisterForm({
       lastName: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
@@ -130,6 +131,26 @@ export default function RegisterForm({
                     )}
                   </Button>
                 </div>
+              </FormControl>
+              <FormMessage className="text-red-500 text-sm" />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-neutral-700 font-medium">Passwort bestätigen</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="password"
+                  placeholder="Passwort wiederholen"
+                  className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+                  disabled={isLoading}
+                />
               </FormControl>
               <FormMessage className="text-red-500 text-sm" />
             </FormItem>
