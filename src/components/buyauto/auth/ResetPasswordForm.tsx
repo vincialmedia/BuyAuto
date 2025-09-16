@@ -54,26 +54,27 @@ export default function ResetPasswordForm({
           )}
         />
 
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="w-full h-11 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:-translate-y-0.5"
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Passwort zurücksetzen
-        </Button>
-
-        <p className="text-center text-sm text-neutral-600">
-          Zurück zur{" "}
-          <button
+        <div className="flex flex-col gap-4">
+          <Button disabled={isLoading} type="submit" className="w-full h-11">
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Link wird gesendet...
+              </>
+            ) : (
+              "Link anfordern"
+            )}
+          </Button>
+          <Button
             type="button"
             onClick={onShowLogin}
-            className="text-red-500 hover:text-red-600 font-medium transition-colors"
+            variant="outline"
+            className="w-full h-11 border-neutral-300 hover:bg-neutral-50"
             disabled={isLoading}
           >
-            Anmeldung
-          </button>
-        </p>
+            Zurück zur Anmeldung
+          </Button>
+        </div>
       </form>
     </Form>
   );

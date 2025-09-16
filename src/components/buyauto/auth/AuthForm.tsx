@@ -5,6 +5,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Terminal } from "lucide-react";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import ResetPasswordForm from "./ResetPasswordForm";
@@ -16,10 +18,12 @@ type AuthView = "login" | "register" | "reset-password";
 export default function AuthForm() {
   const [currentView, setCurrentView] = useState<AuthView>("login");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (data: LoginFormData) => {
     try {
       setIsLoading(true);
+      setError(null);
       console.log("AuthForm: Starting login process");
       
       // Ensure data matches SignInData interface
@@ -49,6 +53,7 @@ export default function AuthForm() {
       }
       
       toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -57,6 +62,7 @@ export default function AuthForm() {
   const handleRegister = async (data: RegisterFormData) => {
     try {
       setIsLoading(true);
+      setError(null);
       console.log("AuthForm: Starting registration process");
       
       // Ensure data matches SignUpData interface
@@ -84,6 +90,7 @@ export default function AuthForm() {
       }
       
       toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +109,9 @@ export default function AuthForm() {
       
     } catch (error: any) {
       console.error("Reset password error:", error);
-      toast.error("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
+      const errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -137,17 +146,31 @@ export default function AuthForm() {
         </p>
       </CardHeader>
       <CardContent className="pt-0">
-        <Tabs value={currentView} onValueChange={(value) => setCurrentView(value as AuthView)} className="w-full">
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <Terminal className="h-4 w-4" />
+            <AlertTitle>Fehler</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <Tabs
+          value={currentView}
+          onValueChange={(value) => {
+            setCurrentView(value as AuthView);
+            setError(null);
+          }}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2 mb-6 bg-neutral-100 p-1">
-            <TabsTrigger 
-              value="login" 
+            <TabsTrigger
+              value="login"
               className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-red-500 data-[state=active]:shadow-sm"
               disabled={isLoading}
             >
               Anmelden
             </TabsTrigger>
-            <TabsTrigger 
-              value="register" 
+            <TabsTrigger
+              value="register"
               className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-red-500 data-[state=active]:shadow-sm"
               disabled={isLoading}
             >

@@ -113,8 +113,14 @@ export default function LoginForm({
           disabled={isLoading}
           className="w-full h-11 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:-translate-y-0.5"
         >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Anmelden
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Wird angemeldet...
+            </>
+          ) : (
+            "Anmelden"
+          )}
         </Button>
 
         <p className="text-center text-sm text-neutral-600">
