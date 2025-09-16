@@ -17,7 +17,9 @@ export interface SearchQuery {
   fuel?: string[];
   gearbox?: string[];
   body?: string[];
-  sort?: "relevance" | "priceAsc" | "priceDesc" | "yearDesc" | "monthsAsc";
+  noDeposit?: boolean;
+  premiumOnly?: boolean;
+  sort?: "relevance" | "priceAsc" | "priceDesc" | "yearDesc" | "monthsAsc" | "monthsDesc" | "kmAsc" | "dateDesc";
 }
 
 export type SearchResult = {
