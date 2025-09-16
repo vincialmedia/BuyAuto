@@ -1,141 +1,103 @@
+# Project Implementation Plan: Secure "My Listings"
 
-# Listing Visibility &amp; Access Control Implementation Plan
+**Objective:** To ensure users can only see their own listings on the "Meine Inserate" dashboard page by implementing ownership controls across the full stack. This plan addresses the bug where users could see all listings in the system.
 
-This document outlines the strategy for implementing role-based access control for listings, ensuring data is segregated between public, user, and admin views.
+---
 
-## Phase 1: Database Schema &amp; Security
+### Phase 1: Database Hardening & Ownership
 
-We will apply the necessary SQL objects to the Supabase database. This will enforce security at the data layer, which is the most secure approach.
+This phase establishes the source of truth for listing ownership and enforces access rules directly within the Supabase database.
 
-### 1.1. RLS Policies &amp; `created_by` Trigger
+1.  **Add `owner_id` Column:**
+    *   **Action:** Execute an `ALTER TABLE` statement to add a new `owner_id` column to the `public_listings` table.
+    *   **Details:** This column will be of type `uuid` and will have a foreign key constraint referencing `auth.users(id)`.
+    *   **SQL:** `ALTER TABLE public_listings ADD COLUMN IF NOT EXISTS owner_id uuid REFERENCES auth.users(id);`
 
-The following SQL script will be executed to:
-1.  Enable RLS on the `public.listings` table.
-2.  Create a trigger function to automatically stamp the `created_by` field with the current user's ID.
-3.  Create RLS policies for public, owner, and admin roles.
+2.  **Implement Row-Level Security (RLS):**
+    *   **Action:** Enable RLS on the `public_listings` table and create a set of policies to govern access.
+    *   **Details:** The policies will ensure that users can only perform `SELECT`, `INSERT`, `UPDATE`, and `DELETE` operations on rows where their `auth.uid()` matches the `owner_id`.
+    *   **SQL:**
+        ```sql
+        -- Enable RLS
+        ALTER TABLE public_listings ENABLE ROW LEVEL SECURITY;
 
-```sql
--- Enable RLS on the listings table
-ALTER TABLE public.listings ENABLE ROW LEVEL SECURITY;
+        -- Create policies for own data
+        CREATE POLICY "listings_select_own" ON public_listings FOR SELECT USING (owner_id = auth.uid());
+        CREATE POLICY "listings_insert_as_self" ON public_listings FOR INSERT WITH CHECK (owner_id = auth.uid());
+        CREATE POLICY "listings_update_own" ON public_listings FOR UPDATE USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
+        CREATE POLICY "listings_delete_own" ON public_listings FOR DELETE USING (owner_id = auth.uid());
+        ```
 
--- Function and Trigger to stamp created_by on new listings
-CREATE OR REPLACE FUNCTION public.set_listing_creator()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.created_by IS NULL THEN
-    NEW.created_by = auth.uid();
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+3.  **Create Ownership Trigger:**
+    *   **Action:** Create a PostgreSQL function and a trigger to automatically populate the `owner_id` on new listing insertions.
+    *   **Details:** This serves as a backend safety measure, guaranteeing that every new listing is assigned an owner, even if the `owner_id` is omitted in the insert call.
+    *   **SQL:**
+        ```sql
+        -- Function to set owner_id
+        CREATE OR REPLACE FUNCTION set_owner_id()
+        RETURNS trigger AS $$
+        BEGIN
+          IF NEW.owner_id IS NULL THEN
+            NEW.owner_id := auth.uid();
+          END IF;
+          RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Drop existing trigger to prevent duplication
-DROP TRIGGER IF EXISTS on_listing_created ON public.listings;
+        -- Trigger to execute the function before insert
+        DROP TRIGGER IF EXISTS trg_set_owner_id ON public_listings;
+        CREATE TRIGGER trg_set_owner_id
+        BEFORE INSERT ON public_listings
+        FOR EACH ROW EXECUTE FUNCTION set_owner_id();
+        ```
 
--- Create the trigger
-CREATE TRIGGER on_listing_created
-  BEFORE INSERT ON public.listings
-  FOR EACH ROW EXECUTE FUNCTION public.set_listing_creator();
+---
 
--- Purge existing policies to start fresh and avoid conflicts
-DROP POLICY IF EXISTS "public_read_published" ON public.listings;
-DROP POLICY IF EXISTS "owner_select" ON public.listings;
-DROP POLICY IF EXISTS "owner_insert" ON public.listings;
-DROP POLICY IF EXISTS "owner_update" ON public.listings;
-DROP POLICY IF EXISTS "owner_delete" ON public.listings;
-DROP POLICY IF EXISTS "admin_all" ON public.listings;
+### Phase 2: Create Secure Server-Side API Endpoint
 
--- 1. Public can only read PUBLISHED listings (for anonymous and authenticated users on public pages)
-CREATE POLICY "public_read_published"
-  ON public.listings FOR SELECT
-  USING (status = 'published');
+This phase creates a dedicated API route that acts as a secure gateway for fetching user-specific listings.
 
--- 2. Owners can manage their own listings (for dashboard)
--- We combine owner policies into one for simplicity, but the user requested separate ones.
--- Sticking to the user's request for clarity.
-CREATE POLICY "owner_select"
-  ON public.listings FOR SELECT
-  USING (created_by = auth.uid());
+1.  **Create API Route File:**
+    *   **Action:** Create a new TypeScript file at `src/pages/api/listings/my.ts`.
 
-CREATE POLICY "owner_insert"
-  ON public.listings FOR INSERT
-  WITH CHECK (created_by = auth.uid());
+2.  **Implement `GET` Handler:**
+    *   **Action:** Implement a `GET` request handler within the new API route.
+    *   **Logic:**
+        1.  Initialize a server-side Supabase client (this needs a helper function, e.g., `createServerClient` that can handle cookies).
+        2.  Fetch the authenticated user from the current session.
+        3.  If no user is found, return a `401 Unauthorized` response.
+        4.  Query the `public_listings` table. The RLS policy `listings_select_own` will automatically filter for the current user's listings.
+        5.  Handle pagination and sorting parameters from the request URL.
+        6.  Return the filtered list of listings as a JSON response.
 
-CREATE POLICY "owner_update"
-  ON public.listings FOR UPDATE
-  USING (created_by = auth.uid())
-  WITH CHECK (created_by = auth.uid());
+---
 
-CREATE POLICY "owner_delete"
-  ON public.listings FOR DELETE
-  USING (created_by = auth.uid());
+### Phase 3: Refactor Frontend Dashboard Component
 
--- 3. Admins can do everything. This relies on a 'role' custom claim in the user's JWT.
--- This assumes the custom claim is being set correctly (e.g., via a 'profiles' table and trigger).
-CREATE POLICY "admin_all"
-  ON public.listings FOR ALL
-  USING (((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'admin'))
-  WITH CHECK (((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'admin'));
-```
+This phase updates the user-facing dashboard to consume data from the new, secure API endpoint.
 
-### 1.2. Public-Facing Security View
+1.  **Identify Target Component:**
+    *   **File:** `src/components/buyauto/dashboard/ListingsSection.tsx` is the primary component to modify.
+    *   **Service:** `src/services/dashboardService.ts` likely contains the current fetching logic that needs to be replaced.
 
-A PostgreSQL VIEW will be created to provide a safe, pre-filtered subset of data for all public-facing queries (Homepage, Search, Listing Detail). This prevents any possibility of unpublished data leaking to the UI.
+2.  **Update Data Fetching Logic:**
+    *   **Action:** Modify the component and/or service to stop calling the public Supabase REST endpoint.
+    *   **New Logic:** Implement a function that makes a `fetch` request to our new `/api/listings/my` endpoint, passing along any necessary pagination or sorting parameters.
 
-```sql
-CREATE OR REPLACE VIEW public.public_listings AS
-  SELECT
-    id,
-    brand,
-    model,
-    year,
-    price_per_month_chf,
-    remaining_months,
-    location,
-    canton_code,
-    mileage_km,
-    fuel,
-    gearbox,
-    body,
-    (premium AND (premium_until IS NULL OR premium_until > now())) AS premium,
-    cover_image_url,
-    image_urls,
-    created_at,
-    status -- For sanity checking, though it will always be 'published'
-  FROM public.listings
-  WHERE status = 'published';
-```
+3.  **Implement Empty State:**
+    *   **Action:** Ensure the component correctly handles an empty response from the API.
+    *   **UI:** When the fetched data array is empty, render the message: "Du hast noch keine Inserate. Jetzt Inserat erstellen."
 
-## Phase 2: Service Layer Refactoring
+---
 
-The TypeScript services will be updated to query the correct database objects. The Supabase client will be used with the user's session, so RLS policies are automatically applied.
+### Phase 4: Verify Create/Update Flow
 
-### 2.1. Public Data Services (`listingsService.ts`, page-level data fetching)
+This final phase ensures that new listings are created with the correct ownership from the start.
 
--   **`searchListings` (in `src/lib/buyauto/search.ts`):** This function, which powers the `/suche` page, will be modified to query `public.public_listings` instead of `public.listings`.
--   **`getListingById` (in `src/pages/fahrzeug/[id].tsx`):** The server-side data fetching for the detail page will also query `public.public_listings`. This ensures a user cannot access a pending/rejected listing by guessing the URL.
--   **Homepage Queries (in `src/pages/index.tsx`):** Data fetching for premium listings on the homepage will also be pointed to the `public.public_listings` view.
+1.  **Review Create Listing Logic:**
+    *   **File:** `src/services/createListingService.ts`.
+    *   **Action:** Review the `insert` logic for new listings.
 
-### 2.2. User Dashboard Services (`dashboardService.ts`)
+2.  **Confirm Authenticated Client:**
+    *   **Verification:** Ensure that all database write operations (`insert`, `update`) are performed using an authenticated Supabase client instance from the browser. The RLS policies and database trigger will automatically enforce ownership. This is a verification step; no code changes are anticipated.
 
--   **`getUserListings`:** This function will continue to query `public.listings`. Because the user is authenticated, the `owner_select` policy will activate, automatically filtering results to only those where `created_by = auth.uid()`. This correctly shows them all their listings, regardless of status.
-
-### 2.3. Admin Services (`adminService.ts`)
-
--   **`getAllListings`, `getModerationQueue`:** These functions will continue to query `public.listings`. For a logged-in admin (with the correct JWT claim), the `admin_all` policy will bypass other restrictions, granting full access to all records.
-
-## Phase 3: UI and Formatting
-
--   **Currency Formatting:** A utility function will be created or updated in `src/lib/utils.ts` to format numbers into the `CHF 1’290 / Monat` style. This will be applied in `ListingCard.tsx`, `[id].tsx`, and other relevant components.
--   **Component Review:** Components in `/dashboard` and `/admin` will be checked to ensure they correctly display all listing statuses (`StatusBadge.tsx`).
-
-## Phase 4: Verification
-
-The implementation will be tested against the user's acceptance criteria:
-1.  ✅ Logged-out user sees only `published` listings.
-2.  ✅ User A sees only User A's listings in their dashboard.
-3.  ✅ User B sees only User B's listings in their dashboard.
-4.  ✅ Admin sees all listings in the admin dashboard.
-5.  ✅ `created_by` is auto-stamped on creation.
-6.  ✅ A newly `published` listing appears on the public site.
-7.  ✅ `pending`/`rejected` listings never appear on the public site.
