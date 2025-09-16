@@ -40,6 +40,8 @@ const authService = {
   async signUp({ email, password, firstName, lastName }: SignUpData) {
     console.log("Starting sign up process");
     
+    const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -47,6 +49,7 @@ const authService = {
         data: {
           first_name: firstName,
           last_name: lastName,
+          full_name: fullName,
         },
       },
     });

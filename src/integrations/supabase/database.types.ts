@@ -1,0 +1,458 @@
+ 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.4"
+  }
+  public: {
+    Tables: {
+      listing_inquiries: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          listing_id: string
+          message: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          listing_id: string
+          message: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          listing_id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_inquiries_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_inquiries_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "public_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listings: {
+        Row: {
+          body: string
+          brand: string
+          canton_code: string
+          cover_image_index: number | null
+          cover_image_url: string | null
+          created_at: string | null
+          created_by: string | null
+          deposit_chf: number | null
+          duration_days: number | null
+          expires_at: string | null
+          fuel: string
+          gearbox: string
+          id: string
+          images: Json | null
+          is_premium: boolean | null
+          km: number | null
+          location: string
+          mileage_km: number
+          model: string
+          moderation_note: string | null
+          premium: boolean | null
+          premium_until: string | null
+          price_per_month_chf: number
+          price_plan: string | null
+          remaining_months: number
+          status: Database["public"]["Enums"]["listing_status"] | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+          year: number
+        }
+        Insert: {
+          body: string
+          brand: string
+          canton_code: string
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deposit_chf?: number | null
+          duration_days?: number | null
+          expires_at?: string | null
+          fuel: string
+          gearbox: string
+          id?: string
+          images?: Json | null
+          is_premium?: boolean | null
+          km?: number | null
+          location: string
+          mileage_km: number
+          model: string
+          moderation_note?: string | null
+          premium?: boolean | null
+          premium_until?: string | null
+          price_per_month_chf: number
+          price_plan?: string | null
+          remaining_months: number
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          year: number
+        }
+        Update: {
+          body?: string
+          brand?: string
+          canton_code?: string
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deposit_chf?: number | null
+          duration_days?: number | null
+          expires_at?: string | null
+          fuel?: string
+          gearbox?: string
+          id?: string
+          images?: Json | null
+          is_premium?: boolean | null
+          km?: number | null
+          location?: string
+          mileage_km?: number
+          model?: string
+          moderation_note?: string | null
+          premium?: boolean | null
+          premium_until?: string | null
+          price_per_month_chf?: number
+          price_plan?: string | null
+          remaining_months?: number
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          role?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      public_listings: {
+        Row: {
+          body: string | null
+          brand: string | null
+          canton_code: string | null
+          cover_image_index: number | null
+          cover_image_url: string | null
+          created_at: string | null
+          deposit_chf: number | null
+          fuel: string | null
+          gearbox: string | null
+          id: string | null
+          images: Json | null
+          location: string | null
+          mileage_km: number | null
+          model: string | null
+          premium: boolean | null
+          price_per_month_chf: number | null
+          remaining_months: number | null
+          title: string | null
+          year: number | null
+        }
+        Insert: {
+          body?: string | null
+          brand?: string | null
+          canton_code?: string | null
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          deposit_chf?: number | null
+          fuel?: string | null
+          gearbox?: string | null
+          id?: string | null
+          images?: Json | null
+          location?: string | null
+          mileage_km?: number | null
+          model?: string | null
+          premium?: boolean | null
+          price_per_month_chf?: number | null
+          remaining_months?: number | null
+          title?: string | null
+          year?: number | null
+        }
+        Update: {
+          body?: string | null
+          brand?: string | null
+          canton_code?: string | null
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          deposit_chf?: number | null
+          fuel?: string | null
+          gearbox?: string | null
+          id?: string | null
+          images?: Json | null
+          location?: string | null
+          mileage_km?: number | null
+          model?: string | null
+          premium?: boolean | null
+          price_per_month_chf?: number | null
+          remaining_months?: number | null
+          title?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      get_distinct_brands: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      get_models_for_brand: {
+        Args: { p_brand: string }
+        Returns: string[]
+      }
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: string
+      }
+      search_published_listings: {
+        Args: {
+          limit_count?: number
+          max_mileage?: number
+          max_price?: number
+          max_year?: number
+          min_price?: number
+          min_year?: number
+          offset_count?: number
+          premium_only?: boolean
+          search_body?: string
+          search_brand?: string
+          search_canton?: string
+          search_fuel?: string
+          search_gearbox?: string
+          search_model?: string
+        }
+        Returns: {
+          body: string
+          brand: string
+          canton_code: string
+          cover_image_index: number
+          cover_image_url: string
+          created_at: string
+          deposit_chf: number
+          fuel: string
+          gearbox: string
+          id: string
+          images: Json
+          location: string
+          mileage_km: number
+          model: string
+          premium: boolean
+          price_per_month_chf: number
+          remaining_months: number
+          title: string
+          year: number
+        }[]
+      }
+    }
+    Enums: {
+      listing_status:
+        | "pending"
+        | "active"
+        | "inactive"
+        | "sold"
+        | "published"
+        | "rejected"
+        | "expired"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      listing_status: [
+        "pending",
+        "active",
+        "inactive",
+        "sold",
+        "published",
+        "rejected",
+        "expired",
+      ],
+    },
+  },
+} as const
