@@ -1,5 +1,6 @@
+
 import type { NextApiRequest, NextApiResponse } from "next";
-import { supabase } from "@/integrations/supabase/client";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,21 +11,18 @@ export default async function handler(
   }
 
   try {
-    // Get the authorization header from the request
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "No authorization token provided" });
-    }
+    // Create a server-side Supabase client that can read from cookies
+    const supabase = createPagesServerClient({ req, res });
 
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
-
-    // Set the auth token for this request
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    // Get the current user session
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
       console.error("Authentication error:", userError);
-      return res.status(401).json({ error: "Invalid or expired token" });
+      return res.status(401).json({ error: "User not authenticated" });
     }
+
+    console.log("Authenticated user ID:", user.id);
 
     // Get query parameters for pagination and sorting
     const limit = parseInt(req.query.limit as string) || 12;
@@ -32,17 +30,8 @@ export default async function handler(
     const orderBy = (req.query.orderBy as string) || "created_at";
     const orderDir = (req.query.orderDir as string) || "desc";
 
-    // Create a new supabase client with the user's session
-    const authenticatedSupabase = supabase;
-    
-    // Set the auth token for this client instance
-    await authenticatedSupabase.auth.setSession({
-      access_token: token,
-      refresh_token: "" // We don't need refresh token for this query
-    });
-
-    // Query listings - RLS will automatically filter for this user's listings
-    const { data, error } = await authenticatedSupabase
+    // Query listings with explicit user filter - RLS will also apply automatically
+    const { data, error } = await supabase
       .from("listings")
       .select(`
         id, brand, model, title, year, price_per_month_chf, remaining_months,
@@ -51,6 +40,7 @@ export default async function handler(
         status, expires_at, duration_days, price_plan, premium_until,
         created_by, user_id, moderation_note, updated_at
       `)
+      .eq("created_by", user.id)
       .order(orderBy as any, { ascending: orderDir === "asc" })
       .range(offset, offset + limit - 1);
 
@@ -58,6 +48,8 @@ export default async function handler(
       console.error("Database query error:", error);
       return res.status(500).json({ error: error.message });
     }
+
+    console.log(`Found ${data?.length || 0} listings for user ${user.id}`);
 
     // Transform the data to match the expected format
     const transformedData = (data || []).map((row: any) => ({
