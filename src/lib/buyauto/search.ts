@@ -1,7 +1,9 @@
 
 import { Listing } from "./types";
 
-export type SearchQuery = {
+export interface SearchQuery {
+  page?: number;
+  query?: string;
   brand?: string;
   model?: string;
   yearMin?: number;
@@ -15,11 +17,8 @@ export type SearchQuery = {
   fuel?: string[];
   gearbox?: string[];
   body?: string[];
-  sort?: "relevance" | "priceAsc" | "priceDesc" | "dateDesc" | "monthsAsc" | "monthsDesc" | "yearDesc" | "kmAsc";
-  page?: number;
-  premiumOnly?: boolean;
-  noDeposit?: boolean;
-};
+  sort?: "relevance" | "priceAsc" | "priceDesc" | "yearDesc" | "monthsAsc";
+}
 
 export type SearchResult = {
   items: Listing[];

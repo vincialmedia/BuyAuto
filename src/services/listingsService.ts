@@ -169,66 +169,74 @@ export async function getSimilarListings(listing: ListingDetail, limit: number =
   }
 }
 
-export async function searchListings(query: SearchQuery): Promise<SearchResult> {
+export async function searchListings(searchQuery: SearchQuery): Promise<SearchResult> {
   try {
     const pageSize = 12;
-    const page = query.page || 1;
+    const page = searchQuery.page || 1;
     const offset = (page - 1) * pageSize;
 
-    let queryBuilder = supabase
+    let query = supabase
       .from('public_listings')
       .select('*', { count: 'exact' });
 
     // Apply filters
-    if (query.brand) queryBuilder = queryBuilder.eq('brand', query.brand);
-    if (query.model) queryBuilder = queryBuilder.eq('model', query.model);
-    if (typeof query.yearMin === 'number') queryBuilder = queryBuilder.gte('year', query.yearMin);
-    if (typeof query.yearMax === 'number') queryBuilder = queryBuilder.lte('year', query.yearMax);
-    if (typeof query.priceMin === 'number') queryBuilder = queryBuilder.gte('price_per_month_chf', query.priceMin);
-    if (typeof query.priceMax === 'number') queryBuilder = queryBuilder.lte('price_per_month_chf', query.priceMax);
-    if (typeof query.kmMax === 'number') queryBuilder = queryBuilder.lte('mileage_km', query.kmMax);
-    if (typeof query.monthsMin === 'number') queryBuilder = queryBuilder.gte('remaining_months', query.monthsMin);
-    if (typeof query.monthsMax === 'number') queryBuilder = queryBuilder.lte('remaining_months', query.monthsMax);
-    if (query.canton?.length) queryBuilder = queryBuilder.in('canton_code', query.canton);
-    if (query.fuel?.length) queryBuilder = queryBuilder.in('fuel', query.fuel);
-    if (query.gearbox?.length) queryBuilder = queryBuilder.in('gearbox', query.gearbox);
-    if (query.body?.length) queryBuilder = queryBuilder.in('body', query.body);
-    if (query.premiumOnly) queryBuilder = queryBuilder.eq('premium', true);
-    if (query.noDeposit) queryBuilder = queryBuilder.is('deposit_chf', null);
+    if (searchQuery.brand) query = query.eq('brand', searchQuery.brand);
+    if (searchQuery.model) query = query.eq('model', searchQuery.model);
+    if (searchQuery.yearMin) {
+      query = query.gte('year', searchQuery.yearMin);
+    }
+
+    if (searchQuery.priceMin) {
+      query = query.gte('price_per_month_chf', searchQuery.priceMin);
+    }
+
+    if (searchQuery.priceMax) {
+      query = query.lte('price_per_month_chf', searchQuery.priceMax);
+    }
+
+    if (typeof searchQuery.kmMax === 'number') query = query.lte('mileage_km', searchQuery.kmMax);
+    if (typeof searchQuery.monthsMin === 'number') query = query.gte('remaining_months', searchQuery.monthsMin);
+    if (typeof searchQuery.monthsMax === 'number') query = query.lte('remaining_months', searchQuery.monthsMax);
+    if (searchQuery.canton?.length) query = query.in('canton_code', searchQuery.canton);
+    if (searchQuery.fuel?.length) query = query.in('fuel', searchQuery.fuel);
+    if (searchQuery.gearbox?.length) query = query.in('gearbox', searchQuery.gearbox);
+    if (searchQuery.body?.length) query = query.in('body', searchQuery.body);
+    if (searchQuery.premiumOnly) query = query.eq('premium', true);
+    if (searchQuery.noDeposit) query = query.is('deposit_chf', null);
 
     // Apply sorting
-    switch (query.sort) {
+    switch (searchQuery.sort) {
       case 'priceAsc':
-        queryBuilder = queryBuilder.order('price_per_month_chf', { ascending: true });
+        query = query.order('price_per_month_chf', { ascending: true });
         break;
       case 'priceDesc':
-        queryBuilder = queryBuilder.order('price_per_month_chf', { ascending: false });
+        query = query.order('price_per_month_chf', { ascending: false });
         break;
       case 'dateDesc':
-        queryBuilder = queryBuilder.order('created_at', { ascending: false });
+        query = query.order('created_at', { ascending: false });
         break;
       case 'monthsAsc':
-        queryBuilder = queryBuilder.order('remaining_months', { ascending: true });
+        query = query.order('remaining_months', { ascending: true });
         break;
       case 'monthsDesc':
-        queryBuilder = queryBuilder.order('remaining_months', { ascending: false });
+        query = query.order('remaining_months', { ascending: false });
         break;
       case 'yearDesc':
-        queryBuilder = queryBuilder.order('year', { ascending: false });
+        query = query.order('year', { ascending: false });
         break;
       case 'kmAsc':
-        queryBuilder = queryBuilder.order('mileage_km', { ascending: true });
+        query = query.order('mileage_km', { ascending: true });
         break;
       case 'relevance':
       default:
-        queryBuilder = queryBuilder.order('premium', { ascending: false }).order('created_at', { ascending: false });
+        query = query.order('premium', { ascending: false }).order('created_at', { ascending: false });
         break;
     }
 
     // Apply pagination
-    queryBuilder = queryBuilder.range(offset, offset + pageSize - 1);
+    query = query.range(offset, offset + pageSize - 1);
 
-    const { data, error, count } = await queryBuilder;
+    const { data, error, count } = await query;
 
     if (error) {
       console.error('Search query error:', error);
@@ -248,7 +256,7 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
     return {
       items: [],
       total: 0,
-      page: query.page || 1,
+      page: searchQuery.page || 1,
       pageSize: 12,
     };
   }

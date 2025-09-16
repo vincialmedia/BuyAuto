@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { useDebounce } from 'use-debounce';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +9,6 @@ import { SearchQuery } from "@/lib/buyauto/search";
 import { Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBrands, getModelsForBrand } from "@/services/listingsService";
-import { Slider } from "@/components/ui/slider";
 
 interface DynamicFilterBarProps {
   searchQuery: SearchQuery;
@@ -18,7 +16,7 @@ interface DynamicFilterBarProps {
   className?: string;
 }
 
-type FilterChipKey = "brand" | "model" | "yearMin" | "priceMax" | "monthsMax";
+type FilterChipKey = "brand" | "model" | "yearMin" | "priceMin" | "priceMax" | "monthsMax";
 
 interface FilterChip {
   key: FilterChipKey;
@@ -31,12 +29,6 @@ export default function DynamicFilterBar({
   onSearchQueryChange,
   className
 }: DynamicFilterBarProps) {
-  // Local state for immediate UI feedback
-  const [localPrice, setLocalPrice] = useState(searchQuery.priceMax ?? 3000);
-  
-  // Debounce the local price value before pushing to URL
-  const [debouncedPrice] = useDebounce(localPrice, 300);
-
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   
   // State for dynamic dropdowns
@@ -49,24 +41,8 @@ export default function DynamicFilterBar({
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: currentYear - 1989 }, (_, i) => currentYear + 1 - i);
 
-  // Effect to update search query when debounced price changes
-  useEffect(() => {
-    // Avoid triggering a search on initial component mount if price hasn't changed
-    if (debouncedPrice === (searchQuery.priceMax ?? 3000)) {
-      return;
-    }
-
-    if (debouncedPrice < 3000) {
-      onSearchQueryChange({
-        ...searchQuery,
-        priceMax: debouncedPrice
-      });
-    } else {
-      // Remove priceMax filter if set to maximum
-      const { priceMax, ...rest } = searchQuery;
-      onSearchQueryChange(rest);
-    }
-  }, [debouncedPrice]);
+  // Generate price options from 100 to 5000 in steps of 100
+  const priceOptions = Array.from({ length: 50 }, (_, i) => (i + 1) * 100);
 
   // Fetch brands on mount
   useEffect(() => {
@@ -118,6 +94,17 @@ export default function DynamicFilterBar({
     onSearchQueryChange({ ...searchQuery, yearMin: yearAsNumber });
   };
   
+  const handlePriceChange = (value: string | undefined, type: 'min' | 'max') => {
+    const priceAsNumber = value === 'all' ? undefined : (value ? parseInt(value, 10) : undefined);
+    const newQuery = { ...searchQuery };
+    if (type === 'min') {
+      newQuery.priceMin = priceAsNumber;
+    } else {
+      newQuery.priceMax = priceAsNumber;
+    }
+    onSearchQueryChange(newQuery);
+  };
+
   // Generate filter chips from active filters
   const getActiveFilterChips = (): FilterChip[] => {
     const chips: FilterChip[] = [];
@@ -125,7 +112,8 @@ export default function DynamicFilterBar({
     if (searchQuery.brand) chips.push({ key: "brand", label: "Marke", value: searchQuery.brand });
     if (searchQuery.model) chips.push({ key: "model", label: "Modell", value: searchQuery.model });
     if (searchQuery.yearMin) chips.push({ key: "yearMin", label: "Ab Jahr", value: searchQuery.yearMin.toString() });
-    if (searchQuery.priceMax && searchQuery.priceMax < 3000) chips.push({ key: "priceMax", label: "Max. Preis", value: `CHF ${searchQuery.priceMax}` });
+    if (searchQuery.priceMin) chips.push({ key: "priceMin", label: "Min. Preis", value: `CHF ${searchQuery.priceMin}` });
+    if (searchQuery.priceMax) chips.push({ key: "priceMax", label: "Max. Preis", value: `CHF ${searchQuery.priceMax}` });
     if (searchQuery.monthsMax) chips.push({ key: "monthsMax", label: "Restlaufzeit", value: `bis ${searchQuery.monthsMax} Mon.`});
     
     return chips;
@@ -138,10 +126,6 @@ export default function DynamicFilterBar({
     if (chipKey === "brand" && newQuery.model) {
       delete newQuery.model; // Also clear model when clearing brand
     }
-    
-    if (chipKey === "priceMax") {
-      setLocalPrice(3000);
-    }
 
     onSearchQueryChange(newQuery as SearchQuery);
   };
@@ -152,7 +136,7 @@ export default function DynamicFilterBar({
   const DesktopFilters = () => (
     <div className="space-y-3">
       {/* Main filter row */}
-      <div className="grid grid-cols-7 items-center gap-4">
+      <div className="grid grid-cols-8 items-center gap-4">
         {/* Brand */}
         <div className="col-span-1">
           <Select value={searchQuery.brand || "all"} onValueChange={handleBrandChange} disabled={loadingBrands}>
@@ -175,7 +159,7 @@ export default function DynamicFilterBar({
           </Select>
         </div>
 
-        {/* Year - Fixed: Now a dropdown instead of text input */}
+        {/* Year - Dropdown instead of text input */}
         <div className="col-span-1">
           <Select value={searchQuery.yearMin ? searchQuery.yearMin.toString() : "all"} onValueChange={handleYearChange}>
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jahr" /></SelectTrigger>
@@ -186,22 +170,30 @@ export default function DynamicFilterBar({
           </Select>
         </div>
 
-        {/* Price Slider - Enhanced for smooth dragging without stepping */}
-        <div className="col-span-2">
-          <div className="px-1">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-neutral-600 font-medium">Max. Preis</span>
-              <span className="text-xs font-semibold text-red-600">CHF {localPrice}</span>
-            </div>
-            <Slider
-              value={[localPrice]}
-              onValueChange={(value) => setLocalPrice(value[0])}
-              max={3000}
-              min={100}
-              step={1}
-              className="w-full"
-            />
-          </div>
+        {/* Min Price Dropdown */}
+        <div className="col-span-1">
+          <Select value={searchQuery.priceMin ? searchQuery.priceMin.toString() : "all"} onValueChange={(value) => handlePriceChange(value, 'min')}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Min. Preis" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Kein Min.</SelectItem>
+              {priceOptions.map((price) => (
+                <SelectItem key={price} value={price.toString()}>CHF {price}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Max Price Dropdown */}
+        <div className="col-span-1">
+          <Select value={searchQuery.priceMax ? searchQuery.priceMax.toString() : "all"} onValueChange={(value) => handlePriceChange(value, 'max')}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Max. Preis" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Kein Max.</SelectItem>
+              {priceOptions.map((price) => (
+                <SelectItem key={price} value={price.toString()}>CHF {price}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Restlaufzeit - Fixed: Show placeholder instead of "Alle" when no selection */}
