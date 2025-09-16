@@ -1,6 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,8 +11,24 @@ export default async function handler(
   }
 
   try {
-    // Create a server-side Supabase client that can read from cookies
-    const supabase = createPagesServerClient({ req, res });
+    // Create a server-side Supabase client using the SSR package
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies[name];
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            res.setHeader('Set-Cookie', `${name}=${value}; Path=/; ${options.httpOnly ? 'HttpOnly;' : ''} ${options.secure ? 'Secure;' : ''} SameSite=${options.sameSite || 'Lax'}`);
+          },
+          remove(name: string, options: CookieOptions) {
+            res.setHeader('Set-Cookie', `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`);
+          },
+        },
+      }
+    );
 
     // Get the current user session
     const { data: { user }, error: userError } = await supabase.auth.getUser();
