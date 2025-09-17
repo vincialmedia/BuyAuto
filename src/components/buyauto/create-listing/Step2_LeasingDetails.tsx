@@ -56,7 +56,6 @@ export default function Step2_LeasingDetails() {
     formState: { errors },
     watch,
     setValue,
-    control,
   } = useForm<LeasingDetailsForm>({
     resolver: zodResolver(leasingDetailsSchema),
     defaultValues: {
