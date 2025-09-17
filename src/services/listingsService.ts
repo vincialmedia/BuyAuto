@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail } from "@/lib/buyauto/types";
@@ -38,8 +39,64 @@ type FullListingRow = PublicListingRow & {
   updated_at?: string;
 };
 
+/**
+ * Safely parse images from database JSON field
+ * Handles multiple formats and provides proper fallbacks
+ */
+function parseImagesFromDatabase(imagesField: any, coverImageUrl?: string): string[] {
+  let imageUrls: string[] = [];
+  
+  // Handle various image formats from database
+  if (imagesField) {
+    try {
+      // Case 1: Already an array (direct array storage)
+      if (Array.isArray(imagesField)) {
+        console.log("Images field is array:", imagesField);
+        imageUrls = imagesField.filter(img => typeof img === "string" && img.trim() !== "");
+      } 
+      // Case 2: JSON string that needs parsing
+      else if (typeof imagesField === "string") {
+        console.log("Images field is string, attempting to parse:", imagesField);
+        const parsed = JSON.parse(imagesField);
+        if (Array.isArray(parsed)) {
+          imageUrls = parsed.filter(img => typeof img === "string" && img.trim() !== "");
+        } else {
+          console.warn("Parsed images is not an array:", parsed);
+        }
+      }
+      // Case 3: Object (might be a JSON object)
+      else if (typeof imagesField === "object") {
+        console.log("Images field is object:", imagesField);
+        // Try to extract if it's a JSON object with array-like structure
+        if (imagesField.length !== undefined) {
+          // Array-like object
+          imageUrls = Object.values(imagesField).filter(img => typeof img === "string" && img.trim() !== "");
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing images JSON:", {
+        error: error.message,
+        imagesField: imagesField,
+        type: typeof imagesField
+      });
+      imageUrls = [];
+    }
+  }
+
+  // Fallback: if no images in array but cover_image_url exists, use it
+  if (imageUrls.length === 0 && coverImageUrl && coverImageUrl.trim() !== "") {
+    console.log("No images found, using cover_image_url as fallback:", coverImageUrl);
+    imageUrls = [coverImageUrl];
+  }
+
+  console.log("Final parsed images:", imageUrls);
+  return imageUrls;
+}
+
 // Transform public listing row to UI Listing format
 function transformPublicRowToListing(row: PublicListingRow): Listing {
+  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
+  
   return {
     id: row.id,
     brand: row.brand,
@@ -55,38 +112,14 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     body: row.body,
     premium: row.premium,
     depositCHF: row.deposit_chf || null,
-    images: row.cover_image_url ? [row.cover_image_url] : [],
-    imageUrl: row.cover_image_url || ""
+    images: imageUrls,
+    imageUrl: imageUrls[0] || ""
   };
 }
 
 // Transform public listing row to detailed format
 function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail {
-  // Handle images field properly - it's stored as JSON in the database
-  let imageUrls: string[] = [];
-  
-  if (row.images) {
-    try {
-      if (Array.isArray(row.images)) {
-        // If it's already an array (some cases)
-        imageUrls = row.images.filter(img => typeof img === "string" && img.trim() !== "");
-      } else if (typeof row.images === "string") {
-        // If it's a JSON string, parse it
-        const parsed = JSON.parse(row.images);
-        if (Array.isArray(parsed)) {
-          imageUrls = parsed.filter(img => typeof img === "string" && img.trim() !== "");
-        }
-      }
-    } catch (error) {
-      console.warn("Error parsing images JSON:", error, row.images);
-      imageUrls = [];
-    }
-  }
-
-  // Fallback to cover_image_url if no images in array
-  if (imageUrls.length === 0 && row.cover_image_url) {
-    imageUrls = [row.cover_image_url];
-  }
+  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
 
   return {
     id: row.id,
@@ -103,8 +136,8 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     body: row.body,
     premium: row.premium,
     depositCHF: row.deposit_chf || null,
-    images: imageUrls, // This is the key fix - properly parsed images array
-    imageUrl: imageUrls[0] || row.cover_image_url || "",
+    images: imageUrls,
+    imageUrl: imageUrls[0] || "",
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
     image_urls: imageUrls,
@@ -119,31 +152,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 
 // Transform full listing row (for dashboard/admin)
 function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
-  // Handle images field properly - it's stored as JSON in the database
-  let imageUrls: string[] = [];
-  
-  if (row.images) {
-    try {
-      if (Array.isArray(row.images)) {
-        // If it's already an array (some cases)
-        imageUrls = row.images.filter(img => typeof img === "string" && img.trim() !== "");
-      } else if (typeof row.images === "string") {
-        // If it's a JSON string, parse it
-        const parsed = JSON.parse(row.images);
-        if (Array.isArray(parsed)) {
-          imageUrls = parsed.filter(img => typeof img === "string" && img.trim() !== "");
-        }
-      }
-    } catch (error) {
-      console.warn("Error parsing images JSON:", error, row.images);
-      imageUrls = [];
-    }
-  }
-
-  // Fallback to cover_image_url if no images in array
-  if (imageUrls.length === 0 && row.cover_image_url) {
-    imageUrls = [row.cover_image_url];
-  }
+  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
 
   return {
     id: row.id,
@@ -160,8 +169,8 @@ function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
     body: row.body,
     premium: row.premium,
     depositCHF: row.deposit_chf || null,
-    images: imageUrls, // This is the key fix - properly parsed images array
-    imageUrl: imageUrls[0] || row.cover_image_url || "",
+    images: imageUrls,
+    imageUrl: imageUrls[0] || "",
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
     image_urls: imageUrls,
@@ -179,6 +188,8 @@ function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
 
 export async function getPublishedListingById(id: string): Promise<ListingDetail | null> {
   try {
+    console.log("Fetching published listing by ID:", id);
+    
     const { data, error } = await supabase
       .from('public_listings')
       .select('*')
@@ -186,12 +197,19 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // No rows returned
+      if (error.code === 'PGRST116') {
+        console.log("No listing found with ID:", id);
+        return null; // No rows returned
+      }
       console.error('Error fetching published listing by ID:', error);
       return null;
     }
 
-    return transformPublicRowToListingDetail(data);
+    console.log("Raw listing data from database:", data);
+    const transformedListing = transformPublicRowToListingDetail(data);
+    console.log("Transformed listing data:", transformedListing);
+    
+    return transformedListing;
   } catch (error) {
     console.error('Get published listing by ID error:', error);
     return null;
