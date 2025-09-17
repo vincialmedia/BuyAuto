@@ -26,7 +26,7 @@ export default function Step5_Preview() {
 
     try {
       // Map wizard data to the expected database format
-      const listingData = {
+      const listingData: ListingFormData = {
         brand: data.brand,
         model: data.model,
         year: data.year,
@@ -42,14 +42,14 @@ export default function Step5_Preview() {
         title: `${data.brand} ${data.model}`, // Generate title
         images: data.images,
         cover_image_index: data.cover_image_index,
-        price_plan: data.price_plan as any, // Cast to PricePlan type
+        price_plan: data.price_plan as PricePlan, // Cast to PricePlan type
       };
 
       const listingId = await createListing(listingData, user);
       
       if (listingId) {
         setIsComplete(true);
-        toast.success("Inserat erfolgreich erstellt!");
+        toast("Inserat erfolgreich erstellt!");
       } else {
         setError('Fehler beim Erstellen des Inserats. Bitte versuchen Sie es erneut.');
       }

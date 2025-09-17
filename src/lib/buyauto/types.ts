@@ -52,9 +52,9 @@ export interface ListingFormData {
   model: string;
   year: number | string;
   mileage_km: number | string;
-  fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
-  gearbox: "Automatik" | "Manuell";
-  body: "Limousine" | "Kombi" | "SUV" | "Cabrio";
+  fuel: string; // Changed from enum to string to match database
+  gearbox: string; // Changed from enum to string to match database  
+  body: string; // Changed from enum to string to match database
   
   // Step 2: Leasing Details
   price_per_month_chf: number | string;
