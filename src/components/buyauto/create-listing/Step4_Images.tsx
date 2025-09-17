@@ -1,14 +1,14 @@
 import { useState, useCallback } from "react";
-import { useFormContext, useWatch } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, X, GripVertical, Loader2 } from "lucide-react";
+import { UploadCloud, X, GripVertical, Loader2, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
 import { Reorder } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadListingImages } from "@/services/storageService";
 import { toast } from "sonner";
+import { useWizard } from "./ListingWizard";
 
 interface ImageItem {
   id: string;
@@ -16,15 +16,16 @@ interface ImageItem {
 }
 
 export function Step4_Images() {
-  const { control, setValue, getValues } = useFormContext();
-  const images = useWatch({ control, name: "images" }) || [];
-  const coverImageIndex = useWatch({ control, name: "cover_image_index" }) || 0;
+  const { data, updateData, nextStep, prevStep, getMaxPhotos } = useWizard();
+  const images = data.images || [];
+  const coverImageIndex = data.cover_image_index || 0;
   
   const [imageItems, setImageItems] = useState<ImageItem[]>(() =>
     images.map((url: string, index: number) => ({ id: `${index}-${Date.now()}`, url }))
   );
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
+  const maxPhotos = getMaxPhotos();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!user) {
@@ -32,8 +33,8 @@ export function Step4_Images() {
       return;
     }
     
-    if ((imageItems.length + acceptedFiles.length) > 15) {
-      toast.error("Sie können maximal 15 Bilder hochladen.");
+    if ((imageItems.length + acceptedFiles.length) > maxPhotos) {
+      toast.error(`Sie können maximal ${maxPhotos} Bilder hochladen.`);
       return;
     }
 
@@ -46,7 +47,10 @@ export function Step4_Images() {
       setImageItems(updatedItems);
       
       const updatedUrls = updatedItems.map(item => item.url);
-      setValue("images", updatedUrls, { shouldValidate: true, shouldDirty: true });
+      updateData({ 
+        images: updatedUrls, 
+        cover_image_index: coverImageIndex < updatedUrls.length ? coverImageIndex : 0 
+      });
 
       toast.success(`${acceptedFiles.length} Bild(er) erfolgreich hochgeladen.`);
     } catch (error) {
@@ -55,12 +59,12 @@ export function Step4_Images() {
     } finally {
       setIsUploading(false);
     }
-  }, [user, imageItems, setValue]);
+  }, [user, imageItems, maxPhotos, updateData, coverImageIndex]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "image/*": [".jpeg", ".jpg", ".png", ".webp"] },
-    maxFiles: 15,
+    maxFiles: maxPhotos,
   });
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -68,17 +72,22 @@ export function Step4_Images() {
     setImageItems(updatedItems);
     
     const updatedUrls = updatedItems.map(item => item.url);
-    setValue("images", updatedUrls, { shouldValidate: true, shouldDirty: true });
-
+    let newCoverIndex = coverImageIndex;
+    
     if (coverImageIndex === indexToRemove) {
-      setValue("cover_image_index", 0, { shouldValidate: true });
+      newCoverIndex = 0;
     } else if (coverImageIndex > indexToRemove) {
-      setValue("cover_image_index", coverImageIndex - 1, { shouldValidate: true });
+      newCoverIndex = coverImageIndex - 1;
     }
+
+    updateData({ 
+      images: updatedUrls, 
+      cover_image_index: newCoverIndex 
+    });
   };
 
   const handleSetCoverImage = (index: number) => {
-    setValue("cover_image_index", index, { shouldValidate: true });
+    updateData({ cover_image_index: index });
   };
   
   const onReorder = (newOrder: ImageItem[]) => {
@@ -86,74 +95,176 @@ export function Step4_Images() {
     setImageItems(newOrder);
 
     const newUrls = newOrder.map(item => item.url);
-    setValue("images", newUrls, { shouldValidate: true, shouldDirty: true });
+    const newCoverIndex = oldCoverUrl ? newOrder.findIndex(item => item.url === oldCoverUrl) : 0;
+    
+    updateData({ 
+      images: newUrls, 
+      cover_image_index: newCoverIndex >= 0 ? newCoverIndex : 0 
+    });
+  };
 
-    const newCoverIndex = newOrder.findIndex(item => item.url === oldCoverUrl);
-    setValue("cover_image_index", newCoverIndex >= 0 ? newCoverIndex : 0);
+  const handleContinue = () => {
+    // Update the wizard data and proceed to next step
+    const updatedUrls = imageItems.map(item => item.url);
+    updateData({ 
+      images: updatedUrls,
+      cover_image_index: coverImageIndex < updatedUrls.length ? coverImageIndex : 0
+    });
+    nextStep();
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Bilder hochladen</CardTitle>
-        <CardDescription>
-          Laden Sie bis zu 15 Bilder Ihres Fahrzeugs hoch. Das erste Bild wird als Titelbild verwendet. Sie können die Reihenfolge per Drag-and-Drop ändern.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragActive ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-          }`}
-        >
-          <input {...getInputProps()} />
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            {isUploading ? (
-              <>
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p>Bilder werden hochgeladen...</p>
-              </>
-            ) : (
-              <>
-                <UploadCloud className="h-12 w-12" />
-                <p className="font-semibold">Klicken oder ziehen Sie Bilder hierher</p>
-                <p className="text-sm">PNG, JPG, WEBP bis zu 10MB</p>
-              </>
-            )}
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
+          Bilder hochladen
+        </h2>
+        <p className="text-neutral-600 font-light leading-relaxed">
+          Laden Sie bis zu {maxPhotos} Bilder Ihres Fahrzeugs hoch
+        </p>
+      </div>
+
+      <Card className="border border-neutral-200/40 shadow-sm bg-white">
+        <CardContent className="p-6">
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              isDragActive 
+                ? "border-red-400 bg-red-50" 
+                : "border-neutral-300 hover:border-red-400 hover:bg-neutral-50"
+            }`}
+          >
+            <input {...getInputProps()} />
+            <div className="flex flex-col items-center gap-3 text-neutral-600">
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+                  <p className="font-medium">Bilder werden hochgeladen...</p>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="h-12 w-12 text-neutral-400" />
+                  <div className="space-y-1">
+                    <p className="font-medium text-neutral-900">Klicken oder ziehen Sie Bilder hierher</p>
+                    <p className="text-sm font-light">PNG, JPG, WEBP bis zu 10MB pro Bild</p>
+                    <p className="text-xs text-neutral-500">
+                      Maximal {maxPhotos} Bilder · {imageItems.length} von {maxPhotos} hochgeladen
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {imageItems.length > 0 && (
+            <div className="mt-8">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-medium text-neutral-900">Ihre Bilder ({imageItems.length})</h3>
+                <p className="text-xs text-neutral-500 font-light">
+                  Ziehen Sie die Bilder, um die Reihenfolge zu ändern
+                </p>
+              </div>
+              
+              <Reorder.Group axis="y" values={imageItems} onReorder={onReorder} className="space-y-3">
+                {imageItems.map((item, index) => (
+                  <Reorder.Item 
+                    key={item.id} 
+                    value={item} 
+                    className="bg-neutral-50 p-4 rounded-lg flex items-center gap-4 border border-neutral-200/40 hover:border-neutral-300 transition-colors"
+                  >
+                    <GripVertical className="h-5 w-5 text-neutral-400 cursor-grab active:cursor-grabbing" />
+                    
+                    <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-neutral-200">
+                      <Image 
+                        src={item.url} 
+                        alt={`Fahrzeugbild ${index + 1}`} 
+                        fill
+                        className="object-cover" 
+                        sizes="80px"
+                      />
+                      {coverImageIndex === index && (
+                        <div className="absolute top-1 left-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                          Titel
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-grow">
+                      <p className="text-sm font-medium text-neutral-900">Bild {index + 1}</p>
+                      <p className="text-xs text-neutral-500 font-light truncate">
+                        {item.url.split("/").pop()}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={coverImageIndex === index ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleSetCoverImage(index)}
+                        className={
+                          coverImageIndex === index 
+                            ? "bg-red-500 hover:bg-red-600 text-white" 
+                            : "border-neutral-200/40 text-neutral-600 hover:bg-neutral-50"
+                        }
+                      >
+                        {coverImageIndex === index ? "Titelbild" : "Als Titel"}
+                      </Button>
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleRemoveImage(index)}
+                        className="text-neutral-500 hover:text-red-600 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Reorder.Item>
+                ))}
+              </Reorder.Group>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Plan info */}
+      <div className="bg-gradient-to-br from-neutral-50 to-red-50/30 rounded-lg p-6 border border-neutral-200/40">
+        <h3 className="text-lg font-medium text-neutral-900 mb-3 tracking-tight">Bilderlimit</h3>
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm font-medium text-neutral-900">
+              {data.price_plan === 'free30' ? 'Standard Plan' : 'Premium Plan'}
+            </p>
+            <p className="text-xs text-neutral-600 font-light">
+              {maxPhotos} Bilder möglich
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-neutral-900">{imageItems.length}/{maxPhotos}</p>
+            <p className="text-xs text-neutral-500 font-light">hochgeladen</p>
           </div>
         </div>
+      </div>
 
-        {imageItems.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-semibold mb-2">Ihre Bilder:</h3>
-            <Reorder.Group axis="y" values={imageItems} onReorder={onReorder} className="space-y-4">
-              {imageItems.map((item, index) => (
-                <Reorder.Item key={item.id} value={item} className="bg-muted/50 p-3 rounded-lg flex items-center gap-4">
-                  <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                  <div className="relative w-24 h-16 rounded-md overflow-hidden flex-shrink-0">
-                    <Image src={item.url} alt={`Fahrzeugbild ${index + 1}`} layout="fill" objectFit="cover" />
-                  </div>
-                  <div className="flex-grow text-sm truncate">{item.url.split("/").pop()}</div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={coverImageIndex === index ? "secondary" : "outline"}
-                      size="sm"
-                      onClick={() => handleSetCoverImage(index)}
-                      className={coverImageIndex === index ? "bg-green-100 dark:bg-green-900 border-green-500" : ""}
-                    >
-                      {coverImageIndex === index ? "Titelbild" : "Als Titelbild"}
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveImage(index)}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </Reorder.Item>
-              ))}
-            </Reorder.Group>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* Navigation */}
+      <div className="flex justify-between pt-6">
+        <Button
+          type="button"
+          onClick={prevStep}
+          variant="outline"
+          className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
+        >
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Zurück
+        </Button>
+        
+        <Button
+          onClick={handleContinue}
+          className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+        >
+          Weiter zur Vorschau
+        </Button>
+      </div>
+    </div>
   );
 }
