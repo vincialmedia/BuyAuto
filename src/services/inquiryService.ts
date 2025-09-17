@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
-import { TablesInsert } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
+
+// Use the proper database types
+type InquiryInsert = Database['public']['Tables']['listing_inquiries']['Insert'];
 
 export interface InquiryData {
   listing_id: string;
@@ -11,7 +14,7 @@ export interface InquiryData {
 
 export async function createInquiry(inquiryData: InquiryData): Promise<boolean> {
   try {
-    const newInquiry: TablesInsert<"listing_inquiries"> = {
+    const newInquiry: InquiryInsert = {
       listing_id: inquiryData.listing_id,
       name: inquiryData.name,
       email: inquiryData.email,

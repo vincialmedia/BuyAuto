@@ -211,7 +211,7 @@ export default function Step1_VehicleData() {
             </Label>
             <Select
               value={watch("body")}
-              onValueChange={(value) => setValue("body", value, { shouldValidate: true })}
+              onValueChange={(value) => setValue("body", value as "Limousine" | "Kombi" | "SUV" | "Cabrio", { shouldValidate: true })}
             >
               <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                 <SelectValue placeholder="Karosserie auswählen" />
@@ -236,7 +236,7 @@ export default function Step1_VehicleData() {
             </Label>
             <Select
               value={watch("fuel")}
-              onValueChange={(value) => setValue("fuel", value, { shouldValidate: true })}
+              onValueChange={(value) => setValue("fuel", value as "Benzin" | "Diesel" | "Hybrid" | "Elektro", { shouldValidate: true })}
             >
               <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                 <SelectValue placeholder="Antrieb auswählen" />
@@ -262,7 +262,7 @@ export default function Step1_VehicleData() {
           </Label>
           <Select
             value={watch("gearbox")}
-            onValueChange={(value) => setValue("gearbox", value, { shouldValidate: true })}
+            onValueChange={(value) => setValue("gearbox", value as "Automatik" | "Manuell", { shouldValidate: true })}
           >
             <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
               <SelectValue placeholder="Getriebe auswählen" />

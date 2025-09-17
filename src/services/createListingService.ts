@@ -1,7 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ListingFormData, PricePlan } from "@/lib/buyauto/types";
 import type { User } from "@supabase/supabase-js";
-import { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
+
+// Use the proper database types
+type ListingInsert = Database['public']['Tables']['listings']['Insert'];
+type ListingUpdate = Database['public']['Tables']['listings']['Update'];
 
 // Calculate expiry date based on price plan
 function calculateExpiryDate(plan: PricePlan): Date | null {
@@ -34,7 +38,7 @@ export async function createListing(listingData: ListingFormData, user: User): P
     const expires_at = calculateExpiryDate(price_plan);
     const cover_image_url = images[cover_image_index] || null;
 
-    const newListing: TablesInsert<"listings"> = {
+    const newListing: ListingInsert = {
       brand,
       model,
       year: Number(year),
@@ -82,7 +86,7 @@ export async function createListing(listingData: ListingFormData, user: User): P
 
 export async function updateListing(listingId: string, listingData: Partial<ListingFormData>): Promise<boolean> {
   try {
-    const updateData: Partial<TablesUpdate<"listings">> = {};
+    const updateData: Partial<ListingUpdate> = {};
 
     // Handle image updates specifically
     if (listingData.images) {
