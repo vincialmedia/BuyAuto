@@ -5,7 +5,7 @@ import ProgressBar from "./ProgressBar";
 import Step1_VehicleData from "./Step1_VehicleData";
 import Step2_LeasingDetails from "./Step2_LeasingDetails";
 import Step3_PlanSelection from "./Step3_PlanSelection";
-import Step4_Images from "./Step4_Images";
+import { Step4_Images } from "./Step4_Images";
 import Step5_Preview from "./Step5_Preview";
 import SuccessScreen from "./SuccessScreen";
 

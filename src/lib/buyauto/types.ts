@@ -1,4 +1,3 @@
-
 export interface Listing {
   id: string;
   brand: string;
@@ -17,6 +16,9 @@ export interface Listing {
   images: string[];
   imageUrl: string; // Ensure this is present and used as the primary image
 }
+
+// Price plan types
+export type PricePlan = "free30" | "premium30" | "paid90" | "unlimited";
 
 // Type for create listing form data - matches what the components actually use
 export interface ListingData {
@@ -43,6 +45,33 @@ export interface ListingData {
   cover_image_index?: number;
 }
 
+// Comprehensive form data type for listing creation
+export interface ListingFormData {
+  // Step 1: Vehicle Data
+  brand: string;
+  model: string;
+  year: number | string;
+  mileage_km: number | string;
+  fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
+  gearbox: "Automatik" | "Manuell";
+  body: "Limousine" | "Kombi" | "SUV" | "Cabrio";
+  
+  // Step 2: Leasing Details
+  price_per_month_chf: number | string;
+  remaining_months: number | string;
+  deposit_chf?: number | string | null;
+  location: string;
+  canton_code: string;
+  title?: string;
+  
+  // Step 3: Plan Selection
+  price_plan: PricePlan;
+  
+  // Step 4: Images
+  images: string[];
+  cover_image_index: number;
+}
+
 // Extended listing type for detail page with additional fields
 export interface ListingDetail extends Listing {
   canton_code?: string;
@@ -50,10 +79,10 @@ export interface ListingDetail extends Listing {
   image_urls: string[];
   status: "pending" | "published" | "rejected" | "expired";
   created_at: string;
-  expires_at?: string;
-  duration_days?: number;
-  price_plan?: "free30" | "premium30" | "paid90" | "unlimited";
-  premium_until?: string;
+  expires_at?: string | null;
+  duration_days?: number | null;
+  price_plan?: PricePlan | null;
+  premium_until?: string | null;
 }
 
 // Type for listing inquiries

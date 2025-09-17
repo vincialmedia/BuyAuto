@@ -3,6 +3,24 @@ import { ListingFormData, PricePlan } from "@/lib/buyauto/types";
 import type { User } from "@supabase/supabase-js";
 import { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
+// Calculate expiry date based on price plan
+function calculateExpiryDate(plan: PricePlan): Date | null {
+  const now = new Date();
+  
+  switch (plan) {
+    case "free30":
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    case "premium30":
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    case "paid90":
+      return new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
+    case "unlimited":
+      return null; // Never expires
+    default:
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default to 30 days
+  }
+}
+
 // This function now expects `listingData.images` to be an array of permanent URLs
 export async function createListing(listingData: ListingFormData, user: User): Promise<string | null> {
   try {
@@ -81,7 +99,6 @@ export async function updateListing(listingId: string, listingData: Partial<List
     if (listingData.remaining_months) updateData.remaining_months = Number(listingData.remaining_months);
     if (listingData.deposit_chf) updateData.deposit_chf = Number(listingData.deposit_chf);
 
-
     const { error } = await supabase
       .from("listings")
       .update(updateData)
@@ -100,17 +117,18 @@ export async function updateListing(listingId: string, listingData: Partial<List
   }
 }
 
-
 const getPlanDuration = (plan: PricePlan): number | undefined => {
   switch (plan) {
-    case "free60":
-      return 60;
+    case "free30":
+      return 30;
     case "premium30":
       return 30;
+    case "paid90":
+      return 90;
     case "unlimited":
-      return undefined;
+      return undefined; // Never expires
     default:
-      return undefined;
+      return 30;
   }
 };
 

@@ -7,6 +7,7 @@ import { useWizard } from "./ListingWizard";
 import { ChevronLeft, Check, Star, MapPin, Calendar, Settings, Image as ImageIcon, CreditCard } from "lucide-react";
 import Image from "next/image";
 import { createListing } from "@/services/createListingService";
+import { toast } from "sonner";
 
 export default function Step5_Preview() {
   const { data, prevStep, setIsComplete } = useWizard();
@@ -46,6 +47,7 @@ export default function Step5_Preview() {
 
       await createListing(listingData);
       setIsComplete(true);
+      toast.success("Inserat erfolgreich erstellt!");
     } catch (error) {
       console.error('Failed to create listing:', error);
       setError('Fehler beim Erstellen des Inserats. Bitte versuchen Sie es erneut.');
