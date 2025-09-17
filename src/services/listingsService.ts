@@ -62,7 +62,31 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
 
 // Transform public listing row to detailed format
 function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail {
-  const imageUrls = Array.isArray(row.images) ? row.images.filter(img => typeof img === "string") : [];
+  // Handle images field properly - it's stored as JSON in the database
+  let imageUrls: string[] = [];
+  
+  if (row.images) {
+    try {
+      if (Array.isArray(row.images)) {
+        // If it's already an array (some cases)
+        imageUrls = row.images.filter(img => typeof img === "string" && img.trim() !== "");
+      } else if (typeof row.images === "string") {
+        // If it's a JSON string, parse it
+        const parsed = JSON.parse(row.images);
+        if (Array.isArray(parsed)) {
+          imageUrls = parsed.filter(img => typeof img === "string" && img.trim() !== "");
+        }
+      }
+    } catch (error) {
+      console.warn("Error parsing images JSON:", error, row.images);
+      imageUrls = [];
+    }
+  }
+
+  // Fallback to cover_image_url if no images in array
+  if (imageUrls.length === 0 && row.cover_image_url) {
+    imageUrls = [row.cover_image_url];
+  }
 
   return {
     id: row.id,
@@ -79,8 +103,8 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     body: row.body,
     premium: row.premium,
     depositCHF: row.deposit_chf || null,
-    images: imageUrls, // Legacy support
-    imageUrl: row.cover_image_url || imageUrls[0] || "",
+    images: imageUrls, // This is the key fix - properly parsed images array
+    imageUrl: imageUrls[0] || row.cover_image_url || "",
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
     image_urls: imageUrls,
@@ -95,7 +119,31 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 
 // Transform full listing row (for dashboard/admin)
 function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
-  const imageUrls = Array.isArray(row.images) ? row.images.filter(img => typeof img === "string") : [];
+  // Handle images field properly - it's stored as JSON in the database
+  let imageUrls: string[] = [];
+  
+  if (row.images) {
+    try {
+      if (Array.isArray(row.images)) {
+        // If it's already an array (some cases)
+        imageUrls = row.images.filter(img => typeof img === "string" && img.trim() !== "");
+      } else if (typeof row.images === "string") {
+        // If it's a JSON string, parse it
+        const parsed = JSON.parse(row.images);
+        if (Array.isArray(parsed)) {
+          imageUrls = parsed.filter(img => typeof img === "string" && img.trim() !== "");
+        }
+      }
+    } catch (error) {
+      console.warn("Error parsing images JSON:", error, row.images);
+      imageUrls = [];
+    }
+  }
+
+  // Fallback to cover_image_url if no images in array
+  if (imageUrls.length === 0 && row.cover_image_url) {
+    imageUrls = [row.cover_image_url];
+  }
 
   return {
     id: row.id,
@@ -112,8 +160,8 @@ function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
     body: row.body,
     premium: row.premium,
     depositCHF: row.deposit_chf || null,
-    images: imageUrls, // Legacy support
-    imageUrl: row.cover_image_url || imageUrls[0] || "",
+    images: imageUrls, // This is the key fix - properly parsed images array
+    imageUrl: imageUrls[0] || row.cover_image_url || "",
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
     image_urls: imageUrls,
