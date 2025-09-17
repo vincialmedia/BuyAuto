@@ -69,8 +69,9 @@ function parseImagesFromDatabase(imagesField: any, coverImageUrl?: string): stri
         console.log("Images field is object:", imagesField);
         // Try to extract if it's a JSON object with array-like structure
         if (imagesField.length !== undefined) {
-          // Array-like object
-          imageUrls = Object.values(imagesField).filter(img => typeof img === "string" && img.trim() !== "");
+          // Array-like object - properly cast Object.values
+          const values = Object.values(imagesField) as unknown[];
+          imageUrls = values.filter(img => typeof img === "string" && img.trim() !== "") as string[];
         }
       }
     } catch (error) {
