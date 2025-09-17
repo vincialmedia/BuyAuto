@@ -32,14 +32,14 @@ export const vehicleDataSchema = z.object({
   model: z.string().min(1, "Modell ist erforderlich"),
   year: z.number().min(1990, "Baujahr muss mindestens 1990 sein").max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
   km: z.number().min(0, "Kilometerstand muss mindestens 0 sein").max(500000, "Kilometerstand zu hoch"),
-  body: z.enum(["Limousine", "Kombi", "SUV", "Cabrio"], {
-    errorMap: () => ({ message: "Bitte wählen Sie eine gültige Karosserie" })
+  body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio"].includes(val), {
+    message: "Bitte wählen Sie eine gültige Karosserie"
   }),
-  fuel: z.enum(["Benzin", "Diesel", "Hybrid", "Elektro"], {
-    errorMap: () => ({ message: "Bitte wählen Sie einen gültigen Antrieb" })
+  fuel: z.string().refine((val) => ["Benzin", "Diesel", "Hybrid", "Elektro"].includes(val), {
+    message: "Bitte wählen Sie einen gültigen Antrieb"
   }),
-  gearbox: z.enum(["Automatik", "Manuell"], {
-    errorMap: () => ({ message: "Bitte wählen Sie ein gültiges Getriebe" })
+  gearbox: z.string().refine((val) => ["Automatik", "Manuell"].includes(val), {
+    message: "Bitte wählen Sie ein gültiges Getriebe"
   }),
 });
 

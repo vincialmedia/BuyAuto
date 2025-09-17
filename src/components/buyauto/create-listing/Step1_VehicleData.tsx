@@ -42,13 +42,13 @@ export default function Step1_VehicleData() {
   } = useForm<VehicleDataForm>({
     resolver: zodResolver(vehicleDataSchema),
     defaultValues: {
-      brand: data.brand,
-      model: data.model,
-      year: data.year ? Number(data.year) : new Date().getFullYear(),
-      km: data.km ? Number(data.km) : undefined,
-      body: data.body,
-      fuel: data.fuel,
-      gearbox: data.gearbox,
+      brand: data.brand || "",
+      model: data.model || "",
+      year: data.year || new Date().getFullYear(),
+      km: data.km || 0,
+      body: (data.body as "Limousine" | "Kombi" | "SUV" | "Cabrio") || "",
+      fuel: (data.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro") || "",
+      gearbox: (data.gearbox as "Automatik" | "Manuell") || "",
     },
     mode: "onBlur"
   });
