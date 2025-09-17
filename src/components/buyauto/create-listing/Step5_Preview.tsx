@@ -26,24 +26,24 @@ export default function Step5_Preview() {
     setError(null);
 
     try {
-      // Map wizard data to the expected database format
+      // Map wizard data to the expected database format with proper fallbacks
       const listingData: ListingFormData = {
-        brand: data.brand,
-        model: data.model,
-        year: data.year,
-        mileage_km: data.km, // Map km to mileage_km
-        body: data.body,
-        fuel: data.fuel,
-        gearbox: data.gearbox,
-        price_per_month_chf: data.price_per_month_chf,
-        remaining_months: data.remaining_months,
-        deposit_chf: data.deposit_chf,
-        location: data.location,
+        brand: data.brand || "",
+        model: data.model || "",
+        year: data.year || new Date().getFullYear(),
+        mileage_km: data.km || 0,
+        body: data.body || "",
+        fuel: data.fuel || "",
+        gearbox: data.gearbox || "",
+        price_per_month_chf: data.price_per_month_chf || 0,
+        remaining_months: data.remaining_months || 12,
+        deposit_chf: data.deposit_chf || 0,
+        location: data.location || "",
         canton_code: "ZH", // Default canton - you may want to derive this from location
-        title: `${data.brand} ${data.model}`, // Generate title
-        images: data.images,
-        cover_image_index: data.cover_image_index,
-        price_plan: data.price_plan as PricePlan, // Cast to PricePlan type
+        title: `${data.brand || ""} ${data.model || ""}`.trim(),
+        images: data.images || [],
+        cover_image_index: data.cover_image_index || 0,
+        price_plan: (data.price_plan || "free30") as PricePlan,
       };
 
       const listingId = await createListing(listingData, user);
@@ -62,8 +62,34 @@ export default function Step5_Preview() {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return price.toLocaleString('de-CH');
+  // Safe formatting function with proper null/undefined handling
+  const formatPrice = (price: number | string | null | undefined): string => {
+    if (price === null || price === undefined || price === "") {
+      return "0";
+    }
+    
+    const numPrice = typeof price === "string" ? parseFloat(price) : price;
+    
+    if (isNaN(numPrice)) {
+      return "0";
+    }
+    
+    return numPrice.toLocaleString('de-CH');
+  };
+
+  // Safe number formatting for mileage
+  const formatMileage = (km: number | string | null | undefined): string => {
+    if (km === null || km === undefined || km === "") {
+      return "0";
+    }
+    
+    const numKm = typeof km === "string" ? parseFloat(km) : km;
+    
+    if (isNaN(numKm)) {
+      return "0";
+    }
+    
+    return numKm.toLocaleString('de-CH');
   };
 
   const getPlanInfo = () => {
@@ -78,6 +104,25 @@ export default function Step5_Preview() {
   };
 
   const planInfo = getPlanInfo();
+
+  // Safe data access with fallbacks
+  const safeData = {
+    brand: data.brand || "",
+    model: data.model || "",
+    year: data.year || new Date().getFullYear(),
+    km: data.km || 0,
+    body: data.body || "",
+    fuel: data.fuel || "",
+    gearbox: data.gearbox || "",
+    price_per_month_chf: data.price_per_month_chf || 0,
+    remaining_months: data.remaining_months || 12,
+    deposit_chf: data.deposit_chf || 0,
+    location: data.location || "",
+    images: data.images || [],
+    cover_image_index: data.cover_image_index || 0,
+    is_premium: data.is_premium || false,
+    duration_days: data.duration_days || 30,
+  };
 
   return (
     <div className="space-y-8">
@@ -96,10 +141,10 @@ export default function Step5_Preview() {
         <div className="lg:col-span-2 space-y-6">
           <Card className="overflow-hidden rounded-lg border border-neutral-200/40 shadow-sm hover:shadow-md transition-shadow duration-200 bg-white">
             <div className="relative aspect-[16/9] bg-neutral-50">
-              {data.images && data.images.length > 0 ? (
+              {safeData.images && safeData.images.length > 0 ? (
                 <Image
-                  src={data.images[data.cover_image_index || 0]}
-                  alt={`${data.brand} ${data.model}`}
+                  src={safeData.images[safeData.cover_image_index] || safeData.images[0]}
+                  alt={`${safeData.brand} ${safeData.model}`}
                   fill
                   className="object-cover"
                   sizes="(max-width: 1024px) 100vw, 66vw"
@@ -111,7 +156,7 @@ export default function Step5_Preview() {
               )}
               
               {/* Premium Badge */}
-              {data.is_premium && (
+              {safeData.is_premium && (
                 <div className="absolute top-4 left-4">
                   <Badge className="bg-red-500 hover:bg-red-500 text-white px-3 py-1 text-sm font-medium shadow-sm">
                     <Star className="w-3 h-3 mr-1 fill-current" />
@@ -121,10 +166,10 @@ export default function Step5_Preview() {
               )}
 
               {/* Image Count */}
-              {data.images && data.images.length > 1 && (
+              {safeData.images && safeData.images.length > 1 && (
                 <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-lg text-sm backdrop-blur-sm">
                   <ImageIcon className="w-4 h-4 inline mr-1" />
-                  {data.images.length}
+                  {safeData.images.length}
                 </div>
               )}
             </div>
@@ -133,16 +178,16 @@ export default function Step5_Preview() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-2xl font-semibold text-neutral-900 tracking-tight">
-                    {data.brand} {data.model}
+                    {safeData.brand} {safeData.model}
                   </h3>
                   <p className="text-neutral-600 flex items-center mt-1 font-light">
                     <MapPin className="w-4 h-4 mr-1" />
-                    {data.location}
+                    {safeData.location || "Standort wird festgelegt"}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-3xl font-bold text-red-600">
-                    CHF {formatPrice(data.price_per_month_chf)}
+                    CHF {formatPrice(safeData.price_per_month_chf)}
                   </p>
                   <p className="text-sm text-neutral-500 font-light">pro Monat</p>
                 </div>
@@ -152,52 +197,52 @@ export default function Step5_Preview() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-neutral-500 font-light">Baujahr</p>
-                  <p className="font-semibold text-neutral-900">{data.year}</p>
+                  <p className="font-semibold text-neutral-900">{safeData.year}</p>
                 </div>
                 <div>
                   <p className="text-neutral-500 font-light">Kilometer</p>
-                  <p className="font-semibold text-neutral-900">{formatPrice(data.km)} km</p>
+                  <p className="font-semibold text-neutral-900">{formatMileage(safeData.km)} km</p>
                 </div>
                 <div>
                   <p className="text-neutral-500 font-light">Karosserie</p>
-                  <p className="font-semibold text-neutral-900">{data.body}</p>
+                  <p className="font-semibold text-neutral-900">{safeData.body}</p>
                 </div>
                 <div>
                   <p className="text-neutral-500 font-light">Antrieb</p>
-                  <p className="font-semibold text-neutral-900">{data.fuel}</p>
+                  <p className="font-semibold text-neutral-900">{safeData.fuel}</p>
                 </div>
               </div>
 
               <div className="mt-4 pt-4 border-t border-neutral-200/60">
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-500 font-light">Restlaufzeit:</span>
-                  <span className="font-semibold text-neutral-900">{data.remaining_months} Monate</span>
+                  <span className="font-semibold text-neutral-900">{safeData.remaining_months} Monate</span>
                 </div>
-                {data.deposit_chf > 0 && (
+                {safeData.deposit_chf > 0 && (
                   <div className="flex justify-between text-sm mt-2">
                     <span className="text-neutral-500 font-light">Kaution:</span>
-                    <span className="font-semibold text-neutral-900">CHF {formatPrice(data.deposit_chf)}</span>
+                    <span className="font-semibold text-neutral-900">CHF {formatPrice(safeData.deposit_chf)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm mt-2">
                   <span className="text-neutral-500 font-light">Getriebe:</span>
-                  <span className="font-semibold text-neutral-900">{data.gearbox}</span>
+                  <span className="font-semibold text-neutral-900">{safeData.gearbox}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Image Gallery Preview */}
-          {data.images && data.images.length > 1 && (
+          {safeData.images && safeData.images.length > 1 && (
             <Card className="rounded-lg border border-neutral-200/40 shadow-sm bg-white">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-medium text-neutral-900 tracking-tight">
-                  Bilder ({data.images.length})
+                  Bilder ({safeData.images.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
-                  {data.images.slice(0, 12).map((image, index) => (
+                  {safeData.images.slice(0, 12).map((image, index) => (
                     <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-neutral-200/40">
                       <Image
                         src={image}
@@ -206,7 +251,7 @@ export default function Step5_Preview() {
                         className="object-cover"
                         sizes="(max-width: 768px) 25vw, 16vw"
                       />
-                      {index === data.cover_image_index && (
+                      {index === safeData.cover_image_index && (
                         <div className="absolute top-1 left-1 bg-red-500 rounded-full p-1">
                           <Star className="w-3 h-3 text-white fill-current" />
                         </div>
@@ -214,9 +259,9 @@ export default function Step5_Preview() {
                     </div>
                   ))}
                 </div>
-                {data.images.length > 12 && (
+                {safeData.images.length > 12 && (
                   <p className="text-sm text-neutral-500 mt-3 text-center font-light">
-                    ... und {data.images.length - 12} weitere Bilder
+                    ... und {safeData.images.length - 12} weitere Bilder
                   </p>
                 )}
               </CardContent>
@@ -250,7 +295,7 @@ export default function Step5_Preview() {
                 </div>
               </div>
 
-              {data.is_premium && (
+              {safeData.is_premium && (
                 <div className="p-3 bg-red-50 border border-red-200/60 rounded-lg">
                   <p className="text-sm text-red-700 font-medium flex items-center">
                     <Star className="w-4 h-4 mr-2 fill-current" />
@@ -268,8 +313,8 @@ export default function Step5_Preview() {
                   Laufzeit
                 </div>
                 <p className="text-sm font-medium text-neutral-900">
-                  {data.duration_days 
-                    ? `${data.duration_days} Tage ab Veröffentlichung`
+                  {safeData.duration_days 
+                    ? `${safeData.duration_days} Tage ab Veröffentlichung`
                     : "Unbegrenzt bis zum Verkauf"
                   }
                 </p>

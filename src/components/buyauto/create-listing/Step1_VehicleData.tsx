@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -15,18 +14,19 @@ const brands = [
   "Nissan", "Mazda", "Subaru", "Lexus", "Mini", "Seat", "Fiat"
 ];
 
+// ✅ FIXED: Updated to match exact database constraint values
 const bodyTypes = [
-  "Limousine", "Kombi", "SUV", "Coupé", "Cabriolet", "Kleinwagen", 
-  "Van", "Pick-up", "Sportwagen", "Stadtgeländewagen"
+  "Limousine", "Kombi", "SUV", "Cabrio"
 ];
 
+// ✅ FIXED: Updated to match exact database constraint values
 const fuelTypes = [
-  "Benzin", "Diesel", "Elektro", "Hybrid (Benzin)", "Hybrid (Diesel)", 
-  "Plug-in-Hybrid", "Erdgas (CNG)", "Autogas (LPG)"
+  "Benzin", "Diesel", "Hybrid", "Elektro"
 ];
 
+// ✅ FIXED: Updated to match exact database constraint values
 const gearboxTypes = [
-  "Manuell", "Automatik", "Halbautomatik", "Stufenlos (CVT)"
+  "Automatik", "Manuell"
 ];
 
 export default function Step1_VehicleData() {

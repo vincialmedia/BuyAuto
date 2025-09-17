@@ -45,16 +45,16 @@ export interface ListingData {
   cover_image_index?: number;
 }
 
-// Comprehensive form data type for listing creation
+// ✅ FIXED: Updated to match exact database constraint values
 export interface ListingFormData {
   // Step 1: Vehicle Data
   brand: string;
   model: string;
   year: number | string;
   mileage_km: number | string;
-  fuel: string; // Changed from enum to string to match database
-  gearbox: string; // Changed from enum to string to match database  
-  body: string; // Changed from enum to string to match database
+  fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro"; // ✅ Fixed to match DB constraints
+  gearbox: "Automatik" | "Manuell"; // ✅ Fixed to match DB constraints  
+  body: "Limousine" | "Kombi" | "SUV" | "Cabrio"; // ✅ Fixed to match DB constraints
   
   // Step 2: Leasing Details
   price_per_month_chf: number | string;

@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 // Auth schemas
@@ -27,20 +26,21 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 // Vehicle schemas (for create listing) - match actual field names used in components
+// Updated to match exact database constraint values
 export const vehicleDataSchema = z.object({
-  brand: z.string().optional(),
-  model: z.string().optional(),
-  year: z.number().optional(),
-  mileage: z.number().optional(),
-  km: z.coerce.number({
-    invalid_type_error: "Kilometerstand muss eine Zahl sein."
-  }).optional(),
-  fuel: z.string().optional(),
-  transmission: z.string().optional(),
-  gearbox: z.string().optional(),
-  power: z.number().optional(),
-  color: z.string().optional(),
-  body: z.string().optional(),
+  brand: z.string().min(1, "Marke ist erforderlich"),
+  model: z.string().min(1, "Modell ist erforderlich"),
+  year: z.number().min(1990, "Baujahr muss mindestens 1990 sein").max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
+  km: z.number().min(0, "Kilometerstand muss mindestens 0 sein").max(500000, "Kilometerstand zu hoch"),
+  body: z.enum(["Limousine", "Kombi", "SUV", "Cabrio"], {
+    errorMap: () => ({ message: "Bitte wählen Sie eine gültige Karosserie" })
+  }),
+  fuel: z.enum(["Benzin", "Diesel", "Hybrid", "Elektro"], {
+    errorMap: () => ({ message: "Bitte wählen Sie einen gültigen Antrieb" })
+  }),
+  gearbox: z.enum(["Automatik", "Manuell"], {
+    errorMap: () => ({ message: "Bitte wählen Sie ein gültiges Getriebe" })
+  }),
 });
 
 export const planSelectionSchema = z.object({
