@@ -8,6 +8,7 @@ import Image from "next/image";
 import { createListing } from "@/services/createListingService";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { ListingFormData, PricePlan } from "@/lib/buyauto/types";
 
 export default function Step5_Preview() {
   const { data, prevStep, setIsComplete } = useWizard();
