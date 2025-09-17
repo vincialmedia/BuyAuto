@@ -62,6 +62,8 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
 
 // Transform public listing row to detailed format
 function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail {
+  const imageUrls = Array.isArray(row.images) ? row.images.filter(img => typeof img === "string") : [];
+
   return {
     id: row.id,
     brand: row.brand,
@@ -77,11 +79,11 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     body: row.body,
     premium: row.premium,
     depositCHF: row.deposit_chf || null,
-    images: row.cover_image_url ? [row.cover_image_url] : [],
-    imageUrl: row.cover_image_url || "",
+    images: imageUrls, // Legacy support
+    imageUrl: row.cover_image_url || imageUrls[0] || "",
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
-    image_urls: [], // Extract from images jsonb if needed
+    image_urls: imageUrls,
     status: "published", // Always published in public view
     created_at: row.created_at,
     expires_at: null,
@@ -93,6 +95,8 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 
 // Transform full listing row (for dashboard/admin)
 function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
+  const imageUrls = Array.isArray(row.images) ? row.images.filter(img => typeof img === "string") : [];
+
   return {
     id: row.id,
     brand: row.brand,
@@ -108,11 +112,11 @@ function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
     body: row.body,
     premium: row.premium,
     depositCHF: row.deposit_chf || null,
-    images: row.cover_image_url ? [row.cover_image_url] : [],
-    imageUrl: row.cover_image_url || "",
+    images: imageUrls, // Legacy support
+    imageUrl: row.cover_image_url || imageUrls[0] || "",
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
-    image_urls: [], // Extract from images jsonb if needed
+    image_urls: imageUrls,
     status: row.status as "pending" | "published" | "rejected" | "expired",
     created_at: row.created_at,
     expires_at: row.expires_at,
