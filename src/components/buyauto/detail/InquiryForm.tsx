@@ -6,8 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { submitInquiry } from "@/services/inquiryService";
-import { InquiryFormData } from "@/lib/buyauto/types";
+import { createInquiry, InquiryData } from "@/services/inquiryService";
+
+interface InquiryFormData {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+}
 
 interface InquiryFormProps {
   listingId: string;
@@ -60,7 +66,15 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
     setIsSubmitting(true);
 
     try {
-      const success = await submitInquiry(formData, listingId);
+      const inquiryData: InquiryData = {
+        listing_id: listingId,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        message: formData.message
+      };
+      
+      const success = await createInquiry(inquiryData);
       
       if (success) {
         setSubmitted(true);

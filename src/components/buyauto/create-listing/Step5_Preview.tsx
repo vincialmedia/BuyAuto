@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,13 +7,20 @@ import { ChevronLeft, Check, Star, MapPin, Calendar, Settings, Image as ImageIco
 import Image from "next/image";
 import { createListing } from "@/services/createListingService";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Step5_Preview() {
   const { data, prevStep, setIsComplete } = useWizard();
+  const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
+    if (!user) {
+      setError('Sie müssen angemeldet sein, um ein Inserat zu erstellen.');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -39,9 +45,14 @@ export default function Step5_Preview() {
         price_plan: data.price_plan as any, // Cast to PricePlan type
       };
 
-      await createListing(listingData);
-      setIsComplete(true);
-      toast.success("Inserat erfolgreich erstellt!");
+      const listingId = await createListing(listingData, user);
+      
+      if (listingId) {
+        setIsComplete(true);
+        toast.success("Inserat erfolgreich erstellt!");
+      } else {
+        setError('Fehler beim Erstellen des Inserats. Bitte versuchen Sie es erneut.');
+      }
     } catch (error) {
       console.error('Failed to create listing:', error);
       setError('Fehler beim Erstellen des Inserats. Bitte versuchen Sie es erneut.');

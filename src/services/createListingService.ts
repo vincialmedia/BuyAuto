@@ -82,7 +82,7 @@ export async function createListing(listingData: ListingFormData, user: User): P
 
 export async function updateListing(listingId: string, listingData: Partial<ListingFormData>): Promise<boolean> {
   try {
-    const updateData: Partial<TablesUpdate<"listings">> = { ...listingData };
+    const updateData: Partial<TablesUpdate<"listings">> = {};
 
     // Handle image updates specifically
     if (listingData.images) {
@@ -92,12 +92,23 @@ export async function updateListing(listingId: string, listingData: Partial<List
       updateData.cover_image_index = cover_image_index;
     }
 
-    // Convert numbers
+    // Convert and assign fields with proper type handling
+    if (listingData.brand) updateData.brand = listingData.brand;
+    if (listingData.model) updateData.model = listingData.model;
     if (listingData.year) updateData.year = Number(listingData.year);
     if (listingData.mileage_km) updateData.mileage_km = Number(listingData.mileage_km);
+    if (listingData.fuel) updateData.fuel = listingData.fuel;
+    if (listingData.gearbox) updateData.gearbox = listingData.gearbox;
+    if (listingData.body) updateData.body = listingData.body;
     if (listingData.price_per_month_chf) updateData.price_per_month_chf = Number(listingData.price_per_month_chf);
     if (listingData.remaining_months) updateData.remaining_months = Number(listingData.remaining_months);
-    if (listingData.deposit_chf) updateData.deposit_chf = Number(listingData.deposit_chf);
+    if (listingData.deposit_chf !== undefined) {
+      updateData.deposit_chf = listingData.deposit_chf ? Number(listingData.deposit_chf) : null;
+    }
+    if (listingData.location) updateData.location = listingData.location;
+    if (listingData.canton_code) updateData.canton_code = listingData.canton_code;
+    if (listingData.title) updateData.title = listingData.title;
+    if (listingData.price_plan) updateData.price_plan = listingData.price_plan;
 
     const { error } = await supabase
       .from("listings")
