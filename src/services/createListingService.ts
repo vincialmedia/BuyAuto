@@ -131,33 +131,3 @@ const getPlanDuration = (plan: PricePlan): number | undefined => {
       return 30;
   }
 };
-
-export interface Listing {
-  id: string;
-  brand: string;
-  model: string;
-  title?: string;
-  year: number;
-  price_per_month_chf: number;
-  remaining_months: number;
-  location: string;
-  mileage_km: number;
-  km?: number;
-  fuel: string;
-  gearbox: string;
-  body: string;
-  premium?: boolean;
-  is_premium?: boolean;
-  cover_image_url?: string;
-  deposit_chf?: number;
-  created_at?: string;
-  updated_at?: string;
-  duration_days?: number;
-  price_plan?: string;
-  expires_at?: string;
-  status?: string;
-  user_id?: string;
-  images?: string[];
-  cover_image_index?: number;
-  canton_code?: string;
-}

@@ -19,16 +19,12 @@ export default function Step5_Preview() {
     setError(null);
 
     try {
-      // Calculate expires_at based on duration_days
-      const expiresAt = data.duration_days 
-        ? new Date(Date.now() + (data.duration_days * 24 * 60 * 60 * 1000)).toISOString()
-        : null;
-
+      // Map wizard data to the expected database format
       const listingData = {
         brand: data.brand,
         model: data.model,
         year: data.year,
-        km: data.km,
+        mileage_km: data.km, // Map km to mileage_km
         body: data.body,
         fuel: data.fuel,
         gearbox: data.gearbox,
@@ -36,13 +32,11 @@ export default function Step5_Preview() {
         remaining_months: data.remaining_months,
         deposit_chf: data.deposit_chf,
         location: data.location,
+        canton_code: "ZH", // Default canton - you may want to derive this from location
+        title: `${data.brand} ${data.model}`, // Generate title
         images: data.images,
         cover_image_index: data.cover_image_index,
-        price_plan: data.price_plan,
-        is_premium: data.is_premium,
-        duration_days: data.duration_days,
-        expires_at: expiresAt,
-        status: 'pending' as const, // All listings need review
+        price_plan: data.price_plan as any, // Cast to PricePlan type
       };
 
       await createListing(listingData);

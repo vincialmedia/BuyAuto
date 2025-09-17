@@ -1,51 +1,56 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { TablesInsert } from "@/integrations/supabase/types";
-import { InquiryFormData } from "@/lib/buyauto/types";
+import { TablesInsert } from "@/integrations/supabase/types";
 
-export async function submitInquiry(formData: InquiryFormData, listingId: string): Promise<boolean> {
+export interface InquiryData {
+  listing_id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+}
+
+export async function createInquiry(inquiryData: InquiryData): Promise<boolean> {
   try {
-    // Prepare the inquiry data conforming to the database insert type
-    const inquiryData: TablesInsert<"listing_inquiries"> = {
-      listing_id: listingId,
-      name: formData.name.trim(),
-      email: formData.email.trim().toLowerCase(),
-      phone: formData.phone?.trim() || null,
-      message: formData.message.trim(),
+    const newInquiry: TablesInsert<"listing_inquiries"> = {
+      listing_id: inquiryData.listing_id,
+      name: inquiryData.name,
+      email: inquiryData.email,
+      phone: inquiryData.phone || null,
+      message: inquiryData.message,
     };
 
-    // Insert into the database
     const { error } = await supabase
       .from("listing_inquiries")
-      .insert(inquiryData);
+      .insert(newInquiry);
 
     if (error) {
-      console.error("Error submitting inquiry:", error);
+      console.error("Error creating inquiry:", error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error("Submit inquiry error:", error);
+    console.error("Failed to create inquiry:", error);
     return false;
   }
 }
 
-// Get inquiry count for a listing (optional, for analytics)
-export async function getInquiryCount(listingId: string): Promise<number> {
+export async function getInquiriesForListing(listingId: string): Promise<any[]> {
   try {
-    const { count, error } = await supabase
+    const { data, error } = await supabase
       .from("listing_inquiries")
-      .select("*", { count: "exact", head: true })
-      .eq("listing_id", listingId);
+      .select("*")
+      .eq("listing_id", listingId)
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching inquiry count:", error);
-      return 0;
+      console.error("Error fetching inquiries:", error);
+      return [];
     }
 
-    return count || 0;
+    return data || [];
   } catch (error) {
-    console.error("Get inquiry count error:", error);
-    return 0;
+    console.error("Failed to fetch inquiries:", error);
+    return [];
   }
 }
