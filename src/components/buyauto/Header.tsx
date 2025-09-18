@@ -92,11 +92,20 @@ export default function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/settings" className="cursor-pointer">
+                    <Link href="/dashboard?tab=listings" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
-                      Einstellungen
+                      Meine Inserate
                     </Link>
                   </DropdownMenuItem>
+                  {/* Admin link - only show for admin users */}
+                  {user?.user_metadata?.role === 'admin' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
@@ -174,6 +183,23 @@ export default function Header() {
                 >
                   Dashboard
                 </Link>
+                <Link 
+                  href="/dashboard?tab=listings" 
+                  className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Meine Inserate
+                </Link>
+                {/* Admin link in mobile menu - only show for admin users */}
+                {user?.user_metadata?.role === 'admin' && (
+                  <Link 
+                    href="/admin" 
+                    className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
                 <button 
                   onClick={() => {
                     handleSignOut();
