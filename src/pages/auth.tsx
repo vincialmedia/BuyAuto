@@ -18,21 +18,21 @@ export default function AuthPage() {
       console.log("User is authenticated, checking admin status for redirect");
       setHasRedirected(true);
       
-      // Determine redirect destination based on admin status
+      // Check for callback URL in query params first
+      const callbackUrl = router.query.callback as string;
       let redirectUrl = "/dashboard"; // Default for regular users
       
       if (isAdmin) {
+        // Admins go to admin dashboard (ignore callback)
         redirectUrl = "/admin";
         console.log("User is admin, redirecting to admin dashboard");
-      } else {
-        console.log("User is regular user, redirecting to user dashboard");
-      }
-      
-      // Check for callback URL in query params, but respect admin routing
-      const callbackUrl = router.query.callback as string;
-      if (callbackUrl && !isAdmin) {
-        // Only use callback URL for non-admin users
+      } else if (callbackUrl) {
+        // Regular users: use callback URL if provided
         redirectUrl = callbackUrl;
+        console.log("User is regular user with callback, redirecting to:", callbackUrl);
+      } else {
+        // Regular users without callback: go to dashboard
+        console.log("User is regular user without callback, redirecting to user dashboard");
       }
       
       console.log("Final redirect URL:", redirectUrl);
