@@ -1,58 +1,24 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "next/router";
-import { Button } from "@/components/ui/button";
-import { LogOut, Shield, FileText, Users } from "lucide-react";
+import { FileText, Users } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { user } = useAuth();
   const router = useRouter();
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-  };
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Shield className="w-6 h-6 text-emerald-600" />
-              <h1 className="text-xl font-semibold text-neutral-900">
-                Admin Dashboard
-              </h1>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-neutral-600">
-                {user?.email}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className="flex items-center space-x-2"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Abmelden</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Sidebar + Main Content */}
       <div className="flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:pt-16 bg-white border-r border-neutral-200">
-          <nav className="flex-1 px-4 py-6 space-y-2">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:pt-4 bg-white border-r border-neutral-200">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Admin Panel</h2>
+          </div>
+          <nav className="flex-1 px-4 py-2 space-y-2">
             <NavItem
               icon={FileText}
               label="Moderation"

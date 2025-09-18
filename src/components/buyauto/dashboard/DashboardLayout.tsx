@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import {
   Menu,
   X
 } from "lucide-react";
-import DashboardHeader from "./DashboardHeader";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -54,8 +52,6 @@ export default function DashboardLayout({ children, currentSection = "overview" 
 
   return (
     <div className="min-h-screen bg-neutral-50/50">
-      <DashboardHeader />
-      
       <div className="max-w-7xl mx-auto">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
           {/* Desktop Sidebar */}

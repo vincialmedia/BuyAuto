@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 import { searchListings } from "@/services/listingsService";
 import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
-import Header from "@/components/buyauto/Header";
 import { debounce } from "@/lib/utils";
 import DynamicFilterBar from "@/components/buyauto/search/DynamicFilterBar";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
@@ -161,12 +160,10 @@ export default function SearchPage() {
       </Head>
 
       <div className="min-h-screen bg-white">
-        <Header />
-
         <DynamicFilterBar
           searchQuery={searchQuery}
           onSearchQueryChange={handleSearchQueryChange}
-          className={filterBarSticky ? "fixed top-14 left-0 right-0 z-40" : "sticky top-14 z-40"}
+          className={filterBarSticky ? "fixed top-16 left-0 right-0 z-40" : "sticky top-16 z-40"}
         />
 
         <main className="max-w-[2000px] mx-auto px-4 md:px-6 lg:px-8">
