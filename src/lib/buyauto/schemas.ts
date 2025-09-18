@@ -31,7 +31,16 @@ export const vehicleDataSchema = z.object({
   brand: z.string().min(1, "Marke ist erforderlich"),
   model: z.string().min(1, "Modell ist erforderlich"),
   year: z.number().min(1990, "Baujahr muss mindestens 1990 sein").max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
-  km: z.number().min(0, "Kilometerstand muss mindestens 0 sein").max(500000, "Kilometerstand zu hoch"),
+  km: z.union([
+    z.number(),
+    z.string().transform((val) => {
+      // Remove all non-numeric characters (Swiss formatting)
+      const cleaned = val.replace(/[^0-9]/g, '');
+      const num = parseInt(cleaned, 10);
+      if (isNaN(num)) throw new Error("Ungültiger Kilometerstand");
+      return num;
+    })
+  ]).pipe(z.number().min(0, "Kilometerstand muss mindestens 0 sein").max(500000, "Kilometerstand zu hoch")),
   body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio"].includes(val), {
     message: "Bitte wählen Sie eine gültige Karosserie"
   }),
