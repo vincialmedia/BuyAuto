@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, MapPin, Gauge, Fuel, Settings, Star } from "lucide-react";
 import { Listing } from "@/lib/buyauto/types";
+import Image from "next/image";
 
 interface ListingCardProps {
   listing: Listing;
@@ -15,14 +16,16 @@ export default function ListingCard({ listing }: ListingCardProps) {
         ? "ring-2 ring-red-100 bg-gradient-to-br from-red-50/50 to-white shadow-lg" 
         : "hover:shadow-lg"
     }`}>
-      <div className="relative overflow-hidden">
-        <img 
+      <div className="relative overflow-hidden h-48">
+        <Image 
           src={listing.imageUrl} 
           alt={`${listing.brand} ${listing.model}`}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         {listing.premium && (
-          <Badge className="absolute top-3 left-3 bg-red-600 hover:bg-red-600 text-white border-0">
+          <Badge className="absolute top-3 left-3 bg-red-600 hover:bg-red-600 text-white border-0 z-10">
             <Star className="h-3 w-3 mr-1 fill-current" />
             Premium
           </Badge>
