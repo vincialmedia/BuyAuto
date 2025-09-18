@@ -1,9 +1,9 @@
-
 import { SearchResult } from "@/lib/buyauto/search";
 import VerticalListingCard from "./VerticalListingCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, RotateCcw, Eye } from "lucide-react";
+import { useRouter } from "next/router";
 
 interface VerticalResultsListProps {
   searchResults: SearchResult | null;
@@ -18,6 +18,7 @@ export default function VerticalResultsList({
   onResetFilters,
   onShowAllListings 
 }: VerticalResultsListProps) {
+  const router = useRouter();
   
   // Loading skeleton
   if (isLoading) {
@@ -100,8 +101,7 @@ export default function VerticalResultsList({
           key={listing.id}
           listing={listing}
           onDetailsClick={(id) => {
-            console.log(`Navigate to listing details: ${id}`);
-            // TODO: Implement navigation to listing detail page
+            router.push(`/fahrzeug/${id}`);
           }}
         />
       ))}

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, MapPin, Calendar, Gauge, Fuel, Settings, Clock } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ interface ListingCardProps {
 export default function ListingCard({ listing, className }: ListingCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
+  const router = useRouter();
 
   const handleImageHover = () => {
     if (listing.images.length > 1) {
@@ -39,8 +41,7 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
   };
 
   const handleDetailsClick = () => {
-    // Placeholder for navigation to detail page
-    console.log(`Navigate to /fahrzeug/${listing.id}`);
+    router.push(`/fahrzeug/${listing.id}`);
   };
 
   const handleSaveClick = (e: React.MouseEvent) => {

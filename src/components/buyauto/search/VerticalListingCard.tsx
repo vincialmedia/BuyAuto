@@ -1,9 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Listing } from "@/lib/buyauto/types";
 import { Star, MapPin, Gauge, Fuel, Settings, Calendar } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/router";
 
 interface VerticalListingCardProps {
   listing: Listing;
@@ -11,12 +11,14 @@ interface VerticalListingCardProps {
 }
 
 export default function VerticalListingCard({ listing, onDetailsClick }: VerticalListingCardProps) {
+  const router = useRouter();
+
   const handleDetailsClick = () => {
     if (onDetailsClick) {
       onDetailsClick(listing.id);
     } else {
-      // Default behavior - could navigate to detail page
-      console.log(`View details for ${listing.id}`);
+      // Navigate to detail page
+      router.push(`/fahrzeug/${listing.id}`);
     }
   };
 
