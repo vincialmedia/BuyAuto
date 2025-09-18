@@ -160,65 +160,60 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
         )}
       </div>
 
-      {/* Lightbox */}
-      <Dialog open={showLightbox} onOpenChange={setShowLightbox}>
-        <DialogContent className="max-w-7xl max-h-[90vh] p-0 bg-black/95 border-0">
-          <div
-            className="relative w-full h-[85vh] flex items-center justify-center"
-            onKeyDown={handleKeyDown}
-            tabIndex={0}
-          >
-            {/* Close Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={closeLightbox}
-              className="absolute top-4 right-4 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full w-10 h-10 p-0 text-white"
-            >
-              <X className="w-5 h-5" />
-            </Button>
+      {/* Lightbox Modal */}
+        {showLightbox && (
+          <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+            <div className="relative w-full h-full max-w-6xl max-h-full p-4 flex items-center justify-center">
+              {/* Close Button */}
+              <button
+                onClick={closeLightbox}
+                className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+                aria-label="Galerie schließen"
+              >
+                <X size={32} />
+              </button>
 
-            {/* Navigation */}
-            {validImages.length > 1 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
+              {/* Previous Button */}
+              {validImages.length > 1 && (
+                <button
                   onClick={prevLightboxImage}
-                  className="absolute left-4 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full w-12 h-12 p-0 text-white"
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
+                  aria-label="Vorheriges Bild"
                 >
-                  <ChevronLeft className="w-6 h-6" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  <ChevronLeft size={48} />
+                </button>
+              )}
+
+              {/* Image Container - Fixed to prevent overflow */}
+              <div className="relative w-full h-full max-w-5xl max-h-[85vh] flex items-center justify-center">
+                <Image
+                  src={validImages[lightboxIndex]}
+                  alt={`${alt} - Bild ${lightboxIndex + 1}`}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 85vw"
+                  priority
+                />
+              </div>
+
+              {/* Next Button */}
+              {validImages.length > 1 && (
+                <button
                   onClick={nextLightboxImage}
-                  className="absolute right-4 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full w-12 h-12 p-0 text-white"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
+                  aria-label="Nächstes Bild"
                 >
-                  <ChevronRight className="w-6 h-6" />
-                </Button>
-              </>
-            )}
+                  <ChevronRight size={48} />
+                </button>
+              )}
 
-            {/* Main Image */}
-            <div className="relative max-w-full max-h-full">
-              <Image
-                src={validImages[lightboxIndex]}
-                alt={`${alt} - Bild ${lightboxIndex + 1}`}
-                width={1200}
-                height={800}
-                className="object-contain max-w-full max-h-full"
-                sizes="100vw"
-              />
-            </div>
-
-            {/* Image Counter */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
-              {lightboxIndex + 1} / {validImages.length}
+              {/* Image Counter */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded">
+                {lightboxIndex + 1} / {validImages.length}
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        )}
     </>
   );
 }
