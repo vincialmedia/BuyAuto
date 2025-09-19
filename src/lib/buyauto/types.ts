@@ -27,7 +27,7 @@ export interface ListingData {
   model?: string;
   year?: number;
   mileage?: number;
-  km?: number; // Changed to number for consistency
+  km?: number;
   fuel?: string;
   transmission?: string;
   gearbox?: string;
@@ -43,10 +43,10 @@ export interface ListingData {
   canton_code?: string;
   title?: string;
   
-  // Step 3: Billing/Plan fields
-  price_plan?: string; // Keep as price_plan for consistency with existing code
+  // Step 3: Billing/Plan fields - Ensure all properties are explicitly defined
+  price_plan?: 'standard' | 'extended' | 'unlimited';
   pricing_plan?: string;
-  premium?: boolean;
+  premium?: boolean; // Explicitly define this as boolean
   duration_days?: number;
   expires_at?: string;
   premium_until?: string;
