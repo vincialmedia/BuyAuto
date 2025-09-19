@@ -22,6 +22,7 @@ export type PricePlan = "free30" | "premium30" | "paid90" | "unlimited";
 
 // Type for create listing form data - matches what the components actually use
 export interface ListingData {
+  // Step 1: Vehicle data fields
   brand?: string;
   model?: string;
   year?: number;
@@ -33,16 +34,42 @@ export interface ListingData {
   power?: number;
   color?: string;
   body?: string;
-  // Step3 fields
-  price_plan?: string;
+  
+  // Step 2: Leasing details fields
+  price_per_month_chf?: number;
+  remaining_months?: number;
+  deposit_chf?: number;
+  location?: string;
+  canton_code?: string;
+  title?: string;
+  
+  // Step 3: Billing/Plan fields
+  price_plan?: string; // Keep as price_plan for consistency with existing code
+  pricing_plan?: string;
+  premium?: boolean;
   duration_days?: number;
+  expires_at?: string;
+  premium_until?: string;
+  price_paid_chf?: number;
+  payment_status?: 'unpaid' | 'requires_payment' | 'paid' | 'refunded' | 'canceled';
+  stripe_payment_intent_id?: string;
+  stripe_refund_id?: string;
+  refunded_at?: string;
   plan_price?: number;
   is_premium?: boolean;
   plan?: string;
   price?: number;
-  // Step4 fields
+  
+  // Step 4: Images fields
   images?: string[];
   cover_image_index?: number;
+  
+  // General listing fields
+  id?: string;
+  user_id?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // ✅ FIXED: Updated to match exact database constraint values
