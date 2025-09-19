@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -82,12 +82,18 @@ export type Database = {
           mileage_km: number
           model: string
           moderation_note: string | null
-          premium: boolean | null
+          payment_status: string | null
+          premium: boolean
           premium_until: string | null
+          price_paid_chf: number | null
           price_per_month_chf: number
           price_plan: string | null
+          pricing_plan: string | null
+          refunded_at: string | null
           remaining_months: number
           status: Database["public"]["Enums"]["listing_status"] | null
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
           title: string | null
           updated_at: string | null
           user_id: string | null
@@ -114,12 +120,18 @@ export type Database = {
           mileage_km: number
           model: string
           moderation_note?: string | null
-          premium?: boolean | null
+          payment_status?: string | null
+          premium?: boolean
           premium_until?: string | null
+          price_paid_chf?: number | null
           price_per_month_chf: number
           price_plan?: string | null
+          pricing_plan?: string | null
+          refunded_at?: string | null
           remaining_months: number
           status?: Database["public"]["Enums"]["listing_status"] | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
           title?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -146,12 +158,18 @@ export type Database = {
           mileage_km?: number
           model?: string
           moderation_note?: string | null
-          premium?: boolean | null
+          payment_status?: string | null
+          premium?: boolean
           premium_until?: string | null
+          price_paid_chf?: number | null
           price_per_month_chf?: number
           price_plan?: string | null
+          pricing_plan?: string | null
+          refunded_at?: string | null
           remaining_months?: number
           status?: Database["public"]["Enums"]["listing_status"] | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
           title?: string | null
           updated_at?: string | null
           user_id?: string | null
