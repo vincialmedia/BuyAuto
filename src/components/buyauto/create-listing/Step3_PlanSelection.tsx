@@ -18,7 +18,7 @@ export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
   const { toast } = useToast();
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(data.pricing_plan as Plan || 'standard');
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(data.price_plan as Plan || 'standard');
   const [isPremium, setIsPremium] = useState<boolean>(data.premium || false);
   const [total, setTotal] = useState(0);
 
@@ -79,7 +79,7 @@ export default function Step3_PlanSelection() {
       }
 
       updateData({
-        pricing_plan: selectedPlan,
+        price_plan: selectedPlan,
         premium: isPremium,
         price_paid_chf: total,
       });
