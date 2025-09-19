@@ -53,12 +53,10 @@ export const vehicleDataSchema = z.object({
 });
 
 export const planSelectionSchema = z.object({
-  plan: z.string().optional(),
-  price: z.number().optional(),
-  price_plan: z.string().optional(),
-  duration_days: z.number().optional(),
-  plan_price: z.number().optional(),
-  is_premium: z.boolean().optional(),
+  pricing_plan: z.string().optional(),
+  premium: z.boolean().optional(),
+  price_paid_chf: z.number().optional(),
+  payment_status: z.string().optional(),
 });
 
 export const imagesSchema = z.object({

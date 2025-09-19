@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useWizard } from './ListingWizard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,7 +18,7 @@ export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
   const { toast } = useToast();
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(data.pricing_plan || 'standard');
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(data.pricing_plan as Plan || 'standard');
   const [isPremium, setIsPremium] = useState<boolean>(data.premium || false);
   const [total, setTotal] = useState(0);
 
