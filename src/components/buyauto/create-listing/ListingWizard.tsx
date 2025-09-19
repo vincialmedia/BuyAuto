@@ -8,33 +8,7 @@ import Step3_PlanSelection from "./Step3_PlanSelection";
 import { Step4_Images } from "./Step4_Images";
 import Step5_Preview from "./Step5_Preview";
 import SuccessScreen from "./SuccessScreen";
-
-export interface ListingData {
-  // Vehicle Data
-  brand: string;
-  model: string;
-  year: number;
-  km: number;
-  body: string;
-  fuel: string;
-  gearbox: string;
-  
-  // Leasing Details (canton_code removed)
-  price_per_month_chf: number;
-  remaining_months: number;
-  deposit_chf: number;
-  location: string;
-  
-  // Plan Selection (before images now)
-  price_plan: string;
-  is_premium: boolean;
-  duration_days: number | null;
-  plan_price: number;
-  
-  // Images (now step 4)
-  images: string[];
-  cover_image_index: number;
-}
+import { ListingData } from "@/lib/buyauto/types"; // Use the shared ListingData type
 
 interface WizardContextType {
   data: ListingData;
@@ -73,8 +47,8 @@ export default function ListingWizard() {
     remaining_months: 12,
     deposit_chf: 0,
     location: "",
-    price_plan: "",
-    is_premium: false,
+    price_plan: "standard",
+    premium: false, // Corrected from is_premium to premium
     duration_days: 30,
     plan_price: 0,
     images: [],
@@ -87,11 +61,11 @@ export default function ListingWizard() {
 
   const getMaxPhotos = useCallback(() => {
     // Free plan gets 5 photos, paid plans get 15 photos
-    if (data.price_plan === 'free30') {
+    if (data.price_plan === 'standard') {
       return 5;
     }
     // Extended, Unlimited plans get 15 photos
-    if (data.price_plan === 'paid90' || data.price_plan === 'unlimited') {
+    if (data.price_plan === 'extended' || data.price_plan === 'unlimited') {
       return 15;
     }
     // Default to 5 if no plan selected yet
