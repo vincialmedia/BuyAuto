@@ -12,14 +12,15 @@ import { CheckoutForm } from './CheckoutForm';
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, Plan } from '@/lib/buyauto/stripe_config';
 import { CheckIcon } from 'lucide-react';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string);
 
 export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
   const { toast } = useToast();
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(data.price_plan as Plan || 'standard');
-  const [isPremium, setIsPremium] = useState<boolean>(data.premium || false);
+  // Fix: Handle potential undefined premium property safely
+  const [selectedPlan, setSelectedPlan] = useState<Plan>((data.price_plan as Plan) || 'standard');
+  const [isPremium, setIsPremium] = useState<boolean>(Boolean(data.premium) || false);
   const [total, setTotal] = useState(0);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -90,10 +91,11 @@ export default function Step3_PlanSelection() {
       } else {
         setClientSecret(result.clientSecret);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unexpected error occurred';
       toast({
         title: 'Error',
-        description: error.message,
+        description: message,
         variant: 'destructive',
       });
     } finally {
