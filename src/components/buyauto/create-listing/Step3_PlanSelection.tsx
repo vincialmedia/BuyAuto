@@ -12,7 +12,12 @@ import { CheckoutForm } from './CheckoutForm';
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, Plan } from '@/lib/buyauto/stripe_config';
 import { CheckIcon } from 'lucide-react';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string);
+// Fix: Add proper error handling for Stripe publishable key
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+if (!stripePublishableKey) {
+  console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined in environment variables');
+}
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
