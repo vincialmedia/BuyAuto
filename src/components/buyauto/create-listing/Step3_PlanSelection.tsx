@@ -12,12 +12,27 @@ import { CheckoutForm } from './CheckoutForm';
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, Plan } from '@/lib/buyauto/stripe_config';
 import { CheckIcon } from 'lucide-react';
 
-// Fix: Add proper error handling for Stripe publishable key
-const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-if (!stripePublishableKey) {
-  console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined in environment variables');
-}
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+// More robust Stripe key loading with client-side safety checks
+const getStripePublishableKey = () => {
+  // Only access process.env on the client side after component mounts
+  if (typeof window === 'undefined') return null;
+  return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+};
+
+let stripePromise: Promise<any> | null = null;
+
+const getStripePromise = () => {
+  if (!stripePromise) {
+    const key = getStripePublishableKey();
+    if (key) {
+      stripePromise = loadStripe(key);
+    } else {
+      console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined');
+      stripePromise = Promise.resolve(null);
+    }
+  }
+  return stripePromise;
+};
 
 export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
@@ -37,7 +52,7 @@ export default function Step3_PlanSelection() {
     if (query.get('payment_confirmed')) {
       const paymentIntentClientSecret = query.get('payment_intent_client_secret');
       if (paymentIntentClientSecret) {
-        stripePromise.then(stripe => {
+        getStripePromise().then(stripe => {
           if (!stripe) return;
           stripe.retrievePaymentIntent(paymentIntentClientSecret).then(({ paymentIntent }) => {
             switch (paymentIntent?.status) {
@@ -188,7 +203,7 @@ export default function Step3_PlanSelection() {
       ) : (
         <div className="max-w-md mx-auto">
             <h3 className="text-xl font-semibold mb-4 text-center">Sichere Zahlung</h3>
-            <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
+            <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={getStripePromise()}>
               <CheckoutForm onSuccess={nextStep} totalAmount={total} />
             </Elements>
         </div>
