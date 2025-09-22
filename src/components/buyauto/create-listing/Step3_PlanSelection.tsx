@@ -1,4 +1,6 @@
+
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useWizard } from './ListingWizard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -6,80 +8,101 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { loadStripe, Stripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
-import { CheckoutForm } from './CheckoutForm';
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, Plan } from '@/lib/buyauto/stripe_config';
 import { CheckIcon } from 'lucide-react';
+
+// Client-only PaymentWidget to prevent SSR issues
+const PaymentWidget = dynamic(
+  () => import('./PaymentWidget'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="text-center py-8">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+        <p className="mt-2 text-neutral-600">Loading payment form...</p>
+      </div>
+    )
+  }
+);
 
 export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
   const { toast } = useToast();
 
-  // Fix: Handle potential undefined premium property safely
+  // State management with proper initialization
   const [selectedPlan, setSelectedPlan] = useState<Plan>((data.price_plan as Plan) || 'standard');
   const [isPremium, setIsPremium] = useState<boolean>(Boolean(data.premium) || false);
   const [total, setTotal] = useState(0);
-
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  // Initialize Stripe only on client side after component mounts
+  // Ensure component is mounted (client-side) before doing anything Stripe-related
   useEffect(() => {
-    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    if (publishableKey) {
-      setStripePromise(loadStripe(publishableKey));
-    } else {
-      console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined');
-    }
+    setMounted(true);
   }, []);
 
-  // Handle redirect back from Stripe
-  useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    if (query.get('payment_confirmed')) {
-      const paymentIntentClientSecret = query.get('payment_intent_client_secret');
-      if (paymentIntentClientSecret && stripePromise) {
-        stripePromise.then(stripe => {
-          if (!stripe) return;
-          stripe.retrievePaymentIntent(paymentIntentClientSecret).then(({ paymentIntent }) => {
-            switch (paymentIntent?.status) {
-              case 'succeeded':
-                toast({ title: "Payment successful!", description: "Your listing is being processed." });
-                updateData({ payment_status: 'paid' });
-                nextStep();
-                break;
-              case 'processing':
-                toast({ title: "Payment processing.", description: "We'll update you when payment is received." });
-                break;
-              case 'requires_payment_method':
-                toast({ title: "Payment failed.", description: "Please try another payment method.", variant: 'destructive' });
-                setClientSecret(paymentIntentClientSecret); // Allow user to retry
-                break;
-              default:
-                toast({ title: "Something went wrong.", description: "Please try again.", variant: 'destructive' });
-                break;
-            }
-          });
-        });
-      }
-    }
-  }, [toast, nextStep, updateData, stripePromise]);
-
+  // Calculate total whenever plan or premium changes
   useEffect(() => {
     const newTotal = calculateTotal(selectedPlan, isPremium);
     setTotal(newTotal);
   }, [selectedPlan, isPremium]);
 
+  // Handle redirect back from Stripe (only run client-side)
+  useEffect(() => {
+    if (!mounted) return;
+
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('payment_confirmed')) {
+      const paymentIntentClientSecret = query.get('payment_intent_client_secret');
+      if (paymentIntentClientSecret) {
+        // Import Stripe dynamically to avoid SSR issues
+        import('@stripe/stripe-js').then(({ loadStripe }) => {
+          const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+          if (!publishableKey) return;
+          
+          loadStripe(publishableKey).then(stripe => {
+            if (!stripe) return;
+            
+            stripe.retrievePaymentIntent(paymentIntentClientSecret).then(({ paymentIntent }) => {
+              switch (paymentIntent?.status) {
+                case 'succeeded':
+                  toast({ title: "Payment successful!", description: "Your listing is being processed." });
+                  updateData({ payment_status: 'paid' });
+                  nextStep();
+                  break;
+                case 'processing':
+                  toast({ title: "Payment processing.", description: "We'll update you when payment is received." });
+                  break;
+                case 'requires_payment_method':
+                  toast({ title: "Payment failed.", description: "Please try another payment method.", variant: 'destructive' });
+                  setClientSecret(paymentIntentClientSecret);
+                  break;
+                default:
+                  toast({ title: "Something went wrong.", description: "Please try again.", variant: 'destructive' });
+                  break;
+              }
+            });
+          });
+        });
+      }
+    }
+  }, [mounted, toast, nextStep, updateData]);
+
   const handlePreparePayment = async () => {
+    if (!mounted) return;
+    
     setIsLoading(true);
 
     try {
       const response = await fetch('/api/billing/prepare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listing_id: data.id, plan: selectedPlan, premium: isPremium }),
+        body: JSON.stringify({ 
+          listing_id: data.id, 
+          plan: selectedPlan, 
+          premium: isPremium 
+        }),
       });
 
       const result = await response.json();
@@ -88,6 +111,7 @@ export default function Step3_PlanSelection() {
         throw new Error(result.error || 'Failed to prepare payment.');
       }
 
+      // Update wizard data
       updateData({
         price_plan: selectedPlan,
         premium: isPremium,
@@ -95,9 +119,14 @@ export default function Step3_PlanSelection() {
       });
 
       if (result.next === 'continue') {
-        toast({ title: 'Plan selected', description: 'Your free listing is ready for the next step.' });
+        // Zero-price flow - no payment needed
+        toast({ 
+          title: 'Plan selected', 
+          description: 'Your free listing is ready for the next step.' 
+        });
         nextStep();
       } else {
+        // Paid flow - show payment form
         setClientSecret(result.clientSecret);
       }
     } catch (error: unknown) {
@@ -118,6 +147,25 @@ export default function Step3_PlanSelection() {
     unlimited: ["Unlimitierte Laufzeit", "Standard-Platzierung", "Jederzeit pausierbar"],
   };
 
+  const handlePaymentSuccess = () => {
+    toast({ 
+      title: "Payment successful!", 
+      description: "Your listing is being processed." 
+    });
+    nextStep();
+  };
+
+  // Don't render anything until mounted to prevent hydration mismatches
+  if (!mounted) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Loading...</h2>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -127,6 +175,7 @@ export default function Step3_PlanSelection() {
 
       {!clientSecret ? (
         <>
+          {/* Plan Selection Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {(Object.keys(pricingPlans) as Plan[]).map((planKey) => (
               <Card
@@ -143,11 +192,11 @@ export default function Step3_PlanSelection() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm text-neutral-600">
-                    {planFeatures[planKey].map(feature => (
-                        <li key={feature} className="flex items-center">
-                            <CheckIcon className="mr-2 h-4 w-4 text-green-500"/>
-                            {feature}
-                        </li>
+                    {planFeatures[planKey].map((feature) => (
+                      <li key={feature} className="flex items-center">
+                        <CheckIcon className="mr-2 h-4 w-4 text-green-500"/>
+                        {feature}
+                      </li>
                     ))}
                   </ul>
                 </CardContent>
@@ -155,6 +204,7 @@ export default function Step3_PlanSelection() {
             ))}
           </div>
 
+          {/* Premium Boost Toggle */}
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -163,11 +213,17 @@ export default function Step3_PlanSelection() {
               </div>
               <div className="flex items-center space-x-4">
                 <span className="font-bold text-lg">+ CHF {PREMIUM_BOOST_PRICE}</span>
-                <Switch id="premium-boost" checked={isPremium} onCheckedChange={setIsPremium} />
+                <Switch 
+                  id="premium-boost" 
+                  checked={isPremium} 
+                  onCheckedChange={setIsPremium}
+                  disabled={isLoading}
+                />
               </div>
             </div>
           </Card>
 
+          {/* Order Summary */}
           <Card className="p-6 bg-neutral-50">
             <h3 className="text-lg font-bold mb-4">Zusammenfassung</h3>
             <div className="space-y-2">
@@ -190,23 +246,38 @@ export default function Step3_PlanSelection() {
           </Card>
         </>
       ) : (
-        <div className="max-w-md mx-auto">
-            <h3 className="text-xl font-semibold mb-4 text-center">Sichere Zahlung</h3>
-            {stripePromise && (
-              <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
-                <CheckoutForm onSuccess={nextStep} totalAmount={total} />
-              </Elements>
-            )}
-        </div>
+        // Payment Form (Client-Only)
+        <PaymentWidget 
+          clientSecret={clientSecret}
+          totalAmount={total}
+          onSuccess={handlePaymentSuccess}
+        />
       )}
 
+      {/* Navigation Buttons */}
       <div className="flex justify-between pt-6">
-        <Button variant="outline" onClick={prevStep} disabled={isLoading}>
+        <Button 
+          variant="outline" 
+          onClick={prevStep} 
+          disabled={isLoading}
+        >
           Zurück
         </Button>
+        
         {!clientSecret && (
-          <Button onClick={handlePreparePayment} disabled={isLoading} className="bg-red-500 hover:bg-red-600">
-            {isLoading ? "Wird geladen..." : total === 0 ? "Weiter" : `Weiter zur Bezahlung (CHF ${total})`}
+          <Button 
+            onClick={handlePreparePayment} 
+            disabled={isLoading} 
+            className="bg-red-500 hover:bg-red-600"
+          >
+            {isLoading ? (
+              <>
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Wird geladen...
+              </>
+            ) : (
+              total === 0 ? "Weiter" : `Weiter zur Bezahlung (CHF ${total})`
+            )}
           </Button>
         )}
       </div>
