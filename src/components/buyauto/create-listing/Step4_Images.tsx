@@ -233,7 +233,7 @@ export function Step4_Images() {
         <div className="flex justify-between items-center">
           <div>
             <p className="text-sm font-medium text-neutral-900">
-              {data.price_plan === 'free30' ? 'Standard Plan' : 'Premium Plan'}
+              {data.price_plan === 'standard' ? 'Standard Plan' : 'Premium Plan'}
             </p>
             <p className="text-xs text-neutral-600 font-light">
               {maxPhotos} Bilder möglich

@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '@/integrations/supabase/types';
 
 export interface AdminListingFilters {
   status?: 'pending' | 'published' | 'rejected' | 'expired' | 'all';
@@ -44,6 +46,21 @@ export interface AdminStats {
 
 export const adminService = {
   /**
+   * Get Supabase admin client with service role key for bypassing RLS
+   */
+  getSupabaseAdminClient() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    
+    return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  },
+
+  /**
    * Get admin statistics
    */
   async getStats(): Promise<AdminStats> {
@@ -53,7 +70,7 @@ export const adminService = {
 
     if (error) throw error;
 
-    const stats = data.reduce((acc, listing) => {
+    const stats = (data as any).reduce((acc: any, listing: any) => {
       acc.total++;
       acc[listing.status as keyof AdminStats]++;
       return acc;
