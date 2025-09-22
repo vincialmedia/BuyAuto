@@ -40,8 +40,8 @@ export default function Step3_PlanSelection() {
     const query = new URLSearchParams(window.location.search);
     if (query.get('payment_confirmed')) {
       const paymentIntentClientSecret = query.get('payment_intent_client_secret');
-      if (paymentIntentClientSecret) {
-        getStripePromise().then(stripe => {
+      if (paymentIntentClientSecret && stripePromise) {
+        stripePromise.then(stripe => {
           if (!stripe) return;
           stripe.retrievePaymentIntent(paymentIntentClientSecret).then(({ paymentIntent }) => {
             switch (paymentIntent?.status) {
@@ -65,7 +65,7 @@ export default function Step3_PlanSelection() {
         });
       }
     }
-  }, [toast, nextStep, updateData]);
+  }, [toast, nextStep, updateData, stripePromise]);
 
   useEffect(() => {
     const newTotal = calculateTotal(selectedPlan, isPremium);
