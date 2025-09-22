@@ -6,33 +6,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutForm } from './CheckoutForm';
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, Plan } from '@/lib/buyauto/stripe_config';
 import { CheckIcon } from 'lucide-react';
-
-// More robust Stripe key loading with client-side safety checks
-const getStripePublishableKey = () => {
-  // Only access process.env on the client side after component mounts
-  if (typeof window === 'undefined') return null;
-  return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-};
-
-let stripePromise: Promise<any> | null = null;
-
-const getStripePromise = () => {
-  if (!stripePromise) {
-    const key = getStripePublishableKey();
-    if (key) {
-      stripePromise = loadStripe(key);
-    } else {
-      console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined');
-      stripePromise = Promise.resolve(null);
-    }
-  }
-  return stripePromise;
-};
 
 export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
@@ -45,6 +23,17 @@ export default function Step3_PlanSelection() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+
+  // Initialize Stripe only on client side after component mounts
+  useEffect(() => {
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (publishableKey) {
+      setStripePromise(loadStripe(publishableKey));
+    } else {
+      console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined');
+    }
+  }, []);
 
   // Handle redirect back from Stripe
   useEffect(() => {
@@ -203,9 +192,11 @@ export default function Step3_PlanSelection() {
       ) : (
         <div className="max-w-md mx-auto">
             <h3 className="text-xl font-semibold mb-4 text-center">Sichere Zahlung</h3>
-            <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={getStripePromise()}>
-              <CheckoutForm onSuccess={nextStep} totalAmount={total} />
-            </Elements>
+            {stripePromise && (
+              <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
+                <CheckoutForm onSuccess={nextStep} totalAmount={total} />
+              </Elements>
+            )}
         </div>
       )}
 
