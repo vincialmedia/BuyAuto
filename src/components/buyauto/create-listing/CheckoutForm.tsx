@@ -7,7 +7,7 @@ interface CheckoutFormProps {
   totalAmount: number;
 }
 
-export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
+export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
