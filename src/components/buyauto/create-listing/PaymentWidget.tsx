@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
-import { getStripe } from '@/lib/stripe-client'; // Use the new client-safe loader
+import { getStripe } from '@/lib/stripe'; // Use the unified safe loader
 import CheckoutForm from './CheckoutForm';
 import type { Stripe } from '@stripe/stripe-js';
 

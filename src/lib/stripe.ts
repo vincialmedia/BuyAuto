@@ -1,33 +1,34 @@
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 
-let stripePromise: Promise<Stripe | null> | null = null;
+// Use a module-level variable to cache the Stripe promise
+let stripePromise: Promise<Stripe | null> | undefined;
 
-export function getStripe(): Promise<Stripe | null> {
-  // CRITICAL: Never attempt to load Stripe during SSR
+export const getStripe = (): Promise<Stripe | null> => {
+  // CRITICAL: Always return a Promise, even during SSR
   if (typeof window === 'undefined') {
-    console.log('🚫 getStripe() called during SSR - returning null');
+    console.log('🚫 getStripe() called during SSR - returning Promise<null>');
     return Promise.resolve(null);
   }
-
+  
   // Only initialize once in the browser
   if (!stripePromise) {
-    const pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    
-    if (!pk) {
-      console.error('❌ Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
-      stripePromise = Promise.resolve(null);
-      return stripePromise;
-    }
+    const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
-    console.log('✅ Initializing Stripe with publishable key');
-    stripePromise = loadStripe(pk).catch(error => {
-      console.error('❌ Failed to load Stripe:', error);
-      return null;
-    });
+    if (!stripePublishableKey) {
+      console.error("❌ Stripe publishable key is not set. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable.");
+      // Return a promise that resolves to null to handle this gracefully
+      stripePromise = Promise.resolve(null);
+    } else {
+      console.log('✅ Initializing Stripe with publishable key');
+      stripePromise = loadStripe(stripePublishableKey).catch(error => {
+        console.error('❌ Failed to load Stripe:', error);
+        return null;
+      });
+    }
   }
   
   return stripePromise;
-}
+};
 
 // Additional helper function to check if Stripe is available
 export function isStripeAvailable(): boolean {
