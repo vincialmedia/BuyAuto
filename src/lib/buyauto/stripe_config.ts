@@ -1,9 +1,5 @@
-import Stripe from 'stripe';
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-02-24.acacia',
-  typescript: true,
-});
+// Remove server-side Stripe import - this was causing client-side bundle issues
+// The stripe instance is now in src/lib/stripe-server.ts for API routes only
 
 export const pricingPlans = {
   standard: { price: 0, duration_days: 60, name: 'Standard' },
