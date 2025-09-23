@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { GetServerSideProps } from "next";
 import ListingWizard from "@/components/buyauto/create-listing/ListingWizard";
 
 export default function CreateListingPage() {
@@ -19,3 +20,11 @@ export default function CreateListingPage() {
     </>
   );
 }
+
+// Force server-side rendering to disable static export for this page
+// This prevents the server-side Stripe SDK from being bundled into client code
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {}, // No props needed, just forces SSR
+  };
+};
