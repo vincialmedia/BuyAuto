@@ -109,27 +109,32 @@ const authService = {
 
   async getUserRole(userId: string): Promise<string> {
     try {
+      // Use maybeSingle() to handle cases where profile doesn't exist yet
       const { data, error } = await supabase
         .from('profiles')
         .select('id, role')
         .eq('id', userId)
-        .maybeSingle(); // Use maybeSingle instead of single to handle missing rows gracefully
+        .maybeSingle(); // This prevents 406 errors when no row exists
 
       if (error) {
         console.error('Error fetching user role:', error);
-        return 'user'; // Default fallback role
+        // If it's a missing profile, the trigger should create it on next auth event
+        return 'user'; // Safe fallback
       }
 
-      // Return the role or default to 'user' if no profile exists
-      const role = data?.role ?? 'user';
-      
-      // Log for debugging during the fix
+      // If no profile exists yet (shouldn't happen with trigger, but just in case)
+      if (!data) {
+        console.warn(`⚠️ No profile found for user ${userId}, defaulting to 'user' role`);
+        return 'user';
+      }
+
+      const role = data.role || 'user'; // Ensure we have a valid role
       console.log(`✅ User role for ${userId}: ${role}`);
       
       return role;
     } catch (error) {
       console.error('Unexpected error in getUserRole:', error);
-      return 'user'; // Safe fallback
+      return 'user'; // Ultimate fallback
     }
   },
 };
