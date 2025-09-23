@@ -86,8 +86,8 @@ export default function Step3_PlanSelection() {
     }
 
     try {
-      // Use the existing getStripe function instead of dynamic import
-      const { getStripe } = await import('@/lib/stripe');
+      // Use the new getStripe function from stripe-client instead of the old one
+      const { getStripe } = await import('@/lib/stripe-client');
       const stripe = await getStripe();
       
       if (!stripe) {
