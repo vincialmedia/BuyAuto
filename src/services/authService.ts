@@ -106,6 +106,32 @@ const authService = {
     
     return session;
   },
+
+  async getUserRole(userId: string): Promise<string> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle instead of single to handle missing rows gracefully
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return 'user'; // Default fallback role
+      }
+
+      // Return the role or default to 'user' if no profile exists
+      const role = data?.role ?? 'user';
+      
+      // Log for debugging during the fix
+      console.log(`✅ User role for ${userId}: ${role}`);
+      
+      return role;
+    } catch (error) {
+      console.error('Unexpected error in getUserRole:', error);
+      return 'user'; // Safe fallback
+    }
+  },
 };
 
 export default authService;
