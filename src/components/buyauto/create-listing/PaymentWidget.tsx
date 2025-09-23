@@ -2,7 +2,7 @@
 
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe';
-import { CheckoutForm } from './CheckoutForm';
+import CheckoutForm from './CheckoutForm';
 
 interface PaymentWidgetProps {
   clientSecret: string;
