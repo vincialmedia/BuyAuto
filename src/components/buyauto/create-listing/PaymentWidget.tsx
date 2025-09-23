@@ -4,8 +4,6 @@ import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe';
 import { CheckoutForm } from './CheckoutForm';
 
-const stripePromise = getStripe();
-
 interface PaymentWidgetProps {
   clientSecret: string;
   totalAmount: number;
@@ -13,8 +11,17 @@ interface PaymentWidgetProps {
 }
 
 export default function PaymentWidget({ clientSecret, totalAmount, onSuccess }: PaymentWidgetProps) {
+  // Guard: if Stripe key is missing, don't render anything to prevent crash
+  if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+    console.error("Stripe key is not configured. Payment widget will not be displayed.");
+    return null;
+  }
+
   // Guard: no clientSecret, no render
   if (!clientSecret) return null;
+
+  // Lazy load Stripe promise only when component actually renders
+  const stripePromise = getStripe();
 
   const appearance = {
     theme: 'stripe' as const,
