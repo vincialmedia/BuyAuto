@@ -32,33 +32,25 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     try {
       setAdminLoading(true);
       
-      // Fix: Use .maybeSingle() instead of .single() to prevent 406 errors
+      // Fix: Use .maybeSingle() and select both id and role for better compatibility
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('id, role')
         .eq('id', userId)
-        .maybeSingle(); // This prevents 406 when no row exists
+        .maybeSingle();
 
       if (error) {
         console.error('Error checking admin role:', error);
         // Default to user role on error
         setIsAdmin(false);
-      } else if (data) {
-        // Profile exists, check role
-        setIsAdmin(data.role === 'admin');
       } else {
-        // No profile found, default to user role
-        console.log('No profile found for user, defaulting to user role');
-        setIsAdmin(false);
+        // Use fallback to 'user' if no data or no role
+        const role = data?.role ?? 'user';
+        setIsAdmin(role === 'admin');
         
-        // Optionally create a default profile (though trigger should handle this)
-        try {
-          await supabase
-            .from('profiles')
-            .insert([{ id: userId, role: 'user' }]);
-          console.log('Created default profile for user');
-        } catch (insertError) {
-          console.log('Profile creation failed (may already exist):', insertError);
+        if (!data) {
+          console.log('No profile found for user, defaulting to user role');
+          // Note: The database trigger should handle this automatically for new users
         }
       }
     } catch (error) {
