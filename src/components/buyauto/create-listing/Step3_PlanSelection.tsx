@@ -80,12 +80,18 @@ export default function Step3_PlanSelection() {
     }
 
     try {
-      // Import and load Stripe with proper error handling
-      const { loadStripe } = await import('@stripe/stripe-js');
-      const stripe = await loadStripe(publishableKey);
+      // Use the existing getStripe function instead of dynamic import
+      const { getStripe } = await import('@/lib/stripe');
+      const stripe = await getStripe();
       
       if (!stripe) {
-        throw new Error('Failed to load Stripe');
+        console.error('❌ Failed to initialize Stripe - likely missing environment variable');
+        toast({ 
+          title: "Configuration Error", 
+          description: "Payment system unavailable. Please contact support.", 
+          variant: 'destructive' 
+        });
+        return;
       }
 
       const { paymentIntent } = await stripe.retrievePaymentIntent(paymentIntentClientSecret);
