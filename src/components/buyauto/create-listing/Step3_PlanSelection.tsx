@@ -55,54 +55,67 @@ export default function Step3_PlanSelection() {
     if (query.get('payment_confirmed')) {
       const paymentIntentClientSecret = query.get('payment_intent_client_secret');
       if (paymentIntentClientSecret) {
-        // Clean up URL without triggering navigation
-        const url = new URL(window.location.href);
-        url.searchParams.delete('payment_confirmed');
-        url.searchParams.delete('payment_intent_client_secret');
-        window.history.replaceState({}, '', url.toString());
-
-        // Import Stripe dynamically to avoid SSR issues
-        const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-        if (!publishableKey) {
-          console.warn('Stripe publishable key not found');
-          return;
-        }
-
-        import('@stripe/stripe-js').then(({ loadStripe }) => {
-          loadStripe(publishableKey).then(stripe => {
-            if (!stripe) return;
-            
-            stripe.retrievePaymentIntent(paymentIntentClientSecret).then(({ paymentIntent }) => {
-              switch (paymentIntent?.status) {
-                case 'succeeded':
-                  toast({ title: "Payment successful!", description: "Your listing is being processed." });
-                  updateData({ payment_status: 'paid' });
-                  nextStep();
-                  break;
-                case 'processing':
-                  toast({ title: "Payment processing.", description: "We'll update you when payment is received." });
-                  break;
-                case 'requires_payment_method':
-                  toast({ title: "Payment failed.", description: "Please try another payment method.", variant: 'destructive' });
-                  setClientSecret(paymentIntentClientSecret);
-                  break;
-                default:
-                  toast({ title: "Something went wrong.", description: "Please try again.", variant: 'destructive' });
-                  break;
-              }
-            }).catch(error => {
-              console.error('Error retrieving payment intent:', error);
-              toast({ title: "Error", description: "Could not verify payment status.", variant: 'destructive' });
-            });
-          }).catch(error => {
-            console.error('Error loading Stripe:', error);
-          });
-        }).catch(error => {
-          console.error('Error importing Stripe:', error);
-        });
+        handlePaymentConfirmation(paymentIntentClientSecret);
       }
     }
   }, [mounted, toast, nextStep, updateData]);
+
+  const handlePaymentConfirmation = async (paymentIntentClientSecret: string) => {
+    // Clean up URL without triggering navigation
+    const url = new URL(window.location.href);
+    url.searchParams.delete('payment_confirmed');
+    url.searchParams.delete('payment_intent_client_secret');
+    window.history.replaceState({}, '', url.toString());
+
+    // Check for publishable key first
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (!publishableKey) {
+      console.error('❌ Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY - cannot verify payment');
+      toast({ 
+        title: "Configuration Error", 
+        description: "Payment verification unavailable. Please contact support.", 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    try {
+      // Import and load Stripe with proper error handling
+      const { loadStripe } = await import('@stripe/stripe-js');
+      const stripe = await loadStripe(publishableKey);
+      
+      if (!stripe) {
+        throw new Error('Failed to load Stripe');
+      }
+
+      const { paymentIntent } = await stripe.retrievePaymentIntent(paymentIntentClientSecret);
+      
+      switch (paymentIntent?.status) {
+        case 'succeeded':
+          toast({ title: "Payment successful!", description: "Your listing is being processed." });
+          updateData({ payment_status: 'paid' });
+          nextStep();
+          break;
+        case 'processing':
+          toast({ title: "Payment processing.", description: "We'll update you when payment is received." });
+          break;
+        case 'requires_payment_method':
+          toast({ title: "Payment failed.", description: "Please try another payment method.", variant: 'destructive' });
+          setClientSecret(paymentIntentClientSecret);
+          break;
+        default:
+          toast({ title: "Something went wrong.", description: "Please try again.", variant: 'destructive' });
+          break;
+      }
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      toast({ 
+        title: "Error", 
+        description: "Could not verify payment status.", 
+        variant: 'destructive' 
+      });
+    }
+  };
 
   const handlePreparePayment = async () => {
     if (!mounted) return;
