@@ -58,7 +58,7 @@ export default function Step3_PlanSelection() {
         handlePaymentConfirmation(paymentIntentClientSecret);
       }
     }
-  }, [mounted, toast, nextStep, updateData]);
+  }, [mounted]);
 
   const handlePaymentConfirmation = async (paymentIntentClientSecret: string) => {
     // Clean up URL without triggering navigation
@@ -76,6 +76,12 @@ export default function Step3_PlanSelection() {
         description: "Payment verification unavailable. Please contact support.", 
         variant: 'destructive' 
       });
+      return;
+    }
+
+    // Additional browser-only check
+    if (typeof window === 'undefined') {
+      console.error('❌ Attempting to access Stripe during SSR');
       return;
     }
 
