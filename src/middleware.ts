@@ -8,28 +8,14 @@ export async function middleware(req: NextRequest) {
   // Create a Supabase client configured to use cookies
   const supabase = createMiddlewareClient({ req, res });
 
-  // Refresh session if expired - important for Server-Side Rendering
+  // Refresh session if expired - this is the key part for API routes to work
   const { data: { session } } = await supabase.auth.getSession();
-  console.log(`Middleware: Session check for ${req.nextUrl.pathname}. User is ${session ? 'authenticated' : 'not authenticated'}.`);
+  
+  // Log for debugging
+  console.log(`Middleware: Session refresh for ${req.nextUrl.pathname}. User is ${session ? 'authenticated' : 'not authenticated'}.`);
 
-  // Define protected routes
-  const protectedPaths = ['/dashboard', '/inserat-erstellen'];
-  const isProtectedPath = protectedPaths.some(path => req.nextUrl.pathname.startsWith(path));
-
-  // If user is not signed in and is trying to access a protected route, redirect to auth page
-  if (!session && isProtectedPath) {
-    console.log(`Middleware: Redirecting unauthenticated user to /auth.`);
-    const redirectUrl = new URL('/auth', req.url);
-    redirectUrl.searchParams.set('callback', req.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  // If user is signed in and tries to access the auth page, redirect to dashboard
-  if (session && req.nextUrl.pathname.startsWith('/auth')) {
-    console.log(`Middleware: Redirecting authenticated user to /dashboard.`);
-    return NextResponse.redirect(new URL('/dashboard', req.url));
-  }
-
+  // Don't do any redirects - let the client-side routing handle auth flow
+  // Just ensure the session is refreshed so API routes can access it
   return res;
 }
 
@@ -41,7 +27,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public folder
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
   ],
 };
