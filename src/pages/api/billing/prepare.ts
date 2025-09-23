@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createPagesServerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
 import { stripe } from '@/lib/stripe-server';
 import { calculateTotal, getPlanDetails, Plan, PREMIUM_BOOST_PRICE } from '@/lib/buyauto/stripe_config';
 import { Database } from '@/integrations/supabase/types';
@@ -13,28 +13,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end('Method Not Allowed');
   }
 
-  const supabase = createPagesServerClient({ req, res });
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const { listing_id, plan, premium } = req.body;
-
-  if (!listing_id || !plan || typeof premium !== 'boolean') {
-    return res.status(400).json({ error: 'Missing required fields: listing_id, plan, premium' });
-  }
-
-  if (!Object.keys(getPlanDetails('standard')).length) { // A simple check if plans are loaded
-      const validPlans = ['standard', 'extended', 'unlimited'];
-      if (!validPlans.includes(plan)) {
-        return res.status(400).json({ error: 'Invalid plan specified' });
-      }
-  }
-
-
   try {
+    // Create Supabase client for Pages Router API routes
+    const supabase = createServerSupabaseClient({ req, res });
+    
+    // Get the current user session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      return res.status(401).json({ error: 'Authentication failed' });
+    }
+
+    if (!session || !session.user) {
+      console.error('No session found');
+      return res.status(401).json({ error: 'Unauthorized - Please log in' });
+    }
+
+    const { listing_id, plan, premium } = req.body;
+
+    if (!listing_id || !plan || typeof premium !== 'boolean') {
+      return res.status(400).json({ error: 'Missing required fields: listing_id, plan, premium' });
+    }
+
+    // Validate plan
+    const validPlans = ['standard', 'extended', 'unlimited'];
+    if (!validPlans.includes(plan)) {
+      return res.status(400).json({ error: 'Invalid plan specified' });
+    }
+
+    // Verify the listing belongs to the authenticated user
     const { data: listing, error: listingError } = await supabase
       .from('listings')
       .select('*')
@@ -54,9 +62,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const date = new Date();
         date.setDate(date.getDate() + duration_days);
         return date.toISOString();
-    }
+    };
 
-    // Path 1: Free plan
+    // Path 1: Free plan (CHF 0)
     if (totalCHF === 0) {
       const { error: updateError } = await supabase
         .from('listings')
@@ -71,15 +79,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
         .eq('id', listing_id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Database update error for free plan:', updateError);
+        throw new Error('Failed to update listing');
+      }
 
       return res.status(200).json({ next: 'continue', listing_id });
     }
 
-    // Path 2: Paid plan
+    // Path 2: Paid plan - Create Stripe Payment Intent
     const amountInCents = Math.round(totalCHF * 100);
 
-    const idempotencyKey = crypto.createHash('sha256').update(`${listing_id}-${plan}-${premium}-${session.user.id}`).digest('hex');
+    const idempotencyKey = crypto
+      .createHash('sha256')
+      .update(`${listing_id}-${plan}-${premium}-${session.user.id}`)
+      .digest('hex');
 
     const paymentIntentParams = {
         amount: amountInCents,
@@ -98,16 +112,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (listing.stripe_payment_intent_id) {
         try {
-            paymentIntent = await stripe.paymentIntents.update(listing.stripe_payment_intent_id, paymentIntentParams, { idempotencyKey });
+            // Try to update existing Payment Intent
+            paymentIntent = await stripe.paymentIntents.update(
+              listing.stripe_payment_intent_id, 
+              paymentIntentParams, 
+              { idempotencyKey }
+            );
         } catch (e) {
-            // If PI can't be updated (e.g., already processed), create a new one.
-            paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, { idempotencyKey });
+            // If PI can't be updated (e.g., already processed), create a new one
+            paymentIntent = await stripe.paymentIntents.create(
+              paymentIntentParams, 
+              { idempotencyKey }
+            );
         }
     } else {
-        paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, { idempotencyKey });
+        // Create new Payment Intent
+        paymentIntent = await stripe.paymentIntents.create(
+          paymentIntentParams, 
+          { idempotencyKey }
+        );
     }
 
-
+    // Update the listing with payment information
     const { error: updateError } = await supabase
       .from('listings')
       .update({
@@ -122,7 +148,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
       .eq('id', listing_id);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('Database update error for paid plan:', updateError);
+      throw new Error('Failed to update listing');
+    }
     
     return res.status(200).json({
       clientSecret: paymentIntent.client_secret,
@@ -132,6 +161,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     console.error('Error in /api/billing/prepare:', error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ 
+      error: error.message || 'An unexpected error occurred'
+    });
   }
 }
