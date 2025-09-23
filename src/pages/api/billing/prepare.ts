@@ -1,7 +1,7 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createPagesServerClient } from '@supabase/auth-helpers-nextjs';
-import { stripe, calculateTotal, getPlanDetails, Plan, PREMIUM_BOOST_PRICE } from '@/lib/buyauto/stripe_config';
+import { stripe } from '@/lib/stripe-server';
+import { calculateTotal, getPlanDetails, Plan, PREMIUM_BOOST_PRICE } from '@/lib/buyauto/stripe_config';
 import { Database } from '@/integrations/supabase/types';
 import crypto from 'crypto';
 

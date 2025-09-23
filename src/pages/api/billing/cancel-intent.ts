@@ -1,7 +1,6 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createPagesServerClient } from '@supabase/auth-helpers-nextjs';
-import { stripe } from '@/lib/buyauto/stripe_config';
+import { stripe } from '@/lib/stripe-server';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {

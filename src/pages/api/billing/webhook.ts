@@ -1,6 +1,5 @@
-
 import { NextApiRequest, NextApiResponse } from 'next';
-import { stripe } from '@/lib/buyauto/stripe_config';
+import { stripe } from '@/lib/stripe-server';
 import Stripe from 'stripe';
 import { buffer } from 'micro';
 import { adminService } from '@/services/adminService';
