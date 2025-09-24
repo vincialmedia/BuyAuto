@@ -93,18 +93,19 @@ export default function Step5_Preview() {
   };
 
   const getPlanInfo = () => {
-    // ✅ FIXED: Use actual plan names from Step3_PlanSelection
+    // ✅ FIXED: Use actual plan names from Step3_PlanSelection with proper mapping
     const planMap = {
-      'standard': { name: 'Standard', duration: '60 Tage', price: 0 },
-      'extended': { name: 'Verlängert', duration: '90 Tage', price: 50 },
-      'unlimited': { name: 'Unlimitiert', duration: 'Ohne Ablauf', price: 190 },
+      'standard': { name: 'Standard Plan', duration: '60 Tage', price: 0 },
+      'extended': { name: 'Verlängert Plan', duration: '90 Tage', price: 50 },
+      'unlimited': { name: 'Unlimitiert Plan', duration: 'Ohne Ablauf', price: 190 },
       // Legacy fallbacks for existing data
       'free30': { name: 'Standard (Gratis)', duration: '30 Tage', price: 0 },
       'premium30': { name: 'Premium (Empfohlen)', duration: '30 Tage Premium', price: 30 },
       'paid90': { name: 'Verlängert', duration: '90 Tage', price: 50 },
     };
     
-    return planMap[data.price_plan as keyof typeof planMap] || planMap.standard;
+    const selectedPlan = data.price_plan as keyof typeof planMap;
+    return planMap[selectedPlan] || planMap.standard;
   };
   
   const planInfo = getPlanInfo();
@@ -288,6 +289,10 @@ export default function Step5_Preview() {
                 <div>
                   <p className="font-semibold text-neutral-900">{planInfo.name}</p>
                   <p className="text-sm text-neutral-600 font-light">{planInfo.duration}</p>
+                  {/* Display the actual selected plan from wizard data */}
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Plan: {data.price_plan || 'standard'}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-neutral-900">
