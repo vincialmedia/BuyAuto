@@ -56,8 +56,15 @@ export default function ListingWizard() {
   });
 
   const updateData = useCallback((updates: Partial<ListingData>) => {
-    setData(prev => ({ ...prev, ...updates }));
-  }, []);
+    console.log("🔍 ListingWizard updateData called with:", updates);
+    console.log("🔍 Current data before update:", data);
+    
+    setData(prev => {
+      const newData = { ...prev, ...updates };
+      console.log("🔍 New data after update:", newData);
+      return newData;
+    });
+  }, [data]);
 
   const getMaxPhotos = useCallback(() => {
     // Free plan gets 5 photos, paid plans get 15 photos
