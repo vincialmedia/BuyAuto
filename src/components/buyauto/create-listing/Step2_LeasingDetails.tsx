@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useWizard } from "./ListingWizard";
 import { ChevronLeft } from "lucide-react";
 import { z } from "zod";
+import { useState } from "react"; // ✅ ADD: useState import
+import { useAuth } from "@/contexts/AuthContext"; // ✅ ADD: useAuth import
+import { useToast } from "@/hooks/use-toast"; // ✅ ADD: useToast import
+import { supabase } from "@/integrations/supabase/client"; // ✅ ADD: supabase import
 
 const swissCantons = [
   { value: "AG", label: "Aargau (AG)" },
