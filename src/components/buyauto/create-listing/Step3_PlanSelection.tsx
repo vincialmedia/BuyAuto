@@ -328,14 +328,16 @@ export default function Step3_PlanSelection() {
         {!clientSecret && (
           <Button 
             onClick={handlePreparePayment} 
-            disabled={isLoading} 
-            className="bg-red-500 hover:bg-red-600"
+            disabled={isLoading || !data.id} 
+            className="bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
                 <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Wird geladen...
               </>
+            ) : !data.id ? (
+              "Listing-ID fehlt - Bitte zurück zum ersten Schritt"
             ) : (
               total === 0 ? "Weiter" : `Weiter zur Bezahlung (CHF ${total})`
             )}
