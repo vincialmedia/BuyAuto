@@ -31,6 +31,7 @@ export interface AdminListing {
   user_id: string | null;
   expires_at: string | null;
   duration_days: number | null;
+  price_plan: string; // ✅ ADDED: Plan information for admin view
   images: any[];
   cover_image_index: number;
   cover_image_url: string | null;
@@ -206,7 +207,7 @@ export const adminService = {
   },
 
   /**
-   * Reject a listing with reason
+   * Reject a listing with reason and trigger refund
    */
   async rejectListing(id: string, reason: string): Promise<AdminListing> {
     const { data, error } = await supabase
@@ -220,6 +221,30 @@ export const adminService = {
       .single();
 
     if (error) throw error;
+
+    // Trigger refund after successful listing rejection
+    try {
+      const refundResponse = await fetch('/api/billing/refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ listing_id: id })
+      });
+
+      if (!refundResponse.ok) {
+        const refundError = await refundResponse.json();
+        console.error(`Failed to process refund for listing ${id}:`, refundError);
+        // Log error but don't throw - listing rejection was successful
+        console.warn(`Manual refund may be required for listing ${id}. Error: ${refundError.error || 'Unknown error'}`);
+      } else {
+        console.log(`Refund successfully initiated for listing ${id}`);
+      }
+    } catch (refundError) {
+      console.error(`Failed to process refund for listing ${id}:`, refundError);
+      console.warn(`Manual refund may be required for listing ${id}. Please check manually.`);
+    }
+
     return data as AdminListing;
   },
 
@@ -315,9 +340,10 @@ export const adminService = {
   },
 
   /**
-   * Bulk reject listings
+   * Bulk reject listings with refund processing
    */
   async bulkReject(ids: string[], reason: string): Promise<void> {
+    // First, update all listing statuses to rejected
     const { error } = await supabase
       .from('listings')
       .update({
@@ -327,5 +353,33 @@ export const adminService = {
       .in('id', ids);
 
     if (error) throw error;
+
+    // Then, trigger refunds for each listing
+    const refundPromises = ids.map(async (id) => {
+      try {
+        const refundResponse = await fetch('/api/billing/refund', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ listing_id: id })
+        });
+
+        if (!refundResponse.ok) {
+          const refundError = await refundResponse.json();
+          console.error(`Failed to process refund for listing ${id}:`, refundError);
+          console.warn(`Manual refund may be required for listing ${id}. Error: ${refundError.error || 'Unknown error'}`);
+        } else {
+          console.log(`Refund successfully initiated for listing ${id}`);
+        }
+      } catch (refundError) {
+        console.error(`Failed to process refund for listing ${id}:`, refundError);
+        console.warn(`Manual refund may be required for listing ${id}. Please check manually.`);
+      }
+    });
+
+    // Process all refunds in parallel but don't wait for completion
+    // This prevents blocking the UI if some refunds are slow
+    Promise.allSettled(refundPromises);
   }
 };

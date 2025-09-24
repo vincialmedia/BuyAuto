@@ -80,19 +80,15 @@ export default function Step1_VehicleData() {
         fuel: formData.fuel,
         gearbox: formData.gearbox,
         body: formData.body,
-        // Set default values for required fields that will be filled in later steps
-        price_per_month_chf: 0, // Will be updated in Step 2
-        remaining_months: 12, // Will be updated in Step 2
-        location: "Wird später hinzugefügt", // ✅ FIXED: Proper placeholder instead of empty string
-        canton_code: "ZH", // ✅ FIXED: Added missing required canton_code field
+        // The following fields are now nullable or have defaults and will be set in later steps
         title: `${formData.brand} ${formData.model}`, // Auto-generate title
         price_plan: "standard", // Default plan, will be updated in Step 3
-        status: "draft", // Mark as draft until completed
+        status: "pending", // Use 'pending' as it's a valid enum value
         images: [],
         cover_image_index: 0,
         premium: false,
         duration_days: 30,
-        created_by: user.id // ✅ ADDED: Set created_by for RLS policies
+        created_by: user.id // Set created_by for RLS policies
       };
 
       console.log("🚀 Creating initial listing with data:", listingInsert);

@@ -93,16 +93,20 @@ export default function Step5_Preview() {
   };
 
   const getPlanInfo = () => {
+    // ✅ FIXED: Use actual plan names from Step3_PlanSelection
     const planMap = {
+      'standard': { name: 'Standard', duration: '60 Tage', price: 0 },
+      'extended': { name: 'Verlängert', duration: '90 Tage', price: 50 },
+      'unlimited': { name: 'Unlimitiert', duration: 'Ohne Ablauf', price: 190 },
+      // Legacy fallbacks for existing data
       'free30': { name: 'Standard (Gratis)', duration: '30 Tage', price: 0 },
       'premium30': { name: 'Premium (Empfohlen)', duration: '30 Tage Premium', price: 30 },
       'paid90': { name: 'Verlängert', duration: '90 Tage', price: 50 },
-      'unlimited': { name: 'Unlimitiert', duration: 'Ohne Ablauf', price: 190 },
     };
     
-    return planMap[data.price_plan as keyof typeof planMap] || planMap.free30;
+    return planMap[data.price_plan as keyof typeof planMap] || planMap.standard;
   };
-
+  
   const planInfo = getPlanInfo();
 
   // Safe data access with fallbacks
@@ -156,7 +160,7 @@ export default function Step5_Preview() {
               )}
               
               {/* Premium Badge */}
-              {safeData.is_premium && (
+              {data.premium && (
                 <div className="absolute top-4 left-4">
                   <Badge className="bg-red-500 hover:bg-red-500 text-white px-3 py-1 text-sm font-medium shadow-sm">
                     <Star className="w-3 h-3 mr-1 fill-current" />
@@ -295,7 +299,7 @@ export default function Step5_Preview() {
                 </div>
               </div>
 
-              {safeData.is_premium && (
+              {data.premium && (
                 <div className="p-3 bg-red-50 border border-red-200/60 rounded-lg">
                   <p className="text-sm text-red-700 font-medium flex items-center">
                     <Star className="w-4 h-4 mr-2 fill-current" />
@@ -313,10 +317,7 @@ export default function Step5_Preview() {
                   Laufzeit
                 </div>
                 <p className="text-sm font-medium text-neutral-900">
-                  {safeData.duration_days 
-                    ? `${safeData.duration_days} Tage ab Veröffentlichung`
-                    : "Unbegrenzt bis zum Verkauf"
-                  }
+                  {planInfo.duration}
                 </p>
               </div>
             </CardContent>
@@ -362,17 +363,8 @@ export default function Step5_Preview() {
                 </div>
               ) : (
                 <div className="flex items-center justify-center">
-                  {planInfo.price > 0 ? (
-                    <>
-                      <CreditCard className="w-5 h-5 mr-2" />
-                      Bezahlen & Inserat erstellen
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-5 h-5 mr-2" />
-                      Inserat kostenfrei erstellen
-                    </>
-                  )}
+                  <Check className="w-5 h-5 mr-2" />
+                  Inserat erstellen
                 </div>
               )}
             </Button>

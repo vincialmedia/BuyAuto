@@ -89,7 +89,7 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
       await adminService.rejectListing(rejectingId, rejectReason.trim());
       toast({
         title: "Abgelehnt",
-        description: "Das Inserat wurde abgelehnt und die Begründung gespeichert."
+        description: "Das Inserat wurde abgelehnt und die Rückerstattung eingeleitet."
       });
       setRejectModalOpen(false);
       setRejectReason('');
@@ -135,7 +135,7 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
       await adminService.bulkReject(selectedIds, rejectReason.trim());
       toast({
         title: "Abgelehnt",
-        description: `${selectedIds.length} Inserate wurden abgelehnt.`
+        description: `${selectedIds.length} Inserate wurden abgelehnt und Rückerstattungen eingeleitet.`
       });
       setBulkRejectModalOpen(false);
       setRejectReason('');

@@ -64,7 +64,7 @@ export type Database = {
         Row: {
           body: string
           brand: string
-          canton_code: string
+          canton_code: string | null
           cover_image_index: number | null
           cover_image_url: string | null
           created_at: string | null
@@ -78,7 +78,7 @@ export type Database = {
           images: Json | null
           is_premium: boolean | null
           km: number | null
-          location: string
+          location: string | null
           mileage_km: number
           model: string
           moderation_note: string | null
@@ -86,11 +86,11 @@ export type Database = {
           premium: boolean
           premium_until: string | null
           price_paid_chf: number | null
-          price_per_month_chf: number
+          price_per_month_chf: number | null
           price_plan: string | null
           pricing_plan: string | null
           refunded_at: string | null
-          remaining_months: number
+          remaining_months: number | null
           status: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id: string | null
           stripe_refund_id: string | null
@@ -102,7 +102,7 @@ export type Database = {
         Insert: {
           body: string
           brand: string
-          canton_code: string
+          canton_code?: string | null
           cover_image_index?: number | null
           cover_image_url?: string | null
           created_at?: string | null
@@ -116,7 +116,7 @@ export type Database = {
           images?: Json | null
           is_premium?: boolean | null
           km?: number | null
-          location: string
+          location?: string | null
           mileage_km: number
           model: string
           moderation_note?: string | null
@@ -124,11 +124,11 @@ export type Database = {
           premium?: boolean
           premium_until?: string | null
           price_paid_chf?: number | null
-          price_per_month_chf: number
+          price_per_month_chf?: number | null
           price_plan?: string | null
           pricing_plan?: string | null
           refunded_at?: string | null
-          remaining_months: number
+          remaining_months?: number | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
@@ -140,7 +140,7 @@ export type Database = {
         Update: {
           body?: string
           brand?: string
-          canton_code?: string
+          canton_code?: string | null
           cover_image_index?: number | null
           cover_image_url?: string | null
           created_at?: string | null
@@ -154,7 +154,7 @@ export type Database = {
           images?: Json | null
           is_premium?: boolean | null
           km?: number | null
-          location?: string
+          location?: string | null
           mileage_km?: number
           model?: string
           moderation_note?: string | null
@@ -162,11 +162,11 @@ export type Database = {
           premium?: boolean
           premium_until?: string | null
           price_paid_chf?: number | null
-          price_per_month_chf?: number
+          price_per_month_chf?: number | null
           price_plan?: string | null
           pricing_plan?: string | null
           refunded_at?: string | null
-          remaining_months?: number
+          remaining_months?: number | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null

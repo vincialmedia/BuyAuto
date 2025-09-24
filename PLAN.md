@@ -1,54 +1,69 @@
-# Global Header Implementation Plan
+# Implementation Plan: Listing Flow &amp; Dashboard Fixes
 
-## 1. Goal
-Create a single, sitewide global header that is consistent across all pages, responsive, and adapts to user authentication status.
+This document outlines the plan to resolve three issues:
+1.  Incorrect plan display in the listing creation preview.
+2.  Missing plan information in the admin dashboard.
+3.  Missing plan information in the end-user dashboard.
 
-## 2. Strategy: Root Layout
-The most robust approach is to create a `MainLayout.tsx` component that wraps all page content via `_app.tsx`.
+---
 
-- **File:** `src/components/layout/MainLayout.tsx` (to be created)
-- **Purpose:** This component will render the global header, a `main` tag for page content, and the global footer.
-- **Integration:** In `src/pages/_app.tsx`, wrap the `<Component {...pageProps} />` with `<MainLayout>`.
+### Problem 1: Fix Listing Creation Preview
 
-## 3. Header Component Refactor
-The existing `src/components/buyauto/Header.tsx` will be adapted to serve as the global header.
+**Goal:** Ensure the selected plan is correctly displayed on the final preview screen and the main call-to-action button has consistent text.
 
-- **File:** `src/components/buyauto/Header.tsx` (to be refactored)
-- **Key Features:**
-    - Logo linking to `/`.
-    - Main navigation links.
-    - User authentication section (Login/Register or Profile Dropdown).
-    - Sticky-on-scroll behavior.
-    - Responsive design with a hamburger menu for mobile.
+**Analysis:** The issue stems from the `price_plan` not being consistently passed to the final preview step (`Step5_Preview.tsx`) and conditional logic on the button text.
 
-## 4. Authentication Logic
-The header will use the `useAuth()` hook from `src/contexts/AuthContext.tsx` to display content conditionally.
+**Implementation Steps:**
 
-- **Logged Out State (`!user`):**
-    - Show "Login" button (`/auth`).
-    - Show "Registrieren" button (`/auth?view=register`).
-- **Logged In State (`user`):**
-    - Show a user profile dropdown menu.
-    - Dropdown contains:
-        - "Profil" (`/dashboard`)
-        - "Meine Inserate" (`/dashboard?tab=listings`)
-        - "Abmelden" (Logout button).
-- **Admin State (`user.role === 'admin'`):**
-    - Add an "Admin" link to the user dropdown (`/admin`).
-- **Loading State:**
-    - Render a skeleton UI in the auth area to prevent content flashing (FOUC) while the user session is being checked.
+1.  **Analyze `ListingWizard.tsx` and `Step3_PlanSelection.tsx`**:
+    - Confirm that selecting a plan in `Step3_PlanSelection.tsx` correctly updates the shared state in `ListingWizard.tsx`.
+    - Ensure the `price_plan` field is part of the `ListingWizardState`.
 
-## 5. Cleanup of Redundant Headers
-To ensure a single source of truth, all existing page-specific headers will be removed.
+2.  **Modify `src/components/buyauto/create-listing/Step5_Preview.tsx`**:
+    - Access the `price_plan` from the wizard's state within the component.
+    - Add a new UI element in the summary section to display the chosen plan (e.g., "Gewählter Plan: Premium").
+    - Locate the main submission button and change its text to be static: **"Inserat erstellen"**. This involves removing the conditional logic that currently shows "Inserat kostenfrei erstellen".
 
-- **`src/pages/index.tsx`**: Remove the direct rendering of `<Header />`.
-- **`src/components/buyauto/dashboard/DashboardLayout.tsx`**: Remove `<DashboardHeader />`. The layout will be adjusted to receive content directly.
-- **`src/components/buyauto/search/SearchLayout.tsx`**: Remove `<SlimHeader />`.
-- **`src/components/admin/AdminLayout.tsx`**: The existing sidebar and top bar will be reviewed to ensure they integrate smoothly without visual conflicts with the new global header.
+---
 
-## 6. Implementation Steps (for Creative Mode)
-1. Create `src/components/layout/MainLayout.tsx`.
-2. Refactor `src/components/buyauto/Header.tsx` with the authentication logic.
-3. Update `src/pages/_app.tsx` to use `MainLayout`.
-4. Remove the old, redundant header components from their respective pages and layouts.
-5. Test all routes and authentication states to confirm visual consistency and functionality.
+### Problem 2: Display Listing Plan in Admin Dashboard
+
+**Goal:** Make the selected pricing plan visible for each listing in the admin dashboard for better moderation and overview.
+
+**Analysis:** The `price_plan` column is available in the database but is not being fetched or displayed in the admin panel components.
+
+**Implementation Steps:**
+
+1.  **Update `src/services/adminService.ts`**:
+    - Add a `price_plan: string;` property to the `AdminListing` TypeScript interface. The service already uses `select('*')`, which will fetch this column automatically. This change makes the data type-safe and accessible.
+
+2.  **Modify `src/components/admin/ModerationView.tsx`**:
+    - Add a new "Plan" column header to the main listings table.
+    - In the table body, render the `listing.price_plan` value for each row.
+    - Use a `<Badge>` component to style the plan name for better visual distinction.
+
+3.  **Modify `src/components/admin/AllListingsView.tsx`**:
+    - Replicate the same UI changes from `ModerationView.tsx` to this component.
+
+---
+
+### Problem 3: Display Listing Plan in User Dashboard
+
+**Goal:** Allow end-users to see the plan associated with each of their listings in their personal dashboard.
+
+**Analysis:** Similar to the admin dashboard, the user's dashboard currently does not fetch or display the `price_plan` for their listings.
+
+**Implementation Steps:**
+
+1.  **Update `src/services/dashboardService.ts`**:
+    - Add a `price_plan: string;` property to the `UserListing` (or equivalent) TypeScript interface in this service.
+    - Ensure the query fetching the user's listings includes the `price_plan`.
+
+2.  **Modify `src/components/buyauto/dashboard/ListingsSection.tsx`**:
+    - Add a new "Plan" column header to the user's listings table.
+    - In the table body, render the `listing.price_plan` for each of the user's listings.
+    - Use a `<Badge>` for consistency with the admin view.
+
+---
+
+This plan will be executed in **Standard Mode** upon approval.
