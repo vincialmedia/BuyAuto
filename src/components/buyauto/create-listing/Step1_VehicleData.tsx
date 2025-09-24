@@ -83,14 +83,16 @@ export default function Step1_VehicleData() {
         // Set default values for required fields that will be filled in later steps
         price_per_month_chf: 0, // Will be updated in Step 2
         remaining_months: 12, // Will be updated in Step 2
-        location: "", // Will be updated in Step 2
+        location: "Wird später hinzugefügt", // ✅ FIXED: Proper placeholder instead of empty string
+        canton_code: "ZH", // ✅ FIXED: Added missing required canton_code field
         title: `${formData.brand} ${formData.model}`, // Auto-generate title
         price_plan: "standard", // Default plan, will be updated in Step 3
         status: "draft", // Mark as draft until completed
         images: [],
         cover_image_index: 0,
         premium: false,
-        duration_days: 30
+        duration_days: 30,
+        created_by: user.id // ✅ ADDED: Set created_by for RLS policies
       };
 
       console.log("🚀 Creating initial listing with data:", listingInsert);
