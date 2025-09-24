@@ -175,7 +175,12 @@ export default function Step1_VehicleData() {
       };
       
       console.log("✅ Processed vehicle data with listing ID:", processedData);
+      console.log("🔍 About to update wizard data with:", { id: listingId, ...processedData });
+      
       updateData(processedData);
+      
+      // Verify that the ID was actually stored
+      console.log("🔍 Current wizard data after update:", data);
       
       toast({
         title: "Success",
