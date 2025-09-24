@@ -1,4 +1,3 @@
-
 import { useState, createContext, useContext, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import ProgressBar from "./ProgressBar";
@@ -36,6 +35,7 @@ export default function ListingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
   const [data, setData] = useState<ListingData>({
+    id: undefined, // ✅ CRITICAL FIX: Add missing listing ID field
     brand: "",
     model: "",
     year: new Date().getFullYear(),
