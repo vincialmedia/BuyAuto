@@ -6,7 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWizard } from "./ListingWizard";
 import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
-import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const brands = [
   "Audi", "BMW", "Mercedes-Benz", "Volkswagen", "Toyota", "Honda", "Ford", 
@@ -31,6 +34,9 @@ const gearboxTypes = [
 
 export default function Step1_VehicleData() {
   const { data, updateData, nextStep } = useWizard();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isCreatingListing, setIsCreatingListing] = useState(false);
   
   const {
     register,
@@ -53,19 +59,141 @@ export default function Step1_VehicleData() {
     mode: "onBlur"
   });
 
-  const handleVehicleDataSubmit = (formData: VehicleDataForm) => {
+  const createInitialListing = async (formData: VehicleDataForm) => {
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "Please log in to create a listing.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    try {
+      // Create a basic listing record with vehicle data
+      const listingInsert = {
+        user_id: user.id,
+        brand: formData.brand,
+        model: formData.model,
+        year: Number(formData.year),
+        mileage_km: Number(formData.km),
+        fuel: formData.fuel,
+        gearbox: formData.gearbox,
+        body: formData.body,
+        // Set default values for required fields that will be filled in later steps
+        price_per_month_chf: 0, // Will be updated in Step 2
+        remaining_months: 12, // Will be updated in Step 2
+        location: "", // Will be updated in Step 2
+        title: `${formData.brand} ${formData.model}`, // Auto-generate title
+        price_plan: "standard", // Default plan, will be updated in Step 3
+        status: "draft", // Mark as draft until completed
+        images: [],
+        cover_image_index: 0,
+        premium: false,
+        duration_days: 30
+      };
+
+      console.log("🚀 Creating initial listing with data:", listingInsert);
+
+      const { data: newListing, error } = await supabase
+        .from("listings")
+        .insert(listingInsert)
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("❌ Error creating listing:", error);
+        throw error;
+      }
+
+      console.log("✅ Successfully created listing with ID:", newListing.id);
+      return newListing.id;
+
+    } catch (error) {
+      console.error("❌ Failed to create initial listing:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create listing. Please try again.",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  const handleVehicleDataSubmit = async (formData: VehicleDataForm) => {
     console.log("Step1 handleVehicleDataSubmit:", formData);
-    
-    // Ensure km is properly converted to number and mapped to mileage
-    const processedData = {
-      ...formData,
-      km: formData.km ? Number(formData.km) : undefined,
-      mileage: formData.km ? Number(formData.km) : undefined
-    };
-    
-    console.log("Processed vehicle data:", processedData);
-    updateData(processedData);
-    nextStep();
+    setIsCreatingListing(true);
+
+    try {
+      // Create the listing in the database if it doesn't exist yet
+      let listingId = data.id;
+      
+      if (!listingId) {
+        console.log("📝 No existing listing ID, creating new listing...");
+        listingId = await createInitialListing(formData);
+        
+        if (!listingId) {
+          // Error already handled in createInitialListing
+          setIsCreatingListing(false);
+          return;
+        }
+      } else {
+        console.log("🔄 Updating existing listing:", listingId);
+        // Update existing listing with new vehicle data
+        const { error } = await supabase
+          .from("listings")
+          .update({
+            brand: formData.brand,
+            model: formData.model,
+            year: Number(formData.year),
+            mileage_km: Number(formData.km),
+            fuel: formData.fuel,
+            gearbox: formData.gearbox,
+            body: formData.body,
+            title: `${formData.brand} ${formData.model}`
+          })
+          .eq("id", listingId);
+
+        if (error) {
+          console.error("❌ Error updating listing:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update listing. Please try again.",
+            variant: "destructive"
+          });
+          setIsCreatingListing(false);
+          return;
+        }
+      }
+
+      // Ensure km is properly converted to number and mapped to mileage
+      const processedData = {
+        ...formData,
+        id: listingId, // ✅ CRITICAL: Store the listing ID in wizard state
+        km: formData.km ? Number(formData.km) : undefined,
+        mileage: formData.km ? Number(formData.km) : undefined
+      };
+      
+      console.log("✅ Processed vehicle data with listing ID:", processedData);
+      updateData(processedData);
+      
+      toast({
+        title: "Success",
+        description: "Vehicle data saved successfully!",
+      });
+
+      nextStep();
+
+    } catch (error) {
+      console.error("❌ Unexpected error in vehicle data submission:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreatingListing(false);
+    }
   };
 
   const currentYear = new Date().getFullYear();
@@ -85,7 +213,6 @@ export default function Step1_VehicleData() {
         }
     }
   }, [watchedKm]);
-
 
   return (
     <div className="space-y-8">
@@ -284,9 +411,17 @@ export default function Step1_VehicleData() {
         <div className="flex justify-end pt-6">
           <Button
             type="submit"
-            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+            disabled={isCreatingListing}
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Weiter zu Leasingdetails
+            {isCreatingListing ? (
+              <>
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Erstelle Inserat...
+              </>
+            ) : (
+              "Weiter zu Leasingdetails"
+            )}
           </Button>
         </div>
       </form>
