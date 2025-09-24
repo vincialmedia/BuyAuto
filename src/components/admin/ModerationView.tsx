@@ -302,6 +302,7 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                 </th>
                 <th className="text-left p-4">Fahrzeug</th>
                 <th className="text-left p-4">Preis/Monat</th>
+                <th className="text-left p-4">Plan</th>
                 <th className="text-left p-4">Laufzeit</th>
                 <th className="text-left p-4">Standort</th>
                 <th className="text-left p-4">Status</th>
@@ -312,14 +313,14 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center">
+                  <td colSpan={9} className="p-8 text-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-500 border-t-transparent mx-auto mb-2"></div>
                     <span className="text-neutral-600">Lade Inserate...</span>
                   </td>
                 </tr>
               ) : listings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-neutral-600">
+                  <td colSpan={9} className="p-8 text-center text-neutral-600">
                     Keine Inserate gefunden
                   </td>
                 </tr>
@@ -364,6 +365,11 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                       <div className="font-medium">
                         {formatPrice(listing.price_per_month_chf)}
                       </div>
+                    </td>
+                    <td className="p-4">
+                      <Badge variant="outline" className="text-xs">
+                        {listing.price_plan || 'N/A'}
+                      </Badge>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center space-x-1 text-neutral-600">
