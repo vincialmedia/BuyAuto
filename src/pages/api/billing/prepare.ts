@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { stripe } from '@/lib/stripe-server';
 import { calculateTotal, getPlanDetails, Plan, PREMIUM_BOOST_PRICE } from '@/lib/buyauto/stripe_config';
 import { Database } from '@/integrations/supabase/types';
@@ -14,21 +14,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Create Supabase client for Pages Router API routes
-    const supabase = createServerSupabaseClient({ req, res });
-    
-    // Get the current user session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Create Supabase client using the modern @supabase/ssr library
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies[name]
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            res.setHeader('Set-Cookie', `${name}=${value}; ${Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ')}`)
+          },
+          remove(name: string, options: CookieOptions) {
+            res.setHeader('Set-Cookie', `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ')}`)
+          },
+        },
+      }
+    )
 
-    if (sessionError) {
-      console.error('Session error:', sessionError);
+    // Get the current user session
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error('User authentication error:', userError);
       return res.status(401).json({ error: 'Authentication failed' });
     }
 
-    if (!session || !session.user) {
-      console.error('No session found');
+    if (!user) {
+      console.error('No authenticated user found');
       return res.status(401).json({ error: 'Unauthorized - Please log in' });
     }
+
+    console.log(`API Route: User ${user.id} authenticated successfully`);
 
     const { listing_id, plan, premium } = req.body;
 
@@ -47,10 +65,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from('listings')
       .select('*')
       .eq('id', listing_id)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (listingError || !listing) {
+      console.error('Listing access error:', listingError);
       return res.status(404).json({ error: 'Listing not found or you do not have permission to access it.' });
     }
 
@@ -92,7 +111,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const idempotencyKey = crypto
       .createHash('sha256')
-      .update(`${listing_id}-${plan}-${premium}-${session.user.id}`)
+      .update(`${listing_id}-${plan}-${premium}-${user.id}`)
       .digest('hex');
 
     const paymentIntentParams = {
@@ -101,7 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         automatic_payment_methods: { enabled: true },
         metadata: {
             listing_id: listing_id,
-            user_id: session.user.id,
+            user_id: user.id,
             plan: plan,
             premium: String(premium),
         },
