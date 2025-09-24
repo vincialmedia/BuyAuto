@@ -1,4 +1,3 @@
-
 import { Car, Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
 
@@ -9,24 +8,24 @@ const footerSections = [
       { label: "Fahrzeuge suchen", href: "/suche" },
       { label: "Inserat erstellen", href: "/inserat-erstellen" },
       { label: "So funktioniert's", href: "#funktioniert" },
-      { label: "Finanzierung", href: "#" }
+      { label: "Finanzierung", href: "/" }
     ]
   },
   {
     title: "Unternehmen",
     links: [
-      { label: "Über uns", href: "#" },
+      { label: "Über uns", href: "/" },
       { label: "Kontakt", href: "#kontakt" },
-      { label: "Presse", href: "#" },
-      { label: "Karriere", href: "#" }
+      { label: "Presse", href: "/" },
+      { label: "Karriere", href: "/" }
     ]
   },
   {
     title: "Rechtliches",
     links: [
-      { label: "Datenschutz", href: "#" },
-      { label: "AGB", href: "#" },
-      { label: "Impressum", href: "#" }
+      { label: "Datenschutz", href: "/" },
+      { label: "AGB", href: "/" },
+      { label: "Impressum", href: "/" }
     ]
   }
 ];
