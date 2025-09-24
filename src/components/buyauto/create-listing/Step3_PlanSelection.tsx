@@ -132,9 +132,26 @@ export default function Step3_PlanSelection() {
   const handlePreparePayment = async () => {
     if (!mounted) return;
     
+    // Add validation guard for listing_id
+    if (!data.id) {
+      console.error('❌ No listing ID found in wizard data:', data);
+      toast({
+        title: 'Fehler',
+        description: 'Listing-ID nicht gefunden. Bitte gehen Sie zurück zum ersten Schritt und versuchen Sie es erneut.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
+      console.log('🚀 Preparing payment with data:', { 
+        listing_id: data.id, 
+        plan: selectedPlan, 
+        premium: isPremium 
+      });
+
       const response = await fetch('/api/billing/prepare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,8 +165,11 @@ export default function Step3_PlanSelection() {
       const result = await response.json();
 
       if (!response.ok) {
+        console.error('❌ API Error Response:', { status: response.status, result });
         throw new Error(result.error || 'Failed to prepare payment.');
       }
+
+      console.log('✅ Payment preparation successful:', result);
 
       // Update wizard data
       updateData({
@@ -171,6 +191,7 @@ export default function Step3_PlanSelection() {
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+      console.error('❌ Payment preparation failed:', error);
       toast({
         title: 'Error',
         description: message,
