@@ -52,6 +52,9 @@ type LeasingDetailsForm = z.infer<typeof leasingDetailsSchema>;
 
 export default function Step2_LeasingDetails() {
   const { data, updateData, nextStep, prevStep } = useWizard();
+  const { user } = useAuth(); // ✅ ADD: Get user for auth checks
+  const { toast } = useToast(); // ✅ ADD: Toast notifications
+  const [isUpdatingListing, setIsUpdatingListing] = useState(false); // ✅ ADD: Loading state
   
   const {
     register,
@@ -69,9 +72,93 @@ export default function Step2_LeasingDetails() {
     },
   });
 
-  const onSubmit = (formData: LeasingDetailsForm) => {
-    updateData(formData);
-    nextStep();
+  const updateListingInDatabase = async (formData: LeasingDetailsForm) => {
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "Please log in to continue.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!data.id) {
+      console.error("❌ No listing ID found in wizard data");
+      toast({
+        title: "Error",
+        description: "Listing ID not found. Please go back to Step 1.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    try {
+      console.log("🔄 Updating listing with leasing details:", { listingId: data.id, formData });
+
+      const { error } = await supabase
+        .from("listings")
+        .update({
+          price_per_month_chf: Number(formData.price_per_month_chf),
+          remaining_months: Number(formData.remaining_months),
+          deposit_chf: formData.deposit_chf ? Number(formData.deposit_chf) : null,
+          location: formData.location
+        })
+        .eq("id", data.id);
+
+      if (error) {
+        console.error("❌ Error updating listing with leasing details:", error);
+        throw error;
+      }
+
+      console.log("✅ Successfully updated listing with leasing details");
+      return true;
+
+    } catch (error) {
+      console.error("❌ Failed to update listing with leasing details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save leasing details. Please try again.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const onSubmit = async (formData: LeasingDetailsForm) => {
+    console.log("Step2 onSubmit - leasing details:", formData);
+    setIsUpdatingListing(true);
+
+    try {
+      // Update the database with leasing details
+      const updateSuccess = await updateListingInDatabase(formData);
+      
+      if (!updateSuccess) {
+        // Error already handled in updateListingInDatabase
+        setIsUpdatingListing(false);
+        return;
+      }
+
+      // Update wizard state
+      updateData(formData);
+      
+      toast({
+        title: "Success",
+        description: "Leasing details saved successfully!",
+      });
+
+      // Move to next step
+      nextStep();
+
+    } catch (error) {
+      console.error("❌ Unexpected error in leasing details submission:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingListing(false);
+    }
   };
 
   const formatCurrency = (value: string) => {
