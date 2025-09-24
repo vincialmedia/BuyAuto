@@ -8,6 +8,12 @@ import crypto from 'crypto';
 type Listing = Database['public']['Tables']['listings']['Row'];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Add diagnostic logging to see exactly what we're receiving
+  console.log('🔍 [DIAGNOSTIC] /api/billing/prepare received request');
+  console.log('🔍 [DIAGNOSTIC] Request method:', req.method);
+  console.log('🔍 [DIAGNOSTIC] Request body:', JSON.stringify(req.body, null, 2));
+  console.log('🔍 [DIAGNOSTIC] User cookies present:', Object.keys(req.cookies).filter(key => key.includes('supabase')));
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).end('Method Not Allowed');
