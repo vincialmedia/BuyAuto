@@ -320,9 +320,17 @@ export default function Step2_LeasingDetails() {
           
           <Button
             type="submit"
-            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+            disabled={isUpdatingListing}
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Weiter zu Plan-Auswahl
+            {isUpdatingListing ? (
+              <>
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Speichere Details...
+              </>
+            ) : (
+              "Weiter zu Plan-Auswahl"
+            )}
           </Button>
         </div>
       </form>
