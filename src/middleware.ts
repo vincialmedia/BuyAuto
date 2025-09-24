@@ -1,22 +1,67 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+  let response = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  })
 
-  // Create a Supabase client configured to use cookies
-  const supabase = createMiddlewareClient({ req, res });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          req.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          req.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
 
-  // Refresh session if expired - this is the key part for API routes to work
-  const { data: { session } } = await supabase.auth.getSession();
+  // Refresh session if expired - this ensures API routes can access updated session
+  const { data: { user } } = await supabase.auth.getUser()
   
   // Log for debugging
-  console.log(`Middleware: Session refresh for ${req.nextUrl.pathname}. User is ${session ? 'authenticated' : 'not authenticated'}.`);
+  console.log(`Middleware: Session refresh for ${req.nextUrl.pathname}. User is ${user ? 'authenticated' : 'not authenticated'}.`)
 
-  // Don't do any redirects - let the client-side routing handle auth flow
-  // Just ensure the session is refreshed so API routes can access it
-  return res;
+  return response
 }
 
 export const config = {
@@ -29,4 +74,4 @@ export const config = {
      */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
-};
+}
