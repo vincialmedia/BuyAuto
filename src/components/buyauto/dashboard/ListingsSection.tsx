@@ -149,11 +149,27 @@ export default function ListingsSection() {
   };
 
   const getPlanBadge = (listing: DashboardListing) => {
-    if (isPremium(listing)) return "Premium 30";
-    if (listing.price_plan) return listing.price_plan;
+    // ✅ FIXED: Use the actual price_plan from the database
+    if (listing.price_plan) {
+      // Map plan values to display names
+      const planNames: { [key: string]: string } = {
+        'standard': 'Standard',
+        'extended': 'Verlängert',
+        'unlimited': 'Unlimitiert',
+        // Legacy plan mappings
+        'free30': 'Gratis 30T',
+        'premium30': 'Premium 30T',
+        'paid90': 'Bezahlt 90T',
+      };
+      
+      return planNames[listing.price_plan] || listing.price_plan;
+    }
+    
+    // Fallback logic for old listings without price_plan
+    if (isPremium(listing)) return "Premium 30T";
     if (listing.duration_days === null) return "Unlimitiert";
     if (listing.duration_days >= 90) return "90 Tage";
-    return "Gratis 30";
+    return "Gratis 30T";
   };
 
   if (isLoading) {
