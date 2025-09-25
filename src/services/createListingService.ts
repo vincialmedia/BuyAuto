@@ -25,10 +25,26 @@ function calculateExpiryDate(plan: PricePlan): Date | null {
   }
 }
 
-// This function now expects `listingData.images` to be an array of permanent URLs
-export async function createListing(listingData: ListingFormData, user: User): Promise<string | null> {
+const getPlanDuration = (plan: PricePlan): number | undefined => {
+  switch (plan) {
+    case "free30":
+      return 30;
+    case "premium30":
+      return 30;
+    case "paid90":
+      return 90;
+    case "unlimited":
+      return undefined; // Never expires
+    default:
+      return 30;
+  }
+};
+
+// NEW: Unified function that handles both creation and updates
+export async function createOrUpdateListing(listingData: ListingFormData & { id?: string }, user: User): Promise<string | null> {
   try {
     const {
+      id,
       brand, model, year, mileage_km, fuel, gearbox, body,
       price_per_month_chf, remaining_months, deposit_chf,
       location, canton_code, title,
@@ -38,6 +54,55 @@ export async function createListing(listingData: ListingFormData, user: User): P
     const expires_at = calculateExpiryDate(price_plan);
     const cover_image_url = images[cover_image_index] || null;
 
+    // If ID exists, update the existing listing
+    if (id) {
+      const updateData: Partial<ListingUpdate> = {};
+
+      // Convert and assign fields with proper type handling
+      if (brand) updateData.brand = brand;
+      if (model) updateData.model = model;
+      if (year) updateData.year = Number(year);
+      if (mileage_km) updateData.mileage_km = Number(mileage_km);
+      if (fuel) updateData.fuel = fuel;
+      if (gearbox) updateData.gearbox = gearbox;
+      if (body) updateData.body = body;
+      if (price_per_month_chf) updateData.price_per_month_chf = Number(price_per_month_chf);
+      if (remaining_months) updateData.remaining_months = Number(remaining_months);
+      if (deposit_chf !== undefined) {
+        updateData.deposit_chf = deposit_chf ? Number(deposit_chf) : null;
+      }
+      if (location) updateData.location = location;
+      if (canton_code) updateData.canton_code = canton_code;
+      if (title) updateData.title = title;
+      if (price_plan) {
+        updateData.price_plan = price_plan;
+        updateData.expires_at = expires_at?.toISOString();
+        updateData.duration_days = getPlanDuration(price_plan);
+        updateData.premium = price_plan === "premium30" || price_plan === "unlimited";
+        updateData.premium_until = price_plan === "premium30" ? expires_at?.toISOString() : (price_plan === "unlimited" ? new Date(new Date().setFullYear(new Date().getFullYear() + 10)).toISOString() : undefined);
+      }
+
+      // Handle images
+      if (images.length > 0) {
+        updateData.images = images;
+        updateData.cover_image_url = cover_image_url;
+        updateData.cover_image_index = cover_image_index;
+      }
+
+      const { error } = await supabase
+        .from("listings")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error updating listing:", error);
+        throw error;
+      }
+
+      return id; // Return the existing ID
+    }
+
+    // If no ID, create a new listing
     const newListing: ListingInsert = {
       brand,
       model,
@@ -53,14 +118,14 @@ export async function createListing(listingData: ListingFormData, user: User): P
       canton_code,
       title,
       price_plan,
-      images: images, // Save the full array of permanent URLs
+      images: images,
       cover_image_url: cover_image_url,
       cover_image_index,
       expires_at: expires_at?.toISOString(),
       duration_days: getPlanDuration(price_plan),
       status: "pending",
       user_id: user.id,
-      created_by: user.id, // Legacy or alternative field
+      created_by: user.id,
       premium: price_plan === "premium30" || price_plan === "unlimited",
       premium_until: price_plan === "premium30" ? expires_at?.toISOString() : (price_plan === "unlimited" ? new Date(new Date().setFullYear(new Date().getFullYear() + 10)).toISOString() : undefined)
     };
@@ -76,12 +141,19 @@ export async function createListing(listingData: ListingFormData, user: User): P
       throw error;
     }
 
-    return data.id;
+    return data.id; // Return the new ID
 
   } catch (error) {
-    console.error("Failed to create listing:", error);
+    console.error("Failed to create or update listing:", error);
     return null;
   }
+}
+
+// LEGACY: Keep the original functions for backward compatibility
+// This function now expects `listingData.images` to be an array of permanent URLs
+export async function createListing(listingData: ListingFormData, user: User): Promise<string | null> {
+  // Delegate to the new unified function
+  return createOrUpdateListing(listingData, user);
 }
 
 export async function updateListing(listingId: string, listingData: Partial<ListingFormData>): Promise<boolean> {
@@ -131,18 +203,3 @@ export async function updateListing(listingId: string, listingData: Partial<List
     return false;
   }
 }
-
-const getPlanDuration = (plan: PricePlan): number | undefined => {
-  switch (plan) {
-    case "free30":
-      return 30;
-    case "premium30":
-      return 30;
-    case "paid90":
-      return 90;
-    case "unlimited":
-      return undefined; // Never expires
-    default:
-      return 30;
-  }
-};
