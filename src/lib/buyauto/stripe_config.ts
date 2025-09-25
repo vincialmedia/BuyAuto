@@ -1,6 +1,8 @@
 // Remove server-side Stripe import - this was causing client-side bundle issues
 // The stripe instance is now in src/lib/stripe-server.ts for API routes only
 
+export const STRIPE_PUBLISHABLE_KEY = 'pk_test_4ZlHGCjsiXjF31Ard96LGWzG';
+
 export const pricingPlans = {
   standard: { price: 0, duration_days: 60, name: 'Standard' },
   extended: { price: 50, duration_days: 90, name: 'Verlängert' },
