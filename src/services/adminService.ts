@@ -65,8 +65,7 @@ export const adminService = {
    * Get admin statistics
    */
   async getStats(): Promise<AdminStats> {
-    const adminClient = this.getSupabaseAdminClient();
-    const { data, error } = await adminClient
+    const { data, error } = await supabase
       .from('listings')
       .select('status');
 
@@ -100,8 +99,7 @@ export const adminService = {
       limit = 25
     } = filters;
 
-    const adminClient = this.getSupabaseAdminClient();
-    let query = adminClient
+    let query = supabase
       .from('listings')
       .select('*', { count: 'exact' });
 
@@ -151,8 +149,7 @@ export const adminService = {
    * Get single listing details for admin
    */
   async getListingDetails(id: string): Promise<AdminListing> {
-    const adminClient = this.getSupabaseAdminClient();
-    const { data, error } = await adminClient
+    const { data, error } = await supabase
       .from('listings')
       .select('*')
       .eq('id', id)
