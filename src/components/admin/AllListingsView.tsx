@@ -282,7 +282,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
             <thead className="border-b border-neutral-200 bg-neutral-50">
               <tr>
                 <th className="text-left p-4">Fahrzeug</th>
-                <th className="text-left p-4">Preis/Monat</th>
+                <th className="text-left p-4">Inserat Preis</th>
                 <th className="text-left p-4">Plan</th>
                 <th className="text-left p-4">Laufzeit</th>
                 <th className="text-left p-4">Standort</th>
@@ -331,7 +331,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                     </td>
                     <td className="p-4">
                       <div className="font-medium">
-                        {formatPrice(listing.price_per_month_chf)}
+                        {formatPrice(listing.price_paid_chf || 0)}
                       </div>
                     </td>
                     <td className="p-4">

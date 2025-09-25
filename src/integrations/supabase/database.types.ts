@@ -280,7 +280,9 @@ export type Database = {
       }
       get_models_for_brand: {
         Args: { p_brand: string }
-        Returns: string[]
+        Returns: {
+          model: string
+        }[]
       }
       get_user_role: {
         Args: { user_id: string }

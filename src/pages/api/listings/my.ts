@@ -54,7 +54,7 @@ export default async function handler(
         location, canton_code, mileage_km, fuel, gearbox, body, premium, 
         cover_image_url, images, cover_image_index, deposit_chf, created_at,
         status, expires_at, duration_days, price_plan, premium_until,
-        created_by, user_id, moderation_note, updated_at
+        created_by, user_id, moderation_note, updated_at, price_paid_chf
       `)
       .eq("created_by", user.id)
       .order(orderBy as any, { ascending: orderDir === "asc" })
@@ -75,6 +75,7 @@ export default async function handler(
       title: row.title,
       year: row.year,
       price_per_month_chf: row.price_per_month_chf,
+      price_paid_chf: row.price_paid_chf,
       remaining_months: row.remaining_months,
       location: row.location,
       canton_code: row.canton_code,

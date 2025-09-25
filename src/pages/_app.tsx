@@ -1,18 +1,16 @@
-import AuthProvider from '@/contexts/AuthContext'
-import MainLayout from '@/components/layout/MainLayout'
-import '@/styles/globals.css'
-import type { AppProps } from 'next/app'
+import type { AppProps } from "next/app";
+import MainLayout from "@/components/layout/MainLayout";
+import AuthProvider from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+import "@/styles/globals.css";
 
-function MyApp({ Component, pageProps }: AppProps) {
+export default function App({ Component, pageProps }: AppProps) {
   return (
     <AuthProvider>
       <MainLayout>
         <Component {...pageProps} />
       </MainLayout>
-      <Toaster richColors closeButton />
+      <Toaster />
     </AuthProvider>
-  )
+  );
 }
-
-export default MyApp

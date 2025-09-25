@@ -10,6 +10,7 @@ export interface DashboardListing {
   title?: string;
   year: number;
   price_per_month_chf: number;
+  price_paid_chf: number | null;
   remaining_months: number;
   location: string;
   canton_code: string;
