@@ -329,7 +329,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                     </td>
                     <td className="p-4">
                       <div className="font-medium">
-                        {formatPrice(listing.listing_price || 0)}
+                        {formatPrice(listing.price_paid_chf || 0)}
                       </div>
                     </td>
                     <td className="p-4">

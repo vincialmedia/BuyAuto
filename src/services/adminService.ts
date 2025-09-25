@@ -18,7 +18,7 @@ export interface AdminListing {
   model: string;
   title: string | null;
   year: number;
-  listing_price: number | null;
+  price_paid_chf: number | null;
   location: string;
   canton_code: string;
   premium: boolean;
@@ -100,7 +100,7 @@ export const adminService = {
 
     let query = supabase
       .from('listings')
-      .select('*, listing_price', { count: 'exact' });
+      .select('*', { count: 'exact' });
 
     // Apply filters
     if (status !== 'all') {
