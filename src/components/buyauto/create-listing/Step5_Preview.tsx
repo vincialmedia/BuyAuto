@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useWizard } from "./ListingWizard";
 import { ChevronLeft, Check, Star, MapPin, Calendar, Settings, Image as ImageIcon, CreditCard } from "lucide-react";
 import Image from "next/image";
-import { createListing } from "@/services/createListingService";
+import { createOrUpdateListing } from "@/services/createListingService";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ListingFormData, PricePlan } from "@/lib/buyauto/types";
@@ -27,7 +27,8 @@ export default function Step5_Preview() {
 
     try {
       // Map wizard data to the expected database format with proper fallbacks
-      const listingData: ListingFormData = {
+      const listingData: ListingFormData & { id?: string } = {
+        id: data.id, // ✅ CRITICAL FIX: Pass the existing listing ID if it exists
         brand: data.brand || "",
         model: data.model || "",
         year: data.year || new Date().getFullYear(),
@@ -46,7 +47,7 @@ export default function Step5_Preview() {
         price_plan: (data.price_plan || "free30") as PricePlan,
       };
 
-      const listingId = await createListing(listingData, user);
+      const listingId = await createOrUpdateListing(listingData, user);
       
       if (listingId) {
         setIsComplete(true);
