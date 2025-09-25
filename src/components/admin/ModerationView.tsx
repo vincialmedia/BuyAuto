@@ -301,9 +301,8 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                   />
                 </th>
                 <th className="text-left p-4">Fahrzeug</th>
-                <th className="text-left p-4">Preis/Monat</th>
+                <th className="text-left p-4">Listing-Preis</th>
                 <th className="text-left p-4">Plan</th>
-                <th className="text-left p-4">Laufzeit</th>
                 <th className="text-left p-4">Standort</th>
                 <th className="text-left p-4">Status</th>
                 <th className="text-left p-4">Erstellt</th>
@@ -313,7 +312,7 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center">
+                  <td colSpan={8} className="p-8 text-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-500 border-t-transparent mx-auto mb-2"></div>
                     <span className="text-neutral-600">Lade Inserate...</span>
                   </td>
@@ -363,19 +362,13 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                     </td>
                     <td className="p-4">
                       <div className="font-medium">
-                        {formatPrice(listing.price_per_month_chf)}
+                        {formatPrice(listing.listing_price || 0)}
                       </div>
                     </td>
                     <td className="p-4">
                       <Badge variant="outline" className="text-xs">
                         {listing.price_plan || 'N/A'}
                       </Badge>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center space-x-1 text-neutral-600">
-                        <Calendar className="w-4 h-4" />
-                        <span>{listing.remaining_months} Monate</span>
-                      </div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center space-x-1 text-neutral-600">

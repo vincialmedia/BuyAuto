@@ -18,9 +18,7 @@ export interface AdminListing {
   model: string;
   title: string | null;
   year: number;
-  price_per_month_chf: number;
-  price_paid_chf: number | null;
-  remaining_months: number;
+  listing_price: number | null;
   location: string;
   canton_code: string;
   premium: boolean;
@@ -32,7 +30,7 @@ export interface AdminListing {
   user_id: string | null;
   expires_at: string | null;
   duration_days: number | null;
-  price_plan: string; // ✅ ADDED: Plan information for admin view
+  price_plan: string;
   images: any[];
   cover_image_index: number;
   cover_image_url: string | null;
@@ -102,7 +100,7 @@ export const adminService = {
 
     let query = supabase
       .from('listings')
-      .select('*', { count: 'exact' });
+      .select('*, listing_price', { count: 'exact' });
 
     // Apply filters
     if (status !== 'all') {

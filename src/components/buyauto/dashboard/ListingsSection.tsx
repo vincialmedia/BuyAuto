@@ -286,7 +286,7 @@ export default function ListingsSection() {
                           <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 mb-3">
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4" />
-                              {formatPrice(listing.listing_price)}
+                              <span>Bezahlt: {formatPrice(listing.listing_price ?? 0)}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <MapPin className="w-4 h-4" />

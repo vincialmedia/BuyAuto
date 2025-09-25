@@ -37,7 +37,7 @@ export function ListingDetailsModal({
       model: listing.model,
       title: listing.title,
       year: listing.year,
-      price_per_month_chf: listing.price_per_month_chf,
+      listing_price: listing.listing_price,
       remaining_months: listing.remaining_months,
       location: listing.location,
       canton_code: listing.canton_code,
@@ -222,19 +222,19 @@ export function ListingDetailsModal({
 
             {/* Pricing & Duration */}
             <div className="space-y-3">
-              <h3 className="font-medium">Konditionen</h3>
+              <h3 className="font-medium">Listing-Preis</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-neutral-600">Preis pro Monat</label>
+                  <label className="text-sm text-neutral-600">Bezahlter Preis</label>
                   {editing ? (
                     <Input
                       type="number"
-                      value={editData.price_per_month_chf || ''}
-                      onChange={(e) => setEditData({ ...editData, price_per_month_chf: parseFloat(e.target.value) })}
+                      value={editData.listing_price || ''}
+                      onChange={(e) => setEditData({ ...editData, listing_price: parseFloat(e.target.value) })}
                     />
                   ) : (
                     <p className="font-medium text-lg text-emerald-600">
-                      {formatPrice(listing.price_per_month_chf)}
+                      {formatPrice(listing.listing_price || 0)}
                     </p>
                   )}
                 </div>
