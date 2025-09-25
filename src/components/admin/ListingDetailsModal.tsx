@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,23 @@ export function ListingDetailsModal({
   const [editData, setEditData] = useState<Partial<AdminListing>>({});
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (listing) {
+      setFormData({
+        brand: listing.brand,
+        model: listing.model,
+        title: listing.title,
+        year: listing.year,
+        price_paid_chf: listing.price_paid_chf,
+        remaining_months: listing.remaining_months,
+        location: listing.location,
+        canton_code: listing.canton_code,
+        status: listing.status,
+        premium: listing.premium
+      });
+    }
+  }, [listing]);
 
   const handleEdit = () => {
     setEditing(true);
