@@ -38,7 +38,6 @@ export function ListingDetailsModal({
       title: listing.title,
       year: listing.year,
       listing_price: listing.listing_price,
-      remaining_months: listing.remaining_months,
       location: listing.location,
       canton_code: listing.canton_code,
       premium: listing.premium,
@@ -236,18 +235,6 @@ export function ListingDetailsModal({
                     <p className="font-medium text-lg text-emerald-600">
                       {formatPrice(listing.listing_price || 0)}
                     </p>
-                  )}
-                </div>
-                <div>
-                  <label className="text-sm text-neutral-600">Restlaufzeit</label>
-                  {editing ? (
-                    <Input
-                      type="number"
-                      value={editData.remaining_months || ''}
-                      onChange={(e) => setEditData({ ...editData, remaining_months: parseInt(e.target.value) })}
-                    />
-                  ) : (
-                    <p className="font-medium">{listing.remaining_months} Monate</p>
                   )}
                 </div>
               </div>
