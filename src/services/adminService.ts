@@ -19,6 +19,7 @@ export interface AdminListing {
   title: string | null;
   year: number;
   price_paid_chf: number | null;
+  remaining_months: number | null;
   location: string;
   canton_code: string;
   premium: boolean;

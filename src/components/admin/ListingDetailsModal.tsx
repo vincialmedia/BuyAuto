@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ export function ListingDetailsModal({
 
   useEffect(() => {
     if (listing) {
-      setFormData({
+      setEditData({
         brand: listing.brand,
         model: listing.model,
         title: listing.title,
@@ -45,21 +46,10 @@ export function ListingDetailsModal({
         premium: listing.premium
       });
     }
-  }, [listing]);
+  }, [listing, open]);
 
   const handleEdit = () => {
     setEditing(true);
-    setEditData({
-      brand: listing.brand,
-      model: listing.model,
-      title: listing.title,
-      year: listing.year,
-      listing_price: listing.listing_price,
-      location: listing.location,
-      canton_code: listing.canton_code,
-      premium: listing.premium,
-      status: listing.status
-    });
   };
 
   const handleSave = async () => {
@@ -115,7 +105,8 @@ export function ListingDetailsModal({
     });
   };
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | null) => {
+    if (price === null) return 'N/A';
     return new Intl.NumberFormat('de-CH', {
       style: 'currency',
       currency: 'CHF'
@@ -143,7 +134,12 @@ export function ListingDetailsModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+        onOpenChange(isOpen);
+        if (!isOpen) {
+            setEditing(false);
+        }
+    }}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -167,7 +163,7 @@ export function ListingDetailsModal({
           {/* Left Column - Images and Basic Info */}
           <div className="space-y-4">
             {/* Images Gallery */}
-            {listing.images && listing.images.length > 0 && (
+            {listing.images && Array.isArray(listing.images) && listing.images.length > 0 && (
               <div className="space-y-2">
                 <h3 className="font-medium">Bilder</h3>
                 <div className="grid grid-cols-2 gap-2">
@@ -245,12 +241,12 @@ export function ListingDetailsModal({
                   {editing ? (
                     <Input
                       type="number"
-                      value={editData.listing_price || ''}
-                      onChange={(e) => setEditData({ ...editData, listing_price: parseFloat(e.target.value) })}
+                      value={editData.price_paid_chf || ''}
+                      onChange={(e) => setEditData({ ...editData, price_paid_chf: parseFloat(e.target.value) })}
                     />
                   ) : (
                     <p className="font-medium text-lg text-emerald-600">
-                      {formatPrice(listing.listing_price || 0)}
+                      {formatPrice(listing.price_paid_chf)}
                     </p>
                   )}
                 </div>
@@ -413,7 +409,6 @@ export function ListingDetailsModal({
                   variant="outline"
                   onClick={() => {
                     setEditing(false);
-                    setEditData({});
                   }}
                   disabled={saving}
                 >
