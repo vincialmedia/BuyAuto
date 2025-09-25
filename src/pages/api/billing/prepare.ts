@@ -14,6 +14,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Early validation - check if Stripe secret key exists
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('❌ STRIPE_SECRET_KEY environment variable is not set');
+      return res.status(500).json({ 
+        error: 'Payment system configuration error. Please contact support.' 
+      });
+    }
+
+    // Test Stripe key validity with a simple API call
+    try {
+      await stripe.balance.retrieve();
+    } catch (stripeError: any) {
+      console.error('❌ Stripe API key validation failed:', stripeError.message);
+      
+      if (stripeError.type === 'StripeAuthenticationError') {
+        return res.status(500).json({ 
+          error: 'Payment system authentication failed. Please contact support.',
+          details: 'Invalid or expired Stripe API key'
+        });
+      }
+      
+      // Re-throw other Stripe errors
+      throw stripeError;
+    }
+
     // Create Supabase client using the modern @supabase/ssr library
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -127,27 +152,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let paymentIntent;
 
-    if (listing.stripe_payment_intent_id) {
-        try {
-            // Try to update existing Payment Intent
-            paymentIntent = await stripe.paymentIntents.update(
-              listing.stripe_payment_intent_id, 
-              paymentIntentParams, 
-              { idempotencyKey }
-            );
-        } catch (e) {
-            // If PI can't be updated (e.g., already processed), create a new one
-            paymentIntent = await stripe.paymentIntents.create(
-              paymentIntentParams, 
-              { idempotencyKey }
-            );
-        }
-    } else {
-        // Create new Payment Intent
-        paymentIntent = await stripe.paymentIntents.create(
-          paymentIntentParams, 
-          { idempotencyKey }
-        );
+    try {
+      if (listing.stripe_payment_intent_id) {
+          try {
+              // Try to update existing Payment Intent
+              paymentIntent = await stripe.paymentIntents.update(
+                listing.stripe_payment_intent_id, 
+                paymentIntentParams, 
+                { idempotencyKey }
+              );
+          } catch (e) {
+              // If PI can't be updated (e.g., already processed), create a new one
+              paymentIntent = await stripe.paymentIntents.create(
+                paymentIntentParams, 
+                { idempotencyKey }
+              );
+          }
+      } else {
+          // Create new Payment Intent
+          paymentIntent = await stripe.paymentIntents.create(
+            paymentIntentParams, 
+            { idempotencyKey }
+          );
+      }
+    } catch (stripeError: any) {
+      console.error('❌ Stripe Payment Intent creation failed:', stripeError);
+      
+      if (stripeError.type === 'StripeAuthenticationError') {
+        return res.status(500).json({ 
+          error: 'Payment system authentication failed. Please contact support.',
+          details: 'Stripe API authentication error'
+        });
+      }
+      
+      return res.status(500).json({ 
+        error: 'Payment processing failed. Please try again or contact support.',
+        details: stripeError.message
+      });
     }
 
     // Update the listing with payment information
@@ -177,9 +218,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error: any) {
-    console.error('Error in /api/billing/prepare:', error);
+    console.error('❌ Error in /api/billing/prepare:', error);
+    
+    // More specific error handling
+    if (error.type === 'StripeAuthenticationError') {
+      return res.status(500).json({ 
+        error: 'Payment system authentication failed. Please contact support.',
+        details: 'Invalid Stripe API credentials'
+      });
+    }
+    
     return res.status(500).json({ 
-      error: error.message || 'An unexpected error occurred'
+      error: error.message || 'An unexpected error occurred. Please try again or contact support.',
+      timestamp: new Date().toISOString()
     });
   }
 }

@@ -1,6 +1,6 @@
 import { Car, Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 
 const footerSections = [
   {
@@ -32,12 +32,7 @@ const footerSections = [
 ];
 
 export function Footer() {
-  const [currentYear, setCurrentYear] = useState(2025); // Default year to prevent hydration mismatch
-
-  useEffect(() => {
-    // Set the actual year only on client side
-    setCurrentYear(new Date().getFullYear());
-  }, []);
+  const hasMounted = useHasMounted();
 
   return (
     <footer id="kontakt" className="bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 text-white">
@@ -105,7 +100,7 @@ export function Footer() {
         <div className="border-t border-neutral-700/60 mt-16 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-neutral-400 text-sm font-light">
-              © {currentYear} BuyAuto. Alle Rechte vorbehalten.
+              © {hasMounted ? new Date().getFullYear() : 2025} BuyAuto. Alle Rechte vorbehalten.
             </p>
             <p className="text-neutral-400 text-sm mt-2 md:mt-0 font-medium">
               Proudly Swiss 🇨🇭
