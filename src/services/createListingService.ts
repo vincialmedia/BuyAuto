@@ -50,6 +50,7 @@ export const createOrUpdateListing = async (
     const listingDataForInsert = {
       ...data,
       user_id: user.id,
+      created_by: user.id, // ✅ ADD: Required for RLS policy compliance
       status: "draft", // Start as draft
     };
 

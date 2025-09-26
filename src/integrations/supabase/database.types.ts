@@ -77,7 +77,6 @@ export type Database = {
           id: string
           images: Json | null
           is_premium: boolean | null
-          km: number | null
           location: string | null
           mileage_km: number
           model: string
@@ -115,7 +114,6 @@ export type Database = {
           id?: string
           images?: Json | null
           is_premium?: boolean | null
-          km?: number | null
           location?: string | null
           mileage_km: number
           model: string
@@ -153,7 +151,6 @@ export type Database = {
           id?: string
           images?: Json | null
           is_premium?: boolean | null
-          km?: number | null
           location?: string | null
           mileage_km?: number
           model?: string
