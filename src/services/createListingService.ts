@@ -45,13 +45,13 @@ export const createOrUpdateListing = async (
 
   const listingId = data.id;
 
-  // 1. If no ID, create a new draft listing
+  // 1. If no ID, create a new listing
   if (!listingId) {
     const listingDataForInsert = {
       ...data,
       user_id: user.id,
-      created_by: user.id, // ✅ ADD: Required for RLS policy compliance
-      status: "draft", // Start as draft
+      created_by: user.id, // ✅ Required for RLS policy compliance
+      status: "pending", // ✅ FIXED: Use valid enum value instead of 'draft'
     };
 
     // Remove id if it's undefined to avoid inserting it
@@ -68,7 +68,7 @@ export const createOrUpdateListing = async (
       throw error;
     }
 
-    console.log("✅ New draft listing created:", newListing);
+    console.log("✅ New listing created:", newListing);
     return newListing;
   }
 
@@ -99,10 +99,11 @@ export const createOrUpdateListing = async (
 };
 
 /**
- * Retrieves a draft listing for the current user.
+ * Retrieves a pending listing for the current user.
+ * Note: Since we're using 'pending' instead of 'draft', we look for pending listings.
  *
  * @param user - The authenticated user.
- * @returns The user's most recent draft listing, or null if none exists.
+ * @returns The user's most recent pending listing, or null if none exists.
  */
 export const getDraftListing = async (user: User) => {
   if (!user) return null;
@@ -111,13 +112,13 @@ export const getDraftListing = async (user: User) => {
     .from("listings")
     .select("*")
     .eq("user_id", user.id)
-    .eq("status", "draft")
+    .eq("status", "pending") // ✅ FIXED: Use valid enum value instead of 'draft'
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (error) {
-    console.error("Error fetching draft listing:", error);
+    console.error("Error fetching pending listing:", error);
     return null;
   }
 
@@ -125,8 +126,9 @@ export const getDraftListing = async (user: User) => {
 };
 
 /**
- * Finalizes a listing by updating its status from 'draft' to 'pending'.
+ * Finalizes a listing by keeping it as 'pending' status.
  * This is called at the end of the wizard.
+ * Note: Since we're already using 'pending', this function maintains the status.
  *
  * @param listingId - The ID of the listing to finalize.
  * @param user - The authenticated user.
@@ -139,7 +141,7 @@ export const finalizeListing = async (listingId: string, user: User) => {
 
   const { data, error } = await supabase
     .from("listings")
-    .update({ status: "pending" })
+    .update({ status: "pending" }) // ✅ FIXED: Maintain valid enum value
     .eq("id", listingId)
     .eq("user_id", user.id)
     .select()
