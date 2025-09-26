@@ -1,7 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
-import { Listing, ListingDetail } from "@/lib/buyauto/types";
+import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
 
 // Database row type for public listings view
 type PublicListingRow = {
@@ -51,32 +50,25 @@ function parseImagesFromDatabase(imagesField: any, coverImageUrl?: string): stri
     try {
       // Case 1: Already an array (direct array storage)
       if (Array.isArray(imagesField)) {
-        console.log("Images field is array:", imagesField);
         imageUrls = imagesField.filter(img => typeof img === "string" && img.trim() !== "");
       } 
       // Case 2: JSON string that needs parsing
       else if (typeof imagesField === "string") {
-        console.log("Images field is string, attempting to parse:", imagesField);
         const parsed = JSON.parse(imagesField);
         if (Array.isArray(parsed)) {
           imageUrls = parsed.filter(img => typeof img === "string" && img.trim() !== "");
-        } else {
-          console.warn("Parsed images is not an array:", parsed);
         }
       }
       // Case 3: Object (might be a JSON object)
       else if (typeof imagesField === "object") {
-        console.log("Images field is object:", imagesField);
-        // Try to extract if it's a JSON object with array-like structure
         if (imagesField.length !== undefined) {
-          // Array-like object - properly cast Object.values
           const values = Object.values(imagesField) as unknown[];
           imageUrls = values.filter(img => typeof img === "string" && img.trim() !== "") as string[];
         }
       }
     } catch (error) {
       console.error("Error parsing images JSON:", {
-        error: error.message,
+        error: (error as Error).message,
         imagesField: imagesField,
         type: typeof imagesField
       });
@@ -86,11 +78,9 @@ function parseImagesFromDatabase(imagesField: any, coverImageUrl?: string): stri
 
   // Fallback: if no images in array but cover_image_url exists, use it
   if (imageUrls.length === 0 && coverImageUrl && coverImageUrl.trim() !== "") {
-    console.log("No images found, using cover_image_url as fallback:", coverImageUrl);
     imageUrls = [coverImageUrl];
   }
 
-  console.log("Final parsed images:", imageUrls);
   return imageUrls;
 }
 
@@ -179,7 +169,7 @@ function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
     created_at: row.created_at,
     expires_at: row.expires_at,
     duration_days: row.duration_days,
-    price_plan: row.price_plan as "free30" | "premium30" | "paid90" | "unlimited",
+    price_plan: row.price_plan as PricePlanId,
     premium_until: row.premium_until,
   };
 }
@@ -189,8 +179,6 @@ function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
 
 export async function getPublishedListingById(id: string): Promise<ListingDetail | null> {
   try {
-    console.log("Fetching published listing by ID:", id);
-    
     const { data, error } = await supabase
       .from('public_listings')
       .select('*')
@@ -199,18 +187,13 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
 
     if (error) {
       if (error.code === 'PGRST116') {
-        console.log("No listing found with ID:", id);
         return null; // No rows returned
       }
       console.error('Error fetching published listing by ID:', error);
       return null;
     }
-
-    console.log("Raw listing data from database:", data);
-    const transformedListing = transformPublicRowToListingDetail(data);
-    console.log("Transformed listing data:", transformedListing);
     
-    return transformedListing;
+    return transformPublicRowToListingDetail(data);
   } catch (error) {
     console.error('Get published listing by ID error:', error);
     return null;
@@ -252,57 +235,24 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
 
     // Apply filters
     if (searchQuery.brand) query = query.eq('brand', searchQuery.brand);
-    if (searchQuery.model) query = query.eq('model', searchQuery.model);
-    if (searchQuery.yearMin) {
-      query = query.gte('year', searchQuery.yearMin);
-    }
-
-    if (searchQuery.priceMin) {
-      query = query.gte('price_per_month_chf', searchQuery.priceMin);
-    }
-
-    if (searchQuery.priceMax) {
-      query = query.lte('price_per_month_chf', searchQuery.priceMax);
-    }
-
+    if (searchQuery.model) query = query.ilike('model', `%${searchQuery.model}%`);
+    if (searchQuery.yearMin) query = query.gte('year', searchQuery.yearMin);
+    if (searchQuery.priceMax) query = query.lte('price_per_month_chf', searchQuery.priceMax);
     if (typeof searchQuery.kmMax === 'number') query = query.lte('mileage_km', searchQuery.kmMax);
-    if (typeof searchQuery.monthsMin === 'number') query = query.gte('remaining_months', searchQuery.monthsMin);
-    if (typeof searchQuery.monthsMax === 'number') query = query.lte('remaining_months', searchQuery.monthsMax);
     if (searchQuery.canton?.length) query = query.in('canton_code', searchQuery.canton);
     if (searchQuery.fuel?.length) query = query.in('fuel', searchQuery.fuel);
     if (searchQuery.gearbox?.length) query = query.in('gearbox', searchQuery.gearbox);
     if (searchQuery.body?.length) query = query.in('body', searchQuery.body);
     if (searchQuery.premiumOnly) query = query.eq('premium', true);
     if (searchQuery.noDeposit) query = query.is('deposit_chf', null);
+    
+    // Sorting
+    const sortOrder = searchQuery.sort || 'relevance';
+    if (sortOrder === 'priceAsc') query = query.order('price_per_month_chf', { ascending: true });
+    else if (sortOrder === 'priceDesc') query = query.order('price_per_month_chf', { ascending: false });
+    else if (sortOrder === 'dateDesc') query = query.order('created_at', { ascending: false });
+    else query = query.order('premium', { ascending: false }).order('created_at', { ascending: false });
 
-    // Apply sorting
-    switch (searchQuery.sort) {
-      case 'priceAsc':
-        query = query.order('price_per_month_chf', { ascending: true });
-        break;
-      case 'priceDesc':
-        query = query.order('price_per_month_chf', { ascending: false });
-        break;
-      case 'dateDesc':
-        query = query.order('created_at', { ascending: false });
-        break;
-      case 'monthsAsc':
-        query = query.order('remaining_months', { ascending: true });
-        break;
-      case 'monthsDesc':
-        query = query.order('remaining_months', { ascending: false });
-        break;
-      case 'yearDesc':
-        query = query.order('year', { ascending: false });
-        break;
-      case 'kmAsc':
-        query = query.order('mileage_km', { ascending: true });
-        break;
-      case 'relevance':
-      default:
-        query = query.order('premium', { ascending: false }).order('created_at', { ascending: false });
-        break;
-    }
 
     // Apply pagination
     query = query.range(offset, offset + pageSize - 1);

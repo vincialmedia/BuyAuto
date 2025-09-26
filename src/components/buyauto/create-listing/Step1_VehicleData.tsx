@@ -8,7 +8,8 @@ import { useWizard } from "./ListingWizard";
 import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createOrUpdateListing } from "@/services/createListingService";
 
 const brands = [
   "Audi", "BMW", "Mercedes-Benz", "Volkswagen", "Toyota", "Honda", "Ford", 
@@ -32,6 +33,7 @@ export default function Step1_VehicleData() {
   const { data, updateData, nextStep } = useWizard();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const {
     register,
@@ -55,33 +57,54 @@ export default function Step1_VehicleData() {
   });
 
   const handleVehicleDataSubmit = async (formData: VehicleDataForm) => {
-    console.log("Step1 handleVehicleDataSubmit:", formData);
-
-    try {
-      // Convert km to number and map to mileage_km for database compatibility
-      const processedData = {
-        ...formData,
-        km: formData.km ? Number(formData.km) : 0,
-        mileage_km: formData.km ? Number(formData.km) : 0,
-      };
-      
-      // Update wizard state with vehicle data (no database operation here)
-      updateData(processedData);
-      
+    if (!user) {
       toast({
-        title: "Erfolg",
-        description: "Fahrzeugdaten erfolgreich gespeichert!",
+        title: "Nicht angemeldet",
+        description: "Sie müssen angemeldet sein, um ein Inserat zu erstellen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      console.log('Step1 handleVehicleDataSubmit:', formData);
+      
+      const validatedData = {
+        brand: formData.brand,
+        model: formData.model,
+        year: parseInt(formData.year.toString()),
+        mileage_km: parseInt(formData.km.toString()), 
+        km: parseInt(formData.km.toString()),
+        fuel: formData.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro", // ✅ Explicit type cast
+        gearbox: formData.gearbox as "Automatik" | "Manuell", // ✅ Explicit type cast
+        body: formData.body as "Limousine" | "Kombi" | "SUV" | "Cabrio", // ✅ Explicit type cast
+      };
+
+      // Create a draft listing first
+      const result = await createOrUpdateListing(validatedData, user);
+      
+      // Update wizard data with the created/updated listing ID
+      updateData({ 
+        ...validatedData,
+        id: result.id 
+      });
+
+      toast({
+        title: "Fahrzeugdaten gespeichert",
+        description: "Ihre Fahrzeugdaten wurden erfolgreich gespeichert.",
       });
 
       nextStep();
-
     } catch (error) {
-      console.error("❌ Unexpected error in vehicle data submission:", error);
+      console.error("Error submitting vehicle data:", error);
       toast({
         title: "Fehler",
-        description: "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
-        variant: "destructive"
+        description: "Fehler beim Speichern der Fahrzeugdaten. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -300,9 +323,10 @@ export default function Step1_VehicleData() {
         <div className="flex justify-end pt-6">
           <Button
             type="submit"
-            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+            disabled={isSubmitting}
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
           >
-            Weiter zu Leasingdetails
+            {isSubmitting ? 'Wird gespeichert...' : 'Weiter zu Leasingdetails'}
           </Button>
         </div>
       </form>

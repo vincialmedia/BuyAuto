@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useWizard } from "./ListingWizard";
 import { ChevronLeft } from "lucide-react";
 import { z } from "zod";
-import { useState } from "react"; // ✅ ADD: useState import
-import { useAuth } from "@/contexts/AuthContext"; // ✅ ADD: useAuth import
-import { useToast } from "@/hooks/use-toast"; // ✅ ADD: useToast import
-import { supabase } from "@/integrations/supabase/client"; // ✅ ADD: supabase import
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { createOrUpdateListing } from "@/services/createListingService";
 
 const swissCantons = [
   { value: "AG", label: "Aargau (AG)" },
@@ -52,9 +52,9 @@ type LeasingDetailsForm = z.infer<typeof leasingDetailsSchema>;
 
 export default function Step2_LeasingDetails() {
   const { data, updateData, nextStep, prevStep } = useWizard();
-  const { user } = useAuth(); // ✅ ADD: Get user for auth checks
-  const { toast } = useToast(); // ✅ ADD: Toast notifications
-  const [isUpdatingListing, setIsUpdatingListing] = useState(false); // ✅ ADD: Loading state
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isUpdatingListing, setIsUpdatingListing] = useState(false);
   
   const {
     register,
@@ -72,89 +72,63 @@ export default function Step2_LeasingDetails() {
     },
   });
 
-  const updateListingInDatabase = async (formData: LeasingDetailsForm) => {
+  const onSubmit = async (formData: LeasingDetailsForm) => {
     if (!user) {
       toast({
-        title: "Authentication Error",
-        description: "Please log in to continue.",
-        variant: "destructive"
+        title: "Nicht angemeldet",
+        description: "Sie müssen angemeldet sein.",
+        variant: "destructive",
       });
-      return false;
+      return;
     }
 
+    // ✅ Fixed: Add proper validation for listing ID
     if (!data.id) {
-      console.error("❌ No listing ID found in wizard data");
+      console.log("❌ No listing ID found in wizard data", data);
       toast({
-        title: "Error",
-        description: "Listing ID not found. Please go back to Step 1.",
-        variant: "destructive"
+        title: "Fehler",
+        description: "Keine Inserat-ID gefunden. Bitte gehen Sie zurück zu Schritt 1 und versuchen Sie es erneut.",
+        variant: "destructive",
       });
-      return false;
+      return;
     }
 
-    try {
-      console.log("🔄 Updating listing with leasing details:", { listingId: data.id, formData });
-
-      const { error } = await supabase
-        .from("listings")
-        .update({
-          price_per_month_chf: Number(formData.price_per_month_chf),
-          remaining_months: Number(formData.remaining_months),
-          deposit_chf: formData.deposit_chf ? Number(formData.deposit_chf) : null,
-          location: formData.location
-        })
-        .eq("id", data.id);
-
-      if (error) {
-        console.error("❌ Error updating listing with leasing details:", error);
-        throw error;
-      }
-
-      console.log("✅ Successfully updated listing with leasing details");
-      return true;
-
-    } catch (error) {
-      console.error("❌ Failed to update listing with leasing details:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save leasing details. Please try again.",
-        variant: "destructive"
-      });
-      return false;
-    }
-  };
-
-  const onSubmit = async (formData: LeasingDetailsForm) => {
-    console.log("Step2 onSubmit - leasing details:", formData);
+    console.log('Step2 onSubmit - leasing details:', formData);
     setIsUpdatingListing(true);
 
     try {
-      // Update the database with leasing details
-      const updateSuccess = await updateListingInDatabase(formData);
-      
-      if (!updateSuccess) {
-        // Error already handled in updateListingInDatabase
-        setIsUpdatingListing(false);
-        return;
-      }
+      const updatePayload = {
+        id: data.id, // ✅ Ensure ID is included
+        price_per_month_chf: parseFloat(formData.price_per_month_chf.toString()),
+        remaining_months: parseInt(formData.remaining_months.toString()),
+        deposit_chf: formData.deposit_chf ? parseFloat(formData.deposit_chf.toString()) : null,
+        location: formData.location,
+        canton_code: formData.location,
+        title: formData.location,
+      };
 
-      // Update wizard state
-      updateData(formData);
+      console.log('🚀 Step2: Updating listing with payload:', updatePayload);
       
-      toast({
-        title: "Success",
-        description: "Leasing details saved successfully!",
+      const result = await createOrUpdateListing(updatePayload, user);
+      
+      // Update wizard data with the response
+      updateData({ 
+        ...updatePayload,
+        id: result.id // Ensure ID is maintained
       });
 
-      // Move to next step
-      nextStep();
-
-    } catch (error) {
-      console.error("❌ Unexpected error in leasing details submission:", error);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
+        title: "Leasing-Details gespeichert",
+        description: "Ihre Leasing-Informationen wurden erfolgreich gespeichert.",
+      });
+
+      nextStep();
+    } catch (error) {
+      console.error("Error saving leasing details:", error);
+      toast({
+        title: "Fehler",
+        description: "Leasing-Details konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
       });
     } finally {
       setIsUpdatingListing(false);

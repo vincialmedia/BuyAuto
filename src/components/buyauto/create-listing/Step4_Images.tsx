@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, X, GripVertical, Loader2, ChevronLeft } from "lucide-react";
@@ -7,8 +7,14 @@ import { useDropzone } from "react-dropzone";
 import { Reorder } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadListingImages } from "@/services/storageService";
-import { toast } from "sonner";
 import { useWizard } from "./ListingWizard";
+import Uppy from '@uppy/core';
+import { Dashboard } from '@uppy/react';
+import { useToast } from '@/hooks/use-toast';
+import { createOrUpdateListing } from '@/services/createListingService';
+
+import '@uppy/core/dist/style.css';
+import '@uppy/dashboard/dist/style.css';
 
 interface ImageItem {
   id: string;
@@ -19,22 +25,93 @@ export function Step4_Images() {
   const { data, updateData, nextStep, prevStep, getMaxPhotos } = useWizard();
   const images = data.images || [];
   const coverImageIndex = data.cover_image_index || 0;
-  
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const maxPhotos = getMaxPhotos();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Initialize image items state
   const [imageItems, setImageItems] = useState<ImageItem[]>(() =>
     images.map((url: string, index: number) => ({ id: `${index}-${Date.now()}`, url }))
   );
-  const [isUploading, setIsUploading] = useState(false);
-  const { user } = useAuth();
-  const maxPhotos = getMaxPhotos();
+
+  const [uppy] = useState(() =>
+    new Uppy({
+      autoProceed: true,
+      restrictions: {
+        maxFileSize: 10 * 1024 * 1024,
+        maxNumberOfFiles: maxPhotos,
+        allowedFileTypes: ['image/*'],
+      },
+    })
+  );
+
+  useEffect(() => {
+    uppy.on('upload-error', (file, error) => {
+      console.error('Uppy upload error:', error);
+      toast({
+        title: 'Upload-Fehler',
+        description: `Fehler beim Hochladen von ${file?.name}: ${error.message}`,
+        variant: 'destructive',
+      });
+    });
+
+    uppy.on('error', (error) => {
+      console.error('Uppy generic error:', error);
+      toast({
+        title: 'Ein Fehler ist aufgetreten',
+        description: 'Beim Uploader ist ein Problem aufgetreten. Bitte laden Sie die Seite neu.',
+        variant: 'destructive',
+      });
+    });
+    
+    uppy.on('complete', (result) => {
+      const successfulUploads = result.successful;
+      if (successfulUploads.length > 0) {
+        const permanentUrls = successfulUploads.map(file => file.response?.body.url).filter(Boolean) as string[];
+        console.log('Uploaded file URLs:', permanentUrls);
+        
+        const newImages = [...(data.images || []), ...permanentUrls];
+        updateData({ images: newImages });
+
+        toast({
+          title: 'Upload erfolgreich',
+          description: `${permanentUrls.length} Bilder wurden erfolgreich hochgeladen.`,
+        });
+      }
+
+      if (result.failed.length > 0) {
+        toast({
+          title: 'Einige Uploads sind fehlgeschlagen',
+          description: `${result.failed.length} Bilder konnten nicht hochgeladen werden.`,
+          variant: 'destructive',
+        });
+      }
+    });
+
+    return () => {
+      // Fix: Use destroy instead of close
+      uppy.destroy();
+    };
+  }, [uppy, data.images, toast, updateData]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!user) {
-      toast.error("Sie müssen angemeldet sein, um Bilder hochzuladen.");
+      toast({
+        title: "Fehler",
+        description: "Sie müssen angemeldet sein, um Bilder hochzuladen.",
+        variant: "destructive",
+      });
       return;
     }
     
     if ((imageItems.length + acceptedFiles.length) > maxPhotos) {
-      toast.error(`Sie können maximal ${maxPhotos} Bilder hochladen.`);
+      toast({
+        title: "Limit erreicht",
+        description: `Sie können maximal ${maxPhotos} Bilder hochladen.`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -52,14 +129,21 @@ export function Step4_Images() {
         cover_image_index: coverImageIndex < updatedUrls.length ? coverImageIndex : 0 
       });
 
-      toast.success(`${acceptedFiles.length} Bild(er) erfolgreich hochgeladen.`);
+      toast({
+        title: "Upload erfolgreich",
+        description: `${acceptedFiles.length} Bild(er) erfolgreich hochgeladen.`,
+      });
     } catch (error) {
       console.error("Upload failed:", error);
-      toast.error("Fehler beim Hochladen der Bilder. Bitte versuchen Sie es erneut.");
+      toast({
+        title: "Upload Fehler",
+        description: "Fehler beim Hochladen der Bilder. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
     } finally {
       setIsUploading(false);
     }
-  }, [user, imageItems, maxPhotos, updateData, coverImageIndex]);
+  }, [user, imageItems, maxPhotos, updateData, coverImageIndex, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -103,14 +187,55 @@ export function Step4_Images() {
     });
   };
 
-  const handleContinue = () => {
-    // Update the wizard data and proceed to next step
-    const updatedUrls = imageItems.map(item => item.url);
-    updateData({ 
-      images: updatedUrls,
-      cover_image_index: coverImageIndex < updatedUrls.length ? coverImageIndex : 0
-    });
-    nextStep();
+  const handleNext = async () => {
+    if (!user) {
+      toast({ 
+        title: "Nicht angemeldet", 
+        description: "Bitte melden Sie sich an.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    if (!data.id) {
+      toast({ 
+        title: "Fehler", 
+        description: "Keine Inserat-ID gefunden.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    if (!data.images || data.images.length === 0) {
+      toast({ 
+        title: "Keine Bilder", 
+        description: "Bitte laden Sie mindestens ein Bild hoch.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await createOrUpdateListing({
+        id: data.id,
+        images: data.images,
+        cover_image_index: data.cover_image_index || 0,
+      }, user);
+
+      toast({
+        title: "Bilder gespeichert",
+        description: "Ihre Bilder wurden dem Inserat hinzugefügt.",
+      });
+      nextStep();
+    } catch (error) {
+      console.error("Fehler beim Speichern der Bilder:", error);
+      toast({ 
+        title: "Fehler", 
+        description: "Bilder konnten nicht gespeichert werden.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -259,10 +384,12 @@ export function Step4_Images() {
         </Button>
         
         <Button
-          onClick={handleContinue}
-          className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+          type="button"
+          onClick={handleNext}
+          className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white"
+          disabled={isUpdating}
         >
-          Weiter zur Vorschau
+          {isUpdating ? "Speichern..." : "Weiter zur Vorschau"}
         </Button>
       </div>
     </div>

@@ -9,6 +9,17 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, Plan } from '@/lib/buyauto/stripe_config';
 import { CheckIcon } from 'lucide-react';
+import { CheckCircle2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { createOrUpdateListing } from "@/services/createListingService";
+import type { PricePlanId } from "@/lib/buyauto/types";
+
+// Get plans from stripe config for the mapping
+const planMapping: Record<Plan, PricePlanId> = {
+  'standard': 'standard',
+  'extended': 'extended', 
+  'unlimited': 'unlimited'
+};
 
 // Client-only PaymentWidget to prevent SSR issues
 const PaymentWidget = dynamic(
@@ -27,6 +38,7 @@ const PaymentWidget = dynamic(
 export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // State management with proper initialization
   const [selectedPlan, setSelectedPlan] = useState<Plan>((data.price_plan as Plan) || 'standard');
@@ -216,6 +228,54 @@ export default function Step3_PlanSelection() {
     nextStep();
   };
 
+  const handleSelectPlan = async (planKey: Plan) => {
+    if (!user) {
+      toast({
+        title: "Fehler",
+        description: "Sie müssen angemeldet sein, um einen Plan auszuwählen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.id) {
+      toast({
+        title: "Fehler",
+        description: "Keine Inserat-ID gefunden. Bitte gehen Sie zurück zu Schritt 1.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Map the plan key to the correct PricePlanId
+      const mappedPlan = planMapping[planKey];
+      
+      // Update the listing with the selected price plan
+      await createOrUpdateListing({ id: data.id, price_plan: mappedPlan }, user);
+
+      // Update wizard state
+      updateData({ price_plan: mappedPlan });
+
+      toast({
+        title: "Plan ausgewählt",
+        description: `Der Plan '${planKey}' wurde für Ihr Inserat gespeichert.`,
+      });
+
+      nextStep();
+    } catch (error) {
+      console.error("Fehler bei der Planauswahl:", error);
+      toast({
+        title: "Fehler",
+        description: "Der Plan konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Don't render anything until mounted to prevent hydration mismatches
   if (!mounted) {
     return (
@@ -245,7 +305,7 @@ export default function Step3_PlanSelection() {
                   'cursor-pointer transition-all',
                   selectedPlan === planKey ? 'border-red-500 ring-2 ring-red-500' : 'hover:border-neutral-400'
                 )}
-                onClick={() => setSelectedPlan(planKey)}
+                onClick={() => handleSelectPlan(planKey)}
               >
                 <CardHeader>
                   <CardTitle>{pricingPlans[planKey].name}</CardTitle>

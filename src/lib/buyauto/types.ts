@@ -17,8 +17,17 @@ export interface Listing {
   imageUrl: string; // Ensure this is present and used as the primary image
 }
 
-// Price plan types
-export type PricePlan = "free30" | "premium30" | "paid90" | "unlimited";
+// Price plan types - single definition
+export type PricePlanId = "free30" | "standard" | "extended" | "unlimited";
+
+export interface PricePlan {
+  id: PricePlanId;
+  name: string;
+  price: number;
+  features: string[];
+  duration_days: number;
+  is_featured: boolean;
+}
 
 // Type for create listing form data - matches what the components actually use
 export interface ListingData {
@@ -44,7 +53,7 @@ export interface ListingData {
   title?: string;
   
   // Step 3: Billing/Plan fields - Ensure all properties are explicitly defined
-  price_plan?: 'standard' | 'extended' | 'unlimited';
+  price_plan?: PricePlanId; // ✅ UNIFIED TYPE
   pricing_plan?: string;
   premium?: boolean; // Explicitly define this as boolean
   duration_days?: number;
@@ -92,7 +101,7 @@ export interface ListingFormData {
   title?: string;
   
   // Step 3: Plan Selection
-  price_plan: PricePlan;
+  price_plan: PricePlanId;
   
   // Step 4: Images
   images: string[];
@@ -108,7 +117,7 @@ export interface ListingDetail extends Listing {
   created_at: string;
   expires_at?: string | null;
   duration_days?: number | null;
-  price_plan?: PricePlan | null;
+  price_plan?: PricePlanId | null;
   premium_until?: string | null;
 }
 
@@ -142,3 +151,5 @@ export interface SearchFilters {
   canton?: string;
   requiresDeposit?: boolean;
 }
+
+export type ListingStatus = "draft" | "pending" | "active" | "rejected" | "sold" | "expired";
