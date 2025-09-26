@@ -64,7 +64,7 @@ export default function ListingWizard() {
       console.log("🔍 New data after update:", newData);
       return newData;
     });
-  }, []); // ✅ CRITICAL FIX: Remove data dependency to prevent callback recreation
+  }, []); // ✅ FIXED: Empty dependency array to prevent callback recreation
 
   const getMaxPhotos = useCallback(() => {
     // Free plan gets 5 photos, paid plans get 15 photos

@@ -83,11 +83,15 @@ export default function Step1_VehicleData() {
       // Create a draft listing first
       const result = await createOrUpdateListing(validatedData, user);
       
-      // Update wizard data with the created/updated listing ID
+      console.log("✅ Step1: Listing created/updated successfully:", result);
+      
+      // Update wizard data with the created/updated listing ID and form data
       updateData({ 
         ...validatedData,
-        id: result.id 
+        id: result.id  // ✅ CRITICAL: Ensure the listing ID is preserved
       });
+
+      console.log("✅ Step1: Wizard data updated with ID:", result.id);
 
       toast({
         title: "Fahrzeugdaten gespeichert",
