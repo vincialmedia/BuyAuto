@@ -74,8 +74,7 @@ export default function Step1_VehicleData() {
         brand: formData.brand,
         model: formData.model,
         year: parseInt(formData.year.toString()),
-        mileage_km: parseInt(formData.km.toString()), 
-        km: parseInt(formData.km.toString()),
+        mileage_km: parseInt(formData.km.toString()),
         fuel: formData.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro", // ✅ Explicit type cast
         gearbox: formData.gearbox as "Automatik" | "Manuell", // ✅ Explicit type cast
         body: formData.body as "Limousine" | "Kombi" | "SUV" | "Cabrio", // ✅ Explicit type cast

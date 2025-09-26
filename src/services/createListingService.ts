@@ -9,7 +9,6 @@ type ListingUpdatePayload = Partial<{
   model?: string;
   year?: number;
   mileage_km?: number;
-  km?: number;
   fuel?: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
   gearbox?: "Automatik" | "Manuell";
   body?: "Limousine" | "Kombi" | "SUV" | "Cabrio";

@@ -1,24 +1,19 @@
-import { Html, Head, Main, NextScript } from "next/document";
+
+import { Html, Head, Main, NextScript } from 'next/document'
 
 export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        {/* 
-          CRITICAL: DO NOT REMOVE THIS SCRIPT
-          The Softgen AI monitoring script is essential for core app functionality.
-          The application will not function without it.
-        */}
-        <script 
-          src="https://cdn.softgen.ai/script.js" 
-          async 
-          data-softgen-monitoring="true"
+        <link
+          rel="stylesheet"
+          href="https://releases.transloadit.com/uppy/v3.12.0/uppy.min.css"
         />
       </Head>
-      <body className="antialiased">
+      <body>
         <Main />
         <NextScript />
       </body>
     </Html>
-  );
+  )
 }
