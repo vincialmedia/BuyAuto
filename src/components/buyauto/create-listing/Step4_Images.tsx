@@ -13,8 +13,7 @@ import { Dashboard } from '@uppy/react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
 
-import '@uppy/core/dist/style.min.css';
-import '@uppy/dashboard/dist/style.min.css';
+import 'uppy/dist/uppy.min.css';
 
 interface ImageItem {
   id: string;
