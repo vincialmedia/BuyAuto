@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useWizard } from './ListingWizard';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, Plan } from '@/lib/buyauto/stripe_config';
 import { CheckIcon } from 'lucide-react';
 import { useAuth } from "@/contexts/AuthContext";
-import { createOrUpdateListing } from "@/services/createListingService";
+import { createOrUpdateListing, getListingByIdForOwner } from "@/services/createListingService";
 import type { PricePlanId } from "@/lib/buyauto/types";
 
 // Get plans from stripe config for the mapping
@@ -58,20 +58,7 @@ export default function Step3_PlanSelection() {
     setTotal(newTotal);
   }, [selectedPlan, isPremium]);
 
-  // Handle redirect back from Stripe (only run client-side)
-  useEffect(() => {
-    if (!mounted) return;
-
-    const query = new URLSearchParams(window.location.search);
-    if (query.get('payment_confirmed')) {
-      const paymentIntentClientSecret = query.get('payment_intent_client_secret');
-      if (paymentIntentClientSecret) {
-        handlePaymentConfirmation(paymentIntentClientSecret);
-      }
-    }
-  }, [mounted]);
-
-  const handlePaymentConfirmation = async (paymentIntentClientSecret: string) => {
+  const handlePaymentConfirmation = useCallback(async (paymentIntentClientSecret: string) => {
     // Clean up URL without triggering navigation
     const url = new URL(window.location.href);
     url.searchParams.delete('payment_confirmed');
@@ -116,8 +103,24 @@ export default function Step3_PlanSelection() {
       switch (paymentIntent?.status) {
         case 'succeeded':
           toast({ title: "Payment successful!", description: "Your listing is being processed." });
-          updateData({ payment_status: 'paid' });
-          nextStep();
+          
+          const listingId = paymentIntent.metadata.listing_id;
+          if (listingId && user) {
+            const freshListingData = await getListingByIdForOwner(listingId, user);
+            if (freshListingData) {
+              console.log('✅ Re-hydrating wizard with fresh data from DB:', freshListingData);
+              updateData(freshListingData);
+              nextStep();
+            } else {
+              console.error(`❌ Could not re-fetch listing data for ID: ${listingId}. Proceeding with stale data.`);
+              updateData({ payment_status: 'paid' });
+              nextStep();
+            }
+          } else {
+            console.error('❌ Missing listing_id in payment intent metadata or no user. Proceeding with stale data.');
+            updateData({ payment_status: 'paid' });
+            nextStep();
+          }
           break;
         case 'processing':
           toast({ title: "Payment processing.", description: "We'll update you when payment is received." });
@@ -138,7 +141,20 @@ export default function Step3_PlanSelection() {
         variant: 'destructive' 
       });
     }
-  };
+  }, [user, toast, updateData, nextStep]);
+
+  // Handle redirect back from Stripe (only run client-side)
+  useEffect(() => {
+    if (!mounted) return;
+
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('payment_confirmed')) {
+      const paymentIntentClientSecret = query.get('payment_intent_client_secret');
+      if (paymentIntentClientSecret) {
+        handlePaymentConfirmation(paymentIntentClientSecret);
+      }
+    }
+  }, [mounted, handlePaymentConfirmation]);
 
   const handlePreparePayment = async () => {
     if (!mounted || !user) {
@@ -180,7 +196,7 @@ export default function Step3_PlanSelection() {
 
       // If total is 0, just proceed to the next step without hitting the payment API
       if (total === 0) {
-        updateData({ price_plan: selectedPlan, premium: isPremium, price_paid_chf: 0 });
+        updateData({ price_plan: selectedPlan, premium: isPremium, price_paid_chf: 0, payment_status: 'paid' });
         toast({ title: 'Plan ausgewählt', description: 'Ihr kostenloses Inserat ist bereit für den nächsten Schritt.' });
         nextStep();
         return;

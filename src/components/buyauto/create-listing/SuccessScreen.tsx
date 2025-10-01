@@ -3,7 +3,7 @@ import { useWizard } from './ListingWizard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, ExternalLink } from 'lucide-react';
-import { pricingPlans } from '@/lib/buyauto/stripe_config';
+import { pricingPlans, PREMIUM_BOOST_PRICE } from '@/lib/buyauto/stripe_config';
 import type { Plan } from '@/lib/buyauto/stripe_config';
 import { useHasMounted } from '@/hooks/use-has-mounted';
 import { useEffect } from 'react';
@@ -50,6 +50,9 @@ export default function SuccessScreen() {
   const selectedPlan = data.price_plan as Plan;
   const isPremium = data.premium;
 
+  // Get the base plan price
+  const basePlanPrice = selectedPlan && pricingPlans[selectedPlan] ? pricingPlans[selectedPlan].price : 0;
+
   const handleCreateNew = () => {
     router.push('/inserat-erstellen');
   };
@@ -74,8 +77,9 @@ export default function SuccessScreen() {
       {listingId && (
         <Card className="mt-8 text-left">
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-neutral-800">Zusammenfassung</h3>
-            <div className="mt-4 space-y-3">
+            <h3 className="text-lg font-semibold text-neutral-800 mb-4">Zusammenfassung</h3>
+            
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-neutral-600">Inserat ID:</span>
                 <span className="font-mono text-sm bg-neutral-100 px-2 py-1 rounded">{listingId}</span>
@@ -87,16 +91,33 @@ export default function SuccessScreen() {
                     <span className="font-semibold">{pricingPlans[selectedPlan].name}</span>
                 </div>
               )}
-             
+            </div>
+
+            <hr className="border-t border-neutral-200 my-4" />
+
+            {/* Price Breakdown */}
+            <div className="space-y-2 mb-4">
+              <h4 className="text-sm font-semibold text-neutral-700 mb-2">Preisübersicht</h4>
+              
+              {/* Base Plan Price */}
+              {selectedPlan && pricingPlans[selectedPlan] && (
+                <div className="flex justify-between items-center text-neutral-700">
+                  <span>{pricingPlans[selectedPlan].name}</span>
+                  <span>CHF {basePlanPrice.toFixed(2)}</span>
+                </div>
+              )}
+              
+              {/* Premium Placement Add-on */}
               {isPremium && (
-                 <div className="flex justify-between items-center">
-                    <span className="text-neutral-600">Zusatzoption:</span>
-                    <span className="font-semibold">Premium Boost</span>
+                <div className="flex justify-between items-center text-neutral-700">
+                  <span>Premium Platzierung</span>
+                  <span>+ CHF {PREMIUM_BOOST_PRICE.toFixed(2)}</span>
                 </div>
               )}
 
-              <hr className="border-t border-neutral-200 my-3" />
+              <hr className="border-t border-neutral-200 my-2" />
 
+              {/* Total Amount */}
               <div className="flex justify-between items-center text-xl font-bold">
                 <span className="text-neutral-800">Gesamtbetrag bezahlt:</span>
                 <span className="text-red-600">CHF {finalPrice.toFixed(2)}</span>

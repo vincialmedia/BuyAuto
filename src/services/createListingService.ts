@@ -155,3 +155,33 @@ export const finalizeListing = async (listingId: string, user: User) => {
   console.log(`✅ Listing ${listingId} finalized:`, data);
   return data;
 };
+
+/**
+ * Retrieves a specific listing by its ID, ensuring it belongs to the authenticated user.
+ * This is used to re-hydrate the wizard state after payment.
+ *
+ * @param listingId - The ID of the listing to fetch.
+ * @param user - The authenticated user.
+ * @returns The listing data if found and owned by the user, otherwise null.
+ */
+export const getListingByIdForOwner = async (listingId: string, user: User) => {
+  if (!user || !listingId) {
+    console.error("User and listingId are required to fetch listing for owner.");
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("*")
+    .eq("id", listingId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching listing ${listingId} for owner:`, error);
+    return null;
+  }
+
+  console.log(`✅ Successfully fetched listing ${listingId} for owner.`);
+  return data;
+};
