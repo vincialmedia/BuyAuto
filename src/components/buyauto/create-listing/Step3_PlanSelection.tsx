@@ -12,6 +12,16 @@ import { CheckIcon } from 'lucide-react';
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing, getListingByIdForOwner } from "@/services/createListingService";
 import type { PricePlanId } from "@/lib/buyauto/types";
+import type { PaymentIntent } from '@stripe/stripe-js';
+
+// The client-side PaymentIntent type from @stripe/stripe-js might not include metadata.
+// We define it here to ensure type safety when accessing it.
+interface PaymentIntentWithMetadata extends PaymentIntent {
+  metadata: {
+    listing_id: string;
+    [key: string]: any;
+  };
+}
 
 // Get plans from stripe config for the mapping
 const planMapping: Record<Plan, PricePlanId> = {
@@ -104,7 +114,7 @@ export default function Step3_PlanSelection() {
         case 'succeeded':
           toast({ title: "Payment successful!", description: "Your listing is being processed." });
           
-          const listingId = paymentIntent.metadata.listing_id;
+          const listingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
           if (listingId && user) {
             const freshListingData = await getListingByIdForOwner(listingId, user);
             if (freshListingData) {
