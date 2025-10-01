@@ -309,21 +309,10 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                 listings.map((listing) => (
                   <tr key={listing.id} className="border-b border-neutral-100 hover:bg-neutral-50">
                     <td className="p-4">
-                      <div className="flex items-center space-x-3">
-                        {listing.cover_image_url && (
-                          <img
-                            src={listing.cover_image_url}
-                            alt=""
-                            className="w-12 h-8 object-cover rounded"
-                          />
-                        )}
+                      <div className="flex items-center">
                         <div>
-                          <div className="font-medium text-neutral-900">
-                            {listing.brand} {listing.model}
-                          </div>
-                          <div className="text-sm text-neutral-600">
-                            {listing.year} • {listing.location}
-                          </div>
+                          <div className="font-medium">{listing.brand} {listing.model}</div>
+                          <div className="text-sm text-muted-foreground">{listing.year} &middot; {listing.canton_code}</div>
                         </div>
                       </div>
                     </td>

@@ -1,145 +1,135 @@
+import Link from 'next/link';
+import { useWizard } from './ListingWizard';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { CheckCircle, ExternalLink } from 'lucide-react';
+import { pricingPlans } from '@/lib/buyauto/stripe_config';
+import type { Plan } from '@/lib/buyauto/stripe_config';
+import { useHasMounted } from '@/hooks/use-has-mounted';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Star, Calendar, ArrowRight, Home, Search } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/router";
+// A simple confetti hook placeholder.
+const useConfetti = () => {
+    const hasMounted = useHasMounted();
+    return {
+        launch: () => {
+            if (hasMounted && window.confetti) {
+                window.confetti({
+                    particleCount: 150,
+                    spread: 90,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+    }
+};
+
+declare global {
+    interface Window {
+        confetti?: (options: any) => void;
+    }
+}
 
 export default function SuccessScreen() {
+  const { data } = useWizard();
   const router = useRouter();
+  const hasMounted = useHasMounted();
+  const confetti = useConfetti();
+
+  // Use the correct, final price from the wizard data.
+  const finalPrice = data.price_paid_chf ?? 0;
+
+  useEffect(() => {
+    if (hasMounted) {
+        confetti.launch();
+    }
+  }, [hasMounted, confetti]);
+
+  const listingId = data.id;
+  const selectedPlan = data.price_plan as Plan;
+  const isPremium = data.premium;
+
+  const handleCreateNew = () => {
+    router.push('/inserat-erstellen');
+  };
+
+  if (!hasMounted) {
+    return null; // or a loading skeleton
+  }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
-      <div className="text-center space-y-8">
-        {/* Success Icon */}
-        <div className="relative">
-          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-green-50 to-emerald-50 rounded-full flex items-center justify-center border border-green-100/40">
-            <CheckCircle className="w-12 h-12 text-green-600" />
-          </div>
-          <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-            <Star className="w-4 h-4 text-white fill-current" />
-          </div>
-        </div>
+    <div className="max-w-2xl mx-auto text-center py-12 px-4">
+      {/* This script is needed for the confetti effect */}
+      <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js" async></script>
+      
+      <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
+      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl">
+        Ihr Inserat ist online!
+      </h1>
+      <p className="mt-4 text-lg text-neutral-600">
+        Herzlichen Glückwunsch! Ihr Fahrzeug ist nun auf unserer Plattform sichtbar.
+      </p>
 
-        {/* Success Message */}
-        <div className="space-y-4">
-          <h1 className="text-3xl font-light text-neutral-900 tracking-tight">
-            Inserat erfolgreich erstellt!
-          </h1>
-          <p className="text-neutral-600 leading-relaxed font-light">
-            Vielen Dank für Ihr Vertrauen in BuyAuto. Ihr Inserat wird nun von unserem Team überprüft 
-            und anschließend veröffentlicht.
-          </p>
-        </div>
-
-        {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="rounded-lg border border-neutral-200/40 shadow-sm bg-white">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto bg-red-50 rounded-lg flex items-center justify-center mb-4">
-                <Calendar className="w-6 h-6 text-red-500" />
+      {listingId && (
+        <Card className="mt-8 text-left">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold text-neutral-800">Zusammenfassung</h3>
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-600">Inserat ID:</span>
+                <span className="font-mono text-sm bg-neutral-100 px-2 py-1 rounded">{listingId}</span>
               </div>
-              <h3 className="font-semibold text-neutral-900 mb-2 tracking-tight">Überprüfung läuft</h3>
-              <p className="text-sm text-neutral-600 font-light">
-                Unser Team überprüft Ihr Inserat innerhalb von 2-4 Stunden
-              </p>
-              <Badge variant="secondary" className="mt-3 bg-red-50 text-red-600 border-red-200/40">
-                In Bearbeitung
-              </Badge>
-            </CardContent>
-          </Card>
+              
+              {selectedPlan && pricingPlans[selectedPlan] && (
+                 <div className="flex justify-between items-center">
+                    <span className="text-neutral-600">Gewählter Plan:</span>
+                    <span className="font-semibold">{pricingPlans[selectedPlan].name}</span>
+                </div>
+              )}
+             
+              {isPremium && (
+                 <div className="flex justify-between items-center">
+                    <span className="text-neutral-600">Zusatzoption:</span>
+                    <span className="font-semibold">Premium Boost</span>
+                </div>
+              )}
 
-          <Card className="rounded-lg border border-neutral-200/40 shadow-sm bg-white">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto bg-green-50 rounded-lg flex items-center justify-center mb-4">
-                <Star className="w-6 h-6 text-green-500" />
+              <hr className="border-t border-neutral-200 my-3" />
+
+              <div className="flex justify-between items-center text-xl font-bold">
+                <span className="text-neutral-800">Gesamtbetrag bezahlt:</span>
+                <span className="text-red-600">CHF {finalPrice.toFixed(2)}</span>
               </div>
-              <h3 className="font-semibold text-neutral-900 mb-2 tracking-tight">Benachrichtigung</h3>
-              <p className="text-sm text-neutral-600 font-light">
-                Sie erhalten eine E-Mail sobald Ihr Inserat live geschaltet wird
-              </p>
-              <Badge variant="secondary" className="mt-3 bg-green-50 text-green-600 border-green-200/40">
-                Automatisch
-              </Badge>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Next Steps */}
-        <Card className="rounded-lg border border-neutral-200/40 shadow-sm bg-gradient-to-br from-neutral-50/30 to-white">
-          <CardContent className="p-8">
-            <h2 className="text-xl font-semibold text-neutral-900 mb-6 tracking-tight">Was passiert als Nächstes?</h2>
+            </div>
             
-            <div className="space-y-4 text-left">
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border border-red-200/40">
-                  <span className="text-sm font-bold text-red-600">1</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-neutral-900 tracking-tight">Qualitätsprüfung</h3>
-                  <p className="text-sm text-neutral-600 font-light">
-                    Wir überprüfen alle Angaben und Bilder auf Vollständigkeit und Richtigkeit
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border border-red-200/40">
-                  <span className="text-sm font-bold text-red-600">2</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-neutral-900 tracking-tight">Freischaltung</h3>
-                  <p className="text-sm text-neutral-600 font-light">
-                    Nach erfolgreicher Prüfung wird Ihr Inserat automatisch veröffentlicht
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border border-red-200/40">
-                  <span className="text-sm font-bold text-red-600">3</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-neutral-900 tracking-tight">Interessenten erreichen</h3>
-                  <p className="text-sm text-neutral-600 font-light">
-                    Ihr Fahrzeug wird von tausenden Interessenten auf BuyAuto entdeckt
-                  </p>
-                </div>
-              </div>
+            <div className="mt-6">
+              <Link href={`/fahrzeug/${listingId}`} passHref legacyBehavior>
+                <a target="_blank" rel="noopener noreferrer" className="w-full">
+                  <Button variant="outline" className="w-full">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Inserat ansehen
+                  </Button>
+                </a>
+              </Link>
             </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row gap-4 justify-center">
-          <Button
-            onClick={() => router.push('/')}
-            className="px-8 py-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
-          >
-            <Home className="w-5 h-5 mr-2" />
-            Zur Startseite
+      <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+        <Link href="/dashboard" passHref>
+          <Button className="w-full sm:w-auto bg-red-500 hover:bg-red-600">
+            Zum Dashboard
           </Button>
-
-          <Button
-            onClick={() => router.push('/suche')}
-            variant="outline"
-            className="px-8 py-4 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
-          >
-            <Search className="w-5 h-5 mr-2" />
-            Andere Angebote ansehen
-          </Button>
-        </div>
-
-        {/* Additional Info */}
-        <div className="pt-8 border-t border-neutral-200/60">
-          <p className="text-sm text-neutral-500 font-light">
-            Haben Sie Fragen? Kontaktieren Sie unser Support-Team unter{" "}
-            <Link href="mailto:support@buyauto.ch" className="text-red-500 hover:text-red-600 transition-colors font-medium">
-              support@buyauto.ch
-            </Link>
-          </p>
-        </div>
+        </Link>
+        <Button 
+          variant="secondary"
+          className="w-full sm:w-auto"
+          onClick={handleCreateNew}
+        >
+          Neues Inserat erstellen
+        </Button>
       </div>
     </div>
   );

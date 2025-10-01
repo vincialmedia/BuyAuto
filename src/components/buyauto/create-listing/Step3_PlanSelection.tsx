@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, Plan } from '@/lib/buyauto/stripe_config';
 import { CheckIcon } from 'lucide-react';
-import { CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing } from "@/services/createListingService";
 import type { PricePlanId } from "@/lib/buyauto/types";
@@ -142,9 +141,15 @@ export default function Step3_PlanSelection() {
   };
 
   const handlePreparePayment = async () => {
-    if (!mounted) return;
+    if (!mounted || !user) {
+      toast({
+        title: 'Fehler',
+        description: 'Sie müssen angemeldet sein, um fortzufahren.',
+        variant: 'destructive',
+      });
+      return;
+    }
     
-    // Add validation guard for listing_id
     if (!data.id) {
       console.error('❌ No listing ID found in wizard data:', data);
       toast({
@@ -158,12 +163,30 @@ export default function Step3_PlanSelection() {
     setIsLoading(true);
 
     try {
+      // ✅ CORRECT: Save the plan and premium status to DB before preparing payment
+      const mappedPlan = planMapping[selectedPlan];
+      await createOrUpdateListing({ id: data.id, price_plan: mappedPlan, premium: isPremium }, user);
+      
+      toast({
+        title: "Plan gespeichert",
+        description: `Der Plan '${selectedPlan}' wurde für Ihr Inserat gespeichert.`,
+      });
+
       console.log('🚀 Preparing payment with data:', { 
         listing_id: data.id, 
         plan: selectedPlan, 
         premium: isPremium 
       });
 
+      // If total is 0, just proceed to the next step without hitting the payment API
+      if (total === 0) {
+        updateData({ price_plan: selectedPlan, premium: isPremium, price_paid_chf: 0 });
+        toast({ title: 'Plan ausgewählt', description: 'Ihr kostenloses Inserat ist bereit für den nächsten Schritt.' });
+        nextStep();
+        return;
+      }
+
+      // If there is a total, prepare the payment with Stripe
       const response = await fetch('/api/billing/prepare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -183,24 +206,15 @@ export default function Step3_PlanSelection() {
 
       console.log('✅ Payment preparation successful:', result);
 
-      // Update wizard data
       updateData({
         price_plan: selectedPlan,
         premium: isPremium,
         price_paid_chf: total,
       });
 
-      if (result.next === 'continue') {
-        // Zero-price flow - no payment needed
-        toast({ 
-          title: 'Plan selected', 
-          description: 'Your free listing is ready for the next step.' 
-        });
-        nextStep();
-      } else {
-        // Paid flow - show payment form
-        setClientSecret(result.clientSecret);
-      }
+      // Paid flow - show payment form
+      setClientSecret(result.clientSecret);
+
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An unexpected error occurred';
       console.error('❌ Payment preparation failed:', error);
@@ -226,54 +240,6 @@ export default function Step3_PlanSelection() {
       description: "Your listing is being processed." 
     });
     nextStep();
-  };
-
-  const handleSelectPlan = async (planKey: Plan) => {
-    if (!user) {
-      toast({
-        title: "Fehler",
-        description: "Sie müssen angemeldet sein, um einen Plan auszuwählen.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!data.id) {
-      toast({
-        title: "Fehler",
-        description: "Keine Inserat-ID gefunden. Bitte gehen Sie zurück zu Schritt 1.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Map the plan key to the correct PricePlanId
-      const mappedPlan = planMapping[planKey];
-      
-      // Update the listing with the selected price plan
-      await createOrUpdateListing({ id: data.id, price_plan: mappedPlan }, user);
-
-      // Update wizard state
-      updateData({ price_plan: mappedPlan });
-
-      toast({
-        title: "Plan ausgewählt",
-        description: `Der Plan '${planKey}' wurde für Ihr Inserat gespeichert.`,
-      });
-
-      nextStep();
-    } catch (error) {
-      console.error("Fehler bei der Planauswahl:", error);
-      toast({
-        title: "Fehler",
-        description: "Der Plan konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   // Don't render anything until mounted to prevent hydration mismatches
@@ -305,7 +271,7 @@ export default function Step3_PlanSelection() {
                   'cursor-pointer transition-all',
                   selectedPlan === planKey ? 'border-red-500 ring-2 ring-red-500' : 'hover:border-neutral-400'
                 )}
-                onClick={() => handleSelectPlan(planKey)}
+                onClick={() => setSelectedPlan(planKey)} // ✅ CORRECT: Only update state on click
               >
                 <CardHeader>
                   <CardTitle>{pricingPlans[planKey].name}</CardTitle>
