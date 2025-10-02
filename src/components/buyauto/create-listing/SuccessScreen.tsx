@@ -110,7 +110,7 @@ export default function SuccessScreen() {
               {/* Premium Placement Add-on */}
               {isPremium && (
                 <div className="flex justify-between items-center text-neutral-700">
-                  <span>Premium Platzierung</span>
+                  <span>Premium Platzierung Aktiv (CHF 30)</span>
                   <span>+ CHF {PREMIUM_BOOST_PRICE.toFixed(2)}</span>
                 </div>
               )}
