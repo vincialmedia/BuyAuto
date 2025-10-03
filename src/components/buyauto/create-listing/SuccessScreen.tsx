@@ -67,8 +67,38 @@ export default function SuccessScreen() {
     router.push('/inserat-erstellen');
   };
 
-  if (!hasMounted || !listingData) {
+  if (!hasMounted) {
     return null; // or a loading skeleton
+  }
+
+  if (!listingData) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-12 px-4">
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js" async></script>
+        <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
+        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl">
+          Vielen Dank!
+        </h1>
+        <p className="mt-4 text-lg text-neutral-600">
+          Ihr Inserat wurde zur Überprüfung eingereicht. Sie werden benachrichtigt, sobald es veröffentlicht wird. Dies dauert in der Regel 2-4 Stunden.
+        </p>
+        <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+          <Button 
+            className="w-full sm:w-auto bg-red-500 hover:bg-red-600"
+            onClick={() => router.push('/dashboard')}
+          >
+            Zum Dashboard
+          </Button>
+          <Button 
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={handleCreateNew}
+          >
+            Neues Inserat erstellen
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const { id: listingId, price_plan: selectedPlan, premium: isPremium, price_paid_chf: finalPrice } = listingData;

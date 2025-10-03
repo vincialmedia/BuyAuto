@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export type DashboardListingStatus = "pending" | "published" | "rejected" | "expired";
@@ -45,26 +44,19 @@ export interface DashboardStats {
   total: number;
 }
 
-export async function getUserListings(): Promise<DashboardListing[]> {
+export async function getUserListings(): Promise<any[]> {
   try {
-    // Make a fetch request to our secure API endpoint
-    // No need to pass auth headers - cookies will handle authentication
-    const response = await fetch('/api/listings/my', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // Include cookies for authentication
-    });
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('API error in getUserListings:', response.status, errorData);
+    if (error) {
+      console.error("Error fetching listings for current user:", error);
       return [];
     }
 
-    const result = await response.json();
-    return result.data || [];
+    return data || [];
 
   } catch (error) {
     console.error('Dashboard getUserListings unexpected error:', error);

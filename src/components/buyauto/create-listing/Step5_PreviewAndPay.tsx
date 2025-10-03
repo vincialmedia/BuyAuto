@@ -131,7 +131,16 @@ export default function Step5_PreviewAndPay() {
           if (listingId && user) {
             const freshListingData = await getListingByIdForOwner(listingId, user);
             if (freshListingData) {
-              console.log('✅ Re-hydrating wizard with fresh data from DB:', freshListingData);
+              console.log('✅ Storing completed listing data in sessionStorage:', freshListingData);
+              if (typeof window !== 'undefined') {
+                const completedData = {
+                  id: freshListingData.id,
+                  price_plan: freshListingData.price_plan,
+                  premium: freshListingData.premium,
+                  price_paid_chf: paymentIntent.amount / 100, // Stripe amount is in cents
+                };
+                sessionStorage.setItem('completedListingData', JSON.stringify(completedData));
+              }
               updateData(freshListingData);
             }
           }

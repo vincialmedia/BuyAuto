@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import AuthLayout from "@/components/buyauto/auth/AuthLayout";
@@ -18,21 +17,26 @@ export default function AuthPage() {
       console.log("User is authenticated, checking admin status for redirect");
       setHasRedirected(true);
       
-      // Check for callback URL in query params first
+      // Check for redirect parameter first, then callback URL
+      const redirectParam = router.query.redirect as string;
       const callbackUrl = router.query.callback as string;
       let redirectUrl = "/dashboard"; // Default for regular users
       
       if (isAdmin) {
-        // Admins go to admin dashboard (ignore callback)
+        // Admins go to admin dashboard (ignore callback/redirect)
         redirectUrl = "/admin";
         console.log("User is admin, redirecting to admin dashboard");
+      } else if (redirectParam) {
+        // Regular users: use redirect parameter if provided (takes priority)
+        redirectUrl = redirectParam;
+        console.log("User is regular user with redirect param, redirecting to:", redirectParam);
       } else if (callbackUrl) {
         // Regular users: use callback URL if provided
         redirectUrl = callbackUrl;
         console.log("User is regular user with callback, redirecting to:", callbackUrl);
       } else {
-        // Regular users without callback: go to dashboard
-        console.log("User is regular user without callback, redirecting to user dashboard");
+        // Regular users without callback/redirect: go to dashboard
+        console.log("User is regular user without callback/redirect, redirecting to user dashboard");
       }
       
       console.log("Final redirect URL:", redirectUrl);

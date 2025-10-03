@@ -33,6 +33,9 @@ export default function Header() {
   const firstName = user?.user_metadata?.first_name;
   const displayName = firstName || user?.email?.split('@')[0] || 'Benutzer';
 
+  // Determine the create listing link based on auth state
+  const createListingHref = user ? "/inserat-erstellen" : "/auth?redirect=/inserat-erstellen";
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-neutral-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -54,7 +57,7 @@ export default function Header() {
               Fahrzeuge suchen
             </Link>
             <Link 
-              href="/inserat-erstellen" 
+              href={createListingHref}
               className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
             >
               Inserat erstellen
@@ -163,7 +166,7 @@ export default function Header() {
               Fahrzeuge suchen
             </Link>
             <Link 
-              href="/inserat-erstellen" 
+              href={createListingHref}
               className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
