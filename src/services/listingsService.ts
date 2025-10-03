@@ -36,6 +36,7 @@ type FullListingRow = PublicListingRow & {
   user_id?: string;
   moderation_note?: string;
   updated_at?: string;
+  listing_price?: number;
 };
 
 /**
@@ -142,7 +143,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 }
 
 // Transform full listing row (for dashboard/admin)
-function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
+function transformFullRowToListingDetail(row: any): ListingDetail {
   const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
 
   return {
@@ -159,18 +160,21 @@ function transformFullRowToListingDetail(row: FullListingRow): ListingDetail {
     gearbox: row.gearbox,
     body: row.body,
     premium: row.premium,
+    is_premium: row.premium,
     depositCHF: row.deposit_chf || null,
     images: imageUrls,
     imageUrl: imageUrls[0] || "",
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
     image_urls: imageUrls,
-    status: row.status as "pending" | "published" | "rejected" | "expired",
+    status: row.status as "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired",
     created_at: row.created_at,
     expires_at: row.expires_at,
     duration_days: row.duration_days,
     price_plan: row.price_plan as PricePlanId,
     premium_until: row.premium_until,
+    cover_image_index: row.cover_image_index,
+    listing_price: row.price_paid_chf, // Use price_paid_chf as listing_price
   };
 }
 
@@ -352,6 +356,32 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
     return transformFullRowToListingDetail(data);
   } catch (error) {
     console.error('Get user listing by ID error:', error);
+    return null;
+  }
+}
+
+/**
+ * Get user's own listing by ID - includes drafts for preview
+ * This is used on the success screen to preview newly created listings
+ * that might not be published yet
+ */
+export async function getUserListingByIdForPreview(id: string): Promise<ListingDetail | null> {
+  try {
+    const { data, error } = await supabase
+      .from('listings')
+      .select(`*`)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      console.error('Error fetching user listing for preview:', error);
+      return null;
+    }
+
+    return transformFullRowToListingDetail(data);
+  } catch (error) {
+    console.error('Get user listing for preview error:', error);
     return null;
   }
 }

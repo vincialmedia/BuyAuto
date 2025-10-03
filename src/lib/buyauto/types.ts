@@ -110,15 +110,18 @@ export interface ListingFormData {
 
 // Extended listing type for detail page with additional fields
 export interface ListingDetail extends Listing {
-  canton_code?: string;
+  canton_code: string;
   cover_image_url?: string;
   image_urls: string[];
-  status: "pending" | "published" | "rejected" | "expired";
+  status: "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired";
   created_at: string;
-  expires_at?: string | null;
-  duration_days?: number | null;
-  price_plan?: PricePlanId | null;
-  premium_until?: string | null;
+  expires_at: string | null;
+  duration_days: number | null;
+  price_plan: PricePlanId | null;
+  premium_until: string | null;
+  cover_image_index?: number;
+  listing_price?: number;
+  is_premium?: boolean;
 }
 
 // Type for listing inquiries
@@ -152,4 +155,4 @@ export interface SearchFilters {
   requiresDeposit?: boolean;
 }
 
-export type ListingStatus = "draft" | "pending" | "active" | "rejected" | "sold" | "expired";
+export type ListingStatus = "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired";

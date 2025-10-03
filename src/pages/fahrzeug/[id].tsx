@@ -5,9 +5,8 @@ import { useRouter } from "next/router";
 import { ArrowLeft, MapPin, Calendar, Settings, Fuel, Users, Shield, Award, Phone, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { ListingDetail } from "@/lib/buyauto/types";
-import { getPublishedListingById, getSimilarListings } from "@/services/listingsService";
+import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
 import TrustBadges from "@/components/buyauto/detail/TrustBadges";
 import InquiryForm from "@/components/buyauto/detail/InquiryForm";
@@ -29,8 +28,13 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   useEffect(() => {
     if (!listing && !notFound && id && typeof id === 'string') {
       const fetchListing = async () => {
+        setIsLoading(true);
         try {
-          const fetchedListing = await getPublishedListingById(id);
+          // If it's a preview, we need to fetch from the user-specific endpoint
+          const isPreview = router.query.preview === 'true';
+          const fetchedListing = isPreview
+            ? await getUserListingById(id)
+            : await getPublishedListingById(id);
           setListing(fetchedListing);
         } catch (error) {
           console.error('Error fetching listing:', error);
@@ -331,30 +335,29 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
 export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = async (context) => {
   const { id } = context.params!;
+  const { preview } = context.query;
 
   if (!id || typeof id !== 'string') {
-    return {
-      notFound: true,
-    };
+    return { notFound: true };
   }
 
   try {
-    // Use the secure published listings function - only shows published listings
+    // If preview mode is active, we don't fetch server-side because we need the user's auth context
+    // The client-side useEffect will handle fetching.
+    if (preview === 'true') {
+      return { props: { listing: null } };
+    }
+
+    // Default: Fetch only published listings for public view
     const listing = await getPublishedListingById(id);
     
     if (!listing) {
-      return {
-        props: { listing: null, notFound: true },
-      };
+      return { props: { listing: null, notFound: true } };
     }
 
-    return {
-      props: { listing },
-    };
+    return { props: { listing } };
   } catch (error) {
-    console.error('Error in getServerSideProps:', error);
-    return {
-      props: { listing: null, notFound: true },
-    };
+    console.error('Error in getServerSideProps for [id].tsx:', error);
+    return { props: { listing: null, notFound: true } };
   }
 };

@@ -1,12 +1,11 @@
 import Link from 'next/link';
-import { useWizard } from './ListingWizard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, ExternalLink } from 'lucide-react';
 import { pricingPlans, PREMIUM_BOOST_PRICE } from '@/lib/buyauto/stripe_config';
 import type { Plan } from '@/lib/buyauto/stripe_config';
 import { useHasMounted } from '@/hooks/use-has-mounted';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
 // A simple confetti hook placeholder.
@@ -31,35 +30,51 @@ declare global {
     }
 }
 
+interface CompletedListingData {
+  id: string;
+  price_plan: Plan;
+  premium: boolean;
+  price_paid_chf: number;
+}
+
 export default function SuccessScreen() {
-  const { data } = useWizard();
   const router = useRouter();
   const hasMounted = useHasMounted();
   const confetti = useConfetti();
+  const [listingData, setListingData] = useState<CompletedListingData | null>(null);
 
-  // Use the correct, final price from the wizard data.
-  const finalPrice = data.price_paid_chf ?? 0;
-
+  // Load listing data from sessionStorage on mount
   useEffect(() => {
-    if (hasMounted) {
-        confetti.launch();
+    if (hasMounted && typeof window !== 'undefined') {
+      const storedData = sessionStorage.getItem('completedListingData');
+      if (storedData) {
+        try {
+          const parsed = JSON.parse(storedData);
+          setListingData(parsed);
+          confetti.launch();
+        } catch (error) {
+          console.error('Failed to parse listing data:', error);
+        }
+      }
     }
   }, [hasMounted, confetti]);
 
-  const listingId = data.id;
-  const selectedPlan = data.price_plan as Plan;
-  const isPremium = data.premium;
-
-  // Get the base plan price
-  const basePlanPrice = selectedPlan && pricingPlans[selectedPlan] ? pricingPlans[selectedPlan].price : 0;
-
   const handleCreateNew = () => {
+    // Clear the stored data before navigating to create a new listing
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('completedListingData');
+    }
     router.push('/inserat-erstellen');
   };
 
-  if (!hasMounted) {
+  if (!hasMounted || !listingData) {
     return null; // or a loading skeleton
   }
+
+  const { id: listingId, price_plan: selectedPlan, premium: isPremium, price_paid_chf: finalPrice } = listingData;
+
+  // Get the base plan price
+  const basePlanPrice = selectedPlan && pricingPlans[selectedPlan] ? pricingPlans[selectedPlan].price : 0;
 
   return (
     <div className="max-w-2xl mx-auto text-center py-12 px-4">
@@ -124,26 +139,40 @@ export default function SuccessScreen() {
               </div>
             </div>
             
-            <div className="mt-6">
-              <Link href={`/fahrzeug/${listingId}`} passHref legacyBehavior>
-                <a target="_blank" rel="noopener noreferrer" className="w-full">
-                  <Button variant="outline" className="w-full">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Inserat ansehen
-                  </Button>
-                </a>
-              </Link>
+            <div className="mt-6 space-y-3">
+              <Button
+                onClick={() => {
+                  // Navigate to dashboard listings section to see the new listing
+                  if (typeof window !== 'undefined') {
+                    // Also clear storage so we don't see this success page again
+                    sessionStorage.removeItem('completedListingData');
+                    window.location.href = `/dashboard?section=listings`;
+                  }
+                }}
+                className="w-full bg-neutral-900 hover:bg-neutral-800"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Inserat ansehen
+              </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
       <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
-        <Link href="/dashboard" passHref>
-          <Button className="w-full sm:w-auto bg-red-500 hover:bg-red-600">
-            Zum Dashboard
-          </Button>
-        </Link>
+        <Button 
+          className="w-full sm:w-auto bg-red-500 hover:bg-red-600"
+          onClick={() => {
+            // Clear sessionStorage before navigating
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('completedListingData');
+              // Force a full page reload to refresh dashboard state
+              window.location.href = '/dashboard';
+            }
+          }}
+        >
+          Zum Dashboard
+        </Button>
         <Button 
           variant="secondary"
           className="w-full sm:w-auto"

@@ -1,20 +1,10 @@
-import { useEffect, useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Edit, 
-  Trash2, 
-  Calendar, 
-  Crown, 
-  MapPin,
-  Clock,
-  DollarSign,
-  MoreHorizontal,
-  AlertTriangle
-} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,95 +22,71 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle } from "lucide-react";
+import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserListings, deleteListing, upgradeToPremium, extendListing, DashboardListing } from "@/services/dashboardService";
 import StatusBadge from "./StatusBadge";
+import { getUserListings } from "@/services/listingsService";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ListingsSection() {
-  const [listings, setListings] = useState<DashboardListing[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const { user } = useAuth();
+  const [listings, setListings] = useState<ListingDetail[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const { user } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
-    const loadListings = async () => {
-      try {
-        const userListings = await getUserListings();
-        setListings(userListings);
-      } catch (error) {
-        console.error('Error loading listings:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (user) {
-      loadListings();
+    if(user) {
+      loadUserListings();
     }
   }, [user]);
 
+  const loadUserListings = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const data = await getUserListings();
+      setListings(data);
+    } catch (error) {
+      console.error("Error loading user listings:", error);
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (listingId: string) => {
+    setActionLoading(listingId);
+    try {
+      const { error } = await supabase.from('listings').delete().eq('id', listingId);
+      if (error) throw error;
+      setListings(prev => prev.filter(l => l.id !== listingId));
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      alert("Fehler beim Löschen des Inserats.");
+    } finally {
+      setActionLoading(null);
+      setListingToDelete(null);
+    }
+  };
+  
   const handleEdit = (listingId: string) => {
     router.push(`/inserat-erstellen?edit=${listingId}`);
   };
 
-  const handleDelete = async (listingId: string) => {
-    try {
-      setActionLoading(listingId);
-      await deleteListing(listingId);
-      setListings(listings.filter(l => l.id !== listingId));
-      setDeleteDialogOpen(false);
-      setListingToDelete(null);
-    } catch (error) {
-      console.error('Error deleting listing:', error);
-      alert('Fehler beim Löschen des Inserats');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const handleUpgrade = async (listingId: string) => {
-    try {
-      setActionLoading(listingId);
-      // In a real app, this would open Stripe checkout
-      // For now, we'll just call the service
-      await upgradeToPremium(listingId);
-      
-      // Update the listing in state
-      setListings(listings.map(l => 
-        l.id === listingId 
-          ? { ...l, premium: true, is_premium: true }
-          : l
-      ));
-      
-      alert('Inserat erfolgreich auf Premium upgegradet!');
-    } catch (error) {
-      console.error('Error upgrading listing:', error);
-      alert('Fehler beim Premium-Upgrade');
-    } finally {
-      setActionLoading(null);
-    }
+    console.log(`Placeholder: Upgrading listing ${listingId}`);
+    // In a real app, this would open Stripe checkout
   };
-
+  
   const handleExtend = async (listingId: string) => {
-    try {
-      setActionLoading(listingId);
-      // In a real app, this would open Stripe checkout
-      await extendListing(listingId, 90);
-      
-      // Reload listings to get updated expiry dates
-      const updatedListings = await getUserListings();
-      setListings(updatedListings);
-      
-      alert('Inserat erfolgreich um 90 Tage verlängert!');
-    } catch (error) {
-      console.error('Error extending listing:', error);
-      alert('Fehler beim Verlängern des Inserats');
-    } finally {
-      setActionLoading(null);
-    }
+    console.log(`Placeholder: Extending listing ${listingId}`);
+    // In a real app, this would open Stripe checkout
   };
 
   const formatPrice = (price: number) => {
@@ -136,43 +102,31 @@ export default function ListingsSection() {
     return new Date(dateString).toLocaleDateString('de-CH');
   };
 
-  const isPremium = (listing: DashboardListing) => {
+  const isPremium = (listing: ListingDetail) => {
     if (!listing.premium && !listing.is_premium) return false;
     if (!listing.premium_until) return true;
     return new Date(listing.premium_until) > new Date();
   };
 
-  const isExpired = (listing: DashboardListing) => {
+  const isExpired = (listing: ListingDetail) => {
     if (listing.status === 'expired') return true;
     if (!listing.expires_at) return false;
     return new Date(listing.expires_at) <= new Date();
   };
 
-  const getPlanBadge = (listing: DashboardListing) => {
-    // ✅ FIXED: Use the actual price_plan from the database
+  const getPlanBadge = (listing: ListingDetail) => {
     if (listing.price_plan) {
-      // Map plan values to display names
       const planNames: { [key: string]: string } = {
         'standard': 'Standard',
         'extended': 'Verlängert',
         'unlimited': 'Unlimitiert',
-        // Legacy plan mappings
-        'free30': 'Gratis 30T',
-        'premium30': 'Premium 30T',
-        'paid90': 'Bezahlt 90T',
       };
-      
       return planNames[listing.price_plan] || listing.price_plan;
     }
-    
-    // Fallback logic for old listings without price_plan
-    if (isPremium(listing)) return "Premium 30T";
-    if (listing.duration_days === null) return "Unlimitiert";
-    if (listing.duration_days >= 90) return "90 Tage";
-    return "Gratis 30T";
+    return "N/A";
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -212,6 +166,7 @@ export default function ListingsSection() {
           onClick={() => router.push('/inserat-erstellen')}
           className="bg-red-500 hover:bg-red-600 text-white"
         >
+          <Plus className="mr-2 h-4 w-4" />
           Neues Inserat erstellen
         </Button>
       </div>
@@ -253,7 +208,6 @@ export default function ListingsSection() {
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row gap-6">
-                    {/* Image */}
                     <div className="relative">
                       {coverImage ? (
                         <div className="w-full lg:w-32 h-48 lg:h-24 relative rounded-lg overflow-hidden">
@@ -276,12 +230,11 @@ export default function ListingsSection() {
                       )}
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                            {listing.brand} {listing.model} {listing.year}
+                          <h3 className="text-lg font-semibold text-neutral-900 mb-2 truncate">
+                            {listing.brand} {listing.model} ({listing.year})
                           </h3>
                           <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 mb-3">
                             <div className="flex items-center gap-1">
@@ -306,13 +259,14 @@ export default function ListingsSection() {
                           </div>
                         </div>
 
-                        {/* Actions */}
                         <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}>
+                            <Eye className="w-4 h-4 mr-2" /> Vorschau
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleEdit(listing.id)}
-                            className="bg-transparent hover:bg-neutral-50"
                           >
                             <Edit className="w-4 h-4 mr-2" />
                             Bearbeiten
@@ -320,7 +274,7 @@ export default function ListingsSection() {
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" className="bg-transparent hover:bg-neutral-50">
+                              <Button variant="ghost" size="icon">
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -367,7 +321,6 @@ export default function ListingsSection() {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -382,9 +335,9 @@ export default function ListingsSection() {
             <AlertDialogAction
               onClick={() => listingToDelete && handleDelete(listingToDelete)}
               className="bg-red-500 hover:bg-red-600"
-              disabled={actionLoading !== null}
+              disabled={actionLoading === listingToDelete}
             >
-              {actionLoading ? 'Wird gelöscht...' : 'Löschen'}
+              {actionLoading === listingToDelete ? 'Wird gelöscht...' : 'Löschen'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

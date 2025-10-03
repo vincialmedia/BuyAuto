@@ -52,6 +52,16 @@ export default function Step5_Preview() {
   ];
 
   const handleFinish = () => {
+    // Store the listing data in sessionStorage before completing
+    // This ensures SuccessScreen can access it even if context is lost
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('completedListingData', JSON.stringify({
+        id: data.id,
+        price_plan: data.price_plan,
+        premium: data.premium,
+        price_paid_chf: total, // Store the calculated total
+      }));
+    }
     setIsComplete(true);
   };
 
