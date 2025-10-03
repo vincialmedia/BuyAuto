@@ -5,9 +5,9 @@ import Step1_VehicleData from "./Step1_VehicleData";
 import Step2_LeasingDetails from "./Step2_LeasingDetails";
 import Step3_PlanSelection from "./Step3_PlanSelection";
 import { Step4_Images } from "./Step4_Images";
-import Step5_Preview from "./Step5_Preview";
+import Step5_PreviewAndPay from "./Step5_PreviewAndPay";
 import SuccessScreen from "./SuccessScreen";
-import { ListingData } from "@/lib/buyauto/types"; // Use the shared ListingData type
+import { ListingData } from "@/lib/buyauto/types";
 
 interface WizardContextType {
   data: ListingData;
@@ -35,7 +35,7 @@ export default function ListingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
   const [data, setData] = useState<ListingData>({
-    id: undefined, // ✅ CRITICAL FIX: Add missing listing ID field
+    id: undefined,
     brand: "",
     model: "",
     year: new Date().getFullYear(),
@@ -48,7 +48,7 @@ export default function ListingWizard() {
     deposit_chf: 0,
     location: "",
     price_plan: "standard",
-    premium: false, // Corrected from is_premium to premium
+    premium: false,
     duration_days: 30,
     plan_price: 0,
     images: [],
@@ -64,18 +64,15 @@ export default function ListingWizard() {
       console.log("🔍 New data after update:", newData);
       return newData;
     });
-  }, []); // ✅ FIXED: Empty dependency array to prevent callback recreation
+  }, []);
 
   const getMaxPhotos = useCallback(() => {
-    // Free plan gets 5 photos, paid plans get 15 photos
     if (data.price_plan === 'standard') {
       return 5;
     }
-    // Extended, Unlimited plans get 15 photos
     if (data.price_plan === 'extended' || data.price_plan === 'unlimited') {
       return 15;
     }
-    // Default to 5 if no plan selected yet
     return 5;
   }, [data.price_plan]);
 
@@ -111,7 +108,6 @@ export default function ListingWizard() {
     <WizardContext.Provider value={contextValue}>
       <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-8">
-          {/* Swiss minimalist header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-light text-neutral-900 mb-3 tracking-tight">
               Inserat erstellen
@@ -130,7 +126,7 @@ export default function ListingWizard() {
                 {currentStep === 2 && <Step2_LeasingDetails />}
                 {currentStep === 3 && <Step3_PlanSelection />}
                 {currentStep === 4 && <Step4_Images />}
-                {currentStep === 5 && <Step5_Preview />}
+                {currentStep === 5 && <Step5_PreviewAndPay />}
               </div>
             </Card>
           </div>
