@@ -219,6 +219,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                       {formatPrice(listing.pricePerMonthCHF)}
                     </div>
                     <p className="text-neutral-600">pro Monat</p>
+                    <p className="text-sm text-neutral-600 mt-2">
+                      {(listing.depositCHF && listing.depositCHF > 0)
+                        ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`
+                        : "Keine Kaution"}
+                    </p>
                   </div>
 
                   <div className="space-y-4 mb-6">
@@ -240,20 +245,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                   </div>
                 </CardContent>
               </Card>
-
-              {listing.depositCHF && listing.depositCHF > 0 && (
-                <Card className="border-neutral-200/60 shadow-sm bg-white">
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-neutral-900 mb-4">Kaution</h3>
-                    <div className="text-center py-4">
-                      <div className="text-3xl font-bold text-neutral-900">
-                        {formatPrice(listing.depositCHF)}
-                      </div>
-                      <p className="text-sm text-neutral-600 mt-2">Einmalige Kaution</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {listing.premium && (
                 <Card className="border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-white shadow-sm">

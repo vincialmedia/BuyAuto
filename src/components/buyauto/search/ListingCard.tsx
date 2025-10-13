@@ -149,11 +149,6 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
                 <Clock className="w-3 h-3 mr-1" />
                 {listing.remainingMonths} Mon.
               </Badge>
-              {listing.depositCHF === null && (
-                <Badge className="bg-green-100 text-green-800 text-xs">
-                  Keine Kaution
-                </Badge>
-              )}
             </div>
           </div>
 
@@ -166,11 +161,11 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
               <div className="text-sm text-neutral-600">
                 pro Monat
               </div>
-              {listing.depositCHF && (
-                <div className="text-xs text-neutral-500">
-                  + {formatPrice(listing.depositCHF)} Kaution
-                </div>
-              )}
+              <div className="text-xs text-neutral-500 mt-1">
+                {(listing.depositCHF && listing.depositCHF > 0)
+                  ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`
+                  : "Keine Kaution"}
+              </div>
             </div>
 
             <div className="flex gap-2 mt-4">

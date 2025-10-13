@@ -190,6 +190,11 @@ export default function PremiumListings() {
                             {formatPrice(listing.pricePerMonthCHF)}
                           </div>
                           <div className="text-sm text-neutral-500">/ Monat</div>
+                          <div className="text-xs text-neutral-500 mt-1">
+                            {(listing.depositCHF && listing.depositCHF > 0)
+                              ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`
+                              : "Keine Kaution"}
+                          </div>
                         </div>
                       </div>
                       
