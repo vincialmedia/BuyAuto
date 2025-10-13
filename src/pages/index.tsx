@@ -4,11 +4,14 @@ import BenefitsSection from "@/components/buyauto/BenefitsSection";
 import HowItWorksSection from "@/components/buyauto/HowItWorksSection";
 import TrustSection from "@/components/buyauto/TrustSection";
 import FAQSection from "@/components/buyauto/FAQSection";
-import { getTotalListingsCount } from "@/lib/buyauto/data";
+import { getPublishedListingsCount } from "@/services/listingsService";
+import { GetStaticProps } from "next";
 
-export default function HomePage() {
-  const totalListings = getTotalListingsCount();
+interface HomePageProps {
+  totalListings: number;
+}
 
+export default function HomePage({ totalListings }: HomePageProps) {
   return (
     <>
       <HeroSection totalListings={totalListings} />
@@ -20,3 +23,13 @@ export default function HomePage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
+  const totalListings = await getPublishedListingsCount();
+  return {
+    props: {
+      totalListings,
+    },
+    revalidate: 60, // Re-generate the page every 60 seconds
+  };
+};

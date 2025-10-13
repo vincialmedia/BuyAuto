@@ -2,13 +2,12 @@ import { GetServerSideProps } from "next";
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { ArrowLeft, MapPin, Calendar, Settings, Fuel, Users, Shield, Award, Phone, Mail, MessageCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Settings, Fuel, Users, Award, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
-import TrustBadges from "@/components/buyauto/detail/TrustBadges";
 import InquiryForm from "@/components/buyauto/detail/InquiryForm";
 import SimilarListings from "@/components/buyauto/detail/SimilarListings";
 
@@ -24,20 +23,18 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   const router = useRouter();
   const { id } = router.query;
 
-  // Client-side fetch if SSR failed
   useEffect(() => {
-    if (!listing && !notFound && id && typeof id === 'string') {
+    if (!listing && !notFound && id && typeof id === "string") {
       const fetchListing = async () => {
         setIsLoading(true);
         try {
-          // If it's a preview, we need to fetch from the user-specific endpoint
-          const isPreview = router.query.preview === 'true';
+          const isPreview = router.query.preview === "true";
           const fetchedListing = isPreview
             ? await getUserListingById(id)
             : await getPublishedListingById(id);
           setListing(fetchedListing);
         } catch (error) {
-          console.error('Error fetching listing:', error);
+          console.error("Error fetching listing:", error);
         } finally {
           setIsLoading(false);
         }
@@ -45,7 +42,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
       fetchListing();
     }
-  }, [id, listing, notFound]);
+  }, [id, listing, notFound, router.query.preview]);
 
   if (notFound) {
     return (
@@ -55,7 +52,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
           <p className="text-neutral-600 mb-6">
             Das gewünschte Inserat existiert nicht oder ist nicht mehr verfügbar.
           </p>
-          <Button onClick={() => router.push('/suche')} className="bg-red-500 hover:bg-red-600 text-white">
+          <Button onClick={() => router.push("/suche")} className="bg-red-500 hover:bg-red-600 text-white">
             Zurück zur Suche
           </Button>
         </div>
@@ -84,15 +81,15 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('de-CH', {
-      style: 'currency',
-      currency: 'CHF',
+    return new Intl.NumberFormat("de-CH", {
+      style: "currency",
+      currency: "CHF",
       minimumFractionDigits: 0
     }).format(price);
   };
 
   const formatMileage = (km: number) => {
-    return new Intl.NumberFormat('de-CH').format(km);
+    return new Intl.NumberFormat("de-CH").format(km);
   };
 
   const getFuelIcon = (fuel: string) => {
@@ -104,7 +101,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   };
 
   const images = listing.images && listing.images.length > 0 ? listing.images : [];
-  const hasImages = images.length > 0;
 
   return (
     <>
@@ -117,7 +113,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
       </Head>
 
       <div className="min-h-screen bg-neutral-50">
-        {/* Header */}
         <div className="bg-white border-b border-neutral-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -136,12 +131,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Images and Details */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Image Gallery */}
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden">
                 <ImageGallery 
                   images={images}
@@ -151,7 +143,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                 />
               </div>
 
-              {/* Vehicle Details */}
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
                 <h2 className="text-2xl font-bold text-neutral-900 mb-6">Fahrzeugdetails</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
@@ -211,14 +202,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                   </div>
                 </div>
               </div>
-
-              {/* Trust Section */}
-              <TrustBadges />
             </div>
 
-            {/* Right Column - Pricing and Contact */}
             <div className="space-y-6">
-              {/* Pricing Card */}
               <Card className="border-neutral-200/60 shadow-sm bg-white">
                 <CardContent className="p-8">
                   <div className="text-center mb-6">
@@ -240,12 +226,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                       <span className="text-neutral-600">Restlaufzeit</span>
                       <span className="font-semibold">{listing.remainingMonths} Monate</span>
                     </div>
-                    {listing.depositCHF && (
-                      <div className="flex justify-between items-center py-2 border-b border-neutral-100">
-                        <span className="text-neutral-600">Kaution</span>
-                        <span className="font-semibold">{formatPrice(listing.depositCHF)}</span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="space-y-3">
@@ -257,24 +237,24 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                       <MessageCircle className="w-5 h-5 mr-2" />
                       Jetzt anfragen
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="w-full bg-transparent hover:bg-neutral-50 border-neutral-300"
-                      onClick={() => {
-                        const subject = encodeURIComponent(`Interesse an ${listing.brand} ${listing.model} ${listing.year}`);
-                        const body = encodeURIComponent(`Hallo,\n\nIch interessiere mich für das Fahrzeug:\n\n${listing.brand} ${listing.model} ${listing.year}\nPreis: ${formatPrice(listing.pricePerMonthCHF)}/Monat\nInserat-ID: ${listing.id}\n\nBitte kontaktieren Sie mich für weitere Informationen.\n\nFreundliche Grüße`);
-                        window.location.href = `mailto:kontakt@buyauto.ch?subject=${subject}&body=${body}`;
-                      }}
-                    >
-                      <Mail className="w-5 h-5 mr-2" />
-                      E-Mail senden
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Premium Badge */}
+              {listing.depositCHF && listing.depositCHF > 0 && (
+                <Card className="border-neutral-200/60 shadow-sm bg-white">
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-4">Kaution</h3>
+                    <div className="text-center py-4">
+                      <div className="text-3xl font-bold text-neutral-900">
+                        {formatPrice(listing.depositCHF)}
+                      </div>
+                      <p className="text-sm text-neutral-600 mt-2">Einmalige Kaution</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {listing.premium && (
                 <Card className="border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-white shadow-sm">
                   <CardContent className="p-6">
@@ -291,37 +271,14 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                   </CardContent>
                 </Card>
               )}
-
-              {/* Contact Info */}
-              <Card className="border-neutral-200/60 shadow-sm bg-white">
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Kontakt & Support</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-neutral-600" />
-                      <span className="text-sm text-neutral-600">+41 44 123 45 67</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-4 h-4 text-neutral-600" />
-                      <span className="text-sm text-neutral-600">kontakt@buyauto.ch</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Shield className="w-4 h-4 text-neutral-600" />
-                      <span className="text-sm text-neutral-600">Sicher & Vertrauenswürdig</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
 
-          {/* Similar Listings */}
           <div className="mt-16">
             <SimilarListings listing={listing} />
           </div>
         </div>
 
-        {/* Inquiry Form Modal */}
         <InquiryForm
           listingId={listing.id}
           listingTitle={`${listing.brand} ${listing.model} ${listing.year}`}
@@ -337,18 +294,15 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
   const { id } = context.params!;
   const { preview } = context.query;
 
-  if (!id || typeof id !== 'string') {
+  if (!id || typeof id !== "string") {
     return { notFound: true };
   }
 
   try {
-    // If preview mode is active, we don't fetch server-side because we need the user's auth context
-    // The client-side useEffect will handle fetching.
-    if (preview === 'true') {
+    if (preview === "true") {
       return { props: { listing: null } };
     }
 
-    // Default: Fetch only published listings for public view
     const listing = await getPublishedListingById(id);
     
     if (!listing) {
@@ -357,7 +311,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
 
     return { props: { listing } };
   } catch (error) {
-    console.error('Error in getServerSideProps for [id].tsx:', error);
+    console.error("Error in getServerSideProps for [id].tsx:", error);
     return { props: { listing: null, notFound: true } };
   }
 };

@@ -431,3 +431,21 @@ export async function updateListingStatus(id: string, status: string, moderation
     return false;
   }
 }
+
+export async function getPublishedListingsCount(): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('public_listings')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) {
+      console.error('Error fetching published listings count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Get published listings count error:', error);
+    return 0;
+  }
+}
