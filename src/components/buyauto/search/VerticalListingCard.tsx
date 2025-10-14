@@ -96,6 +96,13 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
                 <div className="text-sm text-neutral-500 font-medium">
                   / Monat
                 </div>
+                {listing.depositCHF > 0 ? (
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Einmalige Kaution CHF {listing.depositCHF.toLocaleString()}
+                  </p>
+                ) : (
+                  <p className="text-xs text-neutral-500 mt-1">Keine Kaution</p>
+                )}
               </div>
 
               {/* CTA Button */}
