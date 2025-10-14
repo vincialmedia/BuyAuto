@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDashboardStats, DashboardStats } from "@/services/dashboardService";
-import DashboardHeader from "@/components/buyauto/dashboard/DashboardHeader";
 import UserDetailsSection from "@/components/buyauto/dashboard/UserDetailsSection";
 import ListingStatsSection from "@/components/buyauto/dashboard/ListingStatsSection";
 import ListingsSection from "@/components/buyauto/dashboard/ListingsSection";
@@ -84,8 +83,6 @@ export default function DashboardPage() {
       </Head>
 
       <div className="min-h-screen bg-neutral-50/50">
-        <DashboardHeader />
-        
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-8">
             {/* Welcome Banner */}
