@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -34,6 +34,19 @@ export default function SearchForm() {
   
   // State for UI
   const [expandedFilters, setExpandedFilters] = useState(false);
+  
+  // Reduced motion preference
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  // Check for reduced motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handleChange = () => setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   // Fetch brands on mount
   useEffect(() => {
@@ -65,6 +78,11 @@ export default function SearchForm() {
     setSelectedBrand(brand);
     setSelectedModel("");
   };
+
+  // Debounced price range handler for better performance
+  const handlePriceChange = useCallback((value: number[]) => {
+    setPriceRange(value);
+  }, []);
 
   // Dynamic gradient calculation based on price
   const calculateGradientOpacity = () => {
@@ -108,13 +126,22 @@ export default function SearchForm() {
     });
   };
 
+  const transitionClass = prefersReducedMotion ? "" : "transition-all duration-200";
+
   return (
-    <Card className="bg-white shadow-2xl shadow-neutral-900/20 border border-neutral-200/30 rounded-3xl p-6 md:p-8 max-w-4xl mx-auto">
+    <Card 
+      className="bg-white shadow-2xl shadow-neutral-900/20 border border-neutral-200/30 rounded-3xl p-6 md:p-8 max-w-4xl mx-auto"
+      role="search"
+      aria-label="Fahrzeugsuche Filter"
+    >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main filters in clean grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" role="group" aria-label="Hauptfilter">
           <Select value={selectedBrand} onValueChange={handleBrandChange} disabled={loadingBrands}>
-            <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+            <SelectTrigger 
+              className={`bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 ${transitionClass}`}
+              aria-label="Fahrzeugmarke auswählen"
+            >
               <SelectValue placeholder="Marke" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
@@ -127,7 +154,10 @@ export default function SearchForm() {
           </Select>
 
           <Select value={selectedModel} onValueChange={setSelectedModel} disabled={!selectedBrand || loadingModels}>
-            <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+            <SelectTrigger 
+              className={`bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 ${transitionClass}`}
+              aria-label="Fahrzeugmodell auswählen"
+            >
               <SelectValue placeholder="Modell" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
@@ -140,7 +170,10 @@ export default function SearchForm() {
           </Select>
 
           <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+            <SelectTrigger 
+              className={`bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 ${transitionClass}`}
+              aria-label="Baujahr auswählen"
+            >
               <SelectValue placeholder="Jahr" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
@@ -152,27 +185,30 @@ export default function SearchForm() {
           </Select>
 
           <Select value={selectedRestlaufzeit} onValueChange={setSelectedRestlaufzeit}>
-            <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+            <SelectTrigger 
+              className={`bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 ${transitionClass}`}
+              aria-label="Restlaufzeit auswählen"
+            >
               <SelectValue placeholder="Restlaufzeit" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
-              <SelectItem value="0-6" className="font-medium hover:underline hover:decoration-neutral-400 transition-all">≤ 6 Monate</SelectItem>
-              <SelectItem value="7-12" className="font-medium hover:underline hover:decoration-neutral-400 transition-all">7-12 Monate</SelectItem>
-              <SelectItem value="13-24" className="font-medium hover:underline hover:decoration-neutral-400 transition-all">13-24 Monate</SelectItem>
-              <SelectItem value="24+" className="font-medium hover:underline hover:decoration-neutral-400 transition-all">≥ 24 Monate</SelectItem>
+              <SelectItem value="0-6" className="font-medium">≤ 6 Monate</SelectItem>
+              <SelectItem value="7-12" className="font-medium">7-12 Monate</SelectItem>
+              <SelectItem value="13-24" className="font-medium">13-24 Monate</SelectItem>
+              <SelectItem value="24+" className="font-medium">≥ 24 Monate</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Dynamic Price Slider with Gradient Background */}
-        <div className="relative">
-          <label className="block text-sm font-semibold text-neutral-700 mb-4 tracking-wide">
+        <div className="relative" role="group" aria-label="Preisfilter">
+          <label htmlFor="price-slider" className="block text-sm font-semibold text-neutral-700 mb-4 tracking-wide">
             Maximaler Preis pro Monat: CHF {priceRange[0].toLocaleString("de-CH")}{priceRange[0] === 2000 ? '+' : ''}
           </label>
           
           {/* Dynamic gradient background behind slider */}
           <div 
-            className="absolute inset-x-0 top-12 h-2 rounded-full transition-all duration-500"
+            className={`absolute inset-x-0 top-12 h-2 rounded-full ${prefersReducedMotion ? "" : "transition-all duration-500"}`}
             style={{
               background: `linear-gradient(to right, 
                 rgb(163 163 163 / 0.3) 0%, 
@@ -180,20 +216,23 @@ export default function SearchForm() {
                 rgb(220 38 38 / ${calculateGradientOpacity()}) ${(priceRange[0] / 2000) * 100}%, 
                 rgb(163 163 163 / 0.1) 100%)`
             }}
+            aria-hidden="true"
           />
           
           <div className="relative pt-2">
             <Slider 
+              id="price-slider"
               value={priceRange} 
-              onValueChange={setPriceRange} 
+              onValueChange={handlePriceChange} 
               max={2000} 
               min={200} 
               step={50}
               className="w-full"
+              aria-label={`Maximaler Preis: CHF ${priceRange[0]}`}
             />
           </div>
           
-          <div className="flex justify-between text-xs font-medium text-neutral-500 mt-2">
+          <div className="flex justify-between text-xs font-medium text-neutral-500 mt-2" aria-hidden="true">
             <span>CHF 200</span>
             <span>CHF 2'000+</span>
           </div>
@@ -205,19 +244,24 @@ export default function SearchForm() {
             <Button 
               type="button" 
               variant="ghost" 
-              className="w-full justify-between text-neutral-700 hover:bg-neutral-100 h-11 rounded-xl font-medium border border-neutral-300"
+              className={`w-full justify-between text-neutral-700 hover:bg-neutral-100 h-11 rounded-xl font-medium border border-neutral-300 ${transitionClass}`}
+              aria-expanded={expandedFilters}
+              aria-controls="advanced-filters"
             >
               <span className="flex items-center gap-3">
-                <SlidersHorizontal className="h-4 w-4 text-neutral-500" />
+                <SlidersHorizontal className="h-4 w-4 text-neutral-500" aria-hidden="true" />
                 Erweiterte Filter
               </span>
-              <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform duration-200 ${expandedFilters ? "rotate-180" : ""}`} />
+              <ChevronDown className={`h-4 w-4 text-neutral-500 ${prefersReducedMotion ? "" : "transition-transform duration-200"} ${expandedFilters ? "rotate-180" : ""}`} aria-hidden="true" />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-6 pt-6">
+          <CollapsibleContent id="advanced-filters" className="space-y-6 pt-6" role="group" aria-label="Erweiterte Filter">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select value={selectedBody} onValueChange={setSelectedBody}>
-                <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+                <SelectTrigger 
+                  className={`bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 ${transitionClass}`}
+                  aria-label="Karosserie auswählen"
+                >
                   <SelectValue placeholder="Karosserie" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
@@ -229,7 +273,10 @@ export default function SearchForm() {
               </Select>
               
               <Select value={selectedFuel} onValueChange={setSelectedFuel}>
-                <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+                <SelectTrigger 
+                  className={`bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 ${transitionClass}`}
+                  aria-label="Antrieb auswählen"
+                >
                   <SelectValue placeholder="Antrieb" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
@@ -241,7 +288,10 @@ export default function SearchForm() {
               </Select>
               
               <Select value={selectedGearbox} onValueChange={setSelectedGearbox}>
-                <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+                <SelectTrigger 
+                  className={`bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 ${transitionClass}`}
+                  aria-label="Getriebe auswählen"
+                >
                   <SelectValue placeholder="Getriebe" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
@@ -257,9 +307,11 @@ export default function SearchForm() {
                 checked={noDeposit} 
                 onCheckedChange={(checked) => setNoDeposit(!!checked)}
                 className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                aria-describedby="no-deposit-desc"
               />
               <label htmlFor="no-deposit" className="text-sm font-medium text-neutral-700 cursor-pointer">
                 Keine Kaution
+                <span id="no-deposit-desc" className="sr-only">Filter für Fahrzeuge ohne erforderliche Kaution</span>
               </label>
             </div>
           </CollapsibleContent>
@@ -268,9 +320,10 @@ export default function SearchForm() {
         {/* Submit Button - more compact */}
         <Button 
           type="submit" 
-          className="w-full bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-semibold text-base shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5"
+          className={`w-full bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-semibold text-base shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/25 ${transitionClass} hover:-translate-y-0.5`}
+          aria-label="Suche starten"
         >
-          <Search className="h-4 w-4 mr-3" />
+          <Search className="h-4 w-4 mr-3" aria-hidden="true" />
           Fahrzeug finden
         </Button>
       </form>
