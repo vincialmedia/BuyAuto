@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const testimonials = [
   {
@@ -22,11 +23,24 @@ const testimonials = [
 ];
 
 export function TestimonialsSection() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handleChange = () => setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  const transitionClass = prefersReducedMotion ? "" : "transition-all duration-300";
+
   return (
-    <section className="py-16 md:py-24 bg-neutral-50">
+    <section className="py-16 md:py-24 bg-neutral-50" aria-labelledby="testimonials-heading">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
+          <h2 id="testimonials-heading" className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
             Was unsere Nutzer sagen
           </h2>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
@@ -34,14 +48,15 @@ export function TestimonialsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8" role="list" aria-label="Kundenbewertungen">
           {testimonials.map((testimonial, index) => (
-            <div
+            <article
               key={index}
-              className="bg-white rounded-2xl p-6 md:p-8 shadow-lg shadow-neutral-900/5 border border-neutral-200/50 hover:shadow-xl hover:shadow-neutral-900/10 transition-all duration-300"
+              className={`bg-white rounded-2xl p-6 md:p-8 shadow-lg shadow-neutral-900/5 border border-neutral-200/50 ${transitionClass} ${prefersReducedMotion ? "" : "hover:shadow-xl hover:shadow-neutral-900/10 hover:-translate-y-1"}`}
+              role="listitem"
             >
               {/* Rating Stars */}
-              <div className="flex items-center gap-1 mb-4">
+              <div className="flex items-center gap-1 mb-4" role="img" aria-label={`Bewertung: ${testimonial.rating} von 5 Sternen`}>
                 {Array.from({ length: testimonial.rating }).map((_, i) => (
                   <Star
                     key={i}
@@ -58,7 +73,10 @@ export function TestimonialsSection() {
 
               {/* Author */}
               <div className="flex items-center gap-3 pt-4 border-t border-neutral-200">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-semibold text-sm">
+                <div 
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-semibold text-sm"
+                  aria-hidden="true"
+                >
                   {testimonial.author.charAt(0)}
                 </div>
                 <div>
@@ -70,7 +88,7 @@ export function TestimonialsSection() {
                   </p>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </div>
