@@ -1,4 +1,4 @@
-import { SearchForm } from "@/components/buyauto/SearchForm";
+import SearchForm from "@/components/buyauto/SearchForm";
 import { Button } from "@/components/ui/button";
 import { Shield, Zap, TrendingDown, MapPin } from "lucide-react";
 import Link from "next/link";

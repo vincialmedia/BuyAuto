@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { NewHeroSection } from "@/components/buyauto/homepage/NewHeroSection";
-import { PremiumListings } from "@/components/buyauto/PremiumListings";
+import PremiumListings from "@/components/buyauto/PremiumListings";
 import { WhyBuyAutoSection } from "@/components/buyauto/homepage/WhyBuyAutoSection";
 import { HowItWorksRedesignedSection } from "@/components/buyauto/homepage/HowItWorksRedesignedSection";
 import { TestimonialsSection } from "@/components/buyauto/homepage/TestimonialsSection";
