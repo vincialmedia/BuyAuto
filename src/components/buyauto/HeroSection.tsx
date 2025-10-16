@@ -1,4 +1,5 @@
 import SearchForm from "./SearchForm";
+import Image from "next/image";
 
 interface HeroSectionProps {
   totalListings: number;
@@ -7,13 +8,17 @@ interface HeroSectionProps {
 export default function HeroSection({ totalListings }: HeroSectionProps) {
   return (
     <section className="relative min-h-[550px] md:min-h-[600px] flex flex-col justify-between overflow-hidden pt-16">
-      {/* Background Image with Refined Overlay */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1920&h=1080&fit=crop&crop=center')`
-        }}
-      >
+      {/* Background Image with Next.js Image - Mobile Optimized */}
+      <div className="absolute inset-0">
+        <Image
+          src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1920&h=1080&fit=crop&crop=center"
+          alt="Premium car background"
+          fill
+          priority
+          className="object-cover"
+          sizes="100vw"
+          quality={85}
+        />
         {/* Swiss minimalist gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/75 via-neutral-900/60 to-neutral-900/85" />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-900/10 to-transparent" />

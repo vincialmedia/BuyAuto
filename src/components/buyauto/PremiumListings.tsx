@@ -144,7 +144,7 @@ export default function PremiumListings() {
 
           {/* Listings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {visibleListings.map((listing) => (
+            {visibleListings.map((listing, index) => (
               <Link key={listing.id} href={`/fahrzeug/${listing.id}`}>
                 <Card className="group cursor-pointer border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-500 hover:-translate-y-2 ring-2 ring-amber-200/20">
                   <CardContent className="p-0 relative overflow-hidden">
@@ -165,6 +165,8 @@ export default function PremiumListings() {
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-700"
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          priority={currentIndex === 0 && index < 3}
+                          quality={80}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">

@@ -1,73 +1,78 @@
-# Homepage Redesign & SEO Enhancement Plan
+# Mobile Performance Optimization Plan
 
-This document outlines the strategy for redesigning the BuyAuto.ch homepage to be more sleek, user-friendly, and optimized for search engines, as per the user's request.
+This document outlines the strategic plan to improve the mobile PageSpeed/Lighthouse performance score to 90+ for the BuyAuto project. All optimizations are targeted exclusively for mobile devices, ensuring the desktop experience remains unchanged.
 
-## 1. Project Goals
+## 1. Image Optimization (LCP &amp; CLS)
 
-- **Design:** Modernize the homepage with a sleeker hero section, anchored search bar, and prominent Unique Selling Propositions (USPs), while maintaining the brand's color scheme.
-- **User Experience:** Improve mobile-friendliness and overall UX.
-- **Performance:** Ensure fast load times, primarily through image optimization.
-- **SEO:** Enhance on-page SEO with updated meta tags and a dedicated SEO content block.
-- **Integrity:** Do not alter the "Premium Inserate" section.
+**Problem:** Large, unoptimized images are likely slowing down the Largest Contentful Paint (LCP) and causing Cumulative Layout Shift (CLS) on mobile devices.
 
-## 2. File Modification & Creation Strategy
+**Strategy:** We will replace standard `<img>` tags with Next.js's `<Image>` component for all primary listing and hero images. This provides automatic responsive sizing, modern format conversion (WebP/AVIF), and lazy loading. We will also assign explicit `width`, `height`, and `priority` props to prevent layout shifts and prioritize critical above-the-fold images.
 
-The following files will be modified or created:
+**Target Files &amp; Actions:**
 
-- **Modified:**
-  - `src/pages/index.tsx`: To integrate new components and add `next/head` for SEO tags.
-  - `src/components/buyauto/HeroSection.tsx`: To restructure the layout, anchor the search form, and reduce height.
-  - `src/pages/_app.tsx`: To add the canonical link globally or on the homepage.
-- **Created:**
-  - `src/components/buyauto/UspBar.tsx`: A new component to display trust-building USPs.
-  - `src/components/buyauto/SeoCopyBlock.tsx`: A new component for the "Über BuyAuto.ch" SEO text.
+*   **Homepage Hero Image:**
+    *   **File:** `src/components/buyauto/HeroSection.tsx`
+    *   **Action:** Modify the hero background image implementation to use `<Image>` with `priority={true}`, `fill={true}`, and `sizes="100vw"` to ensure it loads quickly and is optimized for mobile screens.
 
-## 3. Phased Implementation Plan
+*   **Listing Card Images:**
+    *   **Files:**
+        *   `src/components/buyauto/search/ListingCard.tsx`
+        *   `src/components/buyauto/search/VerticalListingCard.tsx`
+        *   `src/components/buyauto/PremiumListings.tsx` (which uses a listing card component)
+    *   **Action:** Convert the `<img>` tag to a `<Image>` component. Set fixed `width` and `height` props to match the design and prevent CLS. For the first few images visible on initial load (e.g., in `PremiumListings` and the first results on `suche.tsx`), we will add the `priority` prop.
 
-### Phase 1: Core SEO Enhancements
+*   **Vehicle Detail Page Gallery:**
+    *   **File:** `src/components/buyauto/detail/ImageGallery.tsx`
+    *   **Action:** Update the image gallery to use `<Image>`. The main, visible image will be given `priority={true}`. Thumbnails will be lazy-loaded.
 
-1.  **Update Head Tags (`src/pages/index.tsx`):**
-    -   Use `next/head` to implement the new SEO metadata.
-    -   **Title:** `<title>Auto Leasing Übernehmen oder Verkaufen in der Schweiz | BuyAuto.ch</title>`
-    -   **Meta Description:** `<meta name="description" content="Finde dein nächstes Auto-Leasing oder verkaufe deines einfach und sicher. BuyAuto.ch ist die Plattform für Leasingübernahmen in der Schweiz – transparent, schnell und ohne Stress.">`
-    -   **Canonical Tag:** A canonical link pointing to the root domain (`https://www.buyauto.ch/`) will be added to the homepage to prevent duplicate content issues.
+## 2. JavaScript &amp; Component Loading (INP &amp; TBT)
 
-2.  **Create SEO Copy Block (`src/components/buyauto/SeoCopyBlock.tsx`):**
-    -   Create a new component to house the SEO-focused text.
-    -   It will contain an `H2` heading: "Über BuyAuto.ch".
-    -   It will include 400-600 words of well-written, keyword-rich German text covering the specified topics (leasing takeover, secure process, benefits).
-    -   This component will be designed to be clean and readable, possibly in an expandable section if it feels too long for a static display.
+**Problem:** A large initial JavaScript bundle increases Total Blocking Time (TBT) and negatively impacts the Interaction to Next Paint (INP), making the page feel sluggish on mobile.
 
-3.  **Integrate SEO Block (`src/pages/index.tsx`):**
-    -   Import and add the `SeoCopyBlock` component at the bottom of the homepage, just before the `Footer`.
+**Strategy:** We will use `next/dynamic` to code-split and lazy-load components that are not critical for the initial mobile view. This includes modals, filter sidebars, and sections of the page that are below the fold.
 
-### Phase 2: Design & Layout Redesign
+**Target Files &amp; Actions:**
 
-1.  **Redesign Hero Section (`src/components/buyauto/HeroSection.tsx`):**
-    -   **Reduce Height:** Change the `h-[70vh]` class to a smaller value (e.g., `h-[60vh]` or a fixed height like `min-h-[550px]`) to make it thinner.
-    -   **Anchor Search Form:** Restructure the component's layout. The text content will be centered in the top portion of the hero, and the `SearchForm` component will be moved to the bottom, positioned to slightly overlap the end of the section for a modern, anchored look. This will be achieved using Flexbox and/or absolute positioning.
-    -   **Mobile Responsiveness:** Ensure the new layout adapts seamlessly to mobile screens. The search form will stack neatly below the title on smaller devices.
+*   **Mobile Filter Sheet:**
+    *   **File:** `src/components/buyauto/search/DynamicFilterBar.tsx`
+    *   **Action:** The component rendered inside the mobile `<Sheet>` (likely the `FacetPanel` or similar) will be dynamically imported. It will only be loaded into the browser when the user clicks the "Filter" button.
 
-2.  **Create USP Bar (`src/components/buyauto/UspBar.tsx`):**
-    -   Create a new, simple component to display USPs.
-    -   It will feature icons and short text for points like "✓ Swiss Data Hosting" and "✓ Sichere Bezahlung (Stripe)".
-    -   This component will be styled to be sleek and will be placed directly below the redesigned hero section to build trust immediately.
+*   **Detail Page Inquiry Form:**
+    *   **File:** `src/pages/fahrzeug/[id].tsx`
+    *   **Action:** The `InquiryForm` component will be dynamically imported. It can be loaded when it becomes visible in the viewport or when the user interacts with a CTA.
 
-3.  **Integrate USP Bar (`src/pages/index.tsx`):**
-    -   Import and add the new `UspBar` component between the `HeroSection` and `PremiumListings` sections.
+*   **Below-the-Fold Homepage Sections:**
+    *   **File:** `src/pages/index.tsx`
+    *   **Action:** Dynamically import sections that are not visible on the initial mobile screen load, such as `FAQSection` and `TrustSection`.
 
-### Phase 3: Performance & Linking Audit
+## 3. Font Optimization
 
-1.  **Image Performance:**
-    -   The `PremiumListings` component already uses `next/image`, which provides automatic lazy loading. This is excellent.
-    -   The hero section uses a CSS `background-image`. While this is standard, we will ensure the image is optimized for the web. We won't switch to `next/image` for the background as it adds complexity, but we will ensure the file size is reasonable.
-    -   Any new images introduced will strictly use the `next/image` component.
+**Problem:** Web fonts can block text rendering, causing a flash of invisible text (FOIT) and contributing to a poor user experience.
 
-2.  **Internal Link Audit:**
-    -   A review of all major Call-to-Action (CTA) buttons on the homepage (e.g., in the Header, Footer, and new sections) will be conducted during implementation.
-    -   We will ensure all links use the Next.js `<Link>` component, which renders a crawlable `<a>` tag.
-    -   Links will point to the correct, existing routes, such as `/suche` for finding vehicles and `/inserat-erstellen` for creating a listing.
+**Strategy:** We will migrate from the current CSS-based font loading to the `next/font` system. This modern approach automatically optimizes font delivery, self-hosts the fonts, and applies `font-display: swap` to ensure text is always visible during load.
 
----
+**Target Files &amp; Actions:**
 
-This plan provides a clear path forward. Once you approve, we can switch to **Creative Mode** to begin implementation.
+*   **Global Font Loading:**
+    *   **File:** `src/pages/_app.tsx`
+    *   **Action:**
+        1.  Define local fonts using `next/font/local`, pointing to the font files in `src/pages/fonts/`.
+        2.  Create a CSS variable for the font family.
+        3.  Apply this variable to the global stylesheet or the main layout component to replace the existing `@font-face` declarations.
+    *   **File:** `src/styles/globals.css`
+    *   **Action:** Remove the old `@font-face` rules once `next/font` is implemented.
+
+## 4. Resource Prioritization &amp; Delivery
+
+**Problem:** The browser may not know which resources are critical for the initial mobile render, leading to inefficient loading sequences.
+
+**Strategy:** We will provide hints to the browser using `preconnect` for critical third-party domains (like Supabase for images) and ensure that modern compression (Brotli/Gzip) is active via Vercel's default configuration.
+
+**Target Files &amp; Actions:**
+
+*   **Establish Early Connections:**
+    *   **File:** `src/pages/_document.tsx`
+    *   **Action:** Add a `<link rel="preconnect">` tag to the `<Head>` for the Supabase storage URL (`https://*.supabase.co`). This will speed up the connection handshake, DNS lookup, and SSL negotiation for image requests.
+
+*   **Review Caching &amp; Compression:**
+    *   **Action:** No code changes are needed here. We will rely on Vercel's built-in caching for static assets and Brotli compression, but we will verify the headers in the final review to ensure they are being applied correctly.

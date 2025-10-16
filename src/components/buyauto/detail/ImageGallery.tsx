@@ -66,6 +66,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
               priority
+              quality={85}
               onClick={() => openLightbox(currentIndex)}
             />
           )}
@@ -148,6 +149,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                   fill
                   className="object-cover"
                   sizes="150px"
+                  quality={60}
                 />
               </button>
             ))}
@@ -193,6 +195,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                   className="object-contain"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 85vw"
                   priority
+                  quality={90}
                 />
               </div>
 
