@@ -41,10 +41,22 @@ export default function AuthPage() {
       
       console.log("Final redirect URL:", redirectUrl);
       
-      // Use router.push with delay to ensure session is synced
-      setTimeout(() => {
-        router.push(redirectUrl);
-      }, 1500);
+      // Fix: Only navigate if we're not already on the target page
+      // This prevents the "attempted to hard navigate to the same URL" error
+      const currentPath = router.pathname;
+      const targetPath = redirectUrl.split('?')[0]; // Get path without query params
+      
+      if (currentPath !== targetPath) {
+        // Use router.push with delay to ensure session is synced
+        setTimeout(() => {
+          router.push(redirectUrl);
+        }, 1500);
+      } else {
+        console.log("Already on target page, skipping navigation");
+        // If we're already on the target page, just reset the redirect flag
+        // so the user can see the page content
+        setHasRedirected(false);
+      }
     }
   }, [user, loading, isAdmin, adminLoading, router, hasRedirected]);
 
