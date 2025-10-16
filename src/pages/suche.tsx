@@ -1,4 +1,3 @@
-
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
@@ -7,7 +6,6 @@ import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import { debounce } from "@/lib/utils";
 import DynamicFilterBar from "@/components/buyauto/search/DynamicFilterBar";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
-import SeoCopyBlock from "@/components/buyauto/SeoCopyBlock";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -224,15 +222,6 @@ export default function SearchPage() {
             />
           </div>
         </main>
-
-        {/* SEO Copy Block - Only show when not loading and results exist */}
-        {!isLoading && totalResults > 0 && (
-          <div className="border-t border-neutral-200/50 bg-white">
-            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-              <SeoCopyBlock />
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
