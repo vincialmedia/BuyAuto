@@ -1,11 +1,19 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { searchListings } from "@/services/listingsService";
 import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import { debounce } from "@/lib/utils";
-import DynamicFilterBar from "@/components/buyauto/search/DynamicFilterBar";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
+
+// Dynamically import the filter bar to reduce initial bundle size on mobile
+const DynamicFilterBar = dynamic(() => import("@/components/buyauto/search/DynamicFilterBar"), {
+  ssr: true, // Still render on server for SEO
+  loading: () => (
+    <div className="h-16 bg-white border-b border-neutral-200 animate-pulse" />
+  ),
+});
 
 export default function SearchPage() {
   const router = useRouter();

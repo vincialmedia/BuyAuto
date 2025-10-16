@@ -14,7 +14,6 @@ interface ModernListingCardProps {
 
 export function ModernListingCard({ listing, onDetailsClick, priority = false }: ModernListingCardProps) {
   const router = useRouter();
-  const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleDetailsClick = (e?: React.MouseEvent) => {
@@ -45,7 +44,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
       {/* Image Section */}
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-neutral-100">
         {!imageLoaded && (
-          <div className="absolute inset-0 animate-pulse bg-neutral-200" />
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200" />
         )}
         <Image
           src={listing.imageUrl}
@@ -58,7 +57,6 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
             imageLoaded ? 'opacity-100' : 'opacity-0'
           }`}
           onLoad={() => setImageLoaded(true)}
-          onError={() => setImageError(true)}
         />
         
         {/* Premium Badge */}
