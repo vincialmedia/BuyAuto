@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Listing } from "@/lib/buyauto/types";
@@ -10,11 +9,13 @@ import { useState } from "react";
 interface ModernListingCardProps {
   listing: Listing;
   onDetailsClick?: (listingId: string) => void;
+  priority?: boolean;
 }
 
-export function ModernListingCard({ listing, onDetailsClick }: ModernListingCardProps) {
+export function ModernListingCard({ listing, onDetailsClick, priority = false }: ModernListingCardProps) {
   const router = useRouter();
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleDetailsClick = () => {
     if (onDetailsClick) {
@@ -42,18 +43,27 @@ export function ModernListingCard({ listing, onDetailsClick }: ModernListingCard
     >
       {/* Image Section */}
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-neutral-100">
+        {!imageLoaded && (
+          <div className="absolute inset-0 animate-pulse bg-neutral-200" />
+        )}
         <Image
           src={listing.imageUrl}
           alt={`${listing.brand} ${listing.model}`}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          priority={priority}
+          quality={85}
+          className={`object-cover group-hover:scale-105 transition-all duration-500 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          onLoad={() => setImageLoaded(true)}
           onError={() => setImageError(true)}
         />
         
         {/* Premium Badge */}
         {listing.premium && (
           <div className="absolute top-4 left-4 z-10">
-            <Badge className="bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white border-0 shadow-lg shadow-amber-500/50 text-xs font-bold px-3 py-1.5">
+            <Badge className="bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white border-0 shadow-lg shadow-amber-500/50 text-xs font-bold px-3 py-1.5 backdrop-blur-sm">
               <Star className="h-3.5 w-3.5 mr-1.5 fill-current" />
               Premium
             </Badge>

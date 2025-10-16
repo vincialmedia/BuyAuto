@@ -41,7 +41,7 @@ export default function VerticalResultsList({
   // Empty state
   if (!isLoading && listings.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4">
+      <div className="flex flex-col items-center justify-center py-16 px-4 animate-in fade-in duration-500">
         <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-6">
           <Search className="h-10 w-10 text-neutral-400" />
         </div>
@@ -70,23 +70,36 @@ export default function VerticalResultsList({
     <div className="space-y-8">
       {/* Results Count */}
       {totalResults > 0 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between animate-in fade-in slide-in-from-bottom-4 duration-500">
           <p className="text-sm text-neutral-600 font-medium">
             <span className="text-neutral-900 font-bold">{totalResults}</span> Fahrzeug{totalResults !== 1 ? "e" : ""} gefunden
           </p>
         </div>
       )}
 
-      {/* Results Grid */}
+      {/* Results Grid with staggered animation */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {listings.map((listing) => (
-          <ModernListingCard key={listing.id} listing={listing} />
+        {listings.map((listing, index) => (
+          <div
+            key={listing.id}
+            className="animate-in fade-in slide-in-from-bottom-4"
+            style={{
+              animationDelay: `${index * 50}ms`,
+              animationDuration: '500ms',
+              animationFillMode: 'backwards'
+            }}
+          >
+            <ModernListingCard 
+              listing={listing}
+              priority={index < 3}
+            />
+          </div>
         ))}
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center pt-8">
+        <div className="flex justify-center pt-8 animate-in fade-in duration-500">
           <MinimalPagination
             currentPage={currentPage}
             totalPages={totalPages}

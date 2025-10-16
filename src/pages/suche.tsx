@@ -66,8 +66,17 @@ export default function SearchPage() {
   const handlePageChange = useCallback((page: number) => {
     const newQuery = { ...searchQuery, page };
     setSearchQuery(newQuery);
-    router.push({ pathname: router.pathname, query: buildUrlQuery(newQuery) }, undefined, { shallow: true, scroll: true });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    router.push({ pathname: router.pathname, query: buildUrlQuery(newQuery) }, undefined, { shallow: true, scroll: false });
+    
+    // Smooth scroll to top with offset for sticky header
+    const headerOffset = 100;
+    const elementPosition = 0;
+    const offsetPosition = elementPosition - headerOffset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    });
   }, [searchQuery, router, buildUrlQuery]);
 
   const handleResetFilters = useCallback(() => {
@@ -158,6 +167,8 @@ export default function SearchPage() {
         <meta name="description" content={metaDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <link rel="canonical" href={`https://buyauto.ch${router.asPath.split('?')[0]}`} />
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
       </Head>
 
@@ -175,7 +186,7 @@ export default function SearchPage() {
           <div className={`${filterBarSticky ? 'pt-24' : 'pt-8'} pb-16 transition-all duration-300`}>
             {/* Results Header */}
             {!isLoading && searchResults && (
-              <div className="mb-8">
+              <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
                   {totalResults > 0 ? (
                     <>Deine Fahrzeuge</>
