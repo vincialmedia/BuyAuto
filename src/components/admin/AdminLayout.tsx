@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
-import { FileText, Users } from "lucide-react";
+import { FileText, Users, ClipboardList } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -20,52 +20,50 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </div>
           <nav className="flex-1 px-4 py-2 space-y-2">
             <NavItem
-              icon={FileText}
+              icon={ClipboardList}
               label="Moderation"
-              active={router.pathname === '/admin' || !router.query.tab}
+              active={router.pathname === '/admin' && !router.query.tab}
               onClick={() => router.push('/admin')}
             />
             <NavItem
               icon={FileText}
-              label="Alle Inserate"
+              label="Inserate"
               active={router.query.tab === 'listings'}
               onClick={() => router.push('/admin?tab=listings')}
             />
             <NavItem
               icon={Users}
-              label="Anfragen"
-              active={router.query.tab === 'inquiries'}
-              onClick={() => router.push('/admin?tab=inquiries')}
-              disabled
+              label="Benutzer"
+              active={router.query.tab === 'users'}
+              onClick={() => router.push('/admin?tab=users')}
             />
           </nav>
         </aside>
 
         {/* Mobile Tabs */}
-        <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-2">
-          <div className="flex space-x-1">
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-10 bg-white border-b border-neutral-200">
+          <div className="flex overflow-x-auto">
             <MobileTab
               label="Moderation"
-              active={router.pathname === '/admin' || !router.query.tab}
+              active={router.pathname === '/admin' && !router.query.tab}
               onClick={() => router.push('/admin')}
             />
             <MobileTab
-              label="Alle Inserate"
+              label="Inserate"
               active={router.query.tab === 'listings'}
               onClick={() => router.push('/admin?tab=listings')}
             />
             <MobileTab
-              label="Anfragen"
-              active={router.query.tab === 'inquiries'}
-              onClick={() => router.push('/admin?tab=inquiries')}
-              disabled
+              label="Benutzer"
+              active={router.query.tab === 'users'}
+              onClick={() => router.push('/admin?tab=users')}
             />
           </div>
         </div>
 
         {/* Main Content */}
         <main className="flex-1 lg:pl-64">
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
             {children}
           </div>
         </main>
@@ -117,12 +115,12 @@ function MobileTab({ label, active, disabled, onClick }: MobileTabProps) {
       onClick={onClick}
       disabled={disabled}
       className={`
-        px-4 py-2 rounded-md text-sm font-medium transition-colors
+        flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2
         ${active 
-          ? 'bg-emerald-100 text-emerald-700' 
+          ? 'border-emerald-500 text-emerald-700 bg-emerald-50' 
           : disabled 
-            ? 'text-neutral-400 cursor-not-allowed'
-            : 'text-neutral-600 hover:bg-neutral-100'
+            ? 'border-transparent text-neutral-400 cursor-not-allowed'
+            : 'border-transparent text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
         }
       `}
     >
