@@ -1,3 +1,4 @@
+
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
@@ -6,7 +7,6 @@ import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import { debounce } from "@/lib/utils";
 import DynamicFilterBar from "@/components/buyauto/search/DynamicFilterBar";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
-import MinimalPagination from "@/components/buyauto/search/MinimalPagination";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -67,6 +67,7 @@ export default function SearchPage() {
     const newQuery = { ...searchQuery, page };
     setSearchQuery(newQuery);
     router.push({ pathname: router.pathname, query: buildUrlQuery(newQuery) }, undefined, { shallow: true, scroll: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [searchQuery, router, buildUrlQuery]);
 
   const handleResetFilters = useCallback(() => {
@@ -75,7 +76,6 @@ export default function SearchPage() {
     router.push({ pathname: router.pathname, query: {} }, undefined, { shallow: true });
   }, [router]);
 
-  // FIXED: Only initialize from URL once when the router is ready
   useEffect(() => {
     if (router.isReady && !isInitialized) {
       const parsedQuery = parseQueryFromUrl(router.query);
@@ -84,9 +84,6 @@ export default function SearchPage() {
     }
   }, [router.isReady, isInitialized, parseQueryFromUrl]);
 
-  // REMOVED: The problematic useEffect that was constantly checking router.query changes
-
-  // Search effect - only triggers when searchQuery changes
   useEffect(() => {
     if (!isInitialized) return;
     
@@ -107,7 +104,10 @@ export default function SearchPage() {
   }, [searchQuery, isInitialized]);
 
   useEffect(() => {
-    const handleScroll = () => setFilterBarSticky(window.scrollY > 120);
+    const handleScroll = () => {
+      const scrollThreshold = 80;
+      setFilterBarSticky(window.scrollY > scrollThreshold);
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -156,31 +156,51 @@ export default function SearchPage() {
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <link rel="canonical" href={`https://buyauto.ch${router.asPath.split('?')[0]}`} />
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
       </Head>
 
-      <div className="min-h-screen bg-white">
-        <DynamicFilterBar
-          searchQuery={searchQuery}
-          onSearchQueryChange={handleSearchQueryChange}
-          className={filterBarSticky ? "fixed top-16 left-0 right-0 z-40" : "sticky top-16 z-40"}
-        />
+      <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
+        {/* Filter Bar - Sticky behavior */}
+        <div className={`transition-all duration-300 ${filterBarSticky ? 'fixed top-0 left-0 right-0 z-50 shadow-lg' : 'relative z-40'}`}>
+          <DynamicFilterBar
+            searchQuery={searchQuery}
+            onSearchQueryChange={handleSearchQueryChange}
+          />
+        </div>
 
-        <main className="max-w-[2000px] mx-auto px-4 md:px-6 lg:px-8">
-          <div className={filterBarSticky ? "pt-28" : "pt-6"}>
+        {/* Main Content */}
+        <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`${filterBarSticky ? 'pt-24' : 'pt-8'} pb-16 transition-all duration-300`}>
+            {/* Results Header */}
             {!isLoading && searchResults && (
-              <div className="mb-6">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-neutral-600">
-                    {totalResults > 0 ? (
-                      <><span className="font-semibold text-neutral-900">{totalResults.toLocaleString()}</span> Fahrzeuge gefunden {currentPage > 1 && `– Seite ${currentPage} von ${totalPages}`}</>
-                    ) : ( "Keine Fahrzeuge gefunden" )}
-                  </div>
-                </div>
-                <div className="mt-3 h-px bg-gradient-to-r from-neutral-200 via-neutral-300 to-neutral-200"></div>
+              <div className="mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
+                  {totalResults > 0 ? (
+                    <>Deine Fahrzeuge</>
+                  ) : (
+                    <>Keine Ergebnisse</>
+                  )}
+                </h1>
+                <p className="text-sm text-neutral-600">
+                  {totalResults > 0 ? (
+                    <>
+                      <span className="font-semibold text-neutral-900">{totalResults.toLocaleString()}</span> {totalResults === 1 ? 'Fahrzeug' : 'Fahrzeuge'} verfügbar
+                      {currentPage > 1 && <span className="text-neutral-400 mx-2">·</span>}
+                      {currentPage > 1 && `Seite ${currentPage} von ${totalPages}`}
+                    </>
+                  ) : (
+                    <>Passe deine Filter an, um Ergebnisse zu sehen</>
+                  )}
+                </p>
+                
+                {/* Subtle divider */}
+                <div className="mt-4 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
               </div>
             )}
             
+            {/* Results List */}
             <VerticalResultsList
               listings={searchResults?.items || []}
               currentPage={currentPage}
@@ -190,16 +210,6 @@ export default function SearchPage() {
               totalResults={totalResults}
               onClearFilters={handleResetFilters}
             />
-
-            {!isLoading && searchResults && totalPages > 1 && (
-              <div className="py-12">
-                <MinimalPagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            )}
           </div>
         </main>
       </div>
