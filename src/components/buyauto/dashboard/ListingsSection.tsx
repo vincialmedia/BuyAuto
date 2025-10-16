@@ -26,7 +26,7 @@ import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, M
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
-import { getUserListings } from "@/services/listingsService";
+import { getUserListings } from "@/services/dashboardService";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function ListingsSection() {
