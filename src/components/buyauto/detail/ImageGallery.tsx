@@ -2,7 +2,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface ImageGalleryProps {
   images: string[];
@@ -45,12 +44,6 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
 
   const prevLightboxImage = () => {
     setLightboxIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight") nextLightboxImage();
-    if (e.key === "ArrowLeft") prevLightboxImage();
-    if (e.key === "Escape") closeLightbox();
   };
 
   return (
@@ -124,13 +117,14 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                       ? "bg-white shadow-lg scale-125"
                       : "bg-white/60 hover:bg-white/80"
                   }`}
+                  aria-label={`Bild ${index + 1} anzeigen`}
                 />
               ))}
             </div>
           )}
         </div>
 
-        {/* Desktop Thumbnails */}
+        {/* Desktop Thumbnails - Lazy loaded */}
         {validImages.length > 1 && (
           <div className="hidden md:grid grid-cols-4 lg:grid-cols-6 gap-3">
             {validImages.slice(0, 12).map((image, index) => (
@@ -150,6 +144,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                   className="object-cover"
                   sizes="150px"
                   quality={60}
+                  loading="lazy"
                 />
               </button>
             ))}
@@ -163,60 +158,62 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
       </div>
 
       {/* Lightbox Modal */}
-        {showLightbox && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-            <div className="relative w-full h-full max-w-6xl max-h-full p-4 flex items-center justify-center">
-              {/* Close Button */}
+      {showLightbox && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+          onClick={closeLightbox}
+        >
+          <div className="relative w-full h-full max-w-6xl max-h-full p-4 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {/* Close Button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+              aria-label="Galerie schließen"
+            >
+              <X size={32} />
+            </button>
+
+            {/* Previous Button */}
+            {validImages.length > 1 && (
               <button
-                onClick={closeLightbox}
-                className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
-                aria-label="Galerie schließen"
+                onClick={prevLightboxImage}
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
+                aria-label="Vorheriges Bild"
               >
-                <X size={32} />
+                <ChevronLeft size={48} />
               </button>
+            )}
 
-              {/* Previous Button */}
-              {validImages.length > 1 && (
-                <button
-                  onClick={prevLightboxImage}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
-                  aria-label="Vorheriges Bild"
-                >
-                  <ChevronLeft size={48} />
-                </button>
-              )}
+            {/* Image Container */}
+            <div className="relative w-full h-full max-w-5xl max-h-[85vh] flex items-center justify-center">
+              <Image
+                src={validImages[lightboxIndex]}
+                alt={`${alt} - Bild ${lightboxIndex + 1}`}
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 85vw"
+                quality={90}
+              />
+            </div>
 
-              {/* Image Container - Fixed to prevent overflow */}
-              <div className="relative w-full h-full max-w-5xl max-h-[85vh] flex items-center justify-center">
-                <Image
-                  src={validImages[lightboxIndex]}
-                  alt={`${alt} - Bild ${lightboxIndex + 1}`}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 85vw"
-                  priority
-                  quality={90}
-                />
-              </div>
+            {/* Next Button */}
+            {validImages.length > 1 && (
+              <button
+                onClick={nextLightboxImage}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
+                aria-label="Nächstes Bild"
+              >
+                <ChevronRight size={48} />
+              </button>
+            )}
 
-              {/* Next Button */}
-              {validImages.length > 1 && (
-                <button
-                  onClick={nextLightboxImage}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
-                  aria-label="Nächstes Bild"
-                >
-                  <ChevronRight size={48} />
-                </button>
-              )}
-
-              {/* Image Counter */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded">
-                {lightboxIndex + 1} / {validImages.length}
-              </div>
+            {/* Image Counter */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded">
+              {lightboxIndex + 1} / {validImages.length}
             </div>
           </div>
-        )}
+        </div>
+      )}
     </>
   );
 }
