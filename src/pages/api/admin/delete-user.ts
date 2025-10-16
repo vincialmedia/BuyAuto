@@ -11,18 +11,22 @@ export default async function handler(
   }
 
   try {
-    // Get the user's session from the request
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    // Create a client with the anon key to verify the requesting user
+    if (!supabaseServiceRoleKey) {
+      console.error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+      return res.status(500).json({ error: "Server configuration error" });
+    }
+
+    // Step 1: Authenticate the requesting user with anon key
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: false,
       },
     });
 
-    // Get the session from the authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({ error: "Unauthorized - No authorization header" });
@@ -35,32 +39,7 @@ export default async function handler(
       return res.status(401).json({ error: "Unauthorized - Invalid token" });
     }
 
-    // Check if the user is an admin
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile || profile.role !== "admin") {
-      return res.status(403).json({ error: "Forbidden - Admin access required" });
-    }
-
-    // Get the userId to delete from the request body
-    const { userId } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({ error: "Missing userId in request body" });
-    }
-
-    // Create an admin client using the service role key
-    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseServiceRoleKey) {
-      console.error("SUPABASE_SERVICE_ROLE_KEY is not configured");
-      return res.status(500).json({ error: "Server configuration error" });
-    }
-
+    // Step 2: Create admin client with service role key
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -68,7 +47,27 @@ export default async function handler(
       },
     });
 
-    // Delete the user from auth.users
+    // Step 3: Check if the authenticated user is an admin using the admin client
+    // This bypasses RLS and gives us the true role value
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile || profile.role !== "admin") {
+      console.error("Admin check failed:", profileError || "User is not an admin");
+      return res.status(403).json({ error: "Forbidden - Admin access required" });
+    }
+
+    // Step 4: Get the userId to delete from the request body
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId in request body" });
+    }
+
+    // Step 5: Delete the user from auth.users using the admin client
     // This will cascade to profiles and listings if ON DELETE CASCADE is configured
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
