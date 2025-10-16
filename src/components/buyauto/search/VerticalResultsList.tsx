@@ -1,110 +1,100 @@
-import { SearchResult } from "@/lib/buyauto/search";
-import VerticalListingCard from "./VerticalListingCard";
+
+import { ModernListingCard } from "./ModernListingCard";
+import { ListingCardSkeleton } from "./ListingCardSkeleton";
+import MinimalPagination from "./MinimalPagination";
+import { Listing } from "@/lib/buyauto/types";
+import { SearchCircle, FilterX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Search, RotateCcw, Eye } from "lucide-react";
-import { useRouter } from "next/router";
 
 interface VerticalResultsListProps {
-  searchResults: SearchResult | null;
-  isLoading: boolean;
-  onResetFilters?: () => void;
-  onShowAllListings?: () => void;
+  listings: Listing[];
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  isLoading?: boolean;
+  totalResults?: number;
+  onClearFilters?: () => void;
 }
 
-export default function VerticalResultsList({ 
-  searchResults, 
-  isLoading, 
-  onResetFilters,
-  onShowAllListings 
+export default function VerticalResultsList({
+  listings,
+  currentPage,
+  totalPages,
+  onPageChange,
+  isLoading = false,
+  totalResults = 0,
+  onClearFilters
 }: VerticalResultsListProps) {
-  const router = useRouter();
   
-  // Loading skeleton
+  // Loading state with skeletons
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="bg-white border border-neutral-200/60 rounded-2xl overflow-hidden p-6">
-            <div className="flex">
-              <Skeleton className="w-64 h-40 rounded-xl" />
-              <div className="flex-1 ml-6">
-                <div className="flex justify-between">
-                  <div className="flex-1">
-                    <Skeleton className="h-6 w-64 mb-3" />
-                    <div className="flex gap-2">
-                      <Skeleton className="h-6 w-24 rounded-full" />
-                      <Skeleton className="h-6 w-20 rounded-full" />
-                      <Skeleton className="h-6 w-16 rounded-full" />
-                      <Skeleton className="h-6 w-18 rounded-full" />
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end space-y-3">
-                    <Skeleton className="h-8 w-32" />
-                    <Skeleton className="h-9 w-28 rounded-md" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 9 }).map((_, index) => (
+            <ListingCardSkeleton key={index} />
+          ))}
+        </div>
       </div>
     );
   }
 
   // Empty state
-  if (!searchResults || searchResults.items.length === 0) {
+  if (!isLoading && listings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
-        <div className="w-24 h-24 bg-neutral-100 rounded-full flex items-center justify-center mb-6">
-          <Search className="h-10 w-10 text-neutral-400" />
+        <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-6">
+          <SearchCircle className="h-10 w-10 text-neutral-400" />
         </div>
-        
-        <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+        <h3 className="text-2xl font-bold text-neutral-900 mb-2">
           Keine Fahrzeuge gefunden
         </h3>
-        
-        <p className="text-neutral-600 text-center mb-6 max-w-md">
-          Versuchen Sie es mit weniger spezifischen Filtern oder erweitern Sie Ihre Suchkriterien.
+        <p className="text-neutral-600 text-center max-w-md mb-8">
+          Leider gibt es keine Ergebnisse für Ihre aktuelle Filterauswahl. 
+          Versuchen Sie, einige Filter zu entfernen.
         </p>
-        
-        <div className="flex space-x-3">
-          {onResetFilters && (
-            <Button
-              onClick={onResetFilters}
-              variant="outline"
-              className="bg-transparent hover:bg-transparent border-neutral-300 text-neutral-700 hover:border-red-500 hover:text-red-500"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Filter zurücksetzen
-            </Button>
-          )}
-          
-          {onShowAllListings && (
-            <Button
-              onClick={onShowAllListings}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Alle Anzeigen
-            </Button>
-          )}
-        </div>
+        {onClearFilters && (
+          <Button
+            onClick={onClearFilters}
+            variant="outline"
+            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+          >
+            <FilterX className="h-4 w-4 mr-2" />
+            Alle Filter zurücksetzen
+          </Button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {searchResults.items.map((listing) => (
-        <VerticalListingCard
-          key={listing.id}
-          listing={listing}
-          onDetailsClick={(id) => {
-            router.push(`/fahrzeug/${id}`);
-          }}
-        />
-      ))}
+    <div className="space-y-8">
+      {/* Results Count */}
+      {totalResults > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-neutral-600 font-medium">
+            <span className="text-neutral-900 font-bold">{totalResults}</span> Fahrzeug{totalResults !== 1 ? "e" : ""} gefunden
+          </p>
+        </div>
+      )}
+
+      {/* Results Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {listings.map((listing) => (
+          <ModernListingCard key={listing.id} listing={listing} />
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center pt-8">
+          <MinimalPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </div>
+      )}
     </div>
   );
 }
