@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export function SeoCopyBlock() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -9,44 +10,31 @@ export function SeoCopyBlock() {
     <section className="bg-gray-50 py-16 px-4">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-3xl font-bold text-gray-900 mb-6">
-          Über BuyAuto.ch
+          Auto-Leasing Übernehmen oder Verkaufen in der Schweiz
         </h2>
         
         <div className="prose prose-lg max-w-none text-gray-700">
           <p className="mb-4">
-            BuyAuto.ch ist die führende Plattform für <strong>Leasingübernahmen in der Schweiz</strong>. 
-            Wir verbinden Personen, die ihr Auto-Leasing vorzeitig beenden möchten, mit interessierten 
-            Käufern, die von attraktiven Leasingkonditionen profitieren wollen. Unsere Plattform macht 
-            den Prozess der Leasingübernahme <strong>transparent, sicher und unkompliziert</strong>.
-          </p>
-
-          <p className="mb-4">
-            Eine Leasingübernahme bietet zahlreiche Vorteile: Sie können ein gepflegtes Fahrzeug mit 
-            kurzer Restlaufzeit übernehmen, ohne lange Vertragsbindung eingehen zu müssen. Gleichzeitig 
-            profitieren Sie oft von <strong>günstigeren monatlichen Raten</strong> als bei einem Neuleasing. 
-            Für Verkäufer bedeutet BuyAuto.ch die Möglichkeit, sich flexibel und ohne hohe Kosten aus 
-            einem bestehenden Leasingvertrag zu lösen.
+            BuyAuto.ch ist die führende Plattform für Leasingübernahmen in der Schweiz.
+            Wir bringen Menschen zusammen, die ihr Auto-Leasing vorzeitig beenden möchten, mit Interessenten, die von attraktiven Leasingkonditionen profitieren wollen.
+            Unser Ziel: Auto-Leasing einfacher, sicherer und transparenter zu machen – schweizweit, von Zürich bis Basel.
           </p>
 
           {isExpanded && (
             <>
               <h3 className="text-2xl font-semibold text-gray-900 mt-8 mb-4">
-                Sicherer und transparenter Prozess
+                Wie funktioniert eine Leasingübernahme?
               </h3>
               
               <p className="mb-4">
-                Bei BuyAuto.ch steht <strong>Sicherheit an erster Stelle</strong>. Alle Zahlungen werden 
-                über die renommierte Zahlungsplattform Stripe abgewickelt, die höchste Sicherheitsstandards 
-                garantiert. Ihre sensiblen Daten werden auf Schweizer Servern gehostet und nach den 
-                strengsten Datenschutzrichtlinien behandelt.
+                Eine Leasingübernahme bedeutet, dass Sie einen bestehenden Leasingvertrag übernehmen, statt ein neues Leasing abzuschliessen.
+                Das spart Zeit, Geld und vermeidet lange Vertragsbindungen.
+                Auf BuyAuto.ch finden Sie gepflegte Fahrzeuge mit kurzer Restlaufzeit und attraktiven Monatsraten – oft deutlich günstiger als ein Neuleasing.
               </p>
 
               <p className="mb-4">
-                Unser transparenter Prozess sorgt dafür, dass beide Parteien – Käufer und Verkäufer – 
-                jederzeit den Überblick behalten. Von der Inseratserstellung über die Kontaktaufnahme 
-                bis hin zur finalen Vertragsübernahme begleiten wir Sie Schritt für Schritt. Detaillierte 
-                Fahrzeuginformationen, transparente Kostenaufstellungen und direkte Kommunikationsmöglichkeiten 
-                schaffen Vertrauen und vermeiden Missverständnisse.
+                Für Verkäufer ist es die einfache Lösung, einen laufenden Vertrag ohne hohe Kosten oder Strafgebühren zu übertragen.
+                Sie inserieren Ihr Auto, erreichen gezielt interessierte Käufer und geben Ihren Vertrag stressfrei ab.
               </p>
 
               <h3 className="text-2xl font-semibold text-gray-900 mt-8 mb-4">
@@ -54,18 +42,23 @@ export function SeoCopyBlock() {
               </h3>
               
               <p className="mb-4">
-                Als Käufer profitieren Sie von einer <strong>breiten Auswahl an Fahrzeugen</strong> 
-                verschiedenster Marken und Modelle. Sie können gezielt nach Ihrem Wunschauto suchen, 
-                Konditionen vergleichen und das beste Angebot für sich finden. Die Übernahme eines 
-                bestehenden Leasingvertrags ist oft günstiger als ein Neuleasing und ermöglicht Ihnen, 
-                ein aktuelles Fahrzeug zu fahren, ohne sich langfristig zu binden.
+                <strong>Bessere Konditionen:</strong> Profitieren Sie von bereits ausgehandelten Leasingverträgen.
               </p>
 
               <p className="mb-4">
-                Zudem entfallen bei einer Leasingübernahme oft die hohen Anzahlungen, die bei einem 
-                Neuvertrag fällig werden. Sie steigen einfach in einen laufenden Vertrag ein und 
-                profitieren von den bereits ausgehandelten Konditionen. Alle relevanten Informationen 
-                zum Fahrzeug und zum Leasingvertrag sind transparent auf BuyAuto.ch einsehbar.
+                <strong>Kurze Laufzeiten:</strong> Ideal, wenn Sie flexibel bleiben möchten.
+              </p>
+
+              <p className="mb-4">
+                <strong>Transparente Informationen:</strong> Alle Fahrzeug- und Vertragsdetails sind klar ersichtlich.
+              </p>
+
+              <p className="mb-4">
+                <strong>Keine hohen Anzahlungen:</strong> Steigen Sie direkt in den bestehenden Vertrag ein.
+              </p>
+
+              <p className="mb-4">
+                Entdecken Sie alle verfügbaren Fahrzeuge hier: <Link href="/suche" className="text-red-600 hover:text-red-700 font-semibold underline">Fahrzeuge durchsuchen</Link>
               </p>
 
               <h3 className="text-2xl font-semibold text-gray-900 mt-8 mb-4">
@@ -73,19 +66,38 @@ export function SeoCopyBlock() {
               </h3>
               
               <p className="mb-4">
-                Als Verkäufer bietet Ihnen BuyAuto.ch die <strong>einfachste Möglichkeit</strong>, 
-                Ihren Leasingvertrag abzugeben. Ob sich Ihre Lebensumstände geändert haben, Sie ein 
-                anderes Fahrzeug benötigen oder die monatlichen Raten zur Belastung geworden sind – 
-                auf unserer Plattform finden Sie schnell und unkompliziert einen Nachfolger für Ihr 
-                Leasing.
+                <strong>Schnelle Abwicklung:</strong> Finden Sie unkompliziert einen Nachfolger für Ihren Vertrag.
               </p>
 
               <p className="mb-4">
-                Die Inseratserstellung ist intuitiv und dauert nur wenige Minuten. Sie laden Fotos 
-                hoch, beschreiben Ihr Fahrzeug und geben die Leasingkonditionen an. Potenzielle Käufer 
-                können Sie direkt kontaktieren, und Sie behalten die volle Kontrolle über den Verkaufsprozess. 
-                BuyAuto.ch nimmt Ihnen den administrativen Aufwand ab und unterstützt Sie bei der 
-                Abwicklung der Vertragsübernahme.
+                <strong>Einfache Inseratserstellung:</strong> Fotos hochladen, Konditionen angeben, fertig.
+              </p>
+
+              <p className="mb-4">
+                <strong>Direkter Kontakt:</strong> Interessenten schreiben Sie direkt über die Plattform an.
+              </p>
+
+              <p className="mb-4">
+                <strong>Flexibilität:</strong> Lösen Sie Ihren Vertrag, wenn sich Ihre Lebensumstände ändern.
+              </p>
+
+              <p className="mb-4">
+                Jetzt starten: <Link href="/inserat-erstellen" className="text-red-600 hover:text-red-700 font-semibold underline">Inserat erstellen</Link>
+              </p>
+
+              <h3 className="text-2xl font-semibold text-gray-900 mt-8 mb-4">
+                Sicherer Prozess mit Schweizer Standards
+              </h3>
+              
+              <p className="mb-4">
+                Bei BuyAuto.ch steht Sicherheit an erster Stelle.
+                Alle Zahlungen werden über Stripe abgewickelt – eine der sichersten Zahlungsplattformen der Welt.
+                Ihre Daten werden in der Schweiz gehostet und nach den strengsten Datenschutzrichtlinien (DSG und GDPR) verarbeitet.
+              </p>
+
+              <p className="mb-4">
+                Unser transparenter Prozess garantiert, dass Käufer und Verkäufer jederzeit den Überblick behalten – von der Inseratserstellung bis zur Vertragsübernahme.
+                Keine versteckten Kosten, keine bösen Überraschungen.
               </p>
 
               <h3 className="text-2xl font-semibold text-gray-900 mt-8 mb-4">
@@ -93,17 +105,28 @@ export function SeoCopyBlock() {
               </h3>
               
               <p className="mb-4">
-                BuyAuto.ch kombiniert <strong>Benutzerfreundlichkeit mit höchsten Sicherheitsstandards</strong>. 
-                Unsere Plattform ist speziell auf den Schweizer Markt zugeschnitten und berücksichtigt 
-                die Besonderheiten des hiesigen Leasingmarktes. Mit Swiss Data Hosting garantieren wir, 
-                dass Ihre Daten in der Schweiz bleiben und nach Schweizer Recht geschützt sind.
+                🇨🇭 100 % Schweizer Plattform
               </p>
 
               <p className="mb-4">
-                Unser engagiertes Support-Team steht Ihnen bei Fragen jederzeit zur Verfügung. Wir 
-                entwickeln unsere Plattform kontinuierlich weiter und hören auf das Feedback unserer 
-                Nutzer, um Ihnen das bestmögliche Erlebnis zu bieten. Vertrauen Sie auf BuyAuto.ch – 
-                Ihre erste Adresse für Leasingübernahmen in der Schweiz.
+                🔒 Sichere Online-Zahlungen via Stripe
+              </p>
+
+              <p className="mb-4">
+                💬 Direkte Kommunikation zwischen Käufer und Verkäufer
+              </p>
+
+              <p className="mb-4">
+                ⚙️ Intuitive Benutzeroberfläche und laufende Weiterentwicklung
+              </p>
+
+              <p className="mb-4">
+                👩‍💻 Schweizer Support-Team, das Ihnen persönlich hilft
+              </p>
+
+              <p className="mb-4">
+                BuyAuto.ch kombiniert Benutzerfreundlichkeit, Sicherheit und Schweizer Präzision.
+                Ob Sie Ihr Auto-Leasing übernehmen oder verkaufen möchten – wir sind Ihre erste Adresse für Leasingübernahmen in der Schweiz.
               </p>
             </>
           )}
