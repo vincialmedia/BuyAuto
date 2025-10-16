@@ -1,5 +1,6 @@
 import Head from "next/head";
 import HeroSection from "@/components/buyauto/HeroSection";
+import { UspBar } from "@/components/buyauto/UspBar";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import BenefitsSection from "@/components/buyauto/BenefitsSection";
 import HowItWorksSection from "@/components/buyauto/HowItWorksSection";
@@ -33,6 +34,7 @@ export default function HomePage({ totalListings }: HomePageProps) {
       </Head>
 
       <HeroSection totalListings={totalListings} />
+      <UspBar />
       <PremiumListings />
       <BenefitsSection />
       <HowItWorksSection />
