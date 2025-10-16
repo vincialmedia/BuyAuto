@@ -46,9 +46,19 @@ export interface DashboardStats {
 
 export async function getUserListings(): Promise<any[]> {
   try {
+    // Step 1: Get the current authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      console.log("No user session found for dashboard.");
+      return [];
+    }
+
+    // Step 2: Add an explicit .eq() filter to the query to ensure users only see their own listings
     const { data, error } = await supabase
       .from("listings")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {

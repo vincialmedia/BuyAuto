@@ -319,25 +319,7 @@ export async function getModelsForBrand(brand: string): Promise<string[]> {
 
 // USER DASHBOARD FUNCTIONS
 // These query the full listings table, but RLS ensures users only see their own
-
-export async function getUserListings(): Promise<ListingDetail[]> {
-  try {
-    const { data, error } = await supabase
-      .from('listings')
-      .select(`*`)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching user listings:', error);
-      return [];
-    }
-
-    return (data || []).map(transformFullRowToListingDetail);
-  } catch (error) {
-    console.error('Get user listings error:', error);
-    return [];
-  }
-}
+// Note: The main getUserListings function is in dashboardService.ts with proper user filtering
 
 export async function getUserListingById(id: string): Promise<ListingDetail | null> {
   try {

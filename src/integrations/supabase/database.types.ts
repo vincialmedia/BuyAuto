@@ -277,9 +277,9 @@ export type Database = {
           created_at: string
           email: string
           full_name: string
-          id: string
+          last_sign_in_at: string
           role: string
-          updated_at: string
+          user_id: string
         }[]
       }
       get_distinct_brands: {

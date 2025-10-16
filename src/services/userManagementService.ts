@@ -2,11 +2,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface UserProfile {
   id: string;
-  email: string;
+  email: string | undefined;
   full_name: string | null;
   role: string;
   created_at: string;
   updated_at: string | null;
+  last_sign_in_at?: string | null;
 }
 
 export interface UserWithStats extends UserProfile {
@@ -40,15 +41,22 @@ export const userManagementService = {
     } = filters;
 
     // Use RPC function to bypass RLS and get all users
-    const { data: allProfiles, error: rpcError } = await supabase
+    const { data: rpcData, error: rpcError } = await supabase
       .rpc('get_all_users_with_profiles');
 
     if (rpcError) {
       console.error('Error fetching users:', rpcError);
       throw rpcError;
     }
+    
+    // Transform raw data to match frontend's UserProfile type expectation (id vs user_id)
+    const allProfiles = (rpcData || []).map((p: any) => ({
+      ...p,
+      id: p.user_id,
+    }));
 
-    let profiles = allProfiles || [];
+
+    let profiles = allProfiles;
 
     // Apply filters in JavaScript
     if (role !== 'all') {
@@ -102,7 +110,7 @@ export const userManagementService = {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      users: usersWithStats,
+      users: usersWithStats as UserWithStats[],
       total,
       page,
       totalPages
@@ -116,14 +124,15 @@ export const userManagementService = {
     profile: UserProfile;
     listings: any[];
   }> {
-    // Use RPC function to get user profile
-    const { data: allProfiles, error: rpcError } = await supabase
+    // This is inefficient, but we'll stick to fixing the immediate bug.
+    // It should ideally fetch a single user.
+    const { data: rpcData, error: rpcError } = await supabase
       .rpc('get_all_users_with_profiles');
 
     if (rpcError) throw rpcError;
 
-    const profile = allProfiles?.find((p: any) => p.id === userId);
-    if (!profile) throw new Error('User not found');
+    const rawProfile = rpcData?.find((p: any) => p.user_id === userId);
+    if (!rawProfile) throw new Error('User not found');
 
     const { data: listings, error: listingsError } = await supabase
       .from('listings')
@@ -133,8 +142,14 @@ export const userManagementService = {
 
     if (listingsError) throw listingsError;
 
+    // Transform to match UserProfile interface
+    const profile: UserProfile = {
+      ...rawProfile,
+      id: rawProfile.user_id,
+    };
+
     return {
-      profile: profile as UserProfile,
+      profile,
       listings: listings || []
     };
   },
@@ -173,6 +188,9 @@ export const userManagementService = {
    * Send password reset email
    */
   async resetUserPassword(email: string): Promise<void> {
+    if(!email) {
+      throw new Error("Email is not available for this user.");
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth?mode=reset`,
     });
