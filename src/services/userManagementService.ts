@@ -158,30 +158,29 @@ export const userManagementService = {
    * Delete user account (cascade to listings via DB constraint)
    */
   async deleteUser(userId: string): Promise<void> {
-    // First delete all user's listings
-    const { error: listingsError } = await supabase
-      .from('listings')
-      .delete()
-      .eq('user_id', userId);
-
-    if (listingsError) throw listingsError;
-
-    // Then delete the profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
-
-    if (profileError) throw profileError;
-
-    // Delete from auth.users using admin API
-    // Note: This requires admin privileges and proper RLS policies
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    // Get the current session to pass to the API
+    const { data: { session } } = await supabase.auth.getSession();
     
-    if (authError) {
-      console.error('Failed to delete auth user:', authError);
-      throw new Error('Failed to delete user from authentication system');
+    if (!session) {
+      throw new Error("No active session");
     }
+
+    // Call our secure API endpoint to delete the user
+    const response = await fetch("/api/admin/delete-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to delete user");
+    }
+
+    return;
   },
 
   /**
