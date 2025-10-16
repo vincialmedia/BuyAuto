@@ -1,30 +1,22 @@
 import type { AppProps } from "next/app";
-import localFont from "next/font/local";
+import { Manrope } from "next/font/google";
 import MainLayout from "@/components/layout/MainLayout";
 import AuthProvider from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import "@/styles/globals.css";
 
-// Load local fonts with automatic optimization
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-  display: "swap", // Ensures text is visible during font load
-  preload: true,
-});
-
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+// Configure Manrope font from Google Fonts for automatic optimization
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
   preload: true,
 });
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <div className={`${geistSans.variable} ${geistMono.variable} overflow-x-hidden min-h-screen`}>
+    <div className={`${manrope.variable} font-sans overflow-x-hidden min-h-screen`}>
       <AuthProvider>
         <MainLayout>
           <Component {...pageProps} />

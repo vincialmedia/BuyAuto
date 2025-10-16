@@ -13,7 +13,7 @@ html,
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  /* The font-family is now handled by Tailwind's config */
   overflow-x: hidden;
   max-width: 100vw;
 }
