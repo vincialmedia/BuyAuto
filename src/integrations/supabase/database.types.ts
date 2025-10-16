@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -271,6 +271,17 @@ export type Database = {
       }
     }
     Functions: {
+      get_all_users_with_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          role: string
+          updated_at: string
+        }[]
+      }
       get_distinct_brands: {
         Args: Record<PropertyKey, never>
         Returns: string[]

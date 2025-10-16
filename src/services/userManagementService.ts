@@ -39,32 +39,40 @@ export const userManagementService = {
       limit = 25
     } = filters;
 
-    let query = supabase
-      .from('profiles')
-      .select('*', { count: 'exact' });
+    // Use RPC function to bypass RLS and get all users
+    const { data: allProfiles, error: rpcError } = await supabase
+      .rpc('get_all_users_with_profiles');
 
-    // Apply filters
+    if (rpcError) {
+      console.error('Error fetching users:', rpcError);
+      throw rpcError;
+    }
+
+    let profiles = allProfiles || [];
+
+    // Apply filters in JavaScript
     if (role !== 'all') {
-      query = query.eq('role', role);
+      profiles = profiles.filter((p: any) => p.role === role);
     }
 
     if (search) {
-      query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
+      const searchLower = search.toLowerCase();
+      profiles = profiles.filter((p: any) => 
+        p.email?.toLowerCase().includes(searchLower) ||
+        p.full_name?.toLowerCase().includes(searchLower)
+      );
     }
 
-    // Pagination
+    const total = profiles.length;
+
+    // Apply pagination
     const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    const { data: profiles, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) throw error;
+    const to = from + limit;
+    const paginatedProfiles = profiles.slice(from, to);
 
     // Get listings count for each user
     const usersWithStats = await Promise.all(
-      (profiles || []).map(async (profile) => {
+      paginatedProfiles.map(async (profile: any) => {
         const { count: totalListings } = await supabase
           .from('listings')
           .select('*', { count: 'exact', head: true })
@@ -91,7 +99,6 @@ export const userManagementService = {
       })
     );
 
-    const total = count || 0;
     const totalPages = Math.ceil(total / limit);
 
     return {
@@ -109,13 +116,14 @@ export const userManagementService = {
     profile: UserProfile;
     listings: any[];
   }> {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    // Use RPC function to get user profile
+    const { data: allProfiles, error: rpcError } = await supabase
+      .rpc('get_all_users_with_profiles');
 
-    if (profileError) throw profileError;
+    if (rpcError) throw rpcError;
+
+    const profile = allProfiles?.find((p: any) => p.id === userId);
+    if (!profile) throw new Error('User not found');
 
     const { data: listings, error: listingsError } = await supabase
       .from('listings')
