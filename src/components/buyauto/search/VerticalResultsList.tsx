@@ -1,9 +1,8 @@
-
 import { ModernListingCard } from "./ModernListingCard";
 import { ListingCardSkeleton } from "./ListingCardSkeleton";
 import MinimalPagination from "./MinimalPagination";
 import { Listing } from "@/lib/buyauto/types";
-import { SearchCircle, FilterX } from "lucide-react";
+import { Search, FilterX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface VerticalResultsListProps {
@@ -44,7 +43,7 @@ export default function VerticalResultsList({
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
         <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-6">
-          <SearchCircle className="h-10 w-10 text-neutral-400" />
+          <Search className="h-10 w-10 text-neutral-400" />
         </div>
         <h3 className="text-2xl font-bold text-neutral-900 mb-2">
           Keine Fahrzeuge gefunden

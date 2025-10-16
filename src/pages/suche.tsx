@@ -182,10 +182,13 @@ export default function SearchPage() {
             )}
             
             <VerticalResultsList
-              searchResults={searchResults}
+              listings={searchResults?.items || []}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
               isLoading={isLoading}
-              onResetFilters={handleResetFilters}
-              onShowAllListings={handleResetFilters}
+              totalResults={totalResults}
+              onClearFilters={handleResetFilters}
             />
 
             {!isLoading && searchResults && totalPages > 1 && (
