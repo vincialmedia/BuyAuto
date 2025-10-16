@@ -2,14 +2,19 @@ import { GetServerSideProps } from "next";
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import { ArrowLeft, MapPin, Calendar, Settings, Fuel, Users, Award, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
-import InquiryForm from "@/components/buyauto/detail/InquiryForm";
 import SimilarListings from "@/components/buyauto/detail/SimilarListings";
+
+// Dynamically import InquiryForm (only loads when user clicks inquiry button)
+const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), {
+  ssr: false
+});
 
 interface ListingDetailPageProps {
   listing: ListingDetail | null;

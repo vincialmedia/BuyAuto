@@ -1,14 +1,31 @@
 import Head from "next/head";
+import dynamic from "next/dynamic";
 import HeroSection from "@/components/buyauto/HeroSection";
 import { UspBar } from "@/components/buyauto/UspBar";
 import PremiumListings from "@/components/buyauto/PremiumListings";
-import BenefitsSection from "@/components/buyauto/BenefitsSection";
-import HowItWorksSection from "@/components/buyauto/HowItWorksSection";
-import TrustSection from "@/components/buyauto/TrustSection";
-import FAQSection from "@/components/buyauto/FAQSection";
-import { SeoCopyBlock } from "@/components/buyauto/SeoCopyBlock";
-import { getPublishedListingsCount } from "@/services/listingsService";
 import { GetStaticProps } from "next";
+import { getPublishedListingsCount } from "@/services/listingsService";
+
+// Dynamically import below-the-fold components to reduce initial bundle
+const BenefitsSection = dynamic(() => import("@/components/buyauto/BenefitsSection"), {
+  loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
+});
+
+const HowItWorksSection = dynamic(() => import("@/components/buyauto/HowItWorksSection"), {
+  loading: () => <div className="h-96 bg-white animate-pulse" />
+});
+
+const TrustSection = dynamic(() => import("@/components/buyauto/TrustSection"), {
+  loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
+});
+
+const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"), {
+  loading: () => <div className="h-96 bg-white animate-pulse" />
+});
+
+const SeoCopyBlock = dynamic(() => import("@/components/buyauto/SeoCopyBlock").then(mod => ({ default: mod.SeoCopyBlock })), {
+  loading: () => <div className="h-64 bg-neutral-50 animate-pulse" />
+});
 
 interface HomePageProps {
   totalListings: number;
