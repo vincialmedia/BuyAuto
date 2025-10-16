@@ -6,11 +6,13 @@ import "@/styles/globals.css";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <AuthProvider>
-      <MainLayout>
-        <Component {...pageProps} />
-      </MainLayout>
-      <Toaster />
-    </AuthProvider>
+    <div className="overflow-x-hidden min-h-screen">
+      <AuthProvider>
+        <MainLayout>
+          <Component {...pageProps} />
+        </MainLayout>
+        <Toaster />
+      </AuthProvider>
+    </div>
   );
 }

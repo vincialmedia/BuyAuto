@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -38,14 +37,14 @@ export default function Header() {
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-neutral-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 gap-2">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+          <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity flex-shrink-0">
             <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/25">
               <span className="text-white font-bold text-lg">BA</span>
             </div>
-            <span className="text-2xl font-bold text-neutral-900 tracking-tight">BuyAuto</span>
+            <span className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight">BuyAuto</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -65,7 +64,7 @@ export default function Header() {
           </nav>
 
           {/* Auth Section - Handle loading state properly */}
-          <div className="flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
             {loading ? (
               /* Show loading state instead of login buttons */
               <div className="flex items-center space-x-2">
@@ -133,7 +132,7 @@ export default function Header() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
