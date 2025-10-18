@@ -42,9 +42,9 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity flex-shrink-0">
             <img 
-              src="/buyauto-logo.png" 
+              src="/Untitled_design.svg" 
               alt="BuyAuto Logo" 
-              className="h-10 w-auto"
+              className="h-8 sm:h-10 w-auto"
             />
           </Link>
 
