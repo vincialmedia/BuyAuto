@@ -304,13 +304,27 @@ export async function getBrands(): Promise<string[]> {
 
 export async function getModelsForBrand(brand: string): Promise<string[]> {
   try {
-     const { data, error } = await supabase.rpc('get_models_for_brand', { p_brand: brand });
+    const { data, error } = await supabase.rpc('get_models_for_brand', { p_brand: brand });
 
     if (error) {
       console.error('Error fetching models:', error);
       return [];
     }
-    return data;
+    
+    // Transform the response: if data contains objects with 'model' key, extract the strings
+    if (!data) return [];
+    
+    // Handle both string[] and {model: string}[] formats
+    if (Array.isArray(data) && data.length > 0) {
+      if (typeof data[0] === 'string') {
+        return data;
+      }
+      if (typeof data[0] === 'object' && data[0] !== null && 'model' in data[0]) {
+        return data.map((item: any) => item.model).filter((model: any) => typeof model === 'string');
+      }
+    }
+    
+    return [];
   } catch (error) {
     console.error('Get models error:', error);
     return [];
