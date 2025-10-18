@@ -4,6 +4,8 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
+        {/* Favicon */}
+        <link rel="icon" href="/favicon.png" />
         {/* Preconnect to Supabase storage for faster image loading */}
         <link rel="preconnect" href="https://psdtkknwxzxnxnbqmdzl.supabase.co" />
         <link rel="dns-prefetch" href="https://psdtkknwxzxnxnbqmdzl.supabase.co" />

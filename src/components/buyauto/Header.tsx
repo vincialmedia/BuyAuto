@@ -41,10 +41,11 @@ export default function Header() {
         <div className="flex justify-between items-center h-16 gap-2">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity flex-shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/25">
-              <span className="text-white font-bold text-lg">BA</span>
-            </div>
-            <span className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight">BuyAuto</span>
+            <img 
+              src="/buyauto-logo.png" 
+              alt="BuyAuto Logo" 
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}

@@ -35,16 +35,16 @@ export default function HomePage({ totalListings }: HomePageProps) {
   return (
     <>
       <Head>
-        <title>Auto Leasing Übernehmen oder Verkaufen in der Schweiz | BuyAuto.ch</title>
+        <title>BuyAuto – Die Schweizer Plattform für Leasingübernahmen</title>
         <meta 
           name="description" 
-          content="Finde dein nächstes Auto-Leasing oder verkaufe deines einfach und sicher. BuyAuto.ch ist die Plattform für Leasingübernahmen in der Schweiz – transparent, schnell und ohne Stress." 
+          content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent. Jetzt Inserat erstellen." 
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
-        <meta property="og:title" content="Auto Leasing Übernehmen oder Verkaufen in der Schweiz | BuyAuto.ch" />
+        <meta property="og:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
         <meta 
           property="og:description" 
-          content="Finde dein nächstes Auto-Leasing oder verkaufe deines einfach und sicher. BuyAuto.ch ist die Plattform für Leasingübernahmen in der Schweiz – transparent, schnell und ohne Stress." 
+          content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent. Jetzt Inserat erstellen." 
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
