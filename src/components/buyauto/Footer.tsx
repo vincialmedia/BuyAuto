@@ -42,7 +42,7 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-6 group hover:opacity-80 transition-opacity">
               <img 
-                src="/Untitled_design.svg" 
+                src="/ChatGPT_Image_Oct_18_2025_04_52_11_PM.png" 
                 alt="BuyAuto Logo" 
                 className="w-[100px] h-auto"
               />
