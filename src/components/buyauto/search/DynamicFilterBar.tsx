@@ -399,7 +399,7 @@ export default function DynamicFilterBar({
   );
 
   return (
-    <div className={cn("bg-white/95 backdrop-blur-md border-b border-neutral-200/80 shadow-sm transition-all duration-300", className)}>
+    <div className={cn("bg-white/80 backdrop-blur-md border-b border-white/30 shadow-sm transition-all duration-300", className)}>
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
         {/* Desktop: Show full filter bar */}
         <div className="hidden md:block">
