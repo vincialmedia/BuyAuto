@@ -44,7 +44,7 @@ export function Footer() {
               <img 
                 src="/Untitled_design.svg" 
                 alt="BuyAuto Logo" 
-                className="h-8 w-auto"
+                className="w-[100px] h-auto"
               />
             </Link>
             <p className="text-neutral-300 mb-8 leading-relaxed font-light text-lg max-w-md">
