@@ -11,8 +11,8 @@ export default function HeroSection({ totalListings }: HeroSectionProps) {
       {/* Background Image with Next.js Image - Mobile Optimized */}
       <div className="absolute inset-0">
         <Image
-          src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1920&h=1080&fit=crop&crop=center"
-          alt="Premium car background"
+          src="/ChatGPT_Image_Oct_18_2025_05_36_15_PM.png"
+          alt="Porsche driving on a mountain road"
           fill
           priority
           className="object-cover"
@@ -20,8 +20,8 @@ export default function HeroSection({ totalListings }: HeroSectionProps) {
           quality={85}
         />
         {/* Swiss minimalist gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/75 via-neutral-900/60 to-neutral-900/85" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-900/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/50 via-neutral-900/30 to-neutral-900/60" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-900/5 to-transparent" />
       </div>
 
       {/* Subtle geometric accent */}
