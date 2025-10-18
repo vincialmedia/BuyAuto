@@ -109,7 +109,7 @@ export default function SearchForm() {
   };
 
   return (
-    <Card className="bg-white shadow-2xl shadow-neutral-900/20 border border-neutral-200/30 rounded-3xl p-6 md:p-8 max-w-4xl mx-auto">
+    <Card className="bg-white/90 backdrop-blur-md shadow-2xl shadow-neutral-900/20 border border-white/30 rounded-3xl p-6 md:p-8 max-w-4xl mx-auto dark:bg-zinc-900/90 dark:border-zinc-700/30">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main filters in clean grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
