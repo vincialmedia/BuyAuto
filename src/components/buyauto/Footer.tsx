@@ -1,4 +1,4 @@
-import { Car, Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 
@@ -40,11 +40,12 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Swiss company info */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center space-x-2 mb-6 group">
-              <Car className="h-8 w-8 text-red-500 group-hover:text-red-400 transition-colors" />
-              <span className="text-2xl font-light text-white tracking-tight">
-                <span className="font-semibold">Buy</span>Auto
-              </span>
+            <Link href="/" className="flex items-center space-x-2 mb-6 group hover:opacity-80 transition-opacity">
+              <img 
+                src="/Untitled_design.svg" 
+                alt="BuyAuto Logo" 
+                className="h-8 w-auto"
+              />
             </Link>
             <p className="text-neutral-300 mb-8 leading-relaxed font-light text-lg max-w-md">
               Die führende Plattform für Leasingübernahmen in der Schweiz. 

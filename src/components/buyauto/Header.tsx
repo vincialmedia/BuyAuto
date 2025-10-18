@@ -44,7 +44,7 @@ export default function Header() {
             <img 
               src="/Untitled_design.svg" 
               alt="BuyAuto Logo" 
-              className="h-12 sm:h-14 w-auto"
+              className="h-10 w-auto"
             />
           </Link>
 
