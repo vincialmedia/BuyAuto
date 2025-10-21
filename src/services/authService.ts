@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface SignInData {
@@ -40,7 +39,7 @@ const authService = {
   async signUp({ email, password, firstName, lastName }: SignUpData) {
     console.log("Starting sign up process");
     
-    const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
     
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -59,7 +58,31 @@ const authService = {
       throw error;
     }
 
-    console.log("Sign up successful");
+    console.log("Sign up successful, user data:", data.user);
+
+    // After successful sign up, invoke the welcome-email function
+    if (data.user) {
+        console.log("Invoking welcome-email function...");
+        try {
+            const { data: functionData, error: functionError } = await supabase.functions.invoke("welcome-email", {
+                body: {
+                    record: {
+                        email: data.user.email,
+                        raw_user_meta_data: data.user.user_metadata
+                    }
+                },
+            });
+
+            if (functionError) {
+                console.error("Error invoking welcome-email function:", functionError);
+            } else {
+                console.log("welcome-email function invoked successfully:", functionData);
+            }
+        } catch (e) {
+            console.error("Caught an exception when invoking welcome-email function:", e);
+        }
+    }
+
     return data;
   },
 
@@ -111,30 +134,30 @@ const authService = {
     try {
       // Use maybeSingle() to handle cases where profile doesn't exist yet
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', userId)
+        .from("profiles")
+        .select("id, role")
+        .eq("id", userId)
         .maybeSingle(); // This prevents 406 errors when no row exists
 
       if (error) {
-        console.error('Error fetching user role:', error);
+        console.error("Error fetching user role:", error);
         // If it's a missing profile, the trigger should create it on next auth event
-        return 'user'; // Safe fallback
+        return "user"; // Safe fallback
       }
 
       // If no profile exists yet (shouldn't happen with trigger, but just in case)
       if (!data) {
         console.warn(`⚠️ No profile found for user ${userId}, defaulting to 'user' role`);
-        return 'user';
+        return "user";
       }
 
-      const role = data.role || 'user'; // Ensure we have a valid role
+      const role = data.role || "user"; // Ensure we have a valid role
       console.log(`✅ User role for ${userId}: ${role}`);
       
       return role;
     } catch (error) {
-      console.error('Unexpected error in getUserRole:', error);
-      return 'user'; // Ultimate fallback
+      console.error("Unexpected error in getUserRole:", error);
+      return "user"; // Ultimate fallback
     }
   },
 };

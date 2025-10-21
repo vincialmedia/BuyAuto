@@ -15,6 +15,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      debug_logs: {
+        Row: {
+          created_at: string | null
+          id: number
+          log_message: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          log_message?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          log_message?: Json | null
+        }
+        Relationships: []
+      }
       listing_inquiries: {
         Row: {
           created_at: string
