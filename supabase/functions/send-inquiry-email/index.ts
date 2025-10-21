@@ -65,6 +65,45 @@ function generateEmailHtml(data: InquiryEmailData): string {
   `;
 }
 
+async function sendEmailViaResend(to: string, subject: string, html: string, replyTo: string): Promise<boolean> {
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  
+  if (!resendApiKey) {
+    console.error("RESEND_API_KEY not configured");
+    return false;
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: "BuyAuto <noreply@buyauto.ch>",
+        to: [to],
+        reply_to: replyTo,
+        subject: subject,
+        html: html,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error("Resend API error:", response.status, errorData);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log("Email sent successfully via Resend:", result);
+    return true;
+  } catch (error) {
+    console.error("Error sending email via Resend:", error);
+    return false;
+  }
+}
+
 async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -122,7 +161,7 @@ async function handler(req: Request): Promise<Response> {
       throw new Error("Owner email not found");
     }
 
-    // Construct listing URL - use production domain
+    // Construct listing URL
     const baseUrl = Deno.env.get("SITE_URL") || "https://buy-auto.vercel.app";
     const listingUrl = `${baseUrl}/fahrzeug/${listing.id}`;
 
@@ -143,45 +182,26 @@ async function handler(req: Request): Promise<Response> {
     const emailHtml = generateEmailHtml(emailData);
     const emailSubject = `Neue Anfrage für Ihr Inserat: ${listing.make} ${listing.model}`;
 
-    // Use Supabase's built-in email functionality
-    // This requires SMTP to be configured in Supabase project settings
-    const { error: emailError } = await fetch(
-      `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/generate_link`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-        },
-        body: JSON.stringify({
-          type: "email",
-          email: ownerEmail,
-          options: {
-            emailRedirectTo: listingUrl,
-            data: {
-              subject: emailSubject,
-              html: emailHtml,
-            },
-          },
-        }),
-      }
-    ).then(res => res.json()).then(data => data.error);
+    // Send email via Resend
+    const emailSent = await sendEmailViaResend(
+      ownerEmail,
+      emailSubject,
+      emailHtml,
+      inquiry.email
+    );
 
-    if (emailError) {
-      console.error("Email sending error:", emailError);
-      
-      // Fallback: Log the email details for manual processing
-      console.log("Email would be sent to:", ownerEmail);
+    if (!emailSent) {
+      // Log for debugging but don't fail the request
+      console.log("Email sending failed, but inquiry was saved");
+      console.log("Owner email:", ownerEmail);
       console.log("Subject:", emailSubject);
       console.log("Inquiry ID:", inquiry_id);
       
-      // Don't throw error - the inquiry was still saved successfully
       return new Response(JSON.stringify({
         success: true,
-        message: "Inquiry saved, email queued for delivery",
+        message: "Inquiry saved successfully",
         inquiry_id: inquiry_id,
-        warning: "Email delivery pending SMTP configuration",
+        warning: "Email delivery pending - please configure RESEND_API_KEY",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
