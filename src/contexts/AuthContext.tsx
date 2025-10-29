@@ -41,20 +41,21 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
       if (error) {
         console.error('Error checking admin role:', error);
-        // Default to user role on error
+        console.log('[ADMIN CHECK FAILED] Due to database error.');
         setIsAdmin(false);
       } else {
-        // Use fallback to 'user' if no data or no role
+        console.log('[ADMIN CHECK DATA] Raw profile data from DB:', data);
         const role = data?.role ?? 'user';
+        console.log(`[ADMIN CHECK RESULT] Role resolved to: '${role}'. Is admin: ${role === 'admin'}`);
         setIsAdmin(role === 'admin');
         
         if (!data) {
-          console.log('No profile found for user, defaulting to user role');
-          // Note: The database trigger should handle this automatically for new users
+          console.log('[ADMIN CHECK WARNING] No profile found for user, defaulting to user role');
         }
       }
     } catch (error) {
       console.error('Error checking admin role:', error);
+      console.log('[ADMIN CHECK FAILED] Due to exception.');
       setIsAdmin(false);
     } finally {
       setAdminLoading(false);
