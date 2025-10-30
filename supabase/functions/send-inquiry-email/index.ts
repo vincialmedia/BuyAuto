@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { Resend } from "npm:resend@3.2.0";
+
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const resend = new Resend(RESEND_API_KEY);
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface InquiryEmailData {
@@ -65,48 +68,9 @@ function generateEmailHtml(data: InquiryEmailData): string {
   `;
 }
 
-async function sendEmailViaResend(to: string, subject: string, html: string, replyTo: string): Promise<boolean> {
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  
-  if (!resendApiKey) {
-    console.error("RESEND_API_KEY not configured");
-    return false;
-  }
-
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${resendApiKey}`,
-      },
-      body: JSON.stringify({
-        from: "BuyAuto <noreply@buyauto.ch>",
-        to: [to],
-        reply_to: replyTo,
-        subject: subject,
-        html: html,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("Resend API error:", response.status, errorData);
-      return false;
-    }
-
-    const result = await response.json();
-    console.log("Email sent successfully via Resend:", result);
-    return true;
-  } catch (error) {
-    console.error("Error sending email via Resend:", error);
-    return false;
-  }
-}
-
-async function handler(req: Request): Promise<Response> {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -135,7 +99,7 @@ async function handler(req: Request): Promise<Response> {
         listings!listing_inquiries_listing_id_fkey (
           id,
           title,
-          make,
+          brand,
           model,
           user_id,
           profiles!listings_user_id_fkey (
@@ -174,58 +138,55 @@ async function handler(req: Request): Promise<Response> {
       inquirerPhone: inquiry.phone,
       message: inquiry.message,
       listingTitle: listing.title,
-      listingMake: listing.make,
+      listingMake: listing.brand,
       listingModel: listing.model,
       listingUrl,
     };
 
     const emailHtml = generateEmailHtml(emailData);
-    const emailSubject = `Neue Anfrage für Ihr Inserat: ${listing.make} ${listing.model}`;
+    const emailSubject = `Neue Anfrage für Ihr Inserat: ${listing.brand} ${listing.model}`;
 
-    // Send email via Resend
-    const emailSent = await sendEmailViaResend(
-      ownerEmail,
-      emailSubject,
-      emailHtml,
-      inquiry.email
-    );
+    // Send email using Resend npm package
+    const sendResult = await resend.emails.send({
+      from: "BuyAuto <notifications@email.buyauto.ch>",
+      to: ownerEmail,
+      reply_to: inquiry.email,
+      subject: emailSubject,
+      html: emailHtml,
+    });
 
-    if (!emailSent) {
-      // Log for debugging but don't fail the request
-      console.log("Email sending failed, but inquiry was saved");
-      console.log("Owner email:", ownerEmail);
-      console.log("Subject:", emailSubject);
-      console.log("Inquiry ID:", inquiry_id);
-      
+    if (sendResult.error) {
+      console.error("Error sending inquiry email:", sendResult.error);
       return new Response(JSON.stringify({
-        success: true,
-        message: "Inquiry saved successfully",
+        success: false,
+        message: "Inquiry saved but email delivery failed",
         inquiry_id: inquiry_id,
-        warning: "Email delivery pending - please configure RESEND_API_KEY",
+        error: sendResult.error.message,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
+    console.log(`Inquiry email sent successfully to ${ownerEmail} for inquiry ${inquiry_id}`);
+
     return new Response(JSON.stringify({
       success: true,
       message: "Inquiry email sent successfully",
-      inquiry_id: inquiry_id
+      inquiry_id: inquiry_id,
+      email_id: sendResult.data?.id,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error in send-inquiry-email function:", error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: error.message,
-      success: false 
+      success: false,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
   }
-}
-
-serve(handler);
+});

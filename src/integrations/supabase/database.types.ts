@@ -290,7 +290,7 @@ export type Database = {
     }
     Functions: {
       get_all_users_with_profiles: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           email: string
@@ -300,20 +300,15 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_distinct_brands: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
+      get_distinct_brands: { Args: never; Returns: string[] }
       get_models_for_brand: {
         Args: { p_brand: string }
         Returns: {
           model: string
         }[]
       }
-      get_user_role: {
-        Args: { user_id: string }
-        Returns: string
-      }
+      get_my_role: { Args: never; Returns: string }
+      get_user_role: { Args: { user_id: string }; Returns: string }
       search_published_listings: {
         Args: {
           limit_count?: number
