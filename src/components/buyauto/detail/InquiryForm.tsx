@@ -1,12 +1,14 @@
-import { useState } from "react";
-import { X, Send, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Send, CheckCircle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { createInquiry, InquiryData } from "@/services/inquiryService";
+import { createInquiry, getUserProfile } from "@/services/inquiryService";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/router";
 
 interface InquiryFormData {
   name: string;
@@ -23,6 +25,8 @@ interface InquiryFormProps {
 }
 
 export default function InquiryForm({ listingId, listingTitle, open, onOpenChange }: InquiryFormProps) {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [formData, setFormData] = useState<InquiryFormData>({
     name: "",
     email: "",
@@ -32,19 +36,42 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Partial<InquiryFormData>>({});
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  // Load user profile data when user is authenticated
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (user) {
+        setProfileLoading(true);
+        const profile = await getUserProfile(user.id);
+        
+        if (profile) {
+          setFormData(prev => ({
+            ...prev,
+            name: profile.full_name || "",
+            email: profile.email || user.email || ""
+          }));
+        } else {
+          // Fallback to auth user email if profile not found
+          setFormData(prev => ({
+            ...prev,
+            email: user.email || ""
+          }));
+        }
+        
+        setProfileLoading(false);
+      } else {
+        setProfileLoading(false);
+      }
+    };
+
+    if (open && !authLoading) {
+      loadUserProfile();
+    }
+  }, [user, open, authLoading]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<InquiryFormData> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name ist erforderlich";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "E-Mail ist erforderlich";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Ungültige E-Mail-Adresse";
-    }
 
     if (!formData.message.trim()) {
       newErrors.message = "Nachricht ist erforderlich";
@@ -59,6 +86,10 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) {
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
@@ -66,22 +97,21 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
     setIsSubmitting(true);
 
     try {
-      const inquiryData: InquiryData = {
+      const success = await createInquiry({
         listing_id: listingId,
+        user_id: user.id,
         name: formData.name,
         email: formData.email,
         phone: formData.phone || undefined,
         message: formData.message
-      };
-      
-      const success = await createInquiry(inquiryData);
+      });
       
       if (success) {
         setSubmitted(true);
         // Reset form after 3 seconds and close modal
         setTimeout(() => {
           setSubmitted(false);
-          setFormData({ name: "", email: "", phone: "", message: "" });
+          setFormData(prev => ({ ...prev, phone: "", message: "" }));
           setErrors({});
           onOpenChange(false);
         }, 3000);
@@ -98,7 +128,6 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
 
   const handleChange = (field: keyof InquiryFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -107,11 +136,58 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
   const handleClose = () => {
     if (!isSubmitting) {
       setSubmitted(false);
-      setFormData({ name: "", email: "", phone: "", message: "" });
+      setFormData(prev => ({ ...prev, phone: "", message: "" }));
       setErrors({});
       onOpenChange(false);
     }
   };
+
+  const handleLoginRedirect = () => {
+    onOpenChange(false);
+    router.push("/auth?redirect=" + encodeURIComponent(router.asPath));
+  };
+
+  // Show login prompt if user is not authenticated
+  if (!authLoading && !user) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
+          <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-blue-50 rounded-3xl overflow-hidden">
+            <CardContent className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mx-auto flex items-center justify-center">
+                <LogIn className="w-8 h-8 text-white" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-neutral-900">
+                  Anmeldung erforderlich
+                </h3>
+                <p className="text-neutral-600 text-sm leading-relaxed">
+                  Um eine Anfrage zu senden, müssen Sie angemeldet sein. 
+                  Dies ermöglicht dem Anbieter, Sie schnell und einfach zu kontaktieren.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Button
+                  onClick={handleLoginRedirect}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 h-12 rounded-xl"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Jetzt anmelden
+                </Button>
+                <Button
+                  onClick={handleClose}
+                  variant="ghost"
+                  className="w-full"
+                >
+                  Abbrechen
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (submitted) {
     return (
@@ -175,123 +251,119 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
           </DialogHeader>
 
           <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Name Field */}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium text-neutral-700">
-                  Name *
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  className={`rounded-xl border-2 transition-colors ${
-                    errors.name 
-                      ? "border-red-300 focus:border-red-500" 
-                      : "border-neutral-200 focus:border-red-300"
-                  }`}
-                  placeholder="Ihr vollständiger Name"
-                  disabled={isSubmitting}
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-600 mt-1">{errors.name}</p>
-                )}
+            {profileLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-2 border-neutral-300 border-t-neutral-600 rounded-full animate-spin"></div>
               </div>
-
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-neutral-700">
-                  E-Mail *
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  className={`rounded-xl border-2 transition-colors ${
-                    errors.email 
-                      ? "border-red-300 focus:border-red-500" 
-                      : "border-neutral-200 focus:border-red-300"
-                  }`}
-                  placeholder="ihre.email@beispiel.com"
-                  disabled={isSubmitting}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600 mt-1">{errors.email}</p>
-                )}
-              </div>
-
-              {/* Phone Field */}
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium text-neutral-700">
-                  Telefon (optional)
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                  className="rounded-xl border-2 border-neutral-200 focus:border-red-300 transition-colors"
-                  placeholder="+41 XX XXX XX XX"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Message Field */}
-              <div className="space-y-2">
-                <Label htmlFor="message" className="text-sm font-medium text-neutral-700">
-                  Nachricht *
-                </Label>
-                <Textarea
-                  id="message"
-                  value={formData.message}
-                  onChange={(e) => handleChange("message", e.target.value)}
-                  className={`rounded-xl border-2 transition-colors min-h-[120px] resize-none ${
-                    errors.message 
-                      ? "border-red-300 focus:border-red-500" 
-                      : "border-neutral-200 focus:border-red-300"
-                  }`}
-                  placeholder="Hallo, ich interessiere mich für die Leasingübernahme dieses Fahrzeugs. Können wir einen Termin vereinbaren?"
-                  disabled={isSubmitting}
-                />
-                <div className="flex justify-between items-center">
-                  {errors.message && (
-                    <p className="text-sm text-red-600">{errors.message}</p>
-                  )}
-                  <p className="text-xs text-neutral-500 ml-auto">
-                    Mindestens 20 Zeichen ({formData.message.length}/20)
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Name Field - Read-only from profile */}
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-neutral-700">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={formData.name}
+                    readOnly
+                    className="rounded-xl border-2 border-neutral-200 bg-neutral-50 cursor-not-allowed"
+                    placeholder="Ihr vollständiger Name"
+                  />
+                  <p className="text-xs text-neutral-500">
+                    Wird automatisch aus Ihrem Profil übernommen
                   </p>
                 </div>
-              </div>
 
-              {/* Submit Button */}
-              <div className="pt-4">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 h-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Wird gesendet...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Send className="w-4 h-4" />
-                      Anfrage senden
-                    </div>
-                  )}
-                </Button>
-              </div>
+                {/* Email Field - Read-only from profile */}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-neutral-700">
+                    E-Mail
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    readOnly
+                    className="rounded-xl border-2 border-neutral-200 bg-neutral-50 cursor-not-allowed"
+                    placeholder="ihre.email@beispiel.com"
+                  />
+                  <p className="text-xs text-neutral-500">
+                    Wird automatisch aus Ihrem Profil übernommen
+                  </p>
+                </div>
 
-              <p className="text-xs text-neutral-500 text-center leading-relaxed">
-                Mit dem Absenden bestätigen Sie, dass Ihre Daten zur Bearbeitung 
-                Ihrer Anfrage verwendet werden dürfen. Weitere Informationen finden 
-                Sie in unserer Datenschutzerklärung.
-              </p>
-            </form>
+                {/* Phone Field - Optional, user can edit */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium text-neutral-700">
+                    Telefon (optional)
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleChange("phone", e.target.value)}
+                    className="rounded-xl border-2 border-neutral-200 focus:border-red-300 transition-colors"
+                    placeholder="+41 XX XXX XX XX"
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Message Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-sm font-medium text-neutral-700">
+                    Nachricht *
+                  </Label>
+                  <Textarea
+                    id="message"
+                    value={formData.message}
+                    onChange={(e) => handleChange("message", e.target.value)}
+                    className={`rounded-xl border-2 transition-colors min-h-[120px] resize-none ${
+                      errors.message 
+                        ? "border-red-300 focus:border-red-500" 
+                        : "border-neutral-200 focus:border-red-300"
+                    }`}
+                    placeholder="Hallo, ich interessiere mich für die Leasingübernahme dieses Fahrzeugs. Können wir einen Termin vereinbaren?"
+                    disabled={isSubmitting}
+                  />
+                  <div className="flex justify-between items-center">
+                    {errors.message && (
+                      <p className="text-sm text-red-600">{errors.message}</p>
+                    )}
+                    <p className="text-xs text-neutral-500 ml-auto">
+                      Mindestens 20 Zeichen ({formData.message.length}/20)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-4">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 h-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Wird gesendet...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Send className="w-4 h-4" />
+                        Anfrage senden
+                      </div>
+                    )}
+                  </Button>
+                </div>
+
+                <p className="text-xs text-neutral-500 text-center leading-relaxed">
+                  Mit dem Absenden bestätigen Sie, dass Ihre Daten zur Bearbeitung 
+                  Ihrer Anfrage verwendet werden dürfen. Weitere Informationen finden 
+                  Sie in unserer Datenschutzerklärung.
+                </p>
+              </form>
+            )}
           </CardContent>
         </Card>
       </DialogContent>
