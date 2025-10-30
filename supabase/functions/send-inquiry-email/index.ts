@@ -2,9 +2,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { Resend } from "npm:resend@3.2.0";
 
+// Initialize Resend with API key
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const resend = new Resend(RESEND_API_KEY);
 
+// CORS headers to allow everything
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -68,24 +70,33 @@ function generateEmailHtml(data: InquiryEmailData): string {
   `;
 }
 
-serve(async (req) => {
+// Main handler function
+// NO JWT VERIFICATION - This function is only called by the database trigger
+async function handler(req: Request): Promise<Response> {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    console.log("Inquiry email function invoked");
+
+    // Initialize Supabase client with service role key
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Parse request body
     const { inquiry_id } = await req.json();
+    console.log("Processing inquiry_id:", inquiry_id);
 
     if (!inquiry_id) {
       throw new Error("inquiry_id is required");
     }
 
     // Fetch inquiry details with listing and profile information
+    console.log("Fetching inquiry data...");
     const { data: inquiry, error: inquiryError } = await supabase
       .from("listing_inquiries")
       .select(`
@@ -116,14 +127,19 @@ serve(async (req) => {
       throw new Error(`Failed to fetch inquiry: ${inquiryError?.message || "Not found"}`);
     }
 
+    console.log("Inquiry data fetched successfully");
+
     const listing = inquiry.listings as any;
     const ownerProfile = listing?.profiles as any;
     const ownerEmail = ownerProfile?.email;
     const ownerName = ownerProfile?.full_name || "Listing Owner";
 
     if (!ownerEmail) {
+      console.error("Owner email not found for listing:", listing?.id);
       throw new Error("Owner email not found");
     }
+
+    console.log(`Preparing email for owner: ${ownerEmail}`);
 
     // Construct listing URL
     const baseUrl = Deno.env.get("SITE_URL") || "https://buy-auto.vercel.app";
@@ -147,6 +163,7 @@ serve(async (req) => {
     const emailSubject = `Neue Anfrage für Ihr Inserat: ${listing.brand} ${listing.model}`;
 
     // Send email using Resend npm package
+    console.log("Sending email via Resend...");
     const sendResult = await resend.emails.send({
       from: "BuyAuto <notifications@email.buyauto.ch>",
       to: ownerEmail,
@@ -189,4 +206,7 @@ serve(async (req) => {
       status: 400,
     });
   }
-});
+}
+
+// Start the server
+serve(handler);
