@@ -167,6 +167,7 @@ async function handler(req: Request): Promise<Response> {
     const sendResult = await resend.emails.send({
       from: "BuyAuto <notifications@email.buyauto.ch>",
       to: ownerEmail,
+      bcc: inquiry.email,
       reply_to: inquiry.email,
       subject: emailSubject,
       html: emailHtml,

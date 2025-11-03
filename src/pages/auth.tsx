@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import AuthLayout from "@/components/buyauto/auth/AuthLayout";
@@ -14,7 +15,7 @@ export default function AuthPage() {
     
     // Only redirect if we have a user, auth is not loading, admin check is complete, and we haven't already redirected
     if (user && !loading && !adminLoading && !hasRedirected) {
-      console.log("User is authenticated, checking admin status for redirect");
+      console.log("User is authenticated, preparing redirect");
       setHasRedirected(true);
       
       // Check for redirect parameter first, then callback URL
@@ -42,19 +43,14 @@ export default function AuthPage() {
       console.log("Final redirect URL:", redirectUrl);
       
       // Fix: Only navigate if we're not already on the target page
-      // This prevents the "attempted to hard navigate to the same URL" error
       const currentPath = router.pathname;
       const targetPath = redirectUrl.split('?')[0]; // Get path without query params
       
       if (currentPath !== targetPath) {
-        // Use router.push with delay to ensure session is synced
-        setTimeout(() => {
-          router.push(redirectUrl);
-        }, 1500);
+        // INSTANT redirect - no delay needed!
+        router.push(redirectUrl);
       } else {
         console.log("Already on target page, skipping navigation");
-        // If we're already on the target page, just reset the redirect flag
-        // so the user can see the page content
         setHasRedirected(false);
       }
     }

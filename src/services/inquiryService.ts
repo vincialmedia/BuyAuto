@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -14,6 +15,16 @@ export interface InquiryData {
 
 export async function createInquiry(inquiryData: InquiryData): Promise<boolean> {
   try {
+    const payload = {
+      listing_id: inquiryData.listing_id,
+      user_id: inquiryData.user_id,
+      name: inquiryData.name,
+      email: inquiryData.email,
+      phone: inquiryData.phone,
+      message_length: inquiryData.message.length
+    };
+    console.log("[INQUIRY SERVICE] Creating inquiry with data:", JSON.stringify(payload, null, 2));
+
     const newInquiry: InquiryInsert = {
       listing_id: inquiryData.listing_id,
       user_id: inquiryData.user_id,
@@ -23,18 +34,26 @@ export async function createInquiry(inquiryData: InquiryData): Promise<boolean> 
       message: inquiryData.message,
     };
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("listing_inquiries")
-      .insert(newInquiry);
+      .insert(newInquiry)
+      .select();
 
     if (error) {
-      console.error("Error creating inquiry:", error);
+      const errorDetails = {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      };
+      console.error("[INQUIRY SERVICE] Error creating inquiry:", JSON.stringify(errorDetails, null, 2));
       return false;
     }
 
+    console.log("[INQUIRY SERVICE] Inquiry created successfully:", JSON.stringify(data, null, 2));
     return true;
   } catch (error) {
-    console.error("Failed to create inquiry:", error);
+    console.error("[INQUIRY SERVICE] Exception in createInquiry:", error);
     return false;
   }
 }
@@ -61,6 +80,8 @@ export async function getInquiriesForListing(listingId: string): Promise<any[]> 
 
 export async function getUserProfile(userId: string): Promise<{ email: string; full_name: string } | null> {
   try {
+    console.log("[INQUIRY SERVICE] Fetching profile for user:", userId);
+    
     const { data, error } = await supabase
       .from("profiles")
       .select("email, full_name")
@@ -68,13 +89,14 @@ export async function getUserProfile(userId: string): Promise<{ email: string; f
       .maybeSingle();
 
     if (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("[INQUIRY SERVICE] Error fetching user profile:", error);
       return null;
     }
 
+    console.log("[INQUIRY SERVICE] Profile fetched:", data);
     return data;
   } catch (error) {
-    console.error("Failed to fetch user profile:", error);
+    console.error("[INQUIRY SERVICE] Exception fetching user profile:", error);
     return null;
   }
 }

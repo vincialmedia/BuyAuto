@@ -10,6 +10,7 @@ import { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
 import SimilarListings from "@/components/buyauto/detail/SimilarListings";
+import { StructuredData } from "@/components/buyauto/StructuredData";
 
 // Dynamically import InquiryForm (only loads when user clicks inquiry button)
 const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), {
@@ -106,16 +107,49 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   };
 
   const images = listing.images && listing.images.length > 0 ? listing.images : [];
+  const baseUrl = process.env.NODE_ENV === "production" 
+    ? "https://www.buyauto.ch" 
+    : "http://localhost:3000";
+  const listingUrl = `${baseUrl}/fahrzeug/${listing.id}`;
+  const ogImage = listing.imageUrl || (images.length > 0 ? images[0] : `${baseUrl}/buyauto-logo.png`);
 
   return (
     <>
       <Head>
         <title>{`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`}</title>
         <meta name="description" content={`${listing.brand} ${listing.model} ${listing.year} für ${formatPrice(listing.pricePerMonthCHF)}/Monat in ${listing.location}. Jetzt Auto-Leasing übernehmen!`} />
+        <link rel="canonical" href={listingUrl} />
+        
+        {/* Open Graph Meta Tags */}
         <meta property="og:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
         <meta property="og:description" content={`${listing.brand} ${listing.model} ${listing.year} für ${formatPrice(listing.pricePerMonthCHF)}/Monat in ${listing.location}. Jetzt Auto-Leasing übernehmen!`} />
-        {listing.imageUrl && <meta property="og:image" content={listing.imageUrl} />}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={listingUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={`${listing.brand} ${listing.model} ${listing.year}`} />
+        <meta property="og:site_name" content="BuyAuto" />
+        
+        {/* Twitter Card Meta Tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
+        <meta name="twitter:description" content={`${listing.brand} ${listing.model} ${listing.year} für ${formatPrice(listing.pricePerMonthCHF)}/Monat`} />
+        <meta name="twitter:image" content={ogImage} />
       </Head>
+
+      {/* Structured Data for Google */}
+      <StructuredData 
+        type="listing" 
+        listingData={{
+          id: listing.id,
+          brand: listing.brand,
+          model: listing.model,
+          year: listing.year,
+          price: listing.pricePerMonthCHF,
+          images: images
+        }}
+      />
 
       <div className="min-h-screen bg-neutral-50">
         <div className="bg-white border-b border-neutral-200 sticky top-0 z-10">

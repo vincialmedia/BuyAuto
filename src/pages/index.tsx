@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import HeroSection from "@/components/buyauto/HeroSection";
 import { UspBar } from "@/components/buyauto/UspBar";
 import PremiumListings from "@/components/buyauto/PremiumListings";
+import { StructuredData } from "@/components/buyauto/StructuredData";
 import { GetStaticProps } from "next";
 import { getPublishedListingsCount } from "@/services/listingsService";
 
@@ -32,6 +33,10 @@ interface HomePageProps {
 }
 
 export default function HomePage({ totalListings }: HomePageProps) {
+  const baseUrl = process.env.NODE_ENV === "production" 
+    ? "https://www.buyauto.ch" 
+    : "http://localhost:3000";
+
   return (
     <>
       <Head>
@@ -41,6 +46,8 @@ export default function HomePage({ totalListings }: HomePageProps) {
           content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent. Jetzt Inserat erstellen." 
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
+        
+        {/* Open Graph Meta Tags */}
         <meta property="og:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
         <meta 
           property="og:description" 
@@ -48,7 +55,22 @@ export default function HomePage({ totalListings }: HomePageProps) {
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
+        <meta property="og:image" content={`${baseUrl}/buyauto-logo.png`} />
+        <meta property="og:image:width" content="512" />
+        <meta property="og:image:height" content="512" />
+        <meta property="og:image:alt" content="BuyAuto Logo" />
+        <meta property="og:site_name" content="BuyAuto" />
+        <meta property="og:locale" content="de_CH" />
+        
+        {/* Twitter Card Meta Tags */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
+        <meta name="twitter:description" content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent." />
+        <meta name="twitter:image" content={`${baseUrl}/buyauto-logo.png`} />
       </Head>
+
+      {/* Structured Data for Google */}
+      <StructuredData type="homepage" />
 
       <HeroSection totalListings={totalListings} />
       <UspBar />
