@@ -21,12 +21,12 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // 1. Fetch listing details and owner's email
+    // 1. Fetch listing details and owner's email using explicit foreign key
     const { data: listingData, error: listingError } = await supabaseAdmin
       .from("listings")
       .select(`
         title,
-        profiles (
+        profiles!listings_created_by_fkey (
           email
         )
       `)
