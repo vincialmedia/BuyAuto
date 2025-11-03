@@ -311,6 +311,7 @@ export type Database = {
         }[]
       }
       get_my_role: { Args: never; Returns: string }
+      get_service_role_key: { Args: never; Returns: string }
       get_user_role: { Args: { user_id: string }; Returns: string }
       search_published_listings: {
         Args: {
@@ -351,6 +352,7 @@ export type Database = {
           year: number
         }[]
       }
+      supabase_url: { Args: never; Returns: string }
     }
     Enums: {
       listing_status:
