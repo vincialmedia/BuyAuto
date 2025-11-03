@@ -112,11 +112,7 @@ async function handler(req: Request): Promise<Response> {
           title,
           brand,
           model,
-          user_id,
-          profiles!listings_user_id_fkey (
-            email,
-            full_name
-          )
+          user_id
         )
       `)
       .eq("id", inquiry_id)
@@ -130,7 +126,20 @@ async function handler(req: Request): Promise<Response> {
     console.log("Inquiry data fetched successfully");
 
     const listing = inquiry.listings as any;
-    const ownerProfile = listing?.profiles as any;
+    
+    // Fetch owner profile separately using user_id
+    console.log("Fetching owner profile for user_id:", listing?.user_id);
+    const { data: ownerProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", listing?.user_id)
+      .single();
+
+    if (profileError || !ownerProfile) {
+      console.error("Owner profile fetch error:", profileError);
+      throw new Error(`Failed to fetch owner profile: ${profileError?.message || "Not found"}`);
+    }
+
     const ownerEmail = ownerProfile?.email;
     const ownerName = ownerProfile?.full_name || "Listing Owner";
 
