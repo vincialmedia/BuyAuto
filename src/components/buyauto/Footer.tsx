@@ -58,13 +58,7 @@ export function Footer() {
                 <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
                   <Mail className="h-5 w-5 text-red-400" />
                 </div>
-                <span className="text-neutral-300 font-medium">info@buyauto.ch</span>
-              </div>
-              <div className="flex items-center space-x-4 group">
-                <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
-                  <Phone className="h-5 w-5 text-red-400" />
-                </div>
-                <span className="text-neutral-300 font-medium">+41 44 123 45 67</span>
+                <span className="text-neutral-300 font-medium">hello@buyauto.ch</span>
               </div>
               <div className="flex items-center space-x-4 group">
                 <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
