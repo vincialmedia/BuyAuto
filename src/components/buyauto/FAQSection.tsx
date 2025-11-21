@@ -18,6 +18,16 @@ const faqs = [
     id: "faq-3",
     question: "Welche Voraussetzungen muss ich für eine Leasingübernahme erfüllen?",
     answer: "Um eine Leasingübernahme in der Schweiz machen zu können, brauchst du vor allem eine stabile finanzielle Situation und eine positive Bonitätsprüfung. Die Leasinggesellschaft prüft dabei dein Einkommen, deine laufenden Verpflichtungen und mögliche Einträge im Betreibungsregister. Wichtig ist ausserdem, dass du volljährig bist und einen festen Wohnsitz in der Schweiz hast, da der bestehende Auto-Leasingvertrag vollständig auf dich übertragen wird. Je besser deine finanzielle Ausgangslage, desto höher die Chance, dass die Bank deine Anfrage akzeptiert. Falls du dir unsicher bist, ob du alle Anforderungen erfüllst, lohnt sich ein Blick in unseren ausführlichen Leitfaden zur Leasingübernahme.\n\nMehr Details findest du in unserem Ratgeber zu den Voraussetzungen der Leasingübernahme."
+  },
+  {
+    id: "faq-4",
+    question: "Was kostet eine Leasingübernahme?",
+    answer: "Die Kosten einer Leasingübernahme in der Schweiz setzen sich aus drei Bestandteilen zusammen: Erstens zahlst du die monatliche Leasingrate, die bereits im bestehenden Vertrag festgelegt ist. Zweitens kann eine Ablösesumme an die bisherige Leasingnehmerin oder den bisherigen Leasingnehmer anfallen – zum Beispiel, wenn bereits eine hohe Anzahlung geleistet wurde. Drittens verlangen viele Leasinggesellschaften eine kleine Vertrags- oder Dossiergebühr für die Übertragung des Auto-Leasings. Zusätzlich kommen wie immer die laufenden Kosten wie Versicherung, Service und Motorfahrzeugsteuer dazu. Oft ist eine Leasingübernahme trotzdem günstiger als ein neues Leasing, weil die teure Anfangsphase schon abgeschlossen ist.\n\nEine komplette Übersicht findest du in unserem Leitfaden zu den Kosten der Leasingübernahme."
+  },
+  {
+    id: "faq-5",
+    question: "Welche Risiken oder Nachteile hat eine Leasingübernahme?",
+    answer: "Bei einer Leasingübernahme in der Schweiz übernimmst du einen bestehenden Auto-Leasingvertrag – und damit auch dessen Bedingungen. Das bedeutet: Die Laufzeit, das Kilometerlimit und der vereinbarte Restwert sind bereits fix und können oft nicht mehr angepasst werden. Überschreitest du die Kilometer oder wurden frühere Schäden nicht sauber dokumentiert, kann es bei der Rückgabe zu zusätzlichen Kosten kommen. Auch die Leasingbank kann die Übernahme ablehnen, wenn deine Bonitätsprüfung nicht ausreicht. Deshalb ist es wichtig, das Fahrzeug genau anzuschauen, ein Übergabeprotokoll zu machen und den Vertrag vorab gründlich zu prüfen.\n\nMehr Infos findest du in unserem Leitfaden zu den Risiken einer Leasingübernahme."
   }
 ];
 
