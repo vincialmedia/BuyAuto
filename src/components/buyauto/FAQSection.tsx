@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -7,28 +6,8 @@ import Head from "next/head";
 const faqs = [
   {
     id: "faq-1",
-    question: "Wie funktioniert eine Leasingübernahme?",
-    answer: "Bei einer Leasingübernahme übernimmst du den bestehenden Leasingvertrag eines anderen Kunden. Du zahlst die monatlichen Raten weiter und erhältst das Fahrzeug. Wir prüfen deine Bonität und wickeln den gesamten Prozess für dich ab."
-  },
-  {
-    id: "faq-2",
-    question: "Welche Kosten entstehen?",
-    answer: "Du zahlst die monatliche Leasingrate plus eventuell anfallende Übernahmegebühren. Diese sind transparent in jedem Inserat aufgeführt. Zusätzlich können je nach Anbieter Bearbeitungsgebühren anfallen."
-  },
-  {
-    id: "faq-3",
-    question: "Was muss ich als neuer Leasingnehmer nachweisen?",
-    answer: "Du benötigst einen gültigen Führerausweis, Einkommensnachweis der letzten 3 Monate, einen aktuellen Betreibungsregisterauszug und eine Kopie deines Personalausweises oder Passes."
-  },
-  {
-    id: "faq-4",
-    question: "Kann ich das Fahrzeug vor der Übernahme besichtigen?",
-    answer: "Ja, wir empfehlen dringend eine Besichtigung vor der Übernahme. Du kannst direkt mit dem aktuellen Leasingnehmer einen Termin vereinbaren oder über unsere Plattform eine Besichtigung organisieren."
-  },
-  {
-    id: "faq-5",
-    question: "Was passiert bei Schäden oder Verschleiss?",
-    answer: "Der Zustand des Fahrzeugs wird bei der Übernahme dokumentiert. Bestehende Schäden gehen nicht zu deinen Lasten. Für neue Schäden während deiner Leasingdauer bist du entsprechend den Leasingbedingungen verantwortlich."
+    question: "Was ist eine Leasingübernahme?",
+    answer: "Eine Leasingübernahme in der Schweiz bedeutet, dass du einen bestehenden Auto-Leasingvertrag von einer anderen Person übernimmst, statt ein neues Leasing abzuschliessen. Du wirst dabei als neue:r Leasingnehmer:in in den Vertrag eingetragen und übernimmst die noch verbleibende Laufzeit, die vereinbarten Kilometer und den Restwert. Der grosse Vorteil: Die teure Anfangsphase des Leasings ist bereits bezahlt, sodass du oft von tieferen Raten und einer kürzeren Restlaufzeit profitierst. Für viele ist die Leasingübernahme die flexibelste Lösung zwischen Kauf, Neu-Leasing und Auto-Abo – besonders, wenn du ein gut ausgestattetes Fahrzeug suchst und nicht jahrelang gebunden sein willst.\n\nEine ausführliche Erklärung findest du in unserem Ratgeber zur Leasingübernahme."
   }
 ];
 
@@ -69,7 +48,7 @@ export default function FAQSection() {
 
           {/* Swiss minimalist accordion */}
           <Accordion type="single" collapsible className="w-full space-y-4">
-            {faqs.map((faq, index) => (
+            {faqs.map((faq) => (
               <AccordionItem 
                 key={faq.id} 
                 value={faq.id}
@@ -78,7 +57,7 @@ export default function FAQSection() {
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-8 hover:text-red-600 transition-colors duration-200 text-base md:text-lg leading-relaxed">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-neutral-600 leading-relaxed pb-8 font-light">
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-8 font-light whitespace-pre-line">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>

@@ -9,11 +9,17 @@ export default function Document() {
     <Html lang="de">
       <Head>
         {/* Global Meta Tags */}
-        <meta name="description" content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent. Jetzt Inserat erstellen." />
+        <meta 
+          name="description" 
+          content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." 
+        />
         
         {/* Open Graph Meta Tags for Social Sharing */}
         <meta property="og:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
-        <meta property="og:description" content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent. Jetzt Inserat erstellen." />
+        <meta 
+          property="og:description" 
+          content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." 
+        />
         <meta property="og:type" content="website" />
         <meta property="og:image" content={`${baseUrl}/buyauto-logo.png`} />
         <meta property="og:image:width" content="512" />

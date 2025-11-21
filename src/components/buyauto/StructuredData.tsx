@@ -26,7 +26,7 @@ export function StructuredData({ type = "homepage", listingData }: StructuredDat
     "url": baseUrl,
     "logo": `${baseUrl}/buyauto-logo.png`,
     "image": `${baseUrl}/buyauto-logo.png`,
-    "description": "Die Schweizer Plattform für Leasingübernahmen. Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent.",
+    "description": "Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto.",
     "address": {
       "@type": "PostalAddress",
       "addressCountry": "CH"

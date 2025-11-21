@@ -132,7 +132,7 @@ export default function SearchPage() {
   const currentPage = searchResults?.page || 1;
   const totalPages = Math.ceil(totalResults / (searchResults?.pageSize || 12));
   const pageTitle = totalResults > 0 ? `Auto Leasingübernahme – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz` : "Auto Leasingübernahme – Fahrzeuge suchen | BuyAuto Schweiz";
-  const metaDescription = "Minimalistische Suche für Auto-Leasingübernahmen in der Schweiz. Finde dein nächstes Fahrzeug nach Preis, Marke und Restlaufzeit.";
+  const metaDescription = "Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto.";
 
   const generateJsonLd = () => {
     if (!searchResults || searchResults.items.length === 0) return null;
