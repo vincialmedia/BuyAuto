@@ -13,6 +13,11 @@ const faqs = [
     id: "faq-2",
     question: "Wie funktioniert eine Leasingübernahme mit BuyAuto?",
     answer: "Die Leasingübernahme über BuyAuto.ch funktioniert in wenigen einfachen Schritten. Zuerst suchst du auf unserer Plattform nach einem passenden Leasingauto in der Schweiz, das zur Übernahme angeboten wird. Sobald du ein interessantes Fahrzeug gefunden hast, kontaktierst du die aktuelle Leasingnehmerin oder den Leasingnehmer direkt über BuyAuto. Danach prüft die Leasinggesellschaft deine Bonität und entscheidet, ob du den bestehenden Leasingvertrag übernehmen darfst. Wenn alles passt, wird der Vertrag offiziell auf dich übertragen – inklusive Restlaufzeit, Kilometerlimit und vereinbartem Restwert. Anschliessend erfolgt die Fahrzeugübergabe und du kannst sofort losfahren.\n\nEine ausführliche Schritt-für-Schritt-Anleitung findest du auf unserer Seite zur Leasingübernahme."
+  },
+  {
+    id: "faq-3",
+    question: "Welche Voraussetzungen muss ich für eine Leasingübernahme erfüllen?",
+    answer: "Um eine Leasingübernahme in der Schweiz machen zu können, brauchst du vor allem eine stabile finanzielle Situation und eine positive Bonitätsprüfung. Die Leasinggesellschaft prüft dabei dein Einkommen, deine laufenden Verpflichtungen und mögliche Einträge im Betreibungsregister. Wichtig ist ausserdem, dass du volljährig bist und einen festen Wohnsitz in der Schweiz hast, da der bestehende Auto-Leasingvertrag vollständig auf dich übertragen wird. Je besser deine finanzielle Ausgangslage, desto höher die Chance, dass die Bank deine Anfrage akzeptiert. Falls du dir unsicher bist, ob du alle Anforderungen erfüllst, lohnt sich ein Blick in unseren ausführlichen Leitfaden zur Leasingübernahme.\n\nMehr Details findest du in unserem Ratgeber zu den Voraussetzungen der Leasingübernahme."
   }
 ];
 
