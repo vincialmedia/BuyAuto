@@ -62,6 +62,7 @@ serve(async (req) => {
       from: "BuyAuto <noreply@email.buyauto.ch>",
       to: [ownerEmail],
       bcc: [inquiryEmail],
+      reply_to: [inquiryEmail],
       subject: `Anfrage für Ihr Inserat: "${listingTitle}"`,
       html: `
         <div style="font-family: sans-serif; line-height: 1.6;">
