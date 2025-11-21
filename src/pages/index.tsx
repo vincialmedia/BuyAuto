@@ -43,7 +43,7 @@ export default function HomePage({ totalListings }: HomePageProps) {
         <title>BuyAuto – Die Schweizer Plattform für Leasingübernahmen</title>
         <meta 
           name="description" 
-          content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent. Jetzt Inserat erstellen." 
+          content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." 
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
         
@@ -51,7 +51,7 @@ export default function HomePage({ totalListings }: HomePageProps) {
         <meta property="og:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
         <meta 
           property="og:description" 
-          content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent. Jetzt Inserat erstellen." 
+          content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." 
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
@@ -65,7 +65,7 @@ export default function HomePage({ totalListings }: HomePageProps) {
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
-        <meta name="twitter:description" content="Auto-Leasing übernehmen oder vorzeitig verkaufen – schnell, sicher, transparent." />
+        <meta name="twitter:description" content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." />
         <meta name="twitter:image" content={`${baseUrl}/buyauto-logo.png`} />
       </Head>
 
