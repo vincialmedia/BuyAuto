@@ -13,7 +13,7 @@ import { cantons } from '@/lib/buyauto/data';
 import { useToast } from '@/hooks/use-toast';
 import { getListingByIdForOwner } from "@/services/createListingService";
 import type { PaymentIntent } from '@stripe/stripe-js';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
