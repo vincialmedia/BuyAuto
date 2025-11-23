@@ -13,6 +13,7 @@ import { cantons } from '@/lib/buyauto/data';
 import { useToast } from '@/hooks/use-toast';
 import { getListingByIdForOwner } from "@/services/createListingService";
 import type { PaymentIntent } from '@stripe/stripe-js';
+import { supabase } from '@/lib/supabase';
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -209,6 +210,23 @@ export default function Step5_PreviewAndPay() {
       });
 
       if (total === 0) {
+        // ✅ FIX: Actually update the database for free listings
+        console.log('🆓 Processing free listing - updating database with payment_status=paid');
+        
+        const { data: updatedListing, error } = await supabase
+          .from('listings')
+          .update({ payment_status: 'paid', status: 'pending' })
+          .eq('id', data.id)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Error updating free listing:', error);
+          throw new Error('Failed to update free listing');
+        }
+
+        console.log('✅ Free listing updated in database:', updatedListing);
         updateData({ payment_status: 'paid' });
         toast({ title: 'Plan ausgewählt', description: 'Ihr kostenloses Inserat ist bereit.' });
         setIsComplete(true);

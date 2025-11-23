@@ -170,8 +170,11 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
     setDeleteModalOpen(true);
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Nie';
+  const formatDate = (dateString: string | null, status: string) => {
+    if (!dateString) {
+      if (status === 'pending') return <span className="text-neutral-400 italic">Startet bei Freigabe</span>;
+      return 'Nie';
+    }
     return new Date(dateString).toLocaleDateString('de-CH');
   };
 
@@ -354,16 +357,16 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                         </Button>
                         {listing.premium && listing.premium_until && (
                           <span className="text-xs text-neutral-600">
-                            bis {formatDate(listing.premium_until)}
+                            bis {formatDate(listing.premium_until, listing.status)}
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="p-4 text-sm text-neutral-600">
-                      {formatDate(listing.created_at)}
+                      {formatDate(listing.created_at, listing.status)}
                     </td>
                     <td className="p-4 text-sm text-neutral-600">
-                      {formatDate(listing.expires_at)}
+                      {formatDate(listing.expires_at, listing.status)}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center space-x-2">
