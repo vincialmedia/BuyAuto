@@ -13,15 +13,6 @@ const footerSections = [
     ]
   },
   {
-    title: "Unternehmen",
-    links: [
-      { label: "Über uns", href: "/" },
-      { label: "Kontakt", href: "#kontakt" },
-      { label: "Presse", href: "/" },
-      { label: "Karriere", href: "/" }
-    ]
-  },
-  {
     title: "Rechtliches",
     links: [
       { label: "Datenschutz", href: "/" },
@@ -37,7 +28,7 @@ export function Footer() {
   return (
     <footer id="kontakt" className="bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Swiss company info */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-6 group hover:opacity-80 transition-opacity">
