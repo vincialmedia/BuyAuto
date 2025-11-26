@@ -1,148 +1,94 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { Resend } from "npm:resend@3.2.0";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const ADMIN_EMAIL_ADDRESS = Deno.env.get("ADMIN_EMAIL_ADDRESS");
+
+const resend = new Resend(RESEND_API_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface ListingRecord {
-  id: string;
-  brand: string;
-  model: string;
-  year: number;
-  price: number;
-  payment_status: string;
-  status: string;
-  user_id: string;
-  plan_type: string;
-}
-
-async function handler(req: Request): Promise<Response> {
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { record } = await req.json() as { record: ListingRecord };
+    const payload = await req.json();
+    const record = payload.record;
 
-    if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY is not set");
+    if (!record) {
+      throw new Error("Missing record in payload");
     }
 
-    console.log("Processing new listing notification:", record.id);
+    // Only proceed if listing is pending and paid
+    // (The DB trigger should filter this, but double-check here)
+    if (record.status !== 'pending' || record.payment_status !== 'paid') {
+      return new Response(JSON.stringify({ message: "Listing not ready for approval" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
-    const adminEmail = "hello@buyauto.ch";
-    const fromEmail = "notifications@email.buyauto.ch";
+    const listingId = record.id;
+    const brand = record.brand;
+    const model = record.model;
+    const year = record.first_registration_year || 'N/A';
+    const price = record.price || 'N/A';
 
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #1a1a1a; color: white; padding: 20px; text-align: center; }
-            .content { background-color: #f9f9f9; padding: 30px; margin: 20px 0; }
-            .listing-details { background-color: white; padding: 20px; margin: 15px 0; border-left: 4px solid #4CAF50; }
-            .detail-row { margin: 10px 0; }
-            .label { font-weight: bold; color: #666; }
-            .value { color: #333; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin-top: 20px; }
-            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>🚗 Neues Inserat wartet auf Freigabe</h1>
-            </div>
-            <div class="content">
-              <p>Ein neues Fahrzeuginserat wurde erfolgreich bezahlt und wartet auf deine Freigabe.</p>
-              
-              <div class="listing-details">
-                <h3>Fahrzeugdetails:</h3>
-                <div class="detail-row">
-                  <span class="label">Marke:</span>
-                  <span class="value">${record.brand}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Modell:</span>
-                  <span class="value">${record.model}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Jahr:</span>
-                  <span class="value">${record.year}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Preis:</span>
-                  <span class="value">CHF ${record.price?.toLocaleString('de-CH') || 'N/A'}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Plan:</span>
-                  <span class="value">${record.plan_type || 'Standard'}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Status:</span>
-                  <span class="value">${record.status}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Inserat-ID:</span>
-                  <span class="value">${record.id}</span>
-                </div>
-              </div>
+    if (!ADMIN_EMAIL_ADDRESS) {
+      console.warn("ADMIN_EMAIL_ADDRESS not set");
+      return new Response(JSON.stringify({ message: "Admin email not configured" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
-              <p>Bitte überprüfe das Inserat und gib es frei oder lehne es ab.</p>
+    console.log(`Sending admin notification for listing ${listingId}`);
 
-              <a href="https://buyauto.ch/admin" class="button">Zum Admin-Dashboard</a>
-            </div>
-            <div class="footer">
-              <p>Diese E-Mail wurde automatisch vom BuyAuto System generiert.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const { data, error } = await resend.emails.send({
+      from: "notifications@email.buyauto.ch",
+      to: ADMIN_EMAIL_ADDRESS,
+      subject: "🚗 New Listing Pending Approval",
+      html: `
+        <h1>New Listing Pending Approval</h1>
+        <p>A new listing has been submitted and paid for. It is waiting for your approval.</p>
+        
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3>Vehicle Details:</h3>
+          <ul>
+            <li><strong>ID:</strong> ${listingId}</li>
+            <li><strong>Vehicle:</strong> ${brand} ${model} (${year})</li>
+            <li><strong>Price:</strong> CHF ${price}</li>
+            <li><strong>Status:</strong> ${record.status}</li>
+          </ul>
+        </div>
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [adminEmail],
-        subject: `🚗 Neues Inserat: ${record.brand} ${record.model} (${record.year}) - Freigabe erforderlich`,
-        html: emailHtml,
-      }),
+        <p>
+          <a href="https://buyauto.ch/admin" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+            Go to Admin Dashboard
+          </a>
+        </p>
+      `,
     });
 
-    if (!res.ok) {
-      const error = await res.text();
-      console.error("Resend API error:", error);
-      throw new Error(`Failed to send email: ${error}`);
+    if (error) {
+      throw error;
     }
 
-    const data = await res.json();
-    console.log("Email sent successfully:", data);
-
-    return new Response(JSON.stringify({ success: true, data }), {
+    return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
-    console.error("Error in admin-new-listing-notification:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
-  }
-}
 
-serve(handler);
+  } catch (error) {
+    console.error('Error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
+  }
+});

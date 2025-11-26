@@ -4,8 +4,8 @@ import { CheckCircle, Clock, CreditCard, FileText } from "lucide-react";
 const benefits = [
   {
     icon: CreditCard,
-    title: "Keine Vorabzahlung nötig",
-    description: "Starte sofort ohne grosse Anfangsinvestition in dein neues Fahrzeug."
+    title: "Übersichtliche Kosten",
+    description: "Monatsrate, Restlaufzeit, Kilometer – alles transparent und leicht verständlich."
   },
   {
     icon: Clock,
@@ -14,13 +14,13 @@ const benefits = [
   },
   {
     icon: CheckCircle,
-    title: "Schnelle Kreditprüfung",
-    description: "Erhalte binnen 24 Stunden eine verbindliche Zusage für deine Leasingübernahme."
+    title: "Günstiger als Neu-Leasing",
+    description: "Übernimm Verträge von Privatpersonen, die früher aussteigen wollen – oft mehrere Hundert Franken pro Monat günstiger."
   },
   {
     icon: FileText,
-    title: "Transparente Kostenübersicht",
-    description: "Alle Kosten klar aufgeschlüsselt – keine versteckten Gebühren oder Überraschungen."
+    title: "Direkter Kontakt zum Anbieter",
+    description: "Ohne Zwischenhändler. Kommuniziere direkt mit der Person, die den Vertrag abgeben möchte."
   }
 ];
 
