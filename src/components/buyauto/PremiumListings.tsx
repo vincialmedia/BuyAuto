@@ -113,7 +113,7 @@ export default function PremiumListings() {
             Exklusive Premium-Fahrzeuge
           </h2>
           <p className="text-neutral-600 text-lg leading-relaxed max-w-2xl mx-auto">
-            Entdecken Sie unsere handverlesenen Premium-Angebote mit besonderen Vorteilen und erstklassigem Service.
+            Entdecken Sie unsere handverlesenen Premium-Angebote.
           </p>
         </div>
 
