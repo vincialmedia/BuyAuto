@@ -13,8 +13,8 @@ const steps = [
   {
     icon: FileCheck,
     step: "2", 
-    title: "Anfrage & Kreditcheck",
-    description: "Stelle eine unverbindliche Anfrage und lass deine Bonität binnen 24 Stunden prüfen."
+    title: "Anfrage & Inspektion",
+    description: "Stelle eine unverbindliche Anfrage und besichtige das Fahrzeug."
   },
   {
     icon: Car,
