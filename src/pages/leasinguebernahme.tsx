@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
-import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck } from "lucide-react";
+import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search } from "lucide-react";
 import SearchForm from "@/components/buyauto/SearchForm";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { Button } from "@/components/ui/button";
@@ -82,6 +82,24 @@ export default function LeasingUebernahmePage() {
                       <div className="font-bold text-neutral-900">Meist CHF 0</div>
                     </div>
                   </div>
+                </div>
+
+                {/* CTA Button - Scrolls to Search */}
+                <div className="pt-6">
+                  <Button
+                    onClick={() => {
+                      const searchSection = document.getElementById("search-section");
+                      if (searchSection) {
+                        searchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }}
+                    size="lg"
+                    className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all duration-300 px-8 py-6 text-lg font-semibold rounded-xl group"
+                  >
+                    <Search className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                    Fahrzeuge Durchsuchen
+                    <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
                 </div>
               </div>
               
