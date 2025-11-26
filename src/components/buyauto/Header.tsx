@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { User, LogOut, Settings, BarChart3 } from "lucide-react";
+import { useRouter } from "next/router";
+import { User, LogOut, Settings, BarChart3, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,7 +18,20 @@ import { toast } from "sonner";
 
 export default function Header() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Check if we're on the leasinguebernahme page
+  const isLeasingPage = router.pathname === "/leasinguebernahme";
+
+  // Smooth scroll to search section
+  const scrollToSearch = () => {
+    const searchSection = document.getElementById("search-section");
+    if (searchSection) {
+      searchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    setIsMenuOpen(false);
+  };
 
   const handleSignOut = async () => {
     try {
@@ -63,6 +77,17 @@ export default function Header() {
               Inserat erstellen
             </Link>
           </nav>
+
+          {/* CTA Button - Only on leasinguebernahme page */}
+          {isLeasingPage && (
+            <Button
+              onClick={scrollToSearch}
+              className="hidden md:flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
+            >
+              <Search className="h-4 w-4" />
+              <span>Fahrzeuge Durchsuchen</span>
+            </Button>
+          )}
 
           {/* Auth Section - Handle loading state properly */}
           <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
@@ -166,6 +191,18 @@ export default function Header() {
             >
               Inserat erstellen
             </Link>
+            
+            {/* Mobile CTA - Only on leasinguebernahme page */}
+            {isLeasingPage && (
+              <button
+                onClick={scrollToSearch}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors"
+              >
+                <Search className="h-4 w-4" />
+                <span>Fahrzeuge Durchsuchen</span>
+              </button>
+            )}
+
             {loading ? (
               /* Mobile loading state */
               <div className="px-4 py-2">

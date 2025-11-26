@@ -150,7 +150,7 @@ export default function LeasingUebernahmePage() {
             </div>
 
             {/* SEARCH BAR COMPONENT */}
-            <div className="py-8 -mx-4 px-4 bg-neutral-50/80 md:bg-transparent md:p-0 md:mx-0">
+            <div id="search-section" className="py-8 -mx-4 px-4 bg-neutral-50/80 md:bg-transparent md:p-0 md:mx-0">
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6 md:p-8 relative overflow-hidden">
                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
                  <div className="text-center mb-8 relative z-10">
