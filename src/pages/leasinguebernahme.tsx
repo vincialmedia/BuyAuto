@@ -1,7 +1,6 @@
-
 import Head from "next/head";
 import Link from "next/link";
-import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck } from "lucide-react";
+import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck } from "lucide-react";
 import SearchForm from "@/components/buyauto/SearchForm";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { Button } from "@/components/ui/button";
@@ -34,16 +33,90 @@ export default function LeasingUebernahmePage() {
 
       <main className="bg-neutral-50 min-h-screen">
         
-        {/* SECTION 1 — HERO (Text-Only Hero) */}
-        <section className="bg-white pt-12 pb-8 md:pt-20 md:pb-12 px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl md:text-5xl font-bold text-neutral-900 tracking-tight mb-6 leading-tight">
-              Leasingübernahme in der Schweiz – <br className="hidden md:block" />
-              <span className="text-red-600">Ablauf, Kosten & Vorteile</span>
-            </h1>
-            <p className="text-lg md:text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
-              Alles, was du über die Übernahme eines bestehenden Auto-Leasingvertrags wissen musst – klar erklärt für Käufer und Verkäufer.
-            </p>
+        {/* SECTION 1 — HERO (Text + Image Split) */}
+        <section className="bg-gradient-to-br from-white via-neutral-50 to-red-50/30 pt-12 pb-8 md:pt-20 md:pb-12 px-4 overflow-hidden">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Text Content */}
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-semibold">
+                  <TrendingDown className="w-4 h-4" />
+                  Bis zu CHF 5'000 günstiger
+                </div>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 tracking-tight leading-tight">
+                  Leasingübernahme in der Schweiz
+                </h1>
+                <p className="text-xl md:text-2xl text-red-600 font-semibold">
+                  Ablauf, Kosten & Vorteile
+                </p>
+                <p className="text-lg text-neutral-600 leading-relaxed">
+                  Alles, was du über die Übernahme eines bestehenden Auto-Leasingvertrags wissen musst – klar erklärt für Käufer und Verkäufer.
+                </p>
+                
+                {/* Quick Stats */}
+                <div className="flex flex-wrap gap-6 pt-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-neutral-500">Dauer</div>
+                      <div className="font-bold text-neutral-900">2-7 Tage</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-blue-700" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-neutral-500">Ersparnis</div>
+                      <div className="font-bold text-neutral-900">Bis CHF 5'000</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-purple-700" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-neutral-500">Anzahlung</div>
+                      <div className="font-bold text-neutral-900">Meist CHF 0</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Image */}
+              <div className="relative lg:block">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
+                  <img 
+                    src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80" 
+                    alt="Auto Leasingübernahme Schweiz" 
+                    className="w-full h-[400px] lg:h-[500px] object-cover"
+                  />
+                  {/* Overlay Badge */}
+                  <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-neutral-500 mb-1">Monatliche Rate ab</div>
+                        <div className="text-2xl font-bold text-neutral-900">CHF 299.-</div>
+                      </div>
+                      <div className="bg-green-500 text-white px-4 py-2 rounded-full font-semibold text-sm flex items-center gap-2">
+                        <BadgeCheck className="w-4 h-4" />
+                        Verfügbar
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Floating Elements */}
+                <div className="hidden lg:block absolute -top-4 -right-4 bg-red-600 text-white px-6 py-3 rounded-2xl shadow-lg rotate-3 font-bold">
+                  100+ Angebote
+                </div>
+                <div className="hidden lg:block absolute -bottom-4 -left-4 bg-neutral-900 text-white px-6 py-3 rounded-2xl shadow-lg -rotate-3 font-bold">
+                  Geprüfte Inserate
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -56,32 +129,16 @@ export default function LeasingUebernahmePage() {
           </div>
         </section>
 
-        {/* SECTION 3 — SEARCH BAR COMPONENT */}
-        <section className="bg-white pb-16 px-4 relative z-10">
-          <div className="max-w-5xl mx-auto -mt-4">
-             <div className="text-center mb-8">
-               <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
-                 Angebote Entdecken
-               </h2>
-               <p className="text-neutral-600 max-w-xl mx-auto">
-                 Finde jetzt verfügbare Leasingübernahmen mit unserer intelligenten Suche.
-               </p>
-             </div>
-             <div className="relative">
-                {/* Optional decorative element behind search bar */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-red-500/20 to-orange-500/20 blur-lg opacity-50 rounded-[2rem]"></div>
-                <SearchForm />
-             </div>
-          </div>
-        </section>
-
         {/* SECTION 4 — MAIN CONTENT */}
         <section className="py-12 md:py-20 px-4">
           <div className="max-w-4xl mx-auto space-y-16">
             
             {/* Was ist eine Leasingübernahme? */}
             <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-neutral-900">Was ist eine Leasingübernahme?</h2>
+              <h2 className="text-3xl font-bold text-neutral-900 flex items-center gap-3">
+                <FileCheck className="w-8 h-8 text-red-600" />
+                Was ist eine Leasingübernahme?
+              </h2>
               <div className="prose prose-lg text-neutral-700 max-w-none leading-relaxed">
                 <p>
                   Bei einer Leasingübernahme übernimmst du einen laufenden Auto-Leasingvertrag von einer anderen Person. Vertragskonditionen wie Restlaufzeit, Kilometerlimit und monatliche Rate bleiben in der Regel bestehen – du steigst einfach in den Vertrag ein. Die grosse Stärke: Die teure Anfangsphase des Leasings ist bereits bezahlt, sodass du oft von tieferen Raten und besseren Konditionen profitierst.
@@ -92,51 +149,78 @@ export default function LeasingUebernahmePage() {
               </div>
             </div>
 
+            {/* SEARCH BAR COMPONENT */}
+            <div className="py-8 -mx-4 px-4 bg-neutral-50/80 md:bg-transparent md:p-0 md:mx-0">
+              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6 md:p-8 relative overflow-hidden">
+                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
+                 <div className="text-center mb-8 relative z-10">
+                   <h2 className="text-2xl font-bold text-neutral-900 mb-2">
+                     Angebote Entdecken
+                   </h2>
+                   <p className="text-neutral-600 text-sm md:text-base">
+                     Finde jetzt verfügbare Leasingübernahmen mit unserer intelligenten Suche.
+                   </p>
+                 </div>
+                 <div className="relative z-10">
+                    <SearchForm />
+                 </div>
+              </div>
+            </div>
+
             {/* Warum ist die Leasingübernahme in der Schweiz so beliebt? */}
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-neutral-100">
               <h2 className="text-2xl font-bold text-neutral-900 mb-8">Warum ist die Leasingübernahme in der Schweiz so beliebt?</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[
-                  { title: "Hohe Anfangsabschreibung entfällt", desc: "Grosse Ersparnis gegenüber Neuwagen." },
-                  { title: "Kürzere Restlaufzeiten", desc: "Perfekte Lösung für flexible Fahrer." },
-                  { title: "Attraktive Monatsraten", desc: "Deutlich günstiger als Neuleasing." },
-                  { title: "Kein hoher Kapitalbedarf", desc: "Oft keine Anzahlung nötig." },
-                  { title: "Schneller Prozess", desc: "Viele Verträge lassen sich innert Tagen übertragen." },
-                  { title: "Transparenz", desc: "Fahrzeugzustand ist bereits bekannt." },
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="mt-1 bg-red-50 p-2 rounded-full h-fit">
-                      <Check className="w-5 h-5 text-red-600" />
+                  { title: "Hohe Anfangsabschreibung entfällt", desc: "Grosse Ersparnis gegenüber Neuwagen.", icon: TrendingDown },
+                  { title: "Kürzere Restlaufzeiten", desc: "Perfekte Lösung für flexible Fahrer.", icon: Calendar },
+                  { title: "Attraktive Monatsraten", desc: "Deutlich günstiger als Neuleasing.", icon: DollarSign },
+                  { title: "Kein hoher Kapitalbedarf", desc: "Oft keine Anzahlung nötig.", icon: Zap },
+                  { title: "Schneller Prozess", desc: "Viele Verträge lassen sich innert Tagen übertragen.", icon: Clock },
+                  { title: "Transparenz", desc: "Fahrzeugzustand ist bereits bekannt.", icon: ShieldCheck },
+                ].map((item, i) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <div key={i} className="flex gap-4">
+                      <div className="mt-1 bg-red-50 p-2 rounded-full h-fit">
+                        <IconComponent className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-neutral-900">{item.title}</h3>
+                        <p className="text-neutral-600 text-sm">{item.desc}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-neutral-900">{item.title}</h3>
-                      <p className="text-neutral-600 text-sm">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Voraussetzungen */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-neutral-900">Voraussetzungen für eine Leasingübernahme (Schweiz)</h2>
+              <h2 className="text-2xl font-bold text-neutral-900 flex items-center gap-3">
+                <BadgeCheck className="w-7 h-7 text-red-600" />
+                Voraussetzungen für eine Leasingübernahme (Schweiz)
+              </h2>
               <p className="text-neutral-700 mb-4">Um eine Leasingübernahme durchzuführen, brauchst du:</p>
               <Card className="bg-neutral-50 border-none">
                 <CardContent className="p-6">
                   <ul className="space-y-3">
                     {[
-                      "Wohnsitz in der Schweiz",
-                      "Volljährigkeit",
-                      "Stabile finanzielle Situation",
-                      "Erfolgreiche Bonitätsprüfung durch die Leasingbank",
-                      "Keine relevanten offenen Betreibungen",
-                      "Gültige Fahrerlaubnis (logisch, aber gehört offiziell dazu)"
-                    ].map((req, i) => (
-                      <li key={i} className="flex items-center gap-3 text-neutral-700">
-                        <div className="w-2 h-2 bg-neutral-400 rounded-full"></div>
-                        {req}
-                      </li>
-                    ))}
+                      { text: "Wohnsitz in der Schweiz", icon: MapPin },
+                      { text: "Volljährigkeit", icon: Users },
+                      { text: "Stabile finanzielle Situation", icon: DollarSign },
+                      { text: "Erfolgreiche Bonitätsprüfung durch die Leasingbank", icon: FileCheck },
+                      { text: "Keine relevanten offenen Betreibungen", icon: BadgeCheck },
+                      { text: "Gültige Fahrerlaubnis (logisch, aber gehört offiziell dazu)", icon: FileText }
+                    ].map((req, i) => {
+                      const IconComponent = req.icon;
+                      return (
+                        <li key={i} className="flex items-center gap-3 text-neutral-700">
+                          <IconComponent className="w-4 h-4 text-neutral-400 shrink-0" />
+                          {req.text}
+                        </li>
+                      );
+                    })}
                   </ul>
                   <p className="mt-6 text-sm text-neutral-500 italic bg-white p-4 rounded-xl border border-neutral-200 inline-block">
                     <Info className="w-4 h-4 inline mr-2 align-text-bottom" />
@@ -148,7 +232,10 @@ export default function LeasingUebernahmePage() {
 
             {/* Ablauf */}
             <div className="space-y-8">
-               <h2 className="text-2xl font-bold text-neutral-900">Ablauf der Leasingübernahme – Schritt für Schritt</h2>
+               <h2 className="text-2xl font-bold text-neutral-900 flex items-center gap-3">
+                  <ChevronRight className="w-7 h-7 text-red-600" />
+                  Ablauf der Leasingübernahme – Schritt für Schritt
+               </h2>
                <div className="space-y-6 relative before:absolute before:left-4 before:top-4 before:h-full before:w-0.5 before:bg-neutral-200 before:hidden md:before:block">
                   {[
                     { step: 1, title: "Passendes Fahrzeug finden", desc: "Du suchst auf BuyAuto ein Leasingfahrzeug, das zur Übernahme angeboten wird." },
@@ -174,7 +261,10 @@ export default function LeasingUebernahmePage() {
             {/* Kosten */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                <div className="space-y-6">
-                 <h2 className="text-2xl font-bold text-neutral-900">Kosten einer Leasingübernahme</h2>
+                 <h2 className="text-2xl font-bold text-neutral-900 flex items-center gap-3">
+                    <DollarSign className="w-7 h-7 text-red-600" />
+                    Kosten einer Leasingübernahme
+                 </h2>
                  <p className="text-neutral-600">Die Gesamtkosten setzen sich aus folgenden Punkten zusammen:</p>
                  <div className="space-y-4">
                     {[
@@ -337,25 +427,48 @@ export default function LeasingUebernahmePage() {
             </div>
 
             {/* FAQ */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-neutral-900">FAQ – Leasingübernahme (kurz & präzise)</h2>
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="item-1" className="border-b-neutral-200">
-                  <AccordionTrigger className="text-neutral-900 font-medium hover:text-red-600 hover:no-underline">Wie schnell geht eine Leasingübernahme?</AccordionTrigger>
-                  <AccordionContent className="text-neutral-600">
+            <div className="space-y-8">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-neutral-900 mb-3">
+                  FAQ – Leasingübernahme <span className="text-red-600">(kurz & präzise)</span>
+                </h2>
+                <p className="text-neutral-600">Die wichtigsten Fragen schnell beantwortet</p>
+              </div>
+              
+              <Accordion type="single" collapsible className="w-full space-y-4">
+                <AccordionItem 
+                  value="item-1" 
+                  className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-6 md:px-8 hover:border-neutral-300/60"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 hover:text-red-600 transition-colors duration-200 text-base md:text-lg">
+                    Wie schnell geht eine Leasingübernahme?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 font-light">
                     Zwischen wenigen Tagen und zwei Wochen – je nach Bank und Unterlagen.
                   </AccordionContent>
                 </AccordionItem>
-                <AccordionItem value="item-2" className="border-b-neutral-200">
-                  <AccordionTrigger className="text-neutral-900 font-medium hover:text-red-600 hover:no-underline">Kann jede Person eine Leasingübernahme machen?</AccordionTrigger>
-                  <AccordionContent className="text-neutral-600">
-                    Nein. Die Bank entscheidet anhand der Bonitätsprüfung.
+                
+                <AccordionItem 
+                  value="item-2" 
+                  className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-6 md:px-8 hover:border-neutral-300/60"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 hover:text-red-600 transition-colors duration-200 text-base md:text-lg">
+                    Kann jede Person eine Leasingübernahme machen?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 font-light">
+                    Nein. Die Bank entscheidet anhand der Bonitätsprüfung. Wichtig sind ein Wohnsitz in der Schweiz und eine geregelte finanzielle Situation.
                   </AccordionContent>
                 </AccordionItem>
-                <AccordionItem value="item-3" className="border-b-0">
-                  <AccordionTrigger className="text-neutral-900 font-medium hover:text-red-600 hover:no-underline">Was passiert mit Schäden?</AccordionTrigger>
-                  <AccordionContent className="text-neutral-600">
-                    Alle Vorschäden müssen dokumentiert werden; sonst können bei Rückgabe Kosten entstehen.
+                
+                <AccordionItem 
+                  value="item-3" 
+                  className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-6 md:px-8 hover:border-neutral-300/60"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 hover:text-red-600 transition-colors duration-200 text-base md:text-lg">
+                    Was passiert mit Schäden am Fahrzeug?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 font-light">
+                    Alle Vorschäden müssen genau dokumentiert werden. Wenn nicht protokollierte Schäden bei der späteren Rückgabe festgestellt werden, haftest du als neuer Leasingnehmer dafür. Deshalb ist das Übergabeprotokoll extrem wichtig.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
