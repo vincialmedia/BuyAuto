@@ -10,6 +10,7 @@ interface SignUpData {
   password: string;
   firstName?: string;
   lastName?: string;
+  newsletterConsent?: boolean;
 }
 
 const authService = {
@@ -36,7 +37,7 @@ const authService = {
     return data;
   },
 
-  async signUp({ email, password, firstName, lastName }: SignUpData) {
+  async signUp({ email, password, firstName, lastName, newsletterConsent }: SignUpData) {
     console.log("Starting sign up process");
     
     const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
@@ -59,6 +60,25 @@ const authService = {
     }
 
     console.log("Sign up successful, user data:", data.user);
+
+    // If user opted into newsletter, subscribe them
+    if (newsletterConsent && data.user?.email) {
+      try {
+        await fetch("/api/newsletter/subscribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            email: data.user.email, 
+            consent: true 
+          }),
+        });
+        console.log("Newsletter subscription added during registration");
+      } catch (e) {
+        console.error("Error subscribing to newsletter during registration:", e);
+      }
+    }
 
     // After successful sign up, invoke the welcome-email function
     if (data.user) {

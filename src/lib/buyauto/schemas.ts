@@ -12,6 +12,7 @@ export const registerSchema = z.object({
   email: z.string().email("Gültige E-Mail-Adresse eingeben"),
   password: z.string().min(8, "Passwort muss mindestens 8 Zeichen haben"),
   confirmPassword: z.string().min(1, "Passwort bestätigen ist erforderlich"),
+  newsletterConsent: z.boolean().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwörter stimmen nicht überein",
   path: ["confirmPassword"],
