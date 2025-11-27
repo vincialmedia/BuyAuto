@@ -37,7 +37,11 @@ export function CookieConsent() {
           {/* Actions */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <Link href="/datenschutz">
-              <Button variant="outline" size="sm" className="whitespace-nowrap">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="whitespace-nowrap border-gray-800 text-gray-800 hover:bg-gray-100"
+              >
                 Datenschutz
               </Button>
             </Link>
