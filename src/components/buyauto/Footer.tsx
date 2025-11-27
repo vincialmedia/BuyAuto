@@ -1,6 +1,7 @@
 import { Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useHasMounted } from "@/hooks/use-has-mounted";
+import { NewsletterSignup } from "./NewsletterSignup";
 
 const footerSections = [
   {
@@ -27,6 +28,16 @@ export function Footer() {
 
   return (
     <footer id="kontakt" className="bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 text-white">
+      {/* Newsletter Section */}
+      <div className="border-b border-neutral-700/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="max-w-2xl mx-auto bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 backdrop-blur-sm rounded-2xl p-8 border border-neutral-700/40 shadow-xl">
+            <NewsletterSignup />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Swiss company info */}
