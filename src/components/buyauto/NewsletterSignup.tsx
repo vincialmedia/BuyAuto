@@ -57,7 +57,7 @@ export function NewsletterSignup() {
   return (
     <div className="w-full">
       <div className="flex items-center gap-2 mb-4">
-        <Mail className="h-5 w-5 text-blue-600" />
+        <Mail className="h-5 w-5 text-red-500" />
         <h3 className="text-lg font-semibold text-gray-900">Newsletter abonnieren</h3>
       </div>
       
@@ -73,13 +73,13 @@ export function NewsletterSignup() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading || success}
-            className="flex-1"
+            className="flex-1 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
             aria-label="E-Mail-Adresse für Newsletter"
           />
           <Button
             type="submit"
             disabled={loading || success}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 whitespace-nowrap"
+            className="bg-red-500 hover:bg-red-600 text-white px-6 whitespace-nowrap shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300"
           >
             {loading ? (
               <>
@@ -103,7 +103,7 @@ export function NewsletterSignup() {
             checked={consent}
             onCheckedChange={(checked) => setConsent(checked as boolean)}
             disabled={loading || success}
-            className="mt-0.5"
+            className="mt-0.5 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
           />
           <label
             htmlFor="newsletter-consent"

@@ -8,6 +8,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { registerSchema, type RegisterFormData } from "@/lib/buyauto/schemas";
 
 interface RegisterFormProps {
@@ -156,6 +157,22 @@ export default function RegisterForm({
             </FormItem>
           )}
         />
+
+        <div className="flex items-start gap-3 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+          <Checkbox
+            id="newsletter-consent-register"
+            checked={form.watch("newsletterConsent") || false}
+            onCheckedChange={(checked) => form.setValue("newsletterConsent", checked as boolean)}
+            disabled={isLoading}
+            className="mt-0.5 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+          />
+          <label
+            htmlFor="newsletter-consent-register"
+            className="text-sm text-neutral-700 cursor-pointer leading-tight flex-1"
+          >
+            Ich möchte Informationen und Angebote per E-Mail erhalten.
+          </label>
+        </div>
 
         <Button
           type="submit"
