@@ -73,7 +73,7 @@ export function NewsletterSignup() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading || success}
-            className="flex-1 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+            className="flex-1 text-gray-900 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
             aria-label="E-Mail-Adresse für Newsletter"
           />
           <Button
