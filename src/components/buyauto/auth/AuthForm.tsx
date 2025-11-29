@@ -76,6 +76,33 @@ export default function AuthForm() {
       await authService.signUp(signUpData);
       console.log("AuthForm: Registration successful");
       
+      // If user consented to newsletter, subscribe them
+      if (data.newsletterConsent) {
+        try {
+          console.log("AuthForm: User consented to newsletter, subscribing...");
+          const response = await fetch("/api/newsletter/subscribe", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: data.email,
+              consent: true,
+            }),
+          });
+
+          if (!response.ok) {
+            console.error("Newsletter subscription failed:", await response.text());
+            // Don't block registration flow if newsletter fails
+          } else {
+            console.log("AuthForm: Newsletter subscription successful");
+          }
+        } catch (newsletterError) {
+          console.error("Newsletter subscription error:", newsletterError);
+          // Don't block registration flow if newsletter fails
+        }
+      }
+      
       toast.success("Registrierung erfolgreich! Überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen.");
       setCurrentView("login");
       
