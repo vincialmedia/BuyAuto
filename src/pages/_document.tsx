@@ -1,38 +1,10 @@
 import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
-  const baseUrl = process.env.NODE_ENV === "production" 
-    ? "https://www.buyauto.ch" 
-    : "http://localhost:3000";
-
   return (
     <Html lang="de">
       <Head>
-        {/* Global Meta Tags */}
-        <meta 
-          name="description" 
-          content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." 
-        />
-        
-        {/* Open Graph Meta Tags for Social Sharing */}
-        <meta property="og:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
-        <meta 
-          property="og:description" 
-          content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." 
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${baseUrl}/buyauto-logo.png`} />
-        <meta property="og:image:width" content="512" />
-        <meta property="og:image:height" content="512" />
-        <meta property="og:image:alt" content="BuyAuto Logo" />
-        <meta property="og:site_name" content="BuyAuto" />
-        <meta property="og:locale" content="de_CH" />
-        
-        {/* Twitter Card Meta Tags */}
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:image" content={`${baseUrl}/buyauto-logo.png`} />
-        
-        {/* Favicon */}
+        {/* Favicon - The little red car */}
         <link rel="icon" href="/Untitled_design_7_.png" />
         <link rel="apple-touch-icon" href="/buyauto-logo.png" />
         

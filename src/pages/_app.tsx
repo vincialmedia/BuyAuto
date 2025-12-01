@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import MainLayout from "@/components/layout/MainLayout";
 import AuthProvider from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/react";
 import "@/styles/globals.css";
 
 // Configure Manrope font from Google Fonts for automatic optimization
@@ -23,6 +24,7 @@ export default function App({ Component, pageProps }: AppProps) {
         </MainLayout>
         <Toaster />
       </AuthProvider>
+      <Analytics />
     </div>
   );
 }
