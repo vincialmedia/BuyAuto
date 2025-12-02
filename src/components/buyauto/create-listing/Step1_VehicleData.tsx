@@ -1,8 +1,10 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWizard } from "./ListingWizard";
 import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
@@ -52,6 +54,7 @@ export default function Step1_VehicleData() {
       body: (data.body as "Limousine" | "Kombi" | "SUV" | "Cabrio") || "",
       fuel: (data.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro") || "",
       gearbox: (data.gearbox as "Automatik" | "Manuell") || "",
+      description: data.description || "",
     },
     mode: "onBlur"
   });
@@ -75,20 +78,19 @@ export default function Step1_VehicleData() {
         model: formData.model,
         year: parseInt(formData.year.toString()),
         mileage_km: parseInt(formData.km.toString()),
-        fuel: formData.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro", // ✅ Explicit type cast
-        gearbox: formData.gearbox as "Automatik" | "Manuell", // ✅ Explicit type cast
-        body: formData.body as "Limousine" | "Kombi" | "SUV" | "Cabrio", // ✅ Explicit type cast
+        fuel: formData.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro",
+        gearbox: formData.gearbox as "Automatik" | "Manuell",
+        body: formData.body as "Limousine" | "Kombi" | "SUV" | "Cabrio",
+        description: formData.description || undefined,
       };
 
-      // Create a draft listing first
       const result = await createOrUpdateListing(validatedData, user);
       
       console.log("✅ Step1: Listing created/updated successfully:", result);
       
-      // Update wizard data with the created/updated listing ID and form data
       updateData({ 
         ...validatedData,
-        id: result.id  // ✅ CRITICAL: Ensure the listing ID is preserved
+        id: result.id
       });
 
       console.log("✅ Step1: Wizard data updated with ID:", result.id);
@@ -118,9 +120,9 @@ export default function Step1_VehicleData() {
   );
   
   const watchedKm = watch("km");
+  const descriptionLength = watch("description")?.length || 0;
 
   useEffect(() => {
-    // Format the displayed value
     const input = document.getElementById('km') as HTMLInputElement;
     if (input && document.activeElement !== input) {
         if (watchedKm) {
@@ -320,6 +322,28 @@ export default function Step1_VehicleData() {
           {errors.gearbox && (
             <p className="text-sm text-red-500 font-light">{errors.gearbox.message}</p>
           )}
+        </div>
+
+        {/* Description - Full Width */}
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-sm font-medium text-neutral-700">
+            Fahrzeugbeschreibung (optional)
+          </Label>
+          <Textarea
+            id="description"
+            {...register("description")}
+            placeholder="Beschreiben Sie Ihr Fahrzeug: Besonderheiten, Ausstattung, Zustand, etc."
+            className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm min-h-[120px] resize-y"
+            rows={5}
+          />
+          <div className="flex justify-between items-center">
+            {errors.description && (
+              <p className="text-sm text-red-500 font-light">{errors.description.message}</p>
+            )}
+            <p className="text-xs text-neutral-500 ml-auto">
+              {descriptionLength}/2000 Zeichen
+            </p>
+          </div>
         </div>
 
         {/* Navigation */}
