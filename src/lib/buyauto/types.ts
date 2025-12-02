@@ -1,3 +1,4 @@
+
 export interface Listing {
   id: string;
   brand: string;
@@ -14,10 +15,10 @@ export interface Listing {
   premium: boolean;
   depositCHF?: number | null;
   images: string[];
-  imageUrl: string; // Ensure this is present and used as the primary image
+  imageUrl: string;
+  description?: string; // ✅ Added description field
 }
 
-// Price plan types - single definition
 export type PricePlanId = "free30" | "standard" | "extended" | "unlimited";
 
 export interface PricePlan {
@@ -29,9 +30,7 @@ export interface PricePlan {
   is_featured: boolean;
 }
 
-// Type for create listing form data - matches what the components actually use
 export interface ListingData {
-  // Step 1: Vehicle data fields
   brand?: string;
   model?: string;
   year?: number;
@@ -43,8 +42,8 @@ export interface ListingData {
   power?: number;
   color?: string;
   body?: string;
+  description?: string; // ✅ Added description field
   
-  // Step 2: Leasing details fields
   price_per_month_chf?: number;
   remaining_months?: number;
   deposit_chf?: number;
@@ -52,10 +51,9 @@ export interface ListingData {
   canton_code?: string;
   title?: string;
   
-  // Step 3: Billing/Plan fields - Ensure all properties are explicitly defined
-  price_plan?: PricePlanId; // ✅ UNIFIED TYPE
+  price_plan?: PricePlanId;
   pricing_plan?: string;
-  premium?: boolean; // Explicitly define this as boolean
+  premium?: boolean;
   duration_days?: number;
   expires_at?: string;
   premium_until?: string;
@@ -69,11 +67,9 @@ export interface ListingData {
   plan?: string;
   price?: number;
   
-  // Step 4: Images fields
   images?: string[];
   cover_image_index?: number;
   
-  // General listing fields
   id?: string;
   user_id?: string;
   status?: string;
@@ -81,18 +77,16 @@ export interface ListingData {
   updated_at?: string;
 }
 
-// ✅ FIXED: Updated to match exact database constraint values
 export interface ListingFormData {
-  // Step 1: Vehicle Data
   brand: string;
   model: string;
   year: number | string;
   mileage_km: number | string;
-  fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro"; // ✅ Fixed to match DB constraints
-  gearbox: "Automatik" | "Manuell"; // ✅ Fixed to match DB constraints  
-  body: "Limousine" | "Kombi" | "SUV" | "Cabrio"; // ✅ Fixed to match DB constraints
+  fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
+  gearbox: "Automatik" | "Manuell";  
+  body: "Limousine" | "Kombi" | "SUV" | "Cabrio";
+  description?: string; // ✅ Added description field
   
-  // Step 2: Leasing Details
   price_per_month_chf: number | string;
   remaining_months: number | string;
   deposit_chf?: number | string | null;
@@ -100,15 +94,12 @@ export interface ListingFormData {
   canton_code: string;
   title?: string;
   
-  // Step 3: Plan Selection
   price_plan: PricePlanId;
   
-  // Step 4: Images
   images: string[];
   cover_image_index: number;
 }
 
-// Extended listing type for detail page with additional fields
 export interface ListingDetail extends Listing {
   canton_code: string;
   cover_image_url?: string;
@@ -122,9 +113,9 @@ export interface ListingDetail extends Listing {
   cover_image_index?: number;
   listing_price?: number;
   is_premium?: boolean;
+  description?: string; // ✅ Added description field
 }
 
-// Type for listing inquiries
 export interface Inquiry {
   listing_id: string;
   name: string;
@@ -133,7 +124,6 @@ export interface Inquiry {
   message: string;
 }
 
-// Type for inquiry form data with validation
 export interface InquiryFormData {
   name: string;
   email: string;

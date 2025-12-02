@@ -1,6 +1,6 @@
+
 import { z } from "zod";
 
-// Auth schemas
 export const loginSchema = z.object({
   email: z.string().email("Gültige E-Mail-Adresse eingeben"),
   password: z.string().min(1, "Passwort ist erforderlich"),
@@ -26,8 +26,6 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-// Vehicle schemas (for create listing) - match actual field names used in components
-// Updated to match exact database constraint values
 export const vehicleDataSchema = z.object({
   brand: z.string().min(1, "Marke ist erforderlich"),
   model: z.string().min(1, "Modell ist erforderlich"),
@@ -35,7 +33,6 @@ export const vehicleDataSchema = z.object({
   km: z.union([
     z.number(),
     z.string().transform((val) => {
-      // Remove all non-numeric characters (Swiss formatting)
       const cleaned = val.replace(/[^0-9]/g, '');
       const num = parseInt(cleaned, 10);
       if (isNaN(num)) throw new Error("Ungültiger Kilometerstand");
@@ -51,6 +48,10 @@ export const vehicleDataSchema = z.object({
   gearbox: z.string().refine((val) => ["Automatik", "Manuell"].includes(val), {
     message: "Bitte wählen Sie ein gültiges Getriebe"
   }),
+  description: z.string()
+    .max(2000, "Beschreibung darf maximal 2000 Zeichen enthalten")
+    .optional()
+    .or(z.literal("")),
 });
 
 export const planSelectionSchema = z.object({
@@ -69,6 +70,5 @@ export type VehicleDataForm = z.infer<typeof vehicleDataSchema>;
 export type PlanSelectionForm = z.infer<typeof planSelectionSchema>;
 export type ImagesForm = z.infer<typeof imagesSchema>;
 
-// Keep the old name for backward compatibility
 export const vehicleFormSchema = vehicleDataSchema;
 export type VehicleFormData = VehicleDataForm;
