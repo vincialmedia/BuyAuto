@@ -1,9 +1,10 @@
+
 import { GetServerSideProps } from "next";
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
-import { ArrowLeft, MapPin, Calendar, Settings, Fuel, Users, Award, MessageCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Settings, Fuel, Users, Award, MessageCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ListingDetail } from "@/lib/buyauto/types";
@@ -241,6 +242,23 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                   </div>
                 </div>
               </div>
+
+              {/* Vehicle Description Section */}
+              {listing.description && listing.description.trim() && (
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-neutral-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-neutral-900">Fahrzeugbeschreibung</h2>
+                  </div>
+                  <div className="prose prose-neutral max-w-none">
+                    <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">
+                      {listing.description}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">
