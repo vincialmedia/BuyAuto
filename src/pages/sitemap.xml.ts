@@ -1,111 +1,74 @@
-import { GetServerSideProps } from "next";
-import { supabase } from "@/integrations/supabase/client";
+import { GetServerSideProps } from 'next';
+import { supabase } from '@/integrations/supabase/client';
+
+// Define your base URL
+const BASE_URL = 'https://buyauto.ch';
+
+// Define static pages
+const STATIC_PAGES = [
+  '',
+  '/suche',
+  '/inserat-erstellen',
+  '/leasinguebernahme',
+  '/leasing-abgeben-schweiz',
+  '/datenschutz',
+  '/agb',
+  '/impressum',
+  '/auth',
+];
 
 function generateSiteMap(listings: any[]) {
-  const baseUrl = "https://buyauto.ch";
-  
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Static Pages -->
-  <url>
-    <loc>${baseUrl}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/suche</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/leasinguebernahme</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/datenschutz</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/agb</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  
-  <!-- Dynamic Vehicle Listings -->
-  ${listings
-    .map((listing) => {
-      return `
-  <url>
-    <loc>${baseUrl}/fahrzeug/${listing.id}</loc>
-    <lastmod>${new Date(listing.updated_at || listing.created_at).toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-    })
-    .join("")}
-</urlset>`;
+   <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+     <!-- Static Pages -->
+     ${STATIC_PAGES
+       .map((url) => {
+         return `
+       <url>
+           <loc>${BASE_URL}${url}</loc>
+           <changefreq>daily</changefreq>
+           <priority>0.7</priority>
+       </url>
+     `;
+       })
+       .join('')}
+       
+     <!-- Dynamic Listing Pages -->
+     ${listings
+       .map(({ id, updated_at }) => {
+         return `
+       <url>
+           <loc>${BASE_URL}/fahrzeug/${id}</loc>
+           <lastmod>${new Date(updated_at).toISOString()}</lastmod>
+           <changefreq>daily</changefreq>
+           <priority>0.9</priority>
+       </url>
+     `;
+       })
+       .join('')}
+   </urlset>
+ `;
+}
+
+export default function SiteMap() {
+  // getServerSideProps will do the heavy lifting
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  try {
-    // Fetch all active listings from Supabase
-    const { data: listings, error } = await supabase
-      .from("listings")
-      .select("id, created_at, updated_at")
-      .eq("status", "active")
-      .order("created_at", { ascending: false });
+  // We make an API call to gather the URLs for our site
+  const { data: listings } = await supabase
+    .from('listings')
+    .select('id, updated_at')
+    .eq('status', 'active'); // Only include active listings
 
-    if (error) {
-      console.error("Error fetching listings for sitemap:", error);
-      // Return empty listings array if there's an error
-      const sitemap = generateSiteMap([]);
-      
-      res.setHeader("Content-Type", "text/xml");
-      res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
-      res.write(sitemap);
-      res.end();
+  const sitemap = generateSiteMap(listings || []);
 
-      return {
-        props: {},
-      };
-    }
+  res.setHeader('Content-Type', 'text/xml');
+  // we send the XML to the browser
+  res.write(sitemap);
+  res.end();
 
-    // Generate the XML sitemap with the listings data
-    const sitemap = generateSiteMap(listings || []);
-
-    res.setHeader("Content-Type", "text/xml");
-    // Cache for 1 hour, revalidate in background for 24 hours
-    res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
-    res.write(sitemap);
-    res.end();
-
-    return {
-      props: {},
-    };
-  } catch (error) {
-    console.error("Sitemap generation error:", error);
-    
-    // Fallback: generate sitemap with static pages only
-    const sitemap = generateSiteMap([]);
-    
-    res.setHeader("Content-Type", "text/xml");
-    res.write(sitemap);
-    res.end();
-
-    return {
-      props: {},
-    };
-  }
+  return {
+    props: {},
+  };
 };
-
-export default function Sitemap() {
-  // This component will never be rendered
-  return null;
-}

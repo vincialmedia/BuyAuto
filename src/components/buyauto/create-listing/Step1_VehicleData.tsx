@@ -324,7 +324,7 @@ export default function Step1_VehicleData() {
           )}
         </div>
 
-        {/* Description - Full Width */}
+        {/* Description - Full Width - Added this section */}
         <div className="space-y-2">
           <Label htmlFor="description" className="text-sm font-medium text-neutral-700">
             Fahrzeugbeschreibung (optional)
@@ -332,7 +332,7 @@ export default function Step1_VehicleData() {
           <Textarea
             id="description"
             {...register("description")}
-            placeholder="Beschreiben Sie Ihr Fahrzeug: Besonderheiten, Ausstattung, Zustand, etc."
+            placeholder="Beschreiben Sie Ihr Fahrzeug: Besonderheiten, Ausstattung, Zustand, etc. (Max. 2000 Zeichen)"
             className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm min-h-[120px] resize-y"
             rows={5}
           />

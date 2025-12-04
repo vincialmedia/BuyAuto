@@ -43,7 +43,8 @@ export function ListingDetailsModal({
         location: listing.location,
         canton_code: listing.canton_code,
         status: listing.status,
-        premium: listing.premium
+        premium: listing.premium,
+        description: listing.description // Added description
       });
     }
   }, [listing, open]);
@@ -229,6 +230,23 @@ export function ListingDetailsModal({
                     <p className="font-medium">{listing.title || 'Kein Titel'}</p>
                   )}
                 </div>
+              </div>
+              
+              {/* Description Field - ADDED */}
+              <div className="mt-4">
+                <label className="text-sm text-neutral-600">Fahrzeugbeschreibung</label>
+                {editing ? (
+                  <Textarea
+                    value={editData.description || ''}
+                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                    placeholder="Fahrzeugbeschreibung..."
+                    className="min-h-[100px]"
+                  />
+                ) : (
+                  <div className="p-3 bg-neutral-50 rounded border text-sm whitespace-pre-wrap">
+                    {listing.description || <span className="text-neutral-400 italic">Keine Beschreibung vorhanden</span>}
+                  </div>
+                )}
               </div>
             </div>
 

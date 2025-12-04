@@ -1,12 +1,16 @@
-import { supabase } from "@/integrations/supabase/client";
 
-export type DashboardListingStatus = "pending" | "published" | "rejected" | "expired";
+import { supabase } from "@/integrations/supabase/client";
+import { PostgrestError } from "@supabase/supabase-js";
+import { ListingDetail, ListingStatus } from "@/lib/buyauto/types";
+
+export type DashboardListingStatus = ListingStatus;
 
 export interface DashboardListing {
   id: string;
   brand: string;
   model: string;
   title?: string;
+  description: string | null;
   year: number;
   price_per_month_chf: number;
   price_paid_chf: number | null;
@@ -44,9 +48,8 @@ export interface DashboardStats {
   total: number;
 }
 
-export async function getUserListings(): Promise<any[]> {
+async function getUserListings(): Promise<ListingDetail[]> {
   try {
-    // Step 1: Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -54,7 +57,6 @@ export async function getUserListings(): Promise<any[]> {
       return [];
     }
 
-    // Step 2: Add an explicit .eq() filter to the query to ensure users only see their own listings
     const { data, error } = await supabase
       .from("listings")
       .select("*")
@@ -66,7 +68,20 @@ export async function getUserListings(): Promise<any[]> {
       return [];
     }
 
-    return data || [];
+    if (!data) return [];
+
+    // Map snake_case from DB to the camelCase ListingDetail type the component expects
+    const listings: ListingDetail[] = data.map((dbListing: any) => ({
+      ...dbListing,
+      pricePerMonthCHF: dbListing.price_per_month_chf,
+      remainingMonths: dbListing.remaining_months,
+      mileageKm: dbListing.mileage_km,
+      depositCHF: dbListing.deposit_chf,
+      image_urls: dbListing.images || [],
+      imageUrl: dbListing.cover_image_url || (Array.isArray(dbListing.images) && dbListing.images.length > 0 ? dbListing.images[dbListing.cover_image_index || 0] : ''),
+    }));
+
+    return listings;
 
   } catch (error) {
     console.error('Dashboard getUserListings unexpected error:', error);
@@ -74,13 +89,12 @@ export async function getUserListings(): Promise<any[]> {
   }
 }
 
-export async function getDashboardStats(): Promise<DashboardStats> {
+async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    // Get the user's listings using our secure API
-    const listings = await getUserListings();
+    const listings: ListingDetail[] = await getUserListings();
 
     const now = new Date();
-    const stats = {
+    const stats: DashboardStats = {
       active: 0,
       pending: 0,
       expired: 0,
@@ -89,12 +103,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     };
 
     listings.forEach((listing) => {
-      // Check if listing is expired based on expires_at date
       if (listing.expires_at && new Date(listing.expires_at) <= now) {
         stats.expired += 1;
       } else {
         switch (listing.status) {
           case 'published':
+          case 'active':
             stats.active += 1;
             break;
           case 'pending':
@@ -118,9 +132,29 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   }
 }
 
-export async function deleteListing(listingId: string): Promise<boolean> {
+async function updateListing(listingId: string, updates: Partial<DashboardListing>): Promise<{ success: boolean; error: PostgrestError | null }> {
   try {
-    // RLS ensures users can only delete their own listings
+    const { error } = await supabase
+      .from('listings')
+      .update(updates)
+      .eq('id', listingId);
+
+    if (error) {
+      console.error('Update listing error:', error);
+      return { success: false, error };
+    }
+
+    return { success: true, error: null };
+  } catch (err) {
+    const error = err as PostgrestError;
+    console.error('Update listing unexpected error:', error);
+    return { success: false, error };
+  }
+}
+
+
+async function deleteListing(listingId: string): Promise<{ success: boolean; error: PostgrestError | null }> {
+  try {
     const { error } = await supabase
       .from('listings')
       .delete()
@@ -128,23 +162,22 @@ export async function deleteListing(listingId: string): Promise<boolean> {
 
     if (error) {
       console.error('Delete listing error:', error);
-      return false;
+      return { success: false, error };
     }
 
-    return true;
-  } catch (error) {
+    return { success: true, error: null };
+  } catch (err) {
+    const error = err as PostgrestError;
     console.error('Delete listing unexpected error:', error);
-    return false;
+    return { success: false, error };
   }
 }
 
-export async function upgradeToPremium(listingId: string): Promise<boolean> {
+async function upgradeToPremium(listingId: string): Promise<boolean> {
   try {
-    // Set premium until 30 days from now
     const premiumUntil = new Date();
     premiumUntil.setDate(premiumUntil.getDate() + 30);
 
-    // RLS ensures users can only update their own listings
     const { error } = await supabase
       .from('listings')
       .update({
@@ -167,19 +200,17 @@ export async function upgradeToPremium(listingId: string): Promise<boolean> {
   }
 }
 
-export async function extendListing(listingId: string, days: number): Promise<boolean> {
+async function extendListing(listingId: string, days: number): Promise<boolean> {
   try {
-    // Extend the expiry date by the specified number of days
     const newExpiryDate = new Date();
     newExpiryDate.setDate(newExpiryDate.getDate() + days);
 
-    // RLS ensures users can only update their own listings
     const { error } = await supabase
       .from('listings')
       .update({
         expires_at: newExpiryDate.toISOString(),
         duration_days: days,
-        status: 'published' // Reactivate if expired
+        status: 'published'
       })
       .eq('id', listingId);
 
@@ -194,3 +225,12 @@ export async function extendListing(listingId: string, days: number): Promise<bo
     return false;
   }
 }
+
+export const dashboardService = {
+  getUserListings,
+  getDashboardStats,
+  updateListing,
+  deleteListing,
+  upgradeToPremium,
+  extendListing,
+};

@@ -1,3 +1,4 @@
+
 import { useState, createContext, useContext, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import ProgressBar from "./ProgressBar";
@@ -47,6 +48,7 @@ export default function ListingWizard() {
     remaining_months: 12,
     deposit_chf: 0,
     location: "",
+    description: "",
     price_plan: "standard",
     premium: false,
     duration_days: 30,

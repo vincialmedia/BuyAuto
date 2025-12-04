@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
@@ -8,6 +9,7 @@ type PublicListingRow = {
   brand: string;
   model: string;
   title?: string;
+  description?: string;
   year: number;
   price_per_month_chf: number;
   remaining_months: number;
@@ -94,6 +96,7 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     brand: row.brand,
     model: row.model,
     title: row.title || undefined,
+    description: row.description || undefined,
     year: row.year,
     pricePerMonthCHF: row.price_per_month_chf,
     remainingMonths: row.remaining_months,
@@ -118,6 +121,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     brand: row.brand,
     model: row.model,
     title: row.title || undefined,
+    description: row.description || undefined,
     year: row.year,
     pricePerMonthCHF: row.price_per_month_chf,
     remainingMonths: row.remaining_months,
@@ -151,6 +155,7 @@ function transformFullRowToListingDetail(row: any): ListingDetail {
     brand: row.brand,
     model: row.model,
     title: row.title || undefined,
+    description: row.description || undefined,
     year: row.year,
     pricePerMonthCHF: row.price_per_month_chf,
     remainingMonths: row.remaining_months,

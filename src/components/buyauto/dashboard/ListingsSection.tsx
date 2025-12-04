@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,8 +26,7 @@ import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, M
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
-import { getUserListings } from "@/services/dashboardService";
-import { supabase } from "@/integrations/supabase/client";
+import { dashboardService } from "@/services/dashboardService";
 
 export default function ListingsSection() {
   const router = useRouter();
@@ -38,18 +37,12 @@ export default function ListingsSection() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<string | null>(null);
 
-  useEffect(() => {
-    if(user) {
-      loadUserListings();
-    }
-  }, [user]);
-
-  const loadUserListings = async () => {
+  const loadUserListings = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      const data = await getUserListings();
+      const data = await dashboardService.getUserListings();
       setListings(data);
     } catch (error) {
       console.error("Error loading user listings:", error);
@@ -57,13 +50,21 @@ export default function ListingsSection() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleDelete = async (listingId: string) => {
+  useEffect(() => {
+    if(user) {
+      loadUserListings();
+    }
+  }, [user, loadUserListings]);
+
+  const handleDelete = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
     try {
-      const { error } = await supabase.from('listings').delete().eq('id', listingId);
-      if (error) throw error;
+      const { success, error } = await dashboardService.deleteListing(listingId);
+      if (error || !success) {
+        throw error || new Error("Failed to delete listing");
+      }
       setListings(prev => prev.filter(l => l.id !== listingId));
       setDeleteDialogOpen(false);
     } catch (error) {
@@ -73,7 +74,7 @@ export default function ListingsSection() {
       setActionLoading(null);
       setListingToDelete(null);
     }
-  };
+  }, []);
   
   const handleEdit = (listingId: string) => {
     router.push(`/inserat-erstellen?edit=${listingId}`);

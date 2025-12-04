@@ -18,7 +18,14 @@ const footerSections = [
     links: [
       { label: "Datenschutz", href: "/datenschutz" },
       { label: "AGB", href: "/agb" },
-      { label: "Impressum", href: "/datenschutz" }
+      { label: "Impressum", href: "/impressum" }
+    ]
+  },
+  {
+    title: "Seiten",
+    links: [
+      { label: "Leasingübernahme", href: "/leasinguebernahme" },
+      { label: "Leasing Abgeben", href: "/leasing-abgeben-schweiz" }
     ]
   }
 ];
@@ -50,8 +57,10 @@ export function Footer() {
               />
             </Link>
             <p className="text-neutral-300 mb-8 leading-relaxed font-light text-lg max-w-md">
-              Die führende Plattform für Leasingübernahmen in der Schweiz. 
-              Einfach, sicher und transparent.
+              <span data-nosnippet>
+                Die führende Plattform für Leasingübernahmen in der Schweiz. 
+                Einfach, sicher und transparent.
+              </span>
             </p>
             
             {/* Swiss contact info */}
