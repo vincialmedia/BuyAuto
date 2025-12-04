@@ -1,5 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
+import Header from "@/components/buyauto/Header";
+import { Footer } from "@/components/buyauto/Footer";
 import { 
   Check, 
   ChevronRight, 
@@ -12,8 +14,6 @@ import {
   Banknote,
   Clock
 } from "lucide-react";
-import { Footer } from "@/components/buyauto/Footer";
-import { Header } from "@/components/buyauto/Header";
 
 export default function LeasingAbgebenSchweiz() {
   return (
