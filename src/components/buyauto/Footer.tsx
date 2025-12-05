@@ -9,8 +9,7 @@ const footerSections = [
     links: [
       { label: "Fahrzeuge suchen", href: "/suche" },
       { label: "Inserat erstellen", href: "/inserat-erstellen" },
-      { label: "So funktioniert's", href: "#funktioniert" },
-      { label: "Finanzierung", href: "/" }
+      { label: "So funktioniert's", href: "#funktioniert" }
     ]
   },
   {

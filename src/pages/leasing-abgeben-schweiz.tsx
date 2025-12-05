@@ -1,16 +1,11 @@
 import Head from "next/head";
 import Link from "next/link";
-import Header from "@/components/buyauto/Header";
-import { Footer } from "@/components/buyauto/Footer";
 import { 
   Check, 
   ChevronRight, 
   AlertTriangle,
   ArrowRight,
-  Car,
-  FileText,
   Users,
-  ShieldCheck,
   Banknote,
   Clock
 } from "lucide-react";
@@ -26,11 +21,9 @@ export default function LeasingAbgebenSchweiz() {
         />
       </Head>
 
-      <Header />
-
       <main className="min-h-screen bg-white">
-        {/* Hero Section */}
-        <div className="relative bg-white pt-20 pb-16 lg:pt-28 lg:pb-24 overflow-hidden">
+        {/* Hero Section - Removed overflow-hidden to allow floating card to show */}
+        <div className="relative bg-white pt-10 pb-16 lg:pt-16 lg:pb-24">
           <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30"></div>
           
           <div className="container mx-auto px-4 relative">
@@ -75,28 +68,22 @@ export default function LeasingAbgebenSchweiz() {
                     alt="Leasingvertrag vorzeitig beenden - Erfolgreiche Übergabe und Handshake in der Schweiz" 
                     className="w-full h-[400px] lg:h-[500px] object-cover"
                   />
-                  
-                  {/* Floating Card 1 */}
-                  <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-gray-100 hidden lg:block">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <Banknote className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Durchschnittliche Ersparnis</p>
-                        <p className="text-lg font-bold text-gray-900">CHF 4'500.-</p>
-                      </div>
+                </div>
+                
+                {/* Floating Card 1 - Savings */}
+                <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-gray-100 hidden lg:block z-10">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Banknote className="w-5 h-5 text-green-600" />
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                      <Check className="w-3 h-3" />
-                      <span>Gegenüber Kündigung</span>
+                    <div>
+                      <p className="text-xs text-gray-500">Durchschnittliche Ersparnis</p>
+                      <p className="text-lg font-bold text-gray-900">CHF 4'500.-</p>
                     </div>
                   </div>
-
-                  {/* Floating Card 2 */}
-                  <div className="absolute top-8 -right-6 bg-white p-3 rounded-lg shadow-lg border border-gray-100 flex items-center gap-3 animate-fade-in hidden lg:flex">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-gray-700">Leasing abgeben Schweiz - Erfolgreiche Übergabe</span>
+                  <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                    <Check className="w-3 h-3" />
+                    <span>Gegenüber Kündigung</span>
                   </div>
                 </div>
               </div>
@@ -389,8 +376,6 @@ export default function LeasingAbgebenSchweiz() {
           </div>
         </section>
       </main>
-
-      <Footer />
     </>
   );
 }
