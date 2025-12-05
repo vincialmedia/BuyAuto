@@ -12,6 +12,18 @@ import ImageGallery from "@/components/buyauto/detail/ImageGallery";
 import SimilarListings from "@/components/buyauto/detail/SimilarListings";
 import { StructuredData } from "@/components/buyauto/StructuredData";
 
+// Helper function to ensure no undefined values (Next.js serialization fix)
+const serializeListing = (listing: ListingDetail | null): ListingDetail | null => {
+  if (!listing) return null;
+  
+  return {
+    ...listing,
+    description: listing.description ?? null,
+    imageUrl: listing.imageUrl ?? null,
+    depositCHF: listing.depositCHF ?? null,
+  };
+};
+
 // Dynamically import InquiryForm (only loads when user clicks inquiry button)
 const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), {
   ssr: false
@@ -356,7 +368,10 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       return { props: { listing: null, notFound: true } };
     }
 
-    return { props: { listing } };
+    // Serialize listing to convert undefined to null
+    const serializedListing = serializeListing(listing);
+
+    return { props: { listing: serializedListing } };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
     return { props: { listing: null, notFound: true } };
