@@ -1,4 +1,3 @@
-
 import { GetServerSideProps } from "next";
 import { useState, useEffect } from "react";
 import Head from "next/head";
@@ -173,7 +172,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-2 space-y-6">
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden">
                 <ImageGallery 
                   images={images}
@@ -182,6 +181,23 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                   premium={listing.premium}
                 />
               </div>
+
+              {/* Description Section */}
+              {listing.description && listing.description.trim() && (
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-neutral-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-neutral-900">Fahrzeugbeschreibung</h2>
+                  </div>
+                  <div className="prose prose-neutral max-w-none">
+                    <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">
+                      {listing.description}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
                 <h2 className="text-2xl font-bold text-neutral-900 mb-6">Fahrzeugdetails</h2>
@@ -242,23 +258,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                   </div>
                 </div>
               </div>
-
-              {/* Vehicle Description Section */}
-              {listing.description && listing.description.trim() && (
-                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-neutral-600" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-neutral-900">Fahrzeugbeschreibung</h2>
-                  </div>
-                  <div className="prose prose-neutral max-w-none">
-                    <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">
-                      {listing.description}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="space-y-6">
