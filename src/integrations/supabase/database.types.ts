@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -236,6 +236,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string | null
           deposit_chf: number | null
+          description: string | null
           fuel: string | null
           gearbox: string | null
           id: string | null
@@ -254,9 +255,10 @@ export type Database = {
           brand?: string | null
           canton_code?: string | null
           cover_image_index?: number | null
-          cover_image_url?: string | null
+          cover_image_url?: never
           created_at?: string | null
           deposit_chf?: number | null
+          description?: string | null
           fuel?: string | null
           gearbox?: string | null
           id?: string | null
@@ -275,9 +277,10 @@ export type Database = {
           brand?: string | null
           canton_code?: string | null
           cover_image_index?: number | null
-          cover_image_url?: string | null
+          cover_image_url?: never
           created_at?: string | null
           deposit_chf?: number | null
+          description?: string | null
           fuel?: string | null
           gearbox?: string | null
           id?: string | null

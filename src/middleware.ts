@@ -68,6 +68,10 @@ export async function middleware(req: NextRequest) {
     }
   }
   
+  // Apply security headers (Migration from vercel.json for CVE-2025-55182)
+  // We apply this to the final response object to ensure it persists even if the response was recreated by Supabase auth
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  
   // Log for debugging
   console.log(`Middleware: Session refresh for ${req.nextUrl.pathname}. User is ${user ? 'authenticated' : 'not authenticated'}.`)
 
