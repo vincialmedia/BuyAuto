@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const loadDashboardStats = async () => {
     try {
       setIsLoading(true);
-      const stats = await dashboardService.getStats();
+      const stats = await dashboardService.getDashboardStats();
       setDashboardStats(stats);
     } catch (error) {
       console.error("Error loading dashboard stats:", error);

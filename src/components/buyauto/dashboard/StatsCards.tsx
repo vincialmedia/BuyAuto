@@ -8,11 +8,12 @@ interface StatsCardsProps {
     sold: number;
     expired: number;
   } | null;
+  isLoading?: boolean; // Add optional isLoading prop
 }
 
-export function StatsCards({ stats }: StatsCardsProps) {
+export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   // Handle null/undefined stats gracefully
-  if (!stats) {
+  if (!stats || isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
