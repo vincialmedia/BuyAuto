@@ -3,6 +3,25 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
+  // 1. CANONICAL DOMAIN ENFORCEMENT (One Hop Redirect)
+  // Only enforce in production to preserve localhost development
+  const hostname = req.nextUrl.hostname
+  const protocol = req.nextUrl.protocol
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  // If in production and not already on canonical domain, redirect
+  if (isProduction && hostname !== 'www.buyauto.ch') {
+    const canonicalUrl = new URL(req.nextUrl.pathname + req.nextUrl.search, 'https://www.buyauto.ch')
+    return NextResponse.redirect(canonicalUrl, 301)
+  }
+  
+  // If in production and using http (though Vercel should handle this), ensure https
+  if (isProduction && protocol === 'http:') {
+    const httpsUrl = new URL(req.nextUrl.pathname + req.nextUrl.search, `https://${hostname}`)
+    return NextResponse.redirect(httpsUrl, 301)
+  }
+
+  // 2. SUPABASE AUTH SESSION MANAGEMENT
   let response = NextResponse.next({
     request: {
       headers: req.headers,
@@ -58,7 +77,7 @@ export async function middleware(req: NextRequest) {
   // Refresh session if expired - this ensures API routes can access updated session
   const { data: { user } } = await supabase.auth.getUser()
   
-  // Protect the listing creation page - only authenticated users can access it
+  // 3. PROTECTED ROUTES - Protect the listing creation page
   if (req.nextUrl.pathname === '/inserat-erstellen') {
     if (!user) {
       // Redirect to auth page with redirect parameter
@@ -68,12 +87,8 @@ export async function middleware(req: NextRequest) {
     }
   }
   
-  // Apply security headers (Migration from vercel.json for CVE-2025-55182)
-  // We apply this to the final response object to ensure it persists even if the response was recreated by Supabase auth
+  // 4. SECURITY HEADERS
   response.headers.set('X-Content-Type-Options', 'nosniff')
-  
-  // Log for debugging
-  console.log(`Middleware: Session refresh for ${req.nextUrl.pathname}. User is ${user ? 'authenticated' : 'not authenticated'}.`)
 
   return response
 }
