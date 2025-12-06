@@ -1,13 +1,34 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Clock, AlertCircle, BarChart3 } from "lucide-react";
-import { DashboardStats } from "@/services/dashboardService";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Car, Clock, CheckCircle2, XCircle } from "lucide-react";
 
 interface ListingStatsSectionProps {
-  stats: DashboardStats;
-  isLoading?: boolean;
+  stats: {
+    active: number;
+    pending: number;
+    sold: number;
+    expired: number;
+  } | null;
 }
 
-export default function ListingStatsSection({ stats, isLoading }: ListingStatsSectionProps) {
+export function ListingStatsSection({ stats }: ListingStatsSectionProps) {
+  // Handle null/undefined stats gracefully
+  if (!stats) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-8 w-20 bg-gray-200 animate-pulse rounded" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   const cards = [
     {
       title: "Insgesamt",
@@ -45,24 +66,6 @@ export default function ListingStatsSection({ stats, isLoading }: ListingStatsSe
     red: "bg-red-50 text-red-600 border-red-100",
     neutral: "bg-neutral-50 text-neutral-600 border-neutral-100"
   };
-
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i} className="animate-pulse border-neutral-200/60">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-neutral-200 rounded-xl"></div>
-              </div>
-              <div className="w-16 h-8 bg-neutral-200 rounded mb-2"></div>
-              <div className="w-24 h-4 bg-neutral-200 rounded"></div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

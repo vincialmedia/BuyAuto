@@ -1,19 +1,39 @@
-
-import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Clock, AlertCircle, BarChart3 } from "lucide-react";
-import { DashboardStats } from "@/services/dashboardService";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Car, Clock, CheckCircle2, XCircle } from "lucide-react";
 
 interface StatsCardsProps {
-  stats: DashboardStats;
-  isLoading?: boolean;
+  stats: {
+    active: number;
+    pending: number;
+    sold: number;
+    expired: number;
+  } | null;
 }
 
-export default function StatsCards({ stats, isLoading }: StatsCardsProps) {
+export function StatsCards({ stats }: StatsCardsProps) {
+  // Handle null/undefined stats gracefully
+  if (!stats) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-8 w-20 bg-gray-200 animate-pulse rounded" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   const cards = [
     {
       title: "Aktive Inserate",
       value: stats.active,
-      icon: TrendingUp,
+      icon: Car,
       color: "emerald",
       description: "Veröffentlicht und aktiv"
     },
@@ -27,14 +47,14 @@ export default function StatsCards({ stats, isLoading }: StatsCardsProps) {
     {
       title: "Abgelaufen",
       value: stats.expired,
-      icon: AlertCircle,
+      icon: XCircle,
       color: "red",
       description: "Benötigen Verlängerung"
     },
     {
       title: "Insgesamt",
       value: stats.total,
-      icon: BarChart3,
+      icon: CheckCircle2,
       color: "neutral",
       description: "Alle Ihre Inserate"
     }
@@ -46,25 +66,6 @@ export default function StatsCards({ stats, isLoading }: StatsCardsProps) {
     red: "bg-red-50 text-red-600 border-red-100",
     neutral: "bg-neutral-50 text-neutral-600 border-neutral-100"
   };
-
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-8 h-8 bg-neutral-200 rounded-lg"></div>
-                <div className="w-6 h-6 bg-neutral-200 rounded"></div>
-              </div>
-              <div className="w-16 h-8 bg-neutral-200 rounded mb-2"></div>
-              <div className="w-24 h-4 bg-neutral-200 rounded"></div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
