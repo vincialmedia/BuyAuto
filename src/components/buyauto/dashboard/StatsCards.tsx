@@ -29,6 +29,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
     );
   }
 
+  const total = stats.active + stats.pending + stats.sold + stats.expired;
+
   const cards = [
     {
       title: "Aktive Inserate",
@@ -53,7 +55,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
     },
     {
       title: "Insgesamt",
-      value: stats.total,
+      value: total,
       icon: CheckCircle2,
       color: "neutral",
       description: "Alle Ihre Inserate"

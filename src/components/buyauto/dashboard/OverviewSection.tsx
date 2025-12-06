@@ -4,9 +4,9 @@ import { useRouter } from "next/router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowRight, Sparkles } from "lucide-react";
+import { StatsCards } from "@/components/buyauto/dashboard/StatsCards";
 import { useAuth } from "@/contexts/AuthContext";
 import { dashboardService, type DashboardStats } from "@/services/dashboardService";
-import StatsCards from "./StatsCards";
 
 export default function OverviewSection() {
   const router = useRouter();

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/buyauto/dashboard/DashboardLayout";
+import DashboardHeader from "@/components/buyauto/dashboard/DashboardHeader";
 import Head from "next/head";
 import { useAuth } from "@/contexts/AuthContext";
 import UserDetailsSection from "@/components/buyauto/dashboard/UserDetailsSection";
 import ListingsSection from "@/components/buyauto/dashboard/ListingsSection";
 import OverviewSection from "@/components/buyauto/dashboard/OverviewSection";
+import { ListingStatsSection } from "@/components/buyauto/dashboard/ListingStatsSection";
 import { useRouter } from "next/router";
+import { dashboardService } from "@/services/dashboardService";
 
 export default function DashboardPage() {
   const router = useRouter();

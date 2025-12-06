@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Car, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Car, Clock, CheckCircle2, XCircle, BarChart3, TrendingUp, AlertCircle } from "lucide-react";
 
 interface ListingStatsSectionProps {
   stats: {
@@ -29,10 +29,12 @@ export function ListingStatsSection({ stats }: ListingStatsSectionProps) {
     );
   }
 
+  const total = stats.active + stats.pending + stats.sold + stats.expired;
+
   const cards = [
     {
       title: "Insgesamt",
-      value: stats.total,
+      value: total,
       icon: BarChart3,
       color: "neutral",
       description: "Alle Ihre Inserate"
