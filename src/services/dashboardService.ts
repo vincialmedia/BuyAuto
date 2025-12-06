@@ -140,8 +140,11 @@ async function deleteListing(id: string) {
     .delete()
     .eq('id', id);
 
-  if (error) throw error;
-  return true;
+  if (error) {
+    console.error("Error deleting listing:", error);
+    return { success: false, error };
+  }
+  return { success: true };
 }
 
 async function upgradeToPremium(id: string) {
@@ -163,6 +166,9 @@ async function extendListing(id: string) {
     })
     .eq('id', id);
 
-  if (error) throw error;
-  return true;
+  if (error) {
+    console.error("Error extending listing:", error);
+    return { success: false, error };
+  }
+  return { success: true };
 }
