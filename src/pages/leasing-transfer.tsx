@@ -30,47 +30,66 @@ export default function LeasingTransferPage() {
         <meta property="og:url" content="https://www.buyauto.ch/leasing-transfer" />
       </Head>
 
-      <main className="bg-white min-h-screen">
+      <main className="bg-neutral-50 min-h-screen">
         
-        {/* HERO SECTION - Minimalist Professional Style */}
-        <section className="bg-gradient-to-b from-neutral-100 to-white pt-16 pb-12 md:pt-24 md:pb-16 px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center space-y-6 max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-2 bg-neutral-900 text-white px-5 py-2 rounded-full text-sm font-medium">
-                <FileCheck className="w-4 h-4" />
-                Vertragsübertragung
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 tracking-tight leading-tight">
-                Leasing Transfer in der Schweiz
-              </h1>
-              <p className="text-xl md:text-2xl text-neutral-600 font-medium">
-                So überträgst du deinen Leasingvertrag korrekt
-              </p>
-              <p className="text-lg text-neutral-600 leading-relaxed max-w-2xl mx-auto">
-                Ein klar strukturierter Leitfaden für alle, die einen bestehenden Leasingvertrag übertragen möchten. Transparent, sachlich und Schritt für Schritt erklärt.
-              </p>
-              
-              <div className="pt-6 flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-neutral-900 hover:bg-neutral-800 text-white shadow-lg transition-all duration-300 px-8 py-6 text-base font-semibold rounded-lg"
-                >
-                  <Link href="/inserat-erstellen">
-                    Leasing Transfer starten
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="border-2 border-neutral-900 text-neutral-900 hover:bg-neutral-900 hover:text-white transition-all duration-300 px-8 py-6 text-base font-semibold rounded-lg"
-                >
-                  <Link href="/suche">
-                    Angebote durchsuchen
-                  </Link>
-                </Button>
+        {/* HERO SECTION - With Image Background */}
+        <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
+          {/* Background Image */}
+          <div className="absolute inset-0">
+            <img 
+              src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1600&q=80" 
+              alt="Leasing Transfer Schweiz" 
+              className="w-full h-full object-cover"
+            />
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />
+            <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 via-transparent to-neutral-900/30" />
+          </div>
+
+          {/* Geometric Accents */}
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/3 left-1/5 w-64 h-64 bg-red-400/5 rounded-full blur-2xl" />
+
+          {/* Hero Content */}
+          <div className="relative z-10 w-full px-4 py-16 md:py-20">
+            <div className="max-w-5xl mx-auto">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
+                  <FileCheck className="w-4 h-4" />
+                  Vertragsübertragung
+                </div>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
+                  Leasing Transfer in der Schweiz
+                </h1>
+                <p className="text-xl md:text-2xl text-red-400 font-semibold mb-4">
+                  So überträgst du deinen Leasingvertrag korrekt
+                </p>
+                <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
+                  Ein klar strukturierter Leitfaden für alle, die einen bestehenden Leasingvertrag übertragen möchten. Transparent, sachlich und Schritt für Schritt erklärt.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
+                  >
+                    <Link href="/inserat-erstellen">
+                      Leasing Transfer starten
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl bg-transparent"
+                  >
+                    <Link href="/suche">
+                      Angebote durchsuchen
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -84,7 +103,7 @@ export default function LeasingTransferPage() {
                 <h2 className="text-3xl font-bold text-neutral-900 mb-6">
                   Was bedeutet ein Leasing Transfer?
                 </h2>
-                <div className="bg-neutral-50 border-l-4 border-neutral-900 p-6 rounded-r-xl">
+                <div className="bg-red-50 border-l-4 border-red-600 p-6 rounded-r-xl">
                   <p className="text-lg text-neutral-700 leading-relaxed mb-4">
                     Ein <strong>Leasing Transfer</strong> beschreibt die Übertragung eines bestehenden Leasingvertrags von einer Person oder Firma auf eine neue Vertragspartei.
                   </p>
@@ -110,9 +129,9 @@ export default function LeasingTransferPage() {
                   ].map((item, i) => {
                     const IconComponent = item.icon;
                     return (
-                      <div key={i} className="flex items-start gap-3 bg-white border border-neutral-200 p-4 rounded-lg hover:border-neutral-900 transition-colors">
+                      <div key={i} className="flex items-start gap-3 bg-white border border-neutral-200 p-4 rounded-lg hover:border-red-600 transition-colors">
                         <div className="mt-0.5">
-                          <IconComponent className="w-5 h-5 text-neutral-900" />
+                          <IconComponent className="w-5 h-5 text-red-600" />
                         </div>
                         <span className="text-neutral-700 font-medium">{item.text}</span>
                       </div>
@@ -188,7 +207,7 @@ export default function LeasingTransferPage() {
             {/* Timeline Design */}
             <div className="relative">
               {/* Vertical Line */}
-              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-neutral-200 hidden md:block"></div>
+              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-red-200 hidden md:block"></div>
               
               <div className="space-y-8">
                 {[
@@ -250,14 +269,14 @@ export default function LeasingTransferPage() {
                   return (
                     <div key={item.step} className="relative flex gap-6 md:gap-8">
                       {/* Step Number Circle */}
-                      <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-full bg-neutral-900 text-white flex flex-col items-center justify-center font-bold border-4 border-white shadow-lg z-10">
+                      <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-600 text-white flex flex-col items-center justify-center font-bold border-4 border-white shadow-lg z-10">
                         <span className="text-2xl">{item.step}</span>
                       </div>
                       
                       {/* Content */}
                       <div className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl p-6 md:p-8">
                         <div className="flex items-start gap-3 mb-3">
-                          <IconComponent className="w-6 h-6 text-neutral-900 mt-1" />
+                          <IconComponent className="w-6 h-6 text-red-600 mt-1" />
                           <h3 className="text-xl md:text-2xl font-bold text-neutral-900">{item.title}</h3>
                         </div>
                         <p className="text-neutral-700 mb-4">{item.desc}</p>
@@ -266,7 +285,7 @@ export default function LeasingTransferPage() {
                           <ul className="space-y-2 ml-4">
                             {item.items.map((listItem, i) => (
                               <li key={i} className="flex items-start gap-2 text-neutral-600">
-                                <span className="text-neutral-400 mt-1">•</span>
+                                <span className="text-red-600 mt-1">•</span>
                                 <span>{listItem}</span>
                               </li>
                             ))}
@@ -292,7 +311,7 @@ export default function LeasingTransferPage() {
               <Button
                 asChild
                 size="lg"
-                className="bg-neutral-900 hover:bg-neutral-800 text-white shadow-lg transition-all duration-300 px-8 py-6 text-base font-semibold rounded-lg"
+                className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
               >
                 <Link href="/inserat-erstellen">
                   Jetzt Leasing Transfer durchführen
@@ -310,7 +329,7 @@ export default function LeasingTransferPage() {
               Voraussetzungen für einen Leasing Transfer
             </h2>
             
-            <div className="bg-white border-2 border-neutral-900 rounded-xl p-8">
+            <div className="bg-white border-2 border-red-600 rounded-xl p-8">
               <div className="space-y-4">
                 {[
                   { text: "Zustimmung der Leasingbank", required: true },
@@ -322,8 +341,8 @@ export default function LeasingTransferPage() {
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
                     <div className="flex-shrink-0">
-                      <div className="w-6 h-6 rounded border-2 border-neutral-900 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-neutral-900" />
+                      <div className="w-6 h-6 rounded border-2 border-red-600 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-red-600" />
                       </div>
                     </div>
                     <div className="flex-1">
@@ -346,9 +365,9 @@ export default function LeasingTransferPage() {
               Kosten eines Leasing Transfers
             </h2>
             
-            <div className="overflow-x-auto rounded-xl border-2 border-neutral-900 shadow-lg">
+            <div className="overflow-x-auto rounded-xl border-2 border-red-600 shadow-lg">
               <table className="w-full bg-white text-left">
-                <thead className="bg-neutral-900 text-white">
+                <thead className="bg-red-600 text-white">
                   <tr>
                     <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
                     <th className="p-4 md:p-6 font-bold text-base md:text-lg">Typische Kosten</th>
@@ -356,22 +375,22 @@ export default function LeasingTransferPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
-                  <tr className="hover:bg-neutral-50 transition-colors">
+                  <tr className="hover:bg-red-50 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Transfer-/Übernahmegebühr</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
                   </tr>
-                  <tr className="hover:bg-neutral-50 transition-colors">
+                  <tr className="hover:bg-red-50 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Händler-/Wechselgebühr</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–250 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700">Optional</td>
                   </tr>
-                  <tr className="hover:bg-neutral-50 transition-colors">
+                  <tr className="hover:bg-red-50 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung / Kontrollschilder</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
                   </tr>
-                  <tr className="hover:bg-neutral-50 transition-colors">
+                  <tr className="hover:bg-red-50 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung / laufende Kosten</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">individuell</td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
@@ -482,7 +501,7 @@ export default function LeasingTransferPage() {
         {/* SEARCH SECTION */}
         <section id="search-section" className="py-16 px-4 bg-neutral-50">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg border-2 border-neutral-900 p-6 md:p-10">
+            <div className="bg-white rounded-2xl shadow-lg border-2 border-red-600 p-6 md:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
                   Leasing-Angebote durchsuchen
@@ -511,7 +530,7 @@ export default function LeasingTransferPage() {
             <Accordion type="single" collapsible className="w-full space-y-4">
               <AccordionItem 
                 value="item-1" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Kann jeder einen Leasingvertrag übertragen?
@@ -523,7 +542,7 @@ export default function LeasingTransferPage() {
               
               <AccordionItem 
                 value="item-2" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Wie lange dauert der Leasing Transfer?
@@ -535,7 +554,7 @@ export default function LeasingTransferPage() {
               
               <AccordionItem 
                 value="item-3" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Was passiert mit der Anzahlung?
@@ -547,7 +566,7 @@ export default function LeasingTransferPage() {
               
               <AccordionItem 
                 value="item-4" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Kann die Bank den Transfer ablehnen?
@@ -559,7 +578,7 @@ export default function LeasingTransferPage() {
 
               <AccordionItem 
                 value="item-5" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Welche Unterlagen braucht man?
@@ -582,13 +601,13 @@ export default function LeasingTransferPage() {
               Erstelle dein Inserat oder finde passende Übernehmer. Der Transferprozess ist einfacher, als viele denken.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-white hover:bg-neutral-100 text-neutral-900 rounded-lg transition-all">
+              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg shadow-red-600/30 transition-all">
                 <Link href="/inserat-erstellen">
                   Leasing Transfer starten
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-lg bg-transparent transition-all">
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent transition-all">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
                   Angebote durchsuchen
