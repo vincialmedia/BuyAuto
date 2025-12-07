@@ -1,11 +1,10 @@
 import Head from "next/head";
 import Link from "next/link";
-import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search, ArrowRight, RefreshCw, UserCheck } from "lucide-react";
+import { Check, ChevronRight, AlertCircle, FileText, Info, ShieldCheck, Clock, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search, ArrowRight, RefreshCw, UserCheck, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import SearchForm from "@/components/buyauto/SearchForm";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
   AccordionContent,
@@ -17,537 +16,582 @@ export default function LeasingTransferPage() {
   return (
     <>
       <Head>
-        <title>Leasing Transfer Schweiz – So funktioniert die Übertragung eines Leasingvertrags | BuyAuto</title>
+        <title>Leasing Transfer Schweiz – So überträgst du deinen Leasingvertrag korrekt | BuyAuto</title>
         <meta
           name="description"
-          content="Alles zum Leasing Transfer in der Schweiz: Ablauf, Voraussetzungen, Kosten und wie du deinen Leasingvertrag schnell und einfach übertragen kannst mit BuyAuto"
+          content="Ein klar strukturierter Leitfaden für alle, die einen bestehenden Leasingvertrag übertragen möchten. Transparent, sachlich und Schritt für Schritt erklärt."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasing-transfer" />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasing Transfer Schweiz – So funktioniert die Übertragung eines Leasingvertrags" />
-        <meta property="og:description" content="Erfahre, wie du einen bestehenden Leasingvertrag auf eine andere Person übertragen kannst. Einfach erklärt, transparent und mit klaren Schritten." />
+        <meta property="og:title" content="Leasing Transfer Schweiz – So überträgst du deinen Leasingvertrag korrekt" />
+        <meta property="og:description" content="Ein klar strukturierter Leitfaden für die Übertragung deines Leasingvertrags. Transparent, sachlich und Schritt für Schritt erklärt." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasing-transfer" />
       </Head>
 
-      <main className="bg-neutral-50 min-h-screen">
+      <main className="bg-white min-h-screen">
         
-        {/* SECTION 1 — HERO (Text + Image Split) */}
-        <section className="bg-gradient-to-br from-white via-neutral-50 to-red-50/30 pt-12 pb-8 md:pt-20 md:pb-12 px-4 overflow-hidden">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              {/* Text Content */}
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-semibold">
-                  <RefreshCw className="w-4 h-4" />
-                  Schnell & unkompliziert
-                </div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 tracking-tight leading-tight">
-                  Leasing Transfer in der Schweiz
-                </h1>
-                <p className="text-xl md:text-2xl text-red-600 font-semibold">
-                  Ablauf, Voraussetzungen & Kosten erklärt
-                </p>
-                <p className="text-lg text-neutral-600 leading-relaxed">
-                  Erfahre, wie du einen bestehenden Leasingvertrag auf eine andere Person übertragen kannst. Einfach erklärt, transparent und mit klaren Schritten für Verkäufer und Übernehmer.
-                </p>
-                
-                {/* Quick Stats */}
-                <div className="flex flex-wrap gap-6 pt-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-green-700" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-neutral-500">Dauer</div>
-                      <div className="font-bold text-neutral-900">2-5 Tage</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <DollarSign className="w-5 h-5 text-blue-700" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-neutral-500">Gebühren</div>
-                      <div className="font-bold text-neutral-900">CHF 100-400</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <UserCheck className="w-5 h-5 text-purple-700" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-neutral-500">Prozess</div>
-                      <div className="font-bold text-neutral-900">Einfach</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CTA Button */}
-                <div className="pt-6">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all duration-300 px-8 py-6 text-lg font-semibold rounded-xl group"
-                  >
-                    <Link href="/inserat-erstellen">
-                      <Zap className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                      Jetzt Leasing Transfer starten
-                      <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
-                </div>
+        {/* HERO SECTION - Minimalist Professional Style */}
+        <section className="bg-gradient-to-b from-neutral-100 to-white pt-16 pb-12 md:pt-24 md:pb-16 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center space-y-6 max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-2 bg-neutral-900 text-white px-5 py-2 rounded-full text-sm font-medium">
+                <FileCheck className="w-4 h-4" />
+                Vertragsübertragung
               </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 tracking-tight leading-tight">
+                Leasing Transfer in der Schweiz
+              </h1>
+              <p className="text-xl md:text-2xl text-neutral-600 font-medium">
+                So überträgst du deinen Leasingvertrag korrekt
+              </p>
+              <p className="text-lg text-neutral-600 leading-relaxed max-w-2xl mx-auto">
+                Ein klar strukturierter Leitfaden für alle, die einen bestehenden Leasingvertrag übertragen möchten. Transparent, sachlich und Schritt für Schritt erklärt.
+              </p>
               
-              {/* Image */}
-              <div className="relative lg:block">
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
-                  <img 
-                    src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80" 
-                    alt="Leasing Transfer Schweiz - Vertragsübertragung" 
-                    className="w-full h-[400px] lg:h-[500px] object-cover"
-                  />
-                  {/* Overlay Badge */}
-                  <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm text-neutral-500 mb-1">Übertragung in</div>
-                        <div className="text-2xl font-bold text-neutral-900">2-5 Tagen</div>
-                      </div>
-                      <div className="bg-green-500 text-white px-4 py-2 rounded-full font-semibold text-sm flex items-center gap-2">
-                        <BadgeCheck className="w-4 h-4" />
-                        Einfach
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Floating Elements */}
-                <div className="hidden lg:block absolute -top-4 -right-4 bg-red-600 text-white px-6 py-3 rounded-2xl shadow-lg rotate-3 font-bold">
-                  Schnell & sicher
-                </div>
-                <div className="hidden lg:block absolute -bottom-4 -left-4 bg-neutral-900 text-white px-6 py-3 rounded-2xl shadow-lg -rotate-3 font-bold">
-                  Bank-geprüft
-                </div>
+              <div className="pt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-neutral-900 hover:bg-neutral-800 text-white shadow-lg transition-all duration-300 px-8 py-6 text-base font-semibold rounded-lg"
+                >
+                  <Link href="/inserat-erstellen">
+                    Leasing Transfer starten
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-2 border-neutral-900 text-neutral-900 hover:bg-neutral-900 hover:text-white transition-all duration-300 px-8 py-6 text-base font-semibold rounded-lg"
+                >
+                  <Link href="/suche">
+                    Angebote durchsuchen
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
         </section>
 
-        {/* SECTION 2 — WAS IST EIN LEASING TRANSFER */}
-        <section className="py-12 md:py-20 px-4">
-          <div className="max-w-4xl mx-auto space-y-12">
-            
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-neutral-900 flex items-center gap-3">
-                <RefreshCw className="w-8 h-8 text-red-600" />
-                Was ist ein Leasing Transfer?
-              </h2>
-              <div className="prose prose-lg text-neutral-700 max-w-none leading-relaxed">
-                <p>
-                  Ein <strong>Leasing Transfer</strong> bedeutet, dass ein bestehender Leasingvertrag von einer Person (Abgeber) auf eine andere Person (Übernehmer) übertragen wird. Der ursprüngliche Vertrag bleibt bestehen – nur der Vertragspartner ändert sich.
-                </p>
-                <p>
-                  Dies ist eine Win-Win-Situation: Der Abgeber wird flexibel aus seinem Vertrag entlassen, und der Übernehmer profitiert von attraktiven Konditionen ohne hohe Anzahlung.
-                </p>
+        {/* DEFINITION SECTION */}
+        <section className="py-16 px-4 bg-white">
+          <div className="max-w-4xl mx-auto">
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-3xl font-bold text-neutral-900 mb-6">
+                  Was bedeutet ein Leasing Transfer?
+                </h2>
+                <div className="bg-neutral-50 border-l-4 border-neutral-900 p-6 rounded-r-xl">
+                  <p className="text-lg text-neutral-700 leading-relaxed mb-4">
+                    Ein <strong>Leasing Transfer</strong> beschreibt die Übertragung eines bestehenden Leasingvertrags von einer Person oder Firma auf eine neue Vertragspartei.
+                  </p>
+                  <p className="text-lg text-neutral-700 leading-relaxed">
+                    Der bestehende Vertrag bleibt dabei unverändert – lediglich der Vertragspartner ändert sich.
+                  </p>
+                </div>
               </div>
 
-              {/* Typische Gründe */}
-              <div className="bg-white rounded-3xl p-8 shadow-sm border border-neutral-100">
-                <h3 className="text-xl font-bold text-neutral-900 mb-6">Typische Gründe für einen Leasing Transfer:</h3>
+              {/* Typical Reasons - Grid Layout */}
+              <div className="space-y-6">
+                <h3 className="text-2xl font-bold text-neutral-900">
+                  Typische Gründe für einen Leasing Transfer:
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { icon: MapPin, text: "Umzug ins Ausland" },
-                    { icon: Users, text: "Familienzuwachs" },
-                    { icon: FileText, text: "Firmenwagen wird nicht mehr benötigt" },
-                    { icon: DollarSign, text: "Finanzielle Entlastung" },
-                    { icon: RefreshCw, text: "Wunsch nach Fahrzeugwechsel" },
-                    { icon: TrendingDown, text: "Reduzierung der monatlichen Kosten" }
+                    { icon: MapPin, text: "Umzug ins Ausland oder Kantonswechsel" },
+                    { icon: DollarSign, text: "Finanzielle Veränderungen" },
+                    { icon: Users, text: "Firmenfahrzeug wird nicht mehr benötigt" },
+                    { icon: RefreshCw, text: "Familien- oder Lebenssituation hat sich geändert" },
+                    { icon: Search, text: "Wunsch nach einem anderen Fahrzeug" },
+                    { icon: AlertCircle, text: "Vermeidung von hohen Ausstiegskosten" }
                   ].map((item, i) => {
                     const IconComponent = item.icon;
                     return (
-                      <div key={i} className="flex items-center gap-3 text-neutral-700 bg-neutral-50 p-4 rounded-xl">
-                        <IconComponent className="w-5 h-5 text-red-600 shrink-0" />
-                        <span className="font-medium">{item.text}</span>
+                      <div key={i} className="flex items-start gap-3 bg-white border border-neutral-200 p-4 rounded-lg hover:border-neutral-900 transition-colors">
+                        <div className="mt-0.5">
+                          <IconComponent className="w-5 h-5 text-neutral-900" />
+                        </div>
+                        <span className="text-neutral-700 font-medium">{item.text}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
 
-              <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                <div className="flex items-start gap-4">
-                  <Info className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-blue-900 font-medium mb-2">
-                      Mehr zur Perspektive des Übernehmers?
-                    </p>
-                    <Link 
-                      href="/leasinguebernahme" 
-                      className="text-blue-700 hover:text-blue-800 font-semibold underline inline-flex items-center gap-2 transition-colors"
-                    >
-                      Mehr zur Leasingübernahme erfahren
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
+        {/* WHEN DOES IT MAKE SENSE */}
+        <section className="py-16 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-neutral-900 mb-8">
+              Wann macht ein Leasing Transfer Sinn?
+            </h2>
+            <div className="bg-white border border-neutral-200 rounded-xl p-8">
+              <p className="text-lg text-neutral-700 mb-6">
+                Ein Leasing Transfer ist besonders sinnvoll, wenn:
+              </p>
+              <div className="space-y-4">
+                {[
+                  "du dein Auto schneller und günstiger loswerden möchtest",
+                  "jemand anderes bessere Konditionen nutzen möchte",
+                  "du deine monatliche Belastung reduzieren musst",
+                  "der Vertrag noch lange läuft und eine Kündigung teuer wäre",
+                  "du ein Fahrzeug kurzfristig abgeben musst (z. B. Jobwechsel, Auslandjahr)"
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="mt-1">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                    <span className="text-neutral-700 text-lg">{item}</span>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* ABLAUF SECTION */}
-            <div className="space-y-8">
-              <h2 className="text-3xl font-bold text-neutral-900 flex items-center gap-3">
-                <ChevronRight className="w-8 h-8 text-red-600" />
-                Ablauf eines Leasing Transfers – Schritt für Schritt
+            {/* Link to Leasing Abgeben */}
+            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <Info className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-blue-900 font-medium mb-2">
+                    Möchtest du deinen Leasingvertrag abgeben?
+                  </p>
+                  <Link 
+                    href="/leasing-abgeben-schweiz" 
+                    className="text-blue-700 hover:text-blue-800 font-semibold underline inline-flex items-center gap-2 transition-colors"
+                  >
+                    Praktischer Leitfaden zum Leasing abgeben
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PROCESS TIMELINE */}
+        <section className="py-16 px-4 bg-white">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-neutral-900 mb-4">
+                Ablauf eines Leasing Transfers
               </h2>
-              <div className="space-y-6 relative before:absolute before:left-4 before:top-4 before:h-full before:w-0.5 before:bg-neutral-200 before:hidden md:before:block">
+              <p className="text-lg text-neutral-600">
+                Schritt für Schritt zum erfolgreichen Transfer
+              </p>
+            </div>
+
+            {/* Timeline Design */}
+            <div className="relative">
+              {/* Vertical Line */}
+              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-neutral-200 hidden md:block"></div>
+              
+              <div className="space-y-8">
                 {[
-                  { 
-                    step: 1, 
-                    title: "Vertrag prüfen", 
-                    desc: "Prüfe Laufzeit, Kilometerlimit, Anzahlung, Servicepakete und Restkilometer. Stelle sicher, dass der Vertrag eine Übertragung erlaubt.",
+                  {
+                    step: 1,
+                    title: "Vertragsprüfung",
+                    desc: "Überprüfe die wichtigsten Vertragsdaten",
+                    items: [
+                      "Restlaufzeit",
+                      "Monatliche Leasingrate",
+                      "Anzahlung / Vorauszahlung",
+                      "Kilometerlimit & Mehrkilometerkosten",
+                      "Service- und Reifenpakete",
+                      "Zustand des Fahrzeugs"
+                    ],
                     icon: FileCheck
                   },
-                  { 
-                    step: 2, 
-                    title: "Übernehmer finden", 
-                    desc: "Erstelle ein Inserat auf BuyAuto oder kontaktiere interessierte Käufer direkt. Je attraktiver die Konditionen, desto schneller findest du jemanden.",
+                  {
+                    step: 2,
+                    title: "Übernehmer finden",
+                    desc: "Das kann eine Privatperson, ein Unternehmen oder eine Leasing-Community sein. Ein Inserat beschleunigt den Prozess erheblich.",
+                    items: [],
                     icon: Users
                   },
-                  { 
-                    step: 3, 
-                    title: "Bonitätsprüfung durch die Leasingbank", 
-                    desc: "Der Übernehmer muss eine positive Bonität vorweisen. Die Bank prüft Kreditwürdigkeit und finanzielle Stabilität.",
+                  {
+                    step: 3,
+                    title: "Bonitätsprüfung des neuen Vertragspartners",
+                    desc: "Die Leasingbank prüft:",
+                    items: [
+                      "Einkommen",
+                      "Budget",
+                      "ZEK-Einträge",
+                      "Allgemeine Kreditwürdigkeit"
+                    ],
+                    note: "Ohne positive Prüfung ist ein Transfer nicht möglich.",
                     icon: ShieldCheck
                   },
-                  { 
-                    step: 4, 
-                    title: "Vertragsübertragung", 
-                    desc: "Die Bank erstellt die neuen Vertragsunterlagen. Der Vertrag bleibt inhaltlich identisch – nur der Name des Vertragspartners ändert sich.",
-                    icon: FileText
-                  },
-                  { 
-                    step: 5, 
-                    title: "Fahrzeugübergabe", 
-                    desc: "Dokumentiere den Fahrzeugzustand genau, halte den Kilometerstand fest und übergebe alle Schlüssel und Dokumente.",
+                  {
+                    step: 4,
+                    title: "Bankgenehmigung & Vertragsübertragung",
+                    desc: "Nach Freigabe erstellt die Bank neue Vertragsunterlagen. Der Vertrag bleibt inhaltlich identisch – nur der Name ändert sich.",
+                    items: [],
                     icon: BadgeCheck
+                  },
+                  {
+                    step: 5,
+                    title: "Fahrzeug- und Dokumentenübergabe",
+                    desc: "Nach Vertragsübertragung:",
+                    items: [
+                      "Fahrzeugzustand dokumentieren",
+                      "Kilometerstand notieren",
+                      "Fahrzeugausweis übergeben",
+                      "Schlüssel übergeben"
+                    ],
+                    icon: Check
                   }
                 ].map((item) => {
                   const IconComponent = item.icon;
                   return (
-                    <div key={item.step} className="relative flex flex-col md:flex-row gap-6 md:items-start bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 z-10">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-red-200">
-                        {item.step}
+                    <div key={item.step} className="relative flex gap-6 md:gap-8">
+                      {/* Step Number Circle */}
+                      <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-full bg-neutral-900 text-white flex flex-col items-center justify-center font-bold border-4 border-white shadow-lg z-10">
+                        <span className="text-2xl">{item.step}</span>
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <IconComponent className="w-5 h-5 text-red-600" />
-                          <h3 className="text-lg font-bold text-neutral-900">{item.title}</h3>
+                      
+                      {/* Content */}
+                      <div className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl p-6 md:p-8">
+                        <div className="flex items-start gap-3 mb-3">
+                          <IconComponent className="w-6 h-6 text-neutral-900 mt-1" />
+                          <h3 className="text-xl md:text-2xl font-bold text-neutral-900">{item.title}</h3>
                         </div>
-                        <p className="text-neutral-600">{item.desc}</p>
+                        <p className="text-neutral-700 mb-4">{item.desc}</p>
+                        
+                        {item.items.length > 0 && (
+                          <ul className="space-y-2 ml-4">
+                            {item.items.map((listItem, i) => (
+                              <li key={i} className="flex items-start gap-2 text-neutral-600">
+                                <span className="text-neutral-400 mt-1">•</span>
+                                <span>{listItem}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        
+                        {item.note && (
+                          <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p className="text-sm text-yellow-900 font-medium flex items-start gap-2">
+                              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                              {item.note}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-              <div className="text-center pt-4">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl group"
-                >
-                  <Link href="/inserat-erstellen">
-                    Jetzt Leasing Transfer durchführen
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
-              </div>
             </div>
 
-            {/* VORAUSSETZUNGEN SECTION */}
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-neutral-900 flex items-center gap-3">
-                <BadgeCheck className="w-8 h-8 text-red-600" />
-                Voraussetzungen für einen Leasing Transfer
-              </h2>
-              <p className="text-neutral-700 text-lg">
-                Damit ein Leasing Transfer erfolgreich durchgeführt werden kann, müssen folgende Voraussetzungen erfüllt sein:
-              </p>
-              <Card className="bg-gradient-to-br from-neutral-50 to-white border border-neutral-200 shadow-sm">
-                <CardContent className="p-8">
-                  <ul className="space-y-4">
-                    {[
-                      { text: "Positive Bonität des neuen Übernehmers", icon: ShieldCheck },
-                      { text: "Zustimmung der Leasinggesellschaft", icon: FileCheck },
-                      { text: "Keine offenen Zahlungen oder Mahnungen", icon: AlertTriangle },
-                      { text: "Fahrzeug in ordentlichem Zustand", icon: Check },
-                      { text: "Vertrag erlaubt explizit eine Übertragung (bei fast allen Schweizer Leasingbanken möglich)", icon: FileText }
-                    ].map((req, i) => {
-                      const IconComponent = req.icon;
-                      return (
-                        <li key={i} className="flex items-start gap-4 text-neutral-700 bg-white p-4 rounded-xl border border-neutral-100">
-                          <div className="mt-0.5 bg-green-50 p-2 rounded-full shrink-0">
-                            <IconComponent className="w-5 h-5 text-green-600" />
-                          </div>
-                          <span className="font-medium pt-1">{req.text}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </CardContent>
-              </Card>
+            <div className="text-center mt-12">
+              <Button
+                asChild
+                size="lg"
+                className="bg-neutral-900 hover:bg-neutral-800 text-white shadow-lg transition-all duration-300 px-8 py-6 text-base font-semibold rounded-lg"
+              >
+                <Link href="/inserat-erstellen">
+                  Jetzt Leasing Transfer durchführen
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+              </Button>
             </div>
-
-            {/* KOSTEN SECTION */}
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-neutral-900 flex items-center gap-3">
-                <DollarSign className="w-8 h-8 text-red-600" />
-                Kosten beim Leasing Transfer
-              </h2>
-              <p className="text-neutral-700 text-lg">
-                Je nach Leasinggesellschaft fallen folgende Kosten an:
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  { 
-                    title: "Übernahme-/Verwaltungsgebühr", 
-                    cost: "CHF 100–400", 
-                    desc: "Gebühr der Leasingbank für die Vertragsübertragung",
-                    icon: FileText
-                  },
-                  { 
-                    title: "Wechselgebühr beim Händler", 
-                    cost: "CHF 100–250", 
-                    desc: "Falls der Händler involviert ist",
-                    icon: ShieldCheck
-                  },
-                  { 
-                    title: "Kantonsabhängige Ummeldekosten", 
-                    cost: "CHF 50–150", 
-                    desc: "Für die Ummeldung des Fahrzeugs",
-                    icon: MapPin
-                  }
-                ].map((item, i) => {
-                  const IconComponent = item.icon;
-                  return (
-                    <Card key={i} className="bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
-                      <CardContent className="p-6 space-y-4">
-                        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center">
-                          <IconComponent className="w-6 h-6 text-red-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-neutral-900 mb-1">{item.title}</h3>
-                          <p className="text-2xl font-bold text-red-600 mb-2">{item.cost}</p>
-                          <p className="text-sm text-neutral-600">{item.desc}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              <div className="bg-green-50 p-6 rounded-2xl border border-green-100">
-                <div className="flex items-start gap-4">
-                  <div className="bg-white p-2 rounded-full shadow-sm shrink-0">
-                    <Check className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-green-900 font-semibold mb-1">Kostenübernahme flexibel vereinbar</p>
-                    <p className="text-green-800">
-                      In vielen Fällen übernimmt der Abgeber die Gebühren, um den Transfer zu erleichtern. Dies kann frei zwischen den Parteien vereinbart werden.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                <div className="flex items-start gap-4">
-                  <Info className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-blue-900 font-medium mb-2">
-                      Interessiert an den Gesamtkosten einer Leasingübernahme?
-                    </p>
-                    <Link 
-                      href="/leasinguebernahme" 
-                      className="text-blue-700 hover:text-blue-800 font-semibold underline inline-flex items-center gap-2 transition-colors"
-                    >
-                      Mehr zu Kosten der Leasingübernahme
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* VORTEILE SECTION */}
-            <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 text-white p-10 rounded-3xl shadow-xl">
-              <h2 className="text-3xl font-bold mb-8 flex items-center gap-3">
-                <ShieldCheck className="w-8 h-8 text-red-500" />
-                Vorteile eines Leasing Transfers
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Für Abgeber */}
-                <div>
-                  <h3 className="text-neutral-400 text-sm uppercase tracking-wider font-semibold mb-6">Für Abgeber (Verkäufer)</h3>
-                  <ul className="space-y-4">
-                    {[
-                      "Schnell einen Leasingvertrag abgeben",
-                      "Keine teuren Ausstiegskosten",
-                      "Flexibler Ausstieg bei Lebensveränderungen",
-                      "Kein Wertverlust durch vorzeitige Rückgabe",
-                      "Einfacher Prozess über BuyAuto"
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 text-neutral-200">
-                        <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                {/* Für Übernehmer */}
-                <div>
-                  <h3 className="text-neutral-400 text-sm uppercase tracking-wider font-semibold mb-6">Für Übernehmer (Käufer)</h3>
-                  <ul className="space-y-4">
-                    {[
-                      "Profitieren von tieferen Monatsraten",
-                      "Dank ursprünglicher Anzahlung bessere Konditionen",
-                      "Kürzere Restlaufzeit als bei neuen Leasingverträgen",
-                      "Keine hohe Anzahlung erforderlich",
-                      "Fahrzeugzustand bereits bekannt"
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 text-neutral-200">
-                        <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="mt-8 pt-8 border-t border-neutral-700">
-                <p className="text-neutral-300 text-lg text-center font-medium">
-                  Flexiblere Optionen für beide Seiten – eine echte Win-Win-Situation
-                </p>
-              </div>
-            </div>
-
-            {/* SEARCH BAR */}
-            <div id="search-section" className="py-8 -mx-4 px-4 bg-neutral-50/80 md:bg-transparent md:p-0 md:mx-0">
-              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6 md:p-8 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
-                <div className="text-center mb-8 relative z-10">
-                  <h2 className="text-2xl font-bold text-neutral-900 mb-2">
-                    Verfügbare Leasing-Angebote
-                  </h2>
-                  <p className="text-neutral-600 text-sm md:text-base">
-                    Finde jetzt passende Leasingübernahmen oder erstelle dein eigenes Inserat.
-                  </p>
-                </div>
-                <div className="relative z-10">
-                  <SearchForm />
-                </div>
-              </div>
-            </div>
-
-            {/* FAQ SECTION */}
-            <div className="space-y-8">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                  Häufige Fragen zum <span className="text-red-600">Leasing Transfer</span>
-                </h2>
-                <p className="text-neutral-600">Die wichtigsten Antworten auf einen Blick</p>
-              </div>
-              
-              <Accordion type="single" collapsible className="w-full space-y-4">
-                <AccordionItem 
-                  value="item-1" 
-                  className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-6 md:px-8 hover:border-neutral-300/60"
-                >
-                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 hover:text-red-600 transition-colors duration-200 text-base md:text-lg">
-                    Kann jeder einen Leasingvertrag übertragen?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 font-light">
-                    Ja, sofern die Leasingbank zustimmt und der neue Übernehmer kreditwürdig ist. Die Bank prüft die Bonität des Übernehmers, um sicherzustellen, dass die monatlichen Raten bezahlt werden können.
-                  </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem 
-                  value="item-2" 
-                  className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-6 md:px-8 hover:border-neutral-300/60"
-                >
-                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 hover:text-red-600 transition-colors duration-200 text-base md:text-lg">
-                    Was passiert mit der Anzahlung?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 font-light">
-                    Die ursprüngliche Anzahlung bleibt Bestandteil des Vertrags und kommt dem Übernehmer zugute. Dadurch sind die monatlichen Raten oft deutlich attraktiver als bei einem Neu-Leasing. Der Abgeber erhält die Anzahlung nicht zurück.
-                  </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem 
-                  value="item-3" 
-                  className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-6 md:px-8 hover:border-neutral-300/60"
-                >
-                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 hover:text-red-600 transition-colors duration-200 text-base md:text-lg">
-                    Wie lange dauert der Leasing Transfer?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 font-light">
-                    Meist 2–5 Werktage, abhängig von der Bonitätsprüfung durch die Leasingbank. In Ausnahmefällen kann es auch bis zu 2 Wochen dauern, wenn zusätzliche Unterlagen benötigt werden.
-                  </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem 
-                  value="item-4" 
-                  className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-6 md:px-8 hover:border-neutral-300/60"
-                >
-                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 hover:text-red-600 transition-colors duration-200 text-base md:text-lg">
-                    Wer übernimmt die Gebühren beim Leasing Transfer?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 font-light">
-                    Das kann frei zwischen Abgeber und Übernehmer vereinbart werden. In der Praxis übernehmen viele Abgeber die Gebühren, um den Transfer attraktiver zu gestalten und schneller einen Übernehmer zu finden. Dies ist jedoch keine Pflicht.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem 
-                  value="item-5" 
-                  className="bg-gradient-to-r from-neutral-50/80 to-white rounded-3xl border border-neutral-200/40 shadow-sm hover:shadow-md transition-all duration-300 px-6 md:px-8 hover:border-neutral-300/60"
-                >
-                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 hover:text-red-600 transition-colors duration-200 text-base md:text-lg">
-                    Was ist der Unterschied zwischen Leasing Transfer und Leasingübernahme?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 font-light">
-                    Es ist derselbe Prozess, nur aus unterschiedlicher Perspektive betrachtet. <strong>Leasing Transfer</strong> beschreibt den Vorgang aus Sicht des Abgebers (Verkäufers), während <strong>Leasingübernahme</strong> die Perspektive des Übernehmers (Käufers) darstellt. Beide Begriffe bezeichnen die Übertragung eines bestehenden Leasingvertrags.
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </div>
-
           </div>
         </section>
 
-        {/* ABSCHLUSS CTA */}
-        <section className="py-20 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 px-4">
+        {/* PREREQUISITES CHECKLIST */}
+        <section className="py-16 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-neutral-900 mb-8">
+              Voraussetzungen für einen Leasing Transfer
+            </h2>
+            
+            <div className="bg-white border-2 border-neutral-900 rounded-xl p-8">
+              <div className="space-y-4">
+                {[
+                  { text: "Zustimmung der Leasingbank", required: true },
+                  { text: "Positive Bonität des neuen Vertragspartners", required: true },
+                  { text: "Keine offenen Rechnungen oder Mahnungen", required: true },
+                  { text: "Fahrzeug in ordentlichem Zustand", required: true },
+                  { text: "Vertrag erlaubt die Übertragung", required: true },
+                  { text: "Beide Parteien stimmen der Übertragung zu", required: true }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                    <div className="flex-shrink-0">
+                      <div className="w-6 h-6 rounded border-2 border-neutral-900 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-neutral-900" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-neutral-900 font-medium text-lg">{item.text}</p>
+                      {item.required && (
+                        <p className="text-sm text-neutral-500 mt-1">Erforderlich</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* COSTS TABLE */}
+        <section className="py-16 px-4 bg-white">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-neutral-900 mb-8">
+              Kosten eines Leasing Transfers
+            </h2>
+            
+            <div className="overflow-x-auto rounded-xl border-2 border-neutral-900 shadow-lg">
+              <table className="w-full bg-white text-left">
+                <thead className="bg-neutral-900 text-white">
+                  <tr>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Typische Kosten</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Wer zahlt?</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200">
+                  <tr className="hover:bg-neutral-50 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Transfer-/Übernahmegebühr</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
+                  </tr>
+                  <tr className="hover:bg-neutral-50 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Händler-/Wechselgebühr</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–250 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Optional</td>
+                  </tr>
+                  <tr className="hover:bg-neutral-50 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung / Kontrollschilder</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
+                  </tr>
+                  <tr className="hover:bg-neutral-50 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung / laufende Kosten</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">individuell</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-green-900 font-semibold mb-1">Hinweis</p>
+                  <p className="text-green-800">
+                    Viele Abgeber übernehmen die Transfergebühren, um den Prozess zu beschleunigen.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Link to Costs Page */}
+            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <Info className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-blue-900 font-medium mb-2">
+                    Detaillierte Kostenübersicht gewünscht?
+                  </p>
+                  <Link 
+                    href="/leasinguebernahme" 
+                    className="text-blue-700 hover:text-blue-800 font-semibold underline inline-flex items-center gap-2 transition-colors"
+                  >
+                    Alle Kosten einer Leasingübernahme
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* LEGAL NOTES - UNIQUE SECTION */}
+        <section className="py-16 px-4 bg-neutral-900 text-white">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 mb-8">
+              <ShieldCheck className="w-8 h-8 text-red-500" />
+              <h2 className="text-3xl font-bold">
+                Rechtliche Hinweise
+              </h2>
+            </div>
+            
+            <div className="space-y-6">
+              <Card className="bg-neutral-800 border-neutral-700">
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {[
+                      {
+                        title: "Eigentumsverhältnisse",
+                        text: "Eigentümer des Fahrzeugs bleibt immer die Leasingbank.",
+                        icon: ShieldCheck
+                      },
+                      {
+                        title: "Anzahlung",
+                        text: "Die Anzahlung wird nicht ausgezahlt oder zurückerstattet.",
+                        icon: DollarSign
+                      },
+                      {
+                        title: "Vertragskonditionen",
+                        text: "Der Vertrag bleibt unverändert – Laufzeit, Kilometerlimit und Konditionen bleiben bestehen.",
+                        icon: FileText
+                      },
+                      {
+                        title: "Bankentscheidung",
+                        text: "Die Bank hat immer das letzte Wort und kann Transfers ablehnen.",
+                        icon: XCircle
+                      },
+                      {
+                        title: "Übergabeprotokoll",
+                        text: "Ein Übergabeprotokoll wird dringend empfohlen.",
+                        icon: FileCheck
+                      },
+                      {
+                        title: "Schadensdokumentation",
+                        text: "Schäden müssen klar dokumentiert werden, bevor der Transfer abgeschlossen wird.",
+                        icon: AlertCircle
+                      }
+                    ].map((item, i) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <div key={i} className="flex items-start gap-4 pb-6 border-b border-neutral-700 last:border-0 last:pb-0">
+                          <div className="mt-1">
+                            <IconComponent className="w-6 h-6 text-red-500" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-white text-lg mb-1">{item.title}</h3>
+                            <p className="text-neutral-300">{item.text}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* SEARCH SECTION */}
+        <section id="search-section" className="py-16 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg border-2 border-neutral-900 p-6 md:p-10">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
+                  Leasing-Angebote durchsuchen
+                </h2>
+                <p className="text-neutral-600 text-base md:text-lg">
+                  Finde passende Leasingübernahmen oder erstelle dein eigenes Inserat.
+                </p>
+              </div>
+              <SearchForm />
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ SECTION */}
+        <section className="py-16 px-4 bg-white">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-neutral-900 mb-3">
+                Häufige Fragen zum Leasing Transfer
+              </h2>
+              <p className="text-neutral-600 text-lg">
+                Die wichtigsten Antworten auf einen Blick
+              </p>
+            </div>
+            
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              <AccordionItem 
+                value="item-1" 
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+              >
+                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
+                  Kann jeder einen Leasingvertrag übertragen?
+                </AccordionTrigger>
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
+                  Ja, fast alle Leasingverträge in der Schweiz erlauben einen Transfer – solange die Bank zustimmt.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem 
+                value="item-2" 
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+              >
+                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
+                  Wie lange dauert der Leasing Transfer?
+                </AccordionTrigger>
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
+                  In der Regel 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Bank.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem 
+                value="item-3" 
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+              >
+                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
+                  Was passiert mit der Anzahlung?
+                </AccordionTrigger>
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
+                  Die Anzahlung bleibt Bestandteil des Vertrags. Sie wird nicht ausbezahlt, sondern reduziert indirekt die Monatsrate des Übernehmers.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem 
+                value="item-4" 
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+              >
+                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
+                  Kann die Bank den Transfer ablehnen?
+                </AccordionTrigger>
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
+                  Ja – meist aufgrund ungenügender Bonität des Übernehmers oder offener Beträge beim Abgeber.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem 
+                value="item-5" 
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-neutral-900 transition-colors"
+              >
+                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
+                  Welche Unterlagen braucht man?
+                </AccordionTrigger>
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
+                  Identitätsnachweis, aktueller Vertrag, Fahrzeugausweis, Serviceheft und allfällige Rechnungen.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </section>
+
+        {/* FINAL CTA */}
+        <section className="py-20 bg-neutral-900 px-4">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Leasing Transfer schnell und einfach durchführen
+              Leasing Transfer schnell & unkompliziert durchführen
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Erstelle jetzt kostenlos dein Inserat oder finde passende Leasingübernahmen in der Schweiz. BuyAuto macht den Transfer transparent und sicher.
+              Erstelle dein Inserat oder finde passende Übernehmer. Der Transferprozess ist einfacher, als viele denken.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30 rounded-xl transition-all hover:shadow-xl hover:shadow-red-900/40">
+              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-white hover:bg-neutral-100 text-neutral-900 rounded-lg transition-all">
                 <Link href="/inserat-erstellen">
-                  <Zap className="w-5 h-5 mr-2" />
-                  Inserat erstellen
+                  Leasing Transfer starten
+                  <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-neutral-600 text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent hover:border-white transition-all">
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-lg bg-transparent transition-all">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
-                  Fahrzeuge durchsuchen
+                  Angebote durchsuchen
                 </Link>
               </Button>
             </div>
