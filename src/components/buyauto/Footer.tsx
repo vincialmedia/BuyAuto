@@ -24,8 +24,7 @@ const footerSections = [
     title: "Seiten",
     links: [
       { label: "Leasingübernahme", href: "/leasinguebernahme" },
-      { label: "Leasing Abgeben", href: "/leasing-abgeben-schweiz" },
-      { label: "Leasing Transfer", href: "/leasing-transfer" }
+      { label: "Leasing Abgeben", href: "/leasing-abgeben-schweiz" }
     ]
   }
 ];
