@@ -38,7 +38,7 @@ export default function LeasinguebernahmeKostenPage() {
           {/* Background Image */}
           <div className="absolute inset-0">
             <img 
-              src="https://images.unsplash.com/photo-1554224311-beee460c201f?w=1600&q=80" 
+              src="/pexels-maitree-rimthong-444156-1602726.jpg" 
               alt="Leasingübernahme Kosten Schweiz" 
               className="w-full h-full object-cover"
             />
