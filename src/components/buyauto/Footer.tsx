@@ -24,7 +24,8 @@ const footerSections = [
     title: "Seiten",
     links: [
       { label: "Leasingübernahme", href: "/leasinguebernahme" },
-      { label: "Leasing Abgeben", href: "/leasing-abgeben-schweiz" }
+      { label: "Leasing Abgeben", href: "/leasing-abgeben-schweiz" },
+      { label: "Leasingübernahme Kosten", href: "/leasinguebernahme-kosten" }
     ]
   }
 ];
