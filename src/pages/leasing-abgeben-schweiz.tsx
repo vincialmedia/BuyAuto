@@ -60,8 +60,8 @@ export default function LeasingAbgebenSchweiz() {
           {/* Background Image */}
           <div className="absolute inset-0">
             <img 
-              src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1600&q=80" 
-              alt="Auto Leasing abgeben in der Schweiz" 
+              src="/20251209_0003_Handshake_in_Zurich_simple_compose_01kc036j1cff881r0wzwemf48h.png" 
+              alt="Leasing abgeben Schweiz - Handshake" 
               className="w-full h-full object-cover"
             />
             {/* Gradient Overlay */}
