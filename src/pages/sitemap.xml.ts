@@ -11,6 +11,7 @@ const STATIC_PAGES = [
   '/inserat-erstellen',
   '/leasinguebernahme',
   '/leasing-abgeben-schweiz',
+  '/leasinguebernahme-kosten',
   '/datenschutz',
   '/agb',
   '/impressum',
