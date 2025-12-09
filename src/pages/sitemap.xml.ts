@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 
 // Define your base URL
-const BASE_URL = 'https://buyauto.ch';
+const BASE_URL = 'https://www.buyauto.ch';
 
 // Define static pages
 const STATIC_PAGES = [

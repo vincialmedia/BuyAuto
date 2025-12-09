@@ -1,26 +1,38 @@
 # Sitemap Update Plan
 
-## Issue
-The sitemap generator at `src/pages/sitemap.xml.ts` relies on a hardcoded list of static URLs. It does not automatically scan the file system for new pages.
+## Objective
+Update the sitemap configuration to ensure optimal SEO and Google Search Console compatibility by enforcing the `www` subdomain.
 
-## Identified Missing Page
-- `src/pages/leasing-abgeben-schweiz.tsx` → URL: `/leasing-abgeben-schweiz`
+## Tasks
 
-## Solution
-We need to manually add the new URL entry to the `generateSiteMap` function in `src/pages/sitemap.xml.ts`.
+### 1. Update Base URL
+**Current Status:** `https://buyauto.ch`
+**Required Change:** Update to `https://www.buyauto.ch`
+**Reasoning:** Google Search Console requires consistent domain usage. Using `www` ensures canonical URL consistency and prevents "Duplicate, Google chose different canonical than user" errors.
 
-### Code to Add
-```xml
-  <url>
-    <loc>${baseUrl}/leasing-abgeben-schweiz</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
+## Implementation Details
+File: `src/pages/sitemap.xml.ts`
+
+**Change:**
+```typescript
+// Define your base URL
+const BASE_URL = 'https://buyauto.ch';
 ```
 
-## Steps to Implement
-1. Open `src/pages/sitemap.xml.ts`
-2. Locate the `<!-- Static Pages -->` section
-3. Insert the XML block for the new page
-4. Save and deploy
+**To:**
+```typescript
+// Define your base URL
+const BASE_URL = 'https://www.buyauto.ch';
+```
+
+### 2. Verify Static Pages
+Current list in `src/pages/sitemap.xml.ts` appears correct:
+- `''` (Home)
+- `/suche`
+- `/inserat-erstellen`
+- `/leasinguebernahme`
+- `/leasing-abgeben-schweiz`
+- `/datenschutz`
+- `/agb`
+- `/impressum`
+- `/auth`
