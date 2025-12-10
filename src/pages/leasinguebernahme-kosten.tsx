@@ -117,7 +117,7 @@ export default function LeasinguebernahmeKostenPage() {
                 </div>
                 <div className="bg-red-50 border-l-4 border-red-600 p-6 rounded-r-xl mb-6">
                   <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                    Bei einer <strong>Leasingübernahme</strong> (auch <strong>Leasing Transfer</strong>) wird ein bestehender Vertrag auf eine neue Person übertragen.
+                    Bei einer <Link href="/leasinguebernahme" className="text-red-600 hover:text-red-700 font-semibold underline decoration-red-600/30 hover:decoration-red-700 transition-colors">Leasingübernahme</Link> (auch <strong>Leasing Transfer</strong>) wird ein bestehender Vertrag auf eine neue Person übertragen.
                   </p>
                   <p className="text-lg text-neutral-700 leading-relaxed">
                     Banken und Behörden müssen den Halterwechsel, die Bonitätsprüfung und die Vertragsumschreibung durchführen – deshalb entstehen Gebühren.
