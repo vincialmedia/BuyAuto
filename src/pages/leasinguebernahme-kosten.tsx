@@ -17,18 +17,26 @@ export default function LeasinguebernahmeKostenPage() {
   return (
     <>
       <Head>
-        <title>Leasingübernahme Kosten – Klar & Transparent erklärt | BuyAuto</title>
-        <meta
-          name="description"
-          content="Was kostet eine Leasingübernahme wirklich? Hier findest du eine verständliche, ehrliche und komplette Übersicht aller Gebühren – inklusive Bankkosten, Transfergebühren, Ummeldung und Versicherung."
+        <title>Leasingübernahme Kosten Schweiz 2025 – Komplette Gebühren-Übersicht | BuyAuto</title>
+        <meta 
+          name="description" 
+          content="Leasingübernahme Kosten in der Schweiz: 100-400 CHF Transfergebühr + Ummeldung. Alle Gebühren transparent erklärt. Versteckte Kosten vermeiden. Jetzt informieren!" 
         />
+        <meta name="keywords" content="leasingübernahme kosten, leasingübernahme gebühren, leasing transfer kosten, leasingvertrag übernehmen kosten, leasingübernahme schweiz kosten" />
         <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-kosten" />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingübernahme Kosten – Klar & Transparent erklärt" />
-        <meta property="og:description" content="Was kostet eine Leasingübernahme wirklich? Verständliche, ehrliche und komplette Übersicht aller Gebühren." />
-        <meta property="og:type" content="article" />
+        <meta property="og:title" content="Leasingübernahme Kosten Schweiz 2025 – Komplette Gebühren-Übersicht" />
+        <meta property="og:description" content="Leasingübernahme Kosten in der Schweiz: 100-400 CHF Transfergebühr + Ummeldung. Alle Gebühren transparent erklärt. Versteckte Kosten vermeiden." />
+        <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-kosten" />
+        <meta property="og:image" content="https://www.buyauto.ch/pexels-maitree-rimthong-444156-1602726.jpg" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Leasingübernahme Kosten Schweiz 2025 – Komplette Gebühren-Übersicht" />
+        <meta name="twitter:description" content="Leasingübernahme Kosten in der Schweiz: 100-400 CHF Transfergebühr + Ummeldung. Alle Gebühren transparent erklärt." />
+        <meta name="twitter:image" content="https://www.buyauto.ch/pexels-maitree-rimthong-444156-1602726.jpg" />
       </Head>
 
       <main className="bg-neutral-50 min-h-screen">
