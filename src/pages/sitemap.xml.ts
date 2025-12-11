@@ -12,10 +12,13 @@ const STATIC_PAGES = [
   '/leasinguebernahme',
   '/leasing-abgeben-schweiz',
   '/leasinguebernahme-kosten',
-  '/datenschutz',
-  '/agb',
-  '/impressum',
+  '/leasing-transfer',
+  '/leasingvertrag-uebertragen',
+  '/leasinguebernahme-vs-neues-leasing',
+  '/leasinguebernahme-vs-autoabo',
   '/auth',
+  '/datenschutz',
+  '/agb'
 ];
 
 function generateSiteMap(listings: any[]) {

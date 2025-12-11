@@ -25,7 +25,8 @@ const footerSections = [
     links: [
       { label: "Leasingübernahme", href: "/leasinguebernahme" },
       { label: "Leasing Abgeben", href: "/leasing-abgeben-schweiz" },
-      { label: "Leasingübernahme Kosten", href: "/leasinguebernahme-kosten" }
+      { label: "Leasingübernahme Kosten", href: "/leasinguebernahme-kosten" },
+      { label: "Leasingübernahme vs. Auto Abo", href: "/leasinguebernahme-vs-autoabo" }
     ]
   }
 ];
