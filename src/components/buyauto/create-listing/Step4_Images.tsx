@@ -13,6 +13,10 @@ import { Dashboard } from '@uppy/react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
 
+// Import Uppy CSS only when this component is used (not globally)
+import '@uppy/core/dist/style.min.css';
+import '@uppy/dashboard/dist/style.min.css';
+
 interface ImageItem {
   id: string;
   url: string;
@@ -27,6 +31,7 @@ export function Step4_Images() {
   const maxPhotos = getMaxPhotos();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Initialize image items state
   const [imageItems, setImageItems] = useState<ImageItem[]>(() =>
@@ -44,7 +49,14 @@ export function Step4_Images() {
     })
   );
 
+  // Handle component mount for client-side only rendering
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     uppy.on('upload-error', (file, error) => {
       console.error('Uppy upload error:', error);
       toast({

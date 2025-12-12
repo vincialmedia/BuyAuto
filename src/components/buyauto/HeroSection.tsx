@@ -17,7 +17,7 @@ export default function HeroSection({ totalListings }: HeroSectionProps) {
           priority
           className="object-cover"
           sizes="100vw"
-          quality={85}
+          quality={75}
         />
         {/* Swiss minimalist gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/50 via-neutral-900/30 to-neutral-900/60" />

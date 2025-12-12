@@ -23,6 +23,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          quality={75}
         />
         {listing.premium && (
           <Badge className="absolute top-3 left-3 bg-red-600 hover:bg-red-600 text-white border-0 z-10">

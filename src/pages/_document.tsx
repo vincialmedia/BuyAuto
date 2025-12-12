@@ -11,10 +11,6 @@ export default function Document() {
         {/* Preconnect to Supabase storage for faster image loading */}
         <link rel="preconnect" href="https://psdtkknwxzxnxnbqmdzl.supabase.co" />
         <link rel="dns-prefetch" href="https://psdtkknwxzxnxnbqmdzl.supabase.co" />
-        <link
-          rel="stylesheet"
-          href="https://releases.transloadit.com/uppy/v3.12.0/uppy.min.css"
-        />
       </Head>
       <body>
         <Main />

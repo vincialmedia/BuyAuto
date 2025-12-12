@@ -166,7 +166,7 @@ export default function PremiumListings() {
                           className="object-cover group-hover:scale-110 transition-transform duration-700"
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           priority={currentIndex === 0 && index < 3}
-                          quality={80}
+                          quality={75}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">

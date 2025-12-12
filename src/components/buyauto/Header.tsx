@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { User, LogOut, Settings, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,12 +40,16 @@ export default function Header() {
     <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-neutral-200">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 gap-2">
-          {/* Logo */}
+          {/* Logo - Optimized with Next.js Image */}
           <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity flex-shrink-0">
-            <img 
+            <Image 
               src="/Untitled_design_6_.png" 
               alt="BuyAuto Logo" 
+              width={100}
+              height={40}
+              priority
               className="w-[100px] h-auto"
+              sizes="100px"
             />
           </Link>
 
