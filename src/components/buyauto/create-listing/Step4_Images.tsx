@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { UploadCloud, X, GripVertical, Loader2, ChevronLeft } from "lucide-react";
 import Image from "next/image";
+import Head from "next/head";
 import { useDropzone } from "react-dropzone";
 import { Reorder } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,9 +14,8 @@ import { Dashboard } from '@uppy/react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
 
-// Import Uppy CSS only when this component is used (not globally)
-import '@uppy/core/dist/style.min.css';
-import '@uppy/dashboard/dist/style.min.css';
+// CSS is now loaded via Head to avoid build errors with package exports
+// and to enable better caching/performance
 
 interface ImageItem {
   id: string;
@@ -249,6 +249,9 @@ export function Step4_Images() {
 
   return (
     <div className="space-y-8">
+      <Head>
+        <link href="https://releases.transloadit.com/uppy/v3.27.3/uppy.min.css" rel="stylesheet" />
+      </Head>
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
           Bilder hochladen

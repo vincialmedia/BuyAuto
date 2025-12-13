@@ -7,7 +7,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ totalListings }: HeroSectionProps) {
   return (
-    <section className="relative min-h-[550px] md:min-h-[600px] flex flex-col justify-between overflow-hidden pt-16">
+    <section className="relative min-h-[550px] md:min-h-[600px] flex flex-col justify-between overflow-hidden pt-16 md:pt-20">
       {/* Background Image with Next.js Image - Mobile Optimized */}
       <div className="absolute inset-0">
         <Image
@@ -17,7 +17,7 @@ export default function HeroSection({ totalListings }: HeroSectionProps) {
           priority
           className="object-cover"
           sizes="100vw"
-          quality={75}
+          quality={60}
         />
         {/* Swiss minimalist gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/50 via-neutral-900/30 to-neutral-900/60" />

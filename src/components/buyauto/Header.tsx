@@ -39,17 +39,16 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-neutral-200">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 gap-2">
+        <div className="flex justify-between items-center h-16 md:h-20 gap-2">
           {/* Logo - Optimized with Next.js Image */}
           <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity flex-shrink-0">
             <Image 
               src="/Untitled_design_6_.png" 
               alt="BuyAuto Logo" 
-              width={100}
-              height={40}
+              width={440}
+              height={176}
               priority
-              className="w-[100px] h-auto"
-              sizes="100px"
+              className="h-12 md:h-16 w-auto object-contain"
             />
           </Link>
 
