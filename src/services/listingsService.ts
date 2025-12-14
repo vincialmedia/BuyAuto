@@ -13,6 +13,7 @@ type PublicListingRow = {
   year: number;
   price_per_month_chf: number;
   remaining_months: number;
+  remaining_km?: number;
   location: string;
   canton_code: string;
   mileage_km: number;
@@ -100,6 +101,7 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     year: row.year,
     pricePerMonthCHF: row.price_per_month_chf,
     remainingMonths: row.remaining_months,
+    remaining_km: row.remaining_km,
     location: row.location,
     mileageKm: row.mileage_km,
     fuel: row.fuel,
@@ -125,6 +127,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     year: row.year,
     pricePerMonthCHF: row.price_per_month_chf,
     remainingMonths: row.remaining_months,
+    remaining_km: row.remaining_km,
     location: row.location,
     mileageKm: row.mileage_km,
     fuel: row.fuel,
@@ -159,6 +162,7 @@ function transformFullRowToListingDetail(row: any): ListingDetail {
     year: row.year,
     pricePerMonthCHF: row.price_per_month_chf,
     remainingMonths: row.remaining_months,
+    remaining_km: row.remaining_km,
     location: row.location,
     mileageKm: row.mileage_km,
     fuel: row.fuel,

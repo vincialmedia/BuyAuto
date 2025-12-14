@@ -1,7 +1,7 @@
 
 export interface Listing {
   id: string;
-  user_id: string;
+  user_id?: string; // ✅ Made optional to fix build errors
   brand: string;
   model: string;
   title?: string;

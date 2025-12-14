@@ -99,6 +99,7 @@ export function getDemoListings(): Listing[] {
     
     listings.push({
       id: `listing-${i + 1}`,
+      user_id: `user-${i + 1}`,
       brand,
       model,
       title: Math.random() < 0.3 ? `${brand} ${model} Sportline` : undefined,
