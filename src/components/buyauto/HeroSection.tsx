@@ -8,20 +8,18 @@ interface HeroSectionProps {
 export default function HeroSection({ totalListings }: HeroSectionProps) {
   return (
     <section className="relative min-h-[550px] md:min-h-[600px] flex flex-col justify-between overflow-hidden pt-16 md:pt-20">
-      {/* Background Image with Next.js Image - Mobile Optimized */}
-      <div className="absolute inset-0">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
         <Image
           src="/ChatGPT_Image_Oct_18_2025_05_36_15_PM.png"
           alt="Porsche driving on a mountain road"
           fill
-          priority
           className="object-cover"
+          priority
           sizes="100vw"
-          quality={60}
+          quality={75}
         />
-        {/* Swiss minimalist gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/50 via-neutral-900/30 to-neutral-900/60" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-900/5 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
       </div>
 
       {/* Subtle geometric accent */}

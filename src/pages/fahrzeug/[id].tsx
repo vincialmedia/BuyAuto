@@ -299,6 +299,14 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                       <span className="text-neutral-600">Restlaufzeit</span>
                       <span className="font-semibold">{listing.remainingMonths} Monate</span>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {listing.remaining_km && (
+                        <div>
+                          <p className="text-sm text-neutral-500 mb-1">Verbleibende KM</p>
+                          <p className="text-base font-semibold">{listing.remaining_km.toLocaleString("de-CH")} km</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-3">

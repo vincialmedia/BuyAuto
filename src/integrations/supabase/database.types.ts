@@ -111,6 +111,7 @@ export type Database = {
           price_plan: string | null
           pricing_plan: string | null
           refunded_at: string | null
+          remaining_km: number | null
           remaining_months: number | null
           status: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id: string | null
@@ -149,6 +150,7 @@ export type Database = {
           price_plan?: string | null
           pricing_plan?: string | null
           refunded_at?: string | null
+          remaining_km?: number | null
           remaining_months?: number | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id?: string | null
@@ -187,6 +189,7 @@ export type Database = {
           price_plan?: string | null
           pricing_plan?: string | null
           refunded_at?: string | null
+          remaining_km?: number | null
           remaining_months?: number | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id?: string | null

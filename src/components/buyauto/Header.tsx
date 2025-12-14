@@ -40,17 +40,28 @@ export default function Header() {
     <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-neutral-200">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20 gap-2">
-          {/* Logo - Optimized with Next.js Image */}
-          <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity flex-shrink-0">
-            <Image 
-              src="/Untitled_design_6_.png" 
-              alt="BuyAuto Logo" 
-              width={440}
-              height={176}
-              priority
-              className="h-12 md:h-16 w-auto object-contain"
-            />
-          </Link>
+          {/* Logo */}
+          <div className="flex-shrink-0 flex items-center relative z-50">
+            <Link href="/" className="relative block">
+              {/* 
+                Container preserves space in flow (optional, can be smaller) 
+                but we use absolute positioning for the image to allow overlap
+                without affecting header height.
+              */}
+              <div className="w-[120px] md:w-[160px] h-0 flex items-center justify-center">
+                <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[120px] md:w-[160px] h-24 md:h-32">
+                  <Image
+                    src="/Untitled_design_6_.webp"
+                    alt="BuyAuto Logo"
+                    fill
+                    className="object-contain object-left"
+                    priority
+                    sizes="(max-width: 768px) 120px, 160px"
+                  />
+                </div>
+              </div>
+            </Link>
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">

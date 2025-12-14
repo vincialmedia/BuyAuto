@@ -152,6 +152,18 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
                 {listing.remainingMonths} Mon.
               </Badge>
             </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Restlaufzeit</span>
+              <span className="font-medium">{listing.remainingMonths} Monate</span>
+            </div>
+
+            {listing.remaining_km && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Verbleibende KM</span>
+                <span className="font-medium">{listing.remaining_km.toLocaleString("de-CH")} km</span>
+              </div>
+            )}
           </div>
 
           {/* Price and CTA */}

@@ -340,13 +340,25 @@ export default function Step5_PreviewAndPay() {
 
                   <hr className="my-6" />
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
+                  <div className="space-y-4">
                     {vehicleDetails.map(({ label, value }) => (
                       <div key={label}>
                         <p className="text-neutral-500">{label}</p>
                         <p className="font-semibold text-neutral-800">{value || '-'}</p>
                       </div>
                     ))}
+                    
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Restlaufzeit:</span>
+                      <span className="font-medium">{data.remaining_months} Monate</span>
+                    </div>
+
+                    {data.remaining_km && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Verbleibende KM:</span>
+                        <span className="font-medium">{data.remaining_km?.toLocaleString("de-CH")} km</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

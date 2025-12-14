@@ -69,6 +69,12 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
                   <Calendar className="h-3 w-3 mr-1" />
                   Restlaufzeit {listing.remainingMonths} Mon.
                 </div>
+                {listing.remaining_km && (
+                  <div className="inline-flex items-center px-2 py-1 bg-neutral-100 text-neutral-700 rounded-full text-xs font-medium">
+                    <Gauge className="h-3 w-3 mr-1" />
+                    {listing.remaining_km.toLocaleString("de-CH")} km verbleibend
+                  </div>
+                )}
                 <div className="inline-flex items-center px-2 py-1 bg-neutral-100 text-neutral-700 rounded-full text-xs font-medium">
                   <Gauge className="h-3 w-3 mr-1" />
                   {listing.mileageKm.toLocaleString()} km

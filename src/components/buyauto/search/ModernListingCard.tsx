@@ -106,10 +106,17 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         </div>
 
         {/* Leasing Term */}
-        <div className="flex items-center px-2.5 sm:px-3 py-1.5 sm:py-2 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 font-medium mb-3 sm:mb-4">
-          <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
-          <span className="truncate">Restlaufzeit: {listing.remainingMonths} Monate</span>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Restlaufzeit</span>
+          <span className="font-medium">{listing.remainingMonths} Monate</span>
         </div>
+
+        {listing.remaining_km && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Verbleibende KM</span>
+            <span className="font-medium">{listing.remaining_km.toLocaleString("de-CH")} km</span>
+          </div>
+        )}
 
         {/* Divider */}
         <div className="h-px bg-neutral-200 mb-3 sm:mb-4" />

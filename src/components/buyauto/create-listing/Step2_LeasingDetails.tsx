@@ -46,6 +46,7 @@ const leasingDetailsSchema = z.object({
   remaining_months: z.number().min(1, "Restlaufzeit muss mindestens 1 Monat betragen"),
   deposit_chf: z.number().min(0, "Kaution kann nicht negativ sein"),
   location: z.string().min(1, "Standort ist erforderlich"),
+  remaining_km: z.number().min(0, "Verbleibende KM muss mindestens 0 sein").optional(),
 });
 
 type LeasingDetailsForm = z.infer<typeof leasingDetailsSchema>;
