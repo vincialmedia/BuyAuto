@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -44,7 +43,8 @@ export function ListingDetailsModal({
         canton_code: listing.canton_code,
         status: listing.status,
         premium: listing.premium,
-        description: listing.description // Added description
+        description: listing.description,
+        remaining_km: listing.remaining_km,
       });
     }
   }, [listing, open]);
@@ -252,7 +252,7 @@ export function ListingDetailsModal({
 
             {/* Pricing & Duration */}
             <div className="space-y-3">
-              <h3 className="font-medium">Listing-Preis</h3>
+              <h3 className="font-medium">Leasing-Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-neutral-600">Bezahlter Preis</label>
@@ -265,6 +265,21 @@ export function ListingDetailsModal({
                   ) : (
                     <p className="font-medium text-lg text-emerald-600">
                       {formatPrice(listing.price_paid_chf)}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm text-neutral-600">Verbleibende KM</label>
+                  {editing ? (
+                    <Input
+                      type="number"
+                      value={editData.remaining_km || ''}
+                      onChange={(e) => setEditData({ ...editData, remaining_km: parseInt(e.target.value) })}
+                      placeholder="z.B. 15000"
+                    />
+                  ) : (
+                    <p className="font-medium">
+                      {listing.remaining_km ? `${listing.remaining_km.toLocaleString('de-CH')} km` : <span className="text-neutral-400">Nicht angegeben</span>}
                     </p>
                   )}
                 </div>

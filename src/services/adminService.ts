@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/integrations/supabase/types';
@@ -36,7 +35,8 @@ export interface AdminListing {
   images: any[];
   cover_image_index: number;
   cover_image_url: string | null;
-  description: string | null; // Added description field
+  description: string | null;
+  remaining_km: number | null;
 }
 
 export interface AdminStats {

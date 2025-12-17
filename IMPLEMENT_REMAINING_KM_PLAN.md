@@ -1,46 +1,39 @@
-# Implementation Plan: "Verbleibende KM" (Remaining KM) Field
+# Implementation Plan: "Verbleibende KM" (Remaining KM)
 
-## Goal
-Add a new field "Verbleibende KM" to listings, displayed on the right side under "Restlaufzeit".
+## 1. Analysis
+- **Database**: `listings` table has `remaining_km` (integer, nullable).
+- **Frontend Types**: `Listing` and `ListingData` in `types.ts` include `remaining_km`.
+- **Step 2 (Leasing Details)**:
+  - Schema includes `remaining_km`.
+  - **MISSING**: JSX Input field.
+  - **MISSING**: `onSubmit` payload mapping.
+- **Display Components**:
+  - `Step5_PreviewAndPay`: Includes display logic.
+  - `ModernListingCard`: Includes display logic.
+  - `fahrzeug/[id]`: Includes display logic.
+- **Admin**:
+  - `adminService.ts`: `AdminListing` interface missing `remaining_km`.
+  - `ListingDetailsModal`: Missing input/display.
 
-## 1. Database Schema
-- [ ] Create migration to add `remaining_km` (integer, nullable) to `listings` table.
-- [ ] Run migration.
-- [ ] Update Types (`src/integrations/supabase/database.types.ts` is auto-generated, but we need to ensure our app code uses it).
+## 2. Implementation Steps
 
-## 2. Type Definitions
-- [ ] Update `Listing` interface in `src/lib/buyauto/types.ts` to include `remaining_km?: number`.
-- [ ] Update `ListingFormData` schema/type in `src/lib/buyauto/schemas.ts` or local component state.
+### Step A: Update Listing Wizard (Step 2)
+**File:** `src/components/buyauto/create-listing/Step2_LeasingDetails.tsx`
+- Add Input field for `remaining_km` (optional field).
+- Update `onSubmit` to include `remaining_km: formData.remaining_km` in `updatePayload`.
 
-## 3. Listing Creation Wizard
-- [ ] **Step 2 (Leasing Details):**
-    - Modify `src/components/buyauto/create-listing/Step2_LeasingDetails.tsx`.
-    - Add "Verbleibende KM" input field.
-    - Update Zod validation schema to include `remaining_km`.
-- [ ] **Step 5 (Preview):**
-    - Modify `src/components/buyauto/create-listing/Step5_PreviewAndPay.tsx`.
-    - Add "Verbleibende KM" to the summary list.
-- [ ] **Service:**
-    - Verify `src/services/createListingService.ts` passes the new field to Supabase.
+### Step B: Update Admin Service
+**File:** `src/services/adminService.ts`
+- Update `AdminListing` interface to include `remaining_km: number | null;`.
 
-## 4. Listing Display (Frontend)
-- [ ] **Listing Card:**
-    - Modify `src/components/buyauto/search/ModernListingCard.tsx` (and potentially `ListingCard.tsx` / `VerticalListingCard.tsx`).
-    - Add "Verbleibende KM" display below/next to "Restlaufzeit".
-    - Align it to the right as requested.
-- [ ] **Detail Page:**
-    - Modify `src/pages/fahrzeug/[id].tsx`.
-    - Add "Verbleibende KM" to the details grid.
+### Step C: Update Admin Modal
+**File:** `src/components/admin/ListingDetailsModal.tsx`
+- Add `remaining_km` to `editData` state.
+- Add Input field in the "Listing-Preis" or "Fahrzeugdaten" section to allow editing `remaining_km`.
+- Update `handleSave` (should work automatically if `editData` is typed correctly).
 
-## 5. Admin & Editing
-- [ ] **Admin Dashboard:**
-    - Modify `src/components/admin/ListingDetailsModal.tsx`.
-    - Add input/display for `remaining_km` to allow editing.
-- [ ] **Update Service:**
-    - Verify `src/services/listingsService.ts` handles updates for this field.
-
-## 6. Verification
-- [ ] Check migration status.
-- [ ] Create a test listing with the new field.
-- [ ] Verify display on card and detail page.
-- [ ] Verify admin edit functionality.
+## 3. Verification
+- Create a new listing and verify "Verbleibende KM" is saved.
+- Check the preview (Step 5).
+- Check the final listing page.
+- Check the Admin Dashboard to verify the field is visible/editable.

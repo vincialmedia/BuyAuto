@@ -70,6 +70,7 @@ export default function Step2_LeasingDetails() {
       remaining_months: data.remaining_months || 12,
       deposit_chf: data.deposit_chf || 0,
       location: data.location || "",
+      remaining_km: data.remaining_km || 0,
     },
   });
 
@@ -106,6 +107,7 @@ export default function Step2_LeasingDetails() {
         location: formData.location,
         canton_code: formData.location,
         title: formData.location,
+        remaining_km: formData.remaining_km ? parseInt(formData.remaining_km.toString()) : null,
       };
 
       console.log('🚀 Step2: Updating listing with payload:', updatePayload);
@@ -224,6 +226,32 @@ export default function Step2_LeasingDetails() {
             </div>
             {errors.deposit_chf && (
               <p className="text-sm text-red-500 font-light">{errors.deposit_chf.message}</p>
+            )}
+          </div>
+
+          {/* Remaining KM */}
+          <div className="space-y-2">
+            <Label htmlFor="remaining_km" className="text-sm font-medium text-neutral-700">
+              Verbleibende KM
+            </Label>
+            <div className="relative">
+              <Input
+                id="remaining_km"
+                type="number"
+                min="0"
+                {...register("remaining_km", { valueAsNumber: true })}
+                placeholder="z.B. 15000 (optional)"
+                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">
+                km
+              </span>
+            </div>
+            <p className="text-xs text-neutral-500 font-light">
+              Wie viele Kilometer sind im Leasingvertrag noch verfügbar?
+            </p>
+            {errors.remaining_km && (
+              <p className="text-sm text-red-500 font-light">{errors.remaining_km.message}</p>
             )}
           </div>
 

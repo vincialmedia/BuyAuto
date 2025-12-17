@@ -249,6 +249,7 @@ export type Database = {
           model: string | null
           premium: boolean | null
           price_per_month_chf: number | null
+          remaining_km: number | null
           remaining_months: number | null
           title: string | null
           year: number | null
@@ -271,6 +272,7 @@ export type Database = {
           model?: string | null
           premium?: boolean | null
           price_per_month_chf?: number | null
+          remaining_km?: number | null
           remaining_months?: number | null
           title?: string | null
           year?: number | null
@@ -293,6 +295,7 @@ export type Database = {
           model?: string | null
           premium?: boolean | null
           price_per_month_chf?: number | null
+          remaining_km?: number | null
           remaining_months?: number | null
           title?: string | null
           year?: number | null
