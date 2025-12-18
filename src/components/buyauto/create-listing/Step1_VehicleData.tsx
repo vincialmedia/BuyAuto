@@ -50,7 +50,7 @@ export default function Step1_VehicleData() {
       brand: data.brand || "",
       model: data.model || "",
       year: data.year || new Date().getFullYear(),
-      km: data.km || 0,
+      km: data.km || data.mileage || 0, // ✅ Fixed: Use data.km or data.mileage instead of data.mileage_km
       body: (data.body as "Limousine" | "Kombi" | "SUV" | "Cabrio") || "",
       fuel: (data.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro") || "",
       gearbox: (data.gearbox as "Automatik" | "Manuell") || "",
@@ -73,11 +73,15 @@ export default function Step1_VehicleData() {
     try {
       console.log('Step1 handleVehicleDataSubmit:', formData);
       
+      // Clean the KM value - remove all non-numeric characters (like apostrophes)
+      const cleanKm = formData.km.toString().replace(/[^0-9]/g, '');
+      const parsedKm = parseInt(cleanKm, 10);
+
       const validatedData = {
         brand: formData.brand,
         model: formData.model,
         year: parseInt(formData.year.toString()),
-        mileage_km: parseInt(formData.km.toString()),
+        mileage_km: parsedKm,
         fuel: formData.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro",
         gearbox: formData.gearbox as "Automatik" | "Manuell",
         body: formData.body as "Limousine" | "Kombi" | "SUV" | "Cabrio",
@@ -90,6 +94,7 @@ export default function Step1_VehicleData() {
       
       updateData({ 
         ...validatedData,
+        km: parsedKm, // Explicitly save km to match form field name
         id: result.id
       });
 
@@ -122,14 +127,13 @@ export default function Step1_VehicleData() {
   const watchedKm = watch("km");
   const descriptionLength = watch("description")?.length || 0;
 
+  // Initial formatting effect only
   useEffect(() => {
     const input = document.getElementById('km') as HTMLInputElement;
-    if (input && document.activeElement !== input) {
-        if (watchedKm) {
-            input.value = new Intl.NumberFormat('de-CH').format(watchedKm);
-        }
+    if (input && watchedKm) {
+        input.value = new Intl.NumberFormat('de-CH').format(watchedKm);
     }
-  }, [watchedKm]);
+  }, []); // Only run once on mount
 
   return (
     <div className="space-y-8">
@@ -220,23 +224,27 @@ export default function Step1_VehicleData() {
                 id="km"
                 {...register("km")}
                 type="text"
-                inputMode="numeric"
                 placeholder="z.B. 35'000"
                 className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
-                onFocus={(e) => {
-                    if (e.target.value) {
-                        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                    }
+                onChange={(e) => {
+                  // Keep only numbers
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  setValue("km", value ? parseInt(value) : 0, { shouldValidate: true });
+                  // Force update display value manually to allow typing
+                  e.target.value = value; 
                 }}
                 onBlur={(e) => {
-                    trigger("km");
-                    const value = e.target.value;
-                    if (value) {
-                        const num = parseInt(value.replace(/[^0-9]/g, ''), 10);
-                        if (!isNaN(num)) {
-                            e.target.value = new Intl.NumberFormat('de-CH').format(num);
-                        }
-                    }
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  if (value) {
+                    const num = parseInt(value, 10);
+                    e.target.value = new Intl.NumberFormat('de-CH').format(num);
+                  }
+                  // Trigger validation
+                  trigger("km");
+                }}
+                onFocus={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  e.target.value = value;
                 }}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">

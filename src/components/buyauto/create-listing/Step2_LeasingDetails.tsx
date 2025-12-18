@@ -4,13 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useWizard } from "./ListingWizard";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, CalendarIcon } from "lucide-react";
 import { z } from "zod";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { createOrUpdateListing } from "@/services/createListingService";
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const swissCantons = [
   { value: "AG", label: "Aargau (AG)" },
@@ -51,11 +56,31 @@ const leasingDetailsSchema = z.object({
 
 type LeasingDetailsForm = z.infer<typeof leasingDetailsSchema>;
 
+// Utility function to calculate months between two dates
+const calculateRemainingMonths = (endDate: Date): number => {
+  const now = new Date();
+  const nowYear = now.getFullYear();
+  const nowMonth = now.getMonth();
+  const endYear = endDate.getFullYear();
+  const endMonth = endDate.getMonth();
+  
+  let months = (endYear - nowYear) * 12 + (endMonth - nowMonth);
+  
+  // If the end date's day is less than today's day, subtract one month
+  // For example: today is Jan 15, end date is Feb 10 -> only counts as 0 full months
+  if (endDate.getDate() < now.getDate()) {
+    months -= 1;
+  }
+  
+  return months < 0 ? 0 : months;
+};
+
 export default function Step2_LeasingDetails() {
   const { data, updateData, nextStep, prevStep } = useWizard();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isUpdatingListing, setIsUpdatingListing] = useState(false);
+  const [contractEndDate, setContractEndDate] = useState<Date | undefined>(undefined);
   
   const {
     register,
@@ -147,6 +172,14 @@ export default function Step2_LeasingDetails() {
     setValue("location", value);
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    setContractEndDate(date);
+    if (date) {
+      const months = calculateRemainingMonths(date);
+      setValue("remaining_months", months, { shouldValidate: true });
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -183,24 +216,51 @@ export default function Step2_LeasingDetails() {
             )}
           </div>
 
-          {/* Remaining Months */}
+          {/* Contract End Date with automatic month calculation */}
           <div className="space-y-2">
-            <Label htmlFor="remaining_months" className="text-sm font-medium text-neutral-700">
-              Restlaufzeit *
+            <Label htmlFor="contract_end_date" className="text-sm font-medium text-neutral-700">
+              Vertragsende *
             </Label>
-            <div className="relative">
-              <Input
-                id="remaining_months"
-                type="number"
-                min="1"
-                {...register("remaining_months", { valueAsNumber: true })}
-                placeholder="z.B. 24"
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-16"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">
-                Monate
-              </span>
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal bg-white border border-neutral-200/40 hover:border-neutral-300 hover:bg-white focus:border-red-500 transition-colors shadow-sm",
+                    !contractEndDate && "text-neutral-500"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {contractEndDate ? (
+                    format(contractEndDate, "PPP", { locale: de })
+                  ) : (
+                    <span>Datum auswählen...</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={contractEndDate}
+                  onSelect={handleDateSelect}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                  locale={de}
+                />
+              </PopoverContent>
+            </Popover>
+            {contractEndDate && (
+              <div className="flex items-center gap-2 text-sm">
+                <div className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-md border border-green-200/40">
+                  <span className="font-medium">
+                    {watch("remaining_months") || 0} {watch("remaining_months") === 1 ? "Monat" : "Monate"} Restlaufzeit
+                  </span>
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-neutral-500 font-light">
+              Wählen Sie das Enddatum Ihres Leasingvertrags. Die Restlaufzeit wird automatisch berechnet.
+            </p>
             {errors.remaining_months && (
               <p className="text-sm text-red-500 font-light">{errors.remaining_months.message}</p>
             )}
