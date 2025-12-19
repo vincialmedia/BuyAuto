@@ -78,7 +78,7 @@ export default function Header() {
               >
                 Inserat erstellen
               </Link>
-              <span className="absolute -top-2 -right-12 text-red-500 font-scribble text-lg font-bold rotate-[-8deg] whitespace-nowrap pointer-events-none">
+              <span className="absolute -top-2 left-full ml-2 text-red-500 font-scribble text-lg font-bold rotate-[-8deg] whitespace-nowrap pointer-events-none">
                 Ab CHF0.-
               </span>
             </div>
@@ -187,7 +187,7 @@ export default function Header() {
               >
                 Inserat erstellen
               </Link>
-              <span className="absolute top-1 right-2 text-red-500 font-scribble text-base font-bold rotate-[-5deg] whitespace-nowrap pointer-events-none">
+              <span className="absolute top-1 left-full ml-1 text-red-500 font-scribble text-base font-bold rotate-[-5deg] whitespace-nowrap pointer-events-none">
                 Ab CHF0.-
               </span>
             </div>
