@@ -71,12 +71,17 @@ export default function Header() {
             >
               Fahrzeuge suchen
             </Link>
-            <Link 
-              href={createListingHref}
-              className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
-            >
-              Inserat erstellen
-            </Link>
+            <div className="relative">
+              <Link 
+                href={createListingHref}
+                className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
+              >
+                Inserat erstellen
+              </Link>
+              <span className="absolute -top-2 -right-20 text-red-500 font-scribble text-lg font-bold rotate-[-8deg] whitespace-nowrap pointer-events-none">
+                Ab CHF0.-
+              </span>
+            </div>
           </nav>
 
           {/* Auth Section - Handle loading state properly */}
@@ -174,13 +179,18 @@ export default function Header() {
             >
               Fahrzeuge suchen
             </Link>
-            <Link 
-              href={createListingHref}
-              className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Inserat erstellen
-            </Link>
+            <div className="relative">
+              <Link 
+                href={createListingHref}
+                className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Inserat erstellen
+              </Link>
+              <span className="absolute top-1 right-4 text-red-500 font-scribble text-base font-bold rotate-[-5deg] whitespace-nowrap pointer-events-none">
+                Ab CHF0.-
+              </span>
+            </div>
 
             {loading ? (
               /* Mobile loading state */

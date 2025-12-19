@@ -11,6 +11,7 @@ const config: Config = {
   	extend: {
       fontFamily: {
         sans: ["var(--font-manrope)", "sans-serif"],
+        scribble: ["var(--font-caveat)", "cursive"],
       },
   		colors: {
   			background: 'hsl(var(--background))',

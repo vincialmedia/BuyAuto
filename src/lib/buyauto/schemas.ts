@@ -38,7 +38,7 @@ export const vehicleDataSchema = z.object({
       if (isNaN(num)) throw new Error("Ungültiger Kilometerstand");
       return num;
     })
-  ]).pipe(z.number().min(0, "Kilometerstand muss mindestens 0 sein").max(500000, "Kilometerstand zu hoch")),
+  ]).pipe(z.number().min(0, "Kilometerstand muss mindestens 0 sein")),
   body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio"].includes(val), {
     message: "Bitte wählen Sie eine gültige Karosserie"
   }),
