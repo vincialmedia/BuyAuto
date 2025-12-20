@@ -20,9 +20,19 @@ serve(async (req) => {
     const { record } = await req.json();
     const userEmail = record.email;
     const userId = record.id;
+    const emailConfirmedAt = record.email_confirmed_at;
 
     if (!userEmail) {
       throw new Error("User email is missing in the payload.");
+    }
+
+    // CRITICAL CHECK: Only send welcome email if email has been confirmed
+    if (!emailConfirmedAt) {
+      console.log(`Email not yet confirmed for ${userEmail}. Skipping welcome email.`);
+      return new Response(JSON.stringify({ message: "Email not confirmed yet, welcome email not sent" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
     
     if (!ADMIN_EMAIL_ADDRESS) {
@@ -48,6 +58,7 @@ serve(async (req) => {
        console.log(`Welcome email sent to ${userEmail}`);
     }
 
+    // Send admin notification only when email is confirmed
     if (ADMIN_EMAIL_ADDRESS) {
         const sendToAdmin = await resend.emails.send({
           from: "notifications@email.buyauto.ch",
@@ -70,7 +81,7 @@ serve(async (req) => {
         }
     }
 
-    return new Response(JSON.stringify({ message: "Emails processed" }), {
+    return new Response(JSON.stringify({ message: "Welcome emails sent successfully" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
