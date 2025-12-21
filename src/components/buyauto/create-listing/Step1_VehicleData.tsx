@@ -5,18 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWizard } from "./ListingWizard";
 import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import { createOrUpdateListing } from "@/services/createListingService";
-
-const brands = [
-  "Audi", "BMW", "Mercedes-Benz", "Volkswagen", "Toyota", "Honda", "Ford", 
-  "Opel", "Peugeot", "Renault", "Citroën", "Volvo", "Skoda", "Hyundai", 
-  "Nissan", "Mazda", "Subaru", "Lexus", "Mini", "Seat", "Fiat"
-];
+import { fetchMakes, fetchModelsForMake, searchMakes, searchModelsForMake } from "@/services/vehicleService";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const bodyTypes = [
   "Limousine", "Kombi", "SUV", "Cabrio"
@@ -36,6 +35,16 @@ export default function Step1_VehicleData() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Vehicle data state
+  const [makes, setMakes] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
+  const [loadingMakes, setLoadingMakes] = useState(true);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [makeOpen, setMakeOpen] = useState(false);
+  const [modelOpen, setModelOpen] = useState(false);
+  const [makeSearch, setMakeSearch] = useState("");
+  const [modelSearch, setModelSearch] = useState("");
+  
   const {
     register,
     handleSubmit,
@@ -49,7 +58,7 @@ export default function Step1_VehicleData() {
       brand: data.brand || "",
       model: data.model || "",
       year: data.year || new Date().getFullYear(),
-      km: data.km || data.mileage || 0, // ✅ Fixed: Use data.km or data.mileage instead of data.mileage_km
+      km: data.km || data.mileage || 0,
       body: (data.body as "Limousine" | "Kombi" | "SUV" | "Cabrio") || "",
       fuel: (data.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro") || "",
       gearbox: (data.gearbox as "Automatik" | "Manuell") || "",
@@ -57,6 +66,102 @@ export default function Step1_VehicleData() {
     },
     mode: "onBlur"
   });
+
+  const selectedMake = watch("brand");
+  const selectedModel = watch("model");
+
+  // Load makes on mount
+  useEffect(() => {
+    const loadMakes = async () => {
+      try {
+        setLoadingMakes(true);
+        const data = await fetchMakes();
+        setMakes(data);
+      } catch (error) {
+        console.error("Error loading makes:", error);
+        toast({
+          title: "Fehler",
+          description: "Fehler beim Laden der Fahrzeugmarken.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingMakes(false);
+      }
+    };
+    loadMakes();
+  }, [toast]);
+
+  // Load models when make changes
+  useEffect(() => {
+    const loadModels = async () => {
+      if (!selectedMake) {
+        setModels([]);
+        return;
+      }
+
+      try {
+        setLoadingModels(true);
+        const data = await fetchModelsForMake(selectedMake);
+        setModels(data);
+      } catch (error) {
+        console.error("Error loading models:", error);
+        toast({
+          title: "Fehler",
+          description: "Fehler beim Laden der Fahrzeugmodelle.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingModels(false);
+      }
+    };
+    loadModels();
+  }, [selectedMake, toast]);
+
+  // Search makes with debouncing
+  useEffect(() => {
+    const searchMakesDebounced = async () => {
+      if (!makeSearch) {
+        const data = await fetchMakes();
+        setMakes(data);
+        return;
+      }
+
+      try {
+        const data = await searchMakes(makeSearch);
+        setMakes(data);
+      } catch (error) {
+        console.error("Error searching makes:", error);
+      }
+    };
+
+    const timeoutId = setTimeout(searchMakesDebounced, 300);
+    return () => clearTimeout(timeoutId);
+  }, [makeSearch]);
+
+  // Search models with debouncing
+  useEffect(() => {
+    const searchModelsDebounced = async () => {
+      if (!selectedMake) {
+        return;
+      }
+
+      if (!modelSearch) {
+        const data = await fetchModelsForMake(selectedMake);
+        setModels(data);
+        return;
+      }
+
+      try {
+        const data = await searchModelsForMake(selectedMake, modelSearch);
+        setModels(data);
+      } catch (error) {
+        console.error("Error searching models:", error);
+      }
+    };
+
+    const timeoutId = setTimeout(searchModelsDebounced, 300);
+    return () => clearTimeout(timeoutId);
+  }, [modelSearch, selectedMake]);
 
   const handleVehicleDataSubmit = async (formData: VehicleDataForm) => {
     if (!user) {
@@ -76,7 +181,7 @@ export default function Step1_VehicleData() {
       const cleanKm = formData.km.toString().replace(/[^0-9]/g, '');
       const parsedKm = parseInt(cleanKm, 10);
 
-      // ✅ Generate proper title from vehicle data
+      // Generate proper title from vehicle data
       const generatedTitle = `${formData.brand} ${formData.model} ${formData.year}`;
 
       const validatedData = {
@@ -88,7 +193,7 @@ export default function Step1_VehicleData() {
         gearbox: formData.gearbox as "Automatik" | "Manuell",
         body: formData.body as "Limousine" | "Kombi" | "SUV" | "Cabrio",
         description: formData.description || undefined,
-        title: generatedTitle, // ✅ Add generated title
+        title: generatedTitle,
       };
 
       const result = await createOrUpdateListing(validatedData, user);
@@ -97,7 +202,7 @@ export default function Step1_VehicleData() {
       
       updateData({ 
         ...validatedData,
-        km: parsedKm, // Explicitly save km to match form field name
+        km: parsedKm,
         id: result.id
       });
 
@@ -136,7 +241,7 @@ export default function Step1_VehicleData() {
     if (input && watchedKm) {
         input.value = new Intl.NumberFormat('de-CH').format(watchedKm);
     }
-  }, []); // Only run once on mount
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -151,42 +256,116 @@ export default function Step1_VehicleData() {
 
       <form onSubmit={handleSubmit(handleVehicleDataSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Brand */}
+          {/* Brand - Searchable Combobox */}
           <div className="space-y-2">
             <Label htmlFor="brand" className="text-sm font-medium text-neutral-700">
               Marke *
             </Label>
-            <Select
-              value={watch("brand")}
-              onValueChange={(value) => setValue("brand", value, { shouldValidate: true })}
-            >
-              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-                <SelectValue placeholder="Marke auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                {brands.map((brand) => (
-                  <SelectItem key={brand} value={brand}>
-                    {brand}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={makeOpen} onOpenChange={setMakeOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={makeOpen}
+                  className="w-full justify-between bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+                  disabled={loadingMakes}
+                >
+                  {selectedMake || (loadingMakes ? "Lädt..." : "Marke auswählen")}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Marke suchen..." 
+                    value={makeSearch}
+                    onValueChange={setMakeSearch}
+                  />
+                  <CommandList>
+                    <CommandEmpty>Keine Marke gefunden.</CommandEmpty>
+                    <CommandGroup>
+                      {makes.map((make) => (
+                        <CommandItem
+                          key={make}
+                          value={make}
+                          onSelect={(currentValue) => {
+                            setValue("brand", currentValue, { shouldValidate: true });
+                            setValue("model", "", { shouldValidate: false }); // Clear model when make changes
+                            setMakeOpen(false);
+                            setMakeSearch("");
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedMake === make ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {make}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             {errors.brand && (
               <p className="text-sm text-red-500 font-light">{errors.brand.message}</p>
             )}
           </div>
 
-          {/* Model */}
+          {/* Model - Searchable Combobox */}
           <div className="space-y-2">
             <Label htmlFor="model" className="text-sm font-medium text-neutral-700">
               Modell *
             </Label>
-            <Input
-              id="model"
-              {...register("model")}
-              placeholder="z.B. A4, 320i, C-Klasse"
-              className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-            />
+            <Popover open={modelOpen} onOpenChange={setModelOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={modelOpen}
+                  className="w-full justify-between bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+                  disabled={!selectedMake || loadingModels}
+                >
+                  {selectedModel || (loadingModels ? "Lädt..." : !selectedMake ? "Zuerst Marke wählen" : "Modell auswählen")}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Modell suchen..." 
+                    value={modelSearch}
+                    onValueChange={setModelSearch}
+                  />
+                  <CommandList>
+                    <CommandEmpty>Kein Modell gefunden.</CommandEmpty>
+                    <CommandGroup>
+                      {models.map((model) => (
+                        <CommandItem
+                          key={model}
+                          value={model}
+                          onSelect={(currentValue) => {
+                            setValue("model", currentValue, { shouldValidate: true });
+                            setModelOpen(false);
+                            setModelSearch("");
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedModel === model ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {model}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             {errors.model && (
               <p className="text-sm text-red-500 font-light">{errors.model.message}</p>
             )}
@@ -335,7 +514,7 @@ export default function Step1_VehicleData() {
           )}
         </div>
 
-        {/* Description - Full Width - Added this section */}
+        {/* Description - Full Width */}
         <div className="space-y-2">
           <Label htmlFor="description" className="text-sm font-medium text-neutral-700">
             Fahrzeugbeschreibung (optional)
