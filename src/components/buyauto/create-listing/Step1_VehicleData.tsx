@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -77,6 +76,9 @@ export default function Step1_VehicleData() {
       const cleanKm = formData.km.toString().replace(/[^0-9]/g, '');
       const parsedKm = parseInt(cleanKm, 10);
 
+      // ✅ Generate proper title from vehicle data
+      const generatedTitle = `${formData.brand} ${formData.model} ${formData.year}`;
+
       const validatedData = {
         brand: formData.brand,
         model: formData.model,
@@ -86,6 +88,7 @@ export default function Step1_VehicleData() {
         gearbox: formData.gearbox as "Automatik" | "Manuell",
         body: formData.body as "Limousine" | "Kombi" | "SUV" | "Cabrio",
         description: formData.description || undefined,
+        title: generatedTitle, // ✅ Add generated title
       };
 
       const result = await createOrUpdateListing(validatedData, user);

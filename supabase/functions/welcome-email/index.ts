@@ -26,7 +26,7 @@ serve(async (req) => {
       throw new Error("User email is missing in the payload.");
     }
 
-    // CRITICAL CHECK: Only send welcome email if email has been confirmed
+    // Safety check: Log if this was somehow triggered without confirmation
     if (!emailConfirmedAt) {
       console.log(`Email not yet confirmed for ${userEmail}. Skipping welcome email.`);
       return new Response(JSON.stringify({ message: "Email not confirmed yet, welcome email not sent" }), {
@@ -34,7 +34,7 @@ serve(async (req) => {
         status: 200,
       });
     }
-    
+
     if (!ADMIN_EMAIL_ADDRESS) {
       console.warn("ADMIN_EMAIL_ADDRESS secret is not set. Skipping admin notification.");
     }
@@ -42,13 +42,41 @@ serve(async (req) => {
     const sendToUser = await resend.emails.send({
       from: "welcome@email.buyauto.ch",
       to: userEmail,
-      subject: "Welcome to BuyAuto! Your Account is Confirmed",
+      subject: "Willkommen bei BuyAuto! Dein Account ist bestätigt",
       html: `
-        <h1>Welcome to BuyAuto!</h1>
-        <p>Hi there,</p>
-        <p>Thanks for joining us. Your email has been successfully confirmed, and your account is now active.</p>
-        <p>You can now log in and start exploring available listings.</p>
-        <p>Best,<br>The BuyAuto Team</p>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: sans-serif; color: #333; line-height: 1.6; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+            .content { padding: 30px 0; }
+            .button { display: inline-block; background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+            .footer { text-align: center; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="https://buyauto.ch/buyauto-logo.png" alt="BuyAuto Logo" height="40">
+            </div>
+            <div class="content">
+              <h1>Willkommen bei BuyAuto!</h1>
+              <p>Hallo,</p>
+              <p>Vielen Dank für deine Registrierung. Deine E-Mail-Adresse wurde erfolgreich bestätigt und dein Account ist nun aktiv.</p>
+              <p>Du kannst dich jetzt einloggen und die verfügbaren Angebote entdecken.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="https://buyauto.ch/auth" class="button">Jetzt Einloggen</a>
+              </div>
+              <p>Beste Grüsse,<br>Dein BuyAuto Team</p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} BuyAuto. Alle Rechte vorbehalten.</p>
+            </div>
+          </div>
+        </body>
+        </html>
       `,
     });
 
@@ -58,15 +86,15 @@ serve(async (req) => {
        console.log(`Welcome email sent to ${userEmail}`);
     }
 
-    // Send admin notification only when email is confirmed
+    // Send admin notification
     if (ADMIN_EMAIL_ADDRESS) {
         const sendToAdmin = await resend.emails.send({
           from: "notifications@email.buyauto.ch",
           to: ADMIN_EMAIL_ADDRESS,
-          subject: "🎉 New User Signup on BuyAuto!",
+          subject: "🎉 Neuer Benutzer auf BuyAuto!",
           html: `
-            <h1>New User Alert!</h1>
-            <p>A new user has just signed up and confirmed their email address.</p>
+            <h1>Neuer Benutzer!</h1>
+            <p>Ein neuer Benutzer hat sich registriert und die E-Mail bestätigt.</p>
             <ul>
               <li><strong>User ID:</strong> ${userId}</li>
               <li><strong>Email:</strong> ${userEmail}</li>

@@ -131,7 +131,7 @@ export default function Step2_LeasingDetails() {
         deposit_chf: formData.deposit_chf ? parseFloat(formData.deposit_chf.toString()) : null,
         location: formData.location,
         canton_code: formData.location,
-        title: formData.location,
+        // ✅ REMOVED: title: formData.location (this was causing the bug)
         remaining_km: formData.remaining_km ? parseInt(formData.remaining_km.toString()) : null,
       };
 
