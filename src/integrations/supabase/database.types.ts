@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -225,6 +225,27 @@ export type Database = {
           id?: string
           role?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      vehicle_catalog: {
+        Row: {
+          created_at: string
+          id: number
+          make: string
+          model: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          make: string
+          model: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          make?: string
+          model?: string
         }
         Relationships: []
       }
