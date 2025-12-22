@@ -149,29 +149,25 @@ export async function uploadListingImages(files: File[], userId: string): Promis
   }
 
   const uploadPromises = files.map(async (file) => {
-    // Ensure unique name and standard extension
-    const fileExtension = "jpg"; // We converted to jpeg
-    const fileName = `${uuidv4()}.${fileExtension}`;
-    const filePath = `${userId}/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from(LISTING_IMAGES_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: "31536000", // 1 year cache (aggressive caching for immutable files)
-        upsert: false,
-        contentType: 'image/jpeg'
-      });
-
-    if (error) {
-      console.error(`Error uploading image ${file.name}:`, error);
-      throw new Error(`Failed to upload image: ${file.name}`);
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(LISTING_IMAGES_BUCKET)
-      .getPublicUrl(filePath);
+    try {
+      // Use the optimized upload function
+      // This will generate and upload thumbnail, medium, and large variants
+      const result = await uploadOptimizedImage(
+        file,
+        LISTING_IMAGES_BUCKET,
+        userId // Use userId as the folder path
+      );
       
-    return publicUrl;
+      // Return the large variant URL by default
+      // This ensures we have high quality for detail pages (1200px)
+      // while still being significantly smaller than raw uploads.
+      // The frontend can derive other sizes (thumbnail/medium) from this URL
+      // using the getOptimizedImageUrl utility.
+      return result.urls.large;
+    } catch (error) {
+      console.error(`Error uploading file ${file.name}:`, error);
+      throw error;
+    }
   });
 
   try {
@@ -179,8 +175,6 @@ export async function uploadListingImages(files: File[], userId: string): Promis
     return publicUrls;
   } catch (error) {
     console.error("One or more image uploads failed:", error);
-    // In a real app, you might want to implement a rollback mechanism
-    // to delete already uploaded files if one fails.
     throw error;
   }
 }
