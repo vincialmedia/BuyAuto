@@ -77,6 +77,7 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
                 onError={() => setImageError(true)}
                 sizes="(max-width: 768px) 100vw, 192px"
                 quality={75}
+                loading="lazy"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-neutral-400">
