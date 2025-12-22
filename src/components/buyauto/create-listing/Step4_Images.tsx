@@ -13,6 +13,7 @@ import Uppy from '@uppy/core';
 import { Dashboard } from '@uppy/react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
+import { uploadOptimizedImage } from "@/services/storageService";
 
 // CSS is now loaded via Head to avoid build errors with package exports
 // and to enable better caching/performance
@@ -244,6 +245,48 @@ export function Step4_Images() {
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const uploadImage = async (file: File) => {
+    try {
+      setIsUploading(true);
+      
+      // Use optimized upload that generates multiple size variants
+      const result = await uploadOptimizedImage(
+        file,
+        "listing-images",
+        "",
+        (progress) => {
+          // setUploadProgress(progress);
+        }
+      );
+
+      const newImage: ImageItem = {
+        id: Math.random().toString(36).substring(7),
+        url: result.mainUrl,
+      };
+
+      const updatedItems = [...imageItems, newImage];
+      setImageItems(updatedItems);
+      updateData({ 
+        images: updatedItems.map(item => item.url), 
+        cover_image_index: coverImageIndex < updatedItems.length ? coverImageIndex : 0 
+      });
+
+      toast({
+        title: "Bild hochgeladen",
+        description: "Das Bild wurde erfolgreich optimiert und hochgeladen.",
+      });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Fehler",
+        description: "Beim Hochladen des Bildes ist ein Fehler aufgetreten.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
