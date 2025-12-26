@@ -1,4 +1,5 @@
 import type { AppProps } from "next/app";
+import Script from 'next/script'
 import { Manrope, Caveat } from "next/font/google";
 import MainLayout from "@/components/layout/MainLayout";
 import AuthProvider from "@/contexts/AuthContext";
@@ -29,7 +30,25 @@ export default function App({ Component, pageProps }: AppProps) {
     <div className={`${manrope.variable} ${caveat.variable} font-sans overflow-x-hidden min-h-screen`}>
       <AuthProvider>
         <MainLayout>
-          <Component {...pageProps} />
+          {/* Google Analytics 4 */}
+<Script
+    id="google-analytics-4"
+    src="https://www.googletagmanager.com/gtag/js?id=G-6GJ6D58G1S"
+    strategy="afterInteractive"
+/>
+              <Script
+                  id="google-analytics-4-inline"
+                  strategy="afterInteractive"
+                  dangerouslySetInnerHTML={{
+                      __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-6GJ6D58G1S');`
+                  }}
+              />
+{/* End Google Analytics 4 */}
+<Component {...pageProps} />
         </MainLayout>
         <Toaster />
       </AuthProvider>

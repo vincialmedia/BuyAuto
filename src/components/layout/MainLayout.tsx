@@ -1,7 +1,16 @@
 import Header from "@/components/buyauto/Header";
 import { Footer } from "@/components/buyauto/Footer";
-import { CookieConsent } from "@/components/buyauto/CookieConsent";
-import { PromoBanner } from "@/components/buyauto/PromoBanner";
+import dynamic from "next/dynamic";
+
+// Dynamically import client-side only components to reduce initial bundle size
+// ssr: false because they rely on localStorage and aren't critical for SEO/LCP
+const CookieConsent = dynamic(() => import("@/components/buyauto/CookieConsent").then(mod => mod.CookieConsent), {
+  ssr: false
+});
+
+const PromoBanner = dynamic(() => import("@/components/buyauto/PromoBanner").then(mod => mod.PromoBanner), {
+  ssr: false
+});
 
 interface MainLayoutProps {
   children: React.ReactNode;

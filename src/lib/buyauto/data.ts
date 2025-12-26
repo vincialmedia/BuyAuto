@@ -15,8 +15,8 @@ export const mockListings: Listing[] = [
     gearbox: "Automatik",
     body: "Kombi",
     premium: true,
-    imageUrl: "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop&crop=center",
-    images: ["https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop&crop=center"]
+    imageUrl: "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop&crop=center&fm=webp&q=75",
+    images: ["https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop&crop=center&fm=webp&q=75"]
   },
   {
     id: "2",
@@ -32,8 +32,8 @@ export const mockListings: Listing[] = [
     gearbox: "Automatik",
     body: "SUV",
     premium: true,
-    imageUrl: "https://images.unsplash.com/photo-1544829099-b9a0c5303bea?w=800&h=600&fit=crop&crop=center",
-    images: ["https://images.unsplash.com/photo-1544829099-b9a0c5303bea?w=800&h=600&fit=crop&crop=center"]
+    imageUrl: "https://images.unsplash.com/photo-1544829099-b9a0c5303bea?w=800&h=600&fit=crop&crop=center&fm=webp&q=75",
+    images: ["https://images.unsplash.com/photo-1544829099-b9a0c5303bea?w=800&h=600&fit=crop&crop=center&fm=webp&q=75"]
   },
   {
     id: "3",
@@ -49,8 +49,8 @@ export const mockListings: Listing[] = [
     gearbox: "Automatik",
     body: "Limousine",
     premium: false,
-    imageUrl: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&h=600&fit=crop&crop=center",
-    images: ["https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&h=600&fit=crop&crop=center"]
+    imageUrl: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&h=600&fit=crop&crop=center&fm=webp&q=75",
+    images: ["https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&h=600&fit=crop&crop=center&fm=webp&q=75"]
   },
   {
     id: "4",
@@ -66,8 +66,8 @@ export const mockListings: Listing[] = [
     gearbox: "Manuell",
     body: "Limousine",
     premium: false,
-    imageUrl: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop&crop=center",
-    images: ["https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop&crop=center"]
+    imageUrl: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop&crop=center&fm=webp&q=75",
+    images: ["https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop&crop=center&fm=webp&q=75"]
   },
   {
     id: "5",
@@ -83,8 +83,8 @@ export const mockListings: Listing[] = [
     gearbox: "Automatik",
     body: "SUV",
     premium: false,
-    imageUrl: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&h=600&fit=crop&crop=center",
-    images: ["https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&h=600&fit=crop&crop=center"]
+    imageUrl: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&h=600&fit=crop&crop=center&fm=webp&q=75",
+    images: ["https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&h=600&fit=crop&crop=center&fm=webp&q=75"]
   },
   {
     id: "6",
@@ -100,8 +100,8 @@ export const mockListings: Listing[] = [
     gearbox: "Automatik",
     body: "SUV",
     premium: false,
-    imageUrl: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop&crop=center",
-    images: ["https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop&crop=center"]
+    imageUrl: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop&crop=center&fm=webp&q=75",
+    images: ["https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop&crop=center&fm=webp&q=75"]
   },
   {
     id: "7",
@@ -117,8 +117,8 @@ export const mockListings: Listing[] = [
     gearbox: "Automatik",
     body: "SUV",
     premium: false,
-    imageUrl: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop&crop=center",
-    images: ["https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop&crop=center"]
+    imageUrl: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop&crop=center&fm=webp&q=75",
+    images: ["https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop&crop=center&fm=webp&q=75"]
   },
   {
     id: "8",
@@ -134,8 +134,8 @@ export const mockListings: Listing[] = [
     gearbox: "Automatik",
     body: "Cabrio",
     premium: false,
-    imageUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop&crop=center",
-    images: ["https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop&crop=center"]
+    imageUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop&crop=center&fm=webp&q=75",
+    images: ["https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop&crop=center&fm=webp&q=75"]
   }
 ];
 

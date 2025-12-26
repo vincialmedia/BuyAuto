@@ -12,6 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import Image from "next/image";
 
 export default function LeasingVsAutoAboPage() {
   return (
@@ -31,20 +32,21 @@ export default function LeasingVsAutoAboPage() {
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
       </Head>
 
-      <main className="bg-neutral-50 min-h-screen">
+      <main className="bg-neutral-50 min-h-screen pt-20">
         
-        {/* HERO SECTION - With Image Background */}
-        <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
-          {/* Background Image */}
+        {/* HERO SECTION */}
+        <section className="relative h-[400px] md:h-[500px] flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0">
-            <img 
-              src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1600&q=80" 
-              alt="Leasingübernahme vs. Auto Abo Vergleich" 
-              className="w-full h-full object-cover"
+            <Image
+              src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1600&q=80"
+              alt="Leasingübernahme vs. Auto-Abo Schweiz"
+              fill
+              className="object-cover"
+              priority
+              quality={85}
+              sizes="100vw"
             />
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 via-transparent to-neutral-900/30" />
+            <div className="absolute inset-0 bg-neutral-900/60" />
           </div>
 
           {/* Geometric Accents */}

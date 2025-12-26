@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Check, 
   ChevronRight, 
@@ -59,10 +60,14 @@ export default function LeasingAbgebenSchweiz() {
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
           {/* Background Image */}
           <div className="absolute inset-0">
-            <img 
-              src="/ChatGPT_Image_Dec_11_2025_12_15_22_AM.png" 
-              alt="Leasing abgeben Schweiz" 
-              className="w-full h-full object-cover"
+            <Image
+              src="/ChatGPT_Image_Dec_11_2025_12_15_22_AM.png"
+              alt="Leasing abgeben Schweiz"
+              fill
+              className="object-cover"
+              priority
+              quality={85}
+              sizes="100vw"
             />
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />

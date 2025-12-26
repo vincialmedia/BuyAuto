@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
+import Image from "next/image";
 import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search, ArrowRight, RefreshCw, UserCheck, AlertCircle, CheckCircle, XCircle, Eye, CreditCard, Calculator } from "lucide-react";
 import SearchForm from "@/components/buyauto/SearchForm";
 import PremiumListings from "@/components/buyauto/PremiumListings";
@@ -45,10 +46,14 @@ export default function LeasinguebernahmeKostenPage() {
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
           {/* Background Image */}
           <div className="absolute inset-0">
-            <img 
-              src="/pexels-maitree-rimthong-444156-1602726.jpg" 
-              alt="Leasingübernahme Kosten Schweiz" 
-              className="w-full h-full object-cover"
+            <Image
+              src="/pexels-maitree-rimthong-444156-1602726.jpg"
+              alt="Leasingübernahme Kosten Schweiz"
+              fill
+              className="object-cover"
+              priority
+              quality={85}
+              sizes="100vw"
             />
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />

@@ -1,7 +1,14 @@
 import { Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useHasMounted } from "@/hooks/use-has-mounted";
-import { NewsletterSignup } from "./NewsletterSignup";
+import dynamic from "next/dynamic";
+
+// Dynamically import NewsletterSignup to reduce initial footer bundle size
+// It is at the bottom of the page, so immediate loading is not critical
+const NewsletterSignup = dynamic(() => import("./NewsletterSignup").then(mod => mod.NewsletterSignup), {
+  loading: () => <div className="h-48 bg-neutral-100/50 rounded-lg animate-pulse" />,
+  ssr: false // Prevent hydration mismatch
+});
 
 const footerSections = [
   {

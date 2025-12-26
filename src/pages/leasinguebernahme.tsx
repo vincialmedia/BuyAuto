@@ -12,6 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import Image from "next/image";
 
 export default function LeasingUebernahmePage() {
   return (
@@ -37,10 +38,14 @@ export default function LeasingUebernahmePage() {
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
           {/* Background Image */}
           <div className="absolute inset-0">
-            <img 
-              src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=1600&q=80" 
-              alt="Leasingübernahme & Leasing Transfer Schweiz" 
-              className="w-full h-full object-cover"
+            <Image
+              src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=2400&q=80"
+              alt="Leasingübernahme & Leasing Transfer Schweiz"
+              fill
+              className="object-cover"
+              priority
+              quality={85}
+              sizes="100vw"
             />
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />
