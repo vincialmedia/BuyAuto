@@ -84,20 +84,18 @@ export default function Header() {
             </div>
           </nav>
 
-          {/* Mobile Action Icons - visible only on mobile */}
-          <div className="flex md:hidden items-center space-x-2 flex-shrink-0">
-            {/* Create Listing Icon */}
+          {/* Mobile Action CTA - visible only on mobile */}
+          <div className="flex md:hidden items-center flex-shrink-0">
             <Button
-              variant="ghost"
               size="sm"
               asChild
-              className="p-2 hover:bg-neutral-100 transition-colors relative"
+              className="bg-red-500 hover:bg-red-600 text-white shadow-sm relative px-3 py-2 text-xs font-medium"
             >
-              <Link href={createListingHref}>
-                <Plus className="h-5 w-5 text-neutral-600" />
-                <span className="sr-only">Inserat erstellen</span>
+              <Link href={createListingHref} className="flex items-center gap-1.5">
+                <Plus className="h-4 w-4" />
+                <span>Neues Inserat erstellen</span>
                 {/* Price Badge */}
-                <span className="absolute -top-1 -right-1 text-[10px] font-bold text-red-500 bg-white rounded px-1 border border-red-200">
+                <span className="ml-1 text-[10px] font-bold bg-white text-red-500 rounded px-1.5 py-0.5">
                   CHF0
                 </span>
               </Link>
