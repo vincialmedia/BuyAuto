@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { User, LogOut, Settings, BarChart3, Search, Plus } from "lucide-react";
+import { User, LogOut, Settings, BarChart3, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -86,19 +86,6 @@ export default function Header() {
 
           {/* Mobile Action Icons - visible only on mobile */}
           <div className="flex md:hidden items-center space-x-2 flex-shrink-0">
-            {/* Search Icon */}
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="p-2 hover:bg-neutral-100 transition-colors"
-            >
-              <Link href="/suche">
-                <Search className="h-5 w-5 text-neutral-600" />
-                <span className="sr-only">Fahrzeuge suchen</span>
-              </Link>
-            </Button>
-
             {/* Create Listing Icon */}
             <Button
               variant="ghost"
