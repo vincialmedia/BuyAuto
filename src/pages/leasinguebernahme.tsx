@@ -1,8 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search, ArrowRight, RefreshCw, UserCheck, AlertCircle, CheckCircle, XCircle } from "lucide-react";
-import SearchForm from "@/components/buyauto/SearchForm";
-import PremiumListings from "@/components/buyauto/PremiumListings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +12,15 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Image from "next/image";
+
+// Dynamically import heavy interactive components that are below the fold
+const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
+  loading: () => <div className="h-96 bg-white rounded-2xl border-2 border-neutral-100 animate-pulse" />
+});
+
+const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
+  loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
+});
 
 export default function LeasingUebernahmePage() {
   return (
@@ -44,7 +52,7 @@ export default function LeasingUebernahmePage() {
               fill
               className="object-cover"
               priority
-              quality={85}
+              quality={75}
               sizes="100vw"
             />
             {/* Gradient Overlay */}

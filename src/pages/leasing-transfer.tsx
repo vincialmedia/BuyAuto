@@ -1,8 +1,13 @@
 import Head from "next/head";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search, ArrowRight, RefreshCw, UserCheck, AlertCircle, CheckCircle, XCircle, Building2 } from "lucide-react";
-import PremiumListings from "@/components/buyauto/PremiumListings";
+// Dynamic import for below-the-fold content
+const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
+  loading: () => <div className="w-full h-96 bg-neutral-100 animate-pulse rounded-xl" />,
+  ssr: false
+});
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {

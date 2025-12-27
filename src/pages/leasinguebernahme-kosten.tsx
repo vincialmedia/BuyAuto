@@ -1,9 +1,14 @@
 import Head from "next/head";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search, ArrowRight, RefreshCw, UserCheck, AlertCircle, CheckCircle, XCircle, Eye, CreditCard, Calculator } from "lucide-react";
-import SearchForm from "@/components/buyauto/SearchForm";
-import PremiumListings from "@/components/buyauto/PremiumListings";
+// SearchForm was unused, removed.
+// Dynamic import for below-the-fold content
+const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
+  loading: () => <div className="w-full h-96 bg-neutral-100 animate-pulse rounded-xl" />,
+  ssr: false
+});
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -464,7 +469,7 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-8">
               <Calculator className="w-8 h-8 text-red-600" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Was ist günstiger: Leasingübernahme oder neuer Leasingvertrag?
+                Was ist günstiger: Leasingübernahme oder neues Leasing?
               </h2>
             </div>
             

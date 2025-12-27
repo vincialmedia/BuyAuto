@@ -75,7 +75,7 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
                 fill
                 className="object-cover transition-opacity duration-300"
                 onError={() => setImageError(true)}
-                sizes="(max-width: 768px) 100vw, 192px"
+                sizes="192px"
                 quality={75}
                 loading="lazy"
               />

@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
-import SimilarListings from "@/components/buyauto/detail/SimilarListings";
 import { StructuredData } from "@/components/buyauto/StructuredData";
 
 // Helper function to ensure no undefined values (Next.js serialization fix)
@@ -27,6 +26,11 @@ const serializeListing = (listing: ListingDetail | null): ListingDetail | null =
 // Dynamically import InquiryForm (only loads when user clicks inquiry button)
 const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), {
   ssr: false
+});
+
+// Dynamically import SimilarListings as it fetches data and is below the fold
+const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
+  loading: () => <div className="h-96 bg-neutral-50 animate-pulse rounded-xl mt-16" />
 });
 
 interface ListingDetailPageProps {

@@ -34,11 +34,11 @@ export default function App({ Component, pageProps }: AppProps) {
 <Script
     id="google-analytics-4"
     src="https://www.googletagmanager.com/gtag/js?id=G-6GJ6D58G1S"
-    strategy="afterInteractive"
+    strategy="lazyOnload"
 />
               <Script
                   id="google-analytics-4-inline"
-                  strategy="afterInteractive"
+                  strategy="lazyOnload"
                   dangerouslySetInnerHTML={{
                       __html: `window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}

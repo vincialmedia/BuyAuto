@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { User, LogOut, Settings, BarChart3 } from "lucide-react";
+import { User, LogOut, Settings, BarChart3, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -83,6 +83,39 @@ export default function Header() {
               </span>
             </div>
           </nav>
+
+          {/* Mobile Action Icons - visible only on mobile */}
+          <div className="flex md:hidden items-center space-x-2 flex-shrink-0">
+            {/* Search Icon */}
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="p-2 hover:bg-neutral-100 transition-colors"
+            >
+              <Link href="/suche">
+                <Search className="h-5 w-5 text-neutral-600" />
+                <span className="sr-only">Fahrzeuge suchen</span>
+              </Link>
+            </Button>
+
+            {/* Create Listing Icon */}
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="p-2 hover:bg-neutral-100 transition-colors relative"
+            >
+              <Link href={createListingHref}>
+                <Plus className="h-5 w-5 text-neutral-600" />
+                <span className="sr-only">Inserat erstellen</span>
+                {/* Price Badge */}
+                <span className="absolute -top-1 -right-1 text-[10px] font-bold text-red-500 bg-white rounded px-1 border border-red-200">
+                  CHF0
+                </span>
+              </Link>
+            </Button>
+          </div>
 
           {/* Auth Section - Handle loading state properly */}
           <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
@@ -172,26 +205,6 @@ export default function Header() {
         {/* Mobile Navigation Menu */}
         <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
           <nav className="pb-4 pt-2 space-y-2 border-t border-neutral-200">
-            <Link 
-              href="/suche" 
-              className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Fahrzeuge suchen
-            </Link>
-            <div className="relative">
-              <Link 
-                href={createListingHref}
-                className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Inserat erstellen
-              </Link>
-              <span className="absolute top-1 left-full ml-1 text-red-500 font-scribble text-base font-bold rotate-[-5deg] whitespace-nowrap pointer-events-none">
-                Ab CHF0.-
-              </span>
-            </div>
-
             {loading ? (
               /* Mobile loading state */
               <div className="px-4 py-2">
