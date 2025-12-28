@@ -7,13 +7,13 @@ export default function Datenschutz() {
   return (
     <div className="min-h-screen bg-neutral-50 font-sans text-neutral-900">
       <Head>
-        <title>Datenschutz | BuyAuto</title>
-        <meta name="description" content="Datenschutzerklärung von BuyAuto" />
+        <title>Datenschutz & Impressum | BuyAuto</title>
+        <meta name="description" content="Datenschutzerklärung und Impressum von BuyAuto" />
       </Head>
 
       <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-neutral-200">
-          <h1 className="text-3xl font-bold mb-8 text-neutral-900">Datenschutzerklärung</h1>
+          <h1 className="text-3xl font-bold mb-8 text-neutral-900">Datenschutz / Impressum</h1>
 
           <div className="prose prose-neutral max-w-none">
             <p className="text-sm text-neutral-500 mb-8">
