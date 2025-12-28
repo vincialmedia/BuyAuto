@@ -4,8 +4,6 @@ import HeroSection from "@/components/buyauto/HeroSection";
 import { UspBar } from "@/components/buyauto/UspBar";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { StructuredData } from "@/components/buyauto/StructuredData";
-import { GetStaticProps } from "next";
-import { getPublishedListingsCount } from "@/services/listingsService";
 
 // Dynamically import below-the-fold components to reduce initial bundle
 const BenefitsSection = dynamic(() => import("@/components/buyauto/BenefitsSection"), {
@@ -28,11 +26,7 @@ const SeoCopyBlock = dynamic(() => import("@/components/buyauto/SeoCopyBlock").t
   loading: () => <div className="h-64 bg-neutral-50 animate-pulse" />
 });
 
-interface HomePageProps {
-  totalListings: number;
-}
-
-export default function HomePage({ totalListings }: HomePageProps) {
+export default function HomePage() {
   const baseUrl = process.env.NODE_ENV === "production" 
     ? "https://www.buyauto.ch" 
     : "http://localhost:3000";
@@ -72,7 +66,7 @@ export default function HomePage({ totalListings }: HomePageProps) {
       {/* Structured Data for Google */}
       <StructuredData type="homepage" />
 
-      <HeroSection totalListings={totalListings} />
+      <HeroSection />
       <UspBar />
       <PremiumListings />
       <BenefitsSection />
@@ -83,13 +77,3 @@ export default function HomePage({ totalListings }: HomePageProps) {
     </>
   );
 }
-
-export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
-  const totalListings = await getPublishedListingsCount();
-  return {
-    props: {
-      totalListings,
-    },
-    revalidate: 60,
-  };
-};

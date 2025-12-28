@@ -1,11 +1,7 @@
 import SearchForm from "./SearchForm";
 import Image from "next/image";
 
-interface HeroSectionProps {
-  totalListings: number;
-}
-
-export default function HeroSection({ totalListings }: HeroSectionProps) {
+export default function HeroSection() {
   return (
     <section className="relative min-h-[550px] md:min-h-[600px] flex flex-col justify-between overflow-hidden pt-16 md:pt-20">
       {/* Background Image */}
@@ -38,11 +34,6 @@ export default function HeroSection({ totalListings }: HeroSectionProps) {
           
           <p className="text-base md:text-xl text-neutral-200 mb-3 max-w-2xl mx-auto leading-relaxed font-light">
             Finde und übernimm deinen nächsten Auto-Leasingvertrag – schweizweit.
-          </p>
-          
-          {/* Subtle statistics */}
-          <p className="text-neutral-300 text-sm md:text-base font-medium tracking-wide">
-            Aktuelle Inserate: <span className="text-white font-semibold">{totalListings.toLocaleString("de-CH")}</span>
           </p>
         </div>
       </div>
