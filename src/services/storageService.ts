@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { generateImageVariants, optimizeImage, shouldOptimizeImage, formatFileSize } from "@/lib/buyauto/imageOptimization";
+import { generateImageVariants, shouldOptimizeImage, formatFileSize } from "@/lib/buyauto/imageOptimization";
 
 const LISTING_IMAGES_BUCKET = "listing-images";
 

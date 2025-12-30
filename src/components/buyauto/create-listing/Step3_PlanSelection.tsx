@@ -91,7 +91,7 @@ export default function Step3_PlanSelection() {
   };
 
   const planFeatures = {
-    standard: ["60 Tage Laufzeit", "Standard-Platzierung"],
+    standard: ["30 Tage Laufzeit", "Standard-Platzierung"],
     extended: ["90 Tage Laufzeit", "Standard-Platzierung"],
     unlimited: ["Unlimitierte Laufzeit", "Standard-Platzierung", "Jederzeit pausierbar"],
   };
@@ -104,37 +104,55 @@ export default function Step3_PlanSelection() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {(Object.keys(pricingPlans) as Plan[]).map((planKey) => (
-          <Card
-            key={planKey}
-            className={cn(
-              'cursor-pointer transition-all',
-              selectedPlan === planKey ? 'border-red-500 ring-2 ring-red-500' : 'hover:border-neutral-400'
-            )}
-            onClick={() => setSelectedPlan(planKey)}
-          >
-            <CardHeader>
-              <CardTitle>{pricingPlans[planKey].name}</CardTitle>
-              <CardDescription className="text-2xl font-bold">CHF {pricingPlans[planKey].price}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                {planFeatures[planKey].map((feature) => (
-                  <li key={feature} className="flex items-center">
-                    <CheckIcon className="mr-2 h-4 w-4 text-green-500"/>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        ))}
+        {(Object.keys(pricingPlans) as Plan[]).map((planKey) => {
+          const isExtended = planKey === 'extended';
+          
+          return (
+            <div key={planKey} className="relative">
+              {isExtended && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                  <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                    Beliebt
+                  </span>
+                </div>
+              )}
+              <Card
+                className={cn(
+                  'cursor-pointer transition-all h-full',
+                  selectedPlan === planKey ? 'border-red-500 ring-2 ring-red-500' : 'hover:border-neutral-400',
+                  isExtended && 'border-red-200'
+                )}
+                onClick={() => setSelectedPlan(planKey)}
+              >
+                <CardHeader>
+                  <CardTitle>{pricingPlans[planKey].name}</CardTitle>
+                  <CardDescription className="text-2xl font-bold">CHF {pricingPlans[planKey].price}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm text-neutral-600">
+                    {planFeatures[planKey].map((feature) => (
+                      <li key={feature} className="flex items-center">
+                        <CheckIcon className="mr-2 h-4 w-4 text-green-500"/>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })}
       </div>
 
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <Label htmlFor="premium-boost" className="font-bold text-lg">Premium Boost</Label>
+            <div className="flex items-center gap-2 mb-1">
+              <Label htmlFor="premium-boost" className="font-bold text-lg">Premium Boost</Label>
+              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                Bis zu 3x höhere Verkaufschancen
+              </span>
+            </div>
             <p className="text-neutral-600">Ihr Inserat wird für 30 Tage hervorgehoben.</p>
           </div>
           <div className="flex items-center space-x-4">

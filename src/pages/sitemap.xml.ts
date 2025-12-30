@@ -16,6 +16,8 @@ const STATIC_PAGES = [
   '/leasingvertrag-uebertragen',
   '/leasinguebernahme-vs-neues-leasing',
   '/leasinguebernahme-vs-autoabo',
+  '/auto-abo-kuendigen',
+  '/auto-abo-vs-leasing-kosten',
   '/auth',
   '/datenschutz',
   '/agb'

@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { PostgrestError } from "@supabase/supabase-js";
 import { ListingDetail, ListingStatus } from "@/lib/buyauto/types";
 
 export type DashboardListingStatus = ListingStatus;

@@ -1,7 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import type { ListingFormData, PricePlanId } from "@/lib/buyauto/types";
+import type { PricePlanId } from "@/lib/buyauto/types";
 
 type ListingUpdatePayload = Partial<{
   id?: string;
