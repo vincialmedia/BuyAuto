@@ -138,25 +138,25 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
             />
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-900/20 via-transparent to-neutral-900/30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 via-transparent to-neutral-900/30" />
           </div>
 
           {/* Geometric Accents */}
-          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/3 left-1/5 w-64 h-64 bg-blue-400/5 rounded-full blur-2xl" />
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/3 left-1/5 w-64 h-64 bg-red-400/5 rounded-full blur-2xl" />
 
           {/* Hero Content */}
           <div className="relative z-10 w-full px-4 py-16 md:py-20">
             <div className="max-w-5xl mx-auto">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
+                <div className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <Calculator className="w-4 h-4" />
                   <span>Kosten-Rechner • Aktualisiert am {updatedDate}</span>
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
                   Auto-Abo vs Leasing Kosten: der Vollkosten-Rechner für die Schweiz
                 </h1>
-                <p className="text-xl md:text-2xl text-blue-300 font-semibold mb-4">
+                <p className="text-xl md:text-2xl text-red-300 font-semibold mb-4">
                   Rate ist nicht alles. Vergleiche die echten Gesamtkosten.
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
@@ -167,7 +167,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                   <Button
                     asChild
                     size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
+                    className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
                   >
                     <Link href="#rechner">
                       Zum Rechner
@@ -194,17 +194,17 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
         <section className="py-16 px-4 bg-white">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <Info className="w-8 h-8 text-blue-600" />
+              <Info className="w-8 h-8 text-red-600" />
               <h2 className="text-3xl font-bold text-neutral-900">
                 Kurz gesagt: Die Faustregel
               </h2>
             </div>
             
-            <div className="bg-blue-50 border-l-4 border-blue-600 p-8 rounded-r-xl shadow-sm">
+            <div className="bg-red-50 border-l-4 border-red-600 p-8 rounded-r-xl shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <h3 className="font-bold text-neutral-900 text-lg mb-2 flex items-center gap-2">
-                    <Check className="w-5 h-5 text-blue-600" />
+                    <Check className="w-5 h-5 text-red-600" />
                     Auto-Abo lohnt sich meist, wenn...
                   </h3>
                   <ul className="space-y-2 text-neutral-700 list-disc list-inside pl-2">
@@ -216,7 +216,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                 </div>
                 <div>
                    <h3 className="font-bold text-neutral-900 text-lg mb-2 flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5 text-blue-600" />
+                    <TrendingDown className="w-5 h-5 text-red-600" />
                     Leasing lohnt sich meist, wenn...
                   </h3>
                   <ul className="space-y-2 text-neutral-700 list-disc list-inside pl-2">
@@ -228,8 +228,8 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                 </div>
               </div>
               
-              <div className="mt-6 pt-6 border-t border-blue-200">
-                <p className="text-blue-900 font-medium flex items-center gap-2">
+              <div className="mt-6 pt-6 border-t border-red-200">
+                <p className="text-red-900 font-medium flex items-center gap-2">
                   <AlertCircle className="w-5 h-5" />
                   Achtung: Das Ergebnis hängt extrem von <strong>Versicherung, Laufleistung und Servicekosten</strong> ab. Nutze den Rechner unten für dein Szenario.
                 </p>
@@ -255,9 +255,9 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                   <button 
                     key={i}
                     onClick={() => scrollToSection(item.id)}
-                    className="flex items-center gap-2 text-neutral-600 hover:text-blue-600 transition-colors text-left group"
+                    className="flex items-center gap-2 text-neutral-600 hover:text-red-600 transition-colors text-left group"
                   >
-                    <ChevronRight className="w-4 h-4 text-blue-400 group-hover:text-blue-600 transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-red-400 group-hover:text-red-600 transition-colors" />
                     <span className="font-medium">{item.label}</span>
                   </button>
                 ))}
@@ -270,8 +270,8 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
         <section id="rechner" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-7xl mx-auto">
              <div className="text-center mb-10">
-               <div className="inline-flex items-center justify-center p-3 bg-blue-100 rounded-full mb-4">
-                 <Calculator className="w-8 h-8 text-blue-600" />
+               <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-full mb-4">
+                 <Calculator className="w-8 h-8 text-red-600" />
                </div>
                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
                  Auto-Abo vs. Leasing Rechner
@@ -291,7 +291,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
         <section id="lesen" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <Search className="w-8 h-8 text-blue-600" />
+              <Search className="w-8 h-8 text-red-600" />
               <h2 className="text-3xl font-bold text-neutral-900">
                 So liest du den Vergleich
               </h2>
@@ -307,19 +307,19 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
               </p>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 list-none pl-0">
                 <li className="bg-white p-4 rounded-lg border border-neutral-200 flex items-start gap-3">
-                  <span className="text-blue-600 font-bold text-xl">•</span>
+                  <span className="text-red-600 font-bold text-xl">•</span>
                   <span><strong>Versicherung:</strong> Vollkasko ist beim Leasing Pflicht. Für Junge oder in Städten oft 150-200 CHF/Mt.</span>
                 </li>
                 <li className="bg-white p-4 rounded-lg border border-neutral-200 flex items-start gap-3">
-                  <span className="text-blue-600 font-bold text-xl">•</span>
+                  <span className="text-red-600 font-bold text-xl">•</span>
                   <span><strong>Reifen:</strong> Ein Satz Winterreifen + Wechsel + Einlagerung kostet schnell 600-800 CHF pro Jahr.</span>
                 </li>
                  <li className="bg-white p-4 rounded-lg border border-neutral-200 flex items-start gap-3">
-                  <span className="text-blue-600 font-bold text-xl">•</span>
+                  <span className="text-red-600 font-bold text-xl">•</span>
                   <span><strong>Steuern:</strong> Die Verkehrssteuer (je nach Kanton 200-800 CHF) zahlt beim Leasing der Halter (= Du).</span>
                 </li>
                  <li className="bg-white p-4 rounded-lg border border-neutral-200 flex items-start gap-3">
-                  <span className="text-blue-600 font-bold text-xl">•</span>
+                  <span className="text-red-600 font-bold text-xl">•</span>
                   <span><strong>Service:</strong> Ölwechsel und Inspektionen gehen beim Leasing auf deine Kappe.</span>
                 </li>
               </ul>
@@ -396,24 +396,24 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 text-left">
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
-                <Clock className="w-8 h-8 text-blue-400 mb-4" />
+                <Clock className="w-8 h-8 text-red-400 mb-4" />
                 <h3 className="font-bold text-lg mb-2">Kurze Restlaufzeit</h3>
                 <p className="text-sm text-neutral-400">Oft nur noch 12–24 Monate übrig. Ideal zum Überbrücken.</p>
               </div>
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
-                <TrendingDown className="w-8 h-8 text-blue-400 mb-4" />
+                <TrendingDown className="w-8 h-8 text-red-400 mb-4" />
                 <h3 className="font-bold text-lg mb-2">Keine Anzahlung</h3>
                 <p className="text-sm text-neutral-400">Die Anzahlung hat meist der Vorbesitzer schon geleistet.</p>
               </div>
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
-                <Car className="w-8 h-8 text-blue-400 mb-4" />
+                <Car className="w-8 h-8 text-red-400 mb-4" />
                 <h3 className="font-bold text-lg mb-2">Sofort verfügbar</h3>
                 <p className="text-sm text-neutral-400">Keine Lieferfristen. Das Auto steht schon bereit.</p>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-               <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg border-none">
+               <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white shadow-lg border-none">
                 <Link href="/suche">
                   <Search className="w-4 h-4 mr-2" />
                   Leasingübernahmen finden
@@ -466,7 +466,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                 <AccordionItem 
                   key={i} 
                   value={`item-${i}`}
-                  className="bg-white border border-neutral-200 rounded-xl px-6 md:px-8 hover:border-blue-600 transition-colors"
+                  className="bg-white border border-neutral-200 rounded-xl px-6 md:px-8 hover:border-red-600 transition-colors"
                 >
                   <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                     {faq.q}
