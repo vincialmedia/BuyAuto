@@ -1,10 +1,32 @@
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search, ArrowRight, RefreshCw, UserCheck, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { 
+  Check, 
+  ChevronRight, 
+  AlertTriangle, 
+  FileText, 
+  Info, 
+  ShieldCheck, 
+  TrendingDown, 
+  Clock, 
+  Zap, 
+  Users, 
+  BadgeCheck, 
+  MapPin, 
+  Calendar, 
+  DollarSign, 
+  FileCheck, 
+  Search, 
+  ArrowRight, 
+  RefreshCw, 
+  UserCheck, 
+  AlertCircle, 
+  CheckCircle, 
+  XCircle 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
   AccordionContent,
@@ -23,6 +45,13 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 });
 
 export default function LeasingUebernahmePage() {
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <>
       <Head>
@@ -42,7 +71,7 @@ export default function LeasingUebernahmePage() {
 
       <main className="bg-neutral-50 min-h-screen">
         
-        {/* HERO SECTION - With Image Background */}
+        {/* HERO SECTION */}
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
           {/* Background Image */}
           <div className="absolute inset-0">
@@ -57,25 +86,25 @@ export default function LeasingUebernahmePage() {
             />
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 via-transparent to-neutral-900/30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-neutral-900/30" />
           </div>
 
           {/* Geometric Accents */}
-          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/3 left-1/5 w-64 h-64 bg-red-400/5 rounded-full blur-2xl" />
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/3 left-1/5 w-64 h-64 bg-primary/5 rounded-full blur-2xl" />
 
           {/* Hero Content */}
           <div className="relative z-10 w-full px-4 py-16 md:py-20">
             <div className="max-w-5xl mx-auto">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
+                <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <TrendingDown className="w-4 h-4" />
                   Kompletter Leitfaden
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
                   Leasingübernahme & Leasing Transfer in der Schweiz
                 </h1>
-                <p className="text-xl md:text-2xl text-red-400 font-semibold mb-4">
+                <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
                   Der komplette Leitfaden zur Vertragsübertragung
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
@@ -86,7 +115,7 @@ export default function LeasingUebernahmePage() {
                   <Button
                     asChild
                     size="lg"
-                    className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
+                    className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
                   >
                     <Link href="/suche">
                       Jetzt Leasingübernahme starten
@@ -109,24 +138,75 @@ export default function LeasingUebernahmePage() {
           </div>
         </section>
 
-        {/* DEFINITION SECTION - What is Leasingübernahme */}
+        {/* QUICK ANSWER BOX */}
         <section className="py-16 px-4 bg-white">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <Info className="w-8 h-8 text-primary" />
+              <h2 className="text-3xl font-bold text-neutral-900">
+                Kurz gesagt: Was ist eine Leasingübernahme?
+              </h2>
+            </div>
+            
+            <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
+              <p className="text-lg text-neutral-700 leading-relaxed mb-4">
+                Eine <strong>Leasingübernahme</strong> bedeutet, dass eine Person oder Firma einen bestehenden Leasingvertrag vollständig übernimmt – inklusive monatlicher Raten, Kilometerlimit, Restlaufzeit und Pflichten.
+              </p>
+              <p className="text-lg text-neutral-700 leading-relaxed">
+                Der ursprüngliche Leasingnehmer wird aus dem Vertrag entlassen und der neue Vertragspartner tritt ein.
+              </p>
+              
+              <div className="mt-6 pt-6 border-t border-primary/20">
+                <p className="text-primary font-medium flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  <strong>Leasing Transfer</strong> und <strong>Leasingübernahme</strong> bedeuten das Gleiche – beide Begriffe beschreiben die Übertragung eines bestehenden Vertrags.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* TOC SECTION */}
+        <section className="py-10 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto">
+            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">Inhaltsverzeichnis</h3>
+            <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
+                {[
+                  { id: "definition", label: "Was ist eine Leasingübernahme?" },
+                  { id: "transfer", label: "Leasing Transfer vs. Leasingübernahme" },
+                  { id: "search", label: "Angebote entdecken" },
+                  { id: "ablauf", label: "Ablauf der Leasingübernahme" },
+                  { id: "voraussetzungen", label: "Voraussetzungen" },
+                  { id: "kosten", label: "Kosten im Überblick" },
+                  { id: "vorteile", label: "Vorteile für beide Seiten" },
+                  { id: "rechtliches", label: "Rechtliche Hinweise" },
+                  { id: "faq", label: "Häufige Fragen" },
+                ].map((item, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => scrollToSection(item.id)}
+                    className="flex items-center gap-2 text-neutral-600 hover:text-primary transition-colors text-left group"
+                  >
+                    <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* DEFINITION SECTION */}
+        <section id="definition" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="space-y-8">
               <div>
                 <div className="flex items-center gap-3 mb-6">
-                  <FileCheck className="w-8 h-8 text-red-600" />
+                  <FileCheck className="w-8 h-8 text-primary" />
                   <h2 className="text-3xl font-bold text-neutral-900">
                     Was bedeutet eine Leasingübernahme?
                   </h2>
-                </div>
-                <div className="bg-red-50 border-l-4 border-red-600 p-6 rounded-r-xl mb-6">
-                  <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                    Eine <strong>Leasingübernahme</strong> bedeutet, dass eine Person oder Firma einen bestehenden Leasingvertrag vollständig übernimmt – inklusive monatlicher Raten, Kilometerlimit, Restlaufzeit und Pflichten.
-                  </p>
-                  <p className="text-lg text-neutral-700 leading-relaxed">
-                    Der ursprüngliche Leasingnehmer wird aus dem Vertrag entlassen und der neue Vertragspartner tritt ein.
-                  </p>
                 </div>
 
                 <h3 className="text-2xl font-bold text-neutral-900 mb-4">
@@ -141,9 +221,9 @@ export default function LeasingUebernahmePage() {
                   ].map((item, i) => {
                     const IconComponent = item.icon;
                     return (
-                      <div key={i} className="flex items-start gap-3 bg-white border border-neutral-200 p-4 rounded-lg hover:border-red-600 transition-colors">
+                      <div key={i} className="flex items-start gap-3 bg-white border border-neutral-200 p-4 rounded-lg hover:border-primary transition-colors">
                         <div className="mt-0.5">
-                          <IconComponent className="w-5 h-5 text-red-600" />
+                          <IconComponent className="w-5 h-5 text-primary" />
                         </div>
                         <span className="text-neutral-700 font-medium">{item.text}</span>
                       </div>
@@ -156,18 +236,18 @@ export default function LeasingUebernahmePage() {
         </section>
 
         {/* LEASING TRANSFER DEFINITION */}
-        <section className="py-16 px-4 bg-neutral-50">
+        <section id="transfer" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <RefreshCw className="w-8 h-8 text-red-600" />
+              <RefreshCw className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
                 Was bedeutet Leasing Transfer? (Und ist es das Gleiche?)
               </h2>
             </div>
             
-            <div className="bg-white border-2 border-red-600 rounded-xl p-8">
+            <div className="bg-white border-2 border-primary rounded-xl p-8">
               <div className="text-center mb-6">
-                <p className="text-2xl font-bold text-red-600 mb-2">Ja – Leasing Transfer und Leasingübernahme bedeuten das Gleiche.</p>
+                <p className="text-2xl font-bold text-primary mb-2">Ja – Leasing Transfer und Leasingübernahme bedeuten das Gleiche.</p>
               </div>
               
               <div className="space-y-4 max-w-2xl mx-auto">
@@ -188,8 +268,8 @@ export default function LeasingUebernahmePage() {
                 </div>
               </div>
 
-              <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-xl">
-                <p className="text-lg text-blue-900 font-medium text-center">
+              <div className="mt-8 p-6 bg-primary/5 border border-primary/20 rounded-xl">
+                <p className="text-lg text-neutral-900 font-medium text-center">
                   Beide Begriffe beschreiben: <strong>Die Übertragung eines bestehenden Leasingvertrags auf eine neue Person.</strong>
                 </p>
               </div>
@@ -197,65 +277,10 @@ export default function LeasingUebernahmePage() {
           </div>
         </section>
 
-        {/* DIFFERENCE SECTION */}
-        <section className="py-16 px-4 bg-white">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <AlertCircle className="w-8 h-8 text-red-600" />
-              <h2 className="text-3xl font-bold text-neutral-900">
-                Leasingübernahme vs. Leasing Transfer – gibt es Unterschiede?
-              </h2>
-            </div>
-            
-            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-8">
-              <div className="text-center mb-8">
-                <p className="text-3xl font-bold text-neutral-900 mb-2">Nein.</p>
-                <p className="text-xl text-neutral-600">Es handelt sich um denselben Prozess.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-                <div className="bg-white p-6 rounded-xl border-2 border-red-600">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Users className="w-6 h-6 text-red-600" />
-                    <h3 className="font-bold text-neutral-900 text-lg">Übernahme</h3>
-                  </div>
-                  <p className="text-neutral-600">
-                    Bei einer <strong>Übernahme</strong> liegt der Fokus auf dem neuen Fahrer, der das Auto übernimmt.
-                  </p>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl border-2 border-red-600">
-                  <div className="flex items-center gap-3 mb-3">
-                    <RefreshCw className="w-6 h-6 text-red-600" />
-                    <h3 className="font-bold text-neutral-900 text-lg">Transfer</h3>
-                  </div>
-                  <p className="text-neutral-600">
-                    Beim <strong>Transfer</strong> liegt der Fokus auf dem Abgeber, der den Vertrag weitergeben möchte.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 text-center">
-                <p className="text-lg text-neutral-700 font-medium">
-                  Damit deckt diese Seite beide Zielgruppen ab:
-                </p>
-                <div className="flex flex-wrap justify-center gap-4 mt-4">
-                  <div className="bg-red-600 text-white px-6 py-3 rounded-xl font-semibold">
-                    Käufer (Übernehmer)
-                  </div>
-                  <div className="bg-red-600 text-white px-6 py-3 rounded-xl font-semibold">
-                    Verkäufer (Abgeber)
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* SEARCH SECTION */}
-        <section id="search-section" className="py-16 px-4 bg-neutral-50">
+        <section id="search" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg border-2 border-red-600 p-6 md:p-10">
+            <div className="bg-white rounded-2xl shadow-lg border-2 border-primary p-6 md:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
                   Angebote Entdecken
@@ -270,11 +295,11 @@ export default function LeasingUebernahmePage() {
         </section>
 
         {/* PROCESS TIMELINE */}
-        <section className="py-16 px-4 bg-white">
+        <section id="ablauf" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <div className="flex items-center justify-center gap-3 mb-4">
-                <ChevronRight className="w-8 h-8 text-red-600" />
+                <ChevronRight className="w-8 h-8 text-primary" />
                 <h2 className="text-3xl font-bold text-neutral-900">
                   Ablauf: So funktioniert die Leasingübernahme / der Leasing Transfer
                 </h2>
@@ -287,7 +312,7 @@ export default function LeasingUebernahmePage() {
             {/* Timeline Design */}
             <div className="relative">
               {/* Vertical Line */}
-              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-red-200 hidden md:block"></div>
+              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-primary/20 hidden md:block"></div>
               
               <div className="space-y-8">
                 {[
@@ -348,14 +373,14 @@ export default function LeasingUebernahmePage() {
                   return (
                     <div key={item.step} className="relative flex gap-6 md:gap-8">
                       {/* Step Number Circle */}
-                      <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-600 text-white flex flex-col items-center justify-center font-bold border-4 border-white shadow-lg z-10">
+                      <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary text-white flex flex-col items-center justify-center font-bold border-4 border-white shadow-lg z-10">
                         <span className="text-2xl">{item.step}</span>
                       </div>
                       
                       {/* Content */}
-                      <div className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl p-6 md:p-8">
+                      <div className="flex-1 bg-white border border-neutral-200 rounded-xl p-6 md:p-8">
                         <div className="flex items-start gap-3 mb-3">
-                          <IconComponent className="w-6 h-6 text-red-600 mt-1" />
+                          <IconComponent className="w-6 h-6 text-primary mt-1" />
                           <h3 className="text-xl md:text-2xl font-bold text-neutral-900">{item.title}</h3>
                         </div>
                         <p className="text-neutral-700 mb-4">{item.desc}</p>
@@ -364,7 +389,7 @@ export default function LeasingUebernahmePage() {
                           <ul className="space-y-2 ml-4">
                             {item.items.map((listItem, i) => (
                               <li key={i} className="flex items-start gap-2 text-neutral-600">
-                                <span className="text-red-600 mt-1">•</span>
+                                <span className="text-primary mt-1">•</span>
                                 <span>{listItem}</span>
                               </li>
                             ))}
@@ -380,16 +405,16 @@ export default function LeasingUebernahmePage() {
         </section>
 
         {/* PREREQUISITES CHECKLIST */}
-        <section className="py-16 px-4 bg-neutral-50">
+        <section id="voraussetzungen" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-8">
-              <BadgeCheck className="w-8 h-8 text-red-600" />
+              <BadgeCheck className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
                 Voraussetzungen für eine Leasingübernahme / einen Leasing Transfer
               </h2>
             </div>
             
-            <div className="bg-white border-2 border-red-600 rounded-xl p-8">
+            <div className="bg-white border-2 border-primary rounded-xl p-8">
               <div className="space-y-4">
                 {[
                   { text: "Zustimmung der Leasingbank", icon: ShieldCheck },
@@ -403,12 +428,12 @@ export default function LeasingUebernahmePage() {
                   return (
                     <div key={i} className="flex items-start gap-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
                       <div className="flex-shrink-0">
-                        <div className="w-6 h-6 rounded border-2 border-red-600 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-red-600" />
+                        <div className="w-6 h-6 rounded border-2 border-primary flex items-center justify-center">
+                          <Check className="w-4 h-4 text-primary" />
                         </div>
                       </div>
                       <div className="flex-1 flex items-center gap-3">
-                        <IconComponent className="w-5 h-5 text-red-600" />
+                        <IconComponent className="w-5 h-5 text-primary" />
                         <p className="text-neutral-900 font-medium text-lg">{item.text}</p>
                       </div>
                     </div>
@@ -420,10 +445,10 @@ export default function LeasingUebernahmePage() {
         </section>
 
         {/* COSTS TABLE */}
-        <section className="py-16 px-4 bg-white">
+        <section id="kosten" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-3 mb-8">
-              <DollarSign className="w-8 h-8 text-red-600" />
+              <DollarSign className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
                 Kosten der Leasingübernahme & des Leasing Transfers
               </h2>
@@ -433,9 +458,9 @@ export default function LeasingUebernahmePage() {
               Dies ist ein zentraler Punkt für alle, die eine Vertragsübertragung planen:
             </p>
             
-            <div className="overflow-x-auto rounded-xl border-2 border-red-600 shadow-lg">
+            <div className="overflow-x-auto rounded-xl border-2 border-primary shadow-lg">
               <table className="w-full bg-white text-left">
-                <thead className="bg-red-600 text-white">
+                <thead className="bg-primary text-white">
                   <tr>
                     <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
                     <th className="p-4 md:p-6 font-bold text-base md:text-lg">Typische Kosten</th>
@@ -443,27 +468,27 @@ export default function LeasingUebernahmePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
-                  <tr className="hover:bg-red-50 transition-colors">
+                  <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Übernahme-/Transfergebühr</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
+                  <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Händler-/Wechselgebühr</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–250 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700">Optional</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
+                  <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung / Fahrzeugausweis</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
+                  <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherungskosten</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel</td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
+                  <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Administrationskosten</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">je nach Bank</td>
                     <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
@@ -487,7 +512,7 @@ export default function LeasingUebernahmePage() {
         </section>
 
         {/* ADVANTAGES SECTION */}
-        <section className="py-16 px-4 bg-neutral-50">
+        <section id="vorteile" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
@@ -502,8 +527,8 @@ export default function LeasingUebernahmePage() {
               {/* Advantages for Buyers */}
               <div className="bg-white p-8 rounded-3xl shadow-lg border border-neutral-200">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-red-50 p-3 rounded-xl">
-                    <Users className="w-7 h-7 text-red-600" />
+                  <div className="bg-primary/10 p-3 rounded-xl">
+                    <Users className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="text-2xl font-bold text-neutral-900">
                     Vorteile für Übernehmer (Käufer)
@@ -528,8 +553,8 @@ export default function LeasingUebernahmePage() {
               {/* Advantages for Sellers */}
               <div className="bg-white p-8 rounded-3xl shadow-lg border border-neutral-200">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-red-50 p-3 rounded-xl">
-                    <RefreshCw className="w-7 h-7 text-red-600" />
+                  <div className="bg-primary/10 p-3 rounded-xl">
+                    <RefreshCw className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="text-2xl font-bold text-neutral-900">
                     Vorteile für Abgeber (Verkäufer)
@@ -554,10 +579,10 @@ export default function LeasingUebernahmePage() {
         </section>
 
         {/* LEGAL NOTES */}
-        <section className="py-16 px-4 bg-neutral-900 text-white">
+        <section id="rechtliches" className="py-16 px-4 bg-neutral-900 text-white scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-8">
-              <ShieldCheck className="w-8 h-8 text-red-500" />
+              <ShieldCheck className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold">
                 Rechtliche Hinweise
               </h2>
@@ -598,7 +623,7 @@ export default function LeasingUebernahmePage() {
                       return (
                         <div key={i} className="flex items-start gap-4 pb-6 border-b border-neutral-700 last:border-0 last:pb-0">
                           <div className="mt-1">
-                            <IconComponent className="w-6 h-6 text-red-500" />
+                            <IconComponent className="w-6 h-6 text-primary" />
                           </div>
                           <div>
                             <h3 className="font-bold text-white text-lg mb-1">{item.title}</h3>
@@ -615,7 +640,7 @@ export default function LeasingUebernahmePage() {
         </section>
 
         {/* FAQ SECTION */}
-        <section className="py-16 px-4 bg-white">
+        <section id="faq" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
@@ -629,7 +654,7 @@ export default function LeasingUebernahmePage() {
             <Accordion type="single" collapsible className="w-full space-y-4">
               <AccordionItem 
                 value="item-1" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Gibt es einen Unterschied zwischen Leasingübernahme und Leasing Transfer?
@@ -641,7 +666,7 @@ export default function LeasingUebernahmePage() {
               
               <AccordionItem 
                 value="item-2" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Wie lange dauert der Prozess?
@@ -653,7 +678,7 @@ export default function LeasingUebernahmePage() {
               
               <AccordionItem 
                 value="item-3" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Wer übernimmt die Gebühren?
@@ -665,7 +690,7 @@ export default function LeasingUebernahmePage() {
               
               <AccordionItem 
                 value="item-4" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Kann ich ein Leasingauto verkaufen?
@@ -677,7 +702,7 @@ export default function LeasingUebernahmePage() {
 
               <AccordionItem 
                 value="item-5" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Was passiert mit der Anzahlung?
@@ -689,7 +714,7 @@ export default function LeasingUebernahmePage() {
 
               <AccordionItem 
                 value="item-6" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Kann eine Leasingübernahme abgelehnt werden?
@@ -712,7 +737,7 @@ export default function LeasingUebernahmePage() {
               Kostenloses Inserat erstellen, Übernehmer finden oder Angebote entdecken – schnell, transparent und unkompliziert.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg shadow-red-600/30 transition-all">
+              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
                   Angebote durchsuchen
