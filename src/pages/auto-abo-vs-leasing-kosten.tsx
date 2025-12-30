@@ -17,7 +17,8 @@ import {
   FileCheck,
   Search,
   Users,
-  Calculator
+  Calculator,
+  Car
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
