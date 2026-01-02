@@ -1,100 +1,121 @@
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import Image from "next/image";
-import { Check, ChevronRight, AlertTriangle, FileText, Info, ShieldCheck, TrendingDown, Clock, Zap, Users, BadgeCheck, MapPin, Calendar, DollarSign, FileCheck, Search, ArrowRight, RefreshCw, UserCheck, AlertCircle, CheckCircle, XCircle, Eye, CreditCard, Calculator } from "lucide-react";
-// SearchForm was unused, removed.
-// Dynamic import for below-the-fold content
-const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
-  loading: () => <div className="w-full h-96 bg-neutral-100 animate-pulse rounded-xl" />,
-  ssr: false
-});
+import { 
+  Check, 
+  ChevronRight, 
+  AlertTriangle, 
+  FileText, 
+  Info, 
+  ShieldCheck, 
+  TrendingDown, 
+  DollarSign, 
+  Clock, 
+  Zap, 
+  Users, 
+  BadgeCheck, 
+  ArrowRight, 
+  FileCheck, 
+  Search, 
+  CheckCircle, 
+  XCircle,
+  Calculator,
+  RefreshCw
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import Image from "next/image";
+
+// Dynamically import heavy interactive components
+const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
+  loading: () => <div className="h-96 bg-white rounded-2xl border-2 border-neutral-100 animate-pulse" />
+});
+
+const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
+  loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
+});
 
 export default function LeasinguebernahmeKostenPage() {
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <>
       <Head>
-        <title>Leasingübernahme Kosten Schweiz 2025 – Komplette Gebühren-Übersicht | BuyAuto</title>
-        <meta 
-          name="description" 
-          content="Leasingübernahme Kosten in der Schweiz: 100-400 CHF Transfergebühr + Ummeldung. Alle Gebühren transparent erklärt. Versteckte Kosten vermeiden. Jetzt informieren!" 
+        <title>Leasingübernahme Kosten Schweiz – Kompletter Gebühren-Überblick | BuyAuto</title>
+        <meta
+          name="description"
+          content="Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail – transparent und verständlich erklärt."
         />
-        <meta name="keywords" content="leasingübernahme kosten, leasingübernahme gebühren, leasing transfer kosten, leasingvertrag übernehmen kosten, leasingübernahme schweiz kosten" />
         <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-kosten" />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingübernahme Kosten Schweiz 2025 – Komplette Gebühren-Übersicht" />
-        <meta property="og:description" content="Leasingübernahme Kosten in der Schweiz: 100-400 CHF Transfergebühr + Ummeldung. Alle Gebühren transparent erklärt. Versteckte Kosten vermeiden." />
-        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Leasingübernahme Kosten Schweiz – Kompletter Gebühren-Überblick" />
+        <meta property="og:description" content="Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail." />
+        <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-kosten" />
-        <meta property="og:image" content="https://www.buyauto.ch/pexels-maitree-rimthong-444156-1602726.jpg" />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Leasingübernahme Kosten Schweiz 2025 – Komplette Gebühren-Übersicht" />
-        <meta name="twitter:description" content="Leasingübernahme Kosten in der Schweiz: 100-400 CHF Transfergebühr + Ummeldung. Alle Gebühren transparent erklärt." />
-        <meta name="twitter:image" content="https://www.buyauto.ch/pexels-maitree-rimthong-444156-1602726.jpg" />
       </Head>
 
       <main className="bg-neutral-50 min-h-screen">
         
-        {/* HERO SECTION - With Image Background */}
+        {/* HERO SECTION */}
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
           {/* Background Image */}
           <div className="absolute inset-0">
             <Image
-              src="/pexels-maitree-rimthong-444156-1602726.jpg"
+              src="https://images.unsplash.com/photo-1554224311-beee2309ff49?auto=format&fit=crop&w=2400&q=80"
               alt="Leasingübernahme Kosten Schweiz"
               fill
               className="object-cover"
               priority
-              quality={85}
+              quality={75}
               sizes="100vw"
             />
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 via-transparent to-neutral-900/30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-neutral-900/30" />
           </div>
 
           {/* Geometric Accents */}
-          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/3 left-1/5 w-64 h-64 bg-red-400/5 rounded-full blur-2xl" />
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/3 left-1/5 w-64 h-64 bg-primary/5 rounded-full blur-2xl" />
 
           {/* Hero Content */}
           <div className="relative z-10 w-full px-4 py-16 md:py-20">
             <div className="max-w-5xl mx-auto">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
-                  <Calculator className="w-4 h-4" />
-                  Klar & Transparent
+                <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
+                  <DollarSign className="w-4 h-4" />
+                  Kostenübersicht
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
-                  Leasingübernahme Kosten – Klar & Transparent erklärt
+                  Leasingübernahme Kosten in der Schweiz
                 </h1>
-                <p className="text-xl md:text-2xl text-red-400 font-semibold mb-4">
-                  Ehrliche Kostenübersicht für deine Leasingübernahme
+                <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
+                  Der komplette Gebühren-Überblick
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Was kostet eine Leasingübernahme wirklich? Hier findest du eine verständliche, ehrliche und komplette Übersicht aller Gebühren – inklusive Bankkosten, Transfergebühren, Ummeldung, Versicherung und möglichen Zusatzkosten. Gilt auch für Leasing Transfers.
+                  Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail – transparent und verständlich erklärt.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button
                     asChild
                     size="lg"
-                    className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
+                    className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
                   >
                     <Link href="/suche">
-                      Jetzt Leasingübernahme starten
+                      Angebote durchsuchen
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
@@ -105,7 +126,7 @@ export default function LeasinguebernahmeKostenPage() {
                     className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl bg-transparent"
                   >
                     <Link href="/inserat-erstellen">
-                      Leasingvertrag übertragen
+                      Inserat erstellen
                     </Link>
                   </Button>
                 </div>
@@ -114,150 +135,130 @@ export default function LeasinguebernahmeKostenPage() {
           </div>
         </section>
 
-        {/* WHY DO COSTS OCCUR SECTION */}
+        {/* QUICK ANSWER BOX */}
         <section className="py-16 px-4 bg-white">
           <div className="max-w-4xl mx-auto">
-            <div className="space-y-8">
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <Info className="w-8 h-8 text-red-600" />
-                  <h2 className="text-3xl font-bold text-neutral-900">
-                    Warum fallen bei einer Leasingübernahme überhaupt Kosten an?
-                  </h2>
-                </div>
-                <div className="bg-red-50 border-l-4 border-red-600 p-6 rounded-r-xl mb-6">
-                  <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                    Bei einer <Link href="/leasinguebernahme" className="text-red-600 hover:text-red-700 font-semibold underline decoration-red-600/30 hover:decoration-red-700 transition-colors">Leasingübernahme</Link> (auch <strong>Leasing Transfer</strong>) wird ein bestehender Vertrag auf eine neue Person übertragen.
-                  </p>
-                  <p className="text-lg text-neutral-700 leading-relaxed">
-                    Banken und Behörden müssen den Halterwechsel, die Bonitätsprüfung und die Vertragsumschreibung durchführen – deshalb entstehen Gebühren.
-                  </p>
-                </div>
-
-                <h3 className="text-2xl font-bold text-neutral-900 mb-4">
-                  Die wichtigsten Faktoren für die Gesamtkosten:
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { icon: BadgeCheck, text: "Welche Leasingbank beteiligt ist" },
-                    { icon: DollarSign, text: "Ob der Abgeber Gebühren übernimmt" },
-                    { icon: TrendingDown, text: "Kilometerstand & Restkilometer" },
-                    { icon: FileCheck, text: "Service- und Reifenpakete" },
-                    { icon: MapPin, text: "Kanton des Halterwechsels" },
-                    { icon: ShieldCheck, text: "Zustand des Fahrzeugs" }
-                  ].map((item, i) => {
-                    const IconComponent = item.icon;
-                    return (
-                      <div key={i} className="flex items-start gap-3 bg-neutral-50 border border-neutral-200 p-4 rounded-lg hover:border-red-600 transition-colors">
-                        <div className="mt-0.5">
-                          <IconComponent className="w-5 h-5 text-red-600" />
-                        </div>
-                        <span className="text-neutral-700 font-medium">{item.text}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-                  <div className="flex items-start gap-4">
-                    <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-blue-900 font-semibold mb-1">Kurz gesagt:</p>
-                      <p className="text-blue-800">
-                        Die Kosten hängen stark vom Vertrag und der Situation ab – hier findest du alle Szenarien.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            <div className="flex items-center gap-3 mb-6">
+              <Info className="w-8 h-8 text-primary" />
+              <h2 className="text-3xl font-bold text-neutral-900">
+                Kurz gesagt: Was kostet eine Leasingübernahme?
+              </h2>
+            </div>
+            
+            <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
+              <p className="text-lg text-neutral-700 leading-relaxed mb-4">
+                Eine <strong>Leasingübernahme kostet in der Schweiz typischerweise zwischen 200–600 CHF</strong>, abhängig von der Bank, dem Fahrzeugtyp und eventuellen Zusatzleistungen.
+              </p>
+              <p className="text-lg text-neutral-700 leading-relaxed">
+                Viele Abgeber übernehmen diese Kosten freiwillig, um den Transfer attraktiver zu gestalten.
+              </p>
+              
+              <div className="mt-6 pt-6 border-t border-primary/20">
+                <p className="text-primary font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  <strong>Wichtig:</strong> Versteckte Kosten wie Ummeldung, Versicherung und eventuelle Reparaturen können zusätzlich anfallen.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* MAIN COST OVERVIEW TABLE */}
-        <section className="py-16 px-4 bg-neutral-50">
+        {/* TOC SECTION */}
+        <section className="py-10 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto">
+            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">Inhaltsverzeichnis</h3>
+            <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
+                {[
+                  { id: "uebersicht", label: "Kostenübersicht im Detail" },
+                  { id: "transfergebuehr", label: "Transfergebühr" },
+                  { id: "ummeldung", label: "Ummeldung & Fahrzeugausweis" },
+                  { id: "versicherung", label: "Versicherungskosten" },
+                  { id: "versteckte", label: "Versteckte Kosten" },
+                  { id: "spartipps", label: "Spartipps" },
+                  { id: "vergleich", label: "Kostenvergleich" },
+                  { id: "faq", label: "Häufige Fragen" },
+                ].map((item, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => scrollToSection(item.id)}
+                    className="flex items-center gap-2 text-neutral-600 hover:text-primary transition-colors text-left group"
+                  >
+                    <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* COSTS OVERVIEW */}
+        <section id="uebersicht" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-3 mb-8">
-              <DollarSign className="w-8 h-8 text-red-600" />
+              <Calculator className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kostenübersicht: Was kostet eine Leasingübernahme in der Schweiz?
+                Kostenübersicht im Detail
               </h2>
             </div>
             
-            <p className="text-lg text-neutral-600 mb-8">
-              Hier ist die vollständige Übersicht aller Kosten bei einer Leasingübernahme oder einem Leasing Transfer:
-            </p>
-            
-            <div className="overflow-x-auto rounded-xl border-2 border-red-600 shadow-lg mb-6">
+            <div className="overflow-x-auto rounded-xl border-2 border-primary shadow-lg">
               <table className="w-full bg-white text-left">
-                <thead className="bg-red-600 text-white">
+                <thead className="bg-primary text-white">
                   <tr>
                     <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
                     <th className="p-4 md:p-6 font-bold text-base md:text-lg">Typische Kosten</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Wer zahlt?</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Beschreibung</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Wird bezahlt von</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Übernahme-/Transfergebühr</td>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Transfergebühr (Bank)</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
-                    <td className="p-4 md:p-6 text-neutral-600">Gebühr der Leasingbank für die Vertragsübertragung</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Meist Abgeber oder frei verhandelbar</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Bonitätsprüfung</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">0 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
-                    <td className="p-4 md:p-6 text-neutral-600">Obligatorisch, aber kostenlos</td>
-                  </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Händlerwechsel</td>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Händler-/Wechselgebühr</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–250 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">optional</td>
-                    <td className="p-4 md:p-6 text-neutral-600">Wenn ein Händler involviert wird</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Optional (falls über Händler)</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung / Fahrzeugausweis</td>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung beim Strassenverkehrsamt</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
-                    <td className="p-4 md:p-6 text-neutral-600">Je nach Kanton</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung (Vollkasko)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">80–250 CHF / Monat</td>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Neuer Fahrzeugausweis</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">ca. 50 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
-                    <td className="p-4 md:p-6 text-neutral-600">Pflicht beim Leasing</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Mehrkilometer</td>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung (pro Monat)</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel (150–400 CHF/Monat)</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
+                  </tr>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Eventuelle Reparaturen</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
-                    <td className="p-4 md:p-6 text-neutral-600">10–40 Rp./km</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Nach Vereinbarung</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Service / Reifenpakete</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
-                    <td className="p-4 md:p-6 text-neutral-600">Je nach Vertrag</td>
-                  </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Depot / Kaution</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">selten</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
-                    <td className="p-4 md:p-6 text-neutral-600">Nur bei einigen Banken</td>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Administrationskosten (Bank)</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">0–100 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+            <div className="mt-8 bg-green-50 border border-green-200 rounded-xl p-6">
               <div className="flex items-start gap-4">
-                <CheckCircle className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
+                <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-900 font-semibold mb-1">Gut zu wissen:</p>
+                  <p className="text-green-900 font-semibold mb-1">Spartipp</p>
                   <p className="text-green-800">
-                    Viele Abgeber übernehmen die Transfergebühr, damit der Vertrag schneller übernommen wird.
+                    Verhandle mit dem Abgeber! Viele sind bereit, die Transfergebühr zu übernehmen, um den Vertrag schneller loszuwerden.
                   </p>
                 </div>
               </div>
@@ -265,123 +266,155 @@ export default function LeasinguebernahmeKostenPage() {
           </div>
         </section>
 
-        {/* COSTS FOR BUYERS */}
-        <section className="py-16 px-4 bg-white">
+        {/* TRANSFER FEE DETAILS */}
+        <section id="transfergebuehr" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <Users className="w-8 h-8 text-red-600" />
+            <div className="flex items-center gap-3 mb-8">
+              <DollarSign className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kosten für Übernehmer (die neuen Fahrer)
+                Transfergebühr im Detail
               </h2>
             </div>
             
-            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-8">
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-neutral-900 mb-4">
-                  Übernehmer profitieren oft von:
-                </h3>
+            <div className="space-y-6">
+              <Card className="border-2 border-primary/20">
+                <CardContent className="p-8">
+                  <h3 className="text-2xl font-bold text-neutral-900 mb-4">
+                    Was ist die Transfergebühr?
+                  </h3>
+                  <p className="text-neutral-700 leading-relaxed mb-4">
+                    Die <strong>Transfergebühr</strong> ist die Hauptgebühr bei einer Leasingübernahme. Sie wird von der Leasingbank erhoben und deckt die administrativen Kosten der Vertragsübertragung ab.
+                  </p>
+                  <p className="text-neutral-700 leading-relaxed">
+                    Diese Gebühr variiert je nach Bank und kann zwischen <strong>100 und 400 CHF</strong> liegen.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <div className="bg-white p-6 rounded-xl border border-neutral-200">
+                <h3 className="text-xl font-bold text-neutral-900 mb-4">Faktoren, die die Höhe beeinflussen:</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { icon: TrendingDown, text: "Tiefen Monatsraten (wegen vorhandener Anzahlung)" },
-                    { icon: DollarSign, text: "Keiner einmaligen Anzahlung" },
-                    { icon: Clock, text: "Kurzer Restlaufzeit" },
-                    { icon: Zap, text: "Sofortiger Verfügbarkeit" }
+                    { icon: BadgeCheck, text: "Leasingbank-Richtlinien" },
+                    { icon: DollarSign, text: "Restwert des Fahrzeugs" },
+                    { icon: Clock, text: "Restlaufzeit des Vertrags" },
+                    { icon: FileCheck, text: "Verwaltungsaufwand" }
                   ].map((item, i) => {
                     const IconComponent = item.icon;
                     return (
-                      <div key={i} className="flex items-start gap-3 bg-white border border-neutral-200 p-4 rounded-lg">
-                        <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                        <div className="flex items-start gap-2">
-                          <IconComponent className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                          <span className="text-neutral-700 font-medium">{item.text}</span>
-                        </div>
+                      <div key={i} className="flex items-start gap-3 bg-neutral-50 border border-neutral-200 p-4 rounded-lg">
+                        <IconComponent className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <span className="text-neutral-700 font-medium">{item.text}</span>
                       </div>
                     );
                   })}
-                </div>
-              </div>
-
-              <h3 className="text-xl font-bold text-neutral-900 mb-4">
-                Typische Kosten:
-              </h3>
-              <div className="space-y-4 mb-8">
-                {[
-                  { icon: Calendar, text: "Leasingrate" },
-                  { icon: ShieldCheck, text: "Versicherung" },
-                  { icon: FileCheck, text: "Ummeldung" },
-                  { icon: TrendingDown, text: "Mehrkilometer (falls überschritten)" }
-                ].map((item, i) => {
-                  const IconComponent = item.icon;
-                  return (
-                    <div key={i} className="flex items-start gap-4 p-4 bg-white rounded-lg border border-neutral-200">
-                      <div className="flex-shrink-0">
-                        <div className="w-6 h-6 rounded border-2 border-red-600 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-red-600" />
-                        </div>
-                      </div>
-                      <div className="flex-1 flex items-center gap-3">
-                        <IconComponent className="w-5 h-5 text-red-600" />
-                        <p className="text-neutral-900 font-medium text-lg">{item.text}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="bg-green-50 border-2 border-green-600 rounded-xl p-6">
-                <div className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-green-600 shrink-0 mt-1" />
-                  <div>
-                    <p className="text-green-900 font-bold text-lg mb-2">Wenn der Abgeber die Transfergebühr übernimmt, wird der Einstieg noch günstiger.</p>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* COSTS FOR SELLERS */}
-        <section className="py-16 px-4 bg-neutral-50">
+        {/* REGISTRATION COSTS */}
+        <section id="ummeldung" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <RefreshCw className="w-8 h-8 text-red-600" />
+            <div className="flex items-center gap-3 mb-8">
+              <FileText className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kosten für Abgeber (die den Vertrag abgeben)
+                Ummeldung & Fahrzeugausweis
               </h2>
             </div>
             
-            <div className="bg-white border-2 border-red-600 rounded-xl p-8">
-              <p className="text-lg text-neutral-700 mb-6">
-                Viele Abgeber zahlen Gebühren, um die Übernahme attraktiver zu machen – und die monatliche Belastung schnell loszuwerden.
-              </p>
-
-              <h3 className="text-xl font-bold text-neutral-900 mb-4">
-                Typische Kosten:
-              </h3>
-
-              <div className="space-y-4 mb-8">
-                {[
-                  { icon: DollarSign, text: "Übernahme-/Transfergebühr" },
-                  { icon: Users, text: "Allfällige Händlergebühren" },
-                  { icon: FileCheck, text: "Fahrzeugaufbereitung (optional)" }
-                ].map((item, i) => {
-                  const IconComponent = item.icon;
-                  return (
-                    <div key={i} className="flex items-start gap-3 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-                      <IconComponent className="w-5 h-5 text-red-600 mt-0.5" />
-                      <span className="text-neutral-700 font-medium">{item.text}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <div className="flex items-start gap-4">
-                  <Info className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+            <Card className="border-2 border-primary/20">
+              <CardContent className="p-8">
+                <div className="space-y-6">
                   <div>
-                    <p className="text-blue-900 font-bold text-lg mb-2">Warum Abgeber zahlen:</p>
-                    <p className="text-blue-800">
-                      Ein attraktives Angebot bedeutet: <strong>schneller raus aus dem Vertrag</strong>.
+                    <h3 className="text-xl font-bold text-neutral-900 mb-3">Was kostet die Ummeldung?</h3>
+                    <p className="text-neutral-700 leading-relaxed">
+                      Nach der Vertragsübertragung muss das Fahrzeug beim <strong>Strassenverkehrsamt</strong> auf den neuen Halter umgemeldet werden. Die Kosten variieren je nach Kanton, liegen aber typischerweise bei <strong>50–150 CHF</strong>.
+                    </p>
+                  </div>
+
+                  <div className="bg-primary/5 p-6 rounded-lg">
+                    <h4 className="font-bold text-neutral-900 mb-3">Benötigte Dokumente:</h4>
+                    <ul className="space-y-2">
+                      {[
+                        "Fahrzeugausweis (Original)",
+                        "Personalausweis oder Pass",
+                        "Versicherungsbestätigung",
+                        "Unterschriebener Kaufvertrag oder Übertragungsvereinbarung",
+                        "Kontrollschildnummern (falls nicht übernommen)"
+                      ].map((doc, i) => (
+                        <li key={i} className="flex items-start gap-2 text-neutral-700">
+                          <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                          <span>{doc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-amber-900 font-semibold mb-1">Wichtig</p>
+                        <p className="text-amber-800">
+                          Die Ummeldung muss innerhalb von <strong>14 Tagen</strong> nach der Übernahme erfolgen, sonst drohen Bussen.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        {/* INSURANCE COSTS */}
+        <section id="versicherung" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 mb-8">
+              <ShieldCheck className="w-8 h-8 text-primary" />
+              <h2 className="text-3xl font-bold text-neutral-900">
+                Versicherungskosten
+              </h2>
+            </div>
+            
+            <div className="space-y-6">
+              <Card className="border-2 border-primary/20">
+                <CardContent className="p-8">
+                  <p className="text-lg text-neutral-700 leading-relaxed mb-6">
+                    Bei einer Leasingübernahme musst du eine <strong>eigene Vollkaskoversicherung</strong> abschliessen. Die Kosten hängen von mehreren Faktoren ab:
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { icon: DollarSign, title: "Fahrzeugwert", desc: "Höherer Wert = höhere Prämie" },
+                      { icon: Users, title: "Alter & Erfahrung", desc: "Junge Fahrer zahlen mehr" },
+                      { icon: BadgeCheck, title: "Unfallhistorie", desc: "Schadenfreie Jahre senken Kosten" },
+                      { icon: FileCheck, title: "Deckungsumfang", desc: "Vollkasko vs. Teilkasko" }
+                    ].map((item, i) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <div key={i} className="bg-white border border-neutral-200 p-5 rounded-lg">
+                          <div className="flex items-center gap-3 mb-2">
+                            <IconComponent className="w-6 h-6 text-primary" />
+                            <h4 className="font-bold text-neutral-900">{item.title}</h4>
+                          </div>
+                          <p className="text-neutral-600 text-sm">{item.desc}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-green-900 font-semibold mb-1">Spartipp</p>
+                    <p className="text-green-800">
+                      Vergleiche mehrere Versicherungsangebote! Die Prämien können um <strong>20–40%</strong> variieren.
                     </p>
                   </div>
                 </div>
@@ -391,204 +424,221 @@ export default function LeasinguebernahmeKostenPage() {
         </section>
 
         {/* HIDDEN COSTS */}
-        <section className="py-16 px-4 bg-white">
-          <div className="max-w-5xl mx-auto">
+        <section id="versteckte" className="py-16 px-4 bg-white scroll-mt-20">
+          <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-8">
-              <Eye className="w-8 h-8 text-red-600" />
+              <AlertTriangle className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Versteckte Kosten, auf die du achten solltest
+                Versteckte Kosten – Darauf musst du achten
               </h2>
             </div>
             
-            <p className="text-lg text-neutral-600 mb-8">
-              Diese Punkte sind wichtig – sie beeinflussen die echten Gesamtkosten:
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
               {[
                 {
-                  number: "1",
-                  title: "Mehrkilometer",
-                  desc: "12'000 km Vertrag → Auto hat 15'000 km gefahren? → Du zahlst pro Mehrkilometer.",
-                  detail: "",
-                  icon: TrendingDown
-                },
-                {
-                  number: "2",
-                  title: "Vorschäden",
-                  desc: "Nicht dokumentiert = Streitfälle bei Rückgabe. Immer ein Übergabeprotokoll erstellen.",
-                  detail: "",
+                  title: "Zustandsbedingte Reparaturen",
+                  desc: "Verschleiss, der erst bei der Übergabe auffällt (z.B. abgefahrene Reifen, Kratzer, Steinschläge)",
                   icon: AlertTriangle
                 },
                 {
-                  number: "3",
-                  title: "Versicherungskosten",
-                  desc: "Einige Fahrzeuge sind deutlich teurer zu versichern.",
-                  detail: "",
+                  title: "Service & Wartung fällig",
+                  desc: "Wenn der nächste Service kurz bevorsteht, musst du ihn übernehmen (200–800 CHF)",
+                  icon: Clock
+                },
+                {
+                  title: "Kilometerüberschreitung",
+                  desc: "Falls das Fahrzeug bereits über dem vereinbarten Kilometerlimit liegt, können nachträglich Kosten anfallen",
+                  icon: TrendingDown
+                },
+                {
+                  title: "Nicht übertragene Servicepakete",
+                  desc: "Manche Services (z.B. Winterreifen-Einlagerung) laufen auf den Abgeber und sind nicht übertragbar",
+                  icon: XCircle
+                }
+              ].map((item, i) => {
+                const IconComponent = item.icon;
+                return (
+                  <Card key={i} className="border-2 border-amber-200 bg-amber-50">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-amber-100 p-3 rounded-lg">
+                          <IconComponent className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-neutral-900 text-lg mb-2">{item.title}</h3>
+                          <p className="text-neutral-700">{item.desc}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 bg-primary text-white p-8 rounded-xl">
+              <h3 className="text-xl font-bold mb-3">💡 Profi-Tipp</h3>
+              <p className="leading-relaxed">
+                Erstelle vor der Übernahme ein <strong>detailliertes Übergabeprotokoll</strong> mit Fotos. So vermeidest du nachträgliche Überraschungen bei Schäden oder Mängeln.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* COST SAVINGS TIPS */}
+        <section id="spartipps" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 mb-8">
+              <Zap className="w-8 h-8 text-primary" />
+              <h2 className="text-3xl font-bold text-neutral-900">
+                Spartipps für die Leasingübernahme
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                {
+                  title: "Verhandle die Transfergebühr",
+                  desc: "Viele Abgeber übernehmen die Gebühr freiwillig",
+                  icon: DollarSign
+                },
+                {
+                  title: "Vergleiche Versicherungen",
+                  desc: "20–40% Ersparnis durch Prämienvergleich",
                   icon: ShieldCheck
                 },
                 {
-                  number: "4",
-                  title: "Fehlende Services",
-                  desc: "Übernehmen = Nachzahlen.",
-                  detail: "",
-                  icon: FileText
+                  title: "Prüfe den Fahrzeugzustand genau",
+                  desc: "Vermeide teure Nachbesserungen",
+                  icon: CheckCircle
                 },
                 {
-                  number: "5",
-                  title: "Hohe Rate trotz kurzer Laufzeit",
-                  desc: "Klingt günstig – kann es aber nicht sein. Immer Rate + Restlaufzeit zusammen betrachten.",
-                  detail: "",
-                  icon: Calendar
+                  title: "Achte auf die Restlaufzeit",
+                  desc: "Kürzere Verträge = weniger Risiko",
+                  icon: Clock
+                },
+                {
+                  title: "Nutze Plattformen wie BuyAuto",
+                  desc: "Transparente Angebote ohne Händleraufschlag",
+                  icon: Search
+                },
+                {
+                  title: "Frage nach inkludierten Services",
+                  desc: "Reifenwechsel, Wartungen können Kosten sparen",
+                  icon: FileCheck
                 }
-              ].map((item) => {
-                const IconComponent = item.icon;
+              ].map((tip, i) => {
+                const IconComponent = tip.icon;
                 return (
-                  <div key={item.number} className="bg-neutral-50 border-2 border-neutral-200 rounded-xl p-6 hover:border-red-600 transition-colors">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-lg">
-                        {item.number}
+                  <Card key={i} className="border-2 border-green-200 bg-green-50">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-green-100 p-3 rounded-lg shrink-0">
+                          <IconComponent className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-neutral-900 mb-2">{tip.title}</h3>
+                          <p className="text-neutral-700 text-sm">{tip.desc}</p>
+                        </div>
                       </div>
-                      <IconComponent className="w-6 h-6 text-red-600" />
-                    </div>
-                    <h3 className="text-xl font-bold text-neutral-900 mb-2">{item.title}</h3>
-                    <p className="text-neutral-700">{item.desc}</p>
-                    {item.detail && (
-                      <p className="text-neutral-600 text-sm font-medium mt-2">{item.detail}</p>
-                    )}
-                  </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
           </div>
         </section>
 
-        {/* COST COMPARISON TABLE */}
-        <section className="py-16 px-4 bg-neutral-50">
+        {/* COST COMPARISON */}
+        <section id="vergleich" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-3 mb-8">
-              <Calculator className="w-8 h-8 text-red-600" />
+              <RefreshCw className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Was ist günstiger: Leasingübernahme oder neues Leasing?
+                Kostenvergleich: Leasingübernahme vs. Neues Leasing
               </h2>
             </div>
             
-            <div className="overflow-x-auto rounded-xl border-2 border-red-600 shadow-lg">
+            <div className="overflow-x-auto rounded-xl border-2 border-primary shadow-lg">
               <table className="w-full bg-white text-left">
-                <thead className="bg-red-600 text-white">
+                <thead className="bg-primary text-white">
                   <tr>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Vergleichspunkt</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
                     <th className="p-4 md:p-6 font-bold text-base md:text-lg">Leasingübernahme</th>
                     <th className="p-4 md:p-6 font-bold text-base md:text-lg">Neues Leasing</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Startkosten</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">sehr niedrig</td>
-                    <td className="p-4 md:p-6 text-neutral-700">oft hohe Anzahlung</td>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Anzahlung</td>
+                    <td className="p-4 md:p-6 text-green-600 font-semibold">0–100 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">3'000–10'000 CHF</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Monatsrate</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">oft tiefer</td>
-                    <td className="p-4 md:p-6 text-neutral-700">höher</td>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Transfergebühr</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">—</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
+                  </tr>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung (Monat)</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">150–400 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">150–400 CHF</td>
+                  </tr>
+                  <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Laufzeit</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">kurz</td>
-                    <td className="p-4 md:p-6 text-neutral-700">3–4 Jahre</td>
+                    <td className="p-4 md:p-6 text-green-600 font-semibold">6–24 Monate (kürzer)</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">36–48 Monate</td>
                   </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Risiko</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">tiefer</td>
-                    <td className="p-4 md:p-6 text-neutral-700">höher</td>
-                  </tr>
-                  <tr className="hover:bg-red-50 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Verfügbarkeit</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">sofort</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Wartezeit möglich</td>
+                  <tr className="bg-green-50 hover:bg-green-100 transition-colors">
+                    <td className="p-4 md:p-6 font-bold text-neutral-900">TOTAL (Einstieg)</td>
+                    <td className="p-4 md:p-6 text-green-600 font-bold text-lg">200–650 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-900 font-bold text-lg">3'200–10'550 CHF</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div className="mt-6 bg-green-50 border-2 border-green-600 rounded-xl p-8 text-center">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-                <h3 className="text-2xl font-bold text-green-900">Kurz gesagt:</h3>
+            <div className="mt-8 bg-primary text-white p-8 rounded-xl">
+              <div className="flex items-start gap-4">
+                <CheckCircle className="w-8 h-8 shrink-0" />
+                <div>
+                  <h3 className="text-xl font-bold mb-2">Fazit</h3>
+                  <p className="leading-relaxed text-lg">
+                    Eine Leasingübernahme ist <strong>deutlich günstiger</strong> im Einstieg als ein neues Leasing. Du sparst die hohe Anzahlung und hast mehr Flexibilität durch kürzere Restlaufzeiten.
+                  </p>
+                </div>
               </div>
-              <p className="text-green-800 text-lg leading-relaxed max-w-2xl mx-auto">
-                Wenn du ein gutes Angebot findest, ist eine Leasingübernahme meist <strong>deutlich günstiger</strong> als ein neues Leasing.
-              </p>
             </div>
           </div>
         </section>
 
-        {/* LEGAL NOTES */}
-        <section className="py-16 px-4 bg-neutral-900 text-white">
+        {/* SEARCH SECTION */}
+        <section className="py-16 px-4 bg-neutral-50">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-8">
-              <ShieldCheck className="w-8 h-8 text-red-500" />
-              <h2 className="text-3xl font-bold">
-                Rechtliches zu Kosten & Übertragung
-              </h2>
-            </div>
-            
-            <div className="space-y-6">
-              <Card className="bg-neutral-800 border-neutral-700">
-                <CardContent className="p-6">
-                  <div className="space-y-6">
-                    {[
-                      {
-                        title: "Eigentümer bleibt immer die Leasingbank",
-                        icon: ShieldCheck
-                      },
-                      {
-                        title: "Die Anzahlung wird nicht zurückerstattet",
-                        icon: DollarSign
-                      },
-                      {
-                        title: "Vertrag bleibt identisch (Rate, Kilometer, Laufzeit)",
-                        icon: FileText
-                      },
-                      {
-                        title: "Bank muss die neue Person genehmigen",
-                        icon: BadgeCheck
-                      },
-                      {
-                        title: "Übergabeprotokoll dringend empfohlen",
-                        icon: FileCheck
-                      },
-                      {
-                        title: "Schäden müssen dokumentiert werden",
-                        icon: AlertTriangle
-                      }
-                    ].map((item, i) => {
-                      const IconComponent = item.icon;
-                      return (
-                        <div key={i} className="flex items-start gap-4 pb-6 border-b border-neutral-700 last:border-0 last:pb-0">
-                          <div className="mt-1">
-                            <IconComponent className="w-6 h-6 text-red-500" />
-                          </div>
-                          <div>
-                            <p className="text-white text-lg font-medium">{item.title}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="bg-white rounded-2xl shadow-lg border-2 border-primary p-6 md:p-10">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
+                  Finde jetzt günstige Leasingübernahmen
+                </h2>
+                <p className="text-neutral-600 text-base md:text-lg">
+                  Durchsuche aktuelle Angebote und spare bei deiner nächsten Leasingübernahme.
+                </p>
+              </div>
+              <SearchForm />
             </div>
           </div>
         </section>
 
         {/* FAQ SECTION */}
-        <section className="py-16 px-4 bg-white">
+        <section id="faq" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                FAQ – Häufig gestellte Fragen
+                FAQ – Häufige Fragen zu Leasingübernahme-Kosten
               </h2>
               <p className="text-neutral-600 text-lg">
                 Die wichtigsten Antworten auf einen Blick
@@ -598,73 +648,73 @@ export default function LeasinguebernahmeKostenPage() {
             <Accordion type="single" collapsible className="w-full space-y-4">
               <AccordionItem 
                 value="item-1" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Was kostet eine Leasingübernahme in der Schweiz?
+                  Wie viel kostet eine Leasingübernahme insgesamt?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  In der Regel <strong>100–400 CHF</strong>, plus allfällige Ummeldegebühren.
+                  Die Gesamtkosten liegen typischerweise zwischen <strong>200 und 650 CHF</strong> für den Einstieg (Transfer, Ummeldung, Administration). Hinzu kommen monatliche Kosten wie Leasingrate und Versicherung.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem 
                 value="item-2" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Was kostet ein Leasing Transfer?
+                  Wer zahlt die Transfergebühr?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Die gleichen Gebühren wie bei einer Leasingübernahme.
+                  Das ist frei verhandelbar. In den meisten Fällen übernimmt der <strong>Abgeber</strong> die Transfergebühr, um den Vertrag attraktiver zu machen. Manchmal teilen sich beide Parteien die Kosten.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem 
                 value="item-3" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
-              >
-                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Wer übernimmt die Gebühren?
-                </AccordionTrigger>
-                <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Oft der Abgeber – um den Transfer attraktiver zu machen.
-                </AccordionContent>
-              </AccordionItem>
-              
-              <AccordionItem 
-                value="item-4" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Gibt es versteckte Kosten?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja: <strong>Mehrkilometer, Schäden, fehlende Services, Versicherung</strong>. Diese sollten vor der Übernahme genau geprüft werden.
+                  Ja, achte auf: eventuelle Reparaturen, fällige Services, Kilometerüberschreitungen und nicht übertragbare Servicepakete. Ein detailliertes Übergabeprotokoll schützt dich vor Überraschungen.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem 
+                value="item-4" 
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
+              >
+                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
+                  Ist eine Leasingübernahme günstiger als ein neues Leasing?
+                </AccordionTrigger>
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
+                  Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten.
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem 
                 value="item-5" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Ist Leasingübernahme günstiger als neues Leasing?
+                  Wie viel kostet die Ummeldung?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, meistens deutlich – wegen <strong>tieferen Monatsraten</strong> und <strong>fehlender Anzahlung</strong>.
+                  Die Ummeldung beim Strassenverkehrsamt kostet je nach Kanton <strong>50–150 CHF</strong>. Hinzu kommen eventuell Kosten für einen neuen Fahrzeugausweis (ca. 50 CHF).
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem 
                 value="item-6" 
-                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-red-600 transition-colors"
+                className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Kann ich ein Leasingauto verkaufen?
+                  Kann ich die Kosten mit dem Abgeber teilen?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Nein. Aber du kannst den <strong>Vertrag übertragen</strong>, und genau dafür dient dieser Kostenüberblick.
+                  Ja, absolut. Die Kostenaufteilung ist Verhandlungssache. Viele Abgeber sind bereit, Kosten zu übernehmen, um den Transfer zu beschleunigen.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -675,52 +725,24 @@ export default function LeasinguebernahmeKostenPage() {
         <section className="py-20 bg-neutral-900 px-4">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Lass dir jetzt ein transparentes Leasingübernahme-Angebot anzeigen
+              Spare jetzt bei deiner Leasingübernahme
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Finde passende Übernahmen oder gib deinen Leasingvertrag einfach weiter – schnell, zuverlässig und kostenlos.
+              Finde transparente Angebote ohne versteckte Kosten oder erstelle dein eigenes Inserat – kostenlos und unkompliziert.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg shadow-red-600/30 transition-all">
+              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
-                  Leasingübernahme starten
+                  Angebote durchsuchen
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent transition-all">
                 <Link href="/inserat-erstellen">
-                  Jetzt starten
+                  Inserat erstellen
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
-            </div>
-            
-            {/* Additional Internal Links */}
-            <div className="pt-8 border-t border-neutral-700">
-              <p className="text-neutral-400 text-sm mb-4">Weitere hilfreiche Ressourcen:</p>
-              <div className="flex flex-wrap items-center justify-center gap-6">
-                <Link 
-                  href="/leasinguebernahme" 
-                  className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Leasingübernahme (Hauptseite)
-                </Link>
-                <Link 
-                  href="/leasing-abgeben-schweiz" 
-                  className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Leasing abgeben
-                </Link>
-                <Link 
-                  href="/" 
-                  className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Angebote ansehen
-                </Link>
-              </div>
             </div>
           </div>
         </section>

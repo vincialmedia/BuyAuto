@@ -75,17 +75,10 @@ export async function middleware(req: NextRequest) {
   )
 
   // Refresh session if expired - this ensures API routes can access updated session
-  const { data: { user } } = await supabase.auth.getUser()
+  await supabase.auth.getUser()
   
-  // 3. PROTECTED ROUTES - Protect the listing creation page
-  if (req.nextUrl.pathname === '/inserat-erstellen') {
-    if (!user) {
-      // Redirect to auth page with redirect parameter
-      const redirectUrl = new URL('/auth', req.url)
-      redirectUrl.searchParams.set('redirect', '/inserat-erstellen')
-      return NextResponse.redirect(redirectUrl)
-    }
-  }
+  // 3. PROTECTED ROUTES - Removed /inserat-erstellen protection to allow guest access
+  // Authentication will be handled within the wizard flow before payment
   
   // 4. SECURITY HEADERS
   response.headers.set('X-Content-Type-Options', 'nosniff')

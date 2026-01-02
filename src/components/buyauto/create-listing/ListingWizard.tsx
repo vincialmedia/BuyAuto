@@ -1,5 +1,4 @@
-
-import { useState, createContext, useContext, useCallback } from "react";
+import { useState, createContext, useContext, useCallback, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import ProgressBar from "./ProgressBar";
 import Step1_VehicleData from "./Step1_VehicleData";
@@ -20,6 +19,8 @@ interface WizardContextType {
   isComplete: boolean;
   setIsComplete: (complete: boolean) => void;
   getMaxPhotos: () => number;
+  guestImageFiles: File[];
+  setGuestImageFiles: (files: File[]) => void;
 }
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined);
@@ -32,9 +33,12 @@ export const useWizard = () => {
   return context;
 };
 
+const STORAGE_KEY = "listing_wizard_draft";
+
 export default function ListingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
+  const [guestImageFiles, setGuestImageFiles] = useState<File[]>([]);
   const [data, setData] = useState<ListingData>({
     id: undefined,
     brand: "",
@@ -56,6 +60,29 @@ export default function ListingWizard() {
     images: [],
     cover_image_index: 0,
   });
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        console.log("✅ Loaded wizard data from localStorage:", parsed);
+        setData(parsed);
+      } catch (error) {
+        console.error("❌ Failed to parse saved wizard data:", error);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    if (data.brand || data.model || data.price_per_month_chf) {
+      console.log("💾 Saving wizard data to localStorage:", data);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+  }, [data]);
 
   const updateData = useCallback((updates: Partial<ListingData>) => {
     console.log("🔍 ListingWizard updateData called with:", updates);
@@ -79,7 +106,7 @@ export default function ListingWizard() {
   }, [data.price_plan]);
 
   const nextStep = useCallback(() => {
-    if (currentStep < 5) {
+    if (currentStep < 6) { // Updated to 6 to account for new auth step
       setCurrentStep(prev => prev + 1);
     }
   }, [currentStep]);
@@ -100,9 +127,13 @@ export default function ListingWizard() {
     isComplete,
     setIsComplete,
     getMaxPhotos,
+    guestImageFiles,
+    setGuestImageFiles,
   };
 
   if (isComplete) {
+    // Clear localStorage on completion
+    localStorage.removeItem(STORAGE_KEY);
     return <SuccessScreen />;
   }
 
