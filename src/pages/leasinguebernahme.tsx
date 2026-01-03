@@ -174,9 +174,9 @@ export default function LeasingUebernahmePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
                 {[
                   { id: "definition", label: "Was ist eine Leasingübernahme?" },
-                  { id: "transfer", label: "Leasing Transfer vs. Leasingübernahme" },
+                  { id: "transfer", label: "Leasing Transfer (Synonym)" },
                   { id: "search", label: "Angebote entdecken" },
-                  { id: "ablauf", label: "Ablauf der Leasingübernahme" },
+                  { id: "ablauf", label: "Ablauf der Vertragsübertragung" },
                   { id: "voraussetzungen", label: "Voraussetzungen" },
                   { id: "kosten", label: "Kosten im Überblick" },
                   { id: "vorteile", label: "Vorteile für beide Seiten" },
@@ -209,15 +209,38 @@ export default function LeasingUebernahmePage() {
                   </h2>
                 </div>
 
+                <Card className="border-2 border-primary/20 mb-8">
+                  <CardContent className="p-8">
+                    <p className="text-lg text-neutral-700 leading-relaxed mb-4">
+                      Bei einer <strong>Leasingübernahme</strong> (auch <strong>Leasing Transfer</strong> genannt) wird ein laufender Leasingvertrag vollständig auf eine neue Person übertragen. Diese übernimmt:
+                    </p>
+                    <ul className="space-y-3 ml-4">
+                      {[
+                        "Die monatlichen Leasingraten",
+                        "Das vereinbarte Kilometerlimit",
+                        "Die Restlaufzeit des Vertrags",
+                        "Alle Rechte und Pflichten aus dem Vertrag"
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-neutral-700">
+                          <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                          <span className="font-medium">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+
                 <h3 className="text-2xl font-bold text-neutral-900 mb-4">
-                  Typische Gründe für eine Übernahme:
+                  Typische Gründe für eine Leasingübernahme:
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { icon: DollarSign, text: "Günstigere Monatsrate dank bereits geleisteter Anzahlung" },
+                    { icon: DollarSign, text: "Vorzeitige Vertragsauflösung ohne hohe Kosten" },
+                    { icon: RefreshCw, text: "Geänderte Lebenssituation (Umzug, neuer Job)" },
+                    { icon: TrendingDown, text: "Finanzielle Entlastung" },
+                    { icon: Users, text: "Wechsel zu einem anderen Fahrzeug" },
                     { icon: Calendar, text: "Kürzere Restlaufzeit statt langem Neuvertrag" },
-                    { icon: Zap, text: "Attraktive Leasingbedingungen ohne hohe Einstiegskosten" },
-                    { icon: Check, text: "Sofort verfügbare Fahrzeuge" }
+                    { icon: Zap, text: "Attraktive Leasingbedingungen ohne hohe Einstiegskosten" }
                   ].map((item, i) => {
                     const IconComponent = item.icon;
                     return (
@@ -235,27 +258,27 @@ export default function LeasingUebernahmePage() {
           </div>
         </section>
 
-        {/* LEASING TRANSFER DEFINITION */}
+        {/* LEASING TRANSFER DEFINITION - CONSOLIDATED */}
         <section id="transfer" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
               <RefreshCw className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Was bedeutet Leasing Transfer? (Und ist es das Gleiche?)
+                Leasing Transfer (Synonym von Leasingübernahme)
               </h2>
             </div>
             
             <div className="bg-white border-2 border-primary rounded-xl p-8">
               <div className="text-center mb-6">
-                <p className="text-2xl font-bold text-primary mb-2">Ja – Leasing Transfer und Leasingübernahme bedeuten das Gleiche.</p>
+                <p className="text-2xl font-bold text-primary mb-2">Leasing Transfer und Leasingübernahme bedeuten das Gleiche.</p>
               </div>
               
-              <div className="space-y-4 max-w-2xl mx-auto">
+              <div className="space-y-4 max-w-2xl mx-auto mb-8">
                 <div className="flex items-start gap-4 p-4 bg-neutral-50 rounded-lg">
                   <CheckCircle className="w-6 h-6 text-green-600 shrink-0 mt-1" />
                   <div>
                     <p className="font-semibold text-neutral-900 mb-1">„Leasingübernahme"</p>
-                    <p className="text-neutral-600">ist der übliche Verbrauchsbegriff.</p>
+                    <p className="text-neutral-600">ist der übliche Verbrauchsbegriff in der Schweiz.</p>
                   </div>
                 </div>
                 
@@ -268,10 +291,24 @@ export default function LeasingUebernahmePage() {
                 </div>
               </div>
 
-              <div className="mt-8 p-6 bg-primary/5 border border-primary/20 rounded-xl">
+              <div className="p-6 bg-primary/5 border border-primary/20 rounded-xl mb-6">
                 <p className="text-lg text-neutral-900 font-medium text-center">
                   Beide Begriffe beschreiben: <strong>Die Übertragung eines bestehenden Leasingvertrags auf eine neue Person.</strong>
                 </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <Info className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-blue-900 font-semibold mb-2">Warum zwei Begriffe?</p>
+                    <p className="text-blue-800 leading-relaxed">
+                      Der Begriff „Transfer" stammt aus dem Finanzwesen und wird besonders im professionellen Kontext (Banken, Leasinggesellschaften) verwendet. 
+                      „Übernahme" ist hingegen das deutsche Wort, das Verbraucher intuitiv verstehen. 
+                      In der Praxis werden beide Begriffe synonym verwendet – der Prozess, die Voraussetzungen und die Kosten sind identisch.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -361,7 +398,7 @@ export default function LeasingUebernahmePage() {
                     title: "Fahrzeug- & Dokumentenübergabe",
                     desc: "Empfohlen:",
                     items: [
-                      "Übergabeprotokoll",
+                      "Übergabeprotokoll erstellen",
                       "Kilometerstand notieren",
                       "Schäden dokumentieren",
                       "Servicehefte bereitstellen"
@@ -537,7 +574,7 @@ export default function LeasingUebernahmePage() {
                 <ul className="space-y-4">
                   {[
                     "Oft tiefere Monatsraten dank hoher Anzahlung des Vorbesitzers",
-                    "Keine Startkosten oder geringe Einstiegskosten",
+                    "Keine oder geringe Einstiegskosten",
                     "Sofort verfügbare Fahrzeuge",
                     "Kürzere Restlaufzeit → geringeres Risiko",
                     "Leasingbedingungen bleiben bestehen"
@@ -660,7 +697,7 @@ export default function LeasingUebernahmePage() {
                   Gibt es einen Unterschied zwischen Leasingübernahme und Leasing Transfer?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung.
+                  Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung. „Leasingübernahme" ist der gängige Verbraucherbegriff, während „Leasing Transfer" der formale Begriff ist, der oft von Banken und Leasinggesellschaften verwendet wird.
                 </AccordionContent>
               </AccordionItem>
               
@@ -672,7 +709,7 @@ export default function LeasingUebernahmePage() {
                   Wie lange dauert der Prozess?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Meist 2–5 Werktage, abhängig von der Bonitätsprüfung.
+                  Meist 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Leasingbank.
                 </AccordionContent>
               </AccordionItem>
               
@@ -696,7 +733,7 @@ export default function LeasingUebernahmePage() {
                   Kann ich ein Leasingauto verkaufen?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Nein. Du bist nicht Eigentümer. Aber du kannst den Vertrag übertragen – genau darum geht es beim Leasing Transfer.
+                  Nein. Du bist nicht Eigentümer. Aber du kannst den Vertrag übertragen – genau darum geht es beim Leasing Transfer bzw. der Leasingübernahme.
                 </AccordionContent>
               </AccordionItem>
 
@@ -720,7 +757,7 @@ export default function LeasingUebernahmePage() {
                   Kann eine Leasingübernahme abgelehnt werden?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja – meistens wegen fehlender Bonität oder offener Zahlungen. Die Leasingbank hat immer das letzte Wort.
+                  Ja – meistens wegen fehlender Bonität oder offener Zahlungen. Die Leasingbank hat immer das letzte Wort bei der Genehmigung.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -763,11 +800,11 @@ export default function LeasingUebernahmePage() {
                   Leasing abgeben
                 </Link>
                 <Link 
-                  href="/leasing-transfer" 
+                  href="/leasinguebernahme-kosten" 
                   className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
                 >
                   <ArrowRight className="w-4 h-4" />
-                  Leasing Transfer Details
+                  Leasingübernahme Kosten
                 </Link>
               </div>
             </div>
