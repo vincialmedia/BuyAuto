@@ -21,7 +21,18 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(httpsUrl, 301)
   }
 
-  // 2. SUPABASE AUTH SESSION MANAGEMENT
+  // 2. SEO CONSOLIDATION REDIRECTS (301 Permanent)
+  // Redirect /leasing-transfer to /leasinguebernahme to consolidate SEO authority
+  const pathname = req.nextUrl.pathname
+  
+  if (pathname === '/leasing-transfer' || pathname === '/leasing-transfer/') {
+    const consolidatedUrl = new URL('/leasinguebernahme', req.url)
+    // Preserve query parameters (e.g., ?utm_source=google)
+    consolidatedUrl.search = req.nextUrl.search
+    return NextResponse.redirect(consolidatedUrl, 301)
+  }
+
+  // 3. SUPABASE AUTH SESSION MANAGEMENT
   let response = NextResponse.next({
     request: {
       headers: req.headers,
@@ -77,10 +88,10 @@ export async function middleware(req: NextRequest) {
   // Refresh session if expired - this ensures API routes can access updated session
   await supabase.auth.getUser()
   
-  // 3. PROTECTED ROUTES - Removed /inserat-erstellen protection to allow guest access
+  // 4. PROTECTED ROUTES - Removed /inserat-erstellen protection to allow guest access
   // Authentication will be handled within the wizard flow before payment
   
-  // 4. SECURITY HEADERS
+  // 5. SECURITY HEADERS
   response.headers.set('X-Content-Type-Options', 'nosniff')
 
   return response
