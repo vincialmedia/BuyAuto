@@ -2,7 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Check, 
   ChevronRight, 
@@ -25,7 +25,8 @@ import {
   XCircle,
   Phone,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  X
 } from "lucide-react";
 
 // Dynamic import for below-the-fold content
@@ -46,6 +47,7 @@ import {
 
 export default function LeasingAbgebenSchweiz() {
   const [months, setMonths] = useState(24);
+  const [showStickyCTA, setShowStickyCTA] = useState(false);
   
   // Calculate costs based on months remaining
   const calculateCosts = (remainingMonths: number) => {
@@ -55,6 +57,17 @@ export default function LeasingAbgebenSchweiz() {
   };
 
   const costs = calculateCosts(months);
+
+  // Handle sticky CTA visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroHeight = 600; // Approximate hero section height
+      setShowStickyCTA(window.scrollY > heroHeight);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -82,13 +95,67 @@ export default function LeasingAbgebenSchweiz() {
 
       <main className="bg-white min-h-screen">
         
-        {/* HERO SECTION - Modern & Clean */}
-        <section className="relative min-h-[600px] flex items-center overflow-hidden pt-16">
-          {/* Background with subtle mesh gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-neutral-50 via-white to-primary/5">
-            <div className="absolute inset-0 opacity-30">
-              <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
-              <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
+        {/* STICKY CTA BAR */}
+        <div 
+          className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
+            showStickyCTA ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          <div className="bg-gradient-to-r from-primary via-primary/95 to-primary backdrop-blur-lg border-t border-primary/20 shadow-2xl">
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="hidden md:block">
+                  <p className="text-white font-bold text-lg">Bereit, dein Leasing abzugeben?</p>
+                  <p className="text-white/80 text-sm">Schnell, legal & kostengünstig</p>
+                </div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl px-8 py-6 rounded-xl"
+                  >
+                    <Link href="/inserat-erstellen">
+                      Jetzt Inserat erstellen
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Link>
+                  </Button>
+                  <button
+                    onClick={() => setShowStickyCTA(false)}
+                    className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+                    aria-label="Schließen"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* HERO SECTION - Modern with Image */}
+        <section className="relative min-h-[700px] flex items-center overflow-hidden pt-16">
+          {/* Background with gradient overlay */}
+          <div className="absolute inset-0">
+            {/* Hero Image */}
+            <div className="absolute inset-0">
+              <Image
+                src="/20251209_0003_Handshake_in_Zurich_simple_compose_01kc036j1cff881r0wzwemf48h.png"
+                alt="Handshake - Leasing Übernahme"
+                fill
+                className="object-cover object-center"
+                priority
+                quality={90}
+              />
+            </div>
+            
+            {/* Gradient Overlays for readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+            
+            {/* Decorative mesh gradients */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+              <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
             </div>
           </div>
 
@@ -96,7 +163,7 @@ export default function LeasingAbgebenSchweiz() {
           <div className="relative z-10 w-full px-4 py-20">
             <div className="max-w-6xl mx-auto">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/20">
+                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/20 backdrop-blur-sm">
                   <Sparkles className="w-4 h-4" />
                   Der ultimative Guide 2025
                 </div>
@@ -123,7 +190,7 @@ export default function LeasingAbgebenSchweiz() {
                     onClick={() => scrollToSection("calculator")}
                     size="lg"
                     variant="outline"
-                    className="border-2 border-neutral-300 text-neutral-900 hover:bg-neutral-100 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl"
+                    className="border-2 border-neutral-300 text-neutral-900 hover:bg-neutral-100 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl backdrop-blur-sm bg-white/80"
                   >
                     Kosten berechnen
                   </Button>
@@ -136,7 +203,7 @@ export default function LeasingAbgebenSchweiz() {
                     { value: "CHF 350", label: "Typische Kosten" },
                     { value: "100%", label: "Legal & sicher" }
                   ].map((stat, i) => (
-                    <div key={i} className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-neutral-200/50">
+                    <div key={i} className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-neutral-200/50 shadow-lg">
                       <div className="text-2xl md:text-3xl font-black text-primary mb-1">{stat.value}</div>
                       <div className="text-xs md:text-sm text-neutral-600 font-medium">{stat.label}</div>
                     </div>
