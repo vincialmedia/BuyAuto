@@ -30,10 +30,10 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Hero Content */}
+      {/* Hero Content - Center Aligned */}
       <div className="relative z-10 w-full px-4 py-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="max-w-3xl">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-primary/20 text-white px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/30 backdrop-blur-sm">
               <Sparkles className="w-4 h-4" />
               Die Schweizer Plattform
