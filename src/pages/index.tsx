@@ -66,14 +66,16 @@ export default function HomePage() {
       {/* Structured Data for Google */}
       <StructuredData type="homepage" />
 
-      <HeroSection />
-      <UspBar />
-      <PremiumListings />
-      <BenefitsSection />
-      <HowItWorksSection />
-      <TrustSection />
-      <FAQSection />
-      <SeoCopyBlock />
+      <main className="bg-white min-h-screen">
+        <HeroSection />
+        <UspBar />
+        <PremiumListings />
+        <BenefitsSection />
+        <HowItWorksSection />
+        <TrustSection />
+        <FAQSection />
+        <SeoCopyBlock />
+      </main>
     </>
   );
 }
