@@ -1,4 +1,3 @@
-
 import { Shield, CreditCard, MapPin, Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -22,34 +21,34 @@ const trustPoints = [
 
 export default function TrustSection() {
   return (
-    <section className="py-20 bg-gradient-to-br from-neutral-50/80 via-white to-neutral-50/40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Swiss clean section header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-light text-neutral-900 mb-3 tracking-tight">
-            Sicher & <span className="font-semibold text-red-500">Transparent</span>
+    <section className="py-20 px-4 bg-gradient-to-b from-neutral-50 to-white">
+      <div className="max-w-6xl mx-auto">
+        {/* Section header */}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4 tracking-tight">
+            Sicher & <span className="text-primary">Transparent</span>
           </h2>
-          <p className="text-lg text-neutral-600 max-w-2xl mx-auto font-light leading-relaxed">
+          <p className="text-lg md:text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
             Vertrauen Sie auf unsere bewährten Prozesse und Schweizer Qualität
           </p>
         </div>
 
-        {/* Swiss refined trust cards */}
+        {/* Trust cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {trustPoints.map((point, index) => {
             const IconComponent = point.icon;
             return (
               <div 
                 key={index}
-                className="group bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-sm hover:shadow-xl border border-neutral-200/40 hover:border-neutral-300/60 transition-all duration-500 text-center hover:-translate-y-1"
+                className="group bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl border-2 border-neutral-100 hover:border-primary/30 transition-all duration-300 text-center hover:-translate-y-1"
               >
-                <div className="w-14 h-14 bg-gradient-to-br from-red-50 to-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:shadow-lg group-hover:shadow-red-500/10 transition-all duration-300">
-                  <IconComponent className="h-6 w-6 text-red-500" />
+                <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300">
+                  <IconComponent className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-3 leading-tight">
+                <h3 className="text-xl font-black text-neutral-900 mb-3 leading-tight">
                   {point.title}
                 </h3>
-                <p className="text-neutral-600 leading-relaxed font-light text-sm">
+                <p className="text-neutral-600 leading-relaxed text-base">
                   {point.description}
                 </p>
               </div>
@@ -57,26 +56,26 @@ export default function TrustSection() {
           })}
         </div>
 
-        {/* Swiss refined testimonial */}
+        {/* Testimonial */}
         <div className="max-w-2xl mx-auto">
-          <Card className="bg-white/95 backdrop-blur-sm shadow-lg border border-neutral-200/40 overflow-hidden rounded-3xl">
-            <CardContent className="p-8">
-              <div className="flex items-center mb-6">
+          <Card className="bg-white shadow-lg border-2 border-neutral-100 overflow-hidden rounded-3xl">
+            <CardContent className="p-8 md:p-10">
+              <div className="flex items-center justify-center mb-6">
                 {Array.from({ length: 5 }, (_, i) => (
-                  <Star key={i} className="h-5 w-5 text-amber-400 fill-current mr-1" />
+                  <Star key={i} className="h-6 w-6 text-amber-400 fill-current mr-1" />
                 ))}
               </div>
-              <blockquote className="text-lg text-neutral-700 mb-6 leading-relaxed font-light italic">
+              <blockquote className="text-xl md:text-2xl text-neutral-700 mb-8 leading-relaxed text-center italic">
                 "Übernahme in 3 Tagen erledigt – top Support und transparenter Ablauf. 
                 Kann BuyAuto nur weiterempfehlen!"
               </blockquote>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mr-4 shadow-sm">
-                  <span className="text-red-700 font-semibold text-lg">L</span>
+              <div className="flex items-center justify-center">
+                <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/30 rounded-full flex items-center justify-center mr-4 shadow-sm">
+                  <span className="text-primary font-black text-xl">L</span>
                 </div>
-                <div>
-                  <p className="font-semibold text-neutral-900">Lea M.</p>
-                  <p className="text-neutral-600 text-sm font-light">Zürich</p>
+                <div className="text-center">
+                  <p className="font-black text-neutral-900 text-lg">Lea M.</p>
+                  <p className="text-neutral-600 font-medium">Zürich</p>
                 </div>
               </div>
             </CardContent>
