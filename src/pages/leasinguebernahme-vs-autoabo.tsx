@@ -1,6 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import React from "react";
 import { 
   Check, 
   ChevronRight, 
@@ -38,6 +39,18 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 });
 
 export default function LeasingubernahmeVsAutoAboPage() {
+  const [showStickyCTA, setShowStickyCTA] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setShowStickyCTA(scrollPosition > 600);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -64,6 +77,49 @@ export default function LeasingubernahmeVsAutoAboPage() {
 
       <main className="bg-neutral-50 min-h-screen">
         
+        {/* STICKY CTA BAR */}
+        <div 
+          className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
+            showStickyCTA ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          <div className="bg-gradient-to-r from-primary via-primary/95 to-primary/90 backdrop-blur-lg border-t border-white/20 shadow-2xl">
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="hidden md:block">
+                  <p className="text-white font-bold text-lg">
+                    Finden Sie Ihre perfekte Leasingübernahme
+                  </p>
+                  <p className="text-white/90 text-sm">
+                    Vergleichen und sparen Sie bis zu 30%
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-white text-primary hover:bg-white/90 font-bold shadow-lg flex-1 md:flex-none h-12 px-8 rounded-xl"
+                  >
+                    <Link href="/suche">
+                      <Search className="w-5 h-5 mr-2" />
+                      Jetzt Angebote durchsuchen
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowStickyCTA(false)}
+                    className="text-white hover:bg-white/20 md:hidden h-12 w-12 rounded-xl"
+                  >
+                    <span className="sr-only">Schließen</span>
+                    ✕
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* HERO SECTION */}
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
           {/* Background Image */}
@@ -88,8 +144,8 @@ export default function LeasingubernahmeVsAutoAboPage() {
 
           {/* Hero Content */}
           <div className="relative z-10 w-full px-4 py-16 md:py-20">
-            <div className="max-w-5xl mx-auto">
-              <div className="max-w-3xl">
+            <div className="max-w-6xl mx-auto text-center">
+              <div className="max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <FileCheck className="w-4 h-4" />
                   Detaillierter Vergleich
@@ -132,16 +188,17 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* QUICK ANSWER BOX */}
-        <section className="py-16 px-4 bg-white">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <Info className="w-8 h-8 text-primary" />
-              <h2 className="text-3xl font-bold text-neutral-900">
-                Kurz gesagt: Der Hauptunterschied
-              </h2>
+        <section className="py-20 px-4 bg-white">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-8">
+              <Info className="w-5 h-5 text-primary" />
+              <span className="font-bold text-neutral-900">Kurz gesagt</span>
             </div>
+            <h2 className="text-4xl font-bold text-neutral-900 mb-8 tracking-tight">
+              Der Hauptunterschied
+            </h2>
             
-            <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
+            <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/20 p-8 md:p-10 rounded-3xl shadow-lg text-left">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
                 Bei einer <strong>Leasingübernahme</strong> übernehmen Sie einen bestehenden Vertrag mit fester Laufzeit und oft günstigen Konditionen. Ein <strong>Auto-Abo</strong> bietet maximale Flexibilität mit monatlicher Kündbarkeit und All-Inclusive-Service.
               </p>
@@ -154,10 +211,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* TOC SECTION */}
-        <section className="py-10 px-4 bg-neutral-50">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">Inhaltsverzeichnis</h3>
-            <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
+        <section className="py-16 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto text-center">
+            <h3 className="font-bold text-neutral-900 mb-8 text-2xl">Inhaltsverzeichnis</h3>
+            <div className="bg-white p-8 rounded-3xl border-2 border-neutral-100 shadow-lg">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
                 {[
                   { id: "unterschiede", label: "Hauptunterschiede" },
@@ -184,20 +241,20 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* MAIN DIFFERENCES */}
-        <section id="unterschiede" className="py-16 px-4 bg-white scroll-mt-20">
+        <section id="unterschiede" className="py-20 px-4 bg-white scroll-mt-20">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-neutral-900 mb-3">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
                 Hauptunterschiede im Überblick
               </h2>
-              <p className="text-lg text-neutral-600">
+              <p className="text-xl text-neutral-600">
                 Zwei verschiedene Mobilitätskonzepte im direkten Vergleich
               </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Leasingübernahme */}
-              <div className="bg-neutral-50 p-8 rounded-3xl shadow-lg border-2 border-primary">
+              <div className="bg-gradient-to-br from-neutral-50 to-white p-8 md:p-10 rounded-3xl shadow-xl border-2 border-primary hover:shadow-2xl transition-all">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-primary text-white p-3 rounded-xl">
                     <TrendingDown className="w-7 h-7" />
@@ -224,7 +281,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
               </div>
 
               {/* Auto-Abo */}
-              <div className="bg-neutral-50 p-8 rounded-3xl shadow-lg border-2 border-neutral-300">
+              <div className="bg-gradient-to-br from-neutral-50 to-white p-8 md:p-10 rounded-3xl shadow-xl border-2 border-neutral-300 hover:shadow-2xl transition-all">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-neutral-700 text-white p-3 rounded-xl">
                     <TrendingUp className="w-7 h-7" />
@@ -254,16 +311,17 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* COST COMPARISON */}
-        <section id="kostenvergleich" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-8">
-              <DollarSign className="w-8 h-8 text-primary" />
-              <h2 className="text-3xl font-bold text-neutral-900">
-                Kostenvergleich
-              </h2>
+        <section id="kostenvergleich" className="py-20 px-4 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 scroll-mt-20">
+          <div className="max-w-5xl mx-auto text-center">
+            <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-8">
+              <DollarSign className="w-5 h-5 text-primary" />
+              <span className="font-bold text-neutral-900">Kosten im Vergleich</span>
             </div>
+            <h2 className="text-4xl font-bold text-neutral-900 mb-12 tracking-tight">
+              Kostenvergleich
+            </h2>
             
-            <div className="overflow-x-auto rounded-xl border-2 border-primary shadow-lg">
+            <div className="overflow-x-auto rounded-3xl border-2 border-primary shadow-2xl">
               <table className="w-full bg-white text-left">
                 <thead className="bg-primary text-white">
                   <tr>
@@ -322,14 +380,18 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* SEARCH SECTION */}
-        <section id="search" className="py-16 px-4 bg-white scroll-mt-20">
+        <section id="search" className="py-20 px-4 bg-white scroll-mt-20">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg border-2 border-primary p-6 md:p-10">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
+            <div className="bg-gradient-to-br from-white to-neutral-50 rounded-3xl shadow-2xl border-2 border-primary p-8 md:p-12">
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-6">
+                  <Search className="w-5 h-5 text-primary" />
+                  <span className="font-bold text-neutral-900">Jetzt entdecken</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
                   Leasingübernahmen Entdecken
                 </h2>
-                <p className="text-neutral-600 text-base md:text-lg">
+                <p className="text-neutral-600 text-lg">
                   Finden Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
                 </p>
               </div>
@@ -339,16 +401,19 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* ADVANTAGES LEASINGÜBERNAHME */}
-        <section id="vorteile-uebernahme" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-8">
-              <TrendingDown className="w-8 h-8 text-primary" />
-              <h2 className="text-3xl font-bold text-neutral-900">
+        <section id="vorteile-uebernahme" className="py-20 px-4 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 scroll-mt-20">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-6">
+                <TrendingDown className="w-5 h-5 text-primary" />
+                <span className="font-bold text-neutral-900">Vorteile</span>
+              </div>
+              <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
                 Vorteile der Leasingübernahme
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 {
                   title: "Niedrigere Kosten",
@@ -383,13 +448,13 @@ export default function LeasingubernahmeVsAutoAboPage() {
               ].map((item, i) => {
                 const IconComponent = item.icon;
                 return (
-                  <div key={i} className="bg-white border-2 border-primary rounded-xl p-6 hover:shadow-lg transition-all">
+                  <div key={i} className="bg-white border-2 border-primary/20 rounded-3xl p-6 hover:shadow-xl hover:border-primary transition-all hover:-translate-y-1">
                     <div className="flex items-start gap-4">
-                      <div className="bg-primary/10 p-3 rounded-lg shrink-0">
-                        <IconComponent className="w-6 h-6 text-primary" />
+                      <div className="bg-gradient-to-br from-primary to-primary/80 p-3 rounded-2xl shrink-0 shadow-lg">
+                        <IconComponent className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-neutral-900 mb-2">{item.title}</h3>
+                        <h3 className="font-bold text-neutral-900 mb-2 text-lg">{item.title}</h3>
                         <p className="text-neutral-600">{item.desc}</p>
                       </div>
                     </div>
@@ -401,16 +466,19 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* ADVANTAGES AUTO-ABO */}
-        <section id="vorteile-autoabo" className="py-16 px-4 bg-white scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-8">
-              <TrendingUp className="w-8 h-8 text-neutral-700" />
-              <h2 className="text-3xl font-bold text-neutral-900">
+        <section id="vorteile-autoabo" className="py-20 px-4 bg-white scroll-mt-20">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-3 bg-neutral-200 px-5 py-2 rounded-full mb-6">
+                <TrendingUp className="w-5 h-5 text-neutral-700" />
+                <span className="font-bold text-neutral-900">Vorteile</span>
+              </div>
+              <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
                 Vorteile Auto-Abo
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 {
                   title: "Maximale Flexibilität",
@@ -445,13 +513,13 @@ export default function LeasingubernahmeVsAutoAboPage() {
               ].map((item, i) => {
                 const IconComponent = item.icon;
                 return (
-                  <div key={i} className="bg-neutral-50 border border-neutral-300 rounded-xl p-6 hover:border-neutral-400 transition-all">
+                  <div key={i} className="bg-neutral-50 border-2 border-neutral-200 rounded-3xl p-6 hover:shadow-xl hover:border-neutral-400 transition-all hover:-translate-y-1">
                     <div className="flex items-start gap-4">
-                      <div className="bg-neutral-200 p-3 rounded-lg shrink-0">
-                        <IconComponent className="w-6 h-6 text-neutral-700" />
+                      <div className="bg-gradient-to-br from-neutral-600 to-neutral-700 p-3 rounded-2xl shrink-0 shadow-lg">
+                        <IconComponent className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-neutral-900 mb-2">{item.title}</h3>
+                        <h3 className="font-bold text-neutral-900 mb-2 text-lg">{item.title}</h3>
                         <p className="text-neutral-600">{item.desc}</p>
                       </div>
                     </div>
@@ -463,21 +531,21 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* FOR WHOM SECTION */}
-        <section id="fuer-wen" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
+        <section id="fuer-wen" className="py-20 px-4 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 scroll-mt-20">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-neutral-900 mb-3">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
                 Für wen eignet sich was?
               </h2>
-              <p className="text-lg text-neutral-600">
+              <p className="text-xl text-neutral-600">
                 Finden Sie die passende Mobilitätslösung für Ihre Situation
               </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Leasingübernahme geeignet für */}
-              <Card className="border-2 border-primary shadow-lg">
-                <CardContent className="p-8">
+              <Card className="border-2 border-primary shadow-2xl hover:shadow-3xl transition-all rounded-3xl overflow-hidden">
+                <CardContent className="p-8 md:p-10">
                   <div className="flex items-center gap-3 mb-6">
                     <Users className="w-7 h-7 text-primary" />
                     <h3 className="text-2xl font-bold text-neutral-900">
@@ -503,8 +571,8 @@ export default function LeasingubernahmeVsAutoAboPage() {
               </Card>
 
               {/* Auto-Abo geeignet für */}
-              <Card className="border-2 border-neutral-300 shadow-lg">
-                <CardContent className="p-8">
+              <Card className="border-2 border-neutral-300 shadow-2xl hover:shadow-3xl transition-all rounded-3xl overflow-hidden">
+                <CardContent className="p-8 md:p-10">
                   <div className="flex items-center gap-3 mb-6">
                     <Users className="w-7 h-7 text-neutral-700" />
                     <h3 className="text-2xl font-bold text-neutral-900">
@@ -533,16 +601,17 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* DECISION HELPER */}
-        <section id="entscheidungshilfe" className="py-16 px-4 bg-white scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-8">
-              <FileCheck className="w-8 h-8 text-primary" />
-              <h2 className="text-3xl font-bold text-neutral-900">
-                Entscheidungshilfe: Ihre Checkliste
-              </h2>
+        <section id="entscheidungshilfe" className="py-20 px-4 bg-white scroll-mt-20">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-8">
+              <FileCheck className="w-5 h-5 text-primary" />
+              <span className="font-bold text-neutral-900">Entscheidungshilfe</span>
             </div>
+            <h2 className="text-4xl font-bold text-neutral-900 mb-12 tracking-tight">
+              Entscheidungshilfe: Ihre Checkliste
+            </h2>
             
-            <div className="bg-neutral-50 border-2 border-primary rounded-xl p-8">
+            <div className="bg-gradient-to-br from-neutral-50 to-white border-2 border-primary/20 rounded-3xl p-8 md:p-10 shadow-xl text-left">
               <p className="text-lg text-neutral-700 mb-6">
                 Beantworten Sie diese Fragen, um die richtige Wahl zu treffen:
               </p>
@@ -581,13 +650,17 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* FAQ SECTION */}
-        <section id="faq" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
+        <section id="faq" className="py-20 px-4 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                FAQ – Häufige Fragen
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-6">
+                <Info className="w-5 h-5 text-primary" />
+                <span className="font-bold text-neutral-900">FAQ</span>
+              </div>
+              <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
+                Häufige Fragen
               </h2>
-              <p className="text-neutral-600 text-lg">
+              <p className="text-neutral-600 text-xl">
                 Die wichtigsten Fragen im Vergleich
               </p>
             </div>
@@ -595,7 +668,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
             <Accordion type="single" collapsible className="w-full space-y-4">
               <AccordionItem 
                 value="item-1" 
-                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
+                className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Was ist günstiger: Leasingübernahme oder Auto-Abo?
@@ -607,7 +680,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
               
               <AccordionItem 
                 value="item-2" 
-                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
+                className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Welche Option bietet mehr Flexibilität?
@@ -619,7 +692,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
               
               <AccordionItem 
                 value="item-3" 
-                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
+                className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Brauche ich eine Anzahlung bei einem Auto-Abo?
@@ -631,7 +704,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
               
               <AccordionItem 
                 value="item-4" 
-                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
+                className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Welche versteckten Kosten gibt es?
@@ -643,7 +716,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
 
               <AccordionItem 
                 value="item-5" 
-                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
+                className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Kann ich beim Auto-Abo das Fahrzeug wechseln?
@@ -655,7 +728,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
 
               <AccordionItem 
                 value="item-6" 
-                className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
+                className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
                   Für wen ist eine Leasingübernahme die bessere Wahl?
@@ -669,22 +742,26 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* FINAL CTA */}
-        <section className="py-20 bg-neutral-900 px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">
+        <section className="py-24 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 px-4">
+          <div className="max-w-4xl mx-auto text-center space-y-10">
+            <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-2 rounded-full mb-4">
+              <Zap className="w-5 h-5 text-white" />
+              <span className="font-bold text-white">Bereit zum Start</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
               Bereit für Ihre Mobilitätslösung?
             </h2>
-            <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
+            <p className="text-neutral-300 max-w-2xl mx-auto text-xl leading-relaxed">
               Entdecken Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-10 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/30 transition-all hover:-translate-y-1">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
                   Angebote durchsuchen
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent transition-all">
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-10 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-2xl bg-transparent transition-all hover:-translate-y-1">
                 <Link href="/inserat-erstellen">
                   Inserat erstellen
                   <ArrowRight className="w-5 h-5 ml-2" />
