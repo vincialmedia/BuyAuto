@@ -24,7 +24,8 @@ import {
   AlertCircle, 
   CheckCircle, 
   XCircle,
-  Sparkles
+  Sparkles,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 
 // Dynamically import heavy interactive components that are below the fold
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -46,6 +48,19 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 });
 
 export default function LeasingUebernahmePage() {
+  const [showStickyCTA, setShowStickyCTA] = useState(false);
+
+  // Handle sticky CTA visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroHeight = 600; // Approximate hero section height
+      setShowStickyCTA(window.scrollY > heroHeight);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -72,6 +87,43 @@ export default function LeasingUebernahmePage() {
 
       <main className="bg-white min-h-screen">
         
+        {/* STICKY CTA BAR */}
+        <div 
+          className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
+            showStickyCTA ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          <div className="bg-gradient-to-r from-primary via-primary/95 to-primary backdrop-blur-lg border-t border-primary/20 shadow-2xl">
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="hidden md:block">
+                  <p className="text-white font-bold text-lg">Bereit für deine Leasingübernahme?</p>
+                  <p className="text-white/80 text-sm">Schnell, legal & kostengünstig</p>
+                </div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl px-8 py-6 rounded-xl"
+                  >
+                    <Link href="/suche">
+                      Jetzt Angebote durchsuchen
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Link>
+                  </Button>
+                  <button
+                    onClick={() => setShowStickyCTA(false)}
+                    className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+                    aria-label="Schließen"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* HERO SECTION */}
         <section className="relative min-h-[700px] flex items-center overflow-hidden pt-16">
           {/* Background Image */}
