@@ -2,12 +2,12 @@ import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { useState } from "react";
 import { 
   Check, 
   ChevronRight, 
   AlertTriangle, 
   FileText, 
-  Info, 
   ShieldCheck, 
   TrendingDown, 
   Clock, 
@@ -15,17 +15,17 @@ import {
   Users, 
   BadgeCheck, 
   MapPin, 
-  Calendar, 
   DollarSign, 
   FileCheck, 
   Search, 
   ArrowRight, 
-  RefreshCw, 
   UserCheck, 
   AlertCircle, 
   CheckCircle, 
   XCircle,
-  Phone
+  Phone,
+  Sparkles,
+  TrendingUp
 } from "lucide-react";
 
 // Dynamic import for below-the-fold content
@@ -36,6 +36,7 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
 import {
   Accordion,
   AccordionContent,
@@ -44,6 +45,17 @@ import {
 } from "@/components/ui/accordion";
 
 export default function LeasingAbgebenSchweiz() {
+  const [months, setMonths] = useState(24);
+  
+  // Calculate costs based on months remaining
+  const calculateCosts = (remainingMonths: number) => {
+    const cancellationCost = remainingMonths * 450 + 1500; // Monthly rate + penalty
+    const transferCost = 350;
+    return { cancellationCost, transferCost };
+  };
+
+  const costs = calculateCosts(months);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -68,492 +80,453 @@ export default function LeasingAbgebenSchweiz() {
         <meta property="og:url" content="https://www.buyauto.ch/leasing-abgeben-schweiz" />
       </Head>
 
-      <main className="bg-neutral-50 min-h-screen">
+      <main className="bg-white min-h-screen">
         
-        {/* HERO SECTION */}
-        <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
-          {/* Background Image */}
-          <div className="absolute inset-0">
-            <Image
-              src="/ChatGPT_Image_Dec_11_2025_12_15_22_AM.png"
-              alt="Leasing abgeben Schweiz"
-              fill
-              className="object-cover"
-              priority
-              quality={85}
-              sizes="100vw"
-            />
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/60 to-neutral-900/80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-neutral-900/30" />
+        {/* HERO SECTION - Modern & Clean */}
+        <section className="relative min-h-[600px] flex items-center overflow-hidden pt-16">
+          {/* Background with subtle mesh gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-neutral-50 via-white to-primary/5">
+            <div className="absolute inset-0 opacity-30">
+              <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+              <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
+            </div>
           </div>
-
-          {/* Geometric Accents */}
-          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/3 left-1/5 w-64 h-64 bg-primary/5 rounded-full blur-2xl" />
 
           {/* Hero Content */}
-          <div className="relative z-10 w-full px-4 py-16 md:py-20">
-            <div className="max-w-5xl mx-auto">
+          <div className="relative z-10 w-full px-4 py-20">
+            <div className="max-w-6xl mx-auto">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
-                  <TrendingDown className="w-4 h-4" />
-                  Guide 2025
+                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/20">
+                  <Sparkles className="w-4 h-4" />
+                  Der ultimative Guide 2025
                 </div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
-                  Leasing abgeben in der Schweiz: Deine Möglichkeiten, Kosten & die beste Lösung
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-neutral-900 tracking-tight leading-[1.1] mb-6">
+                  Leasing abgeben<br />
+                  <span className="text-primary">ohne Stress.</span>
                 </h1>
-                <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Der komplette Leitfaden zum Ausstieg aus dem Leasingvertrag
-                </p>
-                <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Möchtest du dein Leasing in der Schweiz abgeben? Viele Leasingnehmer stehen irgendwann vor der Frage, wie sie legal und ohne hohe Zusatzkosten aus ihrem Vertrag aussteigen können. Auf dieser Seite findest du alle Optionen – und warum die Leasingübernahme in den meisten Fällen die günstigste und stressfreieste Lösung ist.
+                <p className="text-xl md:text-2xl text-neutral-600 font-medium mb-8 leading-relaxed">
+                  Legal aussteigen, Kosten minimieren & schnell einen Nachfolger finden – so funktioniert's.
                 </p>
                 
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 mb-12">
                   <Button
                     asChild
                     size="lg"
-                    className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
-                  >
-                    <Link href="/leasinguebernahme">
-                      Mehr zur Leasingübernahme
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl bg-transparent"
+                    className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl group"
                   >
                     <Link href="/inserat-erstellen">
                       Jetzt Inserat erstellen
+                      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* TOC SECTION */}
-        <section className="py-10 px-4 bg-white">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">Inhaltsverzeichnis</h3>
-            <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
-                {[
-                  { id: "warum", label: "Warum Leasing abgeben?" },
-                  { id: "option1", label: "Option 1: Vorzeitige Beendigung" },
-                  { id: "option2", label: "Option 2: Auto verkaufen" },
-                  { id: "option3", label: "Option 3: Leasingübernahme" },
-                  { id: "kosten", label: "Kostenvergleich" },
-                  { id: "ablauf", label: "Ablauf der Übergabe" },
-                  { id: "faq", label: "Häufige Fragen" },
-                ].map((item, i) => (
-                  <button 
-                    key={i}
-                    onClick={() => scrollToSection(item.id)}
-                    className="flex items-center gap-2 text-neutral-600 hover:text-primary transition-colors text-left group"
+                  <Button
+                    onClick={() => scrollToSection("calculator")}
+                    size="lg"
+                    variant="outline"
+                    className="border-2 border-neutral-300 text-neutral-900 hover:bg-neutral-100 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl"
                   >
-                    <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 1 - Warum möchten Fahrer ihr Leasing abgeben? */}
-        <section id="warum" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="space-y-8">
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <Users className="w-8 h-8 text-primary" />
-                  <h2 className="text-3xl font-bold text-neutral-900">
-                    Warum möchten Fahrer ihr Leasing abgeben?
-                  </h2>
+                    Kosten berechnen
+                  </Button>
                 </div>
-                
-                <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-                  Ein Leasing abzugeben ist in der Schweiz keine Seltenheit. Häufige Gründe sind:
-                </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                {/* Quick Stats */}
+                <div className="grid grid-cols-3 gap-4">
                   {[
-                    { icon: DollarSign, text: "Monatliche Raten werden zu hoch" },
-                    { icon: UserCheck, text: "Lebenssituation verändert sich (z. B. Baby, Umzug)" },
-                    { icon: MapPin, text: "Höherer Kilometerverbrauch als geplant" },
-                    { icon: FileText, text: "Versicherungskosten zu teuer" },
-                    { icon: Check, text: "Auto wird nicht mehr benötigt" }
-                  ].map((item, i) => {
-                    const IconComponent = item.icon;
-                    return (
-                      <div key={i} className="flex items-start gap-3 bg-white border border-neutral-200 p-4 rounded-lg hover:border-primary transition-colors">
-                        <div className="mt-0.5">
-                          <IconComponent className="w-5 h-5 text-primary" />
-                        </div>
-                        <span className="text-neutral-700 font-medium">{item.text}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="bg-primary/5 border-l-4 border-primary p-6 rounded-r-xl">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-6 h-6 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-lg text-neutral-900 font-semibold mb-1">Wichtig:</p>
-                      <p className="text-neutral-800">
-                        Ein Leasingvertrag ist rechtlich bindend – einfach zurückgeben ist nicht möglich. Aber es gibt legale Alternativen.
-                      </p>
+                    { value: "< 1 Woche", label: "Durchschnittliche Dauer" },
+                    { value: "CHF 350", label: "Typische Kosten" },
+                    { value: "100%", label: "Legal & sicher" }
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-neutral-200/50">
+                      <div className="text-2xl md:text-3xl font-black text-primary mb-1">{stat.value}</div>
+                      <div className="text-xs md:text-sm text-neutral-600 font-medium">{stat.label}</div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* SECTION 2 - Option 1: Leasing vorzeitig beenden */}
-        <section id="option1" className="py-16 px-4 bg-white scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <XCircle className="w-8 h-8 text-primary" />
-              <h2 className="text-3xl font-bold text-neutral-900">
-                Option 1: Leasing vorzeitig beenden (meist die teuerste Lösung)
-              </h2>
-            </div>
-            
-            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-8">
-              <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-                Ein vorzeitiges Beenden eines Leasingvertrags ist in der Schweiz nur in Ausnahmefällen möglich. Dabei entstehen meist hohe Kosten:
-              </p>
-              
-              <ul className="space-y-3 mb-6">
-                {[
-                  "Restschuld für die verbleibende Vertragsdauer",
-                  "Vorfälligkeitsentschädigung",
-                  "Rücknahmekosten",
-                  "Kosten bei Schäden oder Mehrkilometern"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-neutral-700">
-                    <span className="text-primary font-bold mt-1">•</span>
-                    <span className="text-lg">{item}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="p-4 bg-neutral-100 rounded-lg border-l-4 border-neutral-500">
-                <p className="text-neutral-700 font-medium">
-                  Diese Option ist fast immer die teuerste und für Privatpersonen meistens unattraktiv.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 3 - Option 2: Auto verkaufen */}
-        <section id="option2" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <DollarSign className="w-8 h-8 text-primary" />
-              <h2 className="text-3xl font-bold text-neutral-900">
-                Option 2: Auto verkaufen & Leasing ablösen (unsicher)
-              </h2>
-            </div>
-            
-            <div className="bg-white border border-neutral-200 rounded-xl p-8">
-              <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-                Einige Händler bieten an, dein Auto unter Marktwert zu kaufen und die Leasingrestschuld separat abzurechnen. Dabei entstehen Nachteile:
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {[
-                  "Niedriger Ankaufpreis",
-                  "Risiko eines Wertverlusts",
-                  "Weiterlaufende Leasingraten bis zur Abwicklung",
-                  "Unerwartete Zusatzgebühren"
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 bg-neutral-50 p-4 rounded-lg border border-neutral-200">
-                    <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                    <span className="text-neutral-700">{item}</span>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-neutral-700 italic">
-                Diese Methode ist nur sinnvoll, wenn der Marktwert deutlich über dem Restwert liegt – was bei Leasing selten der Fall ist.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 4 - Option 3: Leasingübernahme (The Best Solution) */}
-        <section id="option3" className="py-16 px-4 bg-white scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-primary/5 rounded-2xl shadow-lg border-2 border-primary p-8 md:p-10 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full -mr-16 -mt-16 z-0"></div>
-              
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-primary text-white p-2 rounded-lg">
-                    <BadgeCheck className="w-8 h-8" />
-                  </div>
-                  <h2 className="text-3xl font-bold text-neutral-900">
-                    Option 3: Leasingübernahme – Die beste Lösung zum Leasing abgeben
-                  </h2>
-                </div>
-
-                <p className="text-lg text-neutral-700 leading-relaxed mb-8">
-                  Die effektivste und finanziell sinnvollste Methode, ein <Link href="/leasinguebernahme" className="text-primary hover:underline font-semibold">Leasing in der Schweiz</Link> abzugeben, ist die <Link href="/leasinguebernahme" className="text-primary hover:underline font-semibold">Leasingübernahme</Link>. Dabei übernimmt eine neue Person deinen bestehenden Vertrag mit allen Pflichten – legal, schnell und ohne hohe Zusatzkosten.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                  <div>
-                    <h3 className="font-bold text-xl text-neutral-900 mb-4 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      Vorteile:
-                    </h3>
-                    <ul className="space-y-3">
-                      {[
-                        "Schneller & unkomplizierter Ausstieg",
-                        "Keine teuren Strafzahlungen",
-                        "Kein Fahrzeugverkauf nötig",
-                        "Der Übernehmer profitiert von attraktiven Konditionen"
-                      ].map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-neutral-700">
-                          <Check className="w-4 h-4 text-green-600 mt-1 shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold text-xl text-neutral-900 mb-4 flex items-center gap-2">
-                      <FileCheck className="w-5 h-5 text-blue-600" />
-                      Unterstützte Anbieter:
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        "AMAG Leasing", "Cembra", "MultiLease", "Santander", "BANQUE PSA", "AXA", "Emil Frey Leasing"
-                      ].map((bank, i) => (
-                        <span key={i} className="bg-white text-neutral-700 px-3 py-1 rounded-full text-sm font-medium border border-neutral-200">
-                          {bank}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 border-t border-neutral-200">
-                  <Button
-                    asChild
-                    className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl px-8 py-6 h-auto text-lg w-full sm:w-auto"
-                  >
-                    <Link href="/leasinguebernahme">
-                      Ablauf der Leasingübernahme
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold rounded-xl px-8 py-6 h-auto text-lg w-full sm:w-auto"
-                  >
-                    <Link href="/inserat-erstellen">
-                      Jetzt Inserat erstellen
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 5 - Kosten beim Leasing abgeben */}
-        <section id="kosten" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-8">
-              <DollarSign className="w-8 h-8 text-primary" />
-              <h2 className="text-3xl font-bold text-neutral-900">
-                Kosten beim Leasing abgeben
-              </h2>
-            </div>
-            
-            <p className="text-lg text-neutral-600 mb-8">
-              Je nach Methode entstehen unterschiedliche Kosten:
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Option 1 Card */}
-              <Card className="border-red-100 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <XCircle className="w-6 h-6 text-red-500" />
-                    <h3 className="font-bold text-lg text-neutral-900">Kündigung</h3>
-                  </div>
-                  <div className="text-sm font-medium text-red-600 mb-4 bg-red-50 inline-block px-2 py-1 rounded">Hohe Kosten</div>
-                  <ul className="space-y-3">
-                    <li className="text-neutral-600 flex gap-2"><span className="text-red-400">•</span> Restschuld</li>
-                    <li className="text-neutral-600 flex gap-2"><span className="text-red-400">•</span> Vorfälligkeitsgebühr</li>
-                    <li className="text-neutral-600 flex gap-2"><span className="text-red-400">•</span> Rücknahmekosten</li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              {/* Option 2 Card */}
-              <Card className="border-orange-100 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <AlertTriangle className="w-6 h-6 text-orange-500" />
-                    <h3 className="font-bold text-lg text-neutral-900">Auto verkaufen</h3>
-                  </div>
-                  <div className="text-sm font-medium text-orange-600 mb-4 bg-orange-50 inline-block px-2 py-1 rounded">Unsicher</div>
-                  <ul className="space-y-3">
-                    <li className="text-neutral-600 flex gap-2"><span className="text-orange-400">•</span> Wertverlust</li>
-                    <li className="text-neutral-600 flex gap-2"><span className="text-orange-400">•</span> Verzögerte Abwicklung</li>
-                    <li className="text-neutral-600 flex gap-2"><span className="text-orange-400">•</span> Risiko offener Restbeträge</li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              {/* Option 3 Card - Highlighted */}
-              <Card className="border-green-200 shadow-md ring-1 ring-green-100 bg-green-50/30">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                    <h3 className="font-bold text-lg text-neutral-900">Leasingübernahme</h3>
-                  </div>
-                  <div className="text-sm font-medium text-green-700 mb-4 bg-green-100 inline-block px-2 py-1 rounded">Optimal & Günstig</div>
-                  <ul className="space-y-3">
-                    <li className="text-neutral-700 flex gap-2"><span className="text-green-500">•</span> Übernahmegebühr (CHF 150–500)</li>
-                    <li className="text-neutral-700 flex gap-2"><span className="text-green-500">•</span> Bonitätsprüfung (kostenlos)</li>
-                    <li className="text-neutral-700 flex gap-2"><span className="text-green-500">•</span> Kleine Ummeldegebühren</li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="mt-8 text-center">
-              <p className="text-neutral-500 italic">
-                Mehr Details findest du auf unserer Seite{" "}
-                <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline font-semibold">
-                  Leasingübernahme Kosten
-                </Link>.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 6 - Ablauf: So gibst du dein Leasing korrekt ab */}
-        <section id="ablauf" className="py-16 px-4 bg-white scroll-mt-20">
+        {/* INTERACTIVE COST CALCULATOR - The "Reality Check" */}
+        <section id="calculator" className="py-20 px-4 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 scroll-mt-20">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <ChevronRight className="w-8 h-8 text-primary" />
-                <h2 className="text-3xl font-bold text-neutral-900">
-                  Ablauf: So gibst du dein Leasing korrekt ab
-                </h2>
+              <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                <TrendingUp className="w-4 h-4" />
+                Interaktiver Rechner
               </div>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
+                Was kostet dein Ausstieg?
+              </h2>
+              <p className="text-neutral-300 text-lg max-w-2xl mx-auto">
+                Schiebe den Regler und sieh sofort, wie viel du mit einer Leasingübernahme sparst.
+              </p>
             </div>
 
-            {/* Timeline Design */}
-            <div className="relative">
-              {/* Vertical Line */}
-              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-primary/20 hidden md:block"></div>
-              
-              <div className="space-y-8">
-                {[
-                  {
-                    step: 1,
-                    title: "Vertragsdetails prüfen",
-                    desc: "Prüfe Restwert, Laufzeit und aktuellen Kilometerstand in deinem Vertrag.",
-                    icon: FileText
-                  },
-                  {
-                    step: 2,
-                    title: "Möglichkeit klären",
-                    desc: "Kontaktiere deinen Leasinggeber und frage nach den Konditionen für eine Leasingübernahme.",
-                    icon: Phone
-                  },
-                  {
-                    step: 3,
-                    title: "Übernehmer finden",
-                    desc: "Erstelle ein Inserat auf BuyAuto.ch, um schnell einen geeigneten Nachfolger zu finden.",
-                    icon: Search
-                  },
-                  {
-                    step: 4,
-                    title: "Bonitätsprüfung",
-                    desc: "Der potenzielle Übernehmer muss von der Leasingbank geprüft werden.",
-                    icon: ShieldCheck
-                  },
-                  {
-                    step: 5,
-                    title: "Umschreibung & Übergabe",
-                    desc: "Nach Genehmigung wird der Vertrag umgeschrieben und du übergibst das Fahrzeug.",
-                    icon: CheckCircle
-                  }
-                ].map((item) => {
-                  const IconComponent = item.icon;
-                  return (
-                    <div key={item.step} className="relative flex gap-6 md:gap-8">
-                      {/* Step Number Circle */}
-                      <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary text-white flex flex-col items-center justify-center font-bold border-4 border-white shadow-lg z-10">
-                        <span className="text-2xl">{item.step}</span>
+            <div className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
+              {/* Slider */}
+              <div className="mb-12">
+                <label className="text-neutral-900 font-bold text-xl mb-6 block">
+                  Wie lange läuft dein Leasing noch?
+                </label>
+                <div className="space-y-4">
+                  <Slider
+                    value={[months]}
+                    onValueChange={(value) => setMonths(value[0])}
+                    min={6}
+                    max={48}
+                    step={6}
+                    className="w-full"
+                  />
+                  <div className="text-center">
+                    <span className="text-5xl font-black text-primary">{months}</span>
+                    <span className="text-2xl text-neutral-600 font-bold ml-2">Monate</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cost Comparison */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Option 1: Cancellation */}
+                <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-8 border-2 border-red-200 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-red-200/50 rounded-full blur-3xl -mr-16 -mt-16" />
+                  <div className="relative">
+                    <div className="flex items-center gap-2 mb-4">
+                      <XCircle className="w-6 h-6 text-red-600" />
+                      <h3 className="font-black text-xl text-neutral-900">Vorzeitige Kündigung</h3>
+                    </div>
+                    <div className="mb-2">
+                      <span className="text-5xl font-black text-red-600">
+                        CHF {costs.cancellationCost.toLocaleString("de-CH")}
+                      </span>
+                    </div>
+                    <p className="text-neutral-700 font-medium">
+                      Restschuld + Vorfälligkeitsgebühr + Rücknahmekosten
+                    </p>
+                  </div>
+                </div>
+
+                {/* Option 2: Transfer */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl p-8 border-2 border-green-300 relative overflow-hidden ring-4 ring-green-200/50">
+                  <div className="absolute top-2 right-2">
+                    <div className="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">BESTE WAHL</div>
+                  </div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-green-200/50 rounded-full blur-3xl -mr-16 -mt-16" />
+                  <div className="relative">
+                    <div className="flex items-center gap-2 mb-4">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                      <h3 className="font-black text-xl text-neutral-900">Leasingübernahme</h3>
+                    </div>
+                    <div className="mb-2">
+                      <span className="text-5xl font-black text-green-600">
+                        CHF {costs.transferCost.toLocaleString("de-CH")}
+                      </span>
+                    </div>
+                    <p className="text-neutral-700 font-medium">
+                      Nur Ummeldegebühren – keine versteckten Kosten
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Savings Badge */}
+              <div className="mt-8 text-center">
+                <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-2xl shadow-lg">
+                  <Zap className="w-6 h-6" />
+                  <span className="text-2xl font-black">
+                    Du sparst CHF {(costs.cancellationCost - costs.transferCost).toLocaleString("de-CH")}!
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* WHY PEOPLE GIVE UP LEASING - Bento Grid Style */}
+        <section id="warum" className="py-20 px-4 bg-neutral-50 scroll-mt-20">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
+                Warum Leasing abgeben?
+              </h2>
+              <p className="text-neutral-600 text-lg">Die häufigsten Gründe in der Schweiz</p>
+            </div>
+            
+            {/* Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { icon: DollarSign, title: "Finanzielle Belastung", desc: "Raten werden zu hoch oder Budget ändert sich" },
+                { icon: UserCheck, title: "Lebenssituation", desc: "Baby, Umzug, neue Prioritäten" },
+                { icon: MapPin, title: "Kilometer überschritten", desc: "Höherer Verbrauch als geplant" },
+                { icon: FileText, title: "Versicherung zu teuer", desc: "Unerwartete Zusatzkosten" },
+                { icon: TrendingDown, title: "Auto nicht nötig", desc: "Homeoffice oder ÖV reicht" },
+                { icon: AlertCircle, title: "Vertrag läuft aus", desc: "Neue Modelle bevorzugt" }
+              ].map((item, i) => {
+                const IconComponent = item.icon;
+                return (
+                  <div
+                    key={i}
+                    className="group bg-white rounded-3xl p-8 border border-neutral-200 hover:border-primary transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                  >
+                    <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                      <IconComponent className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-black text-neutral-900 mb-3">{item.title}</h3>
+                    <p className="text-neutral-600 leading-relaxed">{item.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-12 bg-gradient-to-br from-primary/5 to-primary/10 border-l-4 border-primary p-8 rounded-3xl">
+              <div className="flex items-start gap-4">
+                <AlertTriangle className="w-8 h-8 text-primary shrink-0 mt-1" />
+                <div>
+                  <p className="text-xl font-black text-neutral-900 mb-2">Wichtig zu wissen:</p>
+                  <p className="text-neutral-700 text-lg leading-relaxed">
+                    Ein Leasingvertrag ist rechtlich bindend – einfach zurückgeben ist nicht möglich. Aber es gibt legale, kostengünstige Alternativen.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* OPTIONS COMPARISON - Premium Bento Layout */}
+        <section className="py-20 px-4 bg-white">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
+                Deine 3 Optionen im Vergleich
+              </h2>
+              <p className="text-neutral-600 text-lg">Legal aussteigen – aber welcher Weg ist der beste?</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Option 1: Cancellation - Red Theme */}
+              <Card className="border-2 border-red-100 hover:border-red-200 transition-all duration-300 rounded-3xl overflow-hidden group hover:shadow-2xl">
+                <CardContent className="p-0">
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 p-8">
+                    <div className="bg-red-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
+                      <XCircle className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-2xl font-black text-neutral-900 mb-2">Vorzeitige Kündigung</h3>
+                    <div className="text-sm font-bold text-red-600 bg-red-200 inline-block px-3 py-1 rounded-full">TEUERSTE OPTION</div>
+                  </div>
+                  <div className="p-8 bg-white">
+                    <div className="space-y-4 mb-6">
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-red-400 mt-2 shrink-0" />
+                        <span className="text-neutral-700">Restschuld für verbleibende Vertragsdauer</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-red-400 mt-2 shrink-0" />
+                        <span className="text-neutral-700">Vorfälligkeitsentschädigung</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-red-400 mt-2 shrink-0" />
+                        <span className="text-neutral-700">Rücknahmekosten</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-red-400 mt-2 shrink-0" />
+                        <span className="text-neutral-700">Kosten bei Schäden</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-neutral-500 italic">Fast immer die teuerste Lösung</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Option 2: Selling - Orange Theme */}
+              <Card className="border-2 border-orange-100 hover:border-orange-200 transition-all duration-300 rounded-3xl overflow-hidden group hover:shadow-2xl">
+                <CardContent className="p-0">
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-8">
+                    <div className="bg-orange-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
+                      <AlertTriangle className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-2xl font-black text-neutral-900 mb-2">Auto verkaufen</h3>
+                    <div className="text-sm font-bold text-orange-600 bg-orange-200 inline-block px-3 py-1 rounded-full">UNSICHER</div>
+                  </div>
+                  <div className="p-8 bg-white">
+                    <div className="space-y-4 mb-6">
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-orange-400 mt-2 shrink-0" />
+                        <span className="text-neutral-700">Niedriger Ankaufpreis</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-orange-400 mt-2 shrink-0" />
+                        <span className="text-neutral-700">Risiko eines Wertverlusts</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-orange-400 mt-2 shrink-0" />
+                        <span className="text-neutral-700">Weiterlaufende Raten</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-orange-400 mt-2 shrink-0" />
+                        <span className="text-neutral-700">Unerwartete Zusatzgebühren</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-neutral-500 italic">Nur bei hohem Marktwert sinnvoll</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Option 3: Transfer - Green Theme (HERO) */}
+              <Card className="border-4 border-green-300 rounded-3xl overflow-hidden ring-4 ring-green-100 shadow-2xl relative">
+                <div className="absolute top-4 right-4 z-10">
+                  <div className="bg-green-600 text-white text-xs font-black px-4 py-2 rounded-full flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    EMPFOHLEN
+                  </div>
+                </div>
+                <CardContent className="p-0">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-8">
+                    <div className="bg-green-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
+                      <BadgeCheck className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-2xl font-black text-neutral-900 mb-2">Leasingübernahme</h3>
+                    <div className="text-sm font-bold text-green-700 bg-green-200 inline-block px-3 py-1 rounded-full">BESTE LÖSUNG</div>
+                  </div>
+                  <div className="p-8 bg-white">
+                    <div className="space-y-4 mb-6">
+                      <div className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+                        <span className="text-neutral-700 font-medium">Schneller Ausstieg</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+                        <span className="text-neutral-700 font-medium">Keine Strafzahlungen</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+                        <span className="text-neutral-700 font-medium">Kein Verkauf nötig</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+                        <span className="text-neutral-700 font-medium">Win-Win für beide Seiten</span>
+                      </div>
+                    </div>
+                    <Button
+                      asChild
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-6 rounded-2xl text-lg"
+                    >
+                      <Link href="/leasinguebernahme">
+                        Mehr erfahren
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* PROCESS TIMELINE - Modern Steps */}
+        <section id="ablauf" className="py-20 px-4 bg-gradient-to-b from-neutral-50 to-white scroll-mt-20">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
+                So funktioniert's
+              </h2>
+              <p className="text-neutral-600 text-lg">In 5 einfachen Schritten zum Ziel</p>
+            </div>
+
+            <div className="space-y-8">
+              {[
+                {
+                  step: 1,
+                  title: "Vertragsdetails prüfen",
+                  desc: "Restwert, Laufzeit und Kilometerstand checken",
+                  icon: FileText,
+                  color: "blue"
+                },
+                {
+                  step: 2,
+                  title: "Leasinggeber kontaktieren",
+                  desc: "Konditionen für Übernahme klären",
+                  icon: Phone,
+                  color: "purple"
+                },
+                {
+                  step: 3,
+                  title: "Inserat erstellen",
+                  desc: "Auf BuyAuto.ch veröffentlichen und Nachfolger finden",
+                  icon: Search,
+                  color: "primary"
+                },
+                {
+                  step: 4,
+                  title: "Bonitätsprüfung",
+                  desc: "Leasingbank prüft den Übernehmer",
+                  icon: ShieldCheck,
+                  color: "orange"
+                },
+                {
+                  step: 5,
+                  title: "Umschreibung & Übergabe",
+                  desc: "Vertrag umschreiben, Fahrzeug übergeben – fertig!",
+                  icon: CheckCircle,
+                  color: "green"
+                }
+              ].map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <div key={item.step} className="relative">
+                    <div className="flex items-start gap-6 md:gap-8">
+                      <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-gradient-to-br from-primary to-primary/80 text-white flex flex-col items-center justify-center font-black text-2xl shadow-xl ring-4 ring-primary/20">
+                        {item.step}
                       </div>
                       
-                      {/* Content */}
-                      <div className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl p-6 md:p-8 hover:border-primary transition-colors">
-                        <div className="flex items-start gap-3 mb-3">
-                          <IconComponent className="w-6 h-6 text-primary mt-1" />
-                          <h3 className="text-xl md:text-2xl font-bold text-neutral-900">{item.title}</h3>
+                      <div className="flex-1 bg-white rounded-3xl p-8 border-2 border-neutral-100 hover:border-primary/30 transition-all duration-300 hover:shadow-lg group">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="bg-primary/10 p-2 rounded-xl group-hover:bg-primary/20 transition-colors">
+                            <IconComponent className="w-6 h-6 text-primary" />
+                          </div>
+                          <h3 className="text-2xl font-black text-neutral-900">{item.title}</h3>
                         </div>
-                        <p className="text-neutral-700">{item.desc}</p>
+                        <p className="text-neutral-600 text-lg">{item.desc}</p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
 
-              <div className="mt-12 text-center">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-primary hover:bg-primary/90 text-white shadow-lg transition-all rounded-xl px-8 py-6 h-auto text-lg"
-                >
-                  <Link href="/leasinguebernahme">
-                    Detaillierter Ablauf der Leasingübernahme
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
-              </div>
+                    {item.step < 5 && (
+                      <div className="ml-10 my-4 h-8 w-1 bg-gradient-to-b from-primary/30 to-transparent rounded-full" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-12 text-center">
+              <Button
+                asChild
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-white font-bold px-10 py-7 text-lg rounded-2xl shadow-xl shadow-primary/30"
+              >
+                <Link href="/inserat-erstellen">
+                  Jetzt starten
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+              </Button>
             </div>
           </div>
         </section>
 
-        {/* SECTION 7 - FAQ */}
-        <section id="faq" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
+        {/* FAQ - Clean Accordion */}
+        <section id="faq" className="py-20 px-4 bg-white scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                FAQ – Leasing abgeben Schweiz
+              <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
+                Häufige Fragen
               </h2>
-              <p className="text-neutral-600 text-lg">
-                Häufige Fragen und Antworten
-              </p>
+              <p className="text-neutral-600 text-lg">Alles, was du wissen musst</p>
             </div>
             
             <Accordion type="single" collapsible className="w-full space-y-4">
               {[
                 {
                   q: "Kann ich mein Leasing einfach zurückgeben?",
-                  a: "Nein, ein Leasingvertrag ist bindend. Eine vorzeitige Rückgabe ist meist mit sehr hohen Kosten (Vorfälligkeitsentschädigung) verbunden. Die <a href='/leasinguebernahme' class='text-primary hover:underline'>Leasingübernahme</a> ist oft die einzige kostengünstige Alternative."
+                  a: "Nein, ein Leasingvertrag ist bindend. Eine vorzeitige Rückgabe ist meist mit sehr hohen Kosten (Vorfälligkeitsentschädigung) verbunden. Die <a href='/leasinguebernahme' class='text-primary hover:underline font-semibold'>Leasingübernahme</a> ist oft die einzige kostengünstige Alternative."
                 },
                 {
                   q: "Wie schnell kann ich mein Leasing abgeben?",
@@ -561,7 +534,7 @@ export default function LeasingAbgebenSchweiz() {
                 },
                 {
                   q: "Was passiert, wenn ich nicht mehr zahlen kann?",
-                  a: "Kontaktiere sofort deine Leasingbank. Eine <a href='/leasinguebernahme' class='text-primary hover:underline'>Leasingübernahme</a> kann helfen, aus den Zahlungsverpflichtungen herauszukommen, bevor Schulden entstehen."
+                  a: "Kontaktiere sofort deine Leasingbank. Eine <a href='/leasinguebernahme' class='text-primary hover:underline font-semibold'>Leasingübernahme</a> kann helfen, aus den Zahlungsverpflichtungen herauszukommen, bevor Schulden entstehen."
                 },
                 {
                   q: "Wer trägt die Kosten bei einer Vertragsübernahme?",
@@ -579,12 +552,12 @@ export default function LeasingAbgebenSchweiz() {
                 <AccordionItem 
                   key={i}
                   value={`item-${i}`} 
-                  className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
+                  className="bg-neutral-50 rounded-2xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:bg-white data-[state=open]:shadow-lg"
                 >
-                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
+                  <AccordionTrigger className="text-left font-bold text-neutral-900 hover:no-underline py-6 text-lg">
                     {faq.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
+                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
                     <div dangerouslySetInnerHTML={{ __html: faq.a }} />
                   </AccordionContent>
                 </AccordionItem>
@@ -593,55 +566,61 @@ export default function LeasingAbgebenSchweiz() {
           </div>
         </section>
 
-        {/* SECTION 8 - FINAL CTA */}
-        <section className="py-20 bg-neutral-900 px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Fazit: Die Leasingübernahme ist die beste Lösung für die meisten Fahrer in der Schweiz
+        {/* FINAL CTA - Premium Dark Section */}
+        <section className="py-24 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 px-4 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-primary rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary rounded-full blur-3xl" />
+          </div>
+
+          <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
+            <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold mb-4">
+              <Sparkles className="w-4 h-4" />
+              Bereit für den nächsten Schritt?
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">
+              Gib dein Leasing ab –<br />
+              <span className="text-primary">legal, schnell & günstig</span>
             </h2>
-            <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Wenn du dein Leasing abgeben möchtest, ist die Leasingübernahme der schnellste, fairste und günstigste Weg. Gib dein Leasing legal & stressfrei ab – oft in nur wenigen Tagen.
+            <p className="text-neutral-300 max-w-2xl mx-auto text-xl leading-relaxed">
+              Die Leasingübernahme ist die beste Lösung für 95% aller Fahrer. Keine versteckten Kosten, keine Komplikationen.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">
-                <Link href="/leasinguebernahme">
-                  Mehr zur Leasingübernahme
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent transition-all">
+              <Button 
+                asChild 
+                size="lg" 
+                className="w-full sm:w-auto h-16 px-10 text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/40 transition-all group"
+              >
                 <Link href="/inserat-erstellen">
                   Jetzt Inserat erstellen
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+              <Button 
+                asChild 
+                size="lg" 
+                variant="outline" 
+                className="w-full sm:w-auto h-16 px-10 text-xl font-black border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-2xl bg-transparent transition-all"
+              >
+                <Link href="/leasinguebernahme">
+                  Mehr erfahren
                 </Link>
               </Button>
             </div>
             
-            {/* Additional Internal Links */}
-            <div className="pt-8 border-t border-neutral-700">
-              <p className="text-neutral-400 text-sm mb-4">Weitere hilfreiche Ressourcen:</p>
-              <div className="flex flex-wrap items-center justify-center gap-6">
-                <Link 
-                  href="/leasinguebernahme" 
-                  className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Leasingübernahme
-                </Link>
-                <Link 
-                  href="/leasinguebernahme-kosten" 
-                  className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Kosten im Detail
-                </Link>
-                <Link 
-                  href="/leasing-transfer" 
-                  className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Leasing Transfer
-                </Link>
+            {/* Trust Indicators */}
+            <div className="pt-12 flex flex-wrap items-center justify-center gap-8 text-neutral-400 text-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span>100% legal</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-green-400" />
+                <span>Sicher & geprüft</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-green-400" />
+                <span>In wenigen Tagen</span>
               </div>
             </div>
           </div>

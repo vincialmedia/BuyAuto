@@ -12,7 +12,6 @@ const STATIC_PAGES = [
   '/leasinguebernahme',
   '/leasing-abgeben-schweiz',
   '/leasinguebernahme-kosten',
-  '/leasing-transfer',
   '/leasingvertrag-uebertragen',
   '/leasinguebernahme-vs-neues-leasing',
   '/leasinguebernahme-vs-autoabo',
