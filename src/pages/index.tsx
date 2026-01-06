@@ -4,6 +4,7 @@ import HeroSection from "@/components/buyauto/HeroSection";
 import { UspBar } from "@/components/buyauto/UspBar";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { StructuredData } from "@/components/buyauto/StructuredData";
+import { FounderStory } from "@/components/buyauto/FounderStory";
 
 // Dynamically import below-the-fold components to reduce initial bundle
 const BenefitsSection = dynamic(() => import("@/components/buyauto/BenefitsSection"), {
@@ -69,6 +70,7 @@ export default function HomePage() {
       <main className="bg-white min-h-screen">
         <HeroSection />
         <UspBar />
+        <FounderStory />
         <PremiumListings />
         <BenefitsSection />
         <HowItWorksSection />

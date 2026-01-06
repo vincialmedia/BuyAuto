@@ -48,7 +48,7 @@ export default function HeroSection() {
             
             {/* Search Form */}
             <div className="mt-8">
-              <SearchForm />
+              <SearchForm variant="hero" />
             </div>
           </div>
         </div>

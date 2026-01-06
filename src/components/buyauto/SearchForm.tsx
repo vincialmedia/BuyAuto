@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,9 +10,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 import { getBrands, getModelsForBrand } from "@/services/listingsService";
+import { cn } from "@/lib/utils";
 
-export default function SearchForm() {
+interface SearchFormProps {
+  variant?: "default" | "hero";
+}
+
+export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const router = useRouter();
+  const isHero = variant === "hero";
 
   // State for filter values
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -108,13 +113,31 @@ export default function SearchForm() {
     });
   };
 
+  // Styles based on variant
+  // Lighter Glass Theme: Higher opacity white background, cleaner borders
+  const cardStyles = isHero 
+    ? "bg-white/25 backdrop-blur-xl border-white/30 shadow-2xl shadow-black/10" 
+    : "bg-white/90 backdrop-blur-md border-white/30 shadow-2xl shadow-neutral-900/20 dark:bg-zinc-900/90 dark:border-zinc-700/30";
+
+  const inputStyles = isHero
+    ? "bg-white/20 border-white/30 text-white placeholder:text-white/80 hover:bg-white/30 hover:border-white/40 focus:border-white/50 focus:bg-white/30"
+    : "bg-neutral-50 border-neutral-300 text-neutral-800 hover:border-neutral-400";
+
+  const labelStyles = isHero ? "text-white" : "text-neutral-700";
+  const subTextStyles = isHero ? "text-neutral-200" : "text-neutral-500";
+  const iconStyles = isHero ? "text-neutral-200" : "text-neutral-500";
+
+  const checkboxContainerStyles = isHero
+    ? "bg-white/15 border-white/25"
+    : "bg-neutral-50 border-neutral-200";
+
   return (
-    <Card className="bg-white/90 backdrop-blur-md shadow-2xl shadow-neutral-900/20 border border-white/30 rounded-3xl p-6 md:p-8 max-w-4xl mx-auto dark:bg-zinc-900/90 dark:border-zinc-700/30">
+    <Card className={cn("rounded-3xl p-6 md:p-8 max-w-4xl mx-auto border transition-all duration-300", cardStyles)}>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main filters in clean grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Select value={selectedBrand} onValueChange={handleBrandChange} disabled={loadingBrands}>
-            <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+            <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
               <SelectValue placeholder="Marke" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
@@ -127,7 +150,7 @@ export default function SearchForm() {
           </Select>
 
           <Select value={selectedModel} onValueChange={setSelectedModel} disabled={!selectedBrand || loadingModels}>
-            <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+            <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
               <SelectValue placeholder="Modell" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
@@ -140,7 +163,7 @@ export default function SearchForm() {
           </Select>
 
           <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+            <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
               <SelectValue placeholder="Jahr" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
@@ -152,7 +175,7 @@ export default function SearchForm() {
           </Select>
 
           <Select value={selectedRestlaufzeit} onValueChange={setSelectedRestlaufzeit}>
-            <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+            <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
               <SelectValue placeholder="Restlaufzeit" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
@@ -166,7 +189,7 @@ export default function SearchForm() {
 
         {/* Dynamic Price Slider with Gradient Background */}
         <div className="relative">
-          <label className="block text-sm font-semibold text-neutral-700 mb-4 tracking-wide">
+          <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
             Maximaler Preis pro Monat: CHF {priceRange[0].toLocaleString("de-CH")}{priceRange[0] === 2000 ? '+' : ''}
           </label>
           
@@ -193,7 +216,7 @@ export default function SearchForm() {
             />
           </div>
           
-          <div className="flex justify-between text-xs font-medium text-neutral-500 mt-2">
+          <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
             <span>CHF 200</span>
             <span>CHF 2'000+</span>
           </div>
@@ -205,19 +228,24 @@ export default function SearchForm() {
             <Button 
               type="button" 
               variant="ghost" 
-              className="w-full justify-between text-neutral-700 hover:bg-neutral-100 h-11 rounded-xl font-medium border border-neutral-300"
+              className={cn(
+                "w-full justify-between h-12 rounded-xl font-medium border transition-colors",
+                isHero 
+                  ? "text-white hover:bg-white/20 border-white/30 hover:text-white hover:border-white/40" 
+                  : "text-neutral-700 hover:bg-neutral-100 border-neutral-300"
+              )}
             >
               <span className="flex items-center gap-3">
-                <SlidersHorizontal className="h-4 w-4 text-neutral-500" />
+                <SlidersHorizontal className={cn("h-4 w-4", iconStyles)} />
                 Erweiterte Filter
               </span>
-              <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform duration-200 ${expandedFilters ? "rotate-180" : ""}`} />
+              <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", iconStyles, expandedFilters ? "rotate-180" : "")} />
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-6 pt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select value={selectedBody} onValueChange={setSelectedBody}>
-                <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+                <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
                   <SelectValue placeholder="Karosserie" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
@@ -229,7 +257,7 @@ export default function SearchForm() {
               </Select>
               
               <Select value={selectedFuel} onValueChange={setSelectedFuel}>
-                <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+                <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
                   <SelectValue placeholder="Antrieb" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
@@ -241,7 +269,7 @@ export default function SearchForm() {
               </Select>
               
               <Select value={selectedGearbox} onValueChange={setSelectedGearbox}>
-                <SelectTrigger className="bg-neutral-50 border-neutral-300 text-neutral-800 h-11 rounded-xl font-medium hover:border-neutral-400 transition-colors">
+                <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
                   <SelectValue placeholder="Getriebe" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
@@ -251,14 +279,14 @@ export default function SearchForm() {
               </Select>
             </div>
             
-            <div className="flex items-center space-x-3 p-4 bg-neutral-50 rounded-xl border border-neutral-200">
+            <div className={cn("flex items-center space-x-3 p-4 rounded-xl border", checkboxContainerStyles)}>
               <Checkbox 
                 id="no-deposit" 
                 checked={noDeposit} 
                 onCheckedChange={(checked) => setNoDeposit(!!checked)}
                 className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
               />
-              <label htmlFor="no-deposit" className="text-sm font-medium text-neutral-700 cursor-pointer">
+              <label htmlFor="no-deposit" className={cn("text-sm font-medium cursor-pointer", labelStyles)}>
                 Keine Kaution
               </label>
             </div>
