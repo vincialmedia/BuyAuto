@@ -70,8 +70,8 @@ export default function HomePage() {
       <main className="bg-white min-h-screen">
         <HeroSection />
         <UspBar />
-        <FounderStory />
         <PremiumListings />
+        <FounderStory />
         <BenefitsSection />
         <HowItWorksSection />
         <TrustSection />
