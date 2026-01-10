@@ -4,6 +4,7 @@ import type { Database } from "@/integrations/supabase/types";
 type ServiceInquiryInsert = Database["public"]["Tables"]["service_inquiries"]["Insert"];
 
 export interface ServiceInquiryFormData {
+  vorname: string;
   name: string;
   email: string;
   phone?: string;
@@ -17,13 +18,14 @@ export interface ServiceInquiryFormData {
  * The database trigger will automatically send an email to hello@buyauto.ch
  */
 export async function submitServiceInquiry(data: ServiceInquiryFormData) {
-  const inquiryData: ServiceInquiryInsert = {
+  const inquiryData = {
+    vorname: data.vorname,
     name: data.name,
     email: data.email,
     phone: data.phone || null,
     inquiry_type: data.inquiry_type,
-    leasing_company: data.leasing_company || null,
-    message: data.message,
+    leasinggesellschaft: data.leasing_company || null,
+    nachricht: data.message,
     status: "new",
   };
 

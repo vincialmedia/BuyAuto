@@ -14,6 +14,7 @@ import Link from "next/link";
 
 export default function LeasingConcierge() {
   const [formData, setFormData] = useState({
+    vorname: "",
     name: "",
     email: "",
     phone: "",
@@ -36,6 +37,7 @@ export default function LeasingConcierge() {
 
     try {
       await submitServiceInquiry({
+        vorname: formData.vorname,
         name: formData.name,
         email: formData.email,
         phone: formData.phone || undefined,
@@ -114,7 +116,7 @@ export default function LeasingConcierge() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+              <div className="flex flex-col items-center gap-4 justify-center pt-8">
                 <Button 
                   size="lg" 
                   className="bg-white text-neutral-900 hover:bg-neutral-100 text-lg px-8 py-6 h-auto"
@@ -123,20 +125,14 @@ export default function LeasingConcierge() {
                   Kostenlose Ersteinschätzung
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="border-2 border-white text-white hover:bg-white/10 text-lg px-8 py-6 h-auto bg-transparent"
-                  asChild
-                >
-                  <a href="mailto:Hello@buyauto.ch">
-                    <Mail className="mr-2 w-5 h-5" />
-                    Oder schreib uns direkt: Hello@buyauto.ch
-                  </a>
-                </Button>
+                
+                <a href="mailto:Hello@buyauto.ch" className="text-neutral-300 hover:text-white flex items-center gap-2 mt-2 transition-colors">
+                  <Mail className="w-4 h-4" />
+                  Oder schreib uns direkt: Hello@buyauto.ch
+                </a>
               </div>
 
-              <p className="text-sm text-neutral-400 pt-4">
+              <p className="text-sm text-neutral-400 pt-2">
                 Unverbindlich. Verständlich erklärt. Keine versteckten Kosten.
               </p>
             </div>
@@ -534,30 +530,43 @@ export default function LeasingConcierge() {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="name" className="text-base">Vorname / Name *</Label>
+                        <Label htmlFor="vorname" className="text-base">Vorname *</Label>
+                        <Input
+                          id="vorname"
+                          type="text"
+                          value={formData.vorname}
+                          onChange={(e) => handleInputChange("vorname", e.target.value)}
+                          required
+                          placeholder="Max"
+                          className="h-12"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-base">Name *</Label>
                         <Input
                           id="name"
                           type="text"
                           value={formData.name}
                           onChange={(e) => handleInputChange("name", e.target.value)}
                           required
-                          placeholder="Max Mustermann"
+                          placeholder="Mustermann"
                           className="h-12"
                         />
                       </div>
+                    </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="text-base">E-Mail *</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => handleInputChange("email", e.target.value)}
-                          required
-                          placeholder="max@beispiel.ch"
-                          className="h-12"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-base">E-Mail *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        required
+                        placeholder="max@beispiel.ch"
+                        className="h-12"
+                      />
                     </div>
 
                     <div className="space-y-2">
