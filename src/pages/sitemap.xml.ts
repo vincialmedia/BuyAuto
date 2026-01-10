@@ -74,3 +74,8 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     props: {},
   };
 };
+
+// Default export is required for Next.js pages
+export default function Sitemap() {
+  return null;
+}

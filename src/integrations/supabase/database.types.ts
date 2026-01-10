@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -228,6 +228,48 @@ export type Database = {
         }
         Relationships: []
       }
+      service_inquiries: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          email: string
+          id: string
+          inquiry_type: Database["public"]["Enums"]["service_inquiry_type"]
+          leasinggesellschaft: string | null
+          nachricht: string
+          name: string
+          phone: string | null
+          status: string
+          vorname: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          inquiry_type: Database["public"]["Enums"]["service_inquiry_type"]
+          leasinggesellschaft?: string | null
+          nachricht: string
+          name: string
+          phone?: string | null
+          status?: string
+          vorname: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          inquiry_type?: Database["public"]["Enums"]["service_inquiry_type"]
+          leasinggesellschaft?: string | null
+          nachricht?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          vorname?: string
+        }
+        Relationships: []
+      }
       vehicle_catalog: {
         Row: {
           created_at: string
@@ -396,6 +438,7 @@ export type Database = {
         | "published"
         | "rejected"
         | "expired"
+      service_inquiry_type: "uebernahme_begleiten" | "leasing_exit_full_service"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -531,6 +574,10 @@ export const Constants = {
         "published",
         "rejected",
         "expired",
+      ],
+      service_inquiry_type: [
+        "uebernahme_begleiten",
+        "leasing_exit_full_service",
       ],
     },
   },
