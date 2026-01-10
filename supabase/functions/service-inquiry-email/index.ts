@@ -13,7 +13,31 @@ serve(async (req) => {
       )
     }
 
-    // Email to admin (Hello@buyauto.ch)
+    const messageWithBreaks = inquiry.message.split('
+').join('<br>')
+    
+    const phoneSection = inquiry.phone ? `
+      <div class="field">
+        <span class="label">Telefon:</span>
+        <div class="value"><a href="tel:${inquiry.phone}">${inquiry.phone}</a></div>
+      </div>
+    ` : ''
+    
+    const leasingCompanySection = inquiry.leasing_company ? `
+      <div class="field">
+        <span class="label">Leasinggesellschaft:</span>
+        <div class="value">${inquiry.leasing_company}</div>
+      </div>
+    ` : ''
+
+    const inquiryTypeLabel = inquiry.inquiry_type === 'uebernahme_begleiten' 
+      ? '🤝 Leasingübernahme begleiten' 
+      : '🚀 Leasing Exit (Full Service)'
+
+    const emailSubject = inquiry.inquiry_type === 'uebernahme_begleiten'
+      ? 'Übernahme begleiten'
+      : 'Leasing Exit'
+
     const adminEmailHtml = `
       <!DOCTYPE html>
       <html>
@@ -37,7 +61,7 @@ serve(async (req) => {
             <div class="content">
               <div class="field">
                 <span class="label">Service-Typ:</span>
-                <div class="value">${inquiry.inquiry_type === 'uebernahme_begleiten' ? '🤝 Leasingübernahme begleiten' : '🚀 Leasing Exit (Full Service)'}</div>
+                <div class="value">${inquiryTypeLabel}</div>
               </div>
               
               <div class="field">
@@ -50,24 +74,12 @@ serve(async (req) => {
                 <div class="value"><a href="mailto:${inquiry.email}">${inquiry.email}</a></div>
               </div>
               
-              ${inquiry.phone ? `
-              <div class="field">
-                <span class="label">Telefon:</span>
-                <div class="value"><a href="tel:${inquiry.phone}">${inquiry.phone}</a></div>
-              </div>
-              ` : ''}
-              
-              ${inquiry.leasing_company ? `
-              <div class="field">
-                <span class="label">Leasinggesellschaft:</span>
-                <div class="value">${inquiry.leasing_company}</div>
-              </div>
-              ` : ''}
+              ${phoneSection}
+              ${leasingCompanySection}
               
               <div class="field">
                 <span class="label">Nachricht / Eckdaten:</span>
-                <div class="value">${inquiry.message.replace(/
-/g, '<br>')}</div>
+                <div class="value">${messageWithBreaks}</div>
               </div>
               
               <div class="footer">
@@ -80,7 +92,6 @@ serve(async (req) => {
       </html>
     `
 
-    // Send email via Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -90,7 +101,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'BuyAuto Leasing Concierge <noreply@buyauto.ch>',
         to: 'Hello@buyauto.ch',
-        subject: `🎯 Neue Concierge Anfrage: ${inquiry.inquiry_type === 'uebernahme_begleiten' ? 'Übernahme begleiten' : 'Leasing Exit'}`,
+        subject: `🎯 Neue Concierge Anfrage: ${emailSubject}`,
         html: adminEmailHtml
       })
     })
