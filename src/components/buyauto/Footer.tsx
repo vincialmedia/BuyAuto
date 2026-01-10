@@ -112,11 +112,21 @@ export function Footer() {
 
         {/* Swiss minimal bottom bar */}
         <div className="border-t border-neutral-700/60 mt-16 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
             <p className="text-neutral-400 text-sm font-light">
               © {hasMounted ? new Date().getFullYear() : 2025} BuyAuto. Alle Rechte vorbehalten.
             </p>
-            <p className="text-neutral-400 text-sm mt-2 md:mt-0 font-medium">
+            
+            <a 
+              href="https://www.vincialmedia.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-neutral-400 text-sm font-light hover:text-white transition-colors"
+            >
+              A VincialMedia Website
+            </a>
+
+            <p className="text-neutral-400 text-sm font-medium">
               Proudly Swiss 🇨🇭
             </p>
           </div>

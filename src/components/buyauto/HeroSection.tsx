@@ -38,11 +38,11 @@ export default function HeroSection() {
               <Sparkles className="w-4 h-4" />
               Die Schweizer Plattform
             </div>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-6">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-6 break-words">
               Leasingübernahme<br />
               <span className="text-primary">Einfach & Schnell</span>
             </h1>
-            <p className="text-xl md:text-2xl text-neutral-200 font-medium mb-8 leading-relaxed">
+            <p className="text-lg md:text-2xl text-neutral-200 font-medium mb-8 leading-relaxed px-2">
               Finde und übernimm deinen nächsten Auto-Leasingvertrag – schweizweit.
             </p>
             

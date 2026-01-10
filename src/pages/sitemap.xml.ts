@@ -1,75 +1,72 @@
 import { GetServerSideProps } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 
-// Define your base URL
-const BASE_URL = 'https://www.buyauto.ch';
-
-// Define static pages
-const STATIC_PAGES = [
-  '',
-  '/suche',
-  '/inserat-erstellen',
-  '/leasinguebernahme',
-  '/leasing-abgeben-schweiz',
-  '/leasinguebernahme-kosten',
-  '/leasingvertrag-uebertragen',
-  '/leasinguebernahme-vs-neues-leasing',
-  '/leasinguebernahme-vs-autoabo',
-  '/auto-abo-kuendigen',
-  '/auto-abo-vs-leasing-kosten',
-  '/auth',
-  '/datenschutz',
-  '/agb'
-];
-
-function generateSiteMap(listings: any[]) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-   <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-     <!-- Static Pages -->
-     ${STATIC_PAGES
-       .map((url) => {
-         return `
-       <url>
-           <loc>${BASE_URL}${url}</loc>
-           <changefreq>daily</changefreq>
-           <priority>0.7</priority>
-       </url>
-     `;
-       })
-       .join('')}
-       
-     <!-- Dynamic Listing Pages -->
-     ${listings
-       .map(({ id, updated_at }) => {
-         return `
-       <url>
-           <loc>${BASE_URL}/fahrzeug/${id}</loc>
-           <lastmod>${new Date(updated_at).toISOString()}</lastmod>
-           <changefreq>daily</changefreq>
-           <priority>0.9</priority>
-       </url>
-     `;
-       })
-       .join('')}
-   </urlset>
- `;
-}
-
-export default function SiteMap() {
-  // getServerSideProps will do the heavy lifting
-}
-
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  // We make an API call to gather the URLs for our site
+  // Fetch dynamic slugs from Supabase
   const { data: listings } = await supabase
     .from('listings')
-    .select('id, updated_at')
-    .eq('status', 'active'); // Only include active listings
+    .select('id, make, model')
+    .eq('status', 'active');
 
-  const sitemap = generateSiteMap(listings || []);
+  // Define static pages
+  const staticPages = [
+    '',
+    '/suche',
+    '/inserat-erstellen',
+    '/leasinguebernahme',
+    '/leasinguebernahme-kosten',
+    '/leasingvertrag-uebertragen',
+    '/leasinguebernahme-vs-neues-leasing',
+    '/leasinguebernahme-vs-autoabo',
+    '/auto-abo-kuendigen',
+    '/auto-abo-vs-leasing-kosten',
+    '/leasing-abgeben-schweiz',
+    '/autoscout24-alternative-leasinguebernahme',
+    '/carify-alternativen', // Keeping this for reference, but it will 301 to the new page
+    '/auto-abos-im-vergleich', // NEW PAGE ADDED
+    '/datenschutz',
+    '/agb',
+  ];
 
+  // Build the XML
+  const baseUrl = 'https://www.buyauto.ch';
+  
+  const staticUrls = staticPages
+    .map((page) => {
+      return `
+      <url>
+        <loc>${baseUrl}${page}</loc>
+        <lastmod>${new Date().toISOString()}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>${page === '' ? '1.0' : '0.8'}</priority>
+      </url>
+    `;
+    })
+    .join('');
+
+  const dynamicUrls = (listings || [])
+    .map((listing) => {
+      return `
+      <url>
+        <loc>${baseUrl}/fahrzeug/${listing.id}</loc>
+        <lastmod>${new Date().toISOString()}</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+      </url>
+    `;
+    })
+    .join('');
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      ${staticUrls}
+      ${dynamicUrls}
+    </urlset>
+  `;
+
+  // Set header to XML
   res.setHeader('Content-Type', 'text/xml');
-  // we send the XML to the browser
+  // Send the XML to the browser
   res.write(sitemap);
   res.end();
 
