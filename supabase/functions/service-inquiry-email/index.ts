@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
 
 serve(async (req) => {
   try {
@@ -8,36 +8,36 @@ serve(async (req) => {
 
     if (!inquiry) {
       return new Response(
-        JSON.stringify({ error: 'Missing inquiry data' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Missing inquiry data" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
       )
     }
 
-    const messageLines = inquiry.message.split('
-')
-    const messageWithBreaks = messageLines.join('<br>')
+    const messageLines = inquiry.message.split("
+")
+    const messageWithBreaks = messageLines.join("<br>")
     
     const phoneSection = inquiry.phone ? `
       <div class="field">
         <span class="label">Telefon:</span>
         <div class="value"><a href="tel:${inquiry.phone}">${inquiry.phone}</a></div>
       </div>
-    ` : ''
+    ` : ""
     
     const leasingCompanySection = inquiry.leasing_company ? `
       <div class="field">
         <span class="label">Leasinggesellschaft:</span>
         <div class="value">${inquiry.leasing_company}</div>
       </div>
-    ` : ''
+    ` : ""
 
-    const inquiryTypeLabel = inquiry.inquiry_type === 'uebernahme_begleiten' 
-      ? '🤝 Leasingübernahme begleiten' 
-      : '🚀 Leasing Exit (Full Service)'
+    const inquiryTypeLabel = inquiry.inquiry_type === "uebernahme_begleiten" 
+      ? "🤝 Leasingübernahme begleiten" 
+      : "🚀 Leasing Exit (Full Service)"
 
-    const emailSubject = inquiry.inquiry_type === 'uebernahme_begleiten'
-      ? 'Übernahme begleiten'
-      : 'Leasing Exit'
+    const emailSubject = inquiry.inquiry_type === "uebernahme_begleiten"
+      ? "Übernahme begleiten"
+      : "Leasing Exit"
 
     const adminEmailHtml = `
       <!DOCTYPE html>
@@ -84,7 +84,7 @@ serve(async (req) => {
               </div>
               
               <div class="footer">
-                <p>Eingegangen am: ${new Date(inquiry.created_at).toLocaleString('de-CH')}</p>
+                <p>Eingegangen am: ${new Date(inquiry.created_at).toLocaleString("de-CH")}</p>
                 <p><strong>BuyAuto.ch</strong> | Leasing Concierge Service</p>
               </div>
             </div>
@@ -93,15 +93,15 @@ serve(async (req) => {
       </html>
     `
 
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${RESEND_API_KEY}`
       },
       body: JSON.stringify({
-        from: 'BuyAuto Leasing Concierge <noreply@buyauto.ch>',
-        to: 'Hello@buyauto.ch',
+        from: "BuyAuto Leasing Concierge <noreply@buyauto.ch>",
+        to: "Hello@buyauto.ch",
         subject: `🎯 Neue Concierge Anfrage: ${emailSubject}`,
         html: adminEmailHtml
       })
@@ -109,20 +109,20 @@ serve(async (req) => {
 
     if (!emailResponse.ok) {
       const errorText = await emailResponse.text()
-      console.error('Resend API error:', errorText)
+      console.error("Resend API error:", errorText)
       throw new Error(`Failed to send email: ${errorText}`)
     }
 
     return new Response(
       JSON.stringify({ success: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { "Content-Type": "application/json" } }
     )
 
   } catch (error) {
-    console.error('Error in service-inquiry-email function:', error)
+    console.error("Error in service-inquiry-email function:", error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     )
   }
 })
