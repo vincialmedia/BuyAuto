@@ -13,8 +13,9 @@ serve(async (req) => {
       )
     }
 
-    const messageWithBreaks = inquiry.message.split('
-').join('<br>')
+    const messageLines = inquiry.message.split('
+')
+    const messageWithBreaks = messageLines.join('<br>')
     
     const phoneSection = inquiry.phone ? `
       <div class="field">
