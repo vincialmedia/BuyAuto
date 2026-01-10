@@ -7,7 +7,7 @@ export interface ServiceInquiryFormData {
   name: string;
   email: string;
   phone?: string;
-  inquiry_type: "uebernahme_begleiten" | "leasing_exit_full";
+  inquiry_type: "uebernahme_begleiten" | "leasing_exit_full_service";
   leasing_company?: string;
   message: string;
 }
