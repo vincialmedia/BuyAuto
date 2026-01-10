@@ -1,125 +1,312 @@
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import Image from "next/image";
-import { useState, useEffect } from "react";
-import { 
-  Check, 
-  ChevronRight, 
-  AlertTriangle, 
-  FileText, 
-  ShieldCheck, 
-  TrendingDown, 
-  Clock, 
-  Zap, 
-  Users, 
-  BadgeCheck, 
-  MapPin, 
-  DollarSign, 
-  FileCheck, 
-  Search, 
-  ArrowRight, 
-  UserCheck, 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle,
-  Phone,
-  Sparkles,
-  TrendingUp,
-  X,
-  Car,
-  Calendar,
-  Settings,
-  Coins
-} from "lucide-react";
-
-// Dynamic import for below-the-fold content
-const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
-  loading: () => <div className="w-full h-96 bg-neutral-100 animate-pulse rounded-xl" />,
-  ssr: false
-});
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
+import {
+  ArrowRight,
+  Check,
+  X,
+  Calendar,
+  Gauge,
+  Shield,
+  Users,
+  Zap,
+  Clock,
+  TrendingDown,
+  BadgeCheck,
+  FileText,
+  DollarSign,
+  Package,
+  Car,
+  Sparkles,
+  Target,
+} from "lucide-react";
 
-export default function AutoAbosImVergleich() {
-  const [showStickyCTA, setShowStickyCTA] = useState(false);
-  
-  // Handle sticky CTA visibility
-  useEffect(() => {
-    const handleScroll = () => {
-      const heroHeight = 600; // Approximate hero section height
-      setShowStickyCTA(window.scrollY > heroHeight);
-    };
+const PremiumListings = dynamic(
+  () => import("@/components/buyauto/PremiumListings"),
+  { ssr: false }
+);
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
+export default function AutoAbosImVergleichPage() {
   const providers = [
     {
-      name: "Carvolution",
-      type: "Auto-Abo",
-      strength: "Marktführer, grosse Auswahl, digitaler Prozess",
-      catch: "Oft Mindestlaufzeiten, Zusatzkilometer teuer",
-      target: "Der Klassiker-Sucher"
+      name: "Carify",
+      description: "Plattform für verschiedene Auto-Abo Anbieter mit breiter Auswahl.",
+      fit: "Für alle, die Anbieter vergleichen wollen.",
+      icon: Package,
     },
     {
-      name: "Carify",
-      type: "Plattform",
-      strength: "Grosse Auswahl (Partnergaragen), alles in einem",
-      catch: "Preis variiert je nach Partnergarage",
-      target: "Der Vielfalt-Sucher"
+      name: "Carvolution",
+      description: "Auto-Abo mit flexiblen Laufzeiten, oft ab 3 Monaten.",
+      fit: "Für mittelfristige Flexibilität.",
+      icon: Calendar,
     },
     {
       name: "Clyde",
-      type: "Auto-Abo (AMAG)",
-      strength: "Inkl. Strom (bei EVs), Premium-Service",
-      catch: "Eher gehobenes Preissegment",
-      target: "E-Auto Einsteiger"
+      description: "Kurze Mindestlaufzeiten möglich (1-2 Monate je nach Modell).",
+      fit: "Für maximale Kurzfristigkeit.",
+      icon: Zap,
     },
     {
       name: "FlatDrive",
-      type: "Sorglos-Abo",
-      strength: "Fokus auf Fixpreis & Transparenz",
-      catch: "Kleinere Flotte als die Riesen",
-      target: "Preisbewusste Planer"
+      description: "Sorglos-Abo mit Fokus auf Fixpreis und All-inclusive.",
+      fit: "Für Planbarkeit und Komfort.",
+      icon: Shield,
     },
     {
       name: "Emil Frey move",
-      type: "Marken-Abo",
-      strength: "Riesiges Händlernetz, Top-Service",
-      catch: "Markengebunden",
-      target: "Service-Liebhaber"
+      description: "Marken-Abo mit Qualitätsflotte und Händlernetz.",
+      fit: "Für Markenbewusste mit Service-Fokus.",
+      icon: BadgeCheck,
     },
     {
       name: "SIXT+",
-      type: "Flex-Abo",
-      strength: "Monatlich kündbar, weltweit bekannt",
-      catch: "Startgebühr, teuer bei kurzer Dauer",
-      target: "Ultra-Flexible"
-    }
+      description: "Sehr flexibel: monatlich kündbar, pausierbar.",
+      fit: "Für maximale Flexibilität.",
+      icon: Target,
+    },
+    {
+      name: "Enterprise Minilease",
+      description: "Auto-Abo mit flexibler Dauer (Monate).",
+      fit: "Für Langzeitmiete-Konzept.",
+      icon: Car,
+    },
+    {
+      name: "Hertz Minilease",
+      description: "Langzeitmiete/Abo-Logik.",
+      fit: "Für klassische Mietmodelle.",
+      icon: Clock,
+    },
+    {
+      name: "Abo@Europcar",
+      description: "Abo-Logik bei bekannter Mietwagenmarke.",
+      fit: "Für Vertraute des Brands.",
+      icon: Package,
+    },
+    {
+      name: "Toyota Rent",
+      description: "Markenspezifisches Abo.",
+      fit: "Für Toyota-Fans.",
+      icon: Car,
+    },
+    {
+      name: "Astara Move",
+      description: "Auto-Abo Angebot.",
+      fit: "Weitere Option im Markt.",
+      icon: Sparkles,
+    },
+    {
+      name: "Upto",
+      description: "Auto-Abo Anbieter.",
+      fit: "Alternative im Vergleich.",
+      icon: Package,
+    },
+    {
+      name: "Vivelacar",
+      description: "Auto-Abo Option.",
+      fit: "Weitere Markt-Alternative.",
+      icon: Car,
+    },
+    {
+      name: "e-Joy",
+      description: "E-Mobility fokussiertes Abo.",
+      fit: "Für Elektro-Fans.",
+      icon: Zap,
+    },
   ];
 
-  // Additional providers for text listing
-  const otherProviders = [
-    "Enterprise Minilease", "Hertz Minilease", "Abo@Europcar", "Toyota Rent", 
-    "Astara Move", "Upto", "Vivelacar", "e-Joy"
+  const comparisonData = [
+    {
+      provider: "Carify",
+      model: "Plattform/Partnernetz",
+      strength: "Breite Auswahl, Vergleichslogik",
+      caveat: "Angebote variieren je nach Partner",
+      fit: "Für Vergleicher",
+    },
+    {
+      provider: "Carvolution",
+      model: "Auto-Abo",
+      strength: "Flexible Laufzeiten (oft ab 3 Monaten)",
+      caveat: "Konditionen je nach Modell",
+      fit: "Mittelfristige Flexibilität",
+    },
+    {
+      provider: "Clyde",
+      model: "Auto-Abo",
+      strength: "Sehr kurze Laufzeiten möglich (1-2 Monate)",
+      caveat: "Verfügbarkeit je nach Fahrzeug",
+      fit: "Kurzfristige Nutzung",
+    },
+    {
+      provider: "FlatDrive",
+      model: "Sorglos-Abo",
+      strength: "Fixpreis, All-inclusive Fokus",
+      caveat: "Paketlogik kann teurer sein",
+      fit: "Planbarkeit & Komfort",
+    },
+    {
+      provider: "Emil Frey move",
+      model: "Marken-Abo",
+      strength: "Qualitätsflotte, Händlernetz",
+      caveat: "Markengebunden",
+      fit: "Service & Marke wichtig",
+    },
+    {
+      provider: "SIXT+",
+      model: "Flex-Abo",
+      strength: "Monatlich kündbar, pausierbar",
+      caveat: "Konditionen je nach Paket",
+      fit: "Maximale Flexibilität",
+    },
+    {
+      provider: "Enterprise Minilease",
+      model: "Langzeitmiete",
+      strength: "Flexible Dauer",
+      caveat: "Konditionen variieren",
+      fit: "Langzeitmiete-Konzept",
+    },
+    {
+      provider: "Weitere (Hertz, Europcar, Toyota, etc.)",
+      model: "Verschiedene Modelle",
+      strength: "Je nach Anbieter",
+      caveat: "Unterschiedliche Ansätze",
+      fit: "Markt-Alternativen",
+    },
   ];
+
+  const checklistItems = [
+    {
+      icon: Calendar,
+      title: "Mindestlaufzeit & Kündigungsfrist",
+      description: "Wie lange bindest du dich? Wie flexibel kommst du raus?",
+    },
+    {
+      icon: Gauge,
+      title: "Kilometerpaket & Mehrkilometer",
+      description: "Welches Paket brauchst du? Was kosten Extra-Kilometer?",
+    },
+    {
+      icon: Shield,
+      title: "Versicherung: Deckung & Selbstbehalt",
+      description: "Vollkasko inklusive? Wie hoch ist der Selbstbehalt?",
+    },
+    {
+      icon: Users,
+      title: "Fahrer:innen-Regelung",
+      description: "Wer darf fahren? Gibt es Altersbeschränkungen?",
+    },
+    {
+      icon: Clock,
+      title: "Verfügbarkeit / Lieferzeit",
+      description: "Wie schnell bekommst du das Auto?",
+    },
+    {
+      icon: DollarSign,
+      title: "Zusatzkosten / Fees",
+      description: "Gibt es versteckte Kosten? Übernahmegebühren?",
+    },
+  ];
+
+  const faqs = [
+    {
+      question: "Was ist ein Auto-Abo?",
+      answer:
+        "Ein Auto-Abo ist eine monatliche Pauschale für ein Fahrzeug, oft inklusive Versicherung, Service, Steuern und Wartung (je nach Anbieter und Paket). Du zahlst eine fixe Rate und gibst das Auto nach der Mindestlaufzeit zurück oder verlängerst.",
+    },
+    {
+      question: "Welche Auto-Abo Anbieter gibt es in der Schweiz?",
+      answer:
+        "In der Schweiz gibt es unter anderem: Carify, Carvolution, Clyde, FlatDrive, Emil Frey move, SIXT+, Enterprise Minilease, Hertz Minilease, Abo@Europcar, Toyota Rent, Astara Move, Upto, Vivelacar und e-Joy. Der Markt ist dynamisch und Angebote ändern sich.",
+    },
+    {
+      question: "Was ist bei einem Auto-Abo normalerweise inklusive?",
+      answer:
+        "Oft sind Versicherung (Vollkasko), Service/Wartung, Steuern und manchmal sogar Reifen enthalten. Die genauen Leistungen variieren je nach Anbieter und Paket — deshalb lohnt sich der Vergleich.",
+    },
+    {
+      question: "Ist ein Auto-Abo günstiger als Leasing?",
+      answer:
+        "Nicht unbedingt. Auto-Abos sind oft teurer pro Monat, weil viele Kosten gebündelt sind (Versicherung, Service). Dafür hast du weniger Organisationsaufwand. Ob es günstiger ist, hängt von deiner Nutzung und Versicherungssituation ab.",
+    },
+    {
+      question: "Warum sind Auto-Abos oft teurer pro Monat?",
+      answer:
+        "Weil sie eine All-inclusive-Logik haben: Versicherung, Service, Steuern und Wartung sind oft im Preis enthalten. Das schafft Komfort, aber du zahlst auch für Dinge, die du vielleicht günstiger selbst organisieren könntest.",
+    },
+    {
+      question: "Welche Anbieter sind besonders flexibel (kurze Laufzeiten)?",
+      answer:
+        "SIXT+ bietet monatliche Kündigungsoptionen und Pausierbarkeit. Clyde ermöglicht teilweise sehr kurze Mindestlaufzeiten (1-2 Monate je nach Modell). Auch Carvolution bietet flexible Laufzeiten ab 3 Monaten (je nach Angebot).",
+    },
+    {
+      question: "Worauf muss ich beim Kilometerpaket achten?",
+      answer:
+        "Wähle das Paket realistisch: zu wenig Kilometer = teure Nachzahlungen. Zu viele Kilometer = höhere Monatsrate. Prüfe auch, was Extra-Kilometer kosten und ob du Kilometer zurückkaufen kannst.",
+    },
+    {
+      question: "Was bedeutet Selbstbehalt bei der Versicherung?",
+      answer:
+        "Der Selbstbehalt ist der Betrag, den du bei einem Schaden selbst zahlst (z.B. CHF 1'000). Je niedriger der Selbstbehalt, desto höher oft die Monatsrate. Vergleiche das bei den Anbietern.",
+    },
+    {
+      question: "Was sind Carify Alternativen?",
+      answer:
+        "Wenn du nach 'Carify Alternativen' suchst, meinst du meist: ein ähnliches Auto-Abo, aber mit anderen Laufzeiten, Konditionen oder Fahrzeugauswahl. Alternativen sind z.B. Carvolution, Clyde, FlatDrive, SIXT+ und Emil Frey move.",
+    },
+    {
+      question: "Wann ist Leasingübernahme die bessere Wahl?",
+      answer:
+        "Wenn du die Monatsrate optimieren willst und bereit bist, Versicherung selbst zu organisieren. Bei einer Leasingübernahme übernimmst du einen bestehenden Vertrag (Restlaufzeit + Konditionen) — oft günstiger als ein neues Auto-Abo, weil du die Paketlogik umgehst.",
+    },
+  ];
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "FAQPage",
+        mainEntity: faqs.map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.answer,
+          },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://www.buyauto.ch/",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Auto-Abo",
+            item: "https://www.buyauto.ch/leasinguebernahme",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "Auto-Abos im Vergleich",
+            item: "https://www.buyauto.ch/auto-abos-im-vergleich",
+          },
+        ],
+      },
+    ],
+  };
 
   return (
     <>
@@ -131,659 +318,393 @@ export default function AutoAbosImVergleich() {
         />
         <link rel="canonical" href="https://www.buyauto.ch/auto-abos-im-vergleich" />
         
-        {/* Open Graph */}
         <meta property="og:title" content="Auto-Abos im Vergleich 2026: Die besten Anbieter in der Schweiz | BuyAuto" />
-        <meta property="og:description" content="Auto-Abos im Vergleich (Schweiz): Carify, Carvolution, Clyde, FlatDrive, SIXT+ & mehr. Unterschiede bei Laufzeit, Leistungen & Flexibilität – plus Alternative." />
-        <meta property="og:type" content="article" />
+        <meta
+          property="og:description"
+          content="Auto-Abos im Vergleich (Schweiz): Carify, Carvolution, Clyde, FlatDrive, SIXT+ & mehr. Unterschiede bei Laufzeit, Leistungen & Flexibilität – plus Alternative."
+        />
         <meta property="og:url" content="https://www.buyauto.ch/auto-abos-im-vergleich" />
+        <meta property="og:type" content="website" />
+        
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Auto-Abos im Vergleich 2026: Die besten Anbieter in der Schweiz | BuyAuto" />
+        <meta
+          name="twitter:description"
+          content="Auto-Abos im Vergleich (Schweiz): Carify, Carvolution, Clyde, FlatDrive, SIXT+ & mehr. Unterschiede bei Laufzeit, Leistungen & Flexibilität – plus Alternative."
+        />
 
-        {/* Structured Data */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "BreadcrumbList",
-                  "itemListElement": [
-                    {
-                      "@type": "ListItem",
-                      "position": 1,
-                      "name": "Home",
-                      "item": "https://www.buyauto.ch"
-                    },
-                    {
-                      "@type": "ListItem",
-                      "position": 2,
-                      "name": "Auto-Abo",
-                      "item": "https://www.buyauto.ch/auto-abos-im-vergleich"
-                    },
-                    {
-                      "@type": "ListItem",
-                      "position": 3,
-                      "name": "Auto-Abos im Vergleich"
-                    }
-                  ]
-                },
-                {
-                  "@type": "FAQPage",
-                  "mainEntity": [
-                    {
-                      "@type": "Question",
-                      "name": "Was ist ein Auto-Abo?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Ein Auto-Abo ist eine Art 'All-inclusive'-Miete für ein Auto. Sie zahlen eine monatliche Fixrate, die in der Regel alles ausser Treibstoff/Strom abdeckt: Versicherung, Steuern, Service, Reifen und Wartung."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Welche Auto-Abo Anbieter gibt es in der Schweiz?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Zu den bekanntesten gehören Carvolution, Carify, Clyde, FlatDrive, Emil Frey move, SIXT+, Hertz Minilease, Enterprise Minilease und Toyota Rent."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Was ist bei einem Auto-Abo normalerweise inklusive?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Meistens sind Versicherung (Vollkasko), Verkehrsabgaben (Steuern), Service & Wartung, Bereifung (inkl. Wechsel) und Vignette im Preis enthalten. Treibstoff, Parkgebühren und Bussen zahlen Sie selbst."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Ist ein Auto-Abo günstiger als Leasing?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Nicht zwingend. Auto-Abos bieten mehr Flexibilität und 'All-inclusive'-Komfort, sind aber auf den Monat gerechnet oft teurer als ein Leasing, bei dem Sie Versicherung und Service selbst organisieren können."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Warum sind Auto-Abos oft teurer pro Monat?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Weil der Anbieter das Risiko für Versicherung, Reparaturen und Wertverlust übernimmt und diesen Service (sowie die administrative Abwicklung) in die Rate einpreist. Sie zahlen für die Bequemlichkeit."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Welche Anbieter sind besonders flexibel (kurze Laufzeiten)?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "SIXT+, Enterprise Minilease oder Hertz Minilease bieten oft sehr flexible Modelle (z.B. monatlich kündbar). Auch Clyde und Carvolution haben teils kurze Mindestlaufzeiten, oft gegen Aufpreis."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Worauf muss ich beim Kilometerpaket achten?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Prüfen Sie genau, wie viele Kilometer inklusive sind und was Mehrkilometer kosten. Die Nachzahlung am Ende kann teuer werden. Viele Anbieter erlauben, das Paket monatlich anzupassen."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Was bedeutet Selbstbehalt bei der Versicherung?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Das ist der Betrag, den Sie im Schadenfall selbst zahlen müssen. Auto-Abos haben oft fixierte Selbstbehalte (z.B. CHF 1000). Vergleichen Sie das, besonders wenn Sie Junglenker sind."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Was sind Carify Alternativen?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Direkte Alternativen sind Carvolution, Clyde oder FlatDrive. Wenn Sie günstiger fahren wollen und auf das 'Abo-Label' verzichten können, ist eine Leasingübernahme oft eine starke Alternative."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Wann ist Leasingübernahme die bessere Wahl?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Wenn Sie die monatlichen Fixkosten senken wollen und bereit sind, Versicherung und Service selbst zu managen. Sie übernehmen oft Verträge mit sehr attraktiven 'alten' Konditionen."
-                      }
-                    }
-                  ]
-                }
-              ]
-            })
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </Head>
 
-      <main className="bg-white min-h-screen">
-        
-        {/* STICKY CTA BAR */}
-        <div 
-          className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
-            showStickyCTA ? "translate-y-0" : "translate-y-full"
-          }`}
-        >
-          <div className="bg-gradient-to-r from-primary via-primary/95 to-primary backdrop-blur-lg border-t border-primary/20 shadow-2xl">
-            <div className="max-w-7xl mx-auto px-4 py-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="hidden md:block">
-                  <p className="text-white font-bold text-lg">Vergleich abgeschlossen?</p>
-                  <p className="text-white/80 text-sm">Finde jetzt dein Traumauto</p>
-                </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl px-8 py-6 rounded-xl"
-                  >
-                    <Link href="/leasinguebernahme">
-                      Leasingübernahmen ansehen
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Link>
-                  </Button>
-                  <button
-                    onClick={() => setShowStickyCTA(false)}
-                    className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                    aria-label="Schließen"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <main className="min-h-screen">
+        {/* HERO SECTION */}
+        <section className="relative bg-gradient-to-t from-neutral-900 via-neutral-900/95 to-neutral-900/90 text-white py-24 md:py-32">
+          <div
+            className="absolute inset-0 -z-10"
+            style={{
+              backgroundImage: "url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1920')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/80 to-transparent -z-10" />
 
-        {/* HERO SECTION - Modern with Image */}
-        <section className="relative min-h-[700px] flex items-center overflow-hidden pt-16">
-          {/* Background with gradient overlay */}
-          <div className="absolute inset-0">
-            {/* Hero Image - abstract driving/car theme */}
-            <div className="absolute inset-0">
-              <Image
-                src="/20251209_0003_Handshake_in_Zurich_simple_compose_01kc036j1cff881r0wzwemf48h.png"
-                alt="Auto Abos Vergleich Schweiz"
-                fill
-                className="object-cover object-center"
-                priority
-                quality={90}
-              />
-            </div>
-            
-            {/* Gradient Overlays for readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/80" />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-            
-            {/* Decorative mesh gradients */}
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
-              <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
-            </div>
-          </div>
+          <div className="container mx-auto px-4 max-w-5xl text-center relative z-10">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+              Auto-Abos im Vergleich: Anbieter & Alternativen in der Schweiz
+            </h1>
+            <p className="text-lg md:text-xl text-neutral-200 mb-8 max-w-3xl mx-auto">
+              Auto-Abo ist das Sorglos-Paket: Fixpreis, wenig Aufwand, schnell. Aber: All-inclusive ist bequem — und genau deshalb oft nicht die günstigste Option. Hier ist der faire Vergleich.
+            </p>
 
-          {/* Hero Content */}
-          <div className="relative z-10 w-full px-4 py-20">
-            <div className="max-w-6xl mx-auto">
-              <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/20 backdrop-blur-sm">
-                  <Sparkles className="w-4 h-4" />
-                  Marktübersicht 2026
-                </div>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-neutral-900 tracking-tight leading-[1.1] mb-6">
-                  Auto-Abos im Vergleich:<br />
-                  <span className="text-primary">Anbieter & Alternativen</span>
-                </h1>
-                <p className="text-xl md:text-2xl text-neutral-600 font-medium mb-8 leading-relaxed">
-                  Auto-Abo ist das Sorglos-Paket: Fixpreis, wenig Aufwand, schnell. Aber: All-inclusive ist bequem — und genau deshalb oft nicht die günstigste Option. Hier ist der faire Vergleich.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4 mb-12">
-                  <Button
-                    onClick={() => scrollToSection("vergleich")}
-                    size="lg"
-                    className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl group"
-                  >
-                    Auto-Abos vergleichen
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="border-2 border-neutral-300 text-neutral-900 hover:bg-neutral-100 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl backdrop-blur-sm bg-white/80"
-                  >
-                    <Link href="/leasinguebernahme">
-                      Leasingübernahmen ansehen
-                    </Link>
-                  </Button>
-                </div>
-
-                {/* Mini Trust */}
-                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-neutral-200/50 shadow-lg max-w-xl">
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck className="w-6 h-6 text-primary mt-1 shrink-0" />
-                    <p className="text-neutral-700 text-sm font-medium leading-relaxed">
-                      Anbieter unterscheiden sich stark bei Mindestlaufzeit, Kilometerpaketen, Versicherung/Selbstbehalt und Leistungen — vergleichen lohnt sich.
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <Button
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-white"
+                asChild
+              >
+                <a href="#vergleich">
+                  Auto-Abos vergleichen <ArrowRight className="ml-2 h-5 w-5" />
+                </a>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/30"
+                asChild
+              >
+                <Link href="/leasinguebernahme">Leasingübernahmen ansehen</Link>
+              </Button>
             </div>
+
+            <p className="text-sm text-neutral-300 max-w-2xl mx-auto">
+              Anbieter unterscheiden sich stark bei Mindestlaufzeit, Kilometerpaketen, Versicherung/Selbstbehalt und Leistungen — vergleichen lohnt sich.
+            </p>
           </div>
         </section>
 
-        {/* SECTION 2: WAS IST EIN AUTO-ABO */}
-        <section className="py-20 px-4 bg-white scroll-mt-20">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 mb-8 leading-tight">
-              Was ist ein Auto-Abo <span className="text-primary block text-2xl md:text-3xl mt-2 font-bold">(und warum unterscheiden sie sich so?)</span>
+        {/* SECTION: WAS IST EIN AUTO-ABO */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-6 text-center">
+              Was ist ein Auto-Abo (und warum unterscheiden sich die Angebote so stark)?
             </h2>
-            
-            <div className="grid md:grid-cols-2 gap-8 text-left mb-12">
-              <div className="bg-neutral-50 p-8 rounded-3xl border border-neutral-100">
-                <div className="flex items-center gap-3 mb-4">
-                  <BadgeCheck className="w-8 h-8 text-primary" />
-                  <h3 className="text-xl font-bold">Das Prinzip</h3>
-                </div>
-                <p className="text-neutral-600 leading-relaxed">
-                  Eine monatliche Pauschale, die (fast) alles abdeckt: Versicherung, Service, Steuern, Reifen. Sie zahlen nur noch den Treibstoff oder Strom. Je nach Anbieter und Paket variieren die Leistungen.
-                </p>
-              </div>
-              
-              <div className="bg-neutral-50 p-8 rounded-3xl border border-neutral-100">
-                <div className="flex items-center gap-3 mb-4">
-                  <Settings className="w-8 h-8 text-primary" />
-                  <h3 className="text-xl font-bold">Die Unterschiede</h3>
-                </div>
-                <ul className="space-y-2 text-neutral-600">
-                  <li className="flex gap-2"><Check className="w-4 h-4 text-primary mt-1" /> Mindestlaufzeit & Kündigungsfrist</li>
-                  <li className="flex gap-2"><Check className="w-4 h-4 text-primary mt-1" /> Kilometerpakete & Mehrkilometer</li>
-                  <li className="flex gap-2"><Check className="w-4 h-4 text-primary mt-1" /> Versicherung: Deckung & Selbstbehalt</li>
-                  <li className="flex gap-2"><Check className="w-4 h-4 text-primary mt-1" /> Verfügbarkeit & Fahrzeugwahl</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 inline-block">
-              <p className="text-lg text-primary-900 font-medium italic">
-                “Auto-Abo ist wie Hotel mit Frühstück: entspannt — aber du zahlst halt auch für Dinge, die du vielleicht gar nicht brauchst.”
+            <div className="prose prose-lg max-w-3xl mx-auto text-neutral-700">
+              <p>
+                Ein Auto-Abo ist eine monatliche Pauschale für ein Fahrzeug, oft inklusive Versicherung, Service und Steuern (je nach Anbieter/Paket).
+              </p>
+              <p className="font-semibold text-neutral-900">Die Unterschiede:</p>
+              <ul className="space-y-2">
+                <li><strong>Mindestlaufzeit & Kündigungsfrist:</strong> Manche Anbieter binden dich monatelang, andere sind monatlich kündbar.</li>
+                <li><strong>Kilometerpakete & Mehrkilometer:</strong> Wählst du zu wenig, zahlst du Nachschlag. Wählst du zu viel, zahlst du unnötig.</li>
+                <li><strong>Versicherung:</strong> Deckung, Selbstbehalt und Fahrer:innen-Regelung variieren stark.</li>
+                <li><strong>Verfügbarkeit, Fahrzeugwahl, Extras:</strong> Je nach Anbieter unterschiedlich.</li>
+              </ul>
+              <p className="text-neutral-600 italic border-l-4 border-primary pl-4 mt-6">
+                "Auto-Abo ist wie Hotel mit Frühstück: entspannt — aber du zahlst halt auch für Dinge, die du vielleicht gar nicht brauchst."
               </p>
             </div>
           </div>
         </section>
 
-        {/* SECTION 3: ANBIETER KARTEN */}
-        <section className="py-20 px-4 bg-neutral-50 border-t border-neutral-200 scroll-mt-20">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-5xl font-black text-neutral-900 mb-4">
-                Auto-Abo Anbieter in der Schweiz
-              </h2>
-              <p className="text-neutral-600 text-lg">Eine Auswahl der wichtigsten Player</p>
+        {/* SECTION: ANBIETER LISTE */}
+        <section className="py-20 bg-neutral-50">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-12 text-center">
+              Auto-Abo Anbieter in der Schweiz (Auswahl)
+            </h2>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {providers.map((provider, index) => {
+                const Icon = provider.icon;
+                return (
+                  <Card key={index} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-primary/10 rounded-2xl">
+                          <Icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg text-neutral-900 mb-2">{provider.name}</h3>
+                          <p className="text-sm text-neutral-600 mb-3">{provider.description}</p>
+                          <Badge variant="outline" className="text-xs">
+                            {provider.fit}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {providers.map((p, i) => (
-                <Card key={i} className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white">
-                  <CardContent className="p-8">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-2xl font-black text-neutral-900">{p.name}</h3>
-                      <Badge variant="secondary" className="bg-neutral-100 text-neutral-600 hover:bg-neutral-200">
-                        {p.type}
-                      </Badge>
-                    </div>
-                    <div className="space-y-4 mb-6">
-                      <div>
-                        <span className="text-sm font-bold text-green-600 flex items-center gap-2 mb-1">
-                          <CheckCircle className="w-4 h-4" /> Stärke
-                        </span>
-                        <p className="text-neutral-600 text-sm leading-relaxed">{p.strength}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm font-bold text-amber-600 flex items-center gap-2 mb-1">
-                          <AlertCircle className="w-4 h-4" /> Beachten
-                        </span>
-                        <p className="text-neutral-600 text-sm leading-relaxed">{p.catch}</p>
-                      </div>
-                    </div>
-                    <div className="pt-4 border-t border-neutral-100">
-                      <p className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">Passt für</p>
-                      <p className="text-neutral-900 font-bold">{p.target}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {/* Other Mentions */}
-              <Card className="border-2 border-dashed border-neutral-300 bg-transparent shadow-none flex flex-col justify-center items-center text-center p-8">
-                <p className="text-neutral-500 font-bold mb-4">Weitere Anbieter:</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {otherProviders.map((op, i) => (
-                    <span key={i} className="text-neutral-500 text-sm bg-neutral-100 px-2 py-1 rounded-md">
-                      {op}
-                    </span>
-                  ))}
-                </div>
-              </Card>
-            </div>
-            
-            <p className="text-center text-sm text-neutral-400 mt-8 italic max-w-3xl mx-auto">
-              Hinweis: Der Markt ist dynamisch. Angebote, Mindestlaufzeiten und Inklusivleistungen ändern sich je nach Anbieter, Fahrzeug und Paket.
+            <p className="text-sm text-neutral-600 text-center mt-8 max-w-2xl mx-auto">
+              Der Markt ist dynamisch: Angebote, Mindestlaufzeiten und Inklusivleistungen ändern sich je nach Anbieter, Fahrzeug und Paket.
             </p>
           </div>
         </section>
 
-        {/* SECTION 4: VERGLEICHSTABELLE */}
-        <section id="vergleich" className="py-20 px-4 bg-white scroll-mt-20">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 text-center mb-12">
+        {/* SECTION: VERGLEICHSTABELLE */}
+        <section id="vergleich" className="py-20 bg-white scroll-mt-20">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-12 text-center">
               Auto-Abos im Vergleich (Schweiz) — auf einen Blick
             </h2>
-            
-            <div className="overflow-x-auto rounded-3xl border border-neutral-200 shadow-lg bg-white mb-12">
-              <table className="w-full text-left border-collapse">
+
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-neutral-50 text-neutral-900 border-b border-neutral-200">
-                    <th className="p-6 font-black whitespace-nowrap">Anbieter</th>
-                    <th className="p-6 font-black whitespace-nowrap">Modell</th>
-                    <th className="p-6 font-black min-w-[200px]">Typische Stärke</th>
-                    <th className="p-6 font-black min-w-[200px]">Zu beachten</th>
-                    <th className="p-6 font-black min-w-[200px]">Für wen?</th>
+                  <tr className="bg-neutral-100">
+                    <th className="text-left p-4 font-bold text-neutral-900">Anbieter</th>
+                    <th className="text-left p-4 font-bold text-neutral-900">Modell</th>
+                    <th className="text-left p-4 font-bold text-neutral-900">Typische Stärke</th>
+                    <th className="text-left p-4 font-bold text-neutral-900">Typischer Haken</th>
+                    <th className="text-left p-4 font-bold text-neutral-900">Für wen passt's?</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {providers.map((p, i) => (
-                    <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
-                      <td className="p-6 font-bold text-lg text-primary">{p.name}</td>
-                      <td className="p-6 text-neutral-600 font-medium">{p.type}</td>
-                      <td className="p-6 text-neutral-700">{p.strength}</td>
-                      <td className="p-6 text-neutral-500 text-sm">{p.catch}</td>
-                      <td className="p-6 text-neutral-900 font-medium">{p.target}</td>
+                <tbody>
+                  {comparisonData.map((item, index) => (
+                    <tr key={index} className="border-b border-neutral-200 hover:bg-neutral-50">
+                      <td className="p-4 font-semibold text-neutral-900">{item.provider}</td>
+                      <td className="p-4 text-neutral-700">{item.model}</td>
+                      <td className="p-4 text-neutral-700">{item.strength}</td>
+                      <td className="p-4 text-neutral-600 text-sm">{item.caveat}</td>
+                      <td className="p-4 text-neutral-700">{item.fit}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button asChild size="lg" className="rounded-full h-14 px-8 text-lg font-bold bg-primary hover:bg-primary/90 shadow-lg">
-                <Link href="/leasinguebernahme">Leasingübernahmen ansehen</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full h-14 px-8 text-lg font-bold">
-                <Link href="/inserat-erstellen">Leasing abgeben</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 5: CHECKLISTE */}
-        <section className="py-20 px-4 bg-neutral-900 text-white">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-black mb-10 text-center">
-              Worauf du beim Auto-Abo Vergleich wirklich achten solltest
-            </h2>
-            
-            <div className="grid md:grid-cols-2 gap-x-12 gap-y-6">
-              {[
-                "Mindestlaufzeit & Kündigungsfrist",
-                "Kilometerpaket & Mehrkilometer-Kosten",
-                "Versicherung: Deckung & Selbstbehalt",
-                "Fahrer:innen-Regelung (wer darf fahren?)",
-                "Verfügbarkeit / Lieferzeit",
-                "Zusatzkosten/Startgebühren (je nach Anbieter)"
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0 text-white font-bold">
-                    {i + 1}
-                  </div>
-                  <span className="font-medium text-lg text-neutral-200">{item}</span>
-                </div>
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-4">
+              {comparisonData.map((item, index) => (
+                <Card key={index}>
+                  <CardContent className="p-6 space-y-3">
+                    <h3 className="font-bold text-lg text-neutral-900">{item.provider}</h3>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-semibold text-neutral-700">Modell:</span> {item.model}</p>
+                      <p><span className="font-semibold text-neutral-700">Stärke:</span> {item.strength}</p>
+                      <p><span className="font-semibold text-neutral-700">Haken:</span> {item.caveat}</p>
+                      <p><span className="font-semibold text-neutral-700">Passt für:</span> {item.fit}</p>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* SECTION 6: CARIFY ALTERNATIVEN */}
-        <section className="py-20 px-4 bg-white">
-          <div className="max-w-3xl mx-auto text-center">
-            <Badge variant="outline" className="mb-4 border-neutral-300 text-neutral-500">Keyword Fokus</Badge>
-            <h2 className="text-3xl font-black text-neutral-900 mb-6">
-              Carify Alternativen: Welche Anbieter sind ähnlich?
-            </h2>
-            <p className="text-neutral-600 text-lg leading-relaxed mb-8">
-              Wenn du nach "Carify Alternativen" suchst, meinst du meistens: ein ähnliches Auto-Abo, aber mit anderer Laufzeit, Auswahl oder Konditionen. 
-              Die naheliegendsten Alternativen sind <strong>Carvolution</strong>, <strong>Clyde</strong>, <strong>FlatDrive</strong>, <strong>SIXT+</strong> oder <strong>Emil Frey move</strong>.
-              Wirf einen Blick in unsere Vergleichstabelle oben, um den besten Match zu finden.
-            </p>
-            <div className="bg-amber-50 border-l-4 border-amber-400 p-6 text-left rounded-r-xl">
-              <p className="text-amber-900 font-medium">
-                <span className="font-bold">Pro-Tipp:</span> Für den besten Match lohnt sich der Vergleich nach Mindestlaufzeit, Inklusiv-Kilometern und dem Versicherungs-Selbstbehalt.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 7: PLOT TWIST */}
-        <section className="py-20 px-4 bg-gradient-to-br from-primary/10 to-transparent relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          
-          <div className="max-w-4xl mx-auto text-center relative z-10">
-            <div className="inline-flex items-center gap-2 bg-white text-primary px-4 py-2 rounded-full text-sm font-bold shadow-sm mb-6">
-              <Zap className="w-4 h-4" />
-              Der Geheimtipp
-            </div>
-            <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-6">
-              Günstigere Alternative zum Auto-Abo:<br />
-              <span className="text-primary">Leasingübernahme</span>
-            </h2>
-            
-            <div className="prose prose-lg mx-auto text-neutral-600 mb-10">
-              <p>
-                Auto-Abo folgt einer <strong>Paketlogik</strong> (Komfort, Fixpreis). Eine Leasingübernahme bedeutet, dass du einen <strong>bestehenden Leasingvertrag</strong> übernimmst. 
-                Du profitierst von der (oft kurzen) Restlaufzeit und den originalen Konditionen, regelst aber die Versicherung separat. 
-                Dadurch hast du oft mehr Kontrolle über dein Monatsbudget.
-              </p>
-            </div>
-
-            <div className="bg-white p-8 rounded-3xl shadow-xl border border-neutral-100 mb-10 transform rotate-1 hover:rotate-0 transition-transform duration-300">
-              <p className="text-2xl font-black text-primary-900 italic">
-                “Wenn du keine Lust hast, die Komfort-Steuer zu zahlen: Leasingübernahme ist für viele der Cheatcode.”
-              </p>
-            </div>
-
-            <p className="text-sm text-neutral-500 max-w-2xl mx-auto italic">
-              Ob es günstiger ist, hängt vom Auto, Vertrag und deiner Versicherung ab — aber wenn du den Monatsbetrag optimieren willst, lohnt sich Leasingübernahme fast immer als erster Check.
-            </p>
-          </div>
-        </section>
-
-        {/* SECTION 8: COMPARISON BOX */}
-        <section className="py-20 px-4 bg-white">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 text-center mb-16">
-              Auto-Abo oder Leasingübernahme? <br className="hidden md:block"/>
-              <span className="text-neutral-400">Der ehrliche Vergleich</span>
-            </h2>
-
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
-              {/* Left: Auto-Abo */}
-              <Card className="rounded-3xl border-2 border-neutral-100 bg-neutral-50 hover:border-neutral-200 transition-all">
-                <CardContent className="p-8 md:p-10">
-                  <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-2xl font-black text-neutral-900">Auto-Abo</h3>
-                    <Badge variant="secondary" className="bg-neutral-200 text-neutral-700 px-3 py-1 text-sm font-bold">Sorglos-Modus ✅</Badge>
-                  </div>
-                  <ul className="space-y-6 mb-8">
-                    <li className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-neutral-200 shadow-sm text-xl">📦</div>
-                      <div>
-                        <span className="font-bold text-neutral-900 block text-lg">Fixpreis-Logik</span>
-                        <span className="text-neutral-600">Viele Kosten sind gebündelt (je nach Anbieter/Paket).</span>
-                      </div>
-                    </li>
-                    <li className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-neutral-200 shadow-sm text-xl">🛋️</div>
-                      <div>
-                        <span className="font-bold text-neutral-900 block text-lg">Bequem</span>
-                        <span className="text-neutral-600">Weniger Organisieren (Versicherung/Service oft inkludiert).</span>
-                      </div>
-                    </li>
-                    <li className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-neutral-200 shadow-sm text-xl">🎯</div>
-                      <div>
-                        <span className="font-bold text-neutral-900 block text-lg">Planbar</span>
-                        <span className="text-neutral-600">Passt, wenn Komfort & Planbarkeit Priorität haben.</span>
-                      </div>
-                    </li>
-                  </ul>
-                  <div className="p-4 bg-white rounded-xl text-sm text-neutral-500 italic border border-neutral-200/50">
-                    “Komfort ist selten gratis: du zahlst oft eine Paketlogik, auch wenn du nicht alles ausnutzt.”
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Right: BuyAuto */}
-              <Card className="rounded-3xl border-4 border-primary/20 bg-primary/5 relative overflow-hidden ring-4 ring-primary/5 shadow-xl">
-                <div className="absolute top-0 right-0 p-4 opacity-5">
-                  <Coins className="w-32 h-32 text-primary" />
-                </div>
-                <CardContent className="p-8 md:p-10 relative z-10">
-                  <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-2xl font-black text-primary-900">Leasingübernahme</h3>
-                    <Badge className="bg-primary text-white px-3 py-1 text-sm font-bold">Preis-Optimierer 🧠</Badge>
-                  </div>
-                  <ul className="space-y-6 mb-8">
-                    <li className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-primary/20 shadow-sm text-primary text-xl">🤝</div>
-                      <div>
-                        <span className="font-bold text-neutral-900 block text-lg">Vertrag übernehmen</span>
-                        <span className="text-neutral-600">Bestehenden Leasingvertrag übernehmen (Restlaufzeit + Konditionen transparent).</span>
-                      </div>
-                    </li>
-                    <li className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-primary/20 shadow-sm text-primary text-xl">⚙️</div>
-                      <div>
-                        <span className="font-bold text-neutral-900 block text-lg">Mehr Kontrolle</span>
-                        <span className="text-neutral-600">Rate/Laufzeit/Kilometer wählen statt Paket.</span>
-                      </div>
-                    </li>
-                    <li className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-primary/20 shadow-sm text-primary text-xl">📉</div>
-                      <div>
-                        <span className="font-bold text-neutral-900 block text-lg">Oft günstiger</span>
-                        <span className="text-neutral-600">Besonders wenn du Versicherung separat regelst.</span>
-                      </div>
-                    </li>
-                  </ul>
-                  <div className="p-4 bg-white/60 backdrop-blur-sm rounded-xl text-sm text-primary-900/70 italic border border-primary/10">
-                    “Konditionen hängen vom Inserat & Vertrag ab — darum lohnt sich der Vergleich.”
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="text-center mb-12">
-              <p className="text-xl md:text-2xl font-medium text-neutral-800 italic max-w-3xl mx-auto leading-relaxed">
-                “Auto-Abo ist wie Hotel mit Frühstück. Leasingübernahme ist wie eine gute Wohnung: weniger inklusive — aber oft günstiger, wenn du’s schlau machst.”
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button asChild size="lg" className="rounded-full h-14 px-8 text-lg font-bold bg-primary hover:bg-primary/90 shadow-lg">
-                <Link href="/leasinguebernahme">Leasingübernahmen ansehen</Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
+              <Button size="lg" asChild>
+                <Link href="/leasinguebernahme">
+                  Leasingübernahmen ansehen <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full h-14 px-8 text-lg font-bold">
+              <Button size="lg" variant="outline" asChild>
                 <Link href="/inserat-erstellen">Leasing abgeben</Link>
               </Button>
             </div>
           </div>
         </section>
 
-        {/* SECTION 9: TRUST */}
-        <section className="py-20 px-4 bg-neutral-50">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-black text-neutral-900 mb-6">
+        {/* SECTION: CHECKLISTE */}
+        <section className="py-20 bg-neutral-50">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-12 text-center">
+              Worauf du beim Auto-Abo Vergleich wirklich achten solltest
+            </h2>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {checklistItems.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <Card key={index} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6 flex items-start gap-4">
+                      <div className="p-3 bg-primary/10 rounded-2xl">
+                        <Icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-neutral-900 mb-2">{item.title}</h3>
+                        <p className="text-neutral-600">{item.description}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION: CARIFY ALTERNATIVEN */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-6 text-center">
+              Carify Alternativen: Welche Anbieter sind ähnlich?
+            </h2>
+            <div className="prose prose-lg max-w-3xl mx-auto text-neutral-700">
+              <p>
+                Wenn du nach <strong>"Carify Alternativen"</strong> suchst, meinst du meistens: ein ähnliches Auto-Abo, aber mit anderer Laufzeit, Auswahl oder Konditionen.
+              </p>
+              <p>
+                Nahegelegene Alternativen sind zum Beispiel: <strong>Carvolution, Clyde, FlatDrive, SIXT+</strong> und <strong>Emil Frey move</strong>. Alle bieten Auto-Abo-Modelle mit unterschiedlichen Schwerpunkten.
+              </p>
+              <p className="text-sm text-neutral-600 border-l-4 border-primary pl-4 mt-4">
+                Für den besten Match lohnt sich der Vergleich nach Mindestlaufzeit, Kilometer und Versicherung (siehe Vergleichstabelle oben).
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION: PLOT TWIST */}
+        <section className="py-20 bg-gradient-to-br from-primary/5 to-primary/10">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <div className="text-center mb-12">
+              <Badge className="mb-4 bg-primary text-white">Der Cheatcode</Badge>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-6">
+                Günstigere Alternative zum Auto-Abo: Leasingübernahme
+              </h2>
+            </div>
+
+            <div className="prose prose-lg max-w-3xl mx-auto text-neutral-700">
+              <p>
+                <strong>Auto-Abo = Paketlogik:</strong> Komfort, Fixpreis, alles gebündelt.
+              </p>
+              <p>
+                <strong>Leasingübernahme = bestehenden Vertrag übernehmen:</strong> Du übernimmst einen laufenden Leasingvertrag (Restlaufzeit + Konditionen transparent), organisierst Versicherung selbst → oft besser steuerbar beim Monatsbudget. Du filterst gezielt nach Rate/Laufzeit/Kilometern.
+              </p>
+              <p className="text-neutral-900 font-semibold italic border-l-4 border-primary pl-4 mt-6">
+                "Wenn du keine Lust hast, die Komfort-Steuer zu zahlen: Leasingübernahme ist für viele der Cheatcode."
+              </p>
+              <p className="text-sm text-neutral-600 mt-4">
+                <strong>Fairness-Hinweis:</strong> Ob es günstiger ist, hängt vom Auto, Vertrag und deiner Versicherung ab — aber wenn du den Monatsbetrag optimieren willst, lohnt sich Leasingübernahme fast immer als erster Check.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION: VERGLEICHSBOX (2 SPALTEN) */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-12 text-center">
+              Auto-Abo oder Leasingübernahme? Der ehrliche Vergleich
+            </h2>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-12">
+              {/* AUTO-ABO */}
+              <Card className="relative overflow-hidden hover:shadow-xl transition-shadow">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full" />
+                <CardContent className="p-8">
+                  <Badge className="mb-4 bg-green-500 text-white">Sorglos-Modus ✅</Badge>
+                  <h3 className="text-2xl font-bold text-neutral-900 mb-4">
+                    Auto-Abo (Carify, Carvolution, Clyde, FlatDrive & Co.)
+                  </h3>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                      <span className="text-neutral-700">Fixpreis: viele Kosten gebündelt (je nach Anbieter/Paket)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                      <span className="text-neutral-700">Bequem: weniger Organisieren (Versicherung/Service oft inkludiert)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                      <span className="text-neutral-700">Passt, wenn Komfort & Planbarkeit Priorität haben</span>
+                    </li>
+                  </ul>
+                  <p className="text-sm text-neutral-600 italic border-t pt-4">
+                    Komfort ist selten gratis: du zahlst oft eine Paketlogik, auch wenn du nicht alles ausnutzt.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* LEASINGÜBERNAHME */}
+              <Card className="relative overflow-hidden hover:shadow-xl transition-shadow border-2 border-primary">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-transparent rounded-bl-full" />
+                <CardContent className="p-8">
+                  <Badge className="mb-4 bg-primary text-white">Preis-Optimierer 🧠</Badge>
+                  <h3 className="text-2xl font-bold text-neutral-900 mb-4">
+                    Leasingübernahme (über BuyAuto)
+                  </h3>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                      <span className="text-neutral-700">Bestehenden Leasingvertrag übernehmen (Restlaufzeit + Konditionen transparent)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                      <span className="text-neutral-700">Mehr Kontrolle: Rate/Laufzeit/Kilometer wählen statt Paket</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                      <span className="text-neutral-700">Oft günstiger, wenn du Versicherung separat regelst</span>
+                    </li>
+                  </ul>
+                  <p className="text-sm text-neutral-600 italic border-t pt-4">
+                    Konditionen hängen vom Inserat & Vertrag ab — darum lohnt sich der Vergleich.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <p className="text-center text-lg text-neutral-700 italic max-w-3xl mx-auto mb-8">
+              "Auto-Abo ist wie Hotel mit Frühstück. Leasingübernahme ist wie eine gute Wohnung: weniger inklusive — aber oft günstiger, wenn du's schlau machst."
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" asChild>
+                <Link href="/leasinguebernahme">
+                  Leasingübernahmen ansehen <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/inserat-erstellen">Leasing abgeben</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* TRUST SECTION */}
+        <section className="py-20 bg-neutral-50">
+          <div className="container mx-auto px-4 max-w-4xl text-center">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-6">
               Warum BuyAuto hier überhaupt mitredet
             </h2>
-            <p className="text-lg text-neutral-600 leading-relaxed mb-8">
-              BuyAuto ist auf <Link href="/leasinguebernahme" className="text-primary font-bold hover:underline">Leasingübernahmen</Link> spezialisiert. 
-              Wenn du nach dem besten Auto-Abo suchst, ist die Frage dahinter oft: "Wie komme ich günstig und flexibel zu einem Auto?"
-              Auto-Abo ist bequem — Leasingübernahme ist für viele die unterschätzte Option, um die Monatsrate zu optimieren.
-            </p>
-            <div className="text-neutral-900 font-bold mb-12">
-              — Vincent Hänggi, Gründer von BuyAuto
+            <div className="prose prose-lg max-w-3xl mx-auto text-neutral-700">
+              <p>
+                BuyAuto ist auf <strong>Leasingübernahmen</strong> spezialisiert. Wenn du nach dem besten Auto-Abo suchst, ist die Frage dahinter oft: <em>"Wie komme ich günstig und flexibel zu einem Auto?"</em>
+              </p>
+              <p>
+                Auto-Abo ist bequem — <strong>Leasingübernahme ist für viele die unterschätzte Option</strong>, um die Monatsrate zu optimieren.
+              </p>
+              <p className="text-sm text-neutral-600 italic mt-6">
+                — Vincent Hänggi, Gründer von BuyAuto
+              </p>
             </div>
-            <p className="text-xs text-neutral-400">
-              Disclaimer: BuyAuto ist unabhängig und steht in keiner Verbindung zu den genannten Anbietern (Carify, Carvolution, etc.).
+            <p className="text-xs text-neutral-500 mt-8">
+              BuyAuto ist unabhängig und steht in keiner Verbindung zu den genannten Anbietern.
             </p>
           </div>
         </section>
 
-        {/* SECTION 10: FAQ */}
-        <section className="py-20 px-4 bg-white">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
-                FAQ: Auto-Abos im Vergleich (Schweiz)
-              </h2>
-              <p className="text-neutral-600 text-lg">Schnelle Antworten auf deine Fragen</p>
-            </div>
-            
-            <Accordion type="single" collapsible className="w-full space-y-4">
-              {[
-                {
-                  q: "Was ist ein Auto-Abo?",
-                  a: "Ein Auto-Abo ist eine Art 'All-inclusive'-Miete für ein Auto. Sie zahlen eine monatliche Fixrate, die in der Regel alles ausser Treibstoff/Strom abdeckt: Versicherung, Steuern, Service, Reifen und Wartung."
-                },
-                {
-                  q: "Welche Auto-Abo Anbieter gibt es in der Schweiz?",
-                  a: "Zu den bekanntesten gehören Carvolution, Carify, Clyde, FlatDrive, Emil Frey move, SIXT+, Hertz Minilease, Enterprise Minilease und Toyota Rent."
-                },
-                {
-                  q: "Was ist bei einem Auto-Abo normalerweise inklusive?",
-                  a: "Meistens sind Versicherung (Vollkasko), Verkehrsabgaben (Steuern), Service & Wartung, Bereifung (inkl. Wechsel) und Vignette im Preis enthalten. Treibstoff, Parkgebühren und Bussen zahlen Sie selbst."
-                },
-                {
-                  q: "Ist ein Auto-Abo günstiger als Leasing?",
-                  a: "Nicht zwingend. Auto-Abos bieten mehr Flexibilität und 'All-inclusive'-Komfort, sind aber auf den Monat gerechnet oft teurer als ein Leasing, bei dem Sie Versicherung und Service selbst organisieren können."
-                },
-                {
-                  q: "Warum sind Auto-Abos oft teurer pro Monat?",
-                  a: "Weil der Anbieter das Risiko für Versicherung, Reparaturen und Wertverlust übernimmt und diesen Service (sowie die administrative Abwicklung) in die Rate einpreist. Sie zahlen für die Bequemlichkeit."
-                },
-                {
-                  q: "Welche Anbieter sind besonders flexibel (kurze Laufzeiten)?",
-                  a: "SIXT+, Enterprise Minilease oder Hertz Minilease bieten oft sehr flexible Modelle (z.B. monatlich kündbar). Auch Clyde und Carvolution haben teils kurze Mindestlaufzeiten, oft gegen Aufpreis."
-                },
-                {
-                  q: "Worauf muss ich beim Kilometerpaket achten?",
-                  a: "Prüfen Sie genau, wie viele Kilometer inklusive sind und was Mehrkilometer kosten. Die Nachzahlung am Ende kann teuer werden. Viele Anbieter erlauben, das Paket monatlich anzupassen."
-                },
-                {
-                  q: "Was bedeutet Selbstbehalt bei der Versicherung?",
-                  a: "Das ist der Betrag, den Sie im Schadenfall selbst zahlen müssen. Auto-Abos haben oft fixierte Selbstbehalte (z.B. CHF 1000). Vergleichen Sie das, besonders wenn Sie Junglenker sind."
-                },
-                {
-                  q: "Was sind Carify Alternativen?",
-                  a: "Direkte Alternativen sind Carvolution, Clyde oder FlatDrive. Wenn Sie günstiger fahren wollen und auf das 'Abo-Label' verzichten können, ist eine <Link href='/leasinguebernahme' class='text-primary hover:underline font-bold'>Leasingübernahme</Link> oft eine starke Alternative."
-                },
-                {
-                  q: "Wann ist Leasingübernahme die bessere Wahl?",
-                  a: "Wenn Sie die monatlichen Fixkosten senken wollen und bereit sind, Versicherung und Service selbst zu managen. Sie übernehmen oft Verträge mit sehr attraktiven 'alten' Konditionen."
-                }
-              ].map((faq, i) => (
-                <AccordionItem 
-                  key={i}
-                  value={`item-${i}`} 
-                  className="bg-neutral-50 rounded-2xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:bg-white data-[state=open]:shadow-lg"
-                >
-                  <AccordionTrigger className="text-left font-bold text-neutral-900 hover:no-underline py-6 text-lg">
-                    {faq.q}
+        {/* FAQ SECTION */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-12 text-center">
+              FAQ: Auto-Abos im Vergleich (Schweiz)
+            </h2>
+
+            <Accordion type="single" collapsible className="space-y-4">
+              {faqs.map((faq, index) => (
+                <AccordionItem key={index} value={`item-${index}`} className="border rounded-2xl px-6">
+                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline">
+                    {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                    <div dangerouslySetInnerHTML={{ __html: faq.a }} />
+                  <AccordionContent className="text-neutral-700 pt-4">
+                    {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -791,66 +712,35 @@ export default function AutoAbosImVergleich() {
           </div>
         </section>
 
-        {/* FINAL CTA - Premium Dark Section */}
-        <section className="py-24 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 px-4 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-0 w-96 h-96 bg-primary rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary rounded-full blur-3xl" />
-          </div>
-
-          <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
-            <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold mb-4">
-              <Sparkles className="w-4 h-4" />
-              Fazit
-            </div>
-            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">
-              Vergleich gemacht —<br />
-              <span className="text-primary">jetzt die Monatsrate optimieren.</span>
+        {/* FINAL CTA */}
+        <section className="py-20 bg-gradient-to-br from-primary to-primary/80 text-white">
+          <div className="container mx-auto px-4 max-w-4xl text-center">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
+              Vergleich gemacht — jetzt die Monatsrate optimieren.
             </h2>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Button 
-                asChild 
-                size="lg" 
-                className="w-full sm:w-auto h-16 px-10 text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/40 transition-all group"
-              >
+            <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
+              Du hast die Auto-Abo Anbieter verglichen. Jetzt sieh dir an, wie viel du mit einer Leasingübernahme sparen könntest.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" variant="secondary" asChild>
                 <Link href="/leasinguebernahme">
-                  Leasingübernahmen ansehen
-                  <ArrowRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
+                  Leasingübernahmen ansehen <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button 
-                asChild 
-                size="lg" 
-                variant="outline" 
-                className="w-full sm:w-auto h-16 px-10 text-xl font-black border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-2xl bg-transparent transition-all"
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/30"
+                asChild
               >
-                <Link href="/inserat-erstellen">
-                  Leasing abgeben
-                </Link>
+                <Link href="/inserat-erstellen">Leasing abgeben</Link>
               </Button>
-            </div>
-            
-            {/* Trust Indicators */}
-            <div className="pt-12 flex flex-wrap items-center justify-center gap-8 text-neutral-400 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <span>Unabhängig</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-green-400" />
-                <span>Fairer Vergleich</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-green-400" />
-                <span>Schweizer Plattform</span>
-              </div>
             </div>
           </div>
         </section>
 
         {/* PREMIUM LISTINGS - Dynamic Load */}
         <PremiumListings />
-        
       </main>
     </>
   );

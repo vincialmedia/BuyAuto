@@ -1,14 +1,14 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // 1. Handle redirects
-  if (request.nextUrl.pathname === "/carify-alternativen") {
-    return NextResponse.redirect(new URL("/auto-abos-im-vergleich", request.url), 301)
+  const { pathname } = request.nextUrl;
+
+  // 301 Redirect: /carify-alternativen -> /auto-abos-im-vergleich
+  if (pathname === '/carify-alternativen') {
+    return NextResponse.redirect(new URL('/auto-abos-im-vergleich', request.url), 301);
   }
 
-  // 2. Initialize Supabase response
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
         remove(name: string, options: CookieOptions) {
           request.cookies.set({
             name,
-            value: "",
+            value: '',
             ...options,
           })
           response = NextResponse.next({
@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
           })
           response.cookies.set({
             name,
-            value: "",
+            value: '',
             ...options,
           })
         },
@@ -61,19 +61,35 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Protected routes - redirect to auth if not logged in
+  if (!user && (pathname.startsWith('/dashboard') || pathname === '/inserat-erstellen')) {
+    return NextResponse.redirect(new URL('/auth', request.url))
+  }
+
+  // Admin route protection
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/auth', request.url))
+    }
+    
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+    
+    if (!profile?.is_admin) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
 
   return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
