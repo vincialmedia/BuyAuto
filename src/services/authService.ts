@@ -29,9 +29,29 @@ const authService = {
 
     console.log("Sign in successful, session:", data.session);
 
+    // Ensure SSR/middleware can see the session: set auth cookies server-side
+    if (data.session?.access_token && data.session.refresh_token) {
+      try {
+        const resp = await fetch("/api/auth-set-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          }),
+        });
+
+        if (!resp.ok) {
+          console.error("Failed to set session cookie:", await resp.text());
+        }
+      } catch (e) {
+        console.error("Error setting session cookie:", e);
+      }
+    }
+
     // Wait a moment to ensure session is properly set on server
     if (data.session) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 250));
     }
 
     return data;
@@ -80,34 +100,18 @@ const authService = {
       }
     }
 
-    // After successful sign up, invoke the welcome-email function
-    if (data.user) {
-        console.log("Invoking welcome-email function...");
-        try {
-            const { data: functionData, error: functionError } = await supabase.functions.invoke("welcome-email", {
-                body: {
-                    record: {
-                        email: data.user.email,
-                        raw_user_meta_data: data.user.user_metadata
-                    }
-                },
-            });
-
-            if (functionError) {
-                console.error("Error invoking welcome-email function:", functionError);
-            } else {
-                console.log("welcome-email function invoked successfully:", functionData);
-            }
-        } catch (e) {
-            console.error("Caught an exception when invoking welcome-email function:", e);
-        }
-    }
-
     return data;
   },
 
   async signOut() {
     console.log("Starting sign out process");
+
+    // Clear server-side cookies (SSR/middleware visibility)
+    try {
+      await fetch("/api/auth-signout", { method: "POST" });
+    } catch (e) {
+      console.error("Error clearing server auth cookies:", e);
+    }
     
     const { error } = await supabase.auth.signOut();
     

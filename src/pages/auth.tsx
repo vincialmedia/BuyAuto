@@ -21,20 +21,37 @@ export default function AuthPage() {
       // Check for redirect parameter first, then callback URL
       const redirectParam = router.query.redirect as string;
       const callbackUrl = router.query.callback as string;
+
+      const safeInternalPath = (raw?: string) => {
+        if (!raw) return null;
+        let decoded = raw;
+        try {
+          decoded = decodeURIComponent(raw);
+        } catch {
+          decoded = raw;
+        }
+        if (!decoded.startsWith("/")) return null;
+        if (decoded.startsWith("//")) return null;
+        return decoded;
+      };
+
+      const safeRedirect = safeInternalPath(redirectParam);
+      const safeCallback = safeInternalPath(callbackUrl);
+
       let redirectUrl = "/dashboard"; // Default for regular users
       
       if (isAdmin) {
         // Admins go to admin dashboard (ignore callback/redirect)
         redirectUrl = "/admin";
         console.log("User is admin, redirecting to admin dashboard");
-      } else if (redirectParam) {
+      } else if (safeRedirect) {
         // Regular users: use redirect parameter if provided (takes priority)
-        redirectUrl = redirectParam;
-        console.log("User is regular user with redirect param, redirecting to:", redirectParam);
-      } else if (callbackUrl) {
+        redirectUrl = safeRedirect;
+        console.log("User is regular user with redirect param, redirecting to:", safeRedirect);
+      } else if (safeCallback) {
         // Regular users: use callback URL if provided
-        redirectUrl = callbackUrl;
-        console.log("User is regular user with callback, redirecting to:", callbackUrl);
+        redirectUrl = safeCallback;
+        console.log("User is regular user with callback, redirecting to:", safeCallback);
       } else {
         // Regular users without callback/redirect: go to dashboard
         console.log("User is regular user without callback/redirect, redirecting to user dashboard");
@@ -44,7 +61,7 @@ export default function AuthPage() {
       
       // Fix: Only navigate if we're not already on the target page
       const currentPath = router.pathname;
-      const targetPath = redirectUrl.split('?')[0]; // Get path without query params
+      const targetPath = redirectUrl.split("?")[0]; // Get path without query params
       
       if (currentPath !== targetPath) {
         // INSTANT redirect - no delay needed!

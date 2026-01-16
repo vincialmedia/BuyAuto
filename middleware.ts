@@ -31,7 +31,9 @@ export async function middleware(req: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (profile?.role !== "admin") {
+    const role = (profile as unknown as { role?: string } | null)?.role;
+
+    if (role !== "admin") {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
