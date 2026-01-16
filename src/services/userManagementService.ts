@@ -76,9 +76,9 @@ export const userManagementService = {
 
   async upgradeToGarage(details: GarageDetails) {
     const { data, error } = await supabase.rpc("upgrade_to_garage", {
-      garage_name: details.garage_name,
-      city: details.city,
-      contact_email: details.contact_email,
+      p_garage_name: details.garage_name,
+      p_city: details.city,
+      p_contact_email: details.contact_email,
     });
 
     if (error) throw error;
