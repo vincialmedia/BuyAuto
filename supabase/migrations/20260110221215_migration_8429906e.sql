@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS on_service_inquiry_created ON service_inquiries; DROP FUNCTION IF EXISTS handle_new_service_inquiry();

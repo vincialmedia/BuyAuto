@@ -33,6 +33,44 @@ export type Database = {
         }
         Relationships: []
       }
+      garages: {
+        Row: {
+          city: string | null
+          contact_email: string | null
+          created_at: string | null
+          garage_name: string
+          id: string
+          owner_user_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          contact_email?: string | null
+          created_at?: string | null
+          garage_name: string
+          id?: string
+          owner_user_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          contact_email?: string | null
+          created_at?: string | null
+          garage_name?: string
+          id?: string
+          owner_user_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garages_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_inquiries: {
         Row: {
           created_at: string
@@ -428,6 +466,10 @@ export type Database = {
         }[]
       }
       supabase_url: { Args: never; Returns: string }
+      upgrade_to_garage: {
+        Args: { p_city: string; p_contact_email: string; p_garage_name: string }
+        Returns: Json
+      }
     }
     Enums: {
       listing_status:

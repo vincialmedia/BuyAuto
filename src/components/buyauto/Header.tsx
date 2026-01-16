@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
-import { User, LogOut, Settings, BarChart3, Plus, Loader2 } from "lucide-react";
+import { User, LogOut, Settings, BarChart3, Plus, Loader2, ConciergeBell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -111,6 +111,13 @@ export default function Header() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
               <Link 
+                href="/leasing-concierge" 
+                className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-2"
+              >
+                <ConciergeBell className="w-4 h-4" />
+                Leasing Concierge
+              </Link>
+              <Link 
                 href="/suche" 
                 className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
               >
@@ -131,7 +138,17 @@ export default function Header() {
             </nav>
 
             {/* Mobile Action CTA - visible only on mobile */}
-            <div className="flex md:hidden items-center flex-shrink-0">
+            <div className="flex md:hidden items-center flex-shrink-0 gap-3">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 shadow-sm rounded-full"
+                asChild
+              >
+                <Link href="/leasing-concierge" aria-label="Leasing Concierge Service">
+                  <ConciergeBell className="h-5 w-5" />
+                </Link>
+              </Button>
               <Button
                 size="sm"
                 className="bg-red-500 hover:bg-red-600 text-white shadow-sm relative px-2 xs:px-3 py-2 text-xs font-medium"

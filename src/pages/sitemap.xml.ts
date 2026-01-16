@@ -13,6 +13,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     '',
     '/suche',
     '/inserat-erstellen',
+    '/leasing-concierge',
     '/leasinguebernahme',
     '/leasinguebernahme-kosten',
     '/leasingvertrag-uebertragen',
@@ -23,7 +24,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     '/leasing-abgeben-schweiz',
     '/autoscout24-alternative-leasinguebernahme',
     '/carify-alternativen', // Keeping this for reference, but it will 301 to the new page
-    '/auto-abos-im-vergleich', // NEW PAGE ADDED
+    '/auto-abos-im-vergleich',
     '/datenschutz',
     '/agb',
   ];

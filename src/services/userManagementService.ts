@@ -1,238 +1,63 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface UserProfile {
   id: string;
-  email: string | undefined;
+  email: string | null;
   full_name: string | null;
-  role: string;
+  role: 'private' | 'garage' | 'admin';
   created_at: string;
-  updated_at: string | null;
-  last_sign_in_at?: string | null;
 }
 
-export interface UserWithStats extends UserProfile {
-  listings_count: number;
-  active_listings: number;
-  pending_listings: number;
-}
-
-export interface UserFilters {
-  search?: string;
-  role?: 'admin' | 'user' | 'all';
-  page?: number;
-  limit?: number;
+export interface GarageDetails {
+  garage_name: string;
+  city: string | null;
+  contact_email: string | null;
 }
 
 export const userManagementService = {
-  /**
-   * Get all users with stats
-   */
-  async getUsers(filters: UserFilters = {}): Promise<{
-    users: UserWithStats[];
-    total: number;
-    page: number;
-    totalPages: number;
-  }> {
-    const {
-      search,
-      role = 'all',
-      page = 1,
-      limit = 25
-    } = filters;
-
-    // Use RPC function to bypass RLS and get all users
-    const { data: rpcData, error: rpcError } = await supabase
-      .rpc('get_all_users_with_profiles');
-
-    if (rpcError) {
-      console.error('Error fetching users:', rpcError);
-      throw rpcError;
-    }
-    
-    // Transform raw data to match frontend's UserProfile type expectation (id vs user_id)
-    const allProfiles = (rpcData || []).map((p: any) => ({
-      ...p,
-      id: p.user_id,
-    }));
-
-
-    let profiles = allProfiles;
-
-    // Apply filters in JavaScript
-    if (role !== 'all') {
-      profiles = profiles.filter((p: any) => p.role === role);
-    }
-
-    if (search) {
-      const searchLower = search.toLowerCase();
-      profiles = profiles.filter((p: any) => 
-        p.email?.toLowerCase().includes(searchLower) ||
-        p.full_name?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    const total = profiles.length;
-
-    // Apply pagination
-    const from = (page - 1) * limit;
-    const to = from + limit;
-    const paginatedProfiles = profiles.slice(from, to);
-
-    // Get listings count for each user
-    const usersWithStats = await Promise.all(
-      paginatedProfiles.map(async (profile: any) => {
-        const { count: totalListings } = await supabase
-          .from('listings')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', profile.id);
-
-        const { count: activeListings } = await supabase
-          .from('listings')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', profile.id)
-          .eq('status', 'published');
-
-        const { count: pendingListings } = await supabase
-          .from('listings')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', profile.id)
-          .eq('status', 'pending');
-
-        return {
-          ...profile,
-          listings_count: totalListings || 0,
-          active_listings: activeListings || 0,
-          pending_listings: pendingListings || 0,
-        };
-      })
-    );
-
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      users: usersWithStats as UserWithStats[],
-      total,
-      page,
-      totalPages
-    };
-  },
-
-  /**
-   * Get user details including their listings
-   */
-  async getUserDetails(userId: string): Promise<{
-    profile: UserProfile;
-    listings: any[];
-  }> {
-    // This is inefficient, but we'll stick to fixing the immediate bug.
-    // It should ideally fetch a single user.
-    const { data: rpcData, error: rpcError } = await supabase
-      .rpc('get_all_users_with_profiles');
-
-    if (rpcError) throw rpcError;
-
-    const rawProfile = rpcData?.find((p: any) => p.user_id === userId);
-    if (!rawProfile) throw new Error('User not found');
-
-    const { data: listings, error: listingsError } = await supabase
-      .from('listings')
-      .select('id, brand, model, status, created_at, price_paid_chf')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (listingsError) throw listingsError;
-
-    // Transform to match UserProfile interface
-    const profile: UserProfile = {
-      ...rawProfile,
-      id: rawProfile.user_id,
-    };
-
-    return {
-      profile,
-      listings: listings || []
-    };
-  },
-
-  /**
-   * Delete user account (cascade to listings via DB constraint)
-   */
-  async deleteUser(userId: string): Promise<void> {
-    // Get the current session to pass to the API
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      throw new Error("No active session");
-    }
-
-    // Call our secure API endpoint to delete the user
-    const response = await fetch("/api/admin/delete-user", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ userId }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to delete user");
-    }
-
-    return;
-  },
-
-  /**
-   * Send password reset email
-   */
-  async resetUserPassword(email: string): Promise<void> {
-    if(!email) {
-      throw new Error("Email is not available for this user.");
-    }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?mode=reset`,
-    });
-
-    if (error) throw error;
-  },
-
-  /**
-   * Update user role (admin/user)
-   */
-  async updateUserRole(userId: string, role: 'admin' | 'user'): Promise<void> {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ role })
-      .eq('id', userId);
-
-    if (error) throw error;
-  },
-
-  /**
-   * Get user statistics
-   */
-  async getUserStats(): Promise<{
-    total: number;
-    admins: number;
-    users: number;
-  }> {
+  async getProfile(userId: string) {
     const { data, error } = await supabase
       .from('profiles')
-      .select('role');
+      .select('*')
+      .eq('id', userId)
+      .single();
 
     if (error) throw error;
+    return data as UserProfile;
+  },
 
-    const stats = (data || []).reduce((acc: any, profile: any) => {
-      acc.total++;
-      if (profile.role === 'admin') {
-        acc.admins++;
-      } else {
-        acc.users++;
-      }
-      return acc;
-    }, { total: 0, admins: 0, users: 0 });
+  async updateProfile(userId: string, updates: Partial<UserProfile>) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
 
-    return stats;
+    if (error) throw error;
+    return data;
+  },
+  
+  /**
+   * Atomically upgrades a user to 'garage' role and creates their garage profile.
+   * Uses the 'upgrade_to_garage' database RPC function.
+   */
+  async upgradeToGarage(details: GarageDetails) {
+    const { data, error } = await supabase.rpc('upgrade_to_garage', {
+      garage_name: details.garage_name,
+      city: details.city,
+      contact_email: details.contact_email
+    });
+
+    if (error) throw error;
+    
+    // The RPC returns { success: boolean, error: string }
+    // We check the returned JSON object
+    if (data && (data as any).error) {
+      throw new Error((data as any).error);
+    }
+    
+    return data;
   }
 };

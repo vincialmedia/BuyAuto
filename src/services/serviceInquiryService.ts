@@ -1,8 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type ServiceInquiryInsert = Database["public"]["Tables"]["service_inquiries"]["Insert"];
-
 export interface ServiceInquiryFormData {
   vorname: string;
   name: string;
@@ -15,9 +13,11 @@ export interface ServiceInquiryFormData {
 
 /**
  * Submit a new service inquiry
- * The database trigger will automatically send an email to hello@buyauto.ch
+ * 1. Saves to Database (Reliability/CRM)
+ * 2. Triggers Email Notification DIRECTLY (Fast & Simple)
  */
 export async function submitServiceInquiry(data: ServiceInquiryFormData) {
+  // 1. Save to Database
   const inquiryData = {
     vorname: data.vorname,
     name: data.name,
@@ -26,21 +26,40 @@ export async function submitServiceInquiry(data: ServiceInquiryFormData) {
     inquiry_type: data.inquiry_type,
     leasinggesellschaft: data.leasing_company || null,
     nachricht: data.message,
-    status: "new",
+    status: "new", // ensuring valid status
   };
 
-  const { data: result, error } = await supabase
+  const { data: savedRecord, error: dbError } = await supabase
     .from("service_inquiries")
     .insert(inquiryData)
     .select()
     .single();
 
-  if (error) {
-    console.error("Error submitting service inquiry:", error);
-    throw new Error("Fehler beim Senden der Anfrage. Bitte versuche es erneut.");
+  if (dbError) {
+    console.error("Error saving service inquiry to DB:", dbError);
+    // Even if DB fails, we could technically try to send the email, 
+    // but usually DB failure means something bigger is wrong.
+    throw new Error("Fehler beim Speichern der Anfrage.");
   }
 
-  return result;
+  // 2. Trigger Email Notification Directly
+  // We send the 'savedRecord' so the email function has all the final IDs and timestamps
+  try {
+    const { error: emailError } = await supabase.functions.invoke('service-inquiry-email', {
+      body: savedRecord // Send the exact data we just saved
+    });
+    
+    if (emailError) {
+      console.error("Warning: Email notification failed to send:", emailError);
+      // We do NOT throw here because the inquiry IS saved in the database.
+      // We might want to show a specific warning, but for the user "Success" is better 
+      // since we will see it in the dashboard.
+    }
+  } catch (err) {
+    console.error("Exception sending email notification:", err);
+  }
+
+  return savedRecord;
 }
 
 /**

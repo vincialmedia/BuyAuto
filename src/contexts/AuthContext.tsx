@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -10,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   adminLoading: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isAdmin: false,
   adminLoading: true,
+  refreshProfile: async () => {},
 });
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -32,7 +35,6 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     try {
       setAdminLoading(true);
       
-      // Fix: Use .maybeSingle() and select both id and role for better compatibility
       const { data, error } = await supabase
         .from('profiles')
         .select('id, role')
@@ -44,20 +46,35 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         console.log('[ADMIN CHECK FAILED] Due to database error.');
         setIsAdmin(false);
       } else {
-        console.log('[ADMIN CHECK DATA] Raw profile data from DB:', data);
-        const role = data?.role ?? 'user';
-        console.log(`[ADMIN CHECK RESULT] Role resolved to: '${role}'. Is admin: ${role === 'admin'}`);
+        const role = data?.role ?? 'private';
         setIsAdmin(role === 'admin');
         
         if (!data) {
-          console.log('[ADMIN CHECK WARNING] No profile found for user, defaulting to user role');
+          console.log('[ADMIN CHECK WARNING] No profile found for user');
         }
       }
     } catch (error) {
       console.error('Error checking admin role:', error);
-      console.log('[ADMIN CHECK FAILED] Due to exception.');
       setIsAdmin(false);
     } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const refreshProfile = async () => {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error refreshing session:', error);
+      return;
+    }
+    
+    setSession(session);
+    setUser(session?.user ?? null);
+    
+    if (session?.user) {
+      await checkAdminRole(session.user.id);
+    } else {
+      setIsAdmin(false);
       setAdminLoading(false);
     }
   };
@@ -72,7 +89,6 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
       
       if (mounted) {
-        console.log('Initial session:', session);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -91,7 +107,6 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, session);
       
       if (mounted) {
         setSession(session);
@@ -120,7 +135,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       session, 
       loading, 
       isAdmin, 
-      adminLoading 
+      adminLoading,
+      refreshProfile
     }}>
       {children}
     </AuthContext.Provider>
