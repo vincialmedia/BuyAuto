@@ -8,6 +8,7 @@ import { Step4_Images } from "./Step4_Images";
 import Step5_PreviewAndPay from "./Step5_PreviewAndPay";
 import SuccessScreen from "./SuccessScreen";
 import { ListingData } from "@/lib/buyauto/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface WizardContextType {
   data: ListingData;
@@ -36,6 +37,9 @@ export const useWizard = () => {
 const STORAGE_KEY = "listing_wizard_draft";
 
 export default function ListingWizard() {
+  const { profile } = useAuth();
+  const isGarage = profile?.role === "garage";
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
   const [guestImageFiles, setGuestImageFiles] = useState<File[]>([]);
@@ -105,17 +109,31 @@ export default function ListingWizard() {
     return 5;
   }, [data.price_plan]);
 
-  const nextStep = useCallback(() => {
-    if (currentStep < 6) { // Updated to 6 to account for new auth step
-      setCurrentStep(prev => prev + 1);
+  useEffect(() => {
+    if (isGarage && currentStep === 3) {
+      setCurrentStep(4);
     }
-  }, [currentStep]);
+  }, [currentStep, isGarage]);
+
+  const nextStep = useCallback(() => {
+    if (currentStep < 5) {
+      setCurrentStep((prev) => {
+        if (prev >= 5) return prev;
+        if (isGarage && prev === 2) return 4;
+        return prev + 1;
+      });
+    }
+  }, [currentStep, isGarage]);
 
   const prevStep = useCallback(() => {
     if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep((prev) => {
+        if (prev <= 1) return prev;
+        if (isGarage && prev === 4) return 2;
+        return prev - 1;
+      });
     }
-  }, [currentStep]);
+  }, [currentStep, isGarage]);
 
   const contextValue: WizardContextType = {
     data,
@@ -157,7 +175,7 @@ export default function ListingWizard() {
               <div className="p-6 md:p-8">
                 {currentStep === 1 && <Step1_VehicleData />}
                 {currentStep === 2 && <Step2_LeasingDetails />}
-                {currentStep === 3 && <Step3_PlanSelection />}
+                {currentStep === 3 && !isGarage && <Step3_PlanSelection />}
                 {currentStep === 4 && <Step4_Images />}
                 {currentStep === 5 && <Step5_PreviewAndPay />}
               </div>

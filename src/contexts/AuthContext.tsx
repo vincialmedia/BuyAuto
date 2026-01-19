@@ -1,14 +1,19 @@
-
 "use client";
 
+import type { ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: ProfileRow | null;
   loading: boolean;
+  profileLoading: boolean;
   isAdmin: boolean;
   adminLoading: boolean;
   refreshProfile: () => Promise<void>;
@@ -17,64 +22,76 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
+  profile: null,
   loading: true,
+  profileLoading: true,
   isAdmin: false,
   adminLoading: true,
   refreshProfile: async () => {},
 });
 
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
+export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
 
-  // Check if user is admin
-  const checkAdminRole = async (userId: string) => {
+  const fetchProfile = async (userId: string) => {
     try {
+      setProfileLoading(true);
       setAdminLoading(true);
-      
+
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', userId)
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
         .maybeSingle();
 
       if (error) {
-        console.error('Error checking admin role:', error);
-        console.log('[ADMIN CHECK FAILED] Due to database error.');
+        console.error("Error fetching profile:", error);
+        setProfile(null);
         setIsAdmin(false);
-      } else {
-        const role = data?.role ?? 'private';
-        setIsAdmin(role === 'admin');
-        
-        if (!data) {
-          console.log('[ADMIN CHECK WARNING] No profile found for user');
-        }
+        return;
       }
+
+      setProfile(data ?? null);
+
+      const role = data?.role ?? "private";
+      setIsAdmin(role === "admin");
     } catch (error) {
-      console.error('Error checking admin role:', error);
+      console.error("Error fetching profile:", error);
+      setProfile(null);
       setIsAdmin(false);
     } finally {
+      setProfileLoading(false);
       setAdminLoading(false);
     }
   };
 
   const refreshProfile = async () => {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+
     if (error) {
-      console.error('Error refreshing session:', error);
+      console.error("Error refreshing session:", error);
       return;
     }
-    
-    setSession(session);
-    setUser(session?.user ?? null);
-    
-    if (session?.user) {
-      await checkAdminRole(session.user.id);
+
+    const nextSession = data.session ?? null;
+
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+
+    if (nextSession?.user) {
+      await fetchProfile(nextSession.user.id);
     } else {
+      setProfile(null);
       setIsAdmin(false);
+      setProfileLoading(false);
       setAdminLoading(false);
     }
   };
@@ -82,44 +99,45 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
-        console.error('Error getting session:', error);
+        console.error("Error getting session:", error);
       }
-      
-      if (mounted) {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
 
-        // Check admin role if user exists
-        if (session?.user) {
-          checkAdminRole(session.user.id);
-        } else {
-          setIsAdmin(false);
-          setAdminLoading(false);
-        }
+      if (!mounted) return;
+
+      const nextSession = data.session ?? null;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+
+      if (nextSession?.user) {
+        fetchProfile(nextSession.user.id);
+      } else {
+        setProfile(null);
+        setIsAdmin(false);
+        setProfileLoading(false);
+        setAdminLoading(false);
       }
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      
-      if (mounted) {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!mounted) return;
 
-        // Check admin role on auth changes
-        if (session?.user) {
-          checkAdminRole(session.user.id);
-        } else {
-          setIsAdmin(false);
-          setAdminLoading(false);
-        }
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+
+      if (nextSession?.user) {
+        fetchProfile(nextSession.user.id);
+      } else {
+        setProfile(null);
+        setIsAdmin(false);
+        setProfileLoading(false);
+        setAdminLoading(false);
       }
     });
 
@@ -130,14 +148,18 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      loading, 
-      isAdmin, 
-      adminLoading,
-      refreshProfile
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        profile,
+        loading,
+        profileLoading,
+        isAdmin,
+        adminLoading,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

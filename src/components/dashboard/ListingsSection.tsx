@@ -38,7 +38,7 @@ interface ListingsSectionProps {
 export default function ListingsSection({ listings, onRefresh }: ListingsSectionProps) {
   const router = useRouter();
   const { user, profile } = useAuth();
-  const isGarage = profile?.role === 'garage';
+  const isGarage = profile?.role === "garage";
 
   const [editingListing, setEditingListing] = useState<ListingDetail | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -101,11 +101,11 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
       setIsArchiving(true);
       const { error } = await supabase
         .from('listings')
-        .update({ status: 'archived' })
+        .update({ status: 'inactive' })
         .eq('id', listing.id);
 
       if (error) throw error;
-      toast.success("Inserat archiviert");
+      toast.success("Inserat deaktiviert");
       onRefresh();
     } catch (e: any) {
       toast.error("Fehler beim Archivieren: " + e.message);
@@ -269,7 +269,7 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
 
       <div className="grid gap-4">
         {currentListings.map((listing) => (
-          <Card key={listing.id} className={`overflow-hidden border-neutral-200 transition-all hover:shadow-md ${listing.status === 'archived' ? 'opacity-75 bg-neutral-50' : ''}`}>
+          <Card key={listing.id} className={`overflow-hidden border-neutral-200 transition-all hover:shadow-md ${listing.status === 'inactive' ? 'opacity-75 bg-neutral-50' : ''}`}>
             <div className="flex flex-col sm:flex-row">
               {/* Image */}
               <div className="w-full sm:w-48 h-32 sm:h-auto bg-neutral-100 relative">
@@ -289,9 +289,9 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
                     Premium
                   </div>
                 )}
-                {listing.status === 'archived' && (
+                {listing.status === 'inactive' && (
                   <div className="absolute inset-0 bg-neutral-900/10 flex items-center justify-center">
-                    <Badge variant="secondary" className="bg-neutral-800 text-white">Archiviert</Badge>
+                    <Badge variant="secondary" className="bg-neutral-800 text-white">Inaktiv</Badge>
                   </div>
                 )}
               </div>
@@ -335,13 +335,13 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
                       </DropdownMenuItem>
                       
                       {/* Archive / Unarchive Actions */}
-                      {listing.status === 'archived' ? (
+                      {listing.status === 'inactive' ? (
                         <DropdownMenuItem onClick={() => handleUnarchive(listing)}>
                           <RotateCcw className="mr-2 h-4 w-4" /> Reaktivieren
                         </DropdownMenuItem>
                       ) : (
                          <DropdownMenuItem onClick={() => handleArchive(listing)}>
-                          <Archive className="mr-2 h-4 w-4" /> Archivieren
+                          <Archive className="mr-2 h-4 w-4" /> Deaktivieren
                         </DropdownMenuItem>
                       )}
 

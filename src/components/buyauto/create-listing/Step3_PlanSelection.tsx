@@ -21,7 +21,8 @@ const planMapping: Record<Plan, PricePlanId> = {
 export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep } = useWizard();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isGarage = profile?.role === "garage";
 
   const [selectedPlan, setSelectedPlan] = useState<Plan>((data.price_plan as Plan) || 'standard');
   const [isPremium, setIsPremium] = useState<boolean>(Boolean(data.premium) || false);
@@ -32,6 +33,12 @@ export default function Step3_PlanSelection() {
     const newTotal = calculateTotal(selectedPlan, isPremium);
     setTotal(newTotal);
   }, [selectedPlan, isPremium]);
+
+  useEffect(() => {
+    if (isGarage) {
+      nextStep();
+    }
+  }, [isGarage, nextStep]);
 
   const handlePlanSelection = async () => {
     if (!user) {
