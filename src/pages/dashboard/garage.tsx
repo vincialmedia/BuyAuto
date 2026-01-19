@@ -1,23 +1,26 @@
-
 import { useEffect } from "react";
 import DashboardLayout from "@/components/buyauto/dashboard/DashboardLayout";
 import Head from "next/head";
+import type { GetServerSideProps } from "next";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Car, Users, TrendingUp } from "lucide-react";
+import { Car, Users } from "lucide-react";
+import ListingsSection from "@/components/buyauto/dashboard/ListingsSection";
 
 export default function GarageDashboardPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, profile, profileLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/auth");
+    if (!authLoading && !profileLoading && user && profile?.role !== "garage") {
+      router.push("/dashboard");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, profile, profileLoading]);
 
-  if (authLoading || !user) {
+  if (authLoading || profileLoading || !user) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -75,8 +78,46 @@ export default function GarageDashboardPage() {
               <li>Performance-Analysen</li>
             </ul>
           </div>
+
+          <ListingsSection />
         </div>
       </DashboardLayout>
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const supabase = createPagesServerClient<Database>(ctx);
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/auth",
+        permanent: false,
+      },
+    };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  const role = (profile as unknown as { role?: string } | null)?.role ?? "private";
+
+  if (role !== "garage") {
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: false,
+      },
+    };
+  }
+
+  return { props: {} };
+};

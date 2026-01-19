@@ -15,6 +15,7 @@ import { getListingByIdForOwner } from "@/services/createListingService";
 import type { PaymentIntent } from '@stripe/stripe-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useRouter } from 'next/router';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -65,6 +66,12 @@ export default function Step5_PreviewAndPay() {
   const [isPreparingPayment, setIsPreparingPayment] = useState(false);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [isPublishingGarage, setIsPublishingGarage] = useState(false);
+  const [garagePublishError, setGaragePublishError] = useState<{
+    message: string;
+    code?: string | null;
+    details?: string | null;
+    hint?: string | null;
+  } | null>(null);
 
   const isGarage = profile?.role === 'garage';
 
@@ -257,29 +264,43 @@ export default function Step5_PreviewAndPay() {
   const handleGaragePublish = async () => {
     if (!user || !data.id) return;
 
+    setGaragePublishError(null);
     setIsPublishingGarage(true);
     try {
-      // Ensure garage_id is set correctly (RPC may enforce listing.garage_id)
+      // Ensure garage_id is set correctly (RPC enforces listing.garage_id)
       const { data: garageRow, error: garageError } = await supabase
         .from("garages")
-        .select("id")
+        .select("id, listing_limit, plan")
         .eq("owner_user_id", user.id)
         .single();
 
       if (garageError) throw garageError;
 
       if (garageRow?.id) {
-        const { error: updateGarageIdError } = await supabase
+        const { data: updated, error: updateGarageIdError } = await supabase
           .from("listings")
           .update({ garage_id: garageRow.id })
           .eq("id", data.id)
-          .eq("created_by", user.id);
+          .eq("created_by", user.id)
+          .select("id, garage_id")
+          .maybeSingle();
 
         if (updateGarageIdError) throw updateGarageIdError;
+
+        if (!updated?.id) {
+          const message = "Konnte garage_id nicht setzen. Inserat nicht gefunden oder keine Berechtigung (created_by stimmt evtl. nicht).";
+          setGaragePublishError({ message });
+          toast({
+            title: "Veröffentlichen fehlgeschlagen",
+            description: message,
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Call RPC to enforce limit
-      const { data: result, error } = await supabase
+      const { error } = await supabase
         .rpc('publish_garage_listing', { listing_id: data.id });
 
       if (error) {
@@ -289,6 +310,13 @@ export default function Step5_PreviewAndPay() {
           hint?: string | null;
           code?: string | null;
         };
+
+        setGaragePublishError({
+          message: err.message || "Unbekannter Fehler.",
+          code: err.code ?? null,
+          details: err.details ?? null,
+          hint: err.hint ?? null,
+        });
 
         const extra = [err.code ? `Code: ${err.code}` : null, err.details ? `Details: ${err.details}` : null, err.hint ? `Hint: ${err.hint}` : null]
           .filter(Boolean)
@@ -324,6 +352,13 @@ export default function Step5_PreviewAndPay() {
       const extra = [error?.code ? `Code: ${String(error.code)}` : null, error?.details ? `Details: ${String(error.details)}` : null, error?.hint ? `Hint: ${String(error.hint)}` : null]
         .filter(Boolean)
         .join(" · ");
+
+      setGaragePublishError({
+        message,
+        code: error?.code ?? null,
+        details: error?.details ?? null,
+        hint: error?.hint ?? null,
+      });
 
       toast({
         title: "Fehler beim Veröffentlichen",
@@ -522,23 +557,43 @@ export default function Step5_PreviewAndPay() {
             </Button>
             
             {isGarage ? (
-              <Button 
-                onClick={handleGaragePublish} 
-                disabled={isPublishingGarage}
-                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[200px]"
-              >
-                {isPublishingGarage ? (
-                  <>
-                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Veröffentlichen...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Jetzt Veröffentlichen
-                  </>
+              <div className="flex flex-col items-end gap-3">
+                {garagePublishError && (
+                  <Alert className="max-w-[520px]" variant="destructive">
+                    <AlertTitle>Veröffentlichen fehlgeschlagen</AlertTitle>
+                    <AlertDescription>
+                      <div className="space-y-1">
+                        <div>{garagePublishError.message}</div>
+                        {(garagePublishError.code || garagePublishError.details || garagePublishError.hint) && (
+                          <div className="text-xs opacity-90">
+                            {[garagePublishError.code ? `Code: ${garagePublishError.code}` : null, garagePublishError.details ? `Details: ${garagePublishError.details}` : null, garagePublishError.hint ? `Hint: ${garagePublishError.hint}` : null]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
                 )}
-              </Button>
+
+                <Button 
+                  onClick={handleGaragePublish} 
+                  disabled={isPublishingGarage}
+                  className="bg-blue-600 hover:bg-blue-700 text-white min-w-[200px]"
+                >
+                  {isPublishingGarage ? (
+                    <>
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Veröffentlichen...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Jetzt Veröffentlichen
+                    </>
+                  )}
+                </Button>
+              </div>
             ) : (
               <Button 
                 onClick={handlePreparePayment} 

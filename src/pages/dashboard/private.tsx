@@ -1,20 +1,21 @@
-
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/buyauto/dashboard/DashboardLayout";
 import Head from "next/head";
+import type { GetServerSideProps } from "next";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import UserDetailsSection from "@/components/buyauto/dashboard/UserDetailsSection";
 import ListingsSection from "@/components/buyauto/dashboard/ListingsSection";
 import OverviewSection from "@/components/buyauto/dashboard/OverviewSection";
 import { useRouter } from "next/router";
-import { dashboardService } from "@/services/dashboardService";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { userManagementService } from "@/services/userManagementService";
 import { toast } from "sonner";
-import { Car, Building2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 
 export default function PrivateDashboardPage() {
   const router = useRouter();
@@ -161,3 +162,39 @@ export default function PrivateDashboardPage() {
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const supabase = createPagesServerClient<Database>(ctx);
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/auth",
+        permanent: false,
+      },
+    };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  const role = (profile as unknown as { role?: string } | null)?.role ?? "private";
+
+  if (role !== "private") {
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: false,
+      },
+    };
+  }
+
+  return { props: {} };
+};

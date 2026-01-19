@@ -54,34 +54,60 @@ async function getUserListings(): Promise<ListingDetail[]> {
       return [];
     }
 
-    const { data, error } = await supabase
+    const { data: createdByData, error: createdByError } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("created_by", user.id)
+      .order("created_at", { ascending: false });
+
+    if (createdByError) {
+      console.error("Error fetching listings (created_by) for current user:", createdByError);
+    }
+
+    const { data: userIdData, error: userIdError } = await supabase
       .from("listings")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching listings for current user:", error);
-      return [];
+    if (userIdError) {
+      console.error("Error fetching listings (user_id) for current user:", userIdError);
     }
 
-    if (!data) return [];
+    const combined = [
+      ...(Array.isArray(createdByData) ? createdByData : []),
+      ...(Array.isArray(userIdData) ? userIdData : []),
+    ];
 
-    // Map snake_case from DB to the camelCase ListingDetail type the component expects
-    const listings: ListingDetail[] = data.map((dbListing: any) => ({
+    const byId = new Map<string, any>();
+    combined.forEach((row) => {
+      if (row?.id) byId.set(row.id, row);
+    });
+
+    const merged = Array.from(byId.values()).sort((a, b) => {
+      const aDate = a?.created_at ? new Date(a.created_at).getTime() : 0;
+      const bDate = b?.created_at ? new Date(b.created_at).getTime() : 0;
+      return bDate - aDate;
+    });
+
+    const listings: ListingDetail[] = merged.map((dbListing: any) => ({
       ...dbListing,
       pricePerMonthCHF: dbListing.price_per_month_chf,
       remainingMonths: dbListing.remaining_months,
       mileageKm: dbListing.mileage_km,
       depositCHF: dbListing.deposit_chf,
       image_urls: dbListing.images || [],
-      imageUrl: dbListing.cover_image_url || (Array.isArray(dbListing.images) && dbListing.images.length > 0 ? dbListing.images[dbListing.cover_image_index || 0] : ''),
+      imageUrl:
+        dbListing.cover_image_url ||
+        (Array.isArray(dbListing.images) && dbListing.images.length > 0
+          ? dbListing.images[dbListing.cover_image_index || 0]
+          : ""),
     }));
 
     return listings;
 
   } catch (error) {
-    console.error('Dashboard getUserListings unexpected error:', error);
+    console.error("Dashboard getUserListings unexpected error:", error);
     return [];
   }
 }
