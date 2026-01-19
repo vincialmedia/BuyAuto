@@ -1,10 +1,9 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit2, Trash2, Eye, ExternalLink, X, ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import { Edit2, Trash2, Eye, ExternalLink, X, ChevronLeft, ChevronRight, MoreHorizontal, Archive, RotateCcw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +22,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea"; // Added Textarea import
+import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/buyauto/dashboard/StatusBadge";
 import { useRouter } from "next/router";
 import { dashboardService } from "@/services/dashboardService";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ListingsSectionProps {
   listings: ListingDetail[];
@@ -36,20 +37,48 @@ interface ListingsSectionProps {
 
 export default function ListingsSection({ listings, onRefresh }: ListingsSectionProps) {
   const router = useRouter();
+  const { user, profile } = useAuth();
+  const isGarage = profile?.role === 'garage';
+
   const [editingListing, setEditingListing] = useState<ListingDetail | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<ListingDetail | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  
+  // Counters for Garages
+  const [activeCount, setActiveCount] = useState(0);
+  const [limit, setLimit] = useState(10); // Default
 
   // Form state for editing
   const [formData, setFormData] = useState({
     brand: "",
     model: "",
     price: "",
-    description: "", // Added description field
+    description: "",
   });
+
+  // Calculate active listings on load/refresh if garage
+  useEffect(() => {
+    if (isGarage && user) {
+      // 1. Get Limit
+      const fetchLimit = async () => {
+        const { data } = await supabase.from('garages').select('listing_limit').eq('owner_user_id', user.id).single();
+        if (data) setLimit(data.listing_limit || 10);
+      };
+      fetchLimit();
+
+      // 2. Count Active (Published + Active) locally from props or DB
+      // We can use the passed 'listings' prop if it contains everything, 
+      // otherwise it's safer to query or trust the parent.
+      // For now, let's filter the prop 'listings' assuming it contains the user's listings.
+      const count = listings.filter(l => ['published', 'active'].includes(l.status)).length;
+      setActiveCount(count);
+    }
+  }, [listings, isGarage, user]);
+
 
   const handleEditClick = (listing: ListingDetail) => {
     setEditingListing(listing);
@@ -57,7 +86,7 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
       brand: listing.brand,
       model: listing.model,
       price: listing.pricePerMonthCHF.toString(),
-      description: listing.description || "", // Initialize description
+      description: listing.description || "",
     });
     setIsEditOpen(true);
   };
@@ -67,13 +96,63 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
     setIsDeleteOpen(true);
   };
 
+  const handleArchive = async (listing: ListingDetail) => {
+    try {
+      setIsArchiving(true);
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: 'archived' })
+        .eq('id', listing.id);
+
+      if (error) throw error;
+      toast.success("Inserat archiviert");
+      onRefresh();
+    } catch (e: any) {
+      toast.error("Fehler beim Archivieren: " + e.message);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const handleUnarchive = async (listing: ListingDetail) => {
+    // Check limit before unarchiving via RPC logic (or manually here if simple)
+    // We'll try to just publish it again using the same RPC if possible, 
+    // BUT the RPC expects to take ownership.
+    // Simpler: Just try to update status, but we should enforce limit.
+    // Let's use the same RPC 'publish_garage_listing' to enforce limit!
+    try {
+      setIsArchiving(true);
+      if (isGarage) {
+         const { error } = await supabase.rpc('publish_garage_listing', { listing_id: listing.id });
+         if (error) {
+           if (error.message.includes('Limit')) {
+             toast.error("Limit erreicht. Bitte archivieren Sie zuerst ein anderes Inserat.");
+             return;
+           }
+           throw error;
+         }
+      } else {
+        // Privates: just set back to published/pending? 
+        // Privates usually don't use archive, but if they do, revert to pending for review?
+        // Let's assume this is mostly a garage feature.
+         await supabase.from('listings').update({ status: 'pending' }).eq('id', listing.id);
+      }
+      
+      toast.success("Inserat reaktiviert");
+      onRefresh();
+    } catch (e: any) {
+      toast.error("Fehler: " + e.message);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!editingListing) return;
 
     try {
       setIsSaving(true);
       
-      // Parse price to number
       const price = parseFloat(formData.price);
       if (isNaN(price)) {
         toast.error("Bitte geben Sie einen gültigen Preis ein");
@@ -85,13 +164,13 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
         brand: formData.brand,
         model: formData.model,
         price_per_month_chf: price,
-        description: formData.description, // Save description
+        description: formData.description,
       });
 
       if (success) {
         toast.success("Inserat erfolgreich aktualisiert");
         setIsEditOpen(false);
-        onRefresh(); // Refresh the listings list
+        onRefresh();
       } else {
         toast.error("Fehler beim Aktualisieren: " + (error?.message || "Unbekannter Fehler"));
       }
@@ -171,9 +250,26 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
 
   return (
     <div className="space-y-6">
+      {/* Garage Status Bar */}
+      {isGarage && (
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+           <div>
+             <h4 className="font-semibold text-blue-900">Ihr Garagen-Status</h4>
+             <p className="text-sm text-blue-700">
+               Aktive Inserate: <strong>{activeCount}</strong> / {limit}
+             </p>
+           </div>
+           {activeCount >= limit && (
+             <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-100" onClick={() => toast.info("Upgrade coming soon!")}>
+               Upgrade Paket
+             </Button>
+           )}
+        </div>
+      )}
+
       <div className="grid gap-4">
         {currentListings.map((listing) => (
-          <Card key={listing.id} className="overflow-hidden border-neutral-200 transition-all hover:shadow-md">
+          <Card key={listing.id} className={`overflow-hidden border-neutral-200 transition-all hover:shadow-md ${listing.status === 'archived' ? 'opacity-75 bg-neutral-50' : ''}`}>
             <div className="flex flex-col sm:flex-row">
               {/* Image */}
               <div className="w-full sm:w-48 h-32 sm:h-auto bg-neutral-100 relative">
@@ -191,6 +287,11 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
                 {listing.is_premium && (
                   <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded font-medium shadow-sm">
                     Premium
+                  </div>
+                )}
+                {listing.status === 'archived' && (
+                  <div className="absolute inset-0 bg-neutral-900/10 flex items-center justify-center">
+                    <Badge variant="secondary" className="bg-neutral-800 text-white">Archiviert</Badge>
                   </div>
                 )}
               </div>
@@ -232,6 +333,18 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
                       <DropdownMenuItem onClick={() => handleEditClick(listing)}>
                         <Edit2 className="mr-2 h-4 w-4" /> Bearbeiten
                       </DropdownMenuItem>
+                      
+                      {/* Archive / Unarchive Actions */}
+                      {listing.status === 'archived' ? (
+                        <DropdownMenuItem onClick={() => handleUnarchive(listing)}>
+                          <RotateCcw className="mr-2 h-4 w-4" /> Reaktivieren
+                        </DropdownMenuItem>
+                      ) : (
+                         <DropdownMenuItem onClick={() => handleArchive(listing)}>
+                          <Archive className="mr-2 h-4 w-4" /> Archivieren
+                        </DropdownMenuItem>
+                      )}
+
                       <DropdownMenuItem 
                         className="text-red-600 focus:text-red-600"
                         onClick={() => handleDeleteClick(listing)}

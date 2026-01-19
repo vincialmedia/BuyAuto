@@ -40,7 +40,9 @@ export type Database = {
           created_at: string | null
           garage_name: string
           id: string
+          listing_limit: number | null
           owner_user_id: string
+          plan: string | null
           updated_at: string | null
         }
         Insert: {
@@ -49,7 +51,9 @@ export type Database = {
           created_at?: string | null
           garage_name: string
           id?: string
+          listing_limit?: number | null
           owner_user_id: string
+          plan?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -58,7 +62,9 @@ export type Database = {
           created_at?: string | null
           garage_name?: string
           id?: string
+          listing_limit?: number | null
           owner_user_id?: string
+          plan?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -133,6 +139,7 @@ export type Database = {
           duration_days: number | null
           expires_at: string | null
           fuel: string
+          garage_id: string | null
           gearbox: string
           id: string
           images: Json | null
@@ -151,6 +158,7 @@ export type Database = {
           refunded_at: string | null
           remaining_km: number | null
           remaining_months: number | null
+          seller_type: string | null
           status: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id: string | null
           stripe_refund_id: string | null
@@ -172,6 +180,7 @@ export type Database = {
           duration_days?: number | null
           expires_at?: string | null
           fuel: string
+          garage_id?: string | null
           gearbox: string
           id?: string
           images?: Json | null
@@ -190,6 +199,7 @@ export type Database = {
           refunded_at?: string | null
           remaining_km?: number | null
           remaining_months?: number | null
+          seller_type?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
@@ -211,6 +221,7 @@ export type Database = {
           duration_days?: number | null
           expires_at?: string | null
           fuel?: string
+          garage_id?: string | null
           gearbox?: string
           id?: string
           images?: Json | null
@@ -229,6 +240,7 @@ export type Database = {
           refunded_at?: string | null
           remaining_km?: number | null
           remaining_months?: number | null
+          seller_type?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
@@ -237,7 +249,15 @@ export type Database = {
           user_id?: string | null
           year?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "listings_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -426,6 +446,7 @@ export type Database = {
       get_my_role: { Args: never; Returns: string }
       get_service_role_key: { Args: never; Returns: string }
       get_user_role: { Args: { user_id: string }; Returns: string }
+      publish_garage_listing: { Args: { listing_id: string }; Returns: Json }
       search_published_listings: {
         Args: {
           limit_count?: number
@@ -480,6 +501,7 @@ export type Database = {
         | "published"
         | "rejected"
         | "expired"
+        | "archived"
       service_inquiry_type: "uebernahme_begleiten" | "leasing_exit_full_service"
     }
     CompositeTypes: {
@@ -616,6 +638,7 @@ export const Constants = {
         "published",
         "rejected",
         "expired",
+        "archived",
       ],
       service_inquiry_type: [
         "uebernahme_begleiten",
