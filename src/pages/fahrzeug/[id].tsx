@@ -42,11 +42,12 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   const [listing, setListing] = useState<ListingDetail | null>(initialListing);
   const [isLoading, setIsLoading] = useState(!initialListing && !notFound);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
+  const [clientNotFound, setClientNotFound] = useState(false);
   const router = useRouter();
   const { id } = router.query;
 
   useEffect(() => {
-    if (!listing && !notFound && id && typeof id === "string") {
+    if (!listing && !notFound && !clientNotFound && id && typeof id === "string") {
       const fetchListing = async () => {
         setIsLoading(true);
         try {
@@ -54,9 +55,16 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
           const fetchedListing = isPreview
             ? await getUserListingById(id)
             : await getPublishedListingById(id);
+
+          if (!fetchedListing) {
+            setClientNotFound(true);
+            return;
+          }
+
           setListing(fetchedListing);
         } catch (error) {
           console.error("Error fetching listing:", error);
+          setClientNotFound(true);
         } finally {
           setIsLoading(false);
         }
@@ -64,9 +72,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
       fetchListing();
     }
-  }, [id, listing, notFound, router.query.preview]);
+  }, [id, listing, notFound, clientNotFound, router.query.preview]);
 
-  if (notFound) {
+  if (notFound || clientNotFound) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">

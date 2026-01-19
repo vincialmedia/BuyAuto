@@ -259,26 +259,52 @@ export default function Step5_PreviewAndPay() {
 
     setIsPublishingGarage(true);
     try {
+      // Ensure garage_id is set correctly (RPC may enforce listing.garage_id)
+      const { data: garageRow, error: garageError } = await supabase
+        .from("garages")
+        .select("id")
+        .eq("owner_user_id", user.id)
+        .single();
+
+      if (garageError) throw garageError;
+
+      if (garageRow?.id) {
+        const { error: updateGarageIdError } = await supabase
+          .from("listings")
+          .update({ garage_id: garageRow.id })
+          .eq("id", data.id)
+          .eq("created_by", user.id);
+
+        if (updateGarageIdError) throw updateGarageIdError;
+      }
+
       // Call RPC to enforce limit
       const { data: result, error } = await supabase
         .rpc('publish_garage_listing', { listing_id: data.id });
 
       if (error) {
-        // Check for specific "Limit reached" error
-        if (error.message.includes('Limit erreicht')) {
-           toast({
-             title: "Limit erreicht",
-             description: error.message,
-             variant: "destructive",
-             action: (
-               <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/garage')}>
-                 Verwalten
-               </Button>
-             )
-           });
-           return;
-        }
-        throw error;
+        const err = error as unknown as {
+          message?: string;
+          details?: string | null;
+          hint?: string | null;
+          code?: string | null;
+        };
+
+        const extra = [err.code ? `Code: ${err.code}` : null, err.details ? `Details: ${err.details}` : null, err.hint ? `Hint: ${err.hint}` : null]
+          .filter(Boolean)
+          .join(" · ");
+
+        toast({
+          title: "Veröffentlichen fehlgeschlagen",
+          description: extra ? `${err.message || "Unbekannter Fehler."} (${extra})` : (err.message || "Unbekannter Fehler."),
+          variant: "destructive",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/garage")}>
+              Verwalten
+            </Button>
+          )
+        });
+        return;
       }
 
       toast({
@@ -289,10 +315,25 @@ export default function Step5_PreviewAndPay() {
 
     } catch (error: any) {
       console.error("Garage publish error:", error);
+
+      const message =
+        typeof error?.message === "string"
+          ? error.message
+          : "Bitte versuchen Sie es später erneut.";
+
+      const extra = [error?.code ? `Code: ${String(error.code)}` : null, error?.details ? `Details: ${String(error.details)}` : null, error?.hint ? `Hint: ${String(error.hint)}` : null]
+        .filter(Boolean)
+        .join(" · ");
+
       toast({
         title: "Fehler beim Veröffentlichen",
-        description: error.message || "Bitte versuchen Sie es später erneut.",
-        variant: "destructive"
+        description: extra ? `${message} (${extra})` : message,
+        variant: "destructive",
+        action: (
+          <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/garage")}>
+            Verwalten
+          </Button>
+        )
       });
     } finally {
       setIsPublishingGarage(false);
