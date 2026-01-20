@@ -16,6 +16,8 @@ import { createOrUpdateListing } from "@/services/createListingService";
 import { fetchMakes, fetchModelsForMake, searchMakes, searchModelsForMake } from "@/services/vehicleService";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/router";
+import { deleteListingDraft } from "@/services/listingDraftService";
 
 const bodyTypes = [
   "Limousine", "Kombi", "SUV", "Cabrio"
@@ -30,7 +32,8 @@ const gearboxTypes = [
 ];
 
 export default function Step1_VehicleData() {
-  const { data, updateData, nextStep } = useWizard();
+  const router = useRouter();
+  const { data, updateData, nextStep, draftId, setDraftId } = useWizard();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,6 +72,35 @@ export default function Step1_VehicleData() {
 
   const selectedMake = watch("brand");
   const selectedModel = watch("model");
+  const selectedYear = watch("year");
+  const selectedKm = watch("km");
+  const selectedBody = watch("body");
+  const selectedFuel = watch("fuel");
+  const selectedGearbox = watch("gearbox");
+  const selectedDescription = watch("description");
+
+  useEffect(() => {
+    updateData({
+      brand: selectedMake || "",
+      model: selectedModel || "",
+      year: typeof selectedYear === "number" ? selectedYear : undefined,
+      km: typeof selectedKm === "number" ? selectedKm : undefined,
+      body: selectedBody || "",
+      fuel: selectedFuel || "",
+      gearbox: selectedGearbox || "",
+      description: selectedDescription || "",
+    });
+  }, [
+    updateData,
+    selectedMake,
+    selectedModel,
+    selectedYear,
+    selectedKm,
+    selectedBody,
+    selectedFuel,
+    selectedGearbox,
+    selectedDescription,
+  ]);
 
   // Load makes on mount
   useEffect(() => {
@@ -212,6 +244,18 @@ export default function Step1_VehicleData() {
         title: "Fahrzeugdaten gespeichert",
         description: "Ihre Fahrzeugdaten wurden erfolgreich gespeichert.",
       });
+
+      if (draftId) {
+        try {
+          await deleteListingDraft({ user, draftId });
+        } catch (e) {
+          console.error("Failed to delete partial draft after creating listing:", e);
+        }
+        setDraftId(null);
+        const nextQuery = { ...router.query };
+        delete nextQuery.draft;
+        await router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
+      }
 
       nextStep();
     } catch (error) {

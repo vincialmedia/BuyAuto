@@ -77,6 +77,30 @@ export type Database = {
           },
         ]
       }
+      listing_drafts: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       listing_inquiries: {
         Row: {
           created_at: string
@@ -502,6 +526,7 @@ export type Database = {
         | "rejected"
         | "expired"
         | "archived"
+        | "draft"
       service_inquiry_type: "uebernahme_begleiten" | "leasing_exit_full_service"
     }
     CompositeTypes: {
@@ -639,6 +664,7 @@ export const Constants = {
         "rejected",
         "expired",
         "archived",
+        "draft",
       ],
       service_inquiry_type: [
         "uebernahme_begleiten",

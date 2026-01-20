@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 
 interface StatusBadgeProps {
-  status: "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired";
+  status: "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired";
   expiresAt?: string | null;
   className?: string;
 }
@@ -19,6 +19,8 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
     }
 
     switch (status) {
+      case "draft":
+        return { text: "Entwurf", variant: "draft" as const };
       case "pending":
         return { text: "Ausstehend", variant: "pending" as const };
       case "active":
@@ -41,6 +43,7 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
   const { text, variant } = getStatusDisplay();
 
   const variants = {
+    draft: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
     pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
     active: "bg-emerald-50 text-emerald-700 border-emerald-200",
     inactive: "bg-neutral-100 text-neutral-600 border-neutral-200",
@@ -49,6 +52,25 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
     rejected: "bg-red-50 text-red-600 border-red-200",
     expired: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
   };
+
+  const label =
+    status === "draft"
+      ? "Entwurf"
+      : status === "pending"
+        ? "In Prüfung"
+        : status === "published"
+          ? "Online"
+          : status === "rejected"
+            ? "Abgelehnt"
+            : status === "expired"
+              ? "Abgelaufen"
+              : status === "sold"
+                ? "Verkauft"
+                : status === "inactive"
+                  ? "Inaktiv"
+                  : status === "active"
+                    ? "Aktiv"
+                    : "Unbekannt";
 
   return (
     <span

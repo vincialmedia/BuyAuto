@@ -2,15 +2,16 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { PricePlanId } from "@/lib/buyauto/types";
 
-type ListingUpdatePayload = Partial<{
+export type ListingUpdatePayload = Partial<{
   id?: string;
   brand?: string;
   model?: string;
   year?: number;
   mileage_km?: number;
-  fuel?: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
-  gearbox?: "Automatik" | "Manuell";
-  body?: "Limousine" | "Kombi" | "SUV" | "Cabrio";
+  remaining_km?: number | null;
+  fuel?: string;
+  gearbox?: string;
+  body?: string;
   description?: string;
   price_per_month_chf?: number;
   remaining_months?: number;
@@ -41,7 +42,7 @@ export const createOrUpdateListing = async (
       ...data,
       user_id: user.id,
       created_by: user.id,
-      status: "pending",
+      status: "draft",
     };
 
     delete listingDataForInsert.id;
@@ -92,13 +93,13 @@ export const getDraftListing = async (user: User) => {
     .from("listings")
     .select("*")
     .eq("user_id", user.id)
-    .eq("status", "pending")
+    .eq("status", "draft")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (error) {
-    console.error("Error fetching pending listing:", error);
+    console.error("Error fetching draft listing:", error);
     return null;
   }
 

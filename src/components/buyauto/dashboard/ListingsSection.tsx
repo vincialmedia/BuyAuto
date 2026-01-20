@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
@@ -26,6 +25,7 @@ import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, M
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
+import DraftsSection from "./DraftsSection";
 import { dashboardService } from "@/services/dashboardService";
 
 export default function ListingsSection() {
@@ -156,6 +156,8 @@ export default function ListingsSection() {
 
   return (
     <div className="space-y-6">
+      <DraftsSection />
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-neutral-900">Meine Inserate</h2>
