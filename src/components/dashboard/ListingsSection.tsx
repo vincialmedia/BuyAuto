@@ -123,7 +123,17 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
     try {
       setIsArchiving(true);
       if (isGarage) {
-         const { error } = await supabase.rpc('publish_garage_listing', { listing_id: listing.id });
+         if (listing.status === "draft") {
+           const { error: bumpError } = await supabase
+             .from("listings")
+             .update({ status: "pending" })
+             .eq("id", listing.id)
+             .eq("status", "draft");
+
+           if (bumpError) throw bumpError;
+         }
+
+         const { error } = await supabase.rpc("publish_garage_listing", { listing_id: listing.id });
          if (error) {
            if (error.message.includes('Limit')) {
              toast.error("Limit erreicht. Bitte archivieren Sie zuerst ein anderes Inserat.");

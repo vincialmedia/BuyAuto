@@ -299,9 +299,41 @@ export default function Step5_PreviewAndPay() {
         }
       }
 
+      const { data: statusRow, error: statusFetchError } = await supabase
+        .from("listings")
+        .select("id, status")
+        .eq("id", data.id)
+        .maybeSingle();
+
+      if (statusFetchError) throw statusFetchError;
+
+      if (statusRow?.status === "draft") {
+        const { data: bumped, error: bumpError } = await supabase
+          .from("listings")
+          .update({ status: "pending" })
+          .eq("id", data.id)
+          .eq("status", "draft")
+          .select("id, status")
+          .maybeSingle();
+
+        if (bumpError) throw bumpError;
+
+        const finalStatus = bumped?.status ?? statusRow.status;
+        if (finalStatus !== "pending") {
+          const message = "Konnte Status nicht von Entwurf auf Pending setzen. Bitte neu laden und erneut versuchen.";
+          setGaragePublishError({ message });
+          toast({
+            title: "Veröffentlichen fehlgeschlagen",
+            description: message,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       // Call RPC to enforce limit
       const { error } = await supabase
-        .rpc('publish_garage_listing', { listing_id: data.id });
+        .rpc("publish_garage_listing", { listing_id: data.id });
 
       if (error) {
         const err = error as unknown as {
