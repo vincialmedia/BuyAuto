@@ -178,3 +178,82 @@ export async function uploadListingImages(files: File[], userId: string): Promis
     throw error;
   }
 }
+
+export async function uploadGarageLogo(
+  file: File,
+  garageId: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  try {
+    if (onProgress) onProgress(5);
+
+    const basePath = `garage-logos/${garageId}/logo`;
+
+    const safeFile =
+      file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp" ? file : null;
+
+    if (!safeFile) {
+      throw new Error("Bitte PNG, JPG oder WEBP hochladen.");
+    }
+
+    const needsOptimization = shouldOptimizeImage(safeFile);
+
+    if (needsOptimization) {
+      const variants = await generateImageVariants(safeFile);
+      if (onProgress) onProgress(45);
+
+      const uploads = await Promise.all([
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_thumbnail.webp`, variants.thumbnail, {
+          contentType: "image/webp",
+          cacheControl: "3600",
+          upsert: true,
+        }),
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_medium.webp`, variants.medium, {
+          contentType: "image/webp",
+          cacheControl: "3600",
+          upsert: true,
+        }),
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_large.webp`, variants.large, {
+          contentType: "image/webp",
+          cacheControl: "3600",
+          upsert: true,
+        }),
+      ]);
+
+      const errors = uploads.find((r) => r.error);
+      if (errors?.error) throw errors.error;
+
+      if (onProgress) onProgress(90);
+
+      const { data: mediumData } = supabase.storage
+        .from(LISTING_IMAGES_BUCKET)
+        .getPublicUrl(`${basePath}_medium.webp`);
+
+      if (onProgress) onProgress(100);
+
+      console.log(`Successfully uploaded garage logo (optimized): ${file.name}`);
+      console.log(`Original: ${formatFileSize(file.size)}`);
+      console.log(`Medium: ${formatFileSize(variants.medium.size)}`);
+
+      return mediumData.publicUrl;
+    }
+
+    const { error } = await supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_medium.webp`, safeFile, {
+      contentType: safeFile.type,
+      cacheControl: "3600",
+      upsert: true,
+    });
+
+    if (error) throw error;
+
+    const { data: mediumData } = supabase.storage.from(LISTING_IMAGES_BUCKET).getPublicUrl(`${basePath}_medium.webp`);
+
+    if (onProgress) onProgress(100);
+
+    console.log(`Successfully uploaded garage logo (no optimization): ${file.name}`);
+    return mediumData.publicUrl;
+  } catch (error) {
+    console.error("Error uploading garage logo:", error);
+    throw error;
+  }
+}

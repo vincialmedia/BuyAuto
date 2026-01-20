@@ -121,7 +121,7 @@ export const dashboardService = {
     const { data, error } = await supabase
       .from("listings")
       .select("status")
-      .eq("user_id", user.id);
+      .or(`created_by.eq.${user.id},user_id.eq.${user.id}`);
 
     if (error) throw error;
 
