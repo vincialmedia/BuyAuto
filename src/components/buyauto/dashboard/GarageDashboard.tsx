@@ -41,6 +41,14 @@ function getStableGarageLogoUrl(garageId: string, version?: number): string {
   return version ? `${url}?v=${version}` : url;
 }
 
+function getDealTypeLabel(input: { deal_type?: string; financing_type?: string | null }): string {
+  if (input.deal_type === "direct_purchase") {
+    if (input.financing_type === "leasing") return "Direktkauf · Leasing";
+    return "Direktkauf · Barzahlung";
+  }
+  return "Leasingübernahme";
+}
+
 export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const router = useRouter();
 

@@ -127,6 +127,18 @@ export default function ListingsSection() {
     return "N/A";
   };
 
+  const getDealTypeLabel = (listing: ListingDetail) => {
+    const dealType = (listing as any).deal_type ?? "lease_takeover";
+    const financingType = (listing as any).financing_type ?? null;
+
+    if (dealType === "direct_purchase") {
+      if (financingType === "leasing") return "Direktkauf · Leasing";
+      if (financingType === "cash") return "Direktkauf · Barzahlung";
+      return "Direktkauf";
+    }
+    return "Leasingübernahme";
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -251,6 +263,9 @@ export default function ListingsSection() {
                           </div>
                           <div className="flex flex-wrap items-center gap-3">
                             <StatusBadge status={listing.status} expiresAt={listing.expires_at} />
+                            <Badge variant="secondary" className="text-xs">
+                              {getDealTypeLabel(listing)}
+                            </Badge>
                             <Badge variant="outline" className="text-xs">
                               {getPlanBadge(listing)}
                             </Badge>
