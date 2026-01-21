@@ -50,11 +50,21 @@ export default function Step1_VehicleData() {
   const [makeSearch, setMakeSearch] = useState("");
   const [modelSearch, setModelSearch] = useState("");
   
-  const initialDealType = (data.deal_type ?? (isGarage ? "direct_purchase" : "lease_takeover")) as DealType;
+  const isNewGarageListing =
+    isGarage &&
+    !data.id &&
+    !draftId &&
+    typeof router.query.edit !== "string" &&
+    typeof router.query.draft !== "string";
+
+  const initialDealType = (
+    isNewGarageListing
+      ? "direct_purchase"
+      : (data.deal_type ?? (isGarage ? "direct_purchase" : "lease_takeover"))
+  ) as DealType;
+
   const initialFinancingType =
-    initialDealType === "direct_purchase"
-      ? ((data.financing_type ?? (isGarage ? "cash" : null)) as FinancingType | null)
-      : null;
+    initialDealType === "direct_purchase" ? ((data.financing_type ?? "cash") as FinancingType) : null;
 
   const {
     register,

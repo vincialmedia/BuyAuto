@@ -28,6 +28,15 @@ import StatusBadge from "./StatusBadge";
 import DraftsSection from "./DraftsSection";
 import { dashboardService } from "@/services/dashboardService";
 
+function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: string | null }): string {
+  const dealType = input.deal_type ?? "lease_takeover";
+  if (dealType === "direct_purchase") {
+    if (input.financing_type === "leasing") return "Direktkauf · Leasing";
+    return "Direktkauf · Barzahlung";
+  }
+  return "Leasingübernahme";
+}
+
 export default function ListingsSection() {
   const router = useRouter();
   const { user } = useAuth();
@@ -125,16 +134,6 @@ export default function ListingsSection() {
       return planNames[listing.price_plan] || listing.price_plan;
     }
     return "N/A";
-  };
-
-  const getDealTypeLabel = (listing: any) => {
-    const dealType = (listing?.deal_type ?? "lease_takeover") as string;
-    if (dealType === "direct_purchase") {
-      const financing = listing?.financing_type as string | null | undefined;
-      if (financing === "leasing") return "Direktkauf · Leasing";
-      return "Direktkauf · Barzahlung";
-    }
-    return "Leasingübernahme";
   };
 
   if (loading) {
@@ -261,8 +260,8 @@ export default function ListingsSection() {
                           </div>
                           <div className="flex flex-wrap items-center gap-3">
                             <StatusBadge status={listing.status} expiresAt={listing.expires_at} />
-                            <Badge variant="secondary" className="text-xs">
-                              {getDealTypeLabel(listing)}
+                            <Badge variant="secondary" className="rounded-full">
+                              {getDealTypeLabel({ deal_type: (listing as any).deal_type, financing_type: (listing as any).financing_type })}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
                               {getPlanBadge(listing)}
