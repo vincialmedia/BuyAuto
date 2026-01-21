@@ -41,8 +41,9 @@ function getStableGarageLogoUrl(garageId: string, version?: number): string {
   return version ? `${url}?v=${version}` : url;
 }
 
-function getDealTypeLabel(input: { deal_type?: string; financing_type?: string | null }): string {
-  if (input.deal_type === "direct_purchase") {
+function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: string | null }): string {
+  const dealType = input.deal_type ?? "lease_takeover";
+  if (dealType === "direct_purchase") {
     if (input.financing_type === "leasing") return "Direktkauf · Leasing";
     return "Direktkauf · Barzahlung";
   }

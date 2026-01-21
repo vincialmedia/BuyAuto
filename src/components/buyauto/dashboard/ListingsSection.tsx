@@ -127,14 +127,12 @@ export default function ListingsSection() {
     return "N/A";
   };
 
-  const getDealTypeLabel = (listing: ListingDetail) => {
-    const dealType = (listing as any).deal_type ?? "lease_takeover";
-    const financingType = (listing as any).financing_type ?? null;
-
+  const getDealTypeLabel = (listing: any) => {
+    const dealType = (listing?.deal_type ?? "lease_takeover") as string;
     if (dealType === "direct_purchase") {
-      if (financingType === "leasing") return "Direktkauf · Leasing";
-      if (financingType === "cash") return "Direktkauf · Barzahlung";
-      return "Direktkauf";
+      const financing = listing?.financing_type as string | null | undefined;
+      if (financing === "leasing") return "Direktkauf · Leasing";
+      return "Direktkauf · Barzahlung";
     }
     return "Leasingübernahme";
   };
