@@ -50,6 +50,12 @@ export default function Step1_VehicleData() {
   const [makeSearch, setMakeSearch] = useState("");
   const [modelSearch, setModelSearch] = useState("");
   
+  const initialDealType = (data.deal_type ?? (isGarage ? "direct_purchase" : "lease_takeover")) as DealType;
+  const initialFinancingType =
+    initialDealType === "direct_purchase"
+      ? ((data.financing_type ?? (isGarage ? "cash" : null)) as FinancingType | null)
+      : null;
+
   const {
     register,
     handleSubmit,
@@ -60,8 +66,8 @@ export default function Step1_VehicleData() {
   } = useForm<VehicleDataForm>({
     resolver: zodResolver(vehicleDataSchema),
     defaultValues: {
-      deal_type: (data.deal_type ?? "lease_takeover") as DealType,
-      financing_type: (data.financing_type ?? null) as FinancingType | null,
+      deal_type: initialDealType,
+      financing_type: initialFinancingType,
       brand: data.brand || "",
       model: data.model || "",
       year: data.year || new Date().getFullYear(),
