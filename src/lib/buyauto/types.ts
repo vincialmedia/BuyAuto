@@ -1,7 +1,11 @@
+export type DealType = "lease_takeover" | "direct_purchase";
+export type FinancingType = "cash" | "leasing";
 
 export interface Listing {
   id: string;
   user_id?: string; // ✅ Made optional to fix build errors
+  deal_type?: DealType;
+  financing_type?: FinancingType | null;
   brand: string;
   model: string;
   title?: string;
@@ -33,6 +37,8 @@ export interface PricePlan {
 }
 
 export interface ListingData {
+  deal_type?: DealType;
+  financing_type?: FinancingType | null;
   brand?: string;
   model?: string;
   year?: number;

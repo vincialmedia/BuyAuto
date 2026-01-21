@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 export const loginSchema = z.object({
@@ -27,6 +26,11 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 export const vehicleDataSchema = z.object({
+  deal_type: z.enum(["lease_takeover", "direct_purchase"], {
+    required_error: "Kaufoption ist erforderlich",
+    invalid_type_error: "Kaufoption ist erforderlich",
+  }),
+  financing_type: z.enum(["cash", "leasing"]).nullable().optional(),
   brand: z.string().min(1, "Marke ist erforderlich"),
   model: z.string().min(1, "Modell ist erforderlich"),
   year: z.number().min(1990, "Baujahr muss mindestens 1990 sein").max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
@@ -52,6 +56,26 @@ export const vehicleDataSchema = z.object({
     .max(2000, "Beschreibung darf maximal 2000 Zeichen enthalten")
     .optional()
     .or(z.literal("")),
+}).superRefine((data, ctx) => {
+  if (data.deal_type === "direct_purchase") {
+    if (!data.financing_type) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["financing_type"],
+        message: "Bitte wähle Barzahlung oder Leasing.",
+      });
+    }
+  }
+
+  if (data.deal_type === "lease_takeover") {
+    if (data.financing_type !== null && data.financing_type !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["financing_type"],
+        message: "Bei Leasingübernahme darf keine Zahlungsart gesetzt sein.",
+      });
+    }
+  }
 });
 
 export const planSelectionSchema = z.object({

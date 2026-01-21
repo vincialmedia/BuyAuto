@@ -1,9 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import type { PricePlanId } from "@/lib/buyauto/types";
+import type { DealType, FinancingType, PricePlanId } from "@/lib/buyauto/types";
 
 export type ListingUpdatePayload = Partial<{
   id?: string;
+  deal_type?: DealType;
+  financing_type?: FinancingType | null;
   brand?: string;
   model?: string;
   year?: number;
@@ -27,6 +29,33 @@ export type ListingUpdatePayload = Partial<{
   user_id?: string;
 }>;
 
+function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpdatePayload {
+  const dealType: DealType = payload.deal_type ?? "lease_takeover";
+  if (dealType === "lease_takeover") {
+    return { ...payload, deal_type: "lease_takeover", financing_type: null };
+  }
+  const financingType: FinancingType = payload.financing_type ?? "cash";
+  return { ...payload, deal_type: "direct_purchase", financing_type: financingType };
+}
+
+function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpdatePayload {
+  const hasDealType = typeof payload.deal_type === "string";
+  const hasFinancingField = Object.prototype.hasOwnProperty.call(payload, "financing_type");
+
+  if (!hasDealType && !hasFinancingField) return payload;
+
+  if (!hasDealType) {
+    throw new Error("deal_type is required when updating financing_type");
+  }
+
+  const dealType = payload.deal_type as DealType;
+  if (dealType === "lease_takeover") {
+    return { ...payload, financing_type: null };
+  }
+
+  return { ...payload, financing_type: (payload.financing_type ?? "cash") as FinancingType };
+}
+
 export const createOrUpdateListing = async (
   data: ListingUpdatePayload,
   user: User
@@ -39,7 +68,7 @@ export const createOrUpdateListing = async (
 
   if (!listingId) {
     const listingDataForInsert = {
-      ...data,
+      ...normalizeDealFieldsForInsert(data),
       user_id: user.id,
       created_by: user.id,
       status: "draft",
@@ -62,7 +91,7 @@ export const createOrUpdateListing = async (
     return newListing;
   }
 
-  const { id, ...updateData } = data;
+  const { id, ...updateData } = normalizeDealFieldsForUpdate(data);
 
   const cleanUpdateData = { ...updateData };
   if ('user_id' in cleanUpdateData) {

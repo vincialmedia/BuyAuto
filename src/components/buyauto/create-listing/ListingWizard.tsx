@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,8 +46,10 @@ export const useWizard = () => {
   return context;
 };
 
-const createEmptyListingData = (): ListingData => ({
+const createEmptyListingData = (opts?: { isGarage?: boolean }): ListingData => ({
   id: undefined,
+  deal_type: opts?.isGarage ? "direct_purchase" : "lease_takeover",
+  financing_type: opts?.isGarage ? "cash" : null,
   brand: "",
   model: "",
   year: new Date().getFullYear(),
@@ -92,8 +94,12 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
         ? wizardData.mileage
         : undefined;
 
+  const dealType = (wizardData.deal_type ?? "lease_takeover") as any;
+
   return {
     id: wizardData.id,
+    deal_type: dealType,
+    financing_type: dealType === "direct_purchase" ? (wizardData.financing_type ?? "cash") : null,
     brand: wizardData.brand,
     model: wizardData.model,
     year: wizardData.year,
@@ -127,9 +133,10 @@ export default function ListingWizard() {
   const [isComplete, setIsComplete] = useState(false);
   const [guestImageFiles, setGuestImageFiles] = useState<File[]>([]);
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [data, setData] = useState<ListingData>(() => createEmptyListingData());
+  const [data, setData] = useState<ListingData>(() => createEmptyListingData({ isGarage }));
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingFromQuery, setIsLoadingFromQuery] = useState(true);
+  const garageDefaultsAppliedRef = useRef(false);
 
   const updateData = useCallback((updates: Partial<ListingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
@@ -144,6 +151,21 @@ export default function ListingWizard() {
     }
     return 5;
   }, [data.price_plan]);
+
+  useEffect(() => {
+    if (!isGarage) return;
+    if (isLoadingFromQuery) return;
+    if (garageDefaultsAppliedRef.current) return;
+    if (draftId) return;
+    if (data.id) return;
+
+    setData((prev) => ({
+      ...prev,
+      deal_type: "direct_purchase",
+      financing_type: "cash",
+    }));
+    garageDefaultsAppliedRef.current = true;
+  }, [data.id, draftId, isGarage, isLoadingFromQuery]);
 
   useEffect(() => {
     if (isGarage && currentStep === 3) {
@@ -226,10 +248,14 @@ export default function ListingWizard() {
         if (typeof editQuery === "string" && editQuery.length > 0) {
           const listing = await getListingByIdForOwner(editQuery, user);
           if (listing) {
+            const dealType = (listing as any).deal_type ?? "lease_takeover";
             setDraftId(null);
             setData((prev) => ({
               ...prev,
               id: listing.id,
+              deal_type: dealType,
+              financing_type:
+                dealType === "direct_purchase" ? ((listing as any).financing_type ?? null) : null,
               brand: listing.brand ?? "",
               model: listing.model ?? "",
               year: typeof listing.year === "number" ? listing.year : prev.year,
