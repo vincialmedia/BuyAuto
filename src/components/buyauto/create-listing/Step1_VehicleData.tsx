@@ -11,7 +11,7 @@ import { useWizard } from "./ListingWizard";
 import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createOrUpdateListing } from "@/services/createListingService";
 import { fetchMakes, fetchModelsForMake, searchMakes, searchModelsForMake } from "@/services/vehicleService";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -57,6 +57,8 @@ export default function Step1_VehicleData() {
     typeof router.query.edit !== "string" &&
     typeof router.query.draft !== "string";
 
+  const newGarageDefaultsAppliedRef = useRef(false);
+
   const initialDealType = (
     isNewGarageListing
       ? "direct_purchase"
@@ -100,6 +102,14 @@ export default function Step1_VehicleData() {
   const selectedFuel = watch("fuel");
   const selectedGearbox = watch("gearbox");
   const selectedDescription = watch("description");
+
+  useEffect(() => {
+    if (!isNewGarageListing) return;
+    if (newGarageDefaultsAppliedRef.current) return;
+    setValue("deal_type", "direct_purchase", { shouldValidate: true });
+    setValue("financing_type", "cash", { shouldValidate: true });
+    newGarageDefaultsAppliedRef.current = true;
+  }, [isNewGarageListing, setValue]);
 
   useEffect(() => {
     updateData({

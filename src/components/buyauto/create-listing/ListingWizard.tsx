@@ -10,7 +10,7 @@ import Step3_PlanSelection from "./Step3_PlanSelection";
 import { Step4_Images } from "./Step4_Images";
 import Step5_PreviewAndPay from "./Step5_PreviewAndPay";
 import SuccessScreen from "./SuccessScreen";
-import type { ListingData } from "@/lib/buyauto/types";
+import type { DealType, ListingData } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing, getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
 import {
@@ -94,7 +94,7 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
         ? wizardData.mileage
         : undefined;
 
-  const dealType = (wizardData.deal_type ?? "lease_takeover") as any;
+  const dealType: DealType = wizardData.deal_type ?? "lease_takeover";
 
   return {
     id: wizardData.id,

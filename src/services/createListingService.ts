@@ -94,7 +94,7 @@ export const createOrUpdateListing = async (
   const { id, ...updateData } = normalizeDealFieldsForUpdate(data);
 
   const cleanUpdateData = { ...updateData };
-  if ('user_id' in cleanUpdateData) {
+  if ("user_id" in cleanUpdateData) {
     delete cleanUpdateData.user_id;
   }
   
