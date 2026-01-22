@@ -11,14 +11,14 @@ import { useWizard } from "./ListingWizard";
 import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
 import { fetchMakes, fetchModelsForMake, searchMakes, searchModelsForMake } from "@/services/vehicleService";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/router";
 import { deleteListingDraft } from "@/services/listingDraftService";
-import type { DealType, FinancingType } from "@/lib/buyauto/types";
+import type { DealType } from "@/lib/buyauto/types";
 
 const bodyTypes = [
   "Limousine", "Kombi", "SUV", "Cabrio"
@@ -35,8 +35,7 @@ const gearboxTypes = [
 export default function Step1_VehicleData() {
   const router = useRouter();
   const { data, updateData, nextStep, draftId, setDraftId } = useWizard();
-  const { user, profile } = useAuth();
-  const isGarage = profile?.role === "garage";
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -59,12 +58,7 @@ export default function Step1_VehicleData() {
 
   const newGarageDefaultsAppliedRef = useRef(false);
 
-  const initialDealType = (data.deal_type ?? (isNewGarageListing ? "direct_purchase" : "direct_purchase")) as DealType;
-
-  const initialFinancingType =
-    initialDealType === "direct_purchase"
-      ? ((data.financing_type ?? "cash") as FinancingType)
-      : null;
+  const initialDealType = (data.deal_type ?? "direct_purchase") as DealType;
 
   const {
     register,
@@ -77,7 +71,6 @@ export default function Step1_VehicleData() {
     resolver: zodResolver(vehicleDataSchema),
     defaultValues: {
       deal_type: initialDealType,
-      financing_type: initialFinancingType,
       brand: data.brand || "",
       model: data.model || "",
       year: data.year || new Date().getFullYear(),
@@ -87,11 +80,10 @@ export default function Step1_VehicleData() {
       gearbox: (data.gearbox as "Automatik" | "Manuell") || "",
       description: data.description || "",
     },
-    mode: "onBlur"
+    mode: "onBlur",
   });
 
   const selectedDealType = watch("deal_type");
-  const selectedFinancingType = watch("financing_type");
   const selectedMake = watch("brand");
   const selectedModel = watch("model");
   const selectedYear = watch("year");
@@ -102,17 +94,8 @@ export default function Step1_VehicleData() {
   const selectedDescription = watch("description");
 
   useEffect(() => {
-    if (!isNewGarageListing) return;
-    if (newGarageDefaultsAppliedRef.current) return;
-    setValue("deal_type", "direct_purchase", { shouldValidate: false });
-    setValue("financing_type", "cash" as FinancingType, { shouldValidate: false });
-    newGarageDefaultsAppliedRef.current = true;
-  }, [isNewGarageListing, setValue]);
-
-  useEffect(() => {
     updateData({
       deal_type: selectedDealType || "direct_purchase",
-      financing_type: selectedDealType === "direct_purchase" ? (selectedFinancingType ?? "cash") : null,
       brand: selectedMake || "",
       model: selectedModel || "",
       year: typeof selectedYear === "number" ? selectedYear : undefined,
@@ -125,7 +108,6 @@ export default function Step1_VehicleData() {
   }, [
     updateData,
     selectedDealType,
-    selectedFinancingType,
     selectedMake,
     selectedModel,
     selectedYear,
@@ -135,35 +117,6 @@ export default function Step1_VehicleData() {
     selectedGearbox,
     selectedDescription,
   ]);
-
-  useEffect(() => {
-    if (selectedDealType === "lease_takeover") {
-      if (selectedFinancingType !== null && selectedFinancingType !== undefined) {
-        setValue("financing_type", null, { shouldValidate: true });
-      }
-      return;
-    }
-
-    if (selectedDealType === "direct_purchase") {
-      if (!selectedFinancingType) {
-        setValue("financing_type", "cash" as FinancingType, { shouldValidate: false });
-      }
-      return;
-    }
-  }, [selectedDealType, selectedFinancingType, setValue]);
-
-  useEffect(() => {
-    if (!data.deal_type) return;
-    if (data.deal_type !== selectedDealType) {
-      setValue("deal_type", data.deal_type as DealType, { shouldValidate: false });
-    }
-
-    const normalizedWizardFinancing =
-      data.deal_type === "direct_purchase" ? ((data.financing_type ?? "cash") as FinancingType) : null;
-    if (normalizedWizardFinancing !== selectedFinancingType) {
-      setValue("financing_type", normalizedWizardFinancing, { shouldValidate: false });
-    }
-  }, [data.deal_type, data.financing_type, selectedDealType, selectedFinancingType, setValue]);
 
   // Load makes on mount
   useEffect(() => {
@@ -280,16 +233,16 @@ export default function Step1_VehicleData() {
       const generatedTitle = `${formData.brand} ${formData.model} ${formData.year}`;
 
       const nextDealType = formData.deal_type as DealType;
-      const previousDealType = (data.deal_type ?? undefined) as DealType | undefined;
+      const previousDealType = (data.deal_type ?? "direct_purchase") as DealType;
       const isInsert = !data.id;
-      const dealTypeChanged = !!previousDealType && previousDealType !== nextDealType;
+      const dealTypeChanged = Boolean(data.deal_type) && previousDealType !== nextDealType;
 
       const validatedData: ListingUpdatePayload = {
         id: data.id ?? undefined,
         deal_type: nextDealType,
         brand: formData.brand,
         model: formData.model,
-        year: parseInt(formData.year.toString()),
+        year: parseInt(formData.year.toString(), 10),
         mileage_km: parsedKm,
         fuel: formData.fuel as "Benzin" | "Diesel" | "Hybrid" | "Elektro",
         gearbox: formData.gearbox as "Automatik" | "Manuell",
@@ -382,10 +335,7 @@ export default function Step1_VehicleData() {
             <Label htmlFor="deal_type" className="text-sm font-medium text-neutral-700">
               Verkaufsart *
             </Label>
-            <Select
-              value={selectedDealType}
-              onValueChange={(value) => setValue("deal_type", value as DealType, { shouldValidate: true })}
-            >
+            <Select value={selectedDealType} onValueChange={(value) => setValue("deal_type", value as DealType, { shouldValidate: true })}>
               <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                 <SelectValue placeholder="Verkaufsart auswählen" />
               </SelectTrigger>
@@ -394,9 +344,7 @@ export default function Step1_VehicleData() {
                 <SelectItem value="lease_takeover">Leasingübernahme</SelectItem>
               </SelectContent>
             </Select>
-            {errors.deal_type && (
-              <p className="text-sm text-red-500 font-light">{errors.deal_type.message as string}</p>
-            )}
+            {errors.deal_type && <p className="text-sm text-red-500 font-light">{errors.deal_type.message as string}</p>}
           </div>
 
           {/* Brand - Searchable Combobox */}

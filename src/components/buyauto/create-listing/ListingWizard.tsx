@@ -46,10 +46,10 @@ export const useWizard = () => {
   return context;
 };
 
-const createEmptyListingData = (opts?: { isGarage?: boolean }): ListingData => ({
+const createEmptyListingData = (): ListingData => ({
   id: undefined,
-  deal_type: opts?.isGarage ? "direct_purchase" : "lease_takeover",
-  financing_type: null,
+  deal_type: "direct_purchase",
+  financing_type: "cash",
   brand: "",
   model: "",
   year: new Date().getFullYear(),
@@ -133,10 +133,9 @@ export default function ListingWizard() {
   const [isComplete, setIsComplete] = useState(false);
   const [guestImageFiles, setGuestImageFiles] = useState<File[]>([]);
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [data, setData] = useState<ListingData>(() => createEmptyListingData({ isGarage }));
+  const [data, setData] = useState<ListingData>(() => createEmptyListingData());
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingFromQuery, setIsLoadingFromQuery] = useState(true);
-  const garageDefaultsAppliedRef = useRef(false);
 
   const updateData = useCallback((updates: Partial<ListingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
@@ -155,7 +154,6 @@ export default function ListingWizard() {
   useEffect(() => {
     if (!isGarage) return;
     if (isLoadingFromQuery) return;
-    if (garageDefaultsAppliedRef.current) return;
     if (draftId) return;
     if (data.id) return;
 
@@ -164,7 +162,6 @@ export default function ListingWizard() {
       deal_type: "direct_purchase",
       financing_type: null,
     }));
-    garageDefaultsAppliedRef.current = true;
   }, [data.id, draftId, isGarage, isLoadingFromQuery]);
 
   useEffect(() => {
