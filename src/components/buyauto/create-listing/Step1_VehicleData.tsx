@@ -66,7 +66,7 @@ export default function Step1_VehicleData() {
   ) as DealType;
 
   const initialFinancingType =
-    initialDealType === "direct_purchase" ? ((data.financing_type ?? "cash") as FinancingType) : null;
+    initialDealType === "direct_purchase" ? ((data.financing_type ?? null) as FinancingType | null) : null;
 
   const {
     register,
@@ -106,8 +106,8 @@ export default function Step1_VehicleData() {
   useEffect(() => {
     if (!isNewGarageListing) return;
     if (newGarageDefaultsAppliedRef.current) return;
-    setValue("deal_type", "direct_purchase", { shouldValidate: true });
-    setValue("financing_type", "cash", { shouldValidate: true });
+    setValue("deal_type", "direct_purchase", { shouldValidate: false });
+    setValue("financing_type", null, { shouldValidate: false });
     newGarageDefaultsAppliedRef.current = true;
   }, [isNewGarageListing, setValue]);
 
@@ -149,9 +149,7 @@ export default function Step1_VehicleData() {
     }
 
     if (selectedDealType === "direct_purchase") {
-      if (!selectedFinancingType) {
-        setValue("financing_type", "cash", { shouldValidate: true });
-      }
+      return;
     }
   }, [isGarage, selectedDealType, selectedFinancingType, setValue]);
 

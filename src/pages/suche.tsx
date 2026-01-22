@@ -42,6 +42,16 @@ export default function SearchPage() {
     if (query.noDeposit) newQuery.noDeposit = query.noDeposit === "true";
     if (query.premiumOnly) newQuery.premiumOnly = query.premiumOnly === "true";
 
+    const dealType = query.dealType;
+    if (dealType === "lease_takeover" || dealType === "direct_purchase") {
+      newQuery.dealType = dealType;
+
+      const financingType = query.financingType;
+      if (dealType === "direct_purchase" && (financingType === "cash" || financingType === "leasing")) {
+        newQuery.financingType = financingType;
+      }
+    }
+
     return newQuery;
   }, []);
 

@@ -48,3 +48,43 @@ We will ensure the `listing_inquiries` table has appropriate RLS policies.
 2.  Add the `handle_new_inquiry` function and `on_inquiry_created` trigger to the database via a SQL migration.
 3.  Verify and apply the RLS policies for the `listing_inquiries` table.
 4.  Test the end-to-end flow by submitting an inquiry from the listing detail page and checking if the owner receives an email.
+
+## Deal type + financing type (finalization)
+
+**Status**
+- ✅ DB: enums + columns + CHECK constraint + `public.public_listings` updated
+- ✅ Existing data backfilled to `deal_type=lease_takeover`, `financing_type=NULL`
+- ✅ Services: create/update normalized and dashboard DTOs include the fields
+- ✅ Search UI: filter controls + chips exist
+
+**Remaining app wiring (must-do)**
+1) **Search URL ↔ state parity** (`src/pages/suche.tsx`)
+   - Parse from URL:
+     - `dealType` → `SearchQuery["dealType"]`
+     - `financingType` → `SearchQuery["financingType"]`
+   - Normalization:
+     - If `dealType !== "direct_purchase"`, force `financingType = undefined`
+   - Ensure `buildUrlQuery()` includes these keys so filters persist on reload/share.
+
+2) **Create listing strict requirement** (garage flow)
+   Goal: “Direktkauf listings require selecting cash/leasing” (no silent defaults)
+   - `src/components/buyauto/create-listing/ListingWizard.tsx`
+     - Remove fallback: `wizardData.financing_type ?? "cash"` when `deal_type="direct_purchase"`
+     - Keep `financing_type` nullable in wizard state until user selects
+   - `src/components/buyauto/create-listing/Step1_VehicleData.tsx`
+     - Initial form defaults: do **not** prefill `financing_type` for direct_purchase
+     - Remove any effect that auto-sets financing to `"cash"` when missing
+   - Zod schema (`src/lib/buyauto/schemas.ts`) already enforces:
+     - direct_purchase ⇒ financing_type required
+     - lease_takeover ⇒ financing_type must be null
+
+3) **Regression verification**
+   - Search:
+     - Default (no filters) returns lease_takeover only
+     - Setting dealType=direct_purchase works
+     - financingType filter applies only when direct_purchase
+     - Filters survive refresh + copied URL
+   - Create listing (garage):
+     - direct_purchase cannot proceed until financing selected
+   - Dashboard:
+     - Cards show correct “Kaufoption/Finanzierung” label without crashing

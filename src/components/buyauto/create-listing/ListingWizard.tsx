@@ -49,7 +49,7 @@ export const useWizard = () => {
 const createEmptyListingData = (opts?: { isGarage?: boolean }): ListingData => ({
   id: undefined,
   deal_type: opts?.isGarage ? "direct_purchase" : "lease_takeover",
-  financing_type: opts?.isGarage ? "cash" : null,
+  financing_type: null,
   brand: "",
   model: "",
   year: new Date().getFullYear(),
@@ -99,7 +99,7 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
   return {
     id: wizardData.id,
     deal_type: dealType,
-    financing_type: dealType === "direct_purchase" ? (wizardData.financing_type ?? "cash") : null,
+    financing_type: dealType === "direct_purchase" ? (wizardData.financing_type ?? null) : null,
     brand: wizardData.brand,
     model: wizardData.model,
     year: wizardData.year,
@@ -162,7 +162,7 @@ export default function ListingWizard() {
     setData((prev) => ({
       ...prev,
       deal_type: "direct_purchase",
-      financing_type: "cash",
+      financing_type: null,
     }));
     garageDefaultsAppliedRef.current = true;
   }, [data.id, draftId, isGarage, isLoadingFromQuery]);

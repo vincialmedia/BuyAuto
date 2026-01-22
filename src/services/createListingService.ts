@@ -34,7 +34,13 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
   if (dealType === "lease_takeover") {
     return { ...payload, deal_type: "lease_takeover", financing_type: null };
   }
-  const financingType: FinancingType = payload.financing_type ?? "cash";
+  const hasFinancingField = Object.prototype.hasOwnProperty.call(payload, "financing_type");
+  const financingType = payload.financing_type ?? null;
+
+  if (!hasFinancingField || financingType === null) {
+    throw new Error("financing_type is required when deal_type is direct_purchase");
+  }
+
   return { ...payload, deal_type: "direct_purchase", financing_type: financingType };
 }
 
@@ -53,7 +59,11 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
     return { ...payload, financing_type: null };
   }
 
-  return { ...payload, financing_type: (payload.financing_type ?? "cash") as FinancingType };
+  if (!hasFinancingField || payload.financing_type === null || payload.financing_type === undefined) {
+    throw new Error("financing_type is required when deal_type is direct_purchase");
+  }
+
+  return { ...payload, financing_type: payload.financing_type as FinancingType };
 }
 
 export const createOrUpdateListing = async (
