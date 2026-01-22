@@ -20,6 +20,8 @@ export interface SearchQuery {
   noDeposit?: boolean;
   premiumOnly?: boolean;
   sort?: "relevance" | "priceAsc" | "priceDesc" | "yearDesc" | "monthsAsc" | "monthsDesc" | "kmAsc" | "dateDesc";
+  dealType?: "lease_takeover" | "direct_purchase";
+  financingType?: "cash" | "leasing";
 }
 
 export type SearchResult = {

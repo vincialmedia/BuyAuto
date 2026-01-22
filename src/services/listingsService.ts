@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
@@ -10,6 +9,8 @@ type PublicListingRow = {
   model: string;
   title?: string;
   description?: string;
+  deal_type?: "lease_takeover" | "direct_purchase";
+  financing_type?: "cash" | "leasing" | null;
   year: number;
   price_per_month_chf: number;
   remaining_months: number;
@@ -94,6 +95,8 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
   
   return {
     id: row.id,
+    deal_type: row.deal_type ?? "lease_takeover",
+    financing_type: row.financing_type ?? null,
     brand: row.brand,
     model: row.model,
     title: row.title || undefined,
@@ -120,6 +123,8 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 
   return {
     id: row.id,
+    deal_type: row.deal_type ?? "lease_takeover",
+    financing_type: row.financing_type ?? null,
     brand: row.brand,
     model: row.model,
     title: row.title || undefined,
@@ -155,6 +160,8 @@ function transformFullRowToListingDetail(row: any): ListingDetail {
 
   return {
     id: row.id,
+    deal_type: (row.deal_type ?? "lease_takeover") as any,
+    financing_type: (row.financing_type ?? null) as any,
     brand: row.brand,
     model: row.model,
     title: row.title || undefined,
@@ -247,6 +254,14 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       .select('*', { count: 'exact' });
 
     // Apply filters
+    if (searchQuery.dealType) query = query.eq("deal_type", searchQuery.dealType);
+    else query = query.eq("deal_type", "lease_takeover");
+    if (
+      searchQuery.financingType &&
+      (searchQuery.dealType ?? "lease_takeover") === "direct_purchase"
+    ) {
+      query = query.eq("financing_type", searchQuery.financingType);
+    }
     if (searchQuery.brand) query = query.eq('brand', searchQuery.brand);
     if (searchQuery.model) query = query.ilike('model', `%${searchQuery.model}%`);
     if (searchQuery.yearMin) query = query.gte('year', searchQuery.yearMin);

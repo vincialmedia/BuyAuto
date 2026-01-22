@@ -58,9 +58,11 @@ SELECT
   deposit_chf,
   created_at,
   CASE
-    WHEN jsonb_array_length(images) > 0 THEN
+    WHEN jsonb_array_length(COALESCE(images, '[]'::jsonb)) > 0 THEN
       CASE
-        WHEN cover_image_index IS NOT NULL AND cover_image_index < jsonb_array_length(images) THEN images ->> cover_image_index
+        WHEN cover_image_index IS NOT NULL
+          AND cover_image_index < jsonb_array_length(COALESCE(images, '[]'::jsonb))
+          THEN images ->> cover_image_index
         ELSE images ->> 0
       END
     ELSE NULL::text

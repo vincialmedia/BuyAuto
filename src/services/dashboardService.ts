@@ -45,6 +45,17 @@ export interface DashboardStats {
   expired: number;
 }
 
+function normalizeDealFields<T extends { deal_type?: unknown; financing_type?: unknown }>(
+  row: T
+): { deal_type: "lease_takeover" | "direct_purchase"; financing_type: "cash" | "leasing" | null } {
+  const dealType = row.deal_type === "direct_purchase" ? "direct_purchase" : "lease_takeover";
+  const financingType =
+    dealType === "direct_purchase" && (row.financing_type === "cash" || row.financing_type === "leasing")
+      ? row.financing_type
+      : null;
+  return { deal_type: dealType, financing_type: financingType };
+}
+
 async function getUserListings(): Promise<ListingDetail[]> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
