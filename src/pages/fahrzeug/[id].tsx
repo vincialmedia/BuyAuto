@@ -10,7 +10,7 @@ import { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
 import { StructuredData } from "@/components/buyauto/StructuredData";
-import { LeasingCalculator } from "@/components/buyauto/detail/LeasingCalculator";
+import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 
 // Helper function to ensure no undefined values (Next.js serialization fix)
 const serializeListing = (listing: ListingDetail | null): ListingDetail | null => {
@@ -33,6 +33,11 @@ const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryFor
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
   loading: () => <div className="h-96 bg-neutral-50 animate-pulse rounded-xl mt-16" />
 });
+
+const LeasingCalculator = dynamic<LeasingCalculatorProps>(
+  () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
+  { ssr: false, loading: () => <div className="h-80 bg-neutral-50 animate-pulse rounded-xl" /> }
+);
 
 interface ListingDetailPageProps {
   listing: ListingDetail | null;
