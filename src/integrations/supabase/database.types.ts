@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -158,10 +158,12 @@ export type Database = {
           cover_image_url: string | null
           created_at: string | null
           created_by: string | null
+          deal_type: Database["public"]["Enums"]["deal_type"]
           deposit_chf: number | null
           description: string | null
           duration_days: number | null
           expires_at: string | null
+          financing_type: Database["public"]["Enums"]["financing_type"] | null
           fuel: string
           garage_id: string | null
           gearbox: string
@@ -199,10 +201,12 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"]
           deposit_chf?: number | null
           description?: string | null
           duration_days?: number | null
           expires_at?: string | null
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
           fuel: string
           garage_id?: string | null
           gearbox: string
@@ -240,10 +244,12 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"]
           deposit_chf?: number | null
           description?: string | null
           duration_days?: number | null
           expires_at?: string | null
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
           fuel?: string
           garage_id?: string | null
           gearbox?: string
@@ -383,8 +389,10 @@ export type Database = {
           cover_image_index: number | null
           cover_image_url: string | null
           created_at: string | null
+          deal_type: Database["public"]["Enums"]["deal_type"] | null
           deposit_chf: number | null
           description: string | null
+          financing_type: Database["public"]["Enums"]["financing_type"] | null
           fuel: string | null
           gearbox: string | null
           id: string | null
@@ -406,8 +414,10 @@ export type Database = {
           cover_image_index?: number | null
           cover_image_url?: never
           created_at?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
           deposit_chf?: number | null
           description?: string | null
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
           fuel?: string | null
           gearbox?: string | null
           id?: string | null
@@ -429,8 +439,10 @@ export type Database = {
           cover_image_index?: number | null
           cover_image_url?: never
           created_at?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
           deposit_chf?: number | null
           description?: string | null
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
           fuel?: string | null
           gearbox?: string | null
           id?: string | null
@@ -517,6 +529,8 @@ export type Database = {
       }
     }
     Enums: {
+      deal_type: "lease_takeover" | "direct_purchase"
+      financing_type: "cash" | "leasing"
       listing_status:
         | "pending"
         | "active"
@@ -655,6 +669,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      deal_type: ["lease_takeover", "direct_purchase"],
+      financing_type: ["cash", "leasing"],
       listing_status: [
         "pending",
         "active",
