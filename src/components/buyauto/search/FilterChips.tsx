@@ -38,6 +38,9 @@ export default function FilterChips({ searchQuery, onSearchQueryChange }: Filter
     } else {
       // Remove entire filter
       delete newQuery[key];
+      if (key === "dealType") {
+        delete newQuery.financingType;
+      }
     }
     
     // Reset to page 1
@@ -55,6 +58,16 @@ export default function FilterChips({ searchQuery, onSearchQueryChange }: Filter
     
     if (searchQuery.brand) {
       chips.push({ label: searchQuery.brand, key: 'brand' });
+    }
+
+    if (searchQuery.dealType === "direct_purchase") {
+      chips.push({ label: "Direktkauf", key: "dealType" });
+      if (searchQuery.financingType) {
+        chips.push({
+          label: searchQuery.financingType === "leasing" ? "Leasing" : "Barzahlung",
+          key: "financingType",
+        });
+      }
     }
     
     if (searchQuery.model) {
