@@ -12,7 +12,7 @@ import { vehicleDataSchema, type VehicleDataForm } from "@/lib/buyauto/schemas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useRef, useState } from "react";
-import { createOrUpdateListing } from "@/services/createListingService";
+import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
 import { fetchMakes, fetchModelsForMake, searchMakes, searchModelsForMake } from "@/services/vehicleService";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -59,14 +59,12 @@ export default function Step1_VehicleData() {
 
   const newGarageDefaultsAppliedRef = useRef(false);
 
-  const initialDealType = (
-    isNewGarageListing
-      ? "direct_purchase"
-      : (data.deal_type ?? (isGarage ? "direct_purchase" : "lease_takeover"))
-  ) as DealType;
+  const initialDealType = (data.deal_type ?? (isNewGarageListing ? "direct_purchase" : "direct_purchase")) as DealType;
 
   const initialFinancingType =
-    initialDealType === "direct_purchase" ? ((data.financing_type ?? null) as FinancingType | null) : null;
+    initialDealType === "direct_purchase"
+      ? ((data.financing_type ?? "cash") as FinancingType)
+      : null;
 
   const {
     register,
@@ -107,14 +105,14 @@ export default function Step1_VehicleData() {
     if (!isNewGarageListing) return;
     if (newGarageDefaultsAppliedRef.current) return;
     setValue("deal_type", "direct_purchase", { shouldValidate: false });
-    setValue("financing_type", null, { shouldValidate: false });
+    setValue("financing_type", "cash" as FinancingType, { shouldValidate: false });
     newGarageDefaultsAppliedRef.current = true;
   }, [isNewGarageListing, setValue]);
 
   useEffect(() => {
     updateData({
-      deal_type: selectedDealType || "lease_takeover",
-      financing_type: selectedDealType === "direct_purchase" ? (selectedFinancingType ?? null) : null,
+      deal_type: selectedDealType || "direct_purchase",
+      financing_type: selectedDealType === "direct_purchase" ? (selectedFinancingType ?? "cash") : null,
       brand: selectedMake || "",
       model: selectedModel || "",
       year: typeof selectedYear === "number" ? selectedYear : undefined,
@@ -139,8 +137,6 @@ export default function Step1_VehicleData() {
   ]);
 
   useEffect(() => {
-    if (!isGarage) return;
-
     if (selectedDealType === "lease_takeover") {
       if (selectedFinancingType !== null && selectedFinancingType !== undefined) {
         setValue("financing_type", null, { shouldValidate: true });
@@ -149,9 +145,12 @@ export default function Step1_VehicleData() {
     }
 
     if (selectedDealType === "direct_purchase") {
+      if (!selectedFinancingType) {
+        setValue("financing_type", "cash" as FinancingType, { shouldValidate: false });
+      }
       return;
     }
-  }, [isGarage, selectedDealType, selectedFinancingType, setValue]);
+  }, [selectedDealType, selectedFinancingType, setValue]);
 
   useEffect(() => {
     if (!data.deal_type) return;
@@ -160,7 +159,7 @@ export default function Step1_VehicleData() {
     }
 
     const normalizedWizardFinancing =
-      data.deal_type === "direct_purchase" ? ((data.financing_type ?? null) as FinancingType | null) : null;
+      data.deal_type === "direct_purchase" ? ((data.financing_type ?? "cash") as FinancingType) : null;
     if (normalizedWizardFinancing !== selectedFinancingType) {
       setValue("financing_type", normalizedWizardFinancing, { shouldValidate: false });
     }
@@ -271,18 +270,23 @@ export default function Step1_VehicleData() {
 
     setIsSubmitting(true);
     try {
-      console.log('Step1 handleVehicleDataSubmit:', formData);
+      console.log("Step1 handleVehicleDataSubmit:", formData);
       
       // Clean the KM value - remove all non-numeric characters (like apostrophes)
-      const cleanKm = formData.km.toString().replace(/[^0-9]/g, '');
+      const cleanKm = formData.km.toString().replace(/[^0-9]/g, "");
       const parsedKm = parseInt(cleanKm, 10);
 
       // Generate proper title from vehicle data
       const generatedTitle = `${formData.brand} ${formData.model} ${formData.year}`;
 
-      const validatedData = {
-        deal_type: formData.deal_type,
-        financing_type: formData.deal_type === "direct_purchase" ? formData.financing_type : null,
+      const nextDealType = formData.deal_type as DealType;
+      const previousDealType = (data.deal_type ?? undefined) as DealType | undefined;
+      const isInsert = !data.id;
+      const dealTypeChanged = !!previousDealType && previousDealType !== nextDealType;
+
+      const validatedData: ListingUpdatePayload = {
+        id: data.id ?? undefined,
+        deal_type: nextDealType,
         brand: formData.brand,
         model: formData.model,
         year: parseInt(formData.year.toString()),
@@ -293,6 +297,14 @@ export default function Step1_VehicleData() {
         description: formData.description || undefined,
         title: generatedTitle,
       };
+
+      if (nextDealType === "lease_takeover") {
+        validatedData.financing_type = null;
+        validatedData.leasing_offer = null;
+      } else if (isInsert || dealTypeChanged) {
+        validatedData.financing_type = "cash";
+        validatedData.leasing_offer = null;
+      }
 
       const result = await createOrUpdateListing(validatedData, user);
       
@@ -366,51 +378,26 @@ export default function Step1_VehicleData() {
 
       <form onSubmit={handleSubmit(handleVehicleDataSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {isGarage && (
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="deal_type" className="text-sm font-medium text-neutral-700">
-                Kaufoption *
-              </Label>
-              <Select
-                value={selectedDealType}
-                onValueChange={(value) => setValue("deal_type", value as DealType, { shouldValidate: true })}
-              >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-                  <SelectValue placeholder="Kaufoption auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lease_takeover">Leasingübernahme</SelectItem>
-                  <SelectItem value="direct_purchase">Direktkauf</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.deal_type && (
-                <p className="text-sm text-red-500 font-light">{errors.deal_type.message as string}</p>
-              )}
-            </div>
-          )}
-
-          {isGarage && selectedDealType === "direct_purchase" && (
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="financing_type" className="text-sm font-medium text-neutral-700">
-                Wie willst du bezahlen? *
-              </Label>
-              <Select
-                value={selectedFinancingType ?? ""}
-                onValueChange={(value) => setValue("financing_type", value as FinancingType, { shouldValidate: true })}
-              >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-                  <SelectValue placeholder="Zahlungsart auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Barzahlung</SelectItem>
-                  <SelectItem value="leasing">Leasing</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.financing_type && (
-                <p className="text-sm text-red-500 font-light">{errors.financing_type.message as string}</p>
-              )}
-            </div>
-          )}
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="deal_type" className="text-sm font-medium text-neutral-700">
+              Verkaufsart *
+            </Label>
+            <Select
+              value={selectedDealType}
+              onValueChange={(value) => setValue("deal_type", value as DealType, { shouldValidate: true })}
+            >
+              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectValue placeholder="Verkaufsart auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="direct_purchase">Direktkauf</SelectItem>
+                <SelectItem value="lease_takeover">Leasingübernahme</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.deal_type && (
+              <p className="text-sm text-red-500 font-light">{errors.deal_type.message as string}</p>
+            )}
+          </div>
 
           {/* Brand - Searchable Combobox */}
           <div className="space-y-2">
@@ -699,7 +686,7 @@ export default function Step1_VehicleData() {
             disabled={isSubmitting}
             className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
           >
-            {isSubmitting ? 'Wird gespeichert...' : 'Weiter zu Leasingdetails'}
+            {isSubmitting ? "Wird gespeichert..." : "Weiter zu Finanzierungsdetails"}
           </Button>
         </div>
       </form>

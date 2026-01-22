@@ -2,10 +2,21 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { DealType, FinancingType, PricePlanId } from "@/lib/buyauto/types";
 
+export interface LeasingOfferPayload {
+  enabled: boolean;
+  interest_rate_pct: number;
+  down_payment_pct: number;
+  no_down_payment: boolean;
+  min_term_months: number;
+  max_term_months: number;
+  km_options?: number[];
+}
+
 export type ListingUpdatePayload = Partial<{
   id?: string;
   deal_type?: DealType;
   financing_type?: FinancingType | null;
+  leasing_offer?: LeasingOfferPayload | null;
   brand?: string;
   model?: string;
   year?: number;
@@ -29,41 +40,131 @@ export type ListingUpdatePayload = Partial<{
   user_id?: string;
 }>;
 
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeLeasingOfferForDirectPurchaseInsert(
+  payload: ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType }
+): ListingUpdatePayload {
+  if (payload.financing_type === "cash") {
+    return { ...payload, leasing_offer: null };
+  }
+
+  const offer = payload.leasing_offer;
+  if (!offer || typeof offer !== "object") {
+    throw new Error("leasing_offer is required when financing_type is leasing");
+  }
+
+  const enabled = offer.enabled === true;
+  if (!enabled) {
+    throw new Error("leasing_offer.enabled must be true when financing_type is leasing");
+  }
+
+  const noDownPayment = offer.no_down_payment === true;
+  const normalizedDownPaymentPct = noDownPayment ? 0 : clampNumber(Number(offer.down_payment_pct), 0, 100);
+
+  const normalizedOffer: LeasingOfferPayload = {
+    enabled: true,
+    interest_rate_pct: clampNumber(Number(offer.interest_rate_pct), 0.01, 99),
+    down_payment_pct: normalizedDownPaymentPct,
+    no_down_payment: noDownPayment,
+    min_term_months: Math.max(1, Math.floor(Number(offer.min_term_months))),
+    max_term_months: Math.max(1, Math.floor(Number(offer.max_term_months))),
+    km_options: Array.isArray(offer.km_options) ? offer.km_options.map((v) => Math.floor(Number(v))) : undefined,
+  };
+
+  if (!Number.isFinite(normalizedOffer.interest_rate_pct)) {
+    throw new Error("leasing_offer.interest_rate_pct is required");
+  }
+
+  if (!Number.isFinite(normalizedOffer.min_term_months) || !Number.isFinite(normalizedOffer.max_term_months)) {
+    throw new Error("leasing_offer min/max term months are required");
+  }
+
+  if (normalizedOffer.min_term_months > normalizedOffer.max_term_months) {
+    throw new Error("leasing_offer.min_term_months must be <= max_term_months");
+  }
+
+  if (normalizedOffer.no_down_payment && normalizedOffer.down_payment_pct !== 0) {
+    throw new Error("leasing_offer.down_payment_pct must be 0 when no_down_payment is true");
+  }
+
+  return { ...payload, leasing_offer: normalizedOffer };
+}
+
 function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpdatePayload {
-  const dealType: DealType = payload.deal_type ?? "lease_takeover";
+  const dealType: DealType = payload.deal_type ?? "direct_purchase";
+
   if (dealType === "lease_takeover") {
-    return { ...payload, deal_type: "lease_takeover", financing_type: null };
-  }
-  const hasFinancingField = Object.prototype.hasOwnProperty.call(payload, "financing_type");
-  const financingType = payload.financing_type ?? null;
-
-  if (!hasFinancingField || financingType === null) {
-    throw new Error("financing_type is required when deal_type is direct_purchase");
+    return { ...payload, deal_type: "lease_takeover", financing_type: null, leasing_offer: null };
   }
 
-  return { ...payload, deal_type: "direct_purchase", financing_type: financingType };
+  const financingType: FinancingType = (payload.financing_type ?? "cash") as FinancingType;
+  const base = { ...payload, deal_type: "direct_purchase", financing_type: financingType };
+
+  return normalizeLeasingOfferForDirectPurchaseInsert(base as ListingUpdatePayload & {
+    deal_type: "direct_purchase";
+    financing_type: FinancingType;
+  });
 }
 
 function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpdatePayload {
   const hasDealType = typeof payload.deal_type === "string";
   const hasFinancingField = Object.prototype.hasOwnProperty.call(payload, "financing_type");
+  const hasLeasingOfferField = Object.prototype.hasOwnProperty.call(payload, "leasing_offer");
 
-  if (!hasDealType && !hasFinancingField) return payload;
+  if (!hasDealType && !hasFinancingField && !hasLeasingOfferField) return payload;
 
-  if (!hasDealType) {
-    throw new Error("deal_type is required when updating financing_type");
+  if (!hasDealType && (hasFinancingField || hasLeasingOfferField)) {
+    throw new Error("deal_type is required when updating financing_type or leasing_offer");
   }
 
   const dealType = payload.deal_type as DealType;
+
   if (dealType === "lease_takeover") {
-    return { ...payload, financing_type: null };
+    return { ...payload, financing_type: null, leasing_offer: null };
   }
 
-  if (!hasFinancingField || payload.financing_type === null || payload.financing_type === undefined) {
-    throw new Error("financing_type is required when deal_type is direct_purchase");
+  if (dealType === "direct_purchase") {
+    if (hasFinancingField) {
+      const nextFinancing = payload.financing_type;
+      if (nextFinancing !== "cash" && nextFinancing !== "leasing") {
+        throw new Error("financing_type must be cash or leasing when deal_type is direct_purchase");
+      }
+
+      if (nextFinancing === "cash") {
+        return { ...payload, financing_type: "cash", leasing_offer: null };
+      }
+
+      return normalizeLeasingOfferForDirectPurchaseInsert({
+        ...(payload as ListingUpdatePayload),
+        deal_type: "direct_purchase",
+        financing_type: "leasing",
+        leasing_offer: payload.leasing_offer as LeasingOfferPayload | null,
+      } as ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType });
+    }
+
+    if (hasLeasingOfferField) {
+      const currentOffer = payload.leasing_offer;
+      if (currentOffer === null) return payload;
+      if (!currentOffer || typeof currentOffer !== "object") {
+        throw new Error("leasing_offer must be an object or null");
+      }
+      const noDownPayment = (currentOffer as LeasingOfferPayload).no_down_payment === true;
+      if (noDownPayment && Number((currentOffer as LeasingOfferPayload).down_payment_pct) !== 0) {
+        return {
+          ...payload,
+          leasing_offer: { ...(currentOffer as LeasingOfferPayload), down_payment_pct: 0 },
+        };
+      }
+      return payload;
+    }
+
+    return payload;
   }
 
-  return { ...payload, financing_type: payload.financing_type as FinancingType };
+  return payload;
 }
 
 export const createOrUpdateListing = async (
