@@ -1,11 +1,22 @@
 export type DealType = "lease_takeover" | "direct_purchase";
 export type FinancingType = "cash" | "leasing";
 
+export interface LeasingOffer {
+  enabled: boolean;
+  interest_rate_pct: number;
+  down_payment_pct: number;
+  no_down_payment: boolean;
+  min_term_months: number;
+  max_term_months: number;
+  km_options?: number[];
+}
+
 export interface Listing {
   id: string;
   user_id?: string; // ✅ Made optional to fix build errors
   deal_type?: DealType;
   financing_type?: FinancingType | null;
+  leasing_offer?: LeasingOffer | null;
   brand: string;
   model: string;
   title?: string;
@@ -39,6 +50,7 @@ export interface PricePlan {
 export interface ListingData {
   deal_type?: DealType;
   financing_type?: FinancingType | null;
+  leasing_offer?: LeasingOffer | null;
   brand?: string;
   model?: string;
   year?: number;

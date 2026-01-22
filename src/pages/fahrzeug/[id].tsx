@@ -10,6 +10,7 @@ import { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
 import { StructuredData } from "@/components/buyauto/StructuredData";
+import { LeasingCalculator } from "@/components/buyauto/detail/LeasingCalculator";
 
 // Helper function to ensure no undefined values (Next.js serialization fix)
 const serializeListing = (listing: ListingDetail | null): ListingDetail | null => {
@@ -137,16 +138,45 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   const listingUrl = `${baseUrl}/fahrzeug/${listing.id}`;
   const ogImage = listing.imageUrl || (images.length > 0 ? images[0] : `${baseUrl}/buyauto-logo.png`);
 
+  const dealType = (listing.deal_type ?? (listing as unknown as { deal_type?: string }).deal_type ?? "lease_takeover") as
+    | "lease_takeover"
+    | "direct_purchase";
+
+  const leasingOffer = (listing as unknown as { leasing_offer?: any; leasingOffer?: any }).leasing_offer ??
+    (listing as unknown as { leasing_offer?: any; leasingOffer?: any }).leasingOffer ??
+    null;
+
+  const purchasePriceCandidate =
+    (listing as unknown as { listing_price?: unknown; price_chf?: unknown }).listing_price ??
+    (listing as unknown as { listing_price?: unknown; price_chf?: unknown }).price_chf ??
+    null;
+
+  const purchasePriceChf = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
+
+  const structuredPrice = dealType === "direct_purchase" ? (purchasePriceChf ?? listing.pricePerMonthCHF) : listing.pricePerMonthCHF;
+  const metaPriceText =
+    dealType === "direct_purchase"
+      ? purchasePriceChf
+        ? `${formatPrice(purchasePriceChf)} Kaufpreis`
+        : "Kaufpreis"
+      : `${formatPrice(listing.pricePerMonthCHF)}/Monat`;
+
   return (
     <>
       <Head>
         <title>{`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`}</title>
-        <meta name="description" content={`${listing.brand} ${listing.model} ${listing.year} für ${formatPrice(listing.pricePerMonthCHF)}/Monat in ${listing.location}. Jetzt Auto-Leasing übernehmen!`} />
+        <meta
+          name="description"
+          content={`${listing.brand} ${listing.model} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
+        />
         <link rel="canonical" href={listingUrl} />
         
         {/* Open Graph Meta Tags */}
         <meta property="og:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
-        <meta property="og:description" content={`${listing.brand} ${listing.model} ${listing.year} für ${formatPrice(listing.pricePerMonthCHF)}/Monat in ${listing.location}. Jetzt Auto-Leasing übernehmen!`} />
+        <meta
+          property="og:description"
+          content={`${listing.brand} ${listing.model} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
+        />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={listingUrl} />
         <meta property="og:image" content={ogImage} />
@@ -158,7 +188,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
-        <meta name="twitter:description" content={`${listing.brand} ${listing.model} ${listing.year} für ${formatPrice(listing.pricePerMonthCHF)}/Monat`} />
+        <meta name="twitter:description" content={`${listing.brand} ${listing.model} ${listing.year} - ${metaPriceText}`} />
         <meta name="twitter:image" content={ogImage} />
       </Head>
 
@@ -170,7 +200,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
           brand: listing.brand,
           model: listing.model,
           year: listing.year,
-          price: listing.pricePerMonthCHF,
+          price: structuredPrice,
           images: images
         }}
       />
@@ -295,31 +325,44 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                   </div>
 
                   <div className="text-center mb-6">
-                    <div className="text-4xl font-bold text-red-500 mb-1">
-                      {formatPrice(listing.pricePerMonthCHF)}
-                    </div>
-                    <p className="text-neutral-600">pro Monat</p>
-                    <p className="text-sm text-neutral-600 mt-2">
-                      {(listing.depositCHF && listing.depositCHF > 0)
-                        ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`
-                        : "Keine Kaution"}
-                    </p>
+                    {dealType === "direct_purchase" ? (
+                      <>
+                        <div className="text-4xl font-bold text-red-500 mb-1">
+                          {purchasePriceChf ? formatPrice(purchasePriceChf) : "Preis auf Anfrage"}
+                        </div>
+                        <p className="text-neutral-600">Kaufpreis</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-4xl font-bold text-red-500 mb-1">
+                          {formatPrice(listing.pricePerMonthCHF)}
+                        </div>
+                        <p className="text-neutral-600">pro Monat</p>
+                        <p className="text-sm text-neutral-600 mt-2">
+                          {(listing.depositCHF && listing.depositCHF > 0)
+                            ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`
+                            : "Keine Kaution"}
+                        </p>
+                      </>
+                    )}
                   </div>
 
-                  <div className="space-y-4 mb-6">
-                    <div className="flex justify-between items-center py-2 border-b border-neutral-100">
-                      <span className="text-neutral-600">Restlaufzeit</span>
-                      <span className="font-semibold">{listing.remainingMonths} Monate</span>
+                  {dealType !== "direct_purchase" && (
+                    <div className="space-y-4 mb-6">
+                      <div className="flex justify-between items-center py-2 border-b border-neutral-100">
+                        <span className="text-neutral-600">Restlaufzeit</span>
+                        <span className="font-semibold">{listing.remainingMonths} Monate</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {listing.remaining_km && (
+                          <div>
+                            <p className="text-sm text-neutral-500 mb-1">Verbleibende KM</p>
+                            <p className="text-base font-semibold">{listing.remaining_km.toLocaleString("de-CH")} km</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      {listing.remaining_km && (
-                        <div>
-                          <p className="text-sm text-neutral-500 mb-1">Verbleibende KM</p>
-                          <p className="text-base font-semibold">{listing.remaining_km.toLocaleString("de-CH")} km</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   <div className="space-y-3">
                     <Button
@@ -333,6 +376,15 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                   </div>
                 </CardContent>
               </Card>
+
+              {dealType === "direct_purchase" && leasingOffer?.enabled === true && purchasePriceChf && (
+                <LeasingCalculator
+                  priceChf={purchasePriceChf}
+                  year={listing.year}
+                  mileageKm={listing.mileageKm}
+                  offer={leasingOffer}
+                />
+              )}
 
               {listing.premium && (
                 <Card className="border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-white shadow-sm">

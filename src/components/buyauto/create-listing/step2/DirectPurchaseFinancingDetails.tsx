@@ -14,10 +14,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, type ListingUpdatePayload, type LeasingOfferPayload } from "@/services/createListingService";
 
+const DEFAULT_KM_OPTIONS = [10000, 15000, 20000, 25000];
+
 const directPurchaseFinancingSchema = z
   .object({
     leasing_enabled: z.boolean().default(false),
-    interest_rate_pct: z.number().min(0.01, "Leasingzins ist erforderlich").max(99, "Bitte einen realistischen Wert eingeben").optional(),
+    interest_rate_pct: z
+      .number()
+      .min(0.01, "Leasingzins ist erforderlich")
+      .max(99, "Bitte einen realistischen Wert eingeben")
+      .optional(),
     down_payment_pct: z.number().min(0).max(100).optional(),
     no_down_payment: z.boolean().default(false),
     min_term_months: z.number().int().min(1, "Mindestlaufzeit ist erforderlich").optional(),
@@ -142,6 +148,10 @@ export function DirectPurchaseFinancingDetails() {
             no_down_payment: formData.no_down_payment === true,
             min_term_months: Math.floor(Number(formData.min_term_months)),
             max_term_months: Math.floor(Number(formData.max_term_months)),
+            km_options:
+              Array.isArray(existingOffer?.km_options) && existingOffer.km_options.length > 0
+                ? existingOffer.km_options
+                : DEFAULT_KM_OPTIONS,
           }
         : null;
 

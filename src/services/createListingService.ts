@@ -1,16 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import type { DealType, FinancingType, PricePlanId } from "@/lib/buyauto/types";
+import type { DealType, FinancingType, PricePlanId, LeasingOffer } from "@/lib/buyauto/types";
 
-export interface LeasingOfferPayload {
-  enabled: boolean;
-  interest_rate_pct: number;
-  down_payment_pct: number;
-  no_down_payment: boolean;
-  min_term_months: number;
-  max_term_months: number;
-  km_options?: number[];
-}
+export type LeasingOfferPayload = LeasingOffer;
 
 export type ListingUpdatePayload = Partial<{
   id?: string;
