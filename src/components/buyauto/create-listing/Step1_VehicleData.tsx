@@ -49,15 +49,6 @@ export default function Step1_VehicleData() {
   const [makeSearch, setMakeSearch] = useState("");
   const [modelSearch, setModelSearch] = useState("");
   
-  const isNewGarageListing =
-    isGarage &&
-    !data.id &&
-    !draftId &&
-    typeof router.query.edit !== "string" &&
-    typeof router.query.draft !== "string";
-
-  const newGarageDefaultsAppliedRef = useRef(false);
-
   const initialDealType = (data.deal_type ?? "direct_purchase") as DealType;
 
   const {
