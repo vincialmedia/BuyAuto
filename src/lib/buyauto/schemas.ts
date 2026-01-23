@@ -27,43 +27,214 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-export const vehicleDataSchema = z.object({
-  deal_type: z.enum(["lease_takeover", "direct_purchase"], {
-    required_error: "Verkaufsart ist erforderlich",
-    invalid_type_error: "Verkaufsart ist erforderlich",
-  }),
-  brand: z.string().min(1, "Marke ist erforderlich"),
-  model: z.string().min(1, "Modell ist erforderlich"),
-  year: z
-    .number()
-    .min(1990, "Baujahr muss mindestens 1990 sein")
-    .max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
-  km: z
-    .union([
-      z.number(),
-      z.string().transform((val) => {
-        const cleaned = val.replace(/[^0-9]/g, "");
-        const num = parseInt(cleaned, 10);
-        if (isNaN(num)) throw new Error("Ungültiger Kilometerstand");
-        return num;
-      }),
-    ])
-    .pipe(z.number().min(0, "Kilometerstand muss mindestens 0 sein")),
-  body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio"].includes(val), {
-    message: "Bitte wählen Sie eine gültige Karosserie",
-  }),
-  fuel: z.string().refine((val) => ["Benzin", "Diesel", "Hybrid", "Elektro"].includes(val), {
-    message: "Bitte wählen Sie einen gültigen Antrieb",
-  }),
-  gearbox: z.string().refine((val) => ["Automatik", "Manuell"].includes(val), {
-    message: "Bitte wählen Sie ein gültiges Getriebe",
-  }),
-  description: z
-    .string()
-    .max(2000, "Beschreibung darf maximal 2000 Zeichen enthalten")
-    .optional()
-    .or(z.literal("")),
-});
+const numericFromString = (val: string): number => {
+  const cleaned = val.replace(/[^0-9]/g, "");
+  const num = parseInt(cleaned, 10);
+  if (Number.isNaN(num)) {
+    throw new Error("Ungültige Zahl");
+  }
+  return num;
+};
+
+const numberInput = z.union([z.number(), z.string().transform((val) => numericFromString(val))]);
+
+const kmInput = z
+  .union([
+    z.number(),
+    z.string().transform((val) => {
+      const cleaned = val.replace(/[^0-9]/g, "");
+      const num = parseInt(cleaned, 10);
+      if (Number.isNaN(num)) throw new Error("Ungültiger Kilometerstand");
+      return num;
+    }),
+  ])
+  .pipe(z.number().min(0, "Kilometerstand muss mindestens 0 sein"));
+
+export const vehicleDataSchema = z
+  .object({
+    deal_type: z.enum(["lease_takeover", "direct_purchase"], {
+      required_error: "Verkaufsart ist erforderlich",
+      invalid_type_error: "Verkaufsart ist erforderlich",
+    }),
+    brand: z.string().min(1, "Marke ist erforderlich"),
+    model: z.string().min(1, "Modell ist erforderlich"),
+    year: z
+      .number()
+      .min(1990, "Baujahr muss mindestens 1990 sein")
+      .max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
+    km: kmInput,
+    purchase_price_chf: numberInput.optional(),
+    body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio"].includes(val), {
+      message: "Bitte wählen Sie eine gültige Karosserie",
+    }),
+    fuel: z.string().refine((val) => ["Benzin", "Diesel", "Hybrid", "Elektro"].includes(val), {
+      message: "Bitte wählen Sie einen gültigen Antrieb",
+    }),
+    gearbox: z.string().refine((val) => ["Automatik", "Manuell"].includes(val), {
+      message: "Bitte wählen Sie ein gültiges Getriebe",
+    }),
+    description: z.string().max(2000, "Beschreibung darf maximal 2000 Zeichen enthalten").optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.deal_type === "direct_purchase") {
+      const price = data.purchase_price_chf;
+      if (price === undefined || !Number.isFinite(price) || price <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["purchase_price_chf"],
+          message: "Kaufpreis ist erforderlich",
+        });
+      }
+    }
+  });
+
+export type VehicleDataForm = z.infer<typeof vehicleDataSchema>;
+
+export const listingStep1Schema = z
+  .object({
+    deal_type: z.enum(["lease_takeover", "direct_purchase"], {
+      required_error: "Verkaufsart ist erforderlich",
+      invalid_type_error: "Verkaufsart ist erforderlich",
+    }),
+    brand: z.string().min(1, "Marke ist erforderlich"),
+    model: z.string().min(1, "Modell ist erforderlich"),
+    year: z
+      .number()
+      .min(1990, "Baujahr muss mindestens 1990 sein")
+      .max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
+    km: kmInput,
+    body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio"].includes(val), {
+      message: "Bitte wählen Sie eine gültige Karosserie",
+    }),
+    fuel: z.string().refine((val) => ["Benzin", "Diesel", "Hybrid", "Elektro"].includes(val), {
+      message: "Bitte wählen Sie einen gültigen Antrieb",
+    }),
+    gearbox: z.string().refine((val) => ["Automatik", "Manuell"].includes(val), {
+      message: "Bitte wählen Sie ein gültiges Getriebe",
+    }),
+    description: z.string().max(2000, "Beschreibung darf maximal 2000 Zeichen enthalten").optional().or(z.literal("")),
+
+    purchase_price_chf: numberInput.optional(),
+
+    takeover_rate_chf: numberInput.optional(),
+    contract_end_date: z.date().optional(),
+    remaining_months: z.number().int().min(1, "Restlaufzeit muss mindestens 1 Monat betragen").optional(),
+    deposit_chf: numberInput.optional(),
+    remaining_km: numberInput.optional(),
+    canton_code: z.string().optional(),
+
+    leasing_enabled: z.boolean().optional().default(false),
+    interest_rate_pct: numberInput.optional(),
+    down_payment_pct: numberInput.optional(),
+    no_down_payment: z.boolean().optional().default(false),
+    min_term_months: numberInput.optional(),
+    max_term_months: numberInput.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.deal_type === "direct_purchase") {
+      if (data.purchase_price_chf === undefined || !Number.isFinite(data.purchase_price_chf) || data.purchase_price_chf <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["purchase_price_chf"],
+          message: "Kaufpreis ist erforderlich",
+        });
+      }
+    }
+
+    if (data.deal_type === "lease_takeover") {
+      if (data.takeover_rate_chf === undefined || !Number.isFinite(data.takeover_rate_chf) || data.takeover_rate_chf <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["takeover_rate_chf"],
+          message: "Monatliche Rate ist erforderlich",
+        });
+      }
+
+      if (!(data.contract_end_date instanceof Date)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["contract_end_date"],
+          message: "Vertragsende ist erforderlich",
+        });
+      }
+
+      if (data.remaining_months === undefined || !Number.isFinite(data.remaining_months) || data.remaining_months < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["remaining_months"],
+          message: "Restlaufzeit ist erforderlich",
+        });
+      }
+
+      if (!data.canton_code || data.canton_code.trim().length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["canton_code"],
+          message: "Standort (Kanton) ist erforderlich",
+        });
+      }
+    }
+
+    if (data.leasing_enabled) {
+      if (data.interest_rate_pct === undefined || !Number.isFinite(data.interest_rate_pct) || data.interest_rate_pct <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["interest_rate_pct"],
+          message: "Leasingzins ist erforderlich",
+        });
+      }
+
+      if (data.no_down_payment) {
+        if ((data.down_payment_pct ?? 0) !== 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["down_payment_pct"],
+            message: "Bei 'Keine Anzahlung' muss die Anzahlung 0% sein",
+          });
+        }
+      } else {
+        if (data.down_payment_pct === undefined || !Number.isFinite(data.down_payment_pct)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["down_payment_pct"],
+            message: "Anzahlung ist erforderlich",
+          });
+        }
+      }
+
+      if (data.min_term_months === undefined || !Number.isFinite(data.min_term_months)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["min_term_months"],
+          message: "Mindestlaufzeit ist erforderlich",
+        });
+      }
+
+      if (data.max_term_months === undefined || !Number.isFinite(data.max_term_months)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["max_term_months"],
+          message: "Maximallaufzeit ist erforderlich",
+        });
+      }
+
+      if (
+        data.min_term_months !== undefined &&
+        data.max_term_months !== undefined &&
+        Number.isFinite(data.min_term_months) &&
+        Number.isFinite(data.max_term_months) &&
+        data.min_term_months > data.max_term_months
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["max_term_months"],
+          message: "Maximallaufzeit muss >= Mindestlaufzeit sein",
+        });
+      }
+    }
+  });
+
+export type ListingStep1Form = z.infer<typeof listingStep1Schema>;
 
 export const planSelectionSchema = z.object({
   pricing_plan: z.string().optional(),
@@ -77,7 +248,6 @@ export const imagesSchema = z.object({
   cover_image_index: z.number().optional(),
 });
 
-export type VehicleDataForm = z.infer<typeof vehicleDataSchema>;
 export type PlanSelectionForm = z.infer<typeof planSelectionSchema>;
 export type ImagesForm = z.infer<typeof imagesSchema>;
 

@@ -12,18 +12,14 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
-import { createOrUpdateListing, type ListingUpdatePayload, type LeasingOfferPayload } from "@/services/createListingService";
+import { createOrUpdateListing, type LeasingOfferPayload, type ListingUpdatePayload } from "@/services/createListingService";
 
 const DEFAULT_KM_OPTIONS = [10000, 15000, 20000, 25000];
 
 const directPurchaseFinancingSchema = z
   .object({
     leasing_enabled: z.boolean().default(false),
-    interest_rate_pct: z
-      .number()
-      .min(0.01, "Leasingzins ist erforderlich")
-      .max(99, "Bitte einen realistischen Wert eingeben")
-      .optional(),
+    interest_rate_pct: z.number().min(0.01, "Leasingzins ist erforderlich").max(99, "Bitte einen realistischen Wert eingeben").optional(),
     down_payment_pct: z.number().min(0).max(100).optional(),
     no_down_payment: z.boolean().default(false),
     min_term_months: z.number().int().min(1, "Mindestlaufzeit ist erforderlich").optional(),
@@ -82,8 +78,11 @@ function toNumberOrUndefined(value: unknown): number | undefined {
 
 export function DirectPurchaseFinancingDetails() {
   const { data, updateData, nextStep, prevStep } = useWizard();
-  const { user } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
   const { toast } = useToast();
+
+  const isGarage = profile?.role === "garage";
+  const nextLabel = isGarage ? "Weiter zu Fotos" : "Weiter zu Plan-Auswahl";
 
   const existingOffer = useMemo(() => {
     const anyData = data as unknown as { leasing_offer?: LeasingOfferPayload | null };
@@ -93,6 +92,7 @@ export function DirectPurchaseFinancingDetails() {
   const leasingEnabledInitial =
     data.deal_type === "direct_purchase" && data.financing_type === "leasing" && existingOffer?.enabled === true;
 
+  // IMPORTANT: Hooks must run unconditionally (no early returns above this line)
   const {
     register,
     handleSubmit,
@@ -115,10 +115,56 @@ export function DirectPurchaseFinancingDetails() {
   const noDownPayment = watch("no_down_payment");
 
   useEffect(() => {
+    if (!isGarage) return;
     if (noDownPayment) {
       setValue("down_payment_pct", 0, { shouldValidate: true });
     }
-  }, [noDownPayment, setValue]);
+  }, [isGarage, noDownPayment, setValue]);
+
+  const persistCashAndContinue = async () => {
+    if (!user) {
+      toast({
+        title: "Nicht angemeldet",
+        description: "Sie müssen angemeldet sein.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.id) {
+      toast({
+        title: "Fehler",
+        description: "Keine Inserat-ID gefunden. Bitte gehen Sie zurück zu Schritt 1 und versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const updatePayload: ListingUpdatePayload = {
+        id: data.id,
+        deal_type: "direct_purchase",
+        financing_type: "cash",
+        leasing_offer: null,
+      };
+
+      const result = await createOrUpdateListing(updatePayload, user);
+
+      updateData({
+        ...updatePayload,
+        id: result.id,
+      });
+
+      nextStep();
+    } catch (error) {
+      console.error("Error saving direct purchase defaults:", error);
+      toast({
+        title: "Fehler",
+        description: "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const onSubmit = async (formData: DirectPurchaseFinancingForm) => {
     if (!user) {
@@ -171,9 +217,7 @@ export function DirectPurchaseFinancingDetails() {
 
       toast({
         title: "Finanzierungsdetails gespeichert",
-        description: formData.leasing_enabled
-          ? "Leasing-Angebot wurde gespeichert."
-          : "Keine Finanzierung ausgewählt (Direktkauf).",
+        description: formData.leasing_enabled ? "Leasing-Angebot wurde gespeichert." : "Keine Finanzierung ausgewählt (Direktkauf).",
       });
 
       nextStep();
@@ -187,12 +231,48 @@ export function DirectPurchaseFinancingDetails() {
     }
   };
 
+  if (profileLoading) {
+    return <div className="text-sm text-neutral-600">Lade Profil...</div>;
+  }
+
+  // Private sellers: no access to leasing config (garage-only feature)
+  if (!isGarage) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Finanzierungsdetails</h2>
+          <p className="text-neutral-600 font-light leading-relaxed">Direktkauf: keine zusätzlichen Finanzierungsdetails.</p>
+        </div>
+
+        <div className="flex justify-between pt-6">
+          <Button
+            type="button"
+            onClick={prevStep}
+            variant="outline"
+            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Zurück
+          </Button>
+
+          <Button
+            type="button"
+            onClick={persistCashAndContinue}
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+          >
+            {nextLabel}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Finanzierungsdetails</h2>
         <p className="text-neutral-600 font-light leading-relaxed">
-          Optional: Bieten Sie Leasing an, damit Käufer eine unverbindliche Rate berechnen können
+          Optional (nur Garagen): Bieten Sie Leasing an, damit Käufer eine unverbindliche Rate berechnen können
         </p>
       </div>
 
@@ -201,9 +281,7 @@ export function DirectPurchaseFinancingDetails() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-neutral-900">Leasing anbieten</p>
-              <p className="text-sm text-neutral-600">
-                Wenn aktiv, sehen Käufer einen Leasingrechner auf der Detailseite.
-              </p>
+              <p className="text-sm text-neutral-600">Wenn aktiv, sehen Käufer einen Leasingrechner auf der Detailseite.</p>
             </div>
             <Switch checked={leasingEnabled} onCheckedChange={(checked) => setValue("leasing_enabled", checked)} />
           </div>
@@ -221,9 +299,7 @@ export function DirectPurchaseFinancingDetails() {
                   {...register("interest_rate_pct", { valueAsNumber: true })}
                   className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
                 />
-                {errors.interest_rate_pct && (
-                  <p className="text-sm text-red-500 font-light">{errors.interest_rate_pct.message}</p>
-                )}
+                {errors.interest_rate_pct && <p className="text-sm text-red-500 font-light">{errors.interest_rate_pct.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -244,9 +320,7 @@ export function DirectPurchaseFinancingDetails() {
                   {...register("down_payment_pct", { valueAsNumber: true })}
                   className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm disabled:opacity-60"
                 />
-                {errors.down_payment_pct && (
-                  <p className="text-sm text-red-500 font-light">{errors.down_payment_pct.message}</p>
-                )}
+                {errors.down_payment_pct && <p className="text-sm text-red-500 font-light">{errors.down_payment_pct.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -260,9 +334,7 @@ export function DirectPurchaseFinancingDetails() {
                   {...register("min_term_months", { valueAsNumber: true })}
                   className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
                 />
-                {errors.min_term_months && (
-                  <p className="text-sm text-red-500 font-light">{errors.min_term_months.message}</p>
-                )}
+                {errors.min_term_months && <p className="text-sm text-red-500 font-light">{errors.min_term_months.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -276,9 +348,7 @@ export function DirectPurchaseFinancingDetails() {
                   {...register("max_term_months", { valueAsNumber: true })}
                   className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
                 />
-                {errors.max_term_months && (
-                  <p className="text-sm text-red-500 font-light">{errors.max_term_months.message}</p>
-                )}
+                {errors.max_term_months && <p className="text-sm text-red-500 font-light">{errors.max_term_months.message}</p>}
               </div>
 
               <div className="md:col-span-2">
@@ -305,7 +375,7 @@ export function DirectPurchaseFinancingDetails() {
             type="submit"
             className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
           >
-            Weiter zu Plan-Auswahl
+            {nextLabel}
           </Button>
         </div>
       </form>

@@ -18,7 +18,7 @@ export type ListingUpdatePayload = Partial<{
   gearbox?: string;
   body?: string;
   description?: string;
-  price_per_month_chf?: number;
+  price_per_month_chf?: number | null;
   remaining_months?: number;
   deposit_chf?: number | null;
   location?: string;

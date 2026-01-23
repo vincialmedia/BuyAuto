@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import type { LeasingOffer } from "@/lib/buyauto/types";
 import { cn } from "@/lib/utils";
 
@@ -137,6 +138,7 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
   const [termMonths, setTermMonths] = useState<number>(initialTerm);
   const [downPaymentPct, setDownPaymentPct] = useState<number>(initialDownPaymentPct);
   const [kmPerYear, setKmPerYear] = useState<number>(kmOptions.includes(15000) ? 15000 : kmOptions[0]);
+  const [restwertOverrideChf, setRestwertOverrideChf] = useState<number | null>(null);
 
   const estimate = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -150,19 +152,32 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
       currentYear,
     });
 
+    const effectiveRestwertChf = restwertOverrideChf !== null ? clamp(restwertOverrideChf, 0, Math.round(priceChf)) : restwert.restwertChf;
+
     const rate = estimateMonthlyLeasingRate({
       priceChf,
       interestRatePct: Number(offer.interest_rate_pct),
       downPaymentPct: offer.no_down_payment ? 0 : downPaymentPct,
       termMonths,
-      restwertChf: restwert.restwertChf,
+      restwertChf: effectiveRestwertChf,
     });
 
-    return { restwert, rate };
-  }, [downPaymentPct, kmPerYear, mileageKm, offer.interest_rate_pct, offer.no_down_payment, priceChf, termMonths, year]);
+    return { restwert, rate, effectiveRestwertChf };
+  }, [
+    downPaymentPct,
+    kmPerYear,
+    mileageKm,
+    offer.interest_rate_pct,
+    offer.no_down_payment,
+    priceChf,
+    restwertOverrideChf,
+    termMonths,
+    year,
+  ]);
 
   const formattedRate = Math.round(estimate.rate.monthlyRateChf);
-  const formattedRestwert = estimate.restwert.restwertChf;
+  const formattedRestwert = Math.round(estimate.effectiveRestwertChf);
+  const isRestwertOverridden = restwertOverrideChf !== null;
 
   return (
     <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden">
@@ -178,8 +193,11 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
           <p className="text-sm text-neutral-600">Geschätzte Monatsrate</p>
           <p className="text-3xl font-bold text-neutral-900 tracking-tight mt-1">CHF {formattedRate}.–</p>
           <p className="text-sm text-neutral-600 mt-2">
-            Geschätzter Restwert: <span className="font-medium text-neutral-900">CHF {formattedRestwert}.–</span>
-            <span className="text-neutral-500"> (≈ {(estimate.restwert.residualPct * 100).toFixed(0)}%)</span>
+            {isRestwertOverridden ? "Restwert (angepasst): " : "Geschätzter Restwert (Schätzung): "}
+            <span className="font-medium text-neutral-900">CHF {formattedRestwert}.–</span>
+            {!isRestwertOverridden && (
+              <span className="text-neutral-500"> (≈ {(estimate.restwert.residualPct * 100).toFixed(0)}%)</span>
+            )}
           </p>
         </div>
 
@@ -234,6 +252,29 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-neutral-900">Restwert (Schätzung)</p>
+            <Input
+              value={isRestwertOverridden ? String(formattedRestwert) : ""}
+              placeholder={`Schätzung: CHF ${estimate.restwert.restwertChf}.– (optional überschreiben)`}
+              inputMode="numeric"
+              className="bg-white border border-neutral-200/60"
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                if (!raw) {
+                  setRestwertOverrideChf(null);
+                  return;
+                }
+                setRestwertOverrideChf(parseInt(raw, 10));
+              }}
+            />
+            <p className="text-xs text-neutral-500">
+              {isRestwertOverridden
+                ? "Du hast den Restwert manuell angepasst."
+                : "Automatische Schätzung – kann bei Bedarf überschrieben werden."}
+            </p>
           </div>
 
           <div className="pt-2 text-xs text-neutral-500 leading-relaxed">

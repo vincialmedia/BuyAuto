@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "./ProgressBar";
 import Step1_VehicleData from "./Step1_VehicleData";
-import Step2_LeasingDetails from "./Step2_LeasingDetails";
 import Step3_PlanSelection from "./Step3_PlanSelection";
 import { Step4_Images } from "./Step4_Images";
 import Step5_PreviewAndPay from "./Step5_PreviewAndPay";
@@ -99,7 +98,7 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
   return {
     id: wizardData.id,
     deal_type: dealType,
-    financing_type: dealType === "direct_purchase" ? (wizardData.financing_type ?? null) : null,
+    financing_type: dealType === "direct_purchase" ? (wizardData.financing_type ?? "cash") : null,
     brand: wizardData.brand,
     model: wizardData.model,
     year: wizardData.year,
@@ -120,6 +119,7 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
     images: wizardData.images,
     cover_image_index: wizardData.cover_image_index,
     status: "draft",
+    leasing_offer: (wizardData as unknown as { leasing_offer?: unknown }).leasing_offer as any,
   };
 };
 
@@ -152,43 +152,37 @@ export default function ListingWizard() {
   }, [data.price_plan]);
 
   useEffect(() => {
-    if (!isGarage) return;
-    if (isLoadingFromQuery) return;
-    if (draftId) return;
-    if (data.id) return;
-
-    setData((prev) => ({
-      ...prev,
-      deal_type: "direct_purchase",
-      financing_type: null,
-    }));
-  }, [data.id, draftId, isGarage, isLoadingFromQuery]);
-
-  useEffect(() => {
     if (isGarage && currentStep === 3) {
       setCurrentStep(4);
     }
   }, [currentStep, isGarage]);
 
   const nextStep = useCallback(() => {
-    if (currentStep < 5) {
-      setCurrentStep((prev) => {
-        if (prev >= 5) return prev;
-        if (isGarage && prev === 2) return 4;
-        return prev + 1;
-      });
-    }
-  }, [currentStep, isGarage]);
+    setCurrentStep((prev) => {
+      if (prev >= 5) return prev;
+
+      if (prev === 1) {
+        return isGarage ? 4 : 3;
+      }
+
+      if (prev === 3) return 4;
+      if (prev === 4) return 5;
+
+      return prev + 1;
+    });
+  }, [isGarage]);
 
   const prevStep = useCallback(() => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => {
-        if (prev <= 1) return prev;
-        if (isGarage && prev === 4) return 2;
-        return prev - 1;
-      });
-    }
-  }, [currentStep, isGarage]);
+    setCurrentStep((prev) => {
+      if (prev <= 1) return prev;
+
+      if (prev === 5) return 4;
+      if (prev === 4) return isGarage ? 1 : 3;
+      if (prev === 3) return 1;
+
+      return prev - 1;
+    });
+  }, [isGarage]);
 
   const contextValue: WizardContextType = useMemo(
     () => ({
@@ -246,13 +240,16 @@ export default function ListingWizard() {
           const listing = await getListingByIdForOwner(editQuery, user);
           if (listing) {
             const dealType = (listing as any).deal_type ?? "lease_takeover";
+            const leasingOffer = (listing as any).leasing_offer ?? null;
+
             setDraftId(null);
             setData((prev) => ({
               ...prev,
               id: listing.id,
               deal_type: dealType,
               financing_type:
-                dealType === "direct_purchase" ? ((listing as any).financing_type ?? null) : null,
+                dealType === "direct_purchase" ? ((listing as any).financing_type ?? "cash") : null,
+              leasing_offer: dealType === "direct_purchase" ? leasingOffer : null,
               brand: listing.brand ?? "",
               model: listing.model ?? "",
               year: typeof listing.year === "number" ? listing.year : prev.year,
@@ -388,7 +385,6 @@ export default function ListingWizard() {
                 ) : (
                   <>
                     {currentStep === 1 && <Step1_VehicleData />}
-                    {currentStep === 2 && <Step2_LeasingDetails />}
                     {currentStep === 3 && !isGarage && <Step3_PlanSelection />}
                     {currentStep === 4 && <Step4_Images />}
                     {currentStep === 5 && <Step5_PreviewAndPay />}

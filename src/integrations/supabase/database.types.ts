@@ -170,6 +170,7 @@ export type Database = {
           id: string
           images: Json | null
           is_premium: boolean | null
+          leasing_offer: Json | null
           location: string | null
           mileage_km: number
           model: string
@@ -213,6 +214,7 @@ export type Database = {
           id?: string
           images?: Json | null
           is_premium?: boolean | null
+          leasing_offer?: Json | null
           location?: string | null
           mileage_km: number
           model: string
@@ -256,6 +258,7 @@ export type Database = {
           id?: string
           images?: Json | null
           is_premium?: boolean | null
+          leasing_offer?: Json | null
           location?: string | null
           mileage_km?: number
           model?: string

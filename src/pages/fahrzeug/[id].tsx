@@ -157,8 +157,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     null;
 
   const purchasePriceChf = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
+  const effectivePurchasePriceChf = purchasePriceChf ?? (typeof listing.pricePerMonthCHF === "number" ? listing.pricePerMonthCHF : null);
 
-  const structuredPrice = dealType === "direct_purchase" ? (purchasePriceChf ?? listing.pricePerMonthCHF) : listing.pricePerMonthCHF;
+  const structuredPrice = dealType === "direct_purchase" ? (effectivePurchasePriceChf ?? listing.pricePerMonthCHF) : listing.pricePerMonthCHF;
   const metaPriceText =
     dealType === "direct_purchase"
       ? purchasePriceChf
@@ -333,7 +334,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                     {dealType === "direct_purchase" ? (
                       <>
                         <div className="text-4xl font-bold text-red-500 mb-1">
-                          {purchasePriceChf ? formatPrice(purchasePriceChf) : "Preis auf Anfrage"}
+                          {effectivePurchasePriceChf ? formatPrice(effectivePurchasePriceChf) : "Preis auf Anfrage"}
                         </div>
                         <p className="text-neutral-600">Kaufpreis</p>
                       </>
@@ -382,13 +383,66 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                 </CardContent>
               </Card>
 
-              {dealType === "direct_purchase" && leasingOffer?.enabled === true && purchasePriceChf && (
-                <LeasingCalculator
-                  priceChf={purchasePriceChf}
-                  year={listing.year}
-                  mileageKm={listing.mileageKm}
-                  offer={leasingOffer}
-                />
+              {dealType === "direct_purchase" && leasingOffer?.enabled === true && effectivePurchasePriceChf && (
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
+                  <h2 className="text-2xl font-bold text-neutral-900 mb-6">Leasingkalkulation</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-neutral-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral-600">Jahr</p>
+                        <p className="font-semibold text-neutral-900">{listing.year}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                        <Settings className="w-5 h-5 text-neutral-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral-600">Kilometerstand</p>
+                        <p className="font-semibold text-neutral-900">{formatMileage(listing.mileageKm)} km</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                        {getFuelIcon(listing.fuel)}
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral-600">Treibstoff</p>
+                        <p className="font-semibold text-neutral-900">{listing.fuel}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                        {getGearboxIcon(listing.gearbox)}
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral-600">Getriebe</p>
+                        <p className="font-semibold text-neutral-900">{listing.gearbox}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                        <Users className="w-5 h-5 text-neutral-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral-600">Karosserie</p>
+                        <p className="font-semibold text-neutral-900">{listing.body}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-neutral-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral-600">Standort</p>
+                        <p className="font-semibold text-neutral-900">{listing.location}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {listing.premium && (

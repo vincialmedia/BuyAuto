@@ -15,8 +15,7 @@ export default function ProgressBar() {
 
   const steps = useMemo<DisplayStep[]>(() => {
     const baseSteps: DisplayStep[] = [
-      { wizardStep: 1, label: "Fahrzeugdaten", description: "Grundlegende Fahrzeuginformationen" },
-      { wizardStep: 2, label: "Leasingdetails", description: "Konditionen und Standort" },
+      { wizardStep: 1, label: "Fahrzeugdaten", description: "Fahrzeug & Finanzierung" },
       { wizardStep: 3, label: "Plan wählen", description: "Inseratsdauer & Sichtbarkeit" },
       { wizardStep: 4, label: "Bilder", description: "Fotos hochladen" },
       { wizardStep: 5, label: "Vorschau", description: "Bestätigung und Veröffentlichung" },
