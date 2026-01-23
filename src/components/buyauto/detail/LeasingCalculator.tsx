@@ -214,6 +214,14 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
               <span className="text-neutral-500"> (≈ {(estimate.restwert.residualPct * 100).toFixed(0)}%)</span>
             )}
           </p>
+
+          <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
+            Beispiel (48 Monate, 10’000 km/Jahr): geschätzter Restwert{" "}
+            <span className="font-medium text-neutral-700">
+              {formatCurrency(Math.round(estimate.exampleRestwert.restwertChf))}.–
+            </span>{" "}
+            (ca. {Math.round(estimate.exampleRestwert.residualPct * 100)}% vom Kaufpreis)
+          </p>
         </div>
 
         <div className="mt-6 space-y-5">
@@ -310,16 +318,6 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
             <span className="text-sm font-medium text-neutral-900">
               {formatCurrency(formattedRestwert)}.– ({Math.round(estimate.restwert.residualPct * 100)}%)
             </span>
-          </div>
-
-          <div className="pt-1 text-xs text-neutral-500">
-            <div>
-              Beispiel (48 Monate, 10’000 km/Jahr): geschätzter Restwert{" "}
-              <span className="font-medium text-neutral-700">
-                {formatCurrency(Math.round(estimate.exampleRestwert.restwertChf))}.–
-              </span>{" "}
-              (ca. {Math.round(estimate.exampleRestwert.residualPct * 100)}% vom Kaufpreis)
-            </div>
           </div>
 
           <p className="text-xs text-neutral-500">

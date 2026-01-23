@@ -7,6 +7,7 @@ import { CalendarIcon } from "lucide-react";
 import type { DealType } from "@/lib/buyauto/types";
 import type { ListingStep1Form } from "@/lib/buyauto/schemas";
 
+import { estimateRestwert } from "@/components/buyauto/detail/LeasingCalculator";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,12 @@ const swissCantons = [
   { value: "ZH", label: "Zürich (ZH)" },
 ];
 
+const chfFormatter = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
+
+function formatChf(amountChf: number): string {
+  return chfFormatter.format(Math.round(amountChf));
+}
+
 function calculateRemainingMonths(endDate: Date): number {
   const now = new Date();
   const nowYear = now.getFullYear();
@@ -82,7 +89,16 @@ export function FinancingDetailsSection(props: FinancingDetailsSectionProps) {
   const leasingEnabled = watch("leasing_enabled");
   const noDownPayment = watch("no_down_payment");
 
+  const purchasePriceChf = watch("purchase_price_chf");
+  const vehicleYear = watch("year");
+  const vehicleKm = watch("km");
+
   const [contractEndDate, setContractEndDate] = useState<Date | undefined>(watch("contract_end_date"));
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   useEffect(() => {
     if (dealType !== "lease_takeover") {
@@ -100,6 +116,24 @@ export function FinancingDetailsSection(props: FinancingDetailsSectionProps) {
     return v;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch("remaining_months")]);
+
+  const exampleRestwert = useMemo(() => {
+    if (!hasMounted) return null;
+
+    const priceNum = typeof purchasePriceChf === "number" ? purchasePriceChf : Number(purchasePriceChf);
+    if (!Number.isFinite(priceNum) || priceNum <= 0) return null;
+    if (typeof vehicleYear !== "number" || !Number.isFinite(vehicleYear)) return null;
+    if (typeof vehicleKm !== "number" || !Number.isFinite(vehicleKm)) return null;
+
+    return estimateRestwert({
+      priceChf: priceNum,
+      year: vehicleYear,
+      mileageKm: vehicleKm,
+      termMonths: 48,
+      kmPerYear: 10000,
+      currentYear: new Date().getFullYear(),
+    });
+  }, [hasMounted, purchasePriceChf, vehicleKm, vehicleYear]);
 
   return (
     <div className="space-y-6">
@@ -239,6 +273,19 @@ export function FinancingDetailsSection(props: FinancingDetailsSectionProps) {
                     <p className="text-xs text-neutral-500 mt-1">
                       Beispiel: Bei 48 Monaten und 10’000 km/Jahr liegt der geschätzte Restwert typischerweise bei ca. 48% vom Kaufpreis.
                     </p>
+
+                    <p className="text-xs text-neutral-500 mt-3">
+                      Geschätzter Restwert (Beispiel: 48 Monate, 10’000 km/Jahr):{" "}
+                      {exampleRestwert ? (
+                        <>
+                          <span className="font-medium text-neutral-700">CHF {formatChf(exampleRestwert.restwertChf)}.–</span>{" "}
+                          <span className="text-neutral-500">(ca. {Math.round(exampleRestwert.residualPct * 100)}% vom Kaufpreis)</span>
+                        </>
+                      ) : (
+                        <span className="text-neutral-500">—</span>
+                      )}
+                    </p>
+
                     <p className="text-xs text-neutral-500 mt-1">
                       Restwert wird automatisch anhand von Kaufpreis, Fahrzeugalter, Kilometerstand, Laufzeit und gewählten KM/Jahr geschätzt.
                     </p>
