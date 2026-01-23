@@ -1,7 +1,5 @@
 import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormTrigger, UseFormWatch } from "react-hook-form";
 import { useEffect, useMemo } from "react";
-import type { DealType } from "@/lib/buyauto/types";
-import type { ListingStep1Form } from "@/lib/buyauto/schemas";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,16 +11,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+export interface VehicleStepFormValues {
+  brand: string;
+  model: string;
+  year: number;
+  km: number;
+  gearbox: string;
+  body: string;
+  fuel: string;
+  description?: string;
+}
+
 const bodyTypes = ["Limousine", "Kombi", "SUV", "Cabrio"];
 const fuelTypes = ["Benzin", "Diesel", "Hybrid", "Elektro"];
 const gearboxTypes = ["Automatik", "Manuell"];
 
 export interface VehicleBasicsSectionProps {
-  register: UseFormRegister<ListingStep1Form>;
-  setValue: UseFormSetValue<ListingStep1Form>;
-  trigger: UseFormTrigger<ListingStep1Form>;
-  watch: UseFormWatch<ListingStep1Form>;
-  errors: FieldErrors<ListingStep1Form>;
+  register: UseFormRegister<VehicleStepFormValues>;
+  setValue: UseFormSetValue<VehicleStepFormValues>;
+  trigger: UseFormTrigger<VehicleStepFormValues>;
+  watch: UseFormWatch<VehicleStepFormValues>;
+  errors: FieldErrors<VehicleStepFormValues>;
 
   makes: string[];
   models: string[];
@@ -61,7 +70,6 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
     setModelSearch,
   } = props;
 
-  const selectedDealType = watch("deal_type");
   const selectedMake = watch("brand");
   const selectedModel = watch("model");
   const descriptionLength = (watch("description") ?? "").length;
@@ -82,25 +90,6 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="deal_type" className="text-sm font-medium text-neutral-700">
-            Verkaufsart *
-          </Label>
-          <Select
-            value={selectedDealType}
-            onValueChange={(value) => setValue("deal_type", value as DealType, { shouldValidate: true })}
-          >
-            <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-              <SelectValue placeholder="Verkaufsart auswählen" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="direct_purchase">Direktkauf</SelectItem>
-              <SelectItem value="lease_takeover">Leasingübernahme</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.deal_type && <p className="text-sm text-red-500 font-light">{errors.deal_type.message as string}</p>}
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="brand" className="text-sm font-medium text-neutral-700">
             Marke *
@@ -249,7 +238,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
           <Label htmlFor="gearbox" className="text-sm font-medium text-neutral-700">
             Getriebe *
           </Label>
-          <Select value={watch("gearbox")} onValueChange={(value) => setValue("gearbox", value as any, { shouldValidate: true })}>
+          <Select value={watch("gearbox")} onValueChange={(value) => setValue("gearbox", value, { shouldValidate: true })}>
             <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
               <SelectValue placeholder="Getriebe auswählen" />
             </SelectTrigger>
@@ -268,7 +257,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
           <Label htmlFor="body" className="text-sm font-medium text-neutral-700">
             Karosserie *
           </Label>
-          <Select value={watch("body")} onValueChange={(value) => setValue("body", value as any, { shouldValidate: true })}>
+          <Select value={watch("body")} onValueChange={(value) => setValue("body", value, { shouldValidate: true })}>
             <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
               <SelectValue placeholder="Karosserie auswählen" />
             </SelectTrigger>
@@ -287,7 +276,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
           <Label htmlFor="fuel" className="text-sm font-medium text-neutral-700">
             Antrieb *
           </Label>
-          <Select value={watch("fuel")} onValueChange={(value) => setValue("fuel", value as any, { shouldValidate: true })}>
+          <Select value={watch("fuel")} onValueChange={(value) => setValue("fuel", value, { shouldValidate: true })}>
             <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
               <SelectValue placeholder="Antrieb auswählen" />
             </SelectTrigger>

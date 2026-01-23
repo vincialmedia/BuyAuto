@@ -1,10 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "./ProgressBar";
 import Step1_VehicleData from "./Step1_VehicleData";
+import Step2_LeasingDetails from "./Step2_LeasingDetails";
 import Step3_PlanSelection from "./Step3_PlanSelection";
 import { Step4_Images } from "./Step4_Images";
 import Step5_PreviewAndPay from "./Step5_PreviewAndPay";
@@ -12,11 +13,7 @@ import SuccessScreen from "./SuccessScreen";
 import type { DealType, ListingData } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing, getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
-import {
-  createListingDraft,
-  getListingDraftById,
-  updateListingDraft,
-} from "@/services/listingDraftService";
+import { createListingDraft, getListingDraftById, updateListingDraft } from "@/services/listingDraftService";
 import { Save } from "lucide-react";
 
 interface WizardContextType {
@@ -93,7 +90,7 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
         ? wizardData.mileage
         : undefined;
 
-  const dealType: DealType = wizardData.deal_type ?? "lease_takeover";
+  const dealType: DealType = wizardData.deal_type ?? "direct_purchase";
 
   return {
     id: wizardData.id,
@@ -161,10 +158,8 @@ export default function ListingWizard() {
     setCurrentStep((prev) => {
       if (prev >= 5) return prev;
 
-      if (prev === 1) {
-        return isGarage ? 4 : 3;
-      }
-
+      if (prev === 1) return 2;
+      if (prev === 2) return isGarage ? 4 : 3;
       if (prev === 3) return 4;
       if (prev === 4) return 5;
 
@@ -177,8 +172,9 @@ export default function ListingWizard() {
       if (prev <= 1) return prev;
 
       if (prev === 5) return 4;
-      if (prev === 4) return isGarage ? 1 : 3;
-      if (prev === 3) return 1;
+      if (prev === 4) return isGarage ? 2 : 3;
+      if (prev === 3) return 2;
+      if (prev === 2) return 1;
 
       return prev - 1;
     });
@@ -239,7 +235,10 @@ export default function ListingWizard() {
         if (typeof editQuery === "string" && editQuery.length > 0) {
           const listing = await getListingByIdForOwner(editQuery, user);
           if (listing) {
-            const dealType = (listing as any).deal_type ?? "lease_takeover";
+            const dealType = (listing as any).deal_type ?? "direct_purchase";
+            const financingType =
+              dealType === "direct_purchase" ? ((listing as any).financing_type ?? "cash") : null;
+
             const leasingOffer = (listing as any).leasing_offer ?? null;
 
             setDraftId(null);
@@ -247,8 +246,7 @@ export default function ListingWizard() {
               ...prev,
               id: listing.id,
               deal_type: dealType,
-              financing_type:
-                dealType === "direct_purchase" ? ((listing as any).financing_type ?? "cash") : null,
+              financing_type: financingType,
               leasing_offer: dealType === "direct_purchase" ? leasingOffer : null,
               brand: listing.brand ?? "",
               model: listing.model ?? "",
@@ -357,7 +355,7 @@ export default function ListingWizard() {
                 Inserat erstellen
               </h1>
               <p className="text-neutral-600 font-light leading-relaxed">
-                Erstelle dein Auto-Leasing-Inserat in wenigen Schritten
+                Erstelle dein Inserat in wenigen Schritten
               </p>
             </div>
 
@@ -385,6 +383,7 @@ export default function ListingWizard() {
                 ) : (
                   <>
                     {currentStep === 1 && <Step1_VehicleData />}
+                    {currentStep === 2 && <Step2_LeasingDetails />}
                     {currentStep === 3 && !isGarage && <Step3_PlanSelection />}
                     {currentStep === 4 && <Step4_Images />}
                     {currentStep === 5 && <Step5_PreviewAndPay />}
