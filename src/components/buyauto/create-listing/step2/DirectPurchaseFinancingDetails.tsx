@@ -318,6 +318,11 @@ export function DirectPurchaseFinancingDetails() {
               <div>
                 <p className="text-sm font-medium text-neutral-900">Leasing anbieten</p>
                 <p className="text-sm text-neutral-600">Wenn aktiv, sehen Käufer einen Leasingrechner auf der Detailseite.</p>
+                {!leasingEnabled && (
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Tipp: Aktiviere Leasing, um u.a. <span className="font-medium text-neutral-700">Restwertkorrektur</span> zu setzen.
+                  </p>
+                )}
                 <p className="mt-1 text-xs text-neutral-500">
                   Tipp: Nach dem Aktivieren kannst du den Restwert optional um ± Prozentpunkte korrigieren.
                 </p>
@@ -393,7 +398,7 @@ export function DirectPurchaseFinancingDetails() {
                 {leasingEnabled && isGarage && (
                   <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-6 space-y-4">
                     <div className="space-y-1">
-                      <h3 className="text-base font-medium text-neutral-900">Restwert-Korrektur</h3>
+                      <h3 className="text-base font-medium text-neutral-900">Restwertkorrektur</h3>
                       <p className="text-sm text-neutral-600">
                         Optional. Passt die automatische Restwert-Schätzung an (z.B. +3 = +3 Prozentpunkte).
                       </p>
@@ -401,7 +406,7 @@ export function DirectPurchaseFinancingDetails() {
 
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="residual_pct_adjustment_pp" className="text-sm font-medium text-neutral-700">
-                        Restwert-Korrektur (± Prozentpunkte)
+                        Restwertkorrektur (± Prozentpunkte)
                       </Label>
                       <Input
                         id="residual_pct_adjustment_pp"
