@@ -9,6 +9,7 @@ export interface LeasingOffer {
   min_term_months: number;
   max_term_months: number;
   km_options?: number[];
+  residual_pct_adjustment_pp?: number;
 }
 
 export interface Listing {

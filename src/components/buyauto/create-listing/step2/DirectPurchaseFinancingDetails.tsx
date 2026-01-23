@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
+import { estimateRestwert } from "@/components/buyauto/detail/LeasingCalculator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
@@ -24,6 +25,11 @@ const directPurchaseFinancingSchema = z
     no_down_payment: z.boolean().default(false),
     min_term_months: z.number().int().min(1, "Mindestlaufzeit ist erforderlich").optional(),
     max_term_months: z.number().int().min(1, "Maximallaufzeit ist erforderlich").optional(),
+    residual_pct_adjustment_pp: z
+      .number()
+      .min(-10, "Bitte zwischen -10 und +10 eingeben")
+      .max(10, "Bitte zwischen -10 und +10 eingeben")
+      .optional(),
   })
   .superRefine((values, ctx) => {
     if (!values.leasing_enabled) return;
@@ -65,6 +71,14 @@ const directPurchaseFinancingSchema = z
         message: "Maximallaufzeit muss >= Mindestlaufzeit sein",
       });
     }
+
+    if (values.residual_pct_adjustment_pp !== undefined && !Number.isFinite(values.residual_pct_adjustment_pp)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["residual_pct_adjustment_pp"],
+        message: "Bitte einen gültigen Wert eingeben",
+      });
+    }
   });
 
 type DirectPurchaseFinancingForm = z.infer<typeof directPurchaseFinancingSchema>;
@@ -74,6 +88,15 @@ function toNumberOrUndefined(value: unknown): number | undefined {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return undefined;
   return parsed;
+}
+
+function clampPp(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(-10, Math.min(10, value));
+}
+
+function formatChf(amountChf: number): string {
+  return new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(amountChf));
 }
 
 export function DirectPurchaseFinancingDetails() {
@@ -92,6 +115,31 @@ export function DirectPurchaseFinancingDetails() {
   const leasingEnabledInitial =
     data.deal_type === "direct_purchase" && data.financing_type === "leasing" && existingOffer?.enabled === true;
 
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  const listingInputs = useMemo(() => {
+    const anyData = data as unknown as Partial<{
+      purchase_price_chf: number | string;
+      year: number | string;
+      km: number | string;
+      mileage_km: number | string;
+    }>;
+
+    const priceNum = Number(anyData.purchase_price_chf);
+    const yearNum = Number(anyData.year);
+    const kmNum = Number(anyData.km ?? anyData.mileage_km);
+
+    return {
+      priceChf: Number.isFinite(priceNum) && priceNum > 0 ? priceNum : null,
+      year: Number.isFinite(yearNum) && yearNum > 1900 ? yearNum : null,
+      mileageKm: Number.isFinite(kmNum) && kmNum >= 0 ? kmNum : null,
+    };
+  }, [data]);
+
   // IMPORTANT: Hooks must run unconditionally (no early returns above this line)
   const {
     register,
@@ -108,11 +156,36 @@ export function DirectPurchaseFinancingDetails() {
       no_down_payment: existingOffer?.no_down_payment ?? false,
       min_term_months: toNumberOrUndefined(existingOffer?.min_term_months) ?? 24,
       max_term_months: toNumberOrUndefined(existingOffer?.max_term_months) ?? 60,
+      residual_pct_adjustment_pp: clampPp(toNumberOrUndefined(existingOffer?.residual_pct_adjustment_pp) ?? 0),
     },
   });
 
   const leasingEnabled = watch("leasing_enabled");
   const noDownPayment = watch("no_down_payment");
+  const residualAdjustmentPp = clampPp(toNumberOrUndefined(watch("residual_pct_adjustment_pp")) ?? 0);
+
+  const exampleRestwert = useMemo(() => {
+    if (!hasMounted) return null;
+    if (!listingInputs.priceChf || !listingInputs.year || listingInputs.mileageKm === null) return null;
+
+    const base = estimateRestwert({
+      priceChf: listingInputs.priceChf,
+      year: listingInputs.year,
+      mileageKm: listingInputs.mileageKm,
+      termMonths: 48,
+      kmPerYear: 10000,
+      currentYear: new Date().getFullYear(),
+    });
+
+    const adjustedPct = Math.max(0.15, Math.min(0.7, base.residualPct + residualAdjustmentPp / 100));
+    const adjustedChf = Math.round(listingInputs.priceChf * adjustedPct);
+
+    return {
+      base,
+      adjustedPct,
+      adjustedChf,
+    };
+  }, [hasMounted, listingInputs, residualAdjustmentPp]);
 
   useEffect(() => {
     if (!isGarage) return;
@@ -194,6 +267,7 @@ export function DirectPurchaseFinancingDetails() {
             no_down_payment: formData.no_down_payment === true,
             min_term_months: Math.floor(Number(formData.min_term_months)),
             max_term_months: Math.floor(Number(formData.max_term_months)),
+            residual_pct_adjustment_pp: clampPp(Number(formData.residual_pct_adjustment_pp ?? 0)),
             km_options:
               Array.isArray(existingOffer?.km_options) && existingOffer.km_options.length > 0
                 ? existingOffer.km_options
@@ -349,6 +423,76 @@ export function DirectPurchaseFinancingDetails() {
                   className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
                 />
                 {errors.max_term_months && <p className="text-sm text-red-500 font-light">{errors.max_term_months.message}</p>}
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="residual_pct_adjustment_pp" className="text-sm font-medium text-neutral-700">
+                  Restwert-Korrektur (± Prozentpunkte)
+                </Label>
+                <Input
+                  id="residual_pct_adjustment_pp"
+                  type="number"
+                  step="1"
+                  min="-10"
+                  max="10"
+                  {...register("residual_pct_adjustment_pp", { valueAsNumber: true })}
+                  className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+                />
+                {errors.residual_pct_adjustment_pp && (
+                  <p className="text-sm text-red-500 font-light">{errors.residual_pct_adjustment_pp.message}</p>
+                )}
+                <p className="text-xs text-neutral-500">
+                  Optional. Passt die automatische Restwert-Schätzung an (z.B. +3 = +3 Prozentpunkte).
+                </p>
+              </div>
+
+              <div className="md:col-span-2 rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50/50 via-white to-white p-5 shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-900">Geschätzter Restwert</p>
+                    <p className="mt-0.5 text-xs text-neutral-600">Beispiel: 48 Monate, 10’000 km/Jahr</p>
+                  </div>
+                  {residualAdjustmentPp !== 0 && (
+                    <span className="inline-flex items-center rounded-full bg-red-600/10 px-2.5 py-1 text-xs font-medium text-red-700">
+                      Vom Anbieter angepasst ({residualAdjustmentPp > 0 ? "+" : ""}{residualAdjustmentPp}pp)
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-3">
+                  {exampleRestwert ? (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <p className="text-sm text-neutral-600">Automatisch geschätzt</p>
+                        <p className="text-lg font-semibold text-neutral-900">
+                          CHF {formatChf(exampleRestwert.base.restwertChf)}.–
+                        </p>
+                        <p className="text-sm text-neutral-600">
+                          ca. {Math.round(exampleRestwert.base.residualPct * 100)}%
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <p className="text-sm text-neutral-600">Nach Korrektur</p>
+                        <p className="text-xl font-semibold text-neutral-900">
+                          CHF {formatChf(exampleRestwert.adjustedChf)}.–
+                        </p>
+                        <p className="text-sm text-neutral-600">
+                          ca. {Math.round(exampleRestwert.adjustedPct * 100)}%
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-neutral-500">—</p>
+                  )}
+                </div>
+
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs text-neutral-500">
+                    Automatische Schätzung basiert auf Kaufpreis, Fahrzeugalter, Kilometerstand, Laufzeit und KM/Jahr.
+                  </p>
+                  <p className="text-xs text-neutral-500">Unverbindliche Richtofferte. Finale Rate hängt von Bonität, Leasingpartner und Fahrzeugbewertung ab.</p>
+                </div>
               </div>
 
               <div className="md:col-span-2">

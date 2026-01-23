@@ -56,6 +56,9 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
   const noDownPayment = offer.no_down_payment === true;
   const normalizedDownPaymentPct = noDownPayment ? 0 : clampNumber(Number(offer.down_payment_pct), 0, 100);
 
+  const rawResidualAdj = Number((offer as LeasingOfferPayload).residual_pct_adjustment_pp ?? 0);
+  const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -10, 10) : 0;
+
   const normalizedOffer: LeasingOfferPayload = {
     enabled: true,
     interest_rate_pct: clampNumber(Number(offer.interest_rate_pct), 0.01, 99),
@@ -64,6 +67,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
     min_term_months: Math.max(1, Math.floor(Number(offer.min_term_months))),
     max_term_months: Math.max(1, Math.floor(Number(offer.max_term_months))),
     km_options: Array.isArray(offer.km_options) ? offer.km_options.map((v) => Math.floor(Number(v))) : undefined,
+    residual_pct_adjustment_pp: normalizedResidualAdj,
   };
 
   if (!Number.isFinite(normalizedOffer.interest_rate_pct)) {
@@ -143,13 +147,37 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
       if (!currentOffer || typeof currentOffer !== "object") {
         throw new Error("leasing_offer must be an object or null");
       }
-      const noDownPayment = (currentOffer as LeasingOfferPayload).no_down_payment === true;
-      if (noDownPayment && Number((currentOffer as LeasingOfferPayload).down_payment_pct) !== 0) {
+
+      const offerPayload = currentOffer as LeasingOfferPayload;
+
+      const noDownPayment = offerPayload.no_down_payment === true;
+      const normalizedDownPayment = noDownPayment ? 0 : offerPayload.down_payment_pct;
+
+      const rawResidualAdj = Number(offerPayload.residual_pct_adjustment_pp ?? 0);
+      const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -10, 10) : 0;
+
+      if (noDownPayment && Number(offerPayload.down_payment_pct) !== 0) {
         return {
           ...payload,
-          leasing_offer: { ...(currentOffer as LeasingOfferPayload), down_payment_pct: 0 },
+          leasing_offer: {
+            ...offerPayload,
+            down_payment_pct: 0,
+            residual_pct_adjustment_pp: normalizedResidualAdj,
+          },
         };
       }
+
+      if (offerPayload.residual_pct_adjustment_pp !== normalizedResidualAdj) {
+        return {
+          ...payload,
+          leasing_offer: {
+            ...offerPayload,
+            down_payment_pct: normalizedDownPayment,
+            residual_pct_adjustment_pp: normalizedResidualAdj,
+          },
+        };
+      }
+
       return payload;
     }
 

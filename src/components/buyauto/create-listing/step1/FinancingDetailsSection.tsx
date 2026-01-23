@@ -260,6 +260,41 @@ export function FinancingDetailsSection(props: FinancingDetailsSectionProps) {
                     {errors.max_term_months && <p className="text-sm text-red-500 font-light">{errors.max_term_months.message as string}</p>}
                   </div>
 
+                  <div className="md:col-span-2 rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50/50 via-white to-white p-5 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-neutral-900">Geschätzter Restwert</p>
+                        <p className="mt-0.5 text-xs text-neutral-600">
+                          Beispiel: 48 Monate, 10’000 km/Jahr
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      {exampleRestwert ? (
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <p className="text-xl font-semibold text-neutral-900">
+                            CHF {formatChf(exampleRestwert.restwertChf)}.–
+                          </p>
+                          <p className="text-sm text-neutral-600">
+                            ca. {Math.round(exampleRestwert.residualPct * 100)}% vom Kaufpreis
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-neutral-500">—</p>
+                      )}
+                    </div>
+
+                    <div className="mt-3 space-y-1">
+                      <p className="text-xs text-neutral-500">
+                        Restwert wird automatisch anhand von Kaufpreis, Fahrzeugalter, Kilometerstand, Laufzeit und gewählten KM/Jahr geschätzt.
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        Beispiel: Bei 48 Monaten und 10’000 km/Jahr liegt der geschätzte Restwert typischerweise bei ca. 48% vom Kaufpreis.
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="md:col-span-2">
                     <p className="text-xs text-neutral-500">
                       KM/Jahr Optionen sind aktuell fest: 10’000 / 15’000 / 20’000 / 25’000.
@@ -269,25 +304,6 @@ export function FinancingDetailsSection(props: FinancingDetailsSectionProps) {
                   <div className="md:col-span-2">
                     <p className="text-xs text-neutral-500">
                       Unverbindliche Richtofferte. Finale Rate hängt von Bonität, Leasingpartner und Fahrzeugbewertung ab.
-                    </p>
-                    <p className="text-xs text-neutral-500 mt-1">
-                      Beispiel: Bei 48 Monaten und 10’000 km/Jahr liegt der geschätzte Restwert typischerweise bei ca. 48% vom Kaufpreis.
-                    </p>
-
-                    <p className="text-xs text-neutral-500 mt-3">
-                      Geschätzter Restwert (Beispiel: 48 Monate, 10’000 km/Jahr):{" "}
-                      {exampleRestwert ? (
-                        <>
-                          <span className="font-medium text-neutral-700">CHF {formatChf(exampleRestwert.restwertChf)}.–</span>{" "}
-                          <span className="text-neutral-500">(ca. {Math.round(exampleRestwert.residualPct * 100)}% vom Kaufpreis)</span>
-                        </>
-                      ) : (
-                        <span className="text-neutral-500">—</span>
-                      )}
-                    </p>
-
-                    <p className="text-xs text-neutral-500 mt-1">
-                      Restwert wird automatisch anhand von Kaufpreis, Fahrzeugalter, Kilometerstand, Laufzeit und gewählten KM/Jahr geschätzt.
                     </p>
                   </div>
                 </div>
