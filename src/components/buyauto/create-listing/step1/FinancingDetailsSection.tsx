@@ -236,6 +236,12 @@ export function FinancingDetailsSection(props: FinancingDetailsSectionProps) {
                     <p className="text-xs text-neutral-500">
                       Unverbindliche Richtofferte. Finale Rate hängt von Bonität, Leasingpartner und Fahrzeugbewertung ab.
                     </p>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Beispiel: Bei 48 Monaten und 10’000 km/Jahr liegt der geschätzte Restwert typischerweise bei ca. 48% vom Kaufpreis.
+                    </p>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Restwert wird automatisch anhand von Kaufpreis, Fahrzeugalter, Kilometerstand, Laufzeit und gewählten KM/Jahr geschätzt.
+                    </p>
                   </div>
                 </div>
               )}

@@ -16,6 +16,12 @@ export interface RestwertEstimate {
   typicalEndKm: number;
 }
 
+const chfFormatter = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
+
+function formatCurrency(amountChf: number): string {
+  return `CHF ${chfFormatter.format(Math.round(amountChf))}`;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -152,6 +158,15 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
       currentYear,
     });
 
+    const exampleRestwert = estimateRestwert({
+      priceChf,
+      year,
+      mileageKm,
+      termMonths: 48,
+      kmPerYear: 10000,
+      currentYear,
+    });
+
     const effectiveRestwertChf = restwertOverrideChf !== null ? clamp(restwertOverrideChf, 0, Math.round(priceChf)) : restwert.restwertChf;
 
     const rate = estimateMonthlyLeasingRate({
@@ -162,7 +177,7 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
       restwertChf: effectiveRestwertChf,
     });
 
-    return { restwert, rate, effectiveRestwertChf };
+    return { restwert, rate, effectiveRestwertChf, exampleRestwert };
   }, [
     downPaymentPct,
     kmPerYear,
@@ -280,6 +295,36 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
           <div className="pt-2 text-xs text-neutral-500 leading-relaxed">
             Fixe Inputs aus Inserat: Kaufpreis CHF {Math.round(priceChf).toLocaleString("de-CH")} • Erstzulassung {year} • Aktuell {Math.round(mileageKm).toLocaleString("de-CH")} km
           </div>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="text-sm text-neutral-600">Geschätzte Monatsrate</span>
+            <span className="text-lg font-semibold text-neutral-900">
+              {formatCurrency(formattedRate)}.–
+            </span>
+          </div>
+
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="text-sm text-neutral-600">Geschätzter Restwert</span>
+            <span className="text-sm font-medium text-neutral-900">
+              {formatCurrency(formattedRestwert)}.– ({Math.round(estimate.restwert.residualPct * 100)}%)
+            </span>
+          </div>
+
+          <div className="pt-1 text-xs text-neutral-500">
+            <div>
+              Beispiel (48 Monate, 10’000 km/Jahr): geschätzter Restwert{" "}
+              <span className="font-medium text-neutral-700">
+                {formatCurrency(Math.round(estimate.exampleRestwert.restwertChf))}.–
+              </span>{" "}
+              (ca. {Math.round(estimate.exampleRestwert.residualPct * 100)}% vom Kaufpreis)
+            </div>
+          </div>
+
+          <p className="text-xs text-neutral-500">
+            Unverbindliche Richtofferte. Finale Rate hängt von Bonität, Leasingpartner und Fahrzeugbewertung ab.
+          </p>
         </div>
       </CardContent>
     </Card>
