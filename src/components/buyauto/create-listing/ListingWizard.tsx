@@ -12,7 +12,7 @@ import Step5_PreviewAndPay from "./Step5_PreviewAndPay";
 import SuccessScreen from "./SuccessScreen";
 import type { DealType, ListingData } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { createOrUpdateListing, getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
+import { getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, getListingDraftById, updateListingDraft } from "@/services/listingDraftService";
 import { Save } from "lucide-react";
 
@@ -116,6 +116,53 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
     images: wizardData.images,
     cover_image_index: wizardData.cover_image_index,
     leasing_offer: (wizardData as unknown as { leasing_offer?: unknown }).leasing_offer as any,
+  };
+};
+
+const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<ListingData> => {
+  const dealType: DealType = (listing?.deal_type ?? prev.deal_type ?? "direct_purchase") as DealType;
+
+  const financingType =
+    dealType === "direct_purchase"
+      ? ((listing?.financing_type ?? prev.financing_type ?? "cash") as any)
+      : null;
+
+  const leasingOffer = dealType === "direct_purchase" ? (listing?.leasing_offer ?? null) : null;
+
+  return {
+    id: listing?.id ?? prev.id,
+    deal_type: dealType,
+    financing_type: financingType,
+
+    leasing_offer: leasingOffer,
+
+    brand: listing?.brand ?? prev.brand,
+    model: listing?.model ?? prev.model,
+    year: typeof listing?.year === "number" ? listing.year : prev.year,
+    km: typeof listing?.mileage_km === "number" ? listing.mileage_km : prev.km,
+    remaining_km: listing?.remaining_km ?? prev.remaining_km,
+
+    fuel: listing?.fuel ?? prev.fuel,
+    gearbox: listing?.gearbox ?? prev.gearbox,
+    body: listing?.body ?? prev.body,
+    description: listing?.description ?? prev.description,
+
+    price_per_month_chf: typeof listing?.price_per_month_chf === "number" ? listing.price_per_month_chf : prev.price_per_month_chf,
+    remaining_months: typeof listing?.remaining_months === "number" ? listing.remaining_months : prev.remaining_months,
+    deposit_chf: typeof listing?.deposit_chf === "number" ? listing.deposit_chf : prev.deposit_chf,
+
+    location: listing?.location ?? prev.location,
+    canton_code: listing?.canton_code ?? prev.canton_code,
+    title: listing?.title ?? prev.title,
+
+    price_plan: (listing?.price_plan ?? prev.price_plan) as any,
+    premium: typeof listing?.premium === "boolean" ? listing.premium : prev.premium,
+
+    images: Array.isArray(listing?.images) ? (listing.images as string[]) : prev.images,
+    cover_image_index:
+      typeof listing?.cover_image_index === "number" ? listing.cover_image_index : prev.cover_image_index,
+
+    status: listing?.status ?? prev.status,
   };
 };
 
@@ -226,6 +273,18 @@ export default function ListingWizard() {
           if (draft) {
             setDraftId(draft.id);
             setData((prev) => ({ ...prev, ...draft.data }));
+
+            const draftListingId = (draft.data as any)?.id;
+            if (typeof draftListingId === "string" && draftListingId.length > 0) {
+              try {
+                const listing = await getListingByIdForOwner(draftListingId, user);
+                if (listing) {
+                  setData((prev) => ({ ...prev, ...toWizardPatchFromListing(listing, prev) }));
+                }
+              } catch (e) {
+                console.warn("Could not refresh listing while loading draft:", e);
+              }
+            }
           }
           setIsLoadingFromQuery(false);
           return;
@@ -234,40 +293,8 @@ export default function ListingWizard() {
         if (typeof editQuery === "string" && editQuery.length > 0) {
           const listing = await getListingByIdForOwner(editQuery, user);
           if (listing) {
-            const dealType = (listing as any).deal_type ?? "direct_purchase";
-            const financingType =
-              dealType === "direct_purchase" ? ((listing as any).financing_type ?? "cash") : null;
-
-            const leasingOffer = (listing as any).leasing_offer ?? null;
-
             setDraftId(null);
-            setData((prev) => ({
-              ...prev,
-              id: listing.id,
-              deal_type: dealType,
-              financing_type: financingType,
-              leasing_offer: dealType === "direct_purchase" ? leasingOffer : null,
-              brand: listing.brand ?? "",
-              model: listing.model ?? "",
-              year: typeof listing.year === "number" ? listing.year : prev.year,
-              km: typeof listing.mileage_km === "number" ? listing.mileage_km : prev.km,
-              body: listing.body ?? "",
-              fuel: listing.fuel ?? "",
-              gearbox: listing.gearbox ?? "",
-              description: listing.description ?? "",
-              price_per_month_chf: listing.price_per_month_chf ?? 0,
-              remaining_months: listing.remaining_months ?? 12,
-              remaining_km: listing.remaining_km ?? undefined,
-              deposit_chf: listing.deposit_chf ?? 0,
-              location: listing.location ?? "",
-              canton_code: listing.canton_code ?? undefined,
-              title: listing.title ?? undefined,
-              price_plan: (listing.price_plan ?? prev.price_plan) as any,
-              premium: Boolean(listing.premium),
-              images: Array.isArray(listing.images) ? (listing.images as string[]) : prev.images,
-              cover_image_index: listing.cover_image_index ?? prev.cover_image_index,
-              status: listing.status ?? undefined,
-            }));
+            setData((prev) => ({ ...prev, ...toWizardPatchFromListing(listing, prev) }));
           }
           setIsLoadingFromQuery(false);
           return;
@@ -309,8 +336,36 @@ export default function ListingWizard() {
 
     setIsSavingDraft(true);
     try {
+      let draftData: Partial<ListingData> = data;
+
+      if (draftId) {
+        try {
+          const existing = await getListingDraftById({ user, draftId });
+          if (existing?.data) {
+            draftData = { ...existing.data, ...draftData };
+          }
+        } catch (e) {
+          console.warn("Could not load existing draft before saving:", e);
+        }
+      }
+
+      const listingId = (draftData as any)?.id ?? data.id;
+      if (typeof listingId === "string" && listingId.length > 0) {
+        try {
+          const listing = await getListingByIdForOwner(listingId, user);
+          if (listing) {
+            const patch = toWizardPatchFromListing(listing, draftData as ListingData);
+            draftData = { ...draftData, ...patch };
+
+            updateData(draftData);
+          }
+        } catch (e) {
+          console.warn("Could not refresh listing before saving draft:", e);
+        }
+      }
+
       if (!draftId) {
-        const created = await createListingDraft({ user, data });
+        const created = await createListingDraft({ user, data: draftData });
         setDraftId(created.id);
         await router.replace(
           { pathname: router.pathname, query: { ...router.query, draft: created.id } },
@@ -321,7 +376,7 @@ export default function ListingWizard() {
         return;
       }
 
-      await updateListingDraft({ user, draftId, data });
+      await updateListingDraft({ user, draftId, data: draftData });
       toast({ title: "Entwurf gespeichert" });
     } catch (e) {
       toast({
@@ -332,7 +387,7 @@ export default function ListingWizard() {
     } finally {
       setIsSavingDraft(false);
     }
-  }, [data, draftId, isSavingDraft, router, toast, user]);
+  }, [data, draftId, isSavingDraft, router, toast, updateData, user]);
 
   if (isComplete) {
     return <SuccessScreen />;
