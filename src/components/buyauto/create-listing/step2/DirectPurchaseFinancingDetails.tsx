@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, type LeasingOfferPayload, type ListingUpdatePayload } from "@/services/createListingService";
+import { updateListingDraft } from "@/services/listingDraftService";
 
 const DEFAULT_KM_OPTIONS = [10000, 15000, 20000, 25000];
 
@@ -28,8 +30,8 @@ const directPurchaseFinancingSchema = z
     max_term_months: z.number().int().min(1, "Maximallaufzeit ist erforderlich").optional(),
     residual_pct_adjustment_pp: z
       .number()
-      .min(-10, "Bitte zwischen -10 und +10 eingeben")
-      .max(10, "Bitte zwischen -10 und +10 eingeben")
+      .min(-20, "Bitte zwischen -20 und +20 eingeben")
+      .max(20, "Bitte zwischen -20 und +20 eingeben")
       .optional(),
   })
   .superRefine((values, ctx) => {
@@ -93,7 +95,7 @@ function toNumberOrUndefined(value: unknown): number | undefined {
 
 function clampPp(value: number): number {
   if (!Number.isFinite(value)) return 0;
-  return Math.max(-10, Math.min(10, value));
+  return Math.max(-20, Math.min(20, value));
 }
 
 function formatChf(amountChf: number): string {
@@ -101,7 +103,8 @@ function formatChf(amountChf: number): string {
 }
 
 export function DirectPurchaseFinancingDetails() {
-  const { data, updateData, nextStep, prevStep } = useWizard();
+  const router = useRouter();
+  const { data, updateData, nextStep, prevStep, draftId, setDraftId } = useWizard();
   const { user, profile, profileLoading } = useAuth();
   const { toast } = useToast();
 
@@ -213,15 +216,6 @@ export function DirectPurchaseFinancingDetails() {
       return;
     }
 
-    if (!data.id) {
-      toast({
-        title: "Fehler",
-        description: "Keine Inserat-ID gefunden. Bitte gehen Sie zurück zu Schritt 1 und versuchen Sie es erneut.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const allowLeasingOffer = isGarage === true && formData.leasing_enabled === true;
 
@@ -241,20 +235,51 @@ export function DirectPurchaseFinancingDetails() {
           }
         : null;
 
-      const updatePayload: ListingUpdatePayload = {
-        id: data.id,
+      const baseVehiclePayload: ListingUpdatePayload = {
+        id: data.id ?? undefined,
         deal_type: "direct_purchase",
-        price_per_month_chf: Math.round(Number(formData.purchase_price_chf)),
         financing_type: allowLeasingOffer ? "leasing" : "cash",
         leasing_offer: leasingOffer,
+        brand: data.brand ?? "",
+        model: data.model ?? "",
+        year: typeof data.year === "number" ? data.year : undefined,
+        mileage_km:
+          typeof (data as any).km === "number"
+            ? (data as any).km
+            : typeof (data as any).mileage_km === "number"
+            ? (data as any).mileage_km
+            : undefined,
+        fuel: (data as any).fuel ?? "",
+        gearbox: (data as any).gearbox ?? "",
+        body: (data as any).body ?? "",
+        description: (data as any).description ?? undefined,
+        title: (data as any).title ?? undefined,
+        remaining_km: (data as any).remaining_km ?? null,
+        price_per_month_chf: Math.round(Number(formData.purchase_price_chf)),
       };
 
-      const result = await createOrUpdateListing(updatePayload, user);
+      const result = await createOrUpdateListing(baseVehiclePayload, user);
 
       updateData({
-        ...updatePayload,
+        ...baseVehiclePayload,
         id: result.id,
       });
+
+      if (draftId) {
+        try {
+          await updateListingDraft({
+            user,
+            draftId,
+            data: {
+              ...(data as any),
+              ...baseVehiclePayload,
+              id: result.id,
+            },
+          });
+        } catch {
+          // best-effort
+        }
+      }
 
       toast({
         title: "Finanzierungsdetails gespeichert",
@@ -412,8 +437,8 @@ export function DirectPurchaseFinancingDetails() {
                         id="residual_pct_adjustment_pp"
                         type="number"
                         step="1"
-                        min="-10"
-                        max="10"
+                        min="-20"
+                        max="20"
                         {...register("residual_pct_adjustment_pp", { valueAsNumber: true })}
                         className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
                       />

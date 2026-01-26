@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
+import { useRouter } from "next/router";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { CalendarIcon, ChevronLeft } from "lucide-react";
@@ -18,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
+import { updateListingDraft } from "@/services/listingDraftService";
 
 const swissCantons = [
   { value: "AG", label: "Aargau (AG)" },
@@ -75,7 +77,8 @@ function calculateRemainingMonths(endDate: Date): number {
 }
 
 export function LeaseTakeoverFinancingDetails() {
-  const { data, updateData, nextStep, prevStep } = useWizard();
+  const router = useRouter();
+  const { data, updateData, nextStep, prevStep, draftId, setDraftId } = useWizard();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isUpdatingListing, setIsUpdatingListing] = useState(false);
@@ -108,23 +111,28 @@ export function LeaseTakeoverFinancingDetails() {
       return;
     }
 
-    if (!data.id) {
-      toast({
-        title: "Fehler",
-        description: "Keine Inserat-ID gefunden. Bitte gehen Sie zurück zu Schritt 1 und versuchen Sie es erneut.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsUpdatingListing(true);
 
     try {
       const updatePayload: ListingUpdatePayload = {
-        id: data.id,
+        id: data.id ?? undefined,
         deal_type: "lease_takeover",
         financing_type: null,
         leasing_offer: null,
+        brand: data.brand ?? "",
+        model: data.model ?? "",
+        year: typeof data.year === "number" ? data.year : undefined,
+        mileage_km:
+          typeof (data as any).km === "number"
+            ? (data as any).km
+            : typeof (data as any).mileage_km === "number"
+            ? (data as any).mileage_km
+            : undefined,
+        fuel: (data as any).fuel ?? "",
+        gearbox: (data as any).gearbox ?? "",
+        body: (data as any).body ?? "",
+        description: (data as any).description ?? undefined,
+        title: (data as any).title ?? undefined,
         price_per_month_chf: parseFloat(formData.price_per_month_chf.toString()),
         remaining_months: parseInt(formData.remaining_months.toString()),
         deposit_chf: formData.deposit_chf ? parseFloat(formData.deposit_chf.toString()) : null,
@@ -139,6 +147,22 @@ export function LeaseTakeoverFinancingDetails() {
         ...updatePayload,
         id: result.id,
       });
+
+      if (draftId) {
+        try {
+          await updateListingDraft({
+            user,
+            draftId,
+            data: {
+              ...(data as any),
+              ...updatePayload,
+              id: result.id,
+            },
+          });
+        } catch {
+          // best-effort
+        }
+      }
 
       toast({
         title: "Finanzierungsdetails gespeichert",

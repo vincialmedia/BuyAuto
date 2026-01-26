@@ -309,12 +309,6 @@ export default function ListingWizard() {
 
     setIsSavingDraft(true);
     try {
-      if (data.id) {
-        await createOrUpdateListing(toListingUpdatePayload(data), user);
-        toast({ title: "Entwurf gespeichert" });
-        return;
-      }
-
       if (!draftId) {
         const created = await createListingDraft({ user, data });
         setDraftId(created.id);

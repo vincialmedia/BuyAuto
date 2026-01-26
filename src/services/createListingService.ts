@@ -57,7 +57,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
   const normalizedDownPaymentPct = noDownPayment ? 0 : clampNumber(Number(offer.down_payment_pct), 0, 100);
 
   const rawResidualAdj = Number((offer as LeasingOfferPayload).residual_pct_adjustment_pp ?? 0);
-  const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -10, 10) : 0;
+  const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -20, 20) : 0;
 
   const normalizedOffer: LeasingOfferPayload = {
     enabled: true,
@@ -154,7 +154,7 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
       const normalizedDownPayment = noDownPayment ? 0 : offerPayload.down_payment_pct;
 
       const rawResidualAdj = Number(offerPayload.residual_pct_adjustment_pp ?? 0);
-      const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -10, 10) : 0;
+      const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -20, 20) : 0;
 
       if (noDownPayment && Number(offerPayload.down_payment_pct) !== 0) {
         return {
