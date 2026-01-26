@@ -113,6 +113,9 @@ export function LeaseTakeoverFinancingDetails() {
 
     setIsUpdatingListing(true);
     try {
+      const anyData = data as any;
+      const mileageKm = typeof anyData?.km === "number" ? anyData.km : typeof anyData?.mileage === "number" ? anyData.mileage : null;
+
       const payload: ListingUpdatePayload = {
         id: data.id,
         deal_type: "lease_takeover",
@@ -121,7 +124,7 @@ export function LeaseTakeoverFinancingDetails() {
         brand: data.brand,
         model: data.model,
         year: data.year,
-        mileage_km: data.mileage_km,
+        mileage_km: mileageKm,
         fuel: data.fuel,
         gearbox: data.gearbox,
         body: data.body,
@@ -142,20 +145,40 @@ export function LeaseTakeoverFinancingDetails() {
 
       const saved = await createOrUpdateListing(payload, user);
 
-      if (saved?.id) {
-        updateData((prev) => ({ ...prev, id: saved.id }));
+      const nextListingId = saved?.id ?? data.id;
 
-        if (draftId) {
-          try {
-            await updateListingDraft({
-              user,
-              draftId,
-              data: { ...data, id: saved.id },
-              currentStep: 2,
-            });
-          } catch (e) {
-            console.warn("Could not update listing draft with listing id:", e);
-          }
+      updateData({
+        id: nextListingId,
+        deal_type: "lease_takeover",
+        financing_type: null,
+        leasing_offer: null,
+        price_per_month_chf: Number(formData.price_per_month_chf),
+        remaining_months: Number(formData.remaining_months),
+        deposit_chf: formData.deposit_chf ? Number(formData.deposit_chf) : 0,
+        remaining_km: formData.remaining_km ? Number(formData.remaining_km) : 0,
+        location: formData.location,
+      });
+
+      if (draftId) {
+        try {
+          await updateListingDraft({
+            user,
+            draftId,
+            data: {
+              ...data,
+              id: nextListingId,
+              deal_type: "lease_takeover",
+              financing_type: null,
+              leasing_offer: null,
+              price_per_month_chf: Number(formData.price_per_month_chf),
+              remaining_months: Number(formData.remaining_months),
+              deposit_chf: formData.deposit_chf ? Number(formData.deposit_chf) : 0,
+              remaining_km: formData.remaining_km ? Number(formData.remaining_km) : 0,
+              location: formData.location,
+            },
+          });
+        } catch (e) {
+          console.warn("Could not update listing draft with financing details:", e);
         }
       }
 

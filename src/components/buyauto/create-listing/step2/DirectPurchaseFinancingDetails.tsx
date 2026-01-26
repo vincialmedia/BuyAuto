@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/router";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,8 +29,8 @@ const directPurchaseFinancingSchema = z
     max_term_months: z.number().int().min(1, "Maximallaufzeit ist erforderlich").optional(),
     residual_pct_adjustment_pp: z
       .number()
-      .min(-20, "Bitte zwischen -20 und +20 eingeben")
-      .max(20, "Bitte zwischen -20 und +20 eingeben")
+      .min(-50, "Bitte zwischen -50 und +50 eingeben")
+      .max(50, "Bitte zwischen -50 und +50 eingeben")
       .optional(),
   })
   .superRefine((values, ctx) => {
@@ -95,16 +94,22 @@ function toNumberOrUndefined(value: unknown): number | undefined {
 
 function clampPp(value: number): number {
   if (!Number.isFinite(value)) return 0;
-  return Math.max(-20, Math.min(20, value));
+  return Math.max(-50, Math.min(50, value));
 }
 
 function formatChf(amountChf: number): string {
   return new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(amountChf));
 }
 
+function getMileageKmFromWizardData(data: unknown): number | null {
+  const anyData = data as any;
+  const kmNum = Number(anyData?.km ?? anyData?.mileage ?? anyData?.mileage_km);
+  if (!Number.isFinite(kmNum) || kmNum < 0) return null;
+  return kmNum;
+}
+
 export function DirectPurchaseFinancingDetails() {
-  const router = useRouter();
-  const { data, updateData, nextStep, prevStep, draftId, setDraftId } = useWizard();
+  const { data, updateData, nextStep, prevStep, draftId } = useWizard();
   const { user, profile, profileLoading } = useAuth();
   const { toast } = useToast();
 
@@ -123,6 +128,7 @@ export function DirectPurchaseFinancingDetails() {
     existingOffer?.enabled === true;
 
   const [hasMounted, setHasMounted] = useState(false);
+  const [isUpdatingListing, setIsUpdatingListing] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -130,11 +136,11 @@ export function DirectPurchaseFinancingDetails() {
 
   const listingInputs = useMemo(() => {
     const yearNum = Number(data.year);
-    const kmNum = Number((data as any).km ?? (data as any).mileage_km ?? data.mileage);
+    const mileageKm = getMileageKmFromWizardData(data);
 
     return {
       year: Number.isFinite(yearNum) && yearNum > 1900 ? yearNum : null,
-      mileageKm: Number.isFinite(kmNum) && kmNum >= 0 ? kmNum : null,
+      mileageKm,
     };
   }, [data]);
 
@@ -218,14 +224,35 @@ export function DirectPurchaseFinancingDetails() {
 
     setIsUpdatingListing(true);
     try {
-      const baseVehiclePayload: ListingUpdatePayload = {
+      const mileageKm = getMileageKmFromWizardData(data);
+
+      const leasingOffer = leasingEnabled
+        ? {
+            enabled: true,
+            interest_rate_pct: Number(formData.interest_rate_pct),
+            down_payment_pct: formData.no_down_payment ? 0 : Number(formData.down_payment_pct),
+            no_down_payment: Boolean(formData.no_down_payment),
+            min_term_months: Number(formData.min_term_months),
+            max_term_months: Number(formData.max_term_months),
+            km_options: DEFAULT_KM_OPTIONS,
+            residual_pct_adjustment_pp: clampPp(
+              typeof formData.residual_pct_adjustment_pp === "number" ? formData.residual_pct_adjustment_pp : 0
+            ),
+          }
+        : null;
+
+      const purchasePriceChf = Math.round(Number(formData.purchase_price_chf));
+
+      const payload: ListingUpdatePayload = {
         id: data.id,
         deal_type: "direct_purchase",
         financing_type: leasingEnabled ? "leasing" : "cash",
+        leasing_offer: leasingOffer,
+
         brand: data.brand,
         model: data.model,
         year: data.year,
-        mileage_km: data.mileage_km,
+        mileage_km: mileageKm,
         fuel: data.fuel,
         gearbox: data.gearbox,
         body: data.body,
@@ -237,40 +264,38 @@ export function DirectPurchaseFinancingDetails() {
         premium: data.premium,
         images: data.images,
         cover_image_index: data.cover_image_index,
-      };
 
-      const payload: ListingUpdatePayload = {
-        ...baseVehiclePayload,
-        leasing_offer: leasingEnabled
-          ? {
-              enabled: true,
-              interest_rate_pct: Number(formData.interest_rate_pct),
-              down_payment_pct: formData.no_down_payment ? 0 : Number(formData.down_payment_pct),
-              no_down_payment: Boolean(formData.no_down_payment),
-              min_term_months: Number(formData.min_term_months),
-              max_term_months: Number(formData.max_term_months),
-              km_options: Array.isArray(formData.km_options) && formData.km_options.length > 0 ? formData.km_options : undefined,
-              residual_pct_adjustment_pp: typeof formData.residual_pct_adjustment_pp === "number" ? formData.residual_pct_adjustment_pp : 0,
-            }
-          : null,
+        price_per_month_chf: purchasePriceChf,
       };
 
       const saved = await createOrUpdateListing(payload, user);
 
-      if (saved?.id) {
-        setData((prev) => ({ ...prev, id: saved.id }));
+      const nextListingId = saved?.id ?? data.id;
 
-        if (draftId) {
-          try {
-            await updateListingDraft({
-              user,
-              draftId,
-              data: { ...data, id: saved.id },
-              currentStep: 2,
-            });
-          } catch (e) {
-            console.warn("Could not update listing draft with listing id:", e);
-          }
+      updateData({
+        id: nextListingId,
+        deal_type: "direct_purchase",
+        financing_type: leasingEnabled ? "leasing" : "cash",
+        leasing_offer: leasingOffer,
+        price_per_month_chf: purchasePriceChf,
+      });
+
+      if (draftId) {
+        try {
+          await updateListingDraft({
+            user,
+            draftId,
+            data: {
+              ...data,
+              id: nextListingId,
+              deal_type: "direct_purchase",
+              financing_type: leasingEnabled ? "leasing" : "cash",
+              leasing_offer: leasingOffer,
+              price_per_month_chf: purchasePriceChf,
+            },
+          });
+        } catch (e) {
+          console.warn("Could not update draft with financing details:", e);
         }
       }
 
@@ -350,9 +375,7 @@ export function DirectPurchaseFinancingDetails() {
                     Tipp: Aktiviere Leasing, um u.a. <span className="font-medium text-neutral-700">Restwertkorrektur</span> zu setzen.
                   </p>
                 )}
-                <p className="mt-1 text-xs text-neutral-500">
-                  Tipp: Nach dem Aktivieren kannst du den Restwert optional um ± Prozentpunkte korrigieren.
-                </p>
+                <p className="mt-1 text-xs text-neutral-500">Tipp: Nach dem Aktivieren kannst du den Restwert optional um ±50pp korrigieren.</p>
               </div>
               <Switch checked={leasingEnabled} onCheckedChange={(checked) => setValue("leasing_enabled", checked)} />
             </div>
@@ -422,34 +445,32 @@ export function DirectPurchaseFinancingDetails() {
                   {errors.max_term_months && <p className="text-sm text-red-500 font-light">{errors.max_term_months.message}</p>}
                 </div>
 
-                {leasingEnabled && isGarage && (
-                  <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-6 space-y-4">
-                    <div className="space-y-1">
-                      <h3 className="text-base font-medium text-neutral-900">Restwertkorrektur</h3>
-                      <p className="text-sm text-neutral-600">
-                        Optional. Passt die automatische Restwert-Schätzung an (z.B. +3 = +3 Prozentpunkte).
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="residual_pct_adjustment_pp" className="text-sm font-medium text-neutral-700">
-                        Restwertkorrektur (± Prozentpunkte)
-                      </Label>
-                      <Input
-                        id="residual_pct_adjustment_pp"
-                        type="number"
-                        step="1"
-                        min="-20"
-                        max="20"
-                        {...register("residual_pct_adjustment_pp", { valueAsNumber: true })}
-                        className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-                      />
-                      {errors.residual_pct_adjustment_pp && (
-                        <p className="text-sm text-red-500 font-light">{errors.residual_pct_adjustment_pp.message}</p>
-                      )}
-                    </div>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-6 space-y-4 md:col-span-2">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-medium text-neutral-900">Restwertkorrektur</h3>
+                    <p className="text-sm text-neutral-600">
+                      Optional. Passt die automatische Restwert-Schätzung an (z.B. +3 = +3 Prozentpunkte).
+                    </p>
                   </div>
-                )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="residual_pct_adjustment_pp" className="text-sm font-medium text-neutral-700">
+                      Restwertkorrektur (± Prozentpunkte)
+                    </Label>
+                    <Input
+                      id="residual_pct_adjustment_pp"
+                      type="number"
+                      step="1"
+                      min="-50"
+                      max="50"
+                      {...register("residual_pct_adjustment_pp", { valueAsNumber: true })}
+                      className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+                    />
+                    {errors.residual_pct_adjustment_pp && (
+                      <p className="text-sm text-red-500 font-light">{errors.residual_pct_adjustment_pp.message}</p>
+                    )}
+                  </div>
+                </div>
 
                 <div className="md:col-span-2 rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50/50 via-white to-white p-5 shadow-sm">
                   <div className="flex items-start justify-between gap-4">
@@ -472,9 +493,7 @@ export function DirectPurchaseFinancingDetails() {
                           <p className="text-lg font-semibold text-neutral-900">
                             CHF {formatChf(exampleRestwert.base.restwertChf)}.–
                           </p>
-                          <p className="text-sm text-neutral-600">
-                            ca. {Math.round(exampleRestwert.base.residualPct * 100)}%
-                          </p>
+                          <p className="text-sm text-neutral-600">ca. {Math.round(exampleRestwert.base.residualPct * 100)}%</p>
                         </div>
 
                         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -482,9 +501,7 @@ export function DirectPurchaseFinancingDetails() {
                           <p className="text-xl font-semibold text-neutral-900">
                             CHF {formatChf(exampleRestwert.adjustedChf)}.–
                           </p>
-                          <p className="text-sm text-neutral-600">
-                            ca. {Math.round(exampleRestwert.adjustedPct * 100)}%
-                          </p>
+                          <p className="text-sm text-neutral-600">ca. {Math.round(exampleRestwert.adjustedPct * 100)}%</p>
                         </div>
                       </div>
                     ) : (
@@ -525,9 +542,10 @@ export function DirectPurchaseFinancingDetails() {
 
           <Button
             type="submit"
-            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+            disabled={isUpdatingListing}
+            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {nextLabel}
+            {isUpdatingListing ? "Speichere..." : nextLabel}
           </Button>
         </div>
       </form>

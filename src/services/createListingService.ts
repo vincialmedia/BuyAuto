@@ -57,7 +57,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
   const normalizedDownPaymentPct = noDownPayment ? 0 : clampNumber(Number(offer.down_payment_pct), 0, 100);
 
   const rawResidualAdj = Number((offer as LeasingOfferPayload).residual_pct_adjustment_pp ?? 0);
-  const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -20, 20) : 0;
+  const residual_pct_adjustment_pp = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -50, 50) : 0;
 
   const normalizedOffer: LeasingOfferPayload = {
     enabled: true,
@@ -67,7 +67,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
     min_term_months: Math.max(1, Math.floor(Number(offer.min_term_months))),
     max_term_months: Math.max(1, Math.floor(Number(offer.max_term_months))),
     km_options: Array.isArray(offer.km_options) ? offer.km_options.map((v) => Math.floor(Number(v))) : undefined,
-    residual_pct_adjustment_pp: normalizedResidualAdj,
+    residual_pct_adjustment_pp: residual_pct_adjustment_pp,
   };
 
   if (!Number.isFinite(normalizedOffer.interest_rate_pct)) {
