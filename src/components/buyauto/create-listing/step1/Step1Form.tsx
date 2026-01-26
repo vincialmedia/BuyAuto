@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
-import { deleteListingDraft } from "@/services/listingDraftService";
+import { createListingDraft, deleteListingDraft, updateListingDraft } from "@/services/listingDraftService";
 import { fetchMakes, fetchModelsForMake, searchMakes, searchModelsForMake } from "@/services/vehicleService";
 
 import { Button } from "@/components/ui/button";
@@ -189,6 +189,61 @@ export function Step1Form() {
       const generatedTitle = `${values.brand} ${values.model} ${values.year}`;
       const isNewListing = !data.id;
 
+      // Always keep wizard state in sync
+      updateData({
+        brand: values.brand,
+        model: values.model,
+        year: Number(values.year),
+        km: Number(values.km),
+        fuel: values.fuel,
+        gearbox: values.gearbox,
+        body: values.body,
+        description: values.description || "",
+        title: generatedTitle,
+      } as any);
+
+      // ✅ NEW LISTINGS: don't insert into public.listings yet (can violate DB constraints)
+      // Persist to listing_drafts (best-effort), then continue to Step 2 where financing details exist.
+      if (isNewListing) {
+        const nextDraftData = {
+          ...data,
+          brand: values.brand,
+          model: values.model,
+          year: Number(values.year),
+          km: Number(values.km),
+          fuel: values.fuel,
+          gearbox: values.gearbox,
+          body: values.body,
+          description: values.description || "",
+          title: generatedTitle,
+        };
+
+        try {
+          if (!draftId) {
+            const created = await createListingDraft({ user, data: nextDraftData });
+            setDraftId(created.id);
+            await router.replace(
+              { pathname: router.pathname, query: { ...router.query, draft: created.id } },
+              undefined,
+              { shallow: true }
+            );
+          } else {
+            await updateListingDraft({ user, draftId, data: nextDraftData });
+          }
+        } catch {
+          // Best-effort only: user can still continue; manual "Speichern (Entwurf)" remains available.
+        }
+
+        toast({
+          title: "Gespeichert",
+          description: "Fahrzeugdaten wurden gespeichert.",
+        });
+
+        nextStep();
+        return;
+      }
+
+      // ✅ EDIT EXISTING LISTING: update listing row
       const payload: ListingUpdatePayload = {
         id: data.id ?? undefined,
         brand: values.brand,
@@ -200,16 +255,6 @@ export function Step1Form() {
         body: values.body,
         description: values.description || undefined,
         title: generatedTitle,
-        ...(isNewListing
-          ? {
-              deal_type: "direct_purchase",
-              financing_type: "cash",
-              leasing_offer: null,
-              price_per_month_chf: 0,
-              remaining_months: 12,
-              deposit_chf: 0,
-            }
-          : {}),
       };
 
       const result = await createOrUpdateListing(payload, user);

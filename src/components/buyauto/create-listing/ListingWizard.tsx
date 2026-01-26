@@ -115,7 +115,6 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
     premium: wizardData.premium,
     images: wizardData.images,
     cover_image_index: wizardData.cover_image_index,
-    status: "draft",
     leasing_offer: (wizardData as unknown as { leasing_offer?: unknown }).leasing_offer as any,
   };
 };

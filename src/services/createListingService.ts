@@ -202,10 +202,13 @@ export const createOrUpdateListing = async (
       ...normalizeDealFieldsForInsert(data),
       user_id: user.id,
       created_by: user.id,
-      status: "draft",
     };
 
     delete listingDataForInsert.id;
+
+    if ("status" in listingDataForInsert) {
+      delete (listingDataForInsert as unknown as { status?: unknown }).status;
+    }
 
     const { data: newListing, error } = await supabase
       .from("listings")
@@ -214,7 +217,12 @@ export const createOrUpdateListing = async (
       .single();
 
     if (error) {
-      console.error("Error creating new listing:", error);
+      console.error("Error creating new listing:", {
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+      });
       throw error;
     }
 
@@ -228,7 +236,10 @@ export const createOrUpdateListing = async (
   if ("user_id" in cleanUpdateData) {
     delete cleanUpdateData.user_id;
   }
-  
+  if ("status" in cleanUpdateData) {
+    delete (cleanUpdateData as unknown as { status?: unknown }).status;
+  }
+
   const { data: updatedListing, error } = await supabase
     .from("listings")
     .update(cleanUpdateData)
@@ -238,7 +249,12 @@ export const createOrUpdateListing = async (
     .single();
 
   if (error) {
-    console.error(`Error updating listing ${id}:`, error);
+    console.error(`Error updating listing ${id}:`, {
+      message: (error as any)?.message,
+      code: (error as any)?.code,
+      details: (error as any)?.details,
+      hint: (error as any)?.hint,
+    });
     throw error;
   }
 
