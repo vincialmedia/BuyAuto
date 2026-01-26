@@ -209,91 +209,93 @@ export function DirectPurchaseFinancingDetails() {
   const onSubmit = async (formData: DirectPurchaseFinancingForm) => {
     if (!user) {
       toast({
-        title: "Nicht angemeldet",
-        description: "Sie müssen angemeldet sein.",
+        title: "Nicht eingeloggt",
+        description: "Bitte logge dich ein, um fortzufahren.",
         variant: "destructive",
       });
       return;
     }
 
+    setIsUpdatingListing(true);
     try {
-      const allowLeasingOffer = isGarage === true && formData.leasing_enabled === true;
-
-      const leasingOffer: LeasingOfferPayload | null = allowLeasingOffer
-        ? {
-            enabled: true,
-            interest_rate_pct: Number(formData.interest_rate_pct),
-            down_payment_pct: formData.no_down_payment ? 0 : Number(formData.down_payment_pct),
-            no_down_payment: formData.no_down_payment === true,
-            min_term_months: Math.floor(Number(formData.min_term_months)),
-            max_term_months: Math.floor(Number(formData.max_term_months)),
-            residual_pct_adjustment_pp: clampPp(Number(formData.residual_pct_adjustment_pp ?? 0)),
-            km_options:
-              Array.isArray(existingOffer?.km_options) && existingOffer.km_options.length > 0
-                ? existingOffer.km_options
-                : DEFAULT_KM_OPTIONS,
-          }
-        : null;
-
       const baseVehiclePayload: ListingUpdatePayload = {
-        id: data.id ?? undefined,
+        id: data.id,
         deal_type: "direct_purchase",
-        financing_type: allowLeasingOffer ? "leasing" : "cash",
-        leasing_offer: leasingOffer,
-        brand: data.brand ?? "",
-        model: data.model ?? "",
-        year: typeof data.year === "number" ? data.year : undefined,
-        mileage_km:
-          typeof (data as any).km === "number"
-            ? (data as any).km
-            : typeof (data as any).mileage_km === "number"
-            ? (data as any).mileage_km
-            : undefined,
-        fuel: (data as any).fuel ?? "",
-        gearbox: (data as any).gearbox ?? "",
-        body: (data as any).body ?? "",
-        description: (data as any).description ?? undefined,
-        title: (data as any).title ?? undefined,
-        remaining_km: (data as any).remaining_km ?? null,
-        price_per_month_chf: Math.round(Number(formData.purchase_price_chf)),
+        financing_type: leasingEnabled ? "leasing" : "cash",
+        brand: data.brand,
+        model: data.model,
+        year: data.year,
+        mileage_km: data.mileage_km,
+        fuel: data.fuel,
+        gearbox: data.gearbox,
+        body: data.body,
+        description: data.description,
+        location: data.location,
+        canton_code: data.canton_code,
+        title: data.title,
+        price_plan: data.price_plan,
+        premium: data.premium,
+        images: data.images,
+        cover_image_index: data.cover_image_index,
       };
 
-      const result = await createOrUpdateListing(baseVehiclePayload, user);
-
-      updateData({
+      const payload: ListingUpdatePayload = {
         ...baseVehiclePayload,
-        id: result.id,
-      });
+        leasing_offer: leasingEnabled
+          ? {
+              enabled: true,
+              interest_rate_pct: Number(formData.interest_rate_pct),
+              down_payment_pct: formData.no_down_payment ? 0 : Number(formData.down_payment_pct),
+              no_down_payment: Boolean(formData.no_down_payment),
+              min_term_months: Number(formData.min_term_months),
+              max_term_months: Number(formData.max_term_months),
+              km_options: Array.isArray(formData.km_options) && formData.km_options.length > 0 ? formData.km_options : undefined,
+              residual_pct_adjustment_pp: typeof formData.residual_pct_adjustment_pp === "number" ? formData.residual_pct_adjustment_pp : 0,
+            }
+          : null,
+      };
 
-      if (draftId) {
-        try {
-          await updateListingDraft({
-            user,
-            draftId,
-            data: {
-              ...(data as any),
-              ...baseVehiclePayload,
-              id: result.id,
-            },
-          });
-        } catch {
-          // best-effort
+      const saved = await createOrUpdateListing(payload, user);
+
+      if (saved?.id) {
+        setData((prev) => ({ ...prev, id: saved.id }));
+
+        if (draftId) {
+          try {
+            await updateListingDraft({
+              user,
+              draftId,
+              data: { ...data, id: saved.id },
+              currentStep: 2,
+            });
+          } catch (e) {
+            console.warn("Could not update listing draft with listing id:", e);
+          }
         }
       }
 
       toast({
-        title: "Finanzierungsdetails gespeichert",
-        description: allowLeasingOffer ? "Leasing-Angebot wurde gespeichert." : "Direktkauf gespeichert.",
+        title: "Gespeichert",
+        description: "Finanzierungsdetails wurden gespeichert.",
       });
 
       nextStep();
     } catch (error) {
-      console.error("Error saving direct purchase financing details:", error);
+      console.error("Error submitting Step 2 (direct purchase):", {
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        error,
+      });
+
       toast({
         title: "Fehler",
-        description: "Finanzierungsdetails konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+        description: "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfen Sie die Angaben und versuchen Sie es erneut.",
         variant: "destructive",
       });
+    } finally {
+      setIsUpdatingListing(false);
     }
   };
 

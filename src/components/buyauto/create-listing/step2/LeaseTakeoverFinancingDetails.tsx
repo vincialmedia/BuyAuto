@@ -104,77 +104,79 @@ export function LeaseTakeoverFinancingDetails() {
   const onSubmit = async (formData: LeasingDetailsForm) => {
     if (!user) {
       toast({
-        title: "Nicht angemeldet",
-        description: "Sie müssen angemeldet sein.",
+        title: "Nicht eingeloggt",
+        description: "Bitte logge dich ein, um fortzufahren.",
         variant: "destructive",
       });
       return;
     }
 
     setIsUpdatingListing(true);
-
     try {
-      const updatePayload: ListingUpdatePayload = {
-        id: data.id ?? undefined,
+      const payload: ListingUpdatePayload = {
+        id: data.id,
         deal_type: "lease_takeover",
         financing_type: null,
         leasing_offer: null,
-        brand: data.brand ?? "",
-        model: data.model ?? "",
-        year: typeof data.year === "number" ? data.year : undefined,
-        mileage_km:
-          typeof (data as any).km === "number"
-            ? (data as any).km
-            : typeof (data as any).mileage_km === "number"
-            ? (data as any).mileage_km
-            : undefined,
-        fuel: (data as any).fuel ?? "",
-        gearbox: (data as any).gearbox ?? "",
-        body: (data as any).body ?? "",
-        description: (data as any).description ?? undefined,
-        title: (data as any).title ?? undefined,
-        price_per_month_chf: parseFloat(formData.price_per_month_chf.toString()),
-        remaining_months: parseInt(formData.remaining_months.toString()),
-        deposit_chf: formData.deposit_chf ? parseFloat(formData.deposit_chf.toString()) : null,
-        location: formData.location,
-        canton_code: formData.location,
-        remaining_km: formData.remaining_km ? parseInt(formData.remaining_km.toString()) : null,
+        brand: data.brand,
+        model: data.model,
+        year: data.year,
+        mileage_km: data.mileage_km,
+        fuel: data.fuel,
+        gearbox: data.gearbox,
+        body: data.body,
+        description: data.description,
+        location: data.location,
+        canton_code: data.canton_code,
+        title: data.title,
+        price_plan: data.price_plan,
+        premium: data.premium,
+        images: data.images,
+        cover_image_index: data.cover_image_index,
+
+        price_per_month_chf: Number(formData.price_per_month_chf),
+        remaining_months: Number(formData.remaining_months),
+        deposit_chf: formData.deposit_chf ? Number(formData.deposit_chf) : null,
+        remaining_km: formData.remaining_km ? Number(formData.remaining_km) : null,
       };
 
-      const result = await createOrUpdateListing(updatePayload, user);
+      const saved = await createOrUpdateListing(payload, user);
 
-      updateData({
-        ...updatePayload,
-        id: result.id,
-      });
+      if (saved?.id) {
+        updateData((prev) => ({ ...prev, id: saved.id }));
 
-      if (draftId) {
-        try {
-          await updateListingDraft({
-            user,
-            draftId,
-            data: {
-              ...(data as any),
-              ...updatePayload,
-              id: result.id,
-            },
-          });
-        } catch {
-          // best-effort
+        if (draftId) {
+          try {
+            await updateListingDraft({
+              user,
+              draftId,
+              data: { ...data, id: saved.id },
+              currentStep: 2,
+            });
+          } catch (e) {
+            console.warn("Could not update listing draft with listing id:", e);
+          }
         }
       }
 
       toast({
-        title: "Finanzierungsdetails gespeichert",
-        description: "Ihre Leasing-Informationen wurden erfolgreich gespeichert.",
+        title: "Gespeichert",
+        description: "Finanzierungsdetails wurden gespeichert.",
       });
 
       nextStep();
     } catch (error) {
-      console.error("Error saving leasing takeover details:", error);
+      console.error("Error submitting Step 2 (lease takeover):", {
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        error,
+      });
+
       toast({
         title: "Fehler",
-        description: "Finanzierungsdetails konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+        description: "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfen Sie die Angaben und versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {
