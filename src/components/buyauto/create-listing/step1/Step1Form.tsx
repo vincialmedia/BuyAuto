@@ -271,15 +271,11 @@ export function Step1Form() {
 
       if (draftId) {
         try {
-          await deleteListingDraft({ user, draftId });
+          await updateListingDraft({ user, draftId, data: { ...data, ...payload } });
         } catch {
           setIsSubmitting(false);
           return;
         }
-        setDraftId(null);
-        const nextQuery = { ...router.query };
-        delete nextQuery.draft;
-        await router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
       }
 
       nextStep();

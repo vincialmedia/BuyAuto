@@ -142,7 +142,7 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
   const initialDownPaymentPct = offer.no_down_payment ? 0 : clamp(Number(offer.down_payment_pct), 0, 100);
 
   const rawResidualAdj = Number(offer.residual_pct_adjustment_pp ?? 0);
-  const residualAdjPp = Number.isFinite(rawResidualAdj) ? clamp(rawResidualAdj, -10, 10) : 0;
+  const residualAdjPp = Number.isFinite(rawResidualAdj) ? clamp(rawResidualAdj, -20, 20) : 0;
 
   const [termMonths, setTermMonths] = useState<number>(initialTerm);
   const [downPaymentPct, setDownPaymentPct] = useState<number>(initialDownPaymentPct);
