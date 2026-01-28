@@ -15,6 +15,7 @@ import { fetchMakes, fetchModelsForMake, searchMakes, searchModelsForMake } from
 
 import { Button } from "@/components/ui/button";
 import { VehicleBasicsSection, type VehicleStepFormValues } from "./VehicleBasicsSection";
+import type { DealType, FinancingType, ListingData } from "@/lib/buyauto/types";
 
 const vehicleStepSchema = z.object({
   brand: z.string().min(1, "Marke ist erforderlich"),
@@ -190,8 +191,8 @@ export function Step1Form() {
       const generatedTitle = `${values.brand} ${values.model} ${values.year}`;
       const isNewListing = !data.id;
 
-      const nextDealType = data.deal_type === "lease_takeover" ? "lease_takeover" : "direct_purchase";
-      const nextFinancingType = nextDealType === "lease_takeover" ? null : (data.financing_type ?? "cash");
+      const nextDealType: DealType = data.deal_type === "lease_takeover" ? "lease_takeover" : "direct_purchase";
+      const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : (data.financing_type ?? "cash");
 
       // Always keep wizard state in sync
       updateData({
@@ -212,7 +213,7 @@ export function Step1Form() {
       // ✅ NEW LISTINGS: don't insert into public.listings yet (can violate DB constraints)
       // Persist to listing_drafts (best-effort), then continue to Step 2 where financing details exist.
       if (isNewListing) {
-        const nextDraftData = {
+        const nextDraftData: Partial<ListingData> = {
           ...data,
           deal_type: nextDealType,
           financing_type: nextFinancingType,
@@ -256,8 +257,8 @@ export function Step1Form() {
       // ✅ EDIT EXISTING LISTING: update listing row
       const payload: ListingUpdatePayload = {
         id: data.id ?? undefined,
-        deal_type: nextDealType as any,
-        financing_type: nextFinancingType as any,
+        deal_type: nextDealType,
+        financing_type: nextFinancingType,
         leasing_offer: nextDealType === "lease_takeover" ? null : ((data as any).leasing_offer ?? null),
         brand: values.brand,
         model: values.model,
