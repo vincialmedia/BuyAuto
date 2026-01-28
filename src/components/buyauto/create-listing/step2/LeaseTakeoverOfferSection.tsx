@@ -77,8 +77,8 @@ function calculateRemainingMonths(endDate: Date): number {
 export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues>(props: LeaseTakeoverOfferSectionProps<T>) {
   const { register, setValue, watch, errors } = props;
 
-  const enabled = Boolean(watch("lease_takeover_enabled"));
-  const remainingMonths = Number(watch("lease_takeover_remaining_months") ?? 0) || 0;
+  const enabled = Boolean(watch("lease_takeover_enabled" as any));
+  const remainingMonths = Number(watch("lease_takeover_remaining_months" as any) ?? 0) || 0;
 
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
@@ -100,13 +100,13 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
           value={enabled ? "yes" : "no"}
           onValueChange={(v) => {
             const nextEnabled = v === "yes";
-            setValue("lease_takeover_enabled", nextEnabled as any, { shouldValidate: true });
+            setValue("lease_takeover_enabled" as any, nextEnabled as any, { shouldValidate: true });
 
             if (!nextEnabled) return;
 
-            const currentDeposit = Number(watch("lease_takeover_deposit_chf") ?? 0);
+            const currentDeposit = Number(watch("lease_takeover_deposit_chf" as any) ?? 0);
             if (!Number.isFinite(currentDeposit)) {
-              setValue("lease_takeover_deposit_chf", 0 as any, { shouldValidate: false });
+              setValue("lease_takeover_deposit_chf" as any, 0 as any, { shouldValidate: false });
             }
           }}
           className="grid grid-cols-2 gap-3 pt-2"
@@ -169,7 +169,7 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
                       setEndDate(date);
                       if (date) {
                         const months = calculateRemainingMonths(date);
-                        setValue("lease_takeover_remaining_months", months as any, { shouldValidate: true });
+                        setValue("lease_takeover_remaining_months" as any, months as any, { shouldValidate: true });
                       }
                     }}
                     disabled={(date) => date < new Date()}
@@ -238,8 +238,8 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
                 Standort (Kanton) *
               </Label>
               <Select
-                onValueChange={(value) => setValue("lease_takeover_pickup_canton_code", value as any, { shouldValidate: true })}
-                value={String(watch("lease_takeover_pickup_canton_code") ?? "")}
+                onValueChange={(value) => setValue("lease_takeover_pickup_canton_code" as any, value as any, { shouldValidate: true })}
+                value={String(watch("lease_takeover_pickup_canton_code" as any) ?? "")}
               >
                 <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                   <SelectValue placeholder="Kanton auswählen..." />

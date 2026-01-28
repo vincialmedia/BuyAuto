@@ -93,7 +93,7 @@ export function GarageLeasingOfferSection<T extends GarageLeasingOfferFormValues
           <p className="text-sm text-neutral-600">Wenn aktiv, sehen Käufer einen Leasingrechner auf der Detailseite.</p>
           <p className="mt-1 text-xs text-neutral-500">Tipp: Nach dem Aktivieren kannst du den Restwert optional um ±20pp korrigieren.</p>
         </div>
-        <Switch checked={leasingEnabled} onCheckedChange={(checked) => setValue("leasing_enabled", checked as any)} />
+        <Switch checked={leasingEnabled} onCheckedChange={(checked) => setValue("leasing_enabled" as any, checked as any)} />
       </div>
 
       {leasingEnabled && (
@@ -119,7 +119,7 @@ export function GarageLeasingOfferSection<T extends GarageLeasingOfferFormValues
               </Label>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-neutral-600">Keine Anzahlung benötigt</span>
-                <Switch checked={noDownPayment} onCheckedChange={(checked) => setValue("no_down_payment", checked as any)} />
+                <Switch checked={noDownPayment} onCheckedChange={(checked) => setValue("no_down_payment" as any, checked as any)} />
               </div>
             </div>
             <Input

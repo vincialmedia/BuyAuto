@@ -1,6 +1,15 @@
 export type DealType = "lease_takeover" | "direct_purchase";
 export type FinancingType = "cash" | "leasing";
 
+export interface LeaseTakeoverOffer {
+  enabled: boolean;
+  price_per_month_chf: number;
+  remaining_months: number;
+  deposit_chf: number;
+  remaining_km?: number;
+  pickup_canton_code: string;
+}
+
 export interface LeasingOffer {
   enabled: boolean;
   interest_rate_pct: number;

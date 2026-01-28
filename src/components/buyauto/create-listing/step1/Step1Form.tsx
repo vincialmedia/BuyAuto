@@ -190,8 +190,14 @@ export function Step1Form() {
       const generatedTitle = `${values.brand} ${values.model} ${values.year}`;
       const isNewListing = !data.id;
 
+      const nextDealType = data.deal_type === "lease_takeover" ? "lease_takeover" : "direct_purchase";
+      const nextFinancingType = nextDealType === "lease_takeover" ? null : (data.financing_type ?? "cash");
+
       // Always keep wizard state in sync
       updateData({
+        deal_type: nextDealType,
+        financing_type: nextFinancingType,
+        leasing_offer: nextDealType === "lease_takeover" ? null : data.leasing_offer,
         brand: values.brand,
         model: values.model,
         year: Number(values.year),
@@ -208,6 +214,9 @@ export function Step1Form() {
       if (isNewListing) {
         const nextDraftData = {
           ...data,
+          deal_type: nextDealType,
+          financing_type: nextFinancingType,
+          leasing_offer: nextDealType === "lease_takeover" ? null : (data as any).leasing_offer,
           brand: values.brand,
           model: values.model,
           year: Number(values.year),
@@ -247,6 +256,9 @@ export function Step1Form() {
       // ✅ EDIT EXISTING LISTING: update listing row
       const payload: ListingUpdatePayload = {
         id: data.id ?? undefined,
+        deal_type: nextDealType as any,
+        financing_type: nextFinancingType as any,
+        leasing_offer: nextDealType === "lease_takeover" ? null : ((data as any).leasing_offer ?? null),
         brand: values.brand,
         model: values.model,
         year: Number(values.year),
