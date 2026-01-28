@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { useWizard } from "../ListingWizard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, deleteListingDraft, updateListingDraft } from "@/services/listingDraftService";
@@ -313,51 +312,8 @@ export function Step1Form() {
     return <div className="text-sm text-neutral-600">Lade Profil...</div>;
   }
 
-  const dealTypeValue = data.deal_type === "lease_takeover" ? "lease_takeover" : "direct_purchase";
-
   return (
     <div className="space-y-8">
-      <div className="space-y-3">
-        <h2 className="text-2xl font-light text-neutral-900 tracking-tight">Inserat-Typ</h2>
-        <p className="text-neutral-600 font-light">Wähle, ob du einen Direktkauf oder eine Leasingübernahme anbieten möchtest.</p>
-
-        <RadioGroup
-          value={dealTypeValue}
-          onValueChange={(value) => {
-            if (value === "lease_takeover") {
-              updateData({
-                deal_type: "lease_takeover",
-                financing_type: null,
-                leasing_offer: null,
-              });
-              return;
-            }
-
-            updateData({
-              deal_type: "direct_purchase",
-              financing_type: data.financing_type ?? "cash",
-            });
-          }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-        >
-          <label className="flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md transition-all cursor-pointer">
-            <RadioGroupItem value="direct_purchase" className="mt-1" />
-            <span className="space-y-1">
-              <span className="block text-sm font-medium text-neutral-900">Direktkauf</span>
-              <span className="block text-sm text-neutral-600">Kaufpreis angeben. Optional (Garage): Leasing anbieten.</span>
-            </span>
-          </label>
-
-          <label className="flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md transition-all cursor-pointer">
-            <RadioGroupItem value="lease_takeover" className="mt-1" />
-            <span className="space-y-1">
-              <span className="block text-sm font-medium text-neutral-900">Leasingübernahme</span>
-              <span className="block text-sm text-neutral-600">Monatsrate & Restlaufzeit angeben.</span>
-            </span>
-          </label>
-        </RadioGroup>
-      </div>
-
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Fahrzeugdaten</h2>
         <p className="text-neutral-600 font-light leading-relaxed">Basisdaten zum Fahrzeug</p>
