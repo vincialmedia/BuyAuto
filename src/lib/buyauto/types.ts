@@ -10,6 +10,7 @@ export interface LeasingOffer {
   max_term_months: number;
   km_options?: number[];
   residual_pct_adjustment_pp?: number;
+  lease_takeover_offer?: LeaseTakeoverOffer;
 }
 
 export interface Listing {

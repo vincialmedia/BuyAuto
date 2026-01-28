@@ -116,6 +116,10 @@ export function LeaseTakeoverFinancingDetails() {
       const anyData = data as any;
       const mileageKm = typeof anyData?.km === "number" ? anyData.km : typeof anyData?.mileage === "number" ? anyData.mileage : null;
 
+      const depositChf = Number.isFinite(Number(formData.deposit_chf)) ? Number(formData.deposit_chf) : 0;
+      const remainingKm =
+        typeof formData.remaining_km === "number" && Number.isFinite(formData.remaining_km) ? Number(formData.remaining_km) : 0;
+
       const payload: ListingUpdatePayload = {
         id: data.id,
         deal_type: "lease_takeover",
@@ -129,7 +133,7 @@ export function LeaseTakeoverFinancingDetails() {
         gearbox: data.gearbox,
         body: data.body,
         description: data.description,
-        location: data.location,
+        location: formData.location,
         canton_code: data.canton_code,
         title: data.title,
         price_plan: data.price_plan,
@@ -139,25 +143,27 @@ export function LeaseTakeoverFinancingDetails() {
 
         price_per_month_chf: Number(formData.price_per_month_chf),
         remaining_months: Number(formData.remaining_months),
-        deposit_chf: formData.deposit_chf ? Number(formData.deposit_chf) : null,
-        remaining_km: formData.remaining_km ? Number(formData.remaining_km) : null,
+        deposit_chf: depositChf,
+        remaining_km: remainingKm,
       };
 
       const saved = await createOrUpdateListing(payload, user);
 
       const nextListingId = saved?.id ?? data.id;
 
-      updateData({
+      const financingPatch: Partial<typeof data> = {
         id: nextListingId,
         deal_type: "lease_takeover",
         financing_type: null,
         leasing_offer: null,
         price_per_month_chf: Number(formData.price_per_month_chf),
         remaining_months: Number(formData.remaining_months),
-        deposit_chf: formData.deposit_chf ? Number(formData.deposit_chf) : 0,
-        remaining_km: formData.remaining_km ? Number(formData.remaining_km) : 0,
+        deposit_chf: depositChf,
+        remaining_km: remainingKm,
         location: formData.location,
-      });
+      };
+
+      updateData(financingPatch);
 
       if (draftId) {
         try {
@@ -166,15 +172,7 @@ export function LeaseTakeoverFinancingDetails() {
             draftId,
             data: {
               ...data,
-              id: nextListingId,
-              deal_type: "lease_takeover",
-              financing_type: null,
-              leasing_offer: null,
-              price_per_month_chf: Number(formData.price_per_month_chf),
-              remaining_months: Number(formData.remaining_months),
-              deposit_chf: formData.deposit_chf ? Number(formData.deposit_chf) : 0,
-              remaining_km: formData.remaining_km ? Number(formData.remaining_km) : 0,
-              location: formData.location,
+              ...financingPatch,
             },
           });
         } catch (e) {

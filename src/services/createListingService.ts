@@ -40,6 +40,33 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
   payload: ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType }
 ): ListingUpdatePayload {
   if (payload.financing_type === "cash") {
+    const offer = payload.leasing_offer as LeasingOfferPayload | null | undefined;
+    if (offer?.lease_takeover_offer?.enabled === true) {
+      const takeover = offer.lease_takeover_offer;
+      return {
+        ...payload,
+        leasing_offer: {
+          enabled: false,
+          interest_rate_pct: 0,
+          down_payment_pct: 0,
+          no_down_payment: false,
+          min_term_months: 0,
+          max_term_months: 0,
+          lease_takeover_offer: {
+            enabled: true,
+            price_per_month_chf: Math.max(1, Math.round(Number(takeover.price_per_month_chf))),
+            remaining_months: Math.max(1, Math.floor(Number(takeover.remaining_months))),
+            deposit_chf: Math.max(0, Math.round(Number(takeover.deposit_chf))),
+            remaining_km:
+              typeof takeover.remaining_km === "number" && Number.isFinite(takeover.remaining_km)
+                ? Math.max(0, Math.round(Number(takeover.remaining_km)))
+                : undefined,
+            pickup_canton_code: String(takeover.pickup_canton_code ?? "").trim(),
+          },
+        } as LeasingOfferPayload,
+      };
+    }
+
     return { ...payload, leasing_offer: null };
   }
 
@@ -57,7 +84,9 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
   const normalizedDownPaymentPct = noDownPayment ? 0 : clampNumber(Number(offer.down_payment_pct), 0, 100);
 
   const rawResidualAdj = Number((offer as LeasingOfferPayload).residual_pct_adjustment_pp ?? 0);
-  const residual_pct_adjustment_pp = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -50, 50) : 0;
+  const residual_pct_adjustment_pp = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -20, 20) : 0;
+
+  const takeover = (offer as LeasingOfferPayload).lease_takeover_offer;
 
   const normalizedOffer: LeasingOfferPayload = {
     enabled: true,
@@ -68,6 +97,20 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
     max_term_months: Math.max(1, Math.floor(Number(offer.max_term_months))),
     km_options: Array.isArray(offer.km_options) ? offer.km_options.map((v) => Math.floor(Number(v))) : undefined,
     residual_pct_adjustment_pp: residual_pct_adjustment_pp,
+    lease_takeover_offer:
+      takeover?.enabled === true
+        ? {
+            enabled: true,
+            price_per_month_chf: Math.max(1, Math.round(Number(takeover.price_per_month_chf))),
+            remaining_months: Math.max(1, Math.floor(Number(takeover.remaining_months))),
+            deposit_chf: Math.max(0, Math.round(Number(takeover.deposit_chf))),
+            remaining_km:
+              typeof takeover.remaining_km === "number" && Number.isFinite(takeover.remaining_km)
+                ? Math.max(0, Math.round(Number(takeover.remaining_km)))
+                : undefined,
+            pickup_canton_code: String(takeover.pickup_canton_code ?? "").trim(),
+          }
+        : undefined,
   };
 
   if (!Number.isFinite(normalizedOffer.interest_rate_pct)) {
@@ -130,6 +173,16 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
       }
 
       if (nextFinancing === "cash") {
+        const offer = payload.leasing_offer as LeasingOfferPayload | null | undefined;
+        if (offer?.lease_takeover_offer?.enabled === true) {
+          return normalizeLeasingOfferForDirectPurchaseInsert({
+            ...(payload as ListingUpdatePayload),
+            deal_type: "direct_purchase",
+            financing_type: "cash",
+            leasing_offer: offer,
+          } as ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType });
+        }
+
         return { ...payload, financing_type: "cash", leasing_offer: null };
       }
 
@@ -156,6 +209,22 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
       const rawResidualAdj = Number(offerPayload.residual_pct_adjustment_pp ?? 0);
       const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -20, 20) : 0;
 
+      const takeover = offerPayload.lease_takeover_offer;
+      const normalizedTakeover =
+        takeover?.enabled === true
+          ? {
+              enabled: true,
+              price_per_month_chf: Math.max(1, Math.round(Number(takeover.price_per_month_chf))),
+              remaining_months: Math.max(1, Math.floor(Number(takeover.remaining_months))),
+              deposit_chf: Math.max(0, Math.round(Number(takeover.deposit_chf))),
+              remaining_km:
+                typeof takeover.remaining_km === "number" && Number.isFinite(takeover.remaining_km)
+                  ? Math.max(0, Math.round(Number(takeover.remaining_km)))
+                  : undefined,
+              pickup_canton_code: String(takeover.pickup_canton_code ?? "").trim(),
+            }
+          : undefined;
+
       if (noDownPayment && Number(offerPayload.down_payment_pct) !== 0) {
         return {
           ...payload,
@@ -163,17 +232,19 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
             ...offerPayload,
             down_payment_pct: 0,
             residual_pct_adjustment_pp: normalizedResidualAdj,
+            lease_takeover_offer: normalizedTakeover,
           },
         };
       }
 
-      if (offerPayload.residual_pct_adjustment_pp !== normalizedResidualAdj) {
+      if (offerPayload.residual_pct_adjustment_pp !== normalizedResidualAdj || normalizedTakeover !== takeover) {
         return {
           ...payload,
           leasing_offer: {
             ...offerPayload,
             down_payment_pct: normalizedDownPayment,
             residual_pct_adjustment_pp: normalizedResidualAdj,
+            lease_takeover_offer: normalizedTakeover,
           },
         };
       }
@@ -304,7 +375,7 @@ export const finalizeListing = async (listingId: string, user: User) => {
   return data;
 };
 
-export const getListingByIdForOwner = async (listingId: string, user: User) => {
+export async function getListingByIdForOwner(listingId: string, user: User) {
   if (!user || !listingId) {
     console.error("User and listingId are required to fetch listing for owner.");
     return null;
@@ -315,7 +386,7 @@ export const getListingByIdForOwner = async (listingId: string, user: User) => {
     .select("*")
     .eq("id", listingId)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error(`Error fetching listing ${listingId} for owner:`, error);
@@ -324,4 +395,4 @@ export const getListingByIdForOwner = async (listingId: string, user: User) => {
 
   console.log(`✅ Successfully fetched listing ${listingId} for owner.`);
   return data;
-};
+}

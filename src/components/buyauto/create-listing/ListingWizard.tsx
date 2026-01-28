@@ -78,7 +78,8 @@ const hasAnyUserInput = (data: ListingData) => {
       (typeof data.km === "number" && data.km > 0) ||
       (typeof data.price_per_month_chf === "number" && data.price_per_month_chf > 0) ||
       (typeof data.deposit_chf === "number" && data.deposit_chf > 0) ||
-      (Array.isArray(data.images) && data.images.length > 0)
+      (Array.isArray(data.images) && data.images.length > 0) ||
+      ((data as any)?.leasing_offer?.lease_takeover_offer?.enabled === true)
   );
 };
 
@@ -349,13 +350,24 @@ export default function ListingWizard() {
         }
       }
 
-      const listingId = (draftData as any)?.id ?? data.id;
-      if (typeof listingId === "string" && listingId.length > 0) {
+      const listingId =
+        typeof (draftData as any)?.id === "string" && (draftData as any).id.length > 0
+          ? ((draftData as any).id as string)
+          : typeof data.id === "string" && data.id.length > 0
+            ? data.id
+            : null;
+
+      if (listingId) {
         try {
           const listing = await getListingByIdForOwner(listingId, user);
           if (listing) {
             const patch = toWizardPatchFromListing(listing, draftData as ListingData);
-            draftData = { ...draftData, ...patch };
+
+            const safePatch = { ...(patch as any) };
+            if ("images" in safePatch) delete safePatch.images;
+            if ("cover_image_index" in safePatch) delete safePatch.cover_image_index;
+
+            draftData = { ...draftData, ...safePatch };
 
             updateData(draftData);
           }

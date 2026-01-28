@@ -2,25 +2,71 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 
-import { estimateRestwert } from "@/components/buyauto/detail/LeasingCalculator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
-import { createOrUpdateListing, type LeasingOfferPayload, type ListingUpdatePayload } from "@/services/createListingService";
+import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
 import { updateListingDraft } from "@/services/listingDraftService";
+
+import { LeaseTakeoverOfferSection, type LeaseTakeoverOfferFormValues } from "./LeaseTakeoverOfferSection";
+import { GarageLeasingOfferSection, type GarageLeasingOfferFormValues } from "./GarageLeasingOfferSection";
 
 const DEFAULT_KM_OPTIONS = [10000, 15000, 20000, 25000];
 
+type DirectPurchaseFinancingForm = {
+  purchase_price_chf?: number;
+
+  lease_takeover_enabled: boolean;
+  lease_takeover_price_per_month_chf?: number;
+  lease_takeover_remaining_months?: number;
+  lease_takeover_deposit_chf?: number;
+  lease_takeover_remaining_km?: number;
+  lease_takeover_pickup_canton_code?: string;
+
+  leasing_enabled: boolean;
+  interest_rate_pct?: number;
+  down_payment_pct?: number;
+  no_down_payment: boolean;
+  min_term_months?: number;
+  max_term_months?: number;
+  residual_pct_adjustment_pp?: number;
+};
+
+function toNumberOrUndefined(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return undefined;
+  return parsed;
+}
+
+function clampPp(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(-20, Math.min(20, value));
+}
+
+function getMileageKmFromWizardData(data: unknown): number | null {
+  const anyData = data as any;
+  const kmNum = Number(anyData?.km ?? anyData?.mileage ?? anyData?.mileage_km);
+  if (!Number.isFinite(kmNum) || kmNum < 0) return null;
+  return kmNum;
+}
+
 const directPurchaseFinancingSchema = z
   .object({
-    purchase_price_chf: z.number().min(1, "Kaufpreis ist erforderlich"),
+    purchase_price_chf: z.number().optional(),
+
+    lease_takeover_enabled: z.boolean().default(false),
+    lease_takeover_price_per_month_chf: z.number().min(1, "Monatliche Rate ist erforderlich").optional(),
+    lease_takeover_remaining_months: z.number().min(1, "Restlaufzeit muss mindestens 1 Monat betragen").optional(),
+    lease_takeover_deposit_chf: z.number().min(0, "Kaution kann nicht negativ sein").optional(),
+    lease_takeover_remaining_km: z.number().min(0, "Verbleibende KM muss mindestens 0 sein").optional(),
+    lease_takeover_pickup_canton_code: z.string().min(1, "Standort ist erforderlich").optional(),
+
     leasing_enabled: z.boolean().default(false),
     interest_rate_pct: z.number().min(0.01, "Leasingzins ist erforderlich").max(99, "Bitte einen realistischen Wert eingeben").optional(),
     down_payment_pct: z.number().min(0).max(100).optional(),
@@ -29,11 +75,41 @@ const directPurchaseFinancingSchema = z
     max_term_months: z.number().int().min(1, "Maximallaufzeit ist erforderlich").optional(),
     residual_pct_adjustment_pp: z
       .number()
-      .min(-50, "Bitte zwischen -50 und +50 eingeben")
-      .max(50, "Bitte zwischen -50 und +50 eingeben")
+      .min(-20, "Bitte zwischen -20 und +20 eingeben")
+      .max(20, "Bitte zwischen -20 und +20 eingeben")
       .optional(),
   })
   .superRefine((values, ctx) => {
+    if (!values.lease_takeover_enabled) {
+      if (values.purchase_price_chf === undefined || !Number.isFinite(values.purchase_price_chf) || values.purchase_price_chf <= 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["purchase_price_chf"], message: "Kaufpreis ist erforderlich" });
+      }
+    } else {
+      if (
+        values.lease_takeover_price_per_month_chf === undefined ||
+        !Number.isFinite(values.lease_takeover_price_per_month_chf) ||
+        values.lease_takeover_price_per_month_chf <= 0
+      ) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lease_takeover_price_per_month_chf"], message: "Monatliche Rate ist erforderlich" });
+      }
+
+      if (
+        values.lease_takeover_remaining_months === undefined ||
+        !Number.isFinite(values.lease_takeover_remaining_months) ||
+        values.lease_takeover_remaining_months <= 0
+      ) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lease_takeover_remaining_months"], message: "Restlaufzeit ist erforderlich" });
+      }
+
+      if (values.lease_takeover_deposit_chf === undefined || !Number.isFinite(values.lease_takeover_deposit_chf) || values.lease_takeover_deposit_chf < 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lease_takeover_deposit_chf"], message: "Kaution ist erforderlich" });
+      }
+
+      if (!values.lease_takeover_pickup_canton_code || values.lease_takeover_pickup_canton_code.trim().length === 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lease_takeover_pickup_canton_code"], message: "Standort ist erforderlich" });
+      }
+    }
+
     if (!values.leasing_enabled) return;
 
     if (values.interest_rate_pct === undefined || !Number.isFinite(values.interest_rate_pct)) {
@@ -83,31 +159,6 @@ const directPurchaseFinancingSchema = z
     }
   });
 
-type DirectPurchaseFinancingForm = z.infer<typeof directPurchaseFinancingSchema>;
-
-function toNumberOrUndefined(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return undefined;
-  return parsed;
-}
-
-function clampPp(value: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(-50, Math.min(50, value));
-}
-
-function formatChf(amountChf: number): string {
-  return new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(amountChf));
-}
-
-function getMileageKmFromWizardData(data: unknown): number | null {
-  const anyData = data as any;
-  const kmNum = Number(anyData?.km ?? anyData?.mileage ?? anyData?.mileage_km);
-  if (!Number.isFinite(kmNum) || kmNum < 0) return null;
-  return kmNum;
-}
-
 export function DirectPurchaseFinancingDetails() {
   const { data, updateData, nextStep, prevStep, draftId } = useWizard();
   const { user, profile, profileLoading } = useAuth();
@@ -117,9 +168,11 @@ export function DirectPurchaseFinancingDetails() {
   const nextLabel = isGarage ? "Weiter zu Fotos" : "Weiter zu Plan-Auswahl";
 
   const existingOffer = useMemo(() => {
-    const anyData = data as unknown as { leasing_offer?: LeasingOfferPayload | null };
+    const anyData = data as unknown as { leasing_offer?: any | null };
     return anyData.leasing_offer ?? null;
   }, [data]);
+
+  const existingTakeover = existingOffer?.lease_takeover_offer ?? null;
 
   const leasingEnabledInitial =
     isGarage === true &&
@@ -155,6 +208,14 @@ export function DirectPurchaseFinancingDetails() {
     resolver: zodResolver(directPurchaseFinancingSchema),
     defaultValues: {
       purchase_price_chf: toNumberOrUndefined(data.price_per_month_chf) ?? 0,
+
+      lease_takeover_enabled: existingTakeover?.enabled === true,
+      lease_takeover_price_per_month_chf: toNumberOrUndefined(existingTakeover?.price_per_month_chf) ?? 0,
+      lease_takeover_remaining_months: toNumberOrUndefined(existingTakeover?.remaining_months) ?? 0,
+      lease_takeover_deposit_chf: toNumberOrUndefined(existingTakeover?.deposit_chf) ?? 0,
+      lease_takeover_remaining_km: toNumberOrUndefined(existingTakeover?.remaining_km) ?? 0,
+      lease_takeover_pickup_canton_code: typeof existingTakeover?.pickup_canton_code === "string" ? existingTakeover.pickup_canton_code : "",
+
       leasing_enabled: leasingEnabledInitial,
       interest_rate_pct: toNumberOrUndefined(existingOffer?.interest_rate_pct) ?? 4.9,
       down_payment_pct: toNumberOrUndefined(existingOffer?.down_payment_pct) ?? 10,
@@ -166,9 +227,10 @@ export function DirectPurchaseFinancingDetails() {
     mode: "onBlur",
   });
 
-  const leasingEnabled = watch("leasing_enabled");
-  const noDownPayment = watch("no_down_payment");
+  const leasingEnabled = Boolean(watch("leasing_enabled"));
+  const noDownPayment = Boolean(watch("no_down_payment"));
   const residualAdjustmentPp = clampPp(toNumberOrUndefined(watch("residual_pct_adjustment_pp")) ?? 0);
+  const leaseTakeoverEnabled = Boolean(watch("lease_takeover_enabled"));
 
   useEffect(() => {
     if (!isGarage) {
@@ -183,34 +245,29 @@ export function DirectPurchaseFinancingDetails() {
     }
   }, [isGarage, noDownPayment, setValue]);
 
+  useEffect(() => {
+    if (leaseTakeoverEnabled) return;
+
+    setValue("lease_takeover_price_per_month_chf", 0, { shouldValidate: false });
+    setValue("lease_takeover_remaining_months", 0, { shouldValidate: false });
+    setValue("lease_takeover_deposit_chf", 0, { shouldValidate: false });
+    setValue("lease_takeover_remaining_km", 0, { shouldValidate: false });
+    setValue("lease_takeover_pickup_canton_code", "", { shouldValidate: false });
+
+    const currentOffer = (data as any)?.leasing_offer;
+    if (currentOffer?.lease_takeover_offer) {
+      const nextOffer = { ...currentOffer };
+      delete nextOffer.lease_takeover_offer;
+
+      if (!leasingEnabled) {
+        updateData({ leasing_offer: null } as any);
+      } else {
+        updateData({ leasing_offer: nextOffer } as any);
+      }
+    }
+  }, [data, leaseTakeoverEnabled, leasingEnabled, setValue, updateData]);
+
   const purchasePriceChf = toNumberOrUndefined(watch("purchase_price_chf")) ?? 0;
-
-  const exampleRestwert = useMemo(() => {
-    if (!hasMounted) return null;
-    if (!isGarage) return null;
-    if (!leasingEnabled) return null;
-
-    if (!purchasePriceChf || purchasePriceChf <= 0) return null;
-    if (!listingInputs.year || listingInputs.mileageKm === null) return null;
-
-    const base = estimateRestwert({
-      priceChf: purchasePriceChf,
-      year: listingInputs.year,
-      mileageKm: listingInputs.mileageKm,
-      termMonths: 48,
-      kmPerYear: 10000,
-      currentYear: new Date().getFullYear(),
-    });
-
-    const adjustedPct = Math.max(0.15, Math.min(0.7, base.residualPct + residualAdjustmentPp / 100));
-    const adjustedChf = Math.round(purchasePriceChf * adjustedPct);
-
-    return {
-      base,
-      adjustedPct,
-      adjustedChf,
-    };
-  }, [hasMounted, isGarage, leasingEnabled, listingInputs, purchasePriceChf, residualAdjustmentPp]);
 
   const onSubmit = async (formData: DirectPurchaseFinancingForm) => {
     if (!user) {
@@ -224,24 +281,50 @@ export function DirectPurchaseFinancingDetails() {
 
     setIsUpdatingListing(true);
     try {
-      const mileageKm = getMileageKmFromWizardData(data);
+      const purchasePriceChfRaw = typeof formData.purchase_price_chf === "number" ? formData.purchase_price_chf : 0;
+      const purchasePriceChfClean = purchasePriceChfRaw > 0 ? Math.round(purchasePriceChfRaw) : null;
 
-      const leasingOffer = leasingEnabled
-        ? {
-            enabled: true,
-            interest_rate_pct: Number(formData.interest_rate_pct),
-            down_payment_pct: formData.no_down_payment ? 0 : Number(formData.down_payment_pct),
-            no_down_payment: Boolean(formData.no_down_payment),
-            min_term_months: Number(formData.min_term_months),
-            max_term_months: Number(formData.max_term_months),
-            km_options: DEFAULT_KM_OPTIONS,
-            residual_pct_adjustment_pp: clampPp(
-              typeof formData.residual_pct_adjustment_pp === "number" ? formData.residual_pct_adjustment_pp : 0
-            ),
-          }
-        : null;
+      const leaseTakeoverOffer =
+        formData.lease_takeover_enabled === true
+          ? {
+              enabled: true,
+              price_per_month_chf: Math.round(Number(formData.lease_takeover_price_per_month_chf)),
+              remaining_months: Math.floor(Number(formData.lease_takeover_remaining_months)),
+              deposit_chf: Math.round(Number(formData.lease_takeover_deposit_chf)),
+              remaining_km:
+                typeof formData.lease_takeover_remaining_km === "number" && Number.isFinite(formData.lease_takeover_remaining_km)
+                  ? Math.round(Number(formData.lease_takeover_remaining_km))
+                  : undefined,
+              pickup_canton_code: String(formData.lease_takeover_pickup_canton_code ?? "").trim(),
+            }
+          : undefined;
 
-      const purchasePriceChf = Math.round(Number(formData.purchase_price_chf));
+      const leasingOffer =
+        leasingEnabled
+          ? {
+              enabled: true,
+              interest_rate_pct: Number(formData.interest_rate_pct),
+              down_payment_pct: formData.no_down_payment ? 0 : Number(formData.down_payment_pct),
+              no_down_payment: Boolean(formData.no_down_payment),
+              min_term_months: Number(formData.min_term_months),
+              max_term_months: Number(formData.max_term_months),
+              km_options: DEFAULT_KM_OPTIONS,
+              residual_pct_adjustment_pp: clampPp(
+                typeof formData.residual_pct_adjustment_pp === "number" ? formData.residual_pct_adjustment_pp : 0
+              ),
+              lease_takeover_offer: leaseTakeoverOffer,
+            }
+          : leaseTakeoverOffer
+            ? {
+                enabled: false,
+                interest_rate_pct: 0,
+                down_payment_pct: 0,
+                no_down_payment: false,
+                min_term_months: 0,
+                max_term_months: 0,
+                lease_takeover_offer: leaseTakeoverOffer,
+              }
+            : null;
 
       const payload: ListingUpdatePayload = {
         id: data.id,
@@ -252,7 +335,8 @@ export function DirectPurchaseFinancingDetails() {
         brand: data.brand,
         model: data.model,
         year: data.year,
-        mileage_km: mileageKm,
+        mileage_km: getMileageKmFromWizardData(data),
+        remaining_km: data.remaining_km ?? null,
         fuel: data.fuel,
         gearbox: data.gearbox,
         body: data.body,
@@ -265,20 +349,21 @@ export function DirectPurchaseFinancingDetails() {
         images: data.images,
         cover_image_index: data.cover_image_index,
 
-        price_per_month_chf: purchasePriceChf,
+        price_per_month_chf: purchasePriceChfClean,
       };
 
       const saved = await createOrUpdateListing(payload, user);
-
       const nextListingId = saved?.id ?? data.id;
 
-      updateData({
+      const financingPatch: Partial<typeof data> = {
         id: nextListingId,
         deal_type: "direct_purchase",
         financing_type: leasingEnabled ? "leasing" : "cash",
         leasing_offer: leasingOffer,
-        price_per_month_chf: purchasePriceChf,
-      });
+        price_per_month_chf: purchasePriceChfClean ?? undefined,
+      };
+
+      updateData(financingPatch);
 
       if (draftId) {
         try {
@@ -287,15 +372,11 @@ export function DirectPurchaseFinancingDetails() {
             draftId,
             data: {
               ...data,
-              id: nextListingId,
-              deal_type: "direct_purchase",
-              financing_type: leasingEnabled ? "leasing" : "cash",
-              leasing_offer: leasingOffer,
-              price_per_month_chf: purchasePriceChf,
+              ...financingPatch,
             },
           });
-        } catch (e) {
-          console.warn("Could not update draft with financing details:", e);
+        } catch {
+          // ignore
         }
       }
 
@@ -306,14 +387,6 @@ export function DirectPurchaseFinancingDetails() {
 
       nextStep();
     } catch (error) {
-      console.error("Error submitting Step 2 (direct purchase):", {
-        message: (error as any)?.message,
-        code: (error as any)?.code,
-        details: (error as any)?.details,
-        hint: (error as any)?.hint,
-        error,
-      });
-
       toast({
         title: "Fehler",
         description: "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfen Sie die Angaben und versuchen Sie es erneut.",
@@ -333,14 +406,14 @@ export function DirectPurchaseFinancingDetails() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="purchase_price_chf" className="text-sm font-medium text-neutral-700">
-            Kaufpreis (CHF) *
+            Direktkauf Preis (CHF) {leaseTakeoverEnabled ? "" : "*"}
           </Label>
           <div className="relative">
             <Input
               id="purchase_price_chf"
               type="text"
               inputMode="numeric"
-              {...register("purchase_price_chf")}
+              {...register("purchase_price_chf", { valueAsNumber: true })}
               placeholder="z.B. 25'900"
               className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-16"
               onChange={(e) => {
@@ -361,191 +434,35 @@ export function DirectPurchaseFinancingDetails() {
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">CHF</span>
           </div>
-          {errors.purchase_price_chf && <p className="text-sm text-red-500 font-light">{errors.purchase_price_chf.message}</p>}
+          {(errors as any)?.purchase_price_chf && <p className="text-sm text-red-500 font-light">{(errors as any).purchase_price_chf.message}</p>}
         </div>
 
-        {isGarage && (
-          <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-neutral-900">Leasing anbieten</p>
-                <p className="text-sm text-neutral-600">Wenn aktiv, sehen Käufer einen Leasingrechner auf der Detailseite.</p>
-                {!leasingEnabled && (
-                  <p className="mt-1 text-xs text-neutral-500">
-                    Tipp: Aktiviere Leasing, um u.a. <span className="font-medium text-neutral-700">Restwertkorrektur</span> zu setzen.
-                  </p>
-                )}
-                <p className="mt-1 text-xs text-neutral-500">Tipp: Nach dem Aktivieren kannst du den Restwert optional um ±50pp korrigieren.</p>
-              </div>
-              <Switch checked={leasingEnabled} onCheckedChange={(checked) => setValue("leasing_enabled", checked)} />
-            </div>
+        <LeaseTakeoverOfferSection<LeaseTakeoverOfferFormValues & DirectPurchaseFinancingForm>
+          register={register as any}
+          setValue={setValue as any}
+          watch={watch as any}
+          errors={errors as any}
+        />
 
-            {leasingEnabled && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="interest_rate_pct" className="text-sm font-medium text-neutral-700">
-                    Leasingzins (%) *
-                  </Label>
-                  <Input
-                    id="interest_rate_pct"
-                    type="number"
-                    step="0.1"
-                    {...register("interest_rate_pct", { valueAsNumber: true })}
-                    className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-                  />
-                  {errors.interest_rate_pct && <p className="text-sm text-red-500 font-light">{errors.interest_rate_pct.message}</p>}
-                </div>
+        <GarageLeasingOfferSection<GarageLeasingOfferFormValues & DirectPurchaseFinancingForm>
+          register={register as any}
+          setValue={setValue as any}
+          errors={errors as any}
+          isGarage={Boolean(isGarage)}
+          hasMounted={hasMounted}
+          leasingEnabled={leasingEnabled}
+          noDownPayment={noDownPayment}
+          purchasePriceChf={purchasePriceChf}
+          listingInputs={listingInputs}
+          residualAdjustmentPp={residualAdjustmentPp}
+        />
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <Label htmlFor="down_payment_pct" className="text-sm font-medium text-neutral-700">
-                      Anzahlung (%) *
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-neutral-600">Keine Anzahlung benötigt</span>
-                      <Switch checked={noDownPayment} onCheckedChange={(checked) => setValue("no_down_payment", checked)} />
-                    </div>
-                  </div>
-                  <Input
-                    id="down_payment_pct"
-                    type="number"
-                    step="1"
-                    disabled={noDownPayment}
-                    {...register("down_payment_pct", { valueAsNumber: true })}
-                    className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm disabled:opacity-60"
-                  />
-                  {errors.down_payment_pct && <p className="text-sm text-red-500 font-light">{errors.down_payment_pct.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="min_term_months" className="text-sm font-medium text-neutral-700">
-                    Mindestlaufzeit (Monate) *
-                  </Label>
-                  <Input
-                    id="min_term_months"
-                    type="number"
-                    step="1"
-                    {...register("min_term_months", { valueAsNumber: true })}
-                    className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-                  />
-                  {errors.min_term_months && <p className="text-sm text-red-500 font-light">{errors.min_term_months.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="max_term_months" className="text-sm font-medium text-neutral-700">
-                    Maximallaufzeit (Monate) *
-                  </Label>
-                  <Input
-                    id="max_term_months"
-                    type="number"
-                    step="1"
-                    {...register("max_term_months", { valueAsNumber: true })}
-                    className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-                  />
-                  {errors.max_term_months && <p className="text-sm text-red-500 font-light">{errors.max_term_months.message}</p>}
-                </div>
-
-                <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-6 space-y-4 md:col-span-2">
-                  <div className="space-y-1">
-                    <h3 className="text-base font-medium text-neutral-900">Restwertkorrektur</h3>
-                    <p className="text-sm text-neutral-600">
-                      Optional. Passt die automatische Restwert-Schätzung an (z.B. +3 = +3 Prozentpunkte).
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="residual_pct_adjustment_pp" className="text-sm font-medium text-neutral-700">
-                      Restwertkorrektur (± Prozentpunkte)
-                    </Label>
-                    <Input
-                      id="residual_pct_adjustment_pp"
-                      type="number"
-                      step="1"
-                      min="-50"
-                      max="50"
-                      {...register("residual_pct_adjustment_pp", { valueAsNumber: true })}
-                      className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-                    />
-                    {errors.residual_pct_adjustment_pp && (
-                      <p className="text-sm text-red-500 font-light">{errors.residual_pct_adjustment_pp.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="md:col-span-2 rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50/50 via-white to-white p-5 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-neutral-900">Geschätzter Restwert</p>
-                      <p className="mt-0.5 text-xs text-neutral-600">Beispiel: 48 Monate, 10’000 km/Jahr</p>
-                    </div>
-                    {residualAdjustmentPp !== 0 && (
-                      <span className="inline-flex items-center rounded-full bg-red-600/10 px-2.5 py-1 text-xs font-medium text-red-700">
-                        Vom Anbieter angepasst ({residualAdjustmentPp > 0 ? "+" : ""}{residualAdjustmentPp}pp)
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mt-3">
-                    {exampleRestwert ? (
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                          <p className="text-sm text-neutral-600">Automatisch geschätzt</p>
-                          <p className="text-lg font-semibold text-neutral-900">
-                            CHF {formatChf(exampleRestwert.base.restwertChf)}.–
-                          </p>
-                          <p className="text-sm text-neutral-600">ca. {Math.round(exampleRestwert.base.residualPct * 100)}%</p>
-                        </div>
-
-                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                          <p className="text-sm text-neutral-600">Nach Korrektur</p>
-                          <p className="text-xl font-semibold text-neutral-900">
-                            CHF {formatChf(exampleRestwert.adjustedChf)}.–
-                          </p>
-                          <p className="text-sm text-neutral-600">ca. {Math.round(exampleRestwert.adjustedPct * 100)}%</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-neutral-500">—</p>
-                    )}
-                  </div>
-
-                  <div className="mt-3 space-y-1">
-                    <p className="text-xs text-neutral-500">
-                      Automatische Schätzung basiert auf Kaufpreis, Fahrzeugalter, Kilometerstand, Laufzeit und KM/Jahr.
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      Unverbindliche Richtofferte. Finale Rate hängt von Bonität, Leasingpartner und Fahrzeugbewertung ab.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <p className="text-xs text-neutral-500">
-                    KM/Jahr Optionen werden in V1 automatisch auf 10’000 / 15’000 / 20’000 / 25’000 gesetzt (sofern nicht anders konfiguriert).
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex justify-between pt-6">
-          <Button
-            type="button"
-            onClick={prevStep}
-            variant="outline"
-            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
-          >
-            <ChevronLeft className="w-4 h-4 mr-2" />
+        <div className="flex items-center justify-between pt-2">
+          <Button type="button" variant="outline" onClick={prevStep} className="rounded-2xl">
             Zurück
           </Button>
-
-          <Button
-            type="submit"
-            disabled={isUpdatingListing}
-            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isUpdatingListing ? "Speichere..." : nextLabel}
+          <Button type="submit" className="rounded-2xl" disabled={isUpdatingListing}>
+            {isUpdatingListing ? "Speichern..." : nextLabel}
           </Button>
         </div>
       </form>
