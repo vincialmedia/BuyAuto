@@ -11,6 +11,7 @@ import { getPublishedListingById, getUserListingById } from "@/services/listings
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
 import { StructuredData } from "@/components/buyauto/StructuredData";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
+import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 
 // Helper function to ensure no undefined values (Next.js serialization fix)
 const serializeListing = (listing: ListingDetail | null): ListingDetail | null => {
@@ -152,18 +153,36 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     null;
 
   const purchasePriceCandidate =
-    (listing as unknown as { listing_price?: unknown; price_chf?: unknown }).listing_price ??
-    (listing as unknown as { listing_price?: unknown; price_chf?: unknown }).price_chf ??
+    (listing as unknown as { listing_price?: unknown; price_chf?: unknown; purchase_price_chf?: unknown; purchasePriceCHF?: unknown }).purchasePriceCHF ??
+    (listing as unknown as { listing_price?: unknown; price_chf?: unknown; purchase_price_chf?: unknown; purchasePriceCHF?: unknown }).purchase_price_chf ??
+    (listing as unknown as { listing_price?: unknown; price_chf?: unknown; purchase_price_chf?: unknown; purchasePriceCHF?: unknown }).price_chf ??
+    (listing as unknown as { listing_price?: unknown; price_chf?: unknown; purchase_price_chf?: unknown; purchasePriceCHF?: unknown }).listing_price ??
     null;
 
   const purchasePriceChf = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
-  const effectivePurchasePriceChf = purchasePriceChf ?? (typeof listing.pricePerMonthCHF === "number" ? listing.pricePerMonthCHF : null);
+  const effectivePurchasePriceChf = purchasePriceChf;
 
-  const structuredPrice = dealType === "direct_purchase" ? (effectivePurchasePriceChf ?? listing.pricePerMonthCHF) : listing.pricePerMonthCHF;
+  const teaserMonthlyChf =
+    dealType === "direct_purchase" &&
+    leasingOffer?.enabled === true &&
+    effectivePurchasePriceChf
+      ? estimateTeaserMonthlyRateChf({
+          priceChf: effectivePurchasePriceChf,
+          year: listing.year,
+          mileageKm: listing.mileageKm,
+          interestRatePct: Number(leasingOffer.interest_rate_pct),
+          residualPctAdjustmentPp: leasingOffer.residual_pct_adjustment_pp ?? 0,
+          termMonths: 60,
+          kmPerYear: 10000,
+          downPaymentPct: 5,
+        })
+      : null;
+
+  const structuredPrice = dealType === "direct_purchase" ? (effectivePurchasePriceChf ?? 0) : listing.pricePerMonthCHF;
   const metaPriceText =
     dealType === "direct_purchase"
-      ? purchasePriceChf
-        ? `${formatPrice(purchasePriceChf)} Kaufpreis`
+      ? effectivePurchasePriceChf
+        ? `${formatPrice(effectivePurchasePriceChf)} Kaufpreis`
         : "Kaufpreis"
       : `${formatPrice(listing.pricePerMonthCHF)}/Monat`;
 
@@ -337,6 +356,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                           {effectivePurchasePriceChf ? formatPrice(effectivePurchasePriceChf) : "Preis auf Anfrage"}
                         </div>
                         <p className="text-neutral-600">Kaufpreis</p>
+                        {teaserMonthlyChf && (
+                          <p className="text-sm text-neutral-600 mt-2">
+                            Ab CHF {teaserMonthlyChf.toLocaleString("de-CH")} / Monat
+                          </p>
+                        )}
                       </>
                     ) : (
                       <>
@@ -344,6 +368,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                           {formatPrice(listing.pricePerMonthCHF)}
                         </div>
                         <p className="text-neutral-600">pro Monat</p>
+                        {effectivePurchasePriceChf && (
+                          <p className="text-sm text-neutral-600 mt-2">
+                            Direktkauf: {formatPrice(effectivePurchasePriceChf)}
+                          </p>
+                        )}
                         <p className="text-sm text-neutral-600 mt-2">
                           {(listing.depositCHF && listing.depositCHF > 0)
                             ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`

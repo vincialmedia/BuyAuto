@@ -45,6 +45,7 @@ export interface Listing {
   images: string[];
   imageUrl: string;
   description?: string; // ✅ Added description field
+  purchasePriceCHF?: number | null;
 }
 
 export type PricePlanId = "free30" | "standard" | "extended" | "unlimited";

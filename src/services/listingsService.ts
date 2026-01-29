@@ -92,46 +92,36 @@ function parseImagesFromDatabase(imagesField: any, coverImageUrl?: string): stri
 // Transform public listing row to UI Listing format
 function transformPublicRowToListing(row: PublicListingRow): Listing {
   const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
-  
-  return {
-    id: row.id,
-    deal_type: row.deal_type ?? "lease_takeover",
-    financing_type: row.financing_type ?? null,
-    brand: row.brand,
-    model: row.model,
-    title: row.title || undefined,
-    description: row.description || undefined,
-    year: row.year,
-    pricePerMonthCHF: row.price_per_month_chf,
-    remainingMonths: row.remaining_months,
-    remaining_km: row.remaining_km,
-    location: row.location,
-    mileageKm: row.mileage_km,
-    fuel: row.fuel,
-    gearbox: row.gearbox,
-    body: row.body,
-    premium: row.premium,
-    depositCHF: row.deposit_chf || null,
-    images: imageUrls,
-    imageUrl: imageUrls[0] || ""
-  };
-}
 
-// Transform public listing row to detailed format
-function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail {
-  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
+  const purchasePriceCandidate =
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown })
+      .purchase_price_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).listing_price ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
+    null;
+
+  const purchasePriceCHF = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
+
+  const leasingOfferCandidate =
+    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasing_offer ??
+    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasingOffer ??
+    null;
+
+  const leasing_offer = leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
 
   return {
     id: row.id,
     deal_type: row.deal_type ?? "lease_takeover",
     financing_type: row.financing_type ?? null,
+    leasing_offer,
     brand: row.brand,
     model: row.model,
     title: row.title || undefined,
     description: row.description || undefined,
     year: row.year,
-    pricePerMonthCHF: row.price_per_month_chf,
-    remainingMonths: row.remaining_months,
+    pricePerMonthCHF: row.price_per_month_chf ?? 0,
+    remainingMonths: row.remaining_months ?? 0,
     remaining_km: row.remaining_km,
     location: row.location,
     mileageKm: row.mileage_km,
@@ -142,6 +132,54 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     depositCHF: row.deposit_chf || null,
     images: imageUrls,
     imageUrl: imageUrls[0] || "",
+    purchasePriceCHF,
+  };
+}
+
+// Transform public listing row to detailed format
+function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail {
+  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
+
+  const purchasePriceCandidate =
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown })
+      .purchase_price_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).listing_price ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
+    null;
+
+  const purchasePriceCHF = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
+
+  const leasingOfferCandidate =
+    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasing_offer ??
+    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasingOffer ??
+    null;
+
+  const leasing_offer = leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
+
+  return {
+    id: row.id,
+    deal_type: row.deal_type ?? "lease_takeover",
+    financing_type: row.financing_type ?? null,
+    leasing_offer,
+    brand: row.brand,
+    model: row.model,
+    title: row.title || undefined,
+    description: row.description || undefined,
+    year: row.year,
+    pricePerMonthCHF: row.price_per_month_chf ?? 0,
+    remainingMonths: row.remaining_months ?? 0,
+    remaining_km: row.remaining_km,
+    location: row.location,
+    mileageKm: row.mileage_km,
+    fuel: row.fuel,
+    gearbox: row.gearbox,
+    body: row.body,
+    premium: row.premium,
+    depositCHF: row.deposit_chf || null,
+    images: imageUrls,
+    imageUrl: imageUrls[0] || "",
+    purchasePriceCHF,
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
     image_urls: imageUrls,
@@ -250,37 +288,36 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     const offset = (page - 1) * pageSize;
 
     let query = supabase
-      .from('public_listings')
-      .select('*', { count: 'exact' });
+      .from("public_listings")
+      .select("*", { count: "exact" });
 
     // Apply filters
     if (searchQuery.dealType) query = query.eq("deal_type", searchQuery.dealType);
-    else query = query.eq("deal_type", "lease_takeover");
+
     if (
       searchQuery.financingType &&
-      (searchQuery.dealType ?? "lease_takeover") === "direct_purchase"
+      (searchQuery.dealType ?? null) === "direct_purchase"
     ) {
       query = query.eq("financing_type", searchQuery.financingType);
     }
-    if (searchQuery.brand) query = query.eq('brand', searchQuery.brand);
-    if (searchQuery.model) query = query.ilike('model', `%${searchQuery.model}%`);
-    if (searchQuery.yearMin) query = query.gte('year', searchQuery.yearMin);
-    if (searchQuery.priceMax) query = query.lte('price_per_month_chf', searchQuery.priceMax);
-    if (typeof searchQuery.kmMax === 'number') query = query.lte('mileage_km', searchQuery.kmMax);
-    if (searchQuery.canton?.length) query = query.in('canton_code', searchQuery.canton);
-    if (searchQuery.fuel?.length) query = query.in('fuel', searchQuery.fuel);
-    if (searchQuery.gearbox?.length) query = query.in('gearbox', searchQuery.gearbox);
-    if (searchQuery.body?.length) query = query.in('body', searchQuery.body);
-    if (searchQuery.premiumOnly) query = query.eq('premium', true);
-    if (searchQuery.noDeposit) query = query.is('deposit_chf', null);
-    
-    // Sorting
-    const sortOrder = searchQuery.sort || 'relevance';
-    if (sortOrder === 'priceAsc') query = query.order('price_per_month_chf', { ascending: true });
-    else if (sortOrder === 'priceDesc') query = query.order('price_per_month_chf', { ascending: false });
-    else if (sortOrder === 'dateDesc') query = query.order('created_at', { ascending: false });
-    else query = query.order('premium', { ascending: false }).order('created_at', { ascending: false });
+    if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
+    if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
+    if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
+    if (searchQuery.priceMax) query = query.lte("price_per_month_chf", searchQuery.priceMax);
+    if (typeof searchQuery.kmMax === "number") query = query.lte("mileage_km", searchQuery.kmMax);
+    if (searchQuery.canton?.length) query = query.in("canton_code", searchQuery.canton);
+    if (searchQuery.fuel?.length) query = query.in("fuel", searchQuery.fuel);
+    if (searchQuery.gearbox?.length) query = query.in("gearbox", searchQuery.gearbox);
+    if (searchQuery.body?.length) query = query.in("body", searchQuery.body);
+    if (searchQuery.premiumOnly) query = query.eq("premium", true);
+    if (searchQuery.noDeposit) query = query.is("deposit_chf", null);
 
+    // Sorting
+    const sortOrder = searchQuery.sort || "relevance";
+    if (sortOrder === "priceAsc") query = query.order("price_per_month_chf", { ascending: true });
+    else if (sortOrder === "priceDesc") query = query.order("price_per_month_chf", { ascending: false });
+    else if (sortOrder === "dateDesc") query = query.order("created_at", { ascending: false });
+    else query = query.order("premium", { ascending: false }).order("created_at", { ascending: false });
 
     // Apply pagination
     query = query.range(offset, offset + pageSize - 1);
@@ -288,7 +325,7 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     const { data, error, count } = await query;
 
     if (error) {
-      console.error('Search query error:', error);
+      console.error("Search query error:", error);
       throw error;
     }
 
@@ -301,7 +338,7 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       pageSize,
     };
   } catch (error) {
-    console.error('Search listings error:', error);
+    console.error("Search listings error:", error);
     return {
       items: [],
       total: 0,

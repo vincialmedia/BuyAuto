@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Listing } from "@/lib/buyauto/types";
-import { Star, MapPin, Gauge, Fuel, Settings, Calendar } from "lucide-react";
+import { Star, MapPin, Gauge, Fuel, Settings } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 
 interface ModernListingCardProps {
   listing: Listing;
@@ -15,6 +16,55 @@ interface ModernListingCardProps {
 export function ModernListingCard({ listing, onDetailsClick, priority = false }: ModernListingCardProps) {
   const router = useRouter();
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+
+  const purchasePriceChf =
+    typeof listing.purchasePriceCHF === "number"
+      ? listing.purchasePriceCHF
+      : typeof (listing as unknown as { purchase_price_chf?: unknown }).purchase_price_chf === "number"
+        ? ((listing as unknown as { purchase_price_chf?: number }).purchase_price_chf ?? null)
+        : typeof (listing as unknown as { price_chf?: unknown }).price_chf === "number"
+          ? ((listing as unknown as { price_chf?: number }).price_chf ?? null)
+          : typeof (listing as unknown as { listing_price?: unknown }).listing_price === "number"
+            ? ((listing as unknown as { listing_price?: number }).listing_price ?? null)
+            : null;
+
+  const leasingOffer = listing.leasing_offer ?? null;
+
+  const teaserMonthlyChf =
+    dealType === "direct_purchase" &&
+    leasingOffer?.enabled === true &&
+    purchasePriceChf
+      ? estimateTeaserMonthlyRateChf({
+          priceChf: purchasePriceChf,
+          year: listing.year,
+          mileageKm: listing.mileageKm,
+          interestRatePct: Number(leasingOffer.interest_rate_pct),
+          residualPctAdjustmentPp: leasingOffer.residual_pct_adjustment_pp ?? 0,
+          termMonths: 60,
+          kmPerYear: 10000,
+          downPaymentPct: 5,
+        })
+      : null;
+
+  const chf = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
+
+  const primaryLine =
+    dealType === "lease_takeover"
+      ? `CHF ${chf.format(Math.round(listing.pricePerMonthCHF))} / Monat`
+      : purchasePriceChf
+        ? `CHF ${chf.format(Math.round(purchasePriceChf))}`
+        : "Preis auf Anfrage";
+
+  const secondaryLine =
+    dealType === "lease_takeover"
+      ? purchasePriceChf
+        ? `CHF ${chf.format(Math.round(purchasePriceChf))}`
+        : null
+      : teaserMonthlyChf
+        ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
+        : null;
 
   const handleDetailsClick = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -122,16 +172,26 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           </div>
         </div>
 
-        {/* Leasing Term */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Restlaufzeit</span>
-          <span className="font-medium">{listing.remainingMonths} Monate</span>
-        </div>
+        {dealType === "lease_takeover" && (
+          <>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Restlaufzeit</span>
+              <span className="font-medium">{listing.remainingMonths} Monate</span>
+            </div>
 
-        {listing.remaining_km && (
+            {listing.remaining_km && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Verbleibende KM</span>
+                <span className="font-medium">{listing.remaining_km.toLocaleString("de-CH")} km</span>
+              </div>
+            )}
+          </>
+        )}
+
+        {dealType === "direct_purchase" && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Verbleibende KM</span>
-            <span className="font-medium">{listing.remaining_km.toLocaleString("de-CH")} km</span>
+            <span className="text-muted-foreground">Deal</span>
+            <span className="font-medium">{leasingOffer?.enabled ? "Direktkauf + Leasing" : "Direktkauf"}</span>
           </div>
         )}
 
@@ -140,20 +200,11 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
 
         {/* Price & CTA */}
         <div className="flex items-end justify-between gap-2">
-          {/* Price */}
           <div className="flex-1 min-w-0">
-            <div className="text-xl sm:text-2xl font-bold text-red-600 truncate">
-              CHF {listing.pricePerMonthCHF.toLocaleString()}
-            </div>
-            <div className="text-xs text-neutral-500 font-medium">pro Monat</div>
-            {listing.depositCHF > 0 && (
-              <div className="text-xs text-neutral-400 mt-0.5 truncate">
-                + CHF {listing.depositCHF.toLocaleString()} Kaution
-              </div>
-            )}
+            <div className="text-xl sm:text-2xl font-bold text-red-600 truncate">{primaryLine}</div>
+            {secondaryLine && <div className="text-xs text-neutral-500 font-medium mt-0.5 truncate">{secondaryLine}</div>}
           </div>
 
-          {/* CTA Button */}
           <Button
             onClick={handleDetailsClick}
             variant="ghost"
