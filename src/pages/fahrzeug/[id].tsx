@@ -12,6 +12,7 @@ import ImageGallery from "@/components/buyauto/detail/ImageGallery";
 import { StructuredData } from "@/components/buyauto/StructuredData";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
+import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
 
 // Helper function to ensure no undefined values (Next.js serialization fix)
 const serializeListing = (listing: ListingDetail | null): ListingDetail | null => {
@@ -412,66 +413,35 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                 </CardContent>
               </Card>
 
+              <OwnerMiniProfile
+                sellerType={(listing as unknown as { seller_type?: string | null }).seller_type ?? null}
+                name={
+                  ((listing as unknown as { seller_name?: string | null }).seller_name ?? null) ||
+                  ((listing as unknown as { garage_name?: string | null }).garage_name ?? null)
+                }
+                location={(listing.location ?? null) as unknown as string | null}
+                avatarUrl={(() => {
+                  const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
+                  const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
+                  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+                  if (sellerType === "garage" && garageId && base) {
+                    const path = `garage-logos/${garageId}/logo_medium.webp`
+                      .split("/")
+                      .map((seg) => encodeURIComponent(seg))
+                      .join("/");
+                    return `${base}/storage/v1/object/public/listing-images/${path}`;
+                  }
+                  return (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+                })()}
+              />
+
               {dealType === "direct_purchase" && leasingOffer?.enabled === true && effectivePurchasePriceChf && (
-                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
-                  <h2 className="text-2xl font-bold text-neutral-900 mb-6">Leasingkalkulation</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-neutral-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-neutral-600">Jahr</p>
-                        <p className="font-semibold text-neutral-900">{listing.year}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                        <Settings className="w-5 h-5 text-neutral-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-neutral-600">Kilometerstand</p>
-                        <p className="font-semibold text-neutral-900">{formatMileage(listing.mileageKm)} km</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                        {getFuelIcon(listing.fuel)}
-                      </div>
-                      <div>
-                        <p className="text-sm text-neutral-600">Treibstoff</p>
-                        <p className="font-semibold text-neutral-900">{listing.fuel}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                        {getGearboxIcon(listing.gearbox)}
-                      </div>
-                      <div>
-                        <p className="text-sm text-neutral-600">Getriebe</p>
-                        <p className="font-semibold text-neutral-900">{listing.gearbox}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                        <Users className="w-5 h-5 text-neutral-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-neutral-600">Karosserie</p>
-                        <p className="font-semibold text-neutral-900">{listing.body}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-neutral-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-neutral-600">Standort</p>
-                        <p className="font-semibold text-neutral-900">{listing.location}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <LeasingCalculator
+                  priceChf={effectivePurchasePriceChf}
+                  year={listing.year}
+                  mileageKm={listing.mileageKm}
+                  offer={leasingOffer}
+                />
               )}
 
               {listing.premium && (
