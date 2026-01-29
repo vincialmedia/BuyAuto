@@ -50,6 +50,9 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
     console.log(`Save listing ${listing.id}`);
   };
 
+  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+  const leasingOffer = listing.leasing_offer ?? null;
+
   return (
     <Card 
       className={cn(

@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
 
+const PUBLIC_LISTING_STATUSES: string[] = ["published", "active"];
+
 // Database row type for public listings view
 type PublicListingRow = {
   id: string;
@@ -12,9 +14,9 @@ type PublicListingRow = {
   deal_type?: "lease_takeover" | "direct_purchase";
   financing_type?: "cash" | "leasing" | null;
   year: number;
-  price_per_month_chf: number;
-  remaining_months: number;
-  remaining_km?: number;
+  price_per_month_chf?: number | null;
+  remaining_months?: number | null;
+  remaining_km?: number | null;
   location: string;
   canton_code: string;
   mileage_km: number;
@@ -22,11 +24,24 @@ type PublicListingRow = {
   gearbox: "Automatik" | "Manuell";
   body: "Limousine" | "Kombi" | "SUV" | "Cabrio";
   premium: boolean;
-  cover_image_url?: string;
+  cover_image_url?: string | null;
   images?: any;
-  cover_image_index?: number;
-  deposit_chf?: number;
+  cover_image_index?: number | null;
+  deposit_chf?: number | null;
   created_at: string;
+  status?: string;
+
+  seller_type?: string | null;
+  seller_name?: string | null;
+  seller_avatar_url?: string | null;
+  garage_id?: string | null;
+  garage_name?: string | null;
+
+  leasing_offer?: any;
+  purchase_price_chf?: number | null;
+  price_chf?: number | null;
+  listing_price?: number | null;
+  price_paid_chf?: number | null;
 };
 
 // Database row type for full listings (dashboard/admin)
@@ -122,17 +137,23 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     year: row.year,
     pricePerMonthCHF: row.price_per_month_chf ?? 0,
     remainingMonths: row.remaining_months ?? 0,
-    remaining_km: row.remaining_km,
+    remaining_km: row.remaining_km ?? undefined,
     location: row.location,
     mileageKm: row.mileage_km,
     fuel: row.fuel,
     gearbox: row.gearbox,
     body: row.body,
     premium: row.premium,
-    depositCHF: row.deposit_chf || null,
+    depositCHF: row.deposit_chf ?? null,
     images: imageUrls,
     imageUrl: imageUrls[0] || "",
     purchasePriceCHF,
+
+    seller_type: row.seller_type ?? null,
+    seller_name: row.seller_name ?? null,
+    seller_avatar_url: row.seller_avatar_url ?? null,
+    garage_id: row.garage_id ?? null,
+    garage_name: row.garage_name ?? null,
   };
 }
 
@@ -169,26 +190,32 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     year: row.year,
     pricePerMonthCHF: row.price_per_month_chf ?? 0,
     remainingMonths: row.remaining_months ?? 0,
-    remaining_km: row.remaining_km,
+    remaining_km: row.remaining_km ?? undefined,
     location: row.location,
     mileageKm: row.mileage_km,
     fuel: row.fuel,
     gearbox: row.gearbox,
     body: row.body,
     premium: row.premium,
-    depositCHF: row.deposit_chf || null,
+    depositCHF: row.deposit_chf ?? null,
     images: imageUrls,
     imageUrl: imageUrls[0] || "",
     purchasePriceCHF,
     canton_code: row.canton_code,
-    cover_image_url: row.cover_image_url,
+    cover_image_url: row.cover_image_url ?? undefined,
     image_urls: imageUrls,
-    status: "published", // Always published in public view
+    status: ((row.status ?? "published") as ListingDetail["status"]),
     created_at: row.created_at,
     expires_at: null,
     duration_days: null,
     price_plan: null,
     premium_until: null,
+
+    seller_type: row.seller_type ?? null,
+    seller_name: row.seller_name ?? null,
+    seller_avatar_url: row.seller_avatar_url ?? null,
+    garage_id: row.garage_id ?? null,
+    garage_name: row.garage_name ?? null,
   };
 }
 
@@ -196,10 +223,28 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 function transformFullRowToListingDetail(row: any): ListingDetail {
   const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
 
+  const purchasePriceCandidate =
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown })
+      .purchase_price_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).listing_price ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
+    null;
+
+  const purchasePriceCHF = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
+
+  const leasingOfferCandidate =
+    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasing_offer ??
+    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasingOffer ??
+    null;
+
+  const leasing_offer = leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
+
   return {
     id: row.id,
     deal_type: (row.deal_type ?? "lease_takeover") as any,
     financing_type: (row.financing_type ?? null) as any,
+    leasing_offer,
     brand: row.brand,
     model: row.model,
     title: row.title || undefined,
@@ -218,6 +263,7 @@ function transformFullRowToListingDetail(row: any): ListingDetail {
     depositCHF: row.deposit_chf || null,
     images: imageUrls,
     imageUrl: imageUrls[0] || "",
+    purchasePriceCHF,
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url,
     image_urls: imageUrls,
@@ -228,7 +274,13 @@ function transformFullRowToListingDetail(row: any): ListingDetail {
     price_plan: row.price_plan as PricePlanId,
     premium_until: row.premium_until,
     cover_image_index: row.cover_image_index,
-    listing_price: row.price_paid_chf, // Use price_paid_chf as listing_price
+    listing_price: row.price_paid_chf,
+
+    seller_type: row.seller_type ?? null,
+    seller_name: row.seller_name ?? null,
+    seller_avatar_url: row.seller_avatar_url ?? null,
+    garage_id: row.garage_id ?? null,
+    garage_name: row.garage_name ?? null,
   };
 }
 
@@ -238,22 +290,23 @@ function transformFullRowToListingDetail(row: any): ListingDetail {
 export async function getPublishedListingById(id: string): Promise<ListingDetail | null> {
   try {
     const { data, error } = await supabase
-      .from('public_listings')
-      .select('*')
-      .eq('id', id)
+      .from("listings")
+      .select("*")
+      .eq("id", id)
+      .in("status", PUBLIC_LISTING_STATUSES)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // No rows returned
+      if (error.code === "PGRST116") {
+        return null;
       }
-      console.error('Error fetching published listing by ID:', error);
+      console.error("Error fetching published listing by ID:", error);
       return null;
     }
-    
-    return transformPublicRowToListingDetail(data);
+
+    return transformPublicRowToListingDetail(data as unknown as PublicListingRow);
   } catch (error) {
-    console.error('Get published listing by ID error:', error);
+    console.error("Get published listing by ID error:", error);
     return null;
   }
 }
@@ -261,22 +314,23 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
 export async function getSimilarListings(listing: ListingDetail, limit: number = 6): Promise<Listing[]> {
   try {
     const { data, error } = await supabase
-      .from('public_listings')
-      .select('*')
-      .neq('id', listing.id)
+      .from("listings")
+      .select("*")
+      .in("status", PUBLIC_LISTING_STATUSES)
+      .neq("id", listing.id)
       .or(`brand.eq.${listing.brand},body.eq.${listing.body}`)
-      .order('premium', { ascending: false })
-      .order('created_at', { ascending: false })
+      .order("premium", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching similar listings:', error);
+      console.error("Error fetching similar listings:", error);
       return [];
     }
 
-    return (data || []).map(transformPublicRowToListing);
+    return (data || []).map((r) => transformPublicRowToListing(r as unknown as PublicListingRow));
   } catch (error) {
-    console.error('Get similar listings error:', error);
+    console.error("Get similar listings error:", error);
     return [];
   }
 }
@@ -288,10 +342,10 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     const offset = (page - 1) * pageSize;
 
     let query = supabase
-      .from("public_listings")
-      .select("*", { count: "exact" });
+      .from("listings")
+      .select("*", { count: "exact" })
+      .in("status", PUBLIC_LISTING_STATUSES);
 
-    // Apply filters
     if (searchQuery.dealType) query = query.eq("deal_type", searchQuery.dealType);
 
     if (
@@ -300,9 +354,12 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     ) {
       query = query.eq("financing_type", searchQuery.financingType);
     }
+
     if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
     if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
     if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
+    if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
+
     if (searchQuery.priceMax) query = query.lte("price_per_month_chf", searchQuery.priceMax);
     if (typeof searchQuery.kmMax === "number") query = query.lte("mileage_km", searchQuery.kmMax);
     if (searchQuery.canton?.length) query = query.in("canton_code", searchQuery.canton);
@@ -312,14 +369,16 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     if (searchQuery.premiumOnly) query = query.eq("premium", true);
     if (searchQuery.noDeposit) query = query.is("deposit_chf", null);
 
-    // Sorting
     const sortOrder = searchQuery.sort || "relevance";
     if (sortOrder === "priceAsc") query = query.order("price_per_month_chf", { ascending: true });
     else if (sortOrder === "priceDesc") query = query.order("price_per_month_chf", { ascending: false });
     else if (sortOrder === "dateDesc") query = query.order("created_at", { ascending: false });
+    else if (sortOrder === "yearDesc") query = query.order("year", { ascending: false });
+    else if (sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });
+    else if (sortOrder === "monthsDesc") query = query.order("remaining_months", { ascending: false });
+    else if (sortOrder === "kmAsc") query = query.order("mileage_km", { ascending: true });
     else query = query.order("premium", { ascending: false }).order("created_at", { ascending: false });
 
-    // Apply pagination
     query = query.range(offset, offset + pageSize - 1);
 
     const { data, error, count } = await query;
@@ -329,7 +388,7 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       throw error;
     }
 
-    const items = (data || []).map(transformPublicRowToListing);
+    const items = (data || []).map((r) => transformPublicRowToListing(r as unknown as PublicListingRow));
 
     return {
       items,
@@ -492,17 +551,18 @@ export async function updateListingStatus(id: string, status: string, moderation
 export async function getPublishedListingsCount(): Promise<number> {
   try {
     const { count, error } = await supabase
-      .from('public_listings')
-      .select('*', { count: 'exact', head: true });
+      .from("listings")
+      .select("*", { count: "exact", head: true })
+      .in("status", PUBLIC_LISTING_STATUSES);
 
     if (error) {
-      console.error('Error fetching published listings count:', error);
+      console.error("Error fetching published listings count:", error);
       return 0;
     }
 
     return count || 0;
   } catch (error) {
-    console.error('Get published listings count error:', error);
+    console.error("Get published listings count error:", error);
     return 0;
   }
 }

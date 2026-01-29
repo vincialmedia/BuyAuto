@@ -46,6 +46,12 @@ export interface Listing {
   imageUrl: string;
   description?: string; // ✅ Added description field
   purchasePriceCHF?: number | null;
+
+  seller_type?: string | null;
+  seller_name?: string | null;
+  seller_avatar_url?: string | null;
+  garage_id?: string | null;
+  garage_name?: string | null;
 }
 
 export type PricePlanId = "free30" | "standard" | "extended" | "unlimited";

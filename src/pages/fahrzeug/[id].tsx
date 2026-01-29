@@ -179,6 +179,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         })
       : null;
 
+  const teaserMonthlyLabel =
+    typeof teaserMonthlyChf === "number"
+      ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
+      : null;
+
   const structuredPrice = dealType === "direct_purchase" ? (effectivePurchasePriceChf ?? 0) : listing.pricePerMonthCHF;
   const metaPriceText =
     dealType === "direct_purchase"
@@ -357,9 +362,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                           {effectivePurchasePriceChf ? formatPrice(effectivePurchasePriceChf) : "Preis auf Anfrage"}
                         </div>
                         <p className="text-neutral-600">Kaufpreis</p>
-                        {teaserMonthlyChf && (
+                        {teaserMonthlyLabel && (
                           <p className="text-sm text-neutral-600 mt-2">
-                            Ab CHF {teaserMonthlyChf.toLocaleString("de-CH")} / Monat
+                            {teaserMonthlyLabel}
                           </p>
                         )}
                       </>
