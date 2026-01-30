@@ -20,6 +20,7 @@ const serializeListing = (listing: ListingDetail | null): ListingDetail | null =
   
   return {
     ...listing,
+    ui_version: (listing as unknown as { ui_version?: string | null }).ui_version === "v2" ? "v2" : "v1",
     description: listing.description ?? null,
     imageUrl: listing.imageUrl ?? null,
     depositCHF: listing.depositCHF ?? null,
@@ -117,6 +118,8 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
       </div>
     );
   }
+
+  const uiVersion = (listing as unknown as { ui_version?: string | null }).ui_version === "v2" ? "v2" : "v1";
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("de-CH", {
@@ -418,29 +421,31 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                 </CardContent>
               </Card>
 
-              <OwnerMiniProfile
-                sellerType={(listing as unknown as { seller_type?: string | null }).seller_type ?? null}
-                name={
-                  ((listing as unknown as { seller_name?: string | null }).seller_name ?? null) ||
-                  ((listing as unknown as { garage_name?: string | null }).garage_name ?? null)
-                }
-                location={(listing.location ?? null) as unknown as string | null}
-                avatarUrl={(() => {
-                  const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
-                  const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
-                  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-                  if (sellerType === "garage" && garageId && base) {
-                    const path = `garage-logos/${garageId}/logo_medium.webp`
-                      .split("/")
-                      .map((seg) => encodeURIComponent(seg))
-                      .join("/");
-                    return `${base}/storage/v1/object/public/listing-images/${path}`;
+              {uiVersion === "v2" && (
+                <OwnerMiniProfile
+                  sellerType={(listing as unknown as { seller_type?: string | null }).seller_type ?? null}
+                  name={
+                    ((listing as unknown as { seller_name?: string | null }).seller_name ?? null) ||
+                    ((listing as unknown as { garage_name?: string | null }).garage_name ?? null)
                   }
-                  return (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
-                })()}
-              />
+                  location={(listing.location ?? null) as unknown as string | null}
+                  avatarUrl={(() => {
+                    const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
+                    const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
+                    const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+                    if (sellerType === "garage" && garageId && base) {
+                      const path = `garage-logos/${garageId}/logo_medium.webp`
+                        .split("/")
+                        .map((seg) => encodeURIComponent(seg))
+                        .join("/");
+                      return `${base}/storage/v1/object/public/listing-images/${path}`;
+                    }
+                    return (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+                  })()}
+                />
+              )}
 
-              {dealType === "direct_purchase" && leasingOffer?.enabled === true && effectivePurchasePriceChf && (
+              {uiVersion === "v2" && dealType === "direct_purchase" && leasingOffer?.enabled === true && effectivePurchasePriceChf && (
                 <LeasingCalculator
                   priceChf={effectivePurchasePriceChf}
                   year={listing.year}

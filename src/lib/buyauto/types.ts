@@ -1,5 +1,6 @@
 export type DealType = "lease_takeover" | "direct_purchase";
 export type FinancingType = "cash" | "leasing";
+export type ListingUiVersion = "v1" | "v2";
 
 export interface LeaseTakeoverOffer {
   enabled: boolean;
@@ -25,6 +26,7 @@ export interface LeasingOffer {
 export interface Listing {
   id: string;
   user_id?: string; // ✅ Made optional to fix build errors
+  ui_version?: ListingUiVersion;
   deal_type?: DealType;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOffer | null;
@@ -66,6 +68,7 @@ export interface PricePlan {
 }
 
 export interface ListingData {
+  ui_version?: ListingUiVersion;
   deal_type?: DealType;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOffer | null;
