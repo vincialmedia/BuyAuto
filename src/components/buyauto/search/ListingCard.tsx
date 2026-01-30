@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 
 // Utility functions
 const formatPrice = (price: number): string => {
