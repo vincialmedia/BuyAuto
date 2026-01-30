@@ -86,8 +86,9 @@ export interface ListingData {
   description?: string;
   
   price_per_month_chf?: number;
+  purchase_price_chf?: number | null;
   remaining_months?: number;
-  remaining_km?: number; // ✅ Added remaining_km
+  remaining_km?: number;
   deposit_chf?: number;
   location?: string;
   canton_code?: string;

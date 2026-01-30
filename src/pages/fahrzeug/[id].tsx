@@ -13,6 +13,7 @@ import { StructuredData } from "@/components/buyauto/StructuredData";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Helper function to ensure no undefined values (Next.js serialization fix)
 const serializeListing = (listing: ListingDetail | null): ListingDetail | null => {
@@ -53,8 +54,10 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   const [isLoading, setIsLoading] = useState(!initialListing && !notFound);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [clientNotFound, setClientNotFound] = useState(false);
+  const [isOwnerPreview, setIsOwnerPreview] = useState(false);
   const router = useRouter();
   const { id } = router.query;
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!listing && !notFound && !clientNotFound && id && typeof id === "string") {
@@ -62,9 +65,18 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         setIsLoading(true);
         try {
           const isPreview = router.query.preview === "true";
-          const fetchedListing = isPreview
+
+          let fetchedListing = isPreview
             ? await getUserListingById(id)
             : await getPublishedListingById(id);
+
+          if (!fetchedListing && !isPreview && user) {
+            const ownerListing = await getUserListingById(id);
+            if (ownerListing) {
+              fetchedListing = ownerListing;
+              setIsOwnerPreview(true);
+            }
+          }
 
           if (!fetchedListing) {
             setClientNotFound(true);
@@ -82,7 +94,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
       fetchListing();
     }
-  }, [id, listing, notFound, clientNotFound, router.query.preview]);
+  }, [id, listing, notFound, clientNotFound, router.query.preview, user]);
 
   if (notFound || clientNotFound) {
     return (
@@ -258,6 +270,31 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
             </div>
           </div>
         </div>
+
+        {isOwnerPreview && (
+          <div className="bg-amber-50 border-b border-amber-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="text-sm text-amber-900">
+                Vorschau: Dieses Inserat ist noch nicht veröffentlicht und nur für dich sichtbar.
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="border-amber-300 text-amber-900 hover:bg-amber-100"
+                  onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}
+                >
+                  Vorschau-Link öffnen
+                </Button>
+                <Button
+                  className="bg-neutral-900 hover:bg-neutral-800 text-white"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  Zum Dashboard
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -504,9 +541,9 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     }
 
     const listing = await getPublishedListingById(id);
-    
+
     if (!listing) {
-      return { props: { listing: null, notFound: true } };
+      return { props: { listing: null } };
     }
 
     // Serialize listing to convert undefined to null
@@ -515,6 +552,6 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     return { props: { listing: serializedListing } };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
-    return { props: { listing: null, notFound: true } };
+    return { props: { listing: null } };
   }
 };

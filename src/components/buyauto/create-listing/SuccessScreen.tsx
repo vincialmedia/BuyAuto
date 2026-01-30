@@ -176,7 +176,7 @@ export default function SuccessScreen() {
                   if (typeof window !== 'undefined') {
                     // Also clear storage so we don't see this success page again
                     sessionStorage.removeItem('completedListingData');
-                    window.location.href = `/dashboard?section=listings`;
+                    window.location.href = `/fahrzeug/${listingId}?preview=true`;
                   }
                 }}
                 className="w-full bg-neutral-900 hover:bg-neutral-800"

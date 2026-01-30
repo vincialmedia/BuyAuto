@@ -207,7 +207,10 @@ export function DirectPurchaseFinancingDetails() {
   } = useForm<DirectPurchaseFinancingForm>({
     resolver: zodResolver(directPurchaseFinancingSchema),
     defaultValues: {
-      purchase_price_chf: toNumberOrUndefined(data.price_per_month_chf) ?? 0,
+      purchase_price_chf:
+        toNumberOrUndefined((data as unknown as { purchase_price_chf?: unknown }).purchase_price_chf) ??
+        toNumberOrUndefined(data.price_per_month_chf) ??
+        0,
 
       lease_takeover_enabled: existingTakeover?.enabled === true,
       lease_takeover_price_per_month_chf: toNumberOrUndefined(existingTakeover?.price_per_month_chf) ?? 0,
@@ -349,7 +352,8 @@ export function DirectPurchaseFinancingDetails() {
         images: data.images,
         cover_image_index: data.cover_image_index,
 
-        price_per_month_chf: purchasePriceChfClean,
+        purchase_price_chf: purchasePriceChfClean,
+        price_per_month_chf: null,
       };
 
       const saved = await createOrUpdateListing(payload, user);
@@ -360,7 +364,8 @@ export function DirectPurchaseFinancingDetails() {
         deal_type: "direct_purchase",
         financing_type: leasingEnabled ? "leasing" : "cash",
         leasing_offer: leasingOffer,
-        price_per_month_chf: purchasePriceChfClean ?? undefined,
+        purchase_price_chf: purchasePriceChfClean ?? undefined,
+        price_per_month_chf: undefined,
       };
 
       updateData(financingPatch);

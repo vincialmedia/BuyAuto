@@ -215,7 +215,7 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
   };
 
   const viewListing = (id: string) => {
-    router.push(`/fahrzeug/${id}`);
+    router.push(`/fahrzeug/${id}?preview=true`);
   };
 
   // Pagination state

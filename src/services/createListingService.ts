@@ -20,6 +20,7 @@ export type ListingUpdatePayload = Partial<{
   body?: string;
   description?: string;
   price_per_month_chf?: number | null;
+  purchase_price_chf?: number | null;
   remaining_months?: number;
   deposit_chf?: number | null;
   location?: string;
@@ -151,11 +152,17 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
   const deal_type: DealType = "direct_purchase";
   const financing_type: FinancingType = payload.financing_type === "leasing" ? "leasing" : "cash";
 
+  const hasLegacyPricePerMonth = typeof payload.price_per_month_chf === "number" && Number.isFinite(payload.price_per_month_chf);
+  const hasPurchasePrice =
+    typeof payload.purchase_price_chf === "number" && Number.isFinite(payload.purchase_price_chf) && payload.purchase_price_chf > 0;
+
   return {
     ...payload,
     ui_version: uiVersion,
     deal_type,
     financing_type,
+    purchase_price_chf: hasPurchasePrice ? payload.purchase_price_chf : hasLegacyPricePerMonth ? payload.price_per_month_chf : payload.purchase_price_chf,
+    price_per_month_chf: null,
   };
 }
 
@@ -163,6 +170,14 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
   const hasDealType = typeof payload.deal_type === "string";
   const hasFinancingField = Object.prototype.hasOwnProperty.call(payload, "financing_type");
   const hasLeasingOfferField = Object.prototype.hasOwnProperty.call(payload, "leasing_offer");
+
+  const hasLegacyPricePerMonth = typeof payload.price_per_month_chf === "number" && Number.isFinite(payload.price_per_month_chf);
+  const hasPurchasePrice =
+    typeof payload.purchase_price_chf === "number" && Number.isFinite(payload.purchase_price_chf) && payload.purchase_price_chf > 0;
+
+  if ((payload.deal_type ?? null) === "direct_purchase" && !hasPurchasePrice && hasLegacyPricePerMonth) {
+    payload = { ...payload, purchase_price_chf: payload.price_per_month_chf, price_per_month_chf: null };
+  }
 
   if (!hasDealType && !hasFinancingField && !hasLeasingOfferField) return payload;
 

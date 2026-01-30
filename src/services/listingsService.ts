@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
 
-const PUBLIC_LISTING_STATUSES: string[] = ["published", "active"];
+const PUBLIC_LISTING_STATUSES: string[] = ["published"];
 
 // Database row type for public listings view
 type PublicListingRow = {
@@ -16,6 +16,7 @@ type PublicListingRow = {
   financing_type?: "cash" | "leasing" | null;
   year: number;
   price_per_month_chf?: number | null;
+  purchase_price_chf?: number | null;
   remaining_months?: number | null;
   remaining_km?: number | null;
   location: string;
@@ -41,7 +42,6 @@ type PublicListingRow = {
   leasing_offer?: any;
   purchase_price_chf?: number | null;
   price_chf?: number | null;
-  listing_price?: number | null;
   price_paid_chf?: number | null;
 };
 
@@ -110,11 +110,10 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
   const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
 
   const purchasePriceCandidate =
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown })
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown })
       .purchase_price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).listing_price ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown }).price_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
     null;
 
   const purchasePriceCHF = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
@@ -164,11 +163,10 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
   const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
 
   const purchasePriceCandidate =
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown })
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown })
       .purchase_price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).listing_price ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown }).price_chf ??
+    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
     null;
 
   const purchasePriceCHF = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
@@ -254,8 +252,8 @@ function transformFullRowToListingDetail(row: any): ListingDetail {
     title: row.title || undefined,
     description: row.description || undefined,
     year: row.year,
-    pricePerMonthCHF: row.price_per_month_chf,
-    remainingMonths: row.remaining_months,
+    pricePerMonthCHF: row.price_per_month_chf ?? 0,
+    remainingMonths: row.remaining_months ?? 0,
     remaining_km: row.remaining_km,
     location: row.location,
     mileageKm: row.mileage_km,
@@ -269,7 +267,7 @@ function transformFullRowToListingDetail(row: any): ListingDetail {
     imageUrl: imageUrls[0] || "",
     purchasePriceCHF,
     canton_code: row.canton_code,
-    cover_image_url: row.cover_image_url,
+    cover_image_url: row.cover_image_url ?? null,
     image_urls: imageUrls,
     status: row.status as "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired",
     created_at: row.created_at,

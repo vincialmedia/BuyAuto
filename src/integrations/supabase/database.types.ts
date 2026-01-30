@@ -182,6 +182,7 @@ export type Database = {
           price_per_month_chf: number | null
           price_plan: string | null
           pricing_plan: string | null
+          purchase_price_chf: number | null
           refunded_at: string | null
           remaining_km: number | null
           remaining_months: number | null
@@ -227,6 +228,7 @@ export type Database = {
           price_per_month_chf?: number | null
           price_plan?: string | null
           pricing_plan?: string | null
+          purchase_price_chf?: number | null
           refunded_at?: string | null
           remaining_km?: number | null
           remaining_months?: number | null
@@ -272,6 +274,7 @@ export type Database = {
           price_per_month_chf?: number | null
           price_plan?: string | null
           pricing_plan?: string | null
+          purchase_price_chf?: number | null
           refunded_at?: string | null
           remaining_km?: number | null
           remaining_months?: number | null
