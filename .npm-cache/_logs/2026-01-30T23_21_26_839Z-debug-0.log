@@ -7,8 +7,8 @@
 6 silly config load:file:/usr/local/etc/npmrc
 7 verbose title npm exec supabase login --token sbp_oauth_735b63ecb60cf23734621c2a8c93190e54521eb7
 8 verbose argv "exec" "--" "supabase" "login" "--token" "sbp_oauth_735b63ecb60cf23734621c2a8c93190e54521eb7"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-01-30T22_59_00_029Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-01-30T22_59_00_029Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-01-30T23_21_26_839Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-01-30T23_21_26_839Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368

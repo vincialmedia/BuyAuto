@@ -14,6 +14,7 @@ import type { LeasingCalculatorProps } from "@/components/buyauto/detail/Leasing
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { MessagingPanel } from "@/components/buyauto/detail/MessagingPanel";
 
 // Helper function to ensure no undefined values (Next.js serialization fix)
 const serializeListing = (listing: ListingDetail | null): ListingDetail | null => {
@@ -459,29 +460,31 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
                 </CardContent>
               </Card>
 
-              {uiVersion === "v2" && (
-                <OwnerMiniProfile
-                  sellerType={(listing as unknown as { seller_type?: string | null }).seller_type ?? null}
-                  name={
-                    ((listing as unknown as { seller_name?: string | null }).seller_name ?? null) ||
-                    ((listing as unknown as { garage_name?: string | null }).garage_name ?? null)
+              <OwnerMiniProfile
+                sellerType={(listing as unknown as { seller_type?: string | null }).seller_type ?? null}
+                name={
+                  ((listing as unknown as { seller_name?: string | null }).seller_name ?? null) ||
+                  ((listing as unknown as { garage_name?: string | null }).garage_name ?? null)
+                }
+                location={(listing.location ?? null) as unknown as string | null}
+                avatarUrl={(() => {
+                  const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
+                  const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
+                  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+                  if (sellerType === "garage" && garageId && base) {
+                    const path = `garage-logos/${garageId}/logo_medium.webp`
+                      .split("/")
+                      .map((seg) => encodeURIComponent(seg))
+                      .join("/");
+                    return `${base}/storage/v1/object/public/listing-images/${path}`;
                   }
-                  location={(listing.location ?? null) as unknown as string | null}
-                  avatarUrl={(() => {
-                    const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
-                    const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
-                    const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-                    if (sellerType === "garage" && garageId && base) {
-                      const path = `garage-logos/${garageId}/logo_medium.webp`
-                        .split("/")
-                        .map((seg) => encodeURIComponent(seg))
-                        .join("/");
-                      return `${base}/storage/v1/object/public/listing-images/${path}`;
-                    }
-                    return (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
-                  })()}
-                />
-              )}
+                  return (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+                })()}
+              />
+
+              <div id="messages">
+                <MessagingPanel listingId={listing.id} listingTitle={`${listing.brand} ${listing.model} ${listing.year}`} />
+              </div>
 
               {uiVersion === "v2" && dealType === "direct_purchase" && leasingOffer?.enabled === true && effectivePurchasePriceChf && (
                 <LeasingCalculator
