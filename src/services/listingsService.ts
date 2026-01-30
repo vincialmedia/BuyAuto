@@ -205,7 +205,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     imageUrl: imageUrls[0] || "",
     purchasePriceCHF,
     canton_code: row.canton_code,
-    cover_image_url: row.cover_image_url ?? undefined,
+    cover_image_url: row.cover_image_url ?? null,
     image_urls: imageUrls,
     status: ((row.status ?? "published") as ListingDetail["status"]),
     created_at: row.created_at,
