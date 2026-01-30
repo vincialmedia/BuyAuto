@@ -50,8 +50,44 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
     console.log(`Save listing ${listing.id}`);
   };
 
-  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
-  const leasingOffer = listing.leasing_offer ?? null;
+  const uiVersion = listing.ui_version === "v2" ? "v2" : "v1";
+  const rawDealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+  const dealType = uiVersion === "v1" ? "lease_takeover" : rawDealType;
+  const leasingOffer = uiVersion === "v1" ? null : (listing.leasing_offer ?? null);
+
+  const purchasePriceChf =
+    uiVersion === "v1"
+      ? null
+      : typeof listing.purchasePriceCHF === "number"
+        ? listing.purchasePriceCHF
+        : typeof (listing as unknown as { purchase_price_chf?: unknown }).purchase_price_chf === "number"
+          ? ((listing as unknown as { purchase_price_chf?: number }).purchase_price_chf ?? null)
+          : typeof (listing as unknown as { price_chf?: unknown }).price_chf === "number"
+            ? ((listing as unknown as { price_chf?: number }).price_chf ?? null)
+            : typeof (listing as unknown as { listing_price?: unknown }).listing_price === "number"
+              ? ((listing as unknown as { listing_price?: number }).listing_price ?? null)
+              : null;
+
+  const teaserMonthlyChf =
+    dealType === "direct_purchase" &&
+    leasingOffer?.enabled === true &&
+    purchasePriceChf
+      ? estimateTeaserMonthlyRateChf({
+          priceChf: purchasePriceChf,
+          year: listing.year,
+          mileageKm: listing.mileageKm,
+          interestRatePct: Number(leasingOffer.interest_rate_pct),
+          residualPctAdjustmentPp: leasingOffer.residual_pct_adjustment_pp ?? 0,
+          termMonths: 60,
+          kmPerYear: 10000,
+          downPaymentPct: 5,
+        })
+      : null;
+
+  const teaserMonthlyLabel =
+    typeof teaserMonthlyChf === "number"
+      ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
+      : null;
 
   return (
     <Card 
@@ -168,39 +204,61 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
                 <Settings className="w-3 h-3 mr-1" />
                 {listing.gearbox}
               </Badge>
-              <Badge variant="secondary" className="bg-neutral-100 text-neutral-700 text-xs">
-                <Clock className="w-3 h-3 mr-1" />
-                {listing.remainingMonths} Mon.
-              </Badge>
+              {dealType === "lease_takeover" && (
+                <Badge variant="secondary" className="bg-neutral-100 text-neutral-700 text-xs">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {listing.remainingMonths} Mon.
+                </Badge>
+              )}
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Restlaufzeit</span>
-              <span className="font-medium">{listing.remainingMonths} Monate</span>
-            </div>
+            {dealType === "lease_takeover" && (
+              <>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Restlaufzeit</span>
+                  <span className="font-medium">{listing.remainingMonths} Monate</span>
+                </div>
 
-            {listing.remaining_km && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Verbleibende KM</span>
-                <span className="font-medium">{listing.remaining_km.toLocaleString("de-CH")} km</span>
-              </div>
+                {listing.remaining_km && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Verbleibende KM</span>
+                    <span className="font-medium">{listing.remaining_km.toLocaleString("de-CH")} km</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* Price and CTA */}
           <div className="flex flex-col items-end justify-between text-right min-w-[140px]">
             <div className="space-y-1">
-              <div className="text-2xl font-bold text-neutral-900">
-                {formatPrice(listing.pricePerMonthCHF)}
-              </div>
-              <div className="text-sm text-neutral-600">
-                pro Monat
-              </div>
-              <div className="text-xs text-neutral-500 mt-1">
-                {(listing.depositCHF && listing.depositCHF > 0)
-                  ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`
-                  : "Keine Kaution"}
-              </div>
+              {dealType === "direct_purchase" ? (
+                <>
+                  <div className="text-2xl font-bold text-neutral-900">
+                    {purchasePriceChf ? formatPrice(purchasePriceChf) : "Preis auf Anfrage"}
+                  </div>
+                  <div className="text-sm text-neutral-600">Kaufpreis</div>
+                  {teaserMonthlyLabel && (
+                    <div className="text-xs text-neutral-500 mt-1">
+                      {teaserMonthlyLabel}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-neutral-900">
+                    {formatPrice(listing.pricePerMonthCHF)}
+                  </div>
+                  <div className="text-sm text-neutral-600">
+                    pro Monat
+                  </div>
+                  <div className="text-xs text-neutral-500 mt-1">
+                    {(listing.depositCHF && listing.depositCHF > 0)
+                      ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`
+                      : "Keine Kaution"}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex gap-2 mt-4">
