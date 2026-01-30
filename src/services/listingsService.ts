@@ -40,7 +40,6 @@ type PublicListingRow = {
   garage_name?: string | null;
 
   leasing_offer?: any;
-  purchase_price_chf?: number | null;
   price_chf?: number | null;
   price_paid_chf?: number | null;
 };
