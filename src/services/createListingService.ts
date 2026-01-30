@@ -135,21 +135,28 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
 
 function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpdatePayload {
   const dealType: DealType = payload.deal_type ?? "direct_purchase";
+  const uiVersion: ListingUiVersion = "v2";
 
   if (dealType === "lease_takeover") {
+    const deal_type: DealType = "lease_takeover";
     return {
       ...payload,
-      ui_version: "v2",
-      deal_type: "lease_takeover",
+      ui_version: uiVersion,
+      deal_type,
       financing_type: null,
       leasing_offer: null,
     };
   }
 
-  const financingType: FinancingType = (payload.financing_type ?? "cash") as FinancingType;
-  const base = { ...payload, deal_type: "direct_purchase", financing_type: financingType };
+  const deal_type: DealType = "direct_purchase";
+  const financing_type: FinancingType = payload.financing_type === "leasing" ? "leasing" : "cash";
 
-  return { ...base, ui_version: "v2" };
+  return {
+    ...payload,
+    ui_version: uiVersion,
+    deal_type,
+    financing_type,
+  };
 }
 
 function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpdatePayload {
