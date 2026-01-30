@@ -5,14 +5,14 @@
 4 silly config load:file:/app/.npmrc
 5 silly config load:file:/home/softgen/.npmrc
 6 silly config load:file:/usr/local/etc/npmrc
-7 verbose title npm exec supabase gen types typescript --project-id fgalkhfopecwsryracre --schema public
-8 verbose argv "exec" "--" "supabase" "gen" "types" "typescript" "--project-id" "fgalkhfopecwsryracre" "--schema" "public"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-01-30T13_21_43_382Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-01-30T13_21_43_382Z-debug-0.log
+7 verbose title npm exec supabase login --token sbp_oauth_f9d2782e235218c999a1a449d2956f96c9366b88
+8 verbose argv "exec" "--" "supabase" "login" "--token" "sbp_oauth_f9d2782e235218c999a1a449d2956f96c9366b88"
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-01-30T13_34_13_906Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-01-30T13_34_13_906Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
-14 http fetch GET 200 https://registry.npmjs.org/supabase 80ms (cache revalidated)
+14 http fetch GET 200 https://registry.npmjs.org/supabase 68ms (cache revalidated)
 15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 16 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 17 verbose cwd /app

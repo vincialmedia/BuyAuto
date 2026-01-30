@@ -64,6 +64,7 @@ const createEmptyListingData = (): ListingData => ({
   plan_price: 0,
   images: [],
   cover_image_index: 0,
+  ui_version: "v2",
 });
 
 const hasAnyUserInput = (data: ListingData) => {
