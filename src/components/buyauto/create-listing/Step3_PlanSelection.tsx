@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWizard } from './ListingWizard';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -109,6 +110,17 @@ export default function Step3_PlanSelection() {
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Inserat-Plan auswählen</h2>
         <p className="text-neutral-600 font-light leading-relaxed">Wählen Sie den passenden Plan für Ihr Inserat.</p>
       </div>
+
+      {!data.id && (
+        <Alert variant="destructive">
+          <AlertTitle>Weiter zu Fotos ist blockiert</AlertTitle>
+          <AlertDescription>
+            Die Inserat-ID fehlt. Das bedeutet, dass der vorherige Schritt (Finanzierungsdetails) nicht gespeichert werden konnte.
+            Bitte gehe zurück, prüfe die Pflichtfelder und speichere erneut. Falls danach wieder ein Fehler erscheint, kopiere bitte den
+            exakten Fehlertext aus der Meldung und sende ihn hier.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {(Object.keys(pricingPlans) as Plan[]).map((planKey) => {

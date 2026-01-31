@@ -4,6 +4,7 @@ import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -99,23 +100,19 @@ const directPurchaseFinancingSchema = z
     purchase_price_chf: z.number().optional(),
 
     lease_takeover_enabled: z.boolean().default(false),
-    lease_takeover_price_per_month_chf: z.number().min(1, "Monatliche Rate ist erforderlich").optional(),
-    lease_takeover_remaining_months: z.number().min(1, "Restlaufzeit muss mindestens 1 Monat betragen").optional(),
-    lease_takeover_deposit_chf: z.number().min(0, "Kaution kann nicht negativ sein").optional(),
-    lease_takeover_remaining_km: z.number().min(0, "Verbleibende KM muss mindestens 0 sein").optional(),
-    lease_takeover_pickup_canton_code: z.string().min(1, "Standort ist erforderlich").optional(),
+    lease_takeover_price_per_month_chf: z.number().optional(),
+    lease_takeover_remaining_months: z.number().optional(),
+    lease_takeover_deposit_chf: z.number().optional(),
+    lease_takeover_remaining_km: z.number().optional(),
+    lease_takeover_pickup_canton_code: z.string().optional(),
 
     leasing_enabled: z.boolean().default(false),
-    interest_rate_pct: z.number().min(0.01, "Leasingzins ist erforderlich").max(99, "Bitte einen realistischen Wert eingeben").optional(),
-    down_payment_pct: z.number().min(0).max(100).optional(),
+    interest_rate_pct: z.number().optional(),
+    down_payment_pct: z.number().optional(),
     no_down_payment: z.boolean().default(false),
-    min_term_months: z.number().int().min(1, "Mindestlaufzeit ist erforderlich").optional(),
-    max_term_months: z.number().int().min(1, "Maximallaufzeit ist erforderlich").optional(),
-    residual_pct_adjustment_pp: z
-      .number()
-      .min(-20, "Bitte zwischen -20 und +20 eingeben")
-      .max(20, "Bitte zwischen -20 und +20 eingeben")
-      .optional(),
+    min_term_months: z.number().optional(),
+    max_term_months: z.number().optional(),
+    residual_pct_adjustment_pp: z.number().optional(),
   })
   .superRefine((values, ctx) => {
     if (!values.lease_takeover_enabled) {
@@ -146,12 +143,26 @@ const directPurchaseFinancingSchema = z
       if (!values.lease_takeover_pickup_canton_code || values.lease_takeover_pickup_canton_code.trim().length === 0) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lease_takeover_pickup_canton_code"], message: "Standort ist erforderlich" });
       }
+
+      if (values.lease_takeover_remaining_km !== undefined) {
+        const km = Number(values.lease_takeover_remaining_km);
+        if (!Number.isFinite(km) || km < 0) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lease_takeover_remaining_km"], message: "Verbleibende KM muss mindestens 0 sein" });
+        }
+      }
     }
 
     if (!values.leasing_enabled) return;
 
     if (values.interest_rate_pct === undefined || !Number.isFinite(values.interest_rate_pct)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["interest_rate_pct"], message: "Leasingzins ist erforderlich" });
+    } else {
+      if (values.interest_rate_pct <= 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["interest_rate_pct"], message: "Leasingzins ist erforderlich" });
+      }
+      if (values.interest_rate_pct > 99) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["interest_rate_pct"], message: "Bitte einen realistischen Wert eingeben" });
+      }
     }
 
     if (values.no_down_payment) {
@@ -165,20 +176,28 @@ const directPurchaseFinancingSchema = z
     } else {
       if (values.down_payment_pct === undefined || !Number.isFinite(values.down_payment_pct)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["down_payment_pct"], message: "Anzahlung ist erforderlich" });
+      } else if (values.down_payment_pct < 0 || values.down_payment_pct > 100) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["down_payment_pct"], message: "Bitte einen gültigen Wert eingeben" });
       }
     }
 
     if (values.min_term_months === undefined || !Number.isFinite(values.min_term_months)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["min_term_months"], message: "Mindestlaufzeit ist erforderlich" });
+    } else if (values.min_term_months < 1) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["min_term_months"], message: "Mindestlaufzeit ist erforderlich" });
     }
 
     if (values.max_term_months === undefined || !Number.isFinite(values.max_term_months)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["max_term_months"], message: "Maximallaufzeit ist erforderlich" });
+    } else if (values.max_term_months < 1) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["max_term_months"], message: "Maximallaufzeit ist erforderlich" });
     }
 
     if (
       values.min_term_months !== undefined &&
       values.max_term_months !== undefined &&
+      Number.isFinite(values.min_term_months) &&
+      Number.isFinite(values.max_term_months) &&
       values.min_term_months > values.max_term_months
     ) {
       ctx.addIssue({
@@ -188,12 +207,21 @@ const directPurchaseFinancingSchema = z
       });
     }
 
-    if (values.residual_pct_adjustment_pp !== undefined && !Number.isFinite(values.residual_pct_adjustment_pp)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["residual_pct_adjustment_pp"],
-        message: "Bitte einen gültigen Wert eingeben",
-      });
+    if (values.residual_pct_adjustment_pp !== undefined) {
+      const pp = Number(values.residual_pct_adjustment_pp);
+      if (!Number.isFinite(pp)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["residual_pct_adjustment_pp"],
+          message: "Bitte einen gültigen Wert eingeben",
+        });
+      } else if (pp < -20 || pp > 20) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["residual_pct_adjustment_pp"],
+          message: "Bitte zwischen -20 und +20 eingeben",
+        });
+      }
     }
   });
 
@@ -220,6 +248,8 @@ export function DirectPurchaseFinancingDetails() {
 
   const [hasMounted, setHasMounted] = useState(false);
   const [isUpdatingListing, setIsUpdatingListing] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     setHasMounted(true);
@@ -242,6 +272,7 @@ export function DirectPurchaseFinancingDetails() {
     watch,
     setValue,
     trigger,
+    clearErrors,
   } = useForm<DirectPurchaseFinancingForm>({
     resolver: zodResolver(directPurchaseFinancingSchema),
     defaultValues: {
@@ -289,6 +320,14 @@ export function DirectPurchaseFinancingDetails() {
   useEffect(() => {
     if (leaseTakeoverEnabled) return;
 
+    clearErrors([
+      "lease_takeover_price_per_month_chf",
+      "lease_takeover_remaining_months",
+      "lease_takeover_deposit_chf",
+      "lease_takeover_remaining_km",
+      "lease_takeover_pickup_canton_code",
+    ] as any);
+
     setValue("lease_takeover_price_per_month_chf", 0, { shouldValidate: false });
     setValue("lease_takeover_remaining_months", 0, { shouldValidate: false });
     setValue("lease_takeover_deposit_chf", 0, { shouldValidate: false });
@@ -306,7 +345,19 @@ export function DirectPurchaseFinancingDetails() {
         updateData({ leasing_offer: nextOffer } as any);
       }
     }
-  }, [data, leaseTakeoverEnabled, leasingEnabled, setValue, updateData]);
+  }, [clearErrors, data, leaseTakeoverEnabled, leasingEnabled, setValue, updateData]);
+
+  useEffect(() => {
+    if (leasingEnabled) return;
+
+    clearErrors([
+      "interest_rate_pct",
+      "down_payment_pct",
+      "min_term_months",
+      "max_term_months",
+      "residual_pct_adjustment_pp",
+    ] as any);
+  }, [clearErrors, leasingEnabled]);
 
   const purchasePriceChf = toNumberOrUndefined(watch("purchase_price_chf")) ?? 0;
 
@@ -319,6 +370,9 @@ export function DirectPurchaseFinancingDetails() {
       });
       return;
     }
+
+    setSubmitAttempted(true);
+    setSubmitError(null);
 
     setIsUpdatingListing(true);
     try {
@@ -431,6 +485,7 @@ export function DirectPurchaseFinancingDetails() {
       nextStep();
     } catch (error) {
       const details = getErrorDetailsForToast(error);
+      setSubmitError(details ?? "Unbekannter Fehler.");
 
       console.error("Error submitting Step 2 (direct purchase):", {
         message: (error as any)?.message,
@@ -458,8 +513,33 @@ export function DirectPurchaseFinancingDetails() {
 
   return (
     <div className="space-y-8">
+      {submitError && (
+        <Alert variant="destructive">
+          <AlertTitle>Fehler beim Speichern</AlertTitle>
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
+
+      {submitAttempted && Object.keys(errors ?? {}).length > 0 && (
+        <Alert variant="destructive">
+          <AlertTitle>Bitte prüfe die Angaben</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-5 space-y-1">
+              {Object.entries(errors ?? {}).map(([key, value]) => {
+                const msg = (value as any)?.message as string | undefined;
+                if (!msg) return null;
+                return <li key={key}>{msg}</li>;
+              })}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form
         onSubmit={handleSubmit(onSubmit, (formErrors) => {
+          setSubmitAttempted(true);
+          setSubmitError(null);
+
           focusFirstInvalidField(formErrors);
           toast({
             title: "Bitte prüfe die Angaben",

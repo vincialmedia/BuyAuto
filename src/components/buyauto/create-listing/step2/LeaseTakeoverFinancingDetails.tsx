@@ -8,6 +8,7 @@ import { de } from "date-fns/locale";
 import { CalendarIcon, ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,6 +122,8 @@ export function LeaseTakeoverFinancingDetails() {
   const { toast } = useToast();
   const [isUpdatingListing, setIsUpdatingListing] = useState(false);
   const [contractEndDate, setContractEndDate] = useState<Date | undefined>(undefined);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -148,6 +151,9 @@ export function LeaseTakeoverFinancingDetails() {
       });
       return;
     }
+
+    setSubmitAttempted(true);
+    setSubmitError(null);
 
     setIsUpdatingListing(true);
     try {
@@ -226,6 +232,7 @@ export function LeaseTakeoverFinancingDetails() {
       nextStep();
     } catch (error) {
       const details = getErrorDetailsForToast(error);
+      setSubmitError(details ?? "Unbekannter Fehler.");
 
       console.error("Error submitting Step 2 (lease takeover):", {
         message: (error as any)?.message,
@@ -271,8 +278,33 @@ export function LeaseTakeoverFinancingDetails() {
         <p className="text-neutral-600 font-light leading-relaxed">Konditionen und Standort Ihres Fahrzeugs</p>
       </div>
 
+      {submitError && (
+        <Alert variant="destructive">
+          <AlertTitle>Fehler beim Speichern</AlertTitle>
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
+
+      {submitAttempted && Object.keys(errors ?? {}).length > 0 && (
+        <Alert variant="destructive">
+          <AlertTitle>Bitte prüfe die Angaben</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-5 space-y-1">
+              {Object.entries(errors ?? {}).map(([key, value]) => {
+                const msg = (value as any)?.message as string | undefined;
+                if (!msg) return null;
+                return <li key={key}>{msg}</li>;
+              })}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form
         onSubmit={handleSubmit(onSubmit, (formErrors) => {
+          setSubmitAttempted(true);
+          setSubmitError(null);
+
           focusFirstInvalidField(formErrors);
           toast({
             title: "Bitte prüfe die Angaben",

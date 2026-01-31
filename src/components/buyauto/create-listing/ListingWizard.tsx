@@ -403,7 +403,7 @@ export default function ListingWizard() {
   }, [data, draftId, isSavingDraft, router, toast, updateData, user]);
 
   if (isComplete) {
-    return <SuccessScreen />;
+    return <SuccessScreen draft={data} />;
   }
 
   return (
