@@ -124,11 +124,11 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
 
             const merged = { ...(prevObj ?? {}), ...(fetchedObj ?? {}) } as SuccessListingSummaryInput;
 
-            if ((merged.deal_type == null || merged.deal_type === "") && prevObj?.deal_type) {
+            if (merged.deal_type == null && prevObj?.deal_type) {
               merged.deal_type = prevObj.deal_type;
             }
 
-            if ((merged.financing_type == null || merged.financing_type === "") && prevObj?.financing_type) {
+            if (merged.financing_type == null && prevObj?.financing_type) {
               merged.financing_type = prevObj.financing_type;
             }
 
