@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
@@ -59,6 +59,44 @@ const leasingDetailsSchema = z.object({
 });
 
 type LeasingDetailsForm = z.infer<typeof leasingDetailsSchema>;
+
+function getErrorDetailsForToast(error: unknown): string | null {
+  if (!error) return null;
+  if (typeof error === "string") return error;
+
+  if (typeof error === "object") {
+    const anyErr = error as any;
+
+    const message = typeof anyErr?.message === "string" ? anyErr.message : null;
+    const details = typeof anyErr?.details === "string" ? anyErr.details : null;
+    const hint = typeof anyErr?.hint === "string" ? anyErr.hint : null;
+    const code = typeof anyErr?.code === "string" ? anyErr.code : null;
+
+    const parts = [message, details, hint, code ? `Code: ${code}` : null].filter(Boolean);
+    return parts.length ? parts.join(" · ") : null;
+  }
+
+  return null;
+}
+
+function focusFirstInvalidField<T extends Record<string, any>>(errors: FieldErrors<T>) {
+  const firstKey = Object.keys(errors ?? {})[0];
+  if (!firstKey) return;
+
+  const byName = document.querySelector(`[name="${firstKey}"]`) as HTMLElement | null;
+  const byId = document.getElementById(firstKey);
+
+  const el = byName ?? byId;
+  if (!el) return;
+
+  if (typeof (el as any).focus === "function") {
+    (el as any).focus();
+  }
+
+  if (typeof (el as any).scrollIntoView === "function") {
+    (el as any).scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
 
 function calculateRemainingMonths(endDate: Date): number {
   const now = new Date();
@@ -187,6 +225,8 @@ export function LeaseTakeoverFinancingDetails() {
 
       nextStep();
     } catch (error) {
+      const details = getErrorDetailsForToast(error);
+
       console.error("Error submitting Step 2 (lease takeover):", {
         message: (error as any)?.message,
         code: (error as any)?.code,
@@ -196,8 +236,10 @@ export function LeaseTakeoverFinancingDetails() {
       });
 
       toast({
-        title: "Fehler",
-        description: "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfen Sie die Angaben und versuchen Sie es erneut.",
+        title: "Fehler beim Speichern",
+        description: details
+          ? `Finanzierungsdetails konnten nicht gespeichert werden: ${details}`
+          : "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfen Sie die Angaben und versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -229,7 +271,17 @@ export function LeaseTakeoverFinancingDetails() {
         <p className="text-neutral-600 font-light leading-relaxed">Konditionen und Standort Ihres Fahrzeugs</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={handleSubmit(onSubmit, (formErrors) => {
+          focusFirstInvalidField(formErrors);
+          toast({
+            title: "Bitte prüfe die Angaben",
+            description: "Einige Pflichtfelder sind noch nicht korrekt ausgefüllt.",
+            variant: "destructive",
+          });
+        })}
+        className="space-y-6"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="price_per_month_chf" className="text-sm font-medium text-neutral-700">
@@ -341,7 +393,10 @@ export function LeaseTakeoverFinancingDetails() {
               Standort *
             </Label>
             <Select onValueChange={handleCantonSelect} value={watch("location")}>
-              <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+              <SelectTrigger
+                id="location"
+                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+              >
                 <SelectValue placeholder="Kanton auswählen..." />
               </SelectTrigger>
               <SelectContent className="max-h-60">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,44 @@ function getMileageKmFromWizardData(data: unknown): number | null {
   const kmNum = Number(anyData?.km ?? anyData?.mileage ?? anyData?.mileage_km);
   if (!Number.isFinite(kmNum) || kmNum < 0) return null;
   return kmNum;
+}
+
+function getErrorDetailsForToast(error: unknown): string | null {
+  if (!error) return null;
+  if (typeof error === "string") return error;
+
+  if (typeof error === "object") {
+    const anyErr = error as any;
+
+    const message = typeof anyErr?.message === "string" ? anyErr.message : null;
+    const details = typeof anyErr?.details === "string" ? anyErr.details : null;
+    const hint = typeof anyErr?.hint === "string" ? anyErr.hint : null;
+    const code = typeof anyErr?.code === "string" ? anyErr.code : null;
+
+    const parts = [message, details, hint, code ? `Code: ${code}` : null].filter(Boolean);
+    return parts.length ? parts.join(" · ") : null;
+  }
+
+  return null;
+}
+
+function focusFirstInvalidField<T extends Record<string, any>>(errors: FieldErrors<T>) {
+  const firstKey = Object.keys(errors ?? {})[0];
+  if (!firstKey) return;
+
+  const byName = document.querySelector(`[name="${firstKey}"]`) as HTMLElement | null;
+  const byId = document.getElementById(firstKey);
+
+  const el = byName ?? byId;
+  if (!el) return;
+
+  if (typeof (el as any).focus === "function") {
+    (el as any).focus();
+  }
+
+  if (typeof (el as any).scrollIntoView === "function") {
+    (el as any).scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
 const directPurchaseFinancingSchema = z
@@ -392,9 +430,21 @@ export function DirectPurchaseFinancingDetails() {
 
       nextStep();
     } catch (error) {
+      const details = getErrorDetailsForToast(error);
+
+      console.error("Error submitting Step 2 (direct purchase):", {
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        error,
+      });
+
       toast({
-        title: "Fehler",
-        description: "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfen Sie die Angaben und versuchen Sie es erneut.",
+        title: "Fehler beim Speichern",
+        description: details
+          ? `Finanzierungsdetails konnten nicht gespeichert werden: ${details}`
+          : "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfen Sie die Angaben und versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -408,7 +458,17 @@ export function DirectPurchaseFinancingDetails() {
 
   return (
     <div className="space-y-8">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={handleSubmit(onSubmit, (formErrors) => {
+          focusFirstInvalidField(formErrors);
+          toast({
+            title: "Bitte prüfe die Angaben",
+            description: "Einige Pflichtfelder sind noch nicht korrekt ausgefüllt.",
+            variant: "destructive",
+          });
+        })}
+        className="space-y-6"
+      >
         <div className="space-y-2">
           <Label htmlFor="purchase_price_chf" className="text-sm font-medium text-neutral-700">
             Direktkauf Preis (CHF) {leaseTakeoverEnabled ? "" : "*"}
