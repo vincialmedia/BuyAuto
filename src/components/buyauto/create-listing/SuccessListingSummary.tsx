@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
+import { cantons } from "@/lib/buyauto/data";
 
 type SellerType = "private" | "garage";
 type DealType = "lease_takeover" | "direct_purchase";
@@ -14,7 +15,6 @@ type SummaryVariant =
   | "lease_takeover"
   | "direct_purchase_cash"
   | "direct_purchase_leasing"
-  | "lease_takeover_offer"
   | "unknown";
 
 export interface SuccessListingSummaryInput {
@@ -114,19 +114,14 @@ function getVariant(input: {
   financingType: FinancingType | null;
   leasingOffer: LeasingOfferShape | null;
 }): SummaryVariant {
-  const { dealType, financingType, leasingOffer } = input;
-
-  const takeoverOfferEnabled = leasingOffer?.lease_takeover_offer?.enabled === true;
+  const { dealType, financingType } = input;
 
   if (dealType === "lease_takeover") return "lease_takeover";
-
-  if (takeoverOfferEnabled) {
-    return "lease_takeover_offer";
-  }
 
   if (dealType === "direct_purchase") {
     if (financingType === "leasing") return "direct_purchase_leasing";
     if (financingType === "cash") return "direct_purchase_cash";
+    return "direct_purchase_cash";
   }
 
   return "unknown";
@@ -135,9 +130,14 @@ function getVariant(input: {
 function getDealLabel(variant: SummaryVariant): string {
   if (variant === "direct_purchase_cash") return "Direktkauf · Cash";
   if (variant === "direct_purchase_leasing") return "Direktkauf · Leasing";
-  if (variant === "lease_takeover_offer") return "Leasingübernahme (Angebot)";
   if (variant === "lease_takeover") return "Leasingübernahme";
   return "Inserat";
+}
+
+function getCantonName(cantonCode: string | null): string | null {
+  if (!cantonCode) return null;
+  const canton = cantons.find((c) => c.value === cantonCode);
+  return canton ? canton.label : cantonCode;
 }
 
 function getPrimaryPricing(args: {
@@ -149,14 +149,6 @@ function getPrimaryPricing(args: {
   leasingOffer: LeasingOfferShape | null;
 }): { primary: { label: string; value: string }; secondary?: { label: string; value: string } } {
   const { variant, purchasePriceChf, pricePerMonthChf, year, mileageKm, leasingOffer } = args;
-
-  if (variant === "lease_takeover_offer") {
-    const takeover = leasingOffer?.lease_takeover_offer ?? null;
-    const monthly = getNumber(takeover?.price_per_month_chf);
-    return {
-      primary: { label: "Monatliche Rate", value: monthly ? `${formatChf(monthly)} / Monat` : "-" },
-    };
-  }
 
   if (variant === "lease_takeover") {
     return {
@@ -220,12 +212,18 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
   const financingType = (listing.financing_type ?? null) as FinancingType | null;
 
   const leasingOffer = (listing.leasing_offer ?? null) as LeasingOfferShape | null;
+  const takeoverOfferEnabled = leasingOffer?.lease_takeover_offer?.enabled === true;
+
   const variant = getVariant({ dealType, financingType, leasingOffer });
 
   const year = getNumber(listing.year);
   const mileageKm = getNumber(listing.mileage_km ?? listing.km ?? listing.mileage);
 
-  const purchasePriceChf = getNumber(listing.purchase_price_chf);
+  const purchasePriceRaw = getNumber(listing.purchase_price_chf);
+  const legacyPricePerMonthChf = getNumber(listing.price_per_month_chf);
+  const purchasePriceChf =
+    purchasePriceRaw ?? (dealType === "direct_purchase" ? legacyPricePerMonthChf : null);
+
   const pricePerMonthChf = getNumber(listing.price_per_month_chf);
 
   const images = Array.isArray(listing.images) ? listing.images.filter((u) => typeof u === "string" && u.length > 0) : [];
@@ -318,26 +316,30 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
       if (typeof depositChf === "number") angebotRows.push({ label: "Depot / Anzahlung", value: formatChf(depositChf) });
     }
 
-    if (variant === "lease_takeover_offer") {
+    if (angebotRows.length > 0) out.push({ title: "Angebot", rows: angebotRows });
+
+    if (takeoverOfferEnabled && (variant === "direct_purchase_cash" || variant === "direct_purchase_leasing")) {
       const takeover = leasingOffer?.lease_takeover_offer ?? null;
 
+      const takeoverRows: Array<{ label: string; value: string }> = [];
+
       const monthly = getNumber(takeover?.price_per_month_chf);
-      if (typeof monthly === "number") angebotRows.push({ label: "Monatliche Rate", value: `${formatChf(monthly)} / Monat` });
+      takeoverRows.push({ label: "Monatliche Rate", value: typeof monthly === "number" ? `${formatChf(monthly)} / Monat` : "-" });
 
       const remainingMonths = getNumber(takeover?.remaining_months);
-      if (typeof remainingMonths === "number") angebotRows.push({ label: "Restlaufzeit", value: `${remainingMonths} Monate` });
+      takeoverRows.push({ label: "Restlaufzeit", value: typeof remainingMonths === "number" ? `${remainingMonths} Monate` : "-" });
 
       const remainingKm = getNumber(takeover?.remaining_km);
-      if (typeof remainingKm === "number") angebotRows.push({ label: "Verbleibende KM", value: formatKm(remainingKm) });
+      if (typeof remainingKm === "number") takeoverRows.push({ label: "Verbleibende KM", value: formatKm(remainingKm) });
 
       const depositChf = getNumber(takeover?.deposit_chf);
-      if (typeof depositChf === "number") angebotRows.push({ label: "Depot / Anzahlung", value: formatChf(depositChf) });
+      takeoverRows.push({ label: "Depot / Anzahlung", value: typeof depositChf === "number" ? formatChf(depositChf) : "-" });
 
-      const pickup = getString(takeover?.pickup_canton_code);
-      if (pickup) angebotRows.push({ label: "Abholung", value: pickup });
+      const pickup = getCantonName(getString(takeover?.pickup_canton_code));
+      if (pickup) takeoverRows.push({ label: "Abholung", value: pickup });
+
+      out.push({ title: "Leasingübernahme-Angebot", rows: takeoverRows });
     }
-
-    if (angebotRows.length > 0) out.push({ title: "Angebot", rows: angebotRows });
 
     const listingRows: Array<{ label: string; value: string }> = [];
     listingRows.push({ label: "Inserat-Typ", value: getDealLabel(variant) });
@@ -355,8 +357,7 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
   const showPriceDetails =
     variant === "direct_purchase_cash" ||
     variant === "direct_purchase_leasing" ||
-    variant === "lease_takeover" ||
-    variant === "lease_takeover_offer";
+    variant === "lease_takeover";
 
   return (
     <div className="space-y-6">
@@ -382,6 +383,11 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
             <Badge className="bg-white/80 text-neutral-900 border-white/60 backdrop-blur">
               {getDealLabel(variant)}
             </Badge>
+            {takeoverOfferEnabled && (variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") ? (
+              <Badge className="bg-white/80 text-neutral-900 border-white/60 backdrop-blur">
+                Leasingübernahme-Angebot
+              </Badge>
+            ) : null}
             {sellerType && (
               <Badge className="bg-white/80 text-neutral-900 border-white/60 backdrop-blur">
                 {getSellerLabel(sellerType)}
@@ -487,13 +493,13 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
                 <div className="text-sm text-neutral-600">Rate / Monat</div>
                 <div className="text-sm font-medium text-neutral-900">
                   {variant === "lease_takeover" ? (pricePerMonthChf ? `${formatChf(pricePerMonthChf)} / Monat` : "-") : null}
-                  {variant === "lease_takeover_offer"
+                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") && takeoverOfferEnabled
                     ? (() => {
                         const monthly = getNumber(leasingOffer?.lease_takeover_offer?.price_per_month_chf);
-                        return monthly ? `${formatChf(monthly)} / Monat` : "-";
+                        return monthly ? `Leasingübernahme-Angebot: ${formatChf(monthly)} / Monat` : "-";
                       })()
                     : null}
-                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") ? "-" : null}
+                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") && !takeoverOfferEnabled ? "-" : null}
                 </div>
               </div>
 

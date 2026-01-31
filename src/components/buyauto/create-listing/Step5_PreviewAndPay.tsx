@@ -68,7 +68,6 @@ type LeasingOfferShape = Partial<{
 
 type PreviewVariant =
   | "lease_takeover"
-  | "lease_takeover_offer"
   | "direct_purchase_cash"
   | "direct_purchase_leasing"
   | "unknown";
@@ -106,26 +105,30 @@ export default function Step5_PreviewAndPay() {
 
   const leasingOffer = (data.leasing_offer ?? null) as unknown as LeasingOfferShape | null;
   const takeoverOfferEnabled = leasingOffer?.lease_takeover_offer?.enabled === true;
+  const takeoverOffer = takeoverOfferEnabled ? (leasingOffer?.lease_takeover_offer ?? null) : null;
 
   const previewVariant: PreviewVariant =
     dealType === "lease_takeover"
       ? "lease_takeover"
-      : takeoverOfferEnabled
-        ? "lease_takeover_offer"
-        : dealType === "direct_purchase"
-          ? (financingType === "leasing" ? "direct_purchase_leasing" : "direct_purchase_cash")
-          : "unknown";
+      : dealType === "direct_purchase"
+        ? (financingType === "leasing" ? "direct_purchase_leasing" : "direct_purchase_cash")
+        : "unknown";
 
-  const takeoverMonthlyRateChf =
-    previewVariant === "lease_takeover_offer" ? getNumber(leasingOffer?.lease_takeover_offer?.price_per_month_chf) : null;
+  const takeoverMonthlyRateChf = takeoverOffer ? getNumber(takeoverOffer.price_per_month_chf) : null;
 
   const selectedPlanId = data.price_plan as Plan | undefined;
   const isPremium = data.premium || false;
 
-  // For privates: calculate price. For garages: price is ignored (subscription based).
   const planDetails = selectedPlanId ? pricingPlans[selectedPlanId] : null;
   const planPrice = planDetails ? planDetails.price : 0;
   const total = isGarage ? 0 : (planPrice + (isPremium ? PREMIUM_BOOST_PRICE : 0));
+
+  const purchasePriceForDisplayChf =
+    typeof (data as any)?.purchase_price_chf === "number"
+      ? (data as any).purchase_price_chf
+      : dealType === "direct_purchase" && typeof (data as any)?.price_per_month_chf === "number"
+        ? (data as any).price_per_month_chf
+        : undefined;
 
   const mainImage = data.images?.[0] || DUMMY_IMAGE_URL;
 
@@ -146,24 +149,66 @@ export default function Step5_PreviewAndPay() {
             ? [{ label: "Verbleibende KM", value: `${data.remaining_km.toLocaleString("de-CH")} km` }]
             : []),
         ]
-      : previewVariant === "lease_takeover_offer"
-        ? [
-            { label: "Restlaufzeit", value: typeof leasingOffer?.lease_takeover_offer?.remaining_months === "number" ? `${leasingOffer.lease_takeover_offer.remaining_months} Monate` : "-" },
-            { label: "Depot / Anzahlung", value: typeof leasingOffer?.lease_takeover_offer?.deposit_chf === "number" ? `CHF ${leasingOffer.lease_takeover_offer.deposit_chf.toLocaleString("de-CH")}` : "-" },
-            ...(typeof leasingOffer?.lease_takeover_offer?.remaining_km === "number"
-              ? [{ label: "Verbleibende KM", value: `${leasingOffer.lease_takeover_offer.remaining_km.toLocaleString("de-CH")} km` }]
-              : []),
-            ...(typeof leasingOffer?.lease_takeover_offer?.pickup_canton_code === "string" && leasingOffer.lease_takeover_offer.pickup_canton_code.length > 0
-              ? [{ label: "Abholung", value: leasingOffer.lease_takeover_offer.pickup_canton_code }]
-              : []),
-          ]
-        : [
-            { label: "Finanzierung", value: financingType === "leasing" ? "Leasing" : "Cash" },
-            {
-              label: "Kaufpreis",
-              value: typeof data.purchase_price_chf === "number" ? `CHF ${data.purchase_price_chf.toLocaleString("de-CH")}` : "-",
-            },
-          ];
+      : [
+          { label: "Finanzierung", value: financingType === "leasing" ? "Leasing" : "Cash" },
+          {
+            label: "Kaufpreis",
+            value: typeof purchasePriceForDisplayChf === "number" ? `CHF ${purchasePriceForDisplayChf.toLocaleString("de-CH")}` : "-",
+          },
+          ...(financingType === "leasing"
+            ? [
+                ...(typeof (leasingOffer as any)?.interest_rate_pct === "number"
+                  ? [{ label: "Zinssatz", value: `${(leasingOffer as any).interest_rate_pct}%` }]
+                  : []),
+                ...((leasingOffer as any)?.no_down_payment === true
+                  ? [{ label: "Anzahlung", value: "Keine Anzahlung" }]
+                  : typeof (leasingOffer as any)?.down_payment_pct === "number"
+                    ? [{ label: "Anzahlung", value: `${(leasingOffer as any).down_payment_pct}%` }]
+                    : []),
+                ...(typeof (leasingOffer as any)?.min_term_months === "number" || typeof (leasingOffer as any)?.max_term_months === "number"
+                  ? [
+                      {
+                        label: "Laufzeit",
+                        value:
+                          typeof (leasingOffer as any)?.min_term_months === "number" && typeof (leasingOffer as any)?.max_term_months === "number"
+                            ? `${(leasingOffer as any).min_term_months}–${(leasingOffer as any).max_term_months} Monate`
+                            : typeof (leasingOffer as any)?.min_term_months === "number"
+                              ? `${(leasingOffer as any).min_term_months} Monate`
+                              : typeof (leasingOffer as any)?.max_term_months === "number"
+                                ? `${(leasingOffer as any).max_term_months} Monate`
+                                : "-",
+                      },
+                    ]
+                  : []),
+                ...(Array.isArray((leasingOffer as any)?.km_options) && (leasingOffer as any).km_options.length > 0
+                  ? [
+                      {
+                        label: "KM-Optionen",
+                        value: ((leasingOffer as any).km_options as number[])
+                          .filter((n) => typeof n === "number" && Number.isFinite(n))
+                          .map((n) => `${n.toLocaleString("de-CH")} km/Jahr`)
+                          .join(", "),
+                      },
+                    ]
+                  : []),
+              ]
+            : []),
+        ];
+
+  const takeoverOfferDetails =
+    previewVariant !== "lease_takeover" && takeoverOfferEnabled
+      ? [
+          { label: "Monatliche Rate", value: typeof takeoverMonthlyRateChf === "number" ? `CHF ${takeoverMonthlyRateChf.toLocaleString("de-CH")} / Monat` : "-" },
+          { label: "Restlaufzeit", value: typeof takeoverOffer?.remaining_months === "number" ? `${takeoverOffer.remaining_months} Monate` : "-" },
+          { label: "Depot / Anzahlung", value: typeof takeoverOffer?.deposit_chf === "number" ? `CHF ${takeoverOffer.deposit_chf.toLocaleString("de-CH")}` : "-" },
+          ...(typeof takeoverOffer?.remaining_km === "number"
+            ? [{ label: "Verbleibende KM", value: `${takeoverOffer.remaining_km.toLocaleString("de-CH")} km` }]
+            : []),
+          ...(typeof takeoverOffer?.pickup_canton_code === "string" && takeoverOffer.pickup_canton_code.length > 0
+            ? [{ label: "Abholung", value: getCantonName(takeoverOffer.pickup_canton_code) }]
+            : []),
+        ]
+      : [];
 
   useEffect(() => {
     setMounted(true);
@@ -548,23 +593,21 @@ export default function Step5_PreviewAndPay() {
                       <p className="text-neutral-500">{getCantonName(data.location)}</p>
                     </div>
                     <div className="text-right">
-                      {previewVariant === "direct_purchase_cash" || previewVariant === "direct_purchase_leasing" ? (
+                      {previewVariant === "lease_takeover" ? (
+                        <>
+                          <p className="text-2xl font-bold text-red-600">
+                            {formatPrice(data.price_per_month_chf)}
+                          </p>
+                          <p className="text-sm text-neutral-500">pro Monat</p>
+                        </>
+                      ) : (
                         <>
                           <p className="text-2xl font-bold text-neutral-900">
-                            {typeof data.purchase_price_chf === "number" ? formatPrice(data.purchase_price_chf) : "CHF -"}
+                            {typeof purchasePriceForDisplayChf === "number" ? formatPrice(purchasePriceForDisplayChf) : "CHF -"}
                           </p>
                           <p className="text-sm text-neutral-500">
                             Kaufpreis{previewVariant === "direct_purchase_leasing" ? " · Leasing möglich" : ""}
                           </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-2xl font-bold text-red-600">
-                            {previewVariant === "lease_takeover_offer"
-                              ? (typeof takeoverMonthlyRateChf === "number" ? formatPrice(takeoverMonthlyRateChf) : "CHF -")
-                              : formatPrice(data.price_per_month_chf)}
-                          </p>
-                          <p className="text-sm text-neutral-500">pro Monat</p>
                         </>
                       )}
                     </div>
@@ -585,6 +628,19 @@ export default function Step5_PreviewAndPay() {
                         <p className="font-semibold text-neutral-800">{value || "-"}</p>
                       </div>
                     ))}
+
+                    {takeoverOfferDetails.length > 0 ? (
+                      <>
+                        <hr className="border-t border-neutral-200 !my-6" />
+                        <div className="text-sm font-bold text-neutral-900">Leasingübernahme-Angebot</div>
+                        {takeoverOfferDetails.map(({ label, value }) => (
+                          <div key={`takeover-offer-${label}`}>
+                            <p className="text-neutral-500">{label}</p>
+                            <p className="font-semibold text-neutral-800">{value || "-"}</p>
+                          </div>
+                        ))}
+                      </>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
