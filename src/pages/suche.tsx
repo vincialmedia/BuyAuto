@@ -52,6 +52,11 @@ export default function SearchPage() {
       }
     }
 
+    // Default: the marketplace search is leasing-takeover first (matches UI + filters)
+    if (!newQuery.dealType) {
+      newQuery.dealType = "lease_takeover";
+    }
+
     return newQuery;
   }, []);
 
@@ -59,7 +64,14 @@ export default function SearchPage() {
     const urlQuery: any = {};
     for (const key in query) {
       const value = query[key as keyof SearchQuery];
-      if (value !== undefined && value !== null && (Array.isArray(value) ? value.length > 0 : value !== '')) {
+
+      // Keep URL clean: omit default dealType
+      if (key === "dealType" && value === "lease_takeover") continue;
+
+      // financingType only relevant for direct purchase
+      if (key === "financingType" && (query.dealType ?? "lease_takeover") !== "direct_purchase") continue;
+
+      if (value !== undefined && value !== null && (Array.isArray(value) ? value.length > 0 : value !== "")) {
         urlQuery[key] = value;
       }
     }
@@ -79,12 +91,12 @@ export default function SearchPage() {
     setSearchQuery(queryWithPageReset);
     debouncedUpdateUrl(queryWithPageReset);
   }, [debouncedUpdateUrl]);
-  
+
   const handlePageChange = useCallback((page: number) => {
     const newQuery = { ...searchQuery, page };
     setSearchQuery(newQuery);
     router.push({ pathname: router.pathname, query: buildUrlQuery(newQuery) }, undefined, { shallow: true, scroll: false });
-    
+
     // Smooth scroll to top with offset for sticky header
     const headerOffset = 100;
     const elementPosition = 0;
@@ -92,13 +104,14 @@ export default function SearchPage() {
 
     window.scrollTo({
       top: offsetPosition,
-      behavior: 'smooth'
+      behavior: "smooth"
     });
   }, [searchQuery, router, buildUrlQuery]);
 
   const handleResetFilters = useCallback(() => {
-    const resetQuery: SearchQuery = { page: 1 };
+    const resetQuery: SearchQuery = { page: 1, dealType: "lease_takeover" };
     setSearchQuery(resetQuery);
+    // URL stays clean (dealType omitted because it's default)
     router.push({ pathname: router.pathname, query: {} }, undefined, { shallow: true });
   }, [router]);
 
@@ -112,20 +125,20 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (!isInitialized) return;
-    
+
     const performSearch = async () => {
       setIsLoading(true);
       try {
         const results = await searchListings(searchQuery);
         setSearchResults(results);
       } catch (error) {
-        console.error('Search failed:', error);
+        console.error("Search failed:", error);
         setSearchResults({ items: [], total: 0, page: searchQuery.page || 1, pageSize: 12 });
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     performSearch();
   }, [searchQuery, isInitialized]);
 
@@ -134,8 +147,8 @@ export default function SearchPage() {
       const scrollThreshold = 80;
       setFilterBarSticky(window.scrollY > scrollThreshold);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const totalResults = searchResults?.total || 0;
@@ -183,7 +196,7 @@ export default function SearchPage() {
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <link rel="canonical" href={`https://buyauto.ch${router.asPath.split('?')[0]}`} />
+        <link rel="canonical" href={`https://buyauto.ch${router.asPath.split("?")[0]}`} />
         <link rel="preconnect" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
@@ -191,7 +204,7 @@ export default function SearchPage() {
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
         {/* Filter Bar - Sticky behavior */}
-        <div className={`transition-all duration-300 ${filterBarSticky ? 'fixed top-0 left-0 right-0 z-50 shadow-lg' : 'relative z-40'}`}>
+        <div className={`transition-all duration-300 ${filterBarSticky ? "fixed top-0 left-0 right-0 z-50 shadow-lg" : "relative z-40"}`}>
           <DynamicFilterBar
             searchQuery={searchQuery}
             onSearchQueryChange={handleSearchQueryChange}
@@ -200,7 +213,7 @@ export default function SearchPage() {
 
         {/* Main Content */}
         <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`${filterBarSticky ? 'pt-24' : 'pt-8'} pb-16 transition-all duration-300`}>
+          <div className={`${filterBarSticky ? "pt-24" : "pt-8"} pb-16 transition-all duration-300`}>
             {/* Results Header */}
             {!isLoading && searchResults && (
               <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -214,7 +227,7 @@ export default function SearchPage() {
                 <p className="text-sm text-neutral-600">
                   {totalResults > 0 ? (
                     <>
-                      <span className="font-semibold text-neutral-900">{totalResults.toLocaleString()}</span> {totalResults === 1 ? 'Fahrzeug' : 'Fahrzeuge'} verfügbar
+                      <span className="font-semibold text-neutral-900">{totalResults.toLocaleString()}</span> {totalResults === 1 ? "Fahrzeug" : "Fahrzeuge"} verfügbar
                       {currentPage > 1 && <span className="text-neutral-400 mx-2">·</span>}
                       {currentPage > 1 && `Seite ${currentPage} von ${totalPages}`}
                     </>
@@ -222,12 +235,12 @@ export default function SearchPage() {
                     <>Passe deine Filter an, um Ergebnisse zu sehen</>
                   )}
                 </p>
-                
+
                 {/* Subtle divider */}
                 <div className="mt-4 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
               </div>
             )}
-            
+
             {/* Results List */}
             <VerticalResultsList
               listings={searchResults?.items || []}

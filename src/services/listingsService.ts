@@ -64,14 +64,14 @@ type FullListingRow = PublicListingRow & {
  */
 function parseImagesFromDatabase(imagesField: any, coverImageUrl?: string): string[] {
   let imageUrls: string[] = [];
-  
+
   // Handle various image formats from database
   if (imagesField) {
     try {
       // Case 1: Already an array (direct array storage)
       if (Array.isArray(imagesField)) {
         imageUrls = imagesField.filter(img => typeof img === "string" && img.trim() !== "");
-      } 
+      }
       // Case 2: JSON string that needs parsing
       else if (typeof imagesField === "string") {
         const parsed = JSON.parse(imagesField);
@@ -219,74 +219,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
   };
 }
 
-// Transform full listing row (for dashboard/admin)
-function transformFullRowToListingDetail(row: any): ListingDetail {
-  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
-
-  const purchasePriceCandidate =
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown })
-      .purchase_price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).listing_price ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; listing_price?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
-    null;
-
-  const purchasePriceCHF = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
-
-  const leasingOfferCandidate =
-    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasing_offer ??
-    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasingOffer ??
-    null;
-
-  const leasing_offer = leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
-
-  return {
-    id: row.id,
-    ui_version: row.ui_version === "v2" ? "v2" : "v1",
-    deal_type: (row.deal_type ?? "lease_takeover") as any,
-    financing_type: (row.financing_type ?? null) as any,
-    leasing_offer,
-    brand: row.brand,
-    model: row.model,
-    title: row.title || undefined,
-    description: row.description || undefined,
-    year: row.year,
-    pricePerMonthCHF: row.price_per_month_chf ?? 0,
-    remainingMonths: row.remaining_months ?? 0,
-    remaining_km: row.remaining_km,
-    location: row.location,
-    mileageKm: row.mileage_km,
-    fuel: row.fuel,
-    gearbox: row.gearbox,
-    body: row.body,
-    premium: row.premium,
-    is_premium: row.premium,
-    depositCHF: row.deposit_chf || null,
-    images: imageUrls,
-    imageUrl: imageUrls[0] || "",
-    purchasePriceCHF,
-    canton_code: row.canton_code,
-    cover_image_url: row.cover_image_url ?? null,
-    image_urls: imageUrls,
-    status: row.status as "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired",
-    created_at: row.created_at,
-    expires_at: row.expires_at,
-    duration_days: row.duration_days,
-    price_plan: row.price_plan as PricePlanId,
-    premium_until: row.premium_until,
-    cover_image_index: row.cover_image_index,
-    listing_price: row.price_paid_chf,
-
-    seller_type: row.seller_type ?? null,
-    seller_name: row.seller_name ?? null,
-    seller_avatar_url: row.seller_avatar_url ?? null,
-    garage_id: row.garage_id ?? null,
-    garage_name: row.garage_name ?? null,
-  };
-}
-
 // PUBLIC FRONTEND FUNCTIONS (homepage, search, listing detail)
-// These use the secure public_listings view
 
 export async function getPublishedListingById(id: string): Promise<ListingDetail | null> {
   try {
@@ -312,46 +245,25 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
   }
 }
 
-export async function getSimilarListings(listing: ListingDetail, limit: number = 6): Promise<Listing[]> {
-  try {
-    const { data, error } = await supabase
-      .from("listings")
-      .select("*")
-      .in("status", PUBLIC_LISTING_STATUSES)
-      .neq("id", listing.id)
-      .or(`brand.eq.${listing.brand},body.eq.${listing.body}`)
-      .order("premium", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      console.error("Error fetching similar listings:", error);
-      return [];
-    }
-
-    return (data || []).map((r) => transformPublicRowToListing(r as unknown as PublicListingRow));
-  } catch (error) {
-    console.error("Get similar listings error:", error);
-    return [];
-  }
-}
-
 export async function searchListings(searchQuery: SearchQuery): Promise<SearchResult> {
   try {
     const pageSize = 12;
     const page = searchQuery.page || 1;
     const offset = (page - 1) * pageSize;
 
+    const effectiveDealType = (searchQuery.dealType ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+    const isDirectPurchase = effectiveDealType === "direct_purchase";
+    const priceColumn = isDirectPurchase ? "purchase_price_chf" : "price_per_month_chf";
+
     let query = supabase
       .from("listings")
       .select("*", { count: "exact" })
-      .in("status", PUBLIC_LISTING_STATUSES);
-
-    if (searchQuery.dealType) query = query.eq("deal_type", searchQuery.dealType);
+      .in("status", PUBLIC_LISTING_STATUSES)
+      .eq("deal_type", effectiveDealType);
 
     if (
       searchQuery.financingType &&
-      (searchQuery.dealType ?? null) === "direct_purchase"
+      effectiveDealType === "direct_purchase"
     ) {
       query = query.eq("financing_type", searchQuery.financingType);
     }
@@ -361,7 +273,15 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
     if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
 
-    if (searchQuery.priceMax) query = query.lte("price_per_month_chf", searchQuery.priceMax);
+    if (typeof searchQuery.priceMin === "number") query = query.gte(priceColumn, searchQuery.priceMin);
+    if (typeof searchQuery.priceMax === "number") query = query.lte(priceColumn, searchQuery.priceMax);
+
+    // Only relevant for leasing takeover (direct purchase has no remaining_months)
+    if (!isDirectPurchase) {
+      if (typeof searchQuery.monthsMin === "number") query = query.gte("remaining_months", searchQuery.monthsMin);
+      if (typeof searchQuery.monthsMax === "number") query = query.lte("remaining_months", searchQuery.monthsMax);
+    }
+
     if (typeof searchQuery.kmMax === "number") query = query.lte("mileage_km", searchQuery.kmMax);
     if (searchQuery.canton?.length) query = query.in("canton_code", searchQuery.canton);
     if (searchQuery.fuel?.length) query = query.in("fuel", searchQuery.fuel);
@@ -371,12 +291,12 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     if (searchQuery.noDeposit) query = query.is("deposit_chf", null);
 
     const sortOrder = searchQuery.sort || "relevance";
-    if (sortOrder === "priceAsc") query = query.order("price_per_month_chf", { ascending: true });
-    else if (sortOrder === "priceDesc") query = query.order("price_per_month_chf", { ascending: false });
+    if (sortOrder === "priceAsc") query = query.order(priceColumn, { ascending: true, nullsFirst: false });
+    else if (sortOrder === "priceDesc") query = query.order(priceColumn, { ascending: false, nullsFirst: false });
     else if (sortOrder === "dateDesc") query = query.order("created_at", { ascending: false });
     else if (sortOrder === "yearDesc") query = query.order("year", { ascending: false });
-    else if (sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });
-    else if (sortOrder === "monthsDesc") query = query.order("remaining_months", { ascending: false });
+    else if (!isDirectPurchase && sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });
+    else if (!isDirectPurchase && sortOrder === "monthsDesc") query = query.order("remaining_months", { ascending: false });
     else if (sortOrder === "kmAsc") query = query.order("mileage_km", { ascending: true });
     else query = query.order("premium", { ascending: false }).order("created_at", { ascending: false });
 
@@ -410,160 +330,55 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
 
 export async function getBrands(): Promise<string[]> {
   try {
-    const { data, error } = await supabase.rpc('get_distinct_brands');
+    const { data, error } = await supabase
+      .from("listings")
+      .select("brand")
+      .in("status", PUBLIC_LISTING_STATUSES);
 
     if (error) {
-      console.error('Error fetching brands:', error);
+      console.error("Error fetching brands:", error);
       return [];
     }
-    return data;
+
+    const brands = Array.from(
+      new Set(
+        (data ?? [])
+          .map((r) => (r as { brand?: string | null }).brand)
+          .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+      )
+    ).sort((a, b) => a.localeCompare(b, "de-CH"));
+
+    return brands;
   } catch (error) {
-    console.error('Get brands error:', error);
+    console.error("Get brands error:", error);
     return [];
   }
 }
 
 export async function getModelsForBrand(brand: string): Promise<string[]> {
   try {
-    const { data, error } = await supabase.rpc('get_models_for_brand', { p_brand: brand });
-
-    if (error) {
-      console.error('Error fetching models:', error);
-      return [];
-    }
-    
-    // Transform the response: if data contains objects with 'model' key, extract the strings
-    if (!data) return [];
-    
-    // Handle both string[] and {model: string}[] formats
-    if (Array.isArray(data) && data.length > 0) {
-      if (typeof data[0] === 'string') {
-        return data;
-      }
-      if (typeof data[0] === 'object' && data[0] !== null && 'model' in data[0]) {
-        return data.map((item: any) => item.model).filter((model: any) => typeof model === 'string');
-      }
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Get models error:', error);
-    return [];
-  }
-}
-
-// USER DASHBOARD FUNCTIONS
-// These query the full listings table, but RLS ensures users only see their own
-// Note: The main getUserListings function is in dashboardService.ts with proper user filtering
-
-export async function getUserListingById(id: string): Promise<ListingDetail | null> {
-  try {
     const { data, error } = await supabase
-      .from('listings')
-      .select(`*`)
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      console.error('Error fetching user listing by ID:', error);
-      return null;
-    }
-
-    return transformFullRowToListingDetail(data);
-  } catch (error) {
-    console.error('Get user listing by ID error:', error);
-    return null;
-  }
-}
-
-/**
- * Get user's own listing by ID - includes drafts for preview
- * This is used on the success screen to preview newly created listings
- * that might not be published yet
- */
-export async function getUserListingByIdForPreview(id: string): Promise<ListingDetail | null> {
-  try {
-    const { data, error } = await supabase
-      .from('listings')
-      .select(`*`)
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      console.error('Error fetching user listing for preview:', error);
-      return null;
-    }
-
-    return transformFullRowToListingDetail(data);
-  } catch (error) {
-    console.error('Get user listing for preview error:', error);
-    return null;
-  }
-}
-
-// ADMIN FUNCTIONS
-// These also query the full listings table, but RLS allows admins to see all
-
-export async function getAllListings(): Promise<ListingDetail[]> {
-  try {
-    const { data, error } = await supabase
-      .from('listings')
-      .select(`*`)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching all listings (admin):', error);
-      return [];
-    }
-
-    return (data || []).map(transformFullRowToListingDetail);
-  } catch (error) {
-    console.error('Get all listings error:', error);
-    return [];
-  }
-}
-
-export async function updateListingStatus(id: string, status: string, moderationNote?: string): Promise<boolean> {
-  try {
-    const updateData: any = { status };
-    if (moderationNote !== undefined) {
-      updateData.moderation_note = moderationNote;
-    }
-
-    const { error } = await supabase
-      .from('listings')
-      .update(updateData)
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error updating listing status:', error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Update listing status error:', error);
-    return false;
-  }
-}
-
-export async function getPublishedListingsCount(): Promise<number> {
-  try {
-    const { count, error } = await supabase
       .from("listings")
-      .select("*", { count: "exact", head: true })
+      .select("model")
+      .eq("brand", brand)
       .in("status", PUBLIC_LISTING_STATUSES);
 
     if (error) {
-      console.error("Error fetching published listings count:", error);
-      return 0;
+      console.error("Error fetching models for brand:", { brand, error });
+      return [];
     }
 
-    return count || 0;
+    const models = Array.from(
+      new Set(
+        (data ?? [])
+          .map((r) => (r as { model?: string | null }).model)
+          .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+      )
+    ).sort((a, b) => a.localeCompare(b, "de-CH"));
+
+    return models;
   } catch (error) {
-    console.error("Get published listings count error:", error);
-    return 0;
+    console.error("Get models for brand error:", error);
+    return [];
   }
 }

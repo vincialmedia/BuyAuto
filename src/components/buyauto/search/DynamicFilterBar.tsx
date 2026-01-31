@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,19 +30,25 @@ export default function DynamicFilterBar({
   className
 }: DynamicFilterBarProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  
+
   // State for dynamic dropdowns
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
 
+  const selectedDealType = searchQuery.dealType ?? "lease_takeover";
+  const isDirectPurchase = selectedDealType === "direct_purchase";
+
+  const formatChf = (value: number) => `CHF ${new Intl.NumberFormat("de-CH").format(value)}`;
+
   // Generate year options from 1990 to current year + 1
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: currentYear - 1989 }, (_, i) => currentYear + 1 - i);
 
-  // Generate price options from 100 to 5000 in steps of 100
-  const priceOptions = Array.from({ length: 50 }, (_, i) => (i + 1) * 100);
+  const monthlyPriceOptions = useMemo(() => Array.from({ length: 50 }, (_, i) => (i + 1) * 100), []);
+  const purchasePriceOptions = useMemo(() => Array.from({ length: 60 }, (_, i) => (i + 1) * 5000), []); // 5k..300k
+  const priceOptions = isDirectPurchase ? purchasePriceOptions : monthlyPriceOptions;
 
   // Fetch brands on mount
   useEffect(() => {
@@ -52,7 +58,7 @@ export default function DynamicFilterBar({
         const brandsData = await getBrands();
         setBrands(brandsData);
       } catch (error) {
-        console.error('Error fetching brands:', error);
+        console.error("Error fetching brands:", error);
       } finally {
         setLoadingBrands(false);
       }
@@ -69,7 +75,7 @@ export default function DynamicFilterBar({
           const modelsData = await getModelsForBrand(searchQuery.brand!);
           setModels(modelsData);
         } catch (error) {
-          console.error('Error fetching models:', error);
+          console.error("Error fetching models:", error);
         } finally {
           setLoadingModels(false);
         }
@@ -93,11 +99,11 @@ export default function DynamicFilterBar({
     const yearAsNumber = year === "all" ? undefined : (year ? parseInt(year, 10) : undefined);
     onSearchQueryChange({ ...searchQuery, yearMin: yearAsNumber });
   };
-  
-  const handlePriceChange = (value: string | undefined, type: 'min' | 'max') => {
-    const priceAsNumber = value === 'all' ? undefined : (value ? parseInt(value, 10) : undefined);
+
+  const handlePriceChange = (value: string | undefined, type: "min" | "max") => {
+    const priceAsNumber = value === "all" ? undefined : (value ? parseInt(value, 10) : undefined);
     const newQuery = { ...searchQuery };
-    if (type === 'min') {
+    if (type === "min") {
       newQuery.priceMin = priceAsNumber;
     } else {
       newQuery.priceMax = priceAsNumber;
@@ -107,7 +113,8 @@ export default function DynamicFilterBar({
 
   const handleDealTypeChange = (value: string | undefined) => {
     if (value === "lease_takeover") {
-      onSearchQueryChange({ ...searchQuery, dealType: undefined, financingType: undefined });
+      // Explicitly filter to leasing takeover (matches label + expected behavior)
+      onSearchQueryChange({ ...searchQuery, dealType: "lease_takeover", financingType: undefined });
       return;
     }
     onSearchQueryChange({ ...searchQuery, dealType: "direct_purchase", financingType: searchQuery.financingType });
@@ -120,18 +127,20 @@ export default function DynamicFilterBar({
     });
   };
 
-  const selectedDealType = searchQuery.dealType ?? "lease_takeover";
-
   // Generate filter chips from active filters
   const getActiveFilterChips = (): FilterChip[] => {
     const chips: FilterChip[] = [];
-    
+
     if (searchQuery.brand) chips.push({ key: "brand", label: "Marke", value: searchQuery.brand });
     if (searchQuery.model) chips.push({ key: "model", label: "Modell", value: searchQuery.model });
     if (searchQuery.yearMin) chips.push({ key: "yearMin", label: "Ab Jahr", value: searchQuery.yearMin.toString() });
-    if (searchQuery.priceMin) chips.push({ key: "priceMin", label: "Min. Preis", value: `CHF ${searchQuery.priceMin}` });
-    if (searchQuery.priceMax) chips.push({ key: "priceMax", label: "Max. Preis", value: `CHF ${searchQuery.priceMax}` });
-    if (searchQuery.monthsMax) chips.push({ key: "monthsMax", label: "Restlaufzeit", value: `bis ${searchQuery.monthsMax} Mon.`});
+
+    const minLabel = isDirectPurchase ? "Min. Kaufpreis" : "Min. Rate";
+    const maxLabel = isDirectPurchase ? "Max. Kaufpreis" : "Max. Rate";
+    if (searchQuery.priceMin) chips.push({ key: "priceMin", label: minLabel, value: formatChf(searchQuery.priceMin) });
+    if (searchQuery.priceMax) chips.push({ key: "priceMax", label: maxLabel, value: formatChf(searchQuery.priceMax) });
+
+    if (!isDirectPurchase && searchQuery.monthsMax) chips.push({ key: "monthsMax", label: "Restlaufzeit", value: `bis ${searchQuery.monthsMax} Mon.` });
 
     if (searchQuery.dealType === "direct_purchase") {
       chips.push({ key: "dealType", label: "Kaufoption", value: "Direktkauf" });
@@ -143,7 +152,7 @@ export default function DynamicFilterBar({
         });
       }
     }
-    
+
     return chips;
   };
 
@@ -157,12 +166,18 @@ export default function DynamicFilterBar({
 
     if (chipKey === "dealType") {
       delete newQuery.financingType;
+      // revert to default
+      newQuery.dealType = "lease_takeover";
     }
 
     onSearchQueryChange(newQuery as SearchQuery);
   };
 
   const activeChips = getActiveFilterChips();
+
+  const priceMinPlaceholder = isDirectPurchase ? "Min. Kaufpreis" : "Min. Rate";
+  const priceMaxPlaceholder = isDirectPurchase ? "Max. Kaufpreis" : "Max. Rate";
+  const priceSectionLabel = isDirectPurchase ? "Kaufpreis" : "Preis pro Monat";
 
   // Desktop Filter Bar
   const DesktopFilters = () => (
@@ -205,11 +220,11 @@ export default function DynamicFilterBar({
         {/* Min Price */}
         <div className="col-span-1">
           <Select value={searchQuery.priceMin ? searchQuery.priceMin.toString() : "all"} onValueChange={(value) => handlePriceChange(value, "min")}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Min. Preis" /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={priceMinPlaceholder} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Kein Min.</SelectItem>
               {priceOptions.map((price) => (
-                <SelectItem key={price} value={price.toString()}>CHF {price}</SelectItem>
+                <SelectItem key={price} value={price.toString()}>{formatChf(price)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -218,24 +233,31 @@ export default function DynamicFilterBar({
         {/* Max Price */}
         <div className="col-span-1">
           <Select value={searchQuery.priceMax ? searchQuery.priceMax.toString() : "all"} onValueChange={(value) => handlePriceChange(value, "max")}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Max. Preis" /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={priceMaxPlaceholder} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Kein Max.</SelectItem>
               {priceOptions.map((price) => (
-                <SelectItem key={price} value={price.toString()}>CHF {price}</SelectItem>
+                <SelectItem key={price} value={price.toString()}>{formatChf(price)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Restlaufzeit */}
+        {/* Restlaufzeit (only for leasing takeover) */}
         <div className="col-span-1">
           <Select
-            value={searchQuery.monthsMax ? `${searchQuery.monthsMax}` : undefined}
-            onValueChange={(value) => onSearchQueryChange({ ...searchQuery, monthsMax: value === "all" ? undefined : parseInt(value, 10)})}
+            value={!isDirectPurchase && searchQuery.monthsMax ? `${searchQuery.monthsMax}` : "all"}
+            onValueChange={(value) => {
+              if (isDirectPurchase) {
+                onSearchQueryChange({ ...searchQuery, monthsMax: undefined });
+                return;
+              }
+              onSearchQueryChange({ ...searchQuery, monthsMax: value === "all" ? undefined : parseInt(value, 10) });
+            }}
+            disabled={isDirectPurchase}
           >
             <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Max. Laufzeit" />
+              <SelectValue placeholder={isDirectPurchase ? "Nur Leasingübernahme" : "Max. Laufzeit"} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle</SelectItem>
@@ -363,32 +385,32 @@ export default function DynamicFilterBar({
 
       {/* Price Range */}
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Preis pro Monat</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{priceSectionLabel}</label>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-neutral-600 mb-1 block">Min.</label>
-            <Select value={searchQuery.priceMin ? searchQuery.priceMin.toString() : "all"} onValueChange={(value) => handlePriceChange(value, 'min')}>
+            <Select value={searchQuery.priceMin ? searchQuery.priceMin.toString() : "all"} onValueChange={(value) => handlePriceChange(value, "min")}>
               <SelectTrigger className="h-11 text-sm">
                 <SelectValue placeholder="Kein Min." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Kein Min.</SelectItem>
                 {priceOptions.map((price) => (
-                  <SelectItem key={price} value={price.toString()}>CHF {price}</SelectItem>
+                  <SelectItem key={price} value={price.toString()}>{formatChf(price)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
             <label className="text-xs text-neutral-600 mb-1 block">Max.</label>
-            <Select value={searchQuery.priceMax ? searchQuery.priceMax.toString() : "all"} onValueChange={(value) => handlePriceChange(value, 'max')}>
+            <Select value={searchQuery.priceMax ? searchQuery.priceMax.toString() : "all"} onValueChange={(value) => handlePriceChange(value, "max")}>
               <SelectTrigger className="h-11 text-sm">
                 <SelectValue placeholder="Kein Max." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Kein Max.</SelectItem>
                 {priceOptions.map((price) => (
-                  <SelectItem key={price} value={price.toString()}>CHF {price}</SelectItem>
+                  <SelectItem key={price} value={price.toString()}>{formatChf(price)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -400,11 +422,18 @@ export default function DynamicFilterBar({
       <div>
         <label className="text-sm font-semibold text-neutral-900 mb-2 block">Restlaufzeit (max.)</label>
         <Select
-          value={searchQuery.monthsMax ? `${searchQuery.monthsMax}` : undefined}
-          onValueChange={(value) => onSearchQueryChange({ ...searchQuery, monthsMax: value === "all" ? undefined : parseInt(value)})}
+          value={!isDirectPurchase && searchQuery.monthsMax ? `${searchQuery.monthsMax}` : "all"}
+          onValueChange={(value) => {
+            if (isDirectPurchase) {
+              onSearchQueryChange({ ...searchQuery, monthsMax: undefined });
+              return;
+            }
+            onSearchQueryChange({ ...searchQuery, monthsMax: value === "all" ? undefined : parseInt(value, 10) });
+          }}
+          disabled={isDirectPurchase}
         >
           <SelectTrigger className="h-11 text-sm">
-            <SelectValue placeholder="Alle Laufzeiten" />
+            <SelectValue placeholder={isDirectPurchase ? "Nur Leasingübernahme" : "Alle Laufzeiten"} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alle</SelectItem>
@@ -487,7 +516,7 @@ export default function DynamicFilterBar({
           <Button
             variant="outline"
             onClick={() => {
-              onSearchQueryChange({});
+              onSearchQueryChange({ dealType: "lease_takeover" });
               setMobileFilterOpen(false);
             }}
             className="h-11 px-6 border-neutral-300 text-neutral-700 hover:bg-neutral-50"
@@ -524,18 +553,18 @@ export default function DynamicFilterBar({
                 <MobileFilters />
               </SheetContent>
             </Sheet>
-            
+
             {activeChips.length > 0 && (
               <Button
                 variant="ghost"
-                onClick={() => onSearchQueryChange({})}
+                onClick={() => onSearchQueryChange({ dealType: "lease_takeover" })}
                 className="h-9 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold"
               >
                 Alle löschen
               </Button>
             )}
           </div>
-          
+
           {/* Mobile filter chips */}
           {activeChips.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">

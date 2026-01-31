@@ -201,6 +201,53 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
         </div>
       </div>
 
+      <div className="mt-3 flex items-center gap-3">
+        <div className="relative h-8 w-8 overflow-hidden rounded-full bg-neutral-100 ring-1 ring-neutral-200 flex-shrink-0">
+          {(() => {
+            const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
+            const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
+            const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+            if (sellerType === "garage" && garageId && base) {
+              const path = `garage-logos/${garageId}/logo_medium.webp`
+                .split("/")
+                .map((seg) => encodeURIComponent(seg))
+                .join("/");
+              const src = `${base}/storage/v1/object/public/listing-images/${path}`;
+              return <img src={src} alt="Garage Logo" className="h-full w-full object-cover" loading="lazy" />;
+            }
+
+            const avatarUrl = (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+            const name =
+              (listing as unknown as { seller_name?: string | null }).seller_name ??
+              (listing as unknown as { garage_name?: string | null }).garage_name ??
+              "Anbieter";
+
+            const initials = name
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((p) => p[0]?.toUpperCase())
+              .join("") || "A";
+
+            if (avatarUrl) {
+              return <img src={avatarUrl} alt={name} className="h-full w-full object-cover" loading="lazy" />;
+            }
+
+            return <div className="h-full w-full grid place-items-center text-xs font-bold text-neutral-700">{initials}</div>;
+          })()}
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-neutral-900 truncate">
+            {(listing as unknown as { seller_name?: string | null }).seller_name ??
+              (listing as unknown as { garage_name?: string | null }).garage_name ??
+              ((listing as unknown as { seller_type?: string | null }).seller_type === "garage" ? "Garage" : "Privatanbieter")}
+          </p>
+          <p className="text-xs text-neutral-500 truncate">{listing.location}</p>
+        </div>
+      </div>
+
       {/* Premium glow effect */}
       {listing.premium && (
         <div className="absolute inset-0 rounded-2xl ring-1 ring-amber-200/50 ring-inset pointer-events-none" />

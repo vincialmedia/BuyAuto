@@ -86,6 +86,23 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
     return location;
   };
 
+  const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
+  const sellerName =
+    (listing as unknown as { seller_name?: string | null }).seller_name ??
+    (listing as unknown as { garage_name?: string | null }).garage_name ??
+    (sellerType === "garage" ? "Garage" : "Privatanbieter");
+
+  const sellerAvatarUrl = (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+
+  const sellerInitials =
+    sellerName
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join("") || "A";
+
   return (
     <article
       className={`group relative bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 cursor-pointer touch-manipulation ${
@@ -160,7 +177,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         <div className="grid grid-cols-2 gap-2 sm:gap-2.5 mb-3 sm:mb-4">
           <div className="flex items-center text-xs text-neutral-600">
             <Gauge className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
-            <span className="font-medium truncate">{listing.mileageKm.toLocaleString()} km</span>
+            <span className="font-medium truncate">{listing.mileageKm.toLocaleString("de-CH")} km</span>
           </div>
           <div className="flex items-center text-xs text-neutral-600">
             <Fuel className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
@@ -199,8 +216,37 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           </div>
         )}
 
+        <div className="mt-3 flex items-center gap-3">
+          <div className="relative h-9 w-9 overflow-hidden rounded-full bg-neutral-100 ring-1 ring-neutral-200 flex-shrink-0">
+            {(() => {
+              const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
+              const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
+              const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+              if (sellerType === "garage" && garageId && base) {
+                const path = `garage-logos/${garageId}/logo_medium.webp`
+                  .split("/")
+                  .map((seg) => encodeURIComponent(seg))
+                  .join("/");
+                const src = `${base}/storage/v1/object/public/listing-images/${path}`;
+                return <img src={src} alt={sellerName} className="h-full w-full object-cover" loading="lazy" />;
+              }
+
+              if (sellerAvatarUrl) {
+                return <img src={sellerAvatarUrl} alt={sellerName} className="h-full w-full object-cover" loading="lazy" />;
+              }
+
+              return <div className="h-full w-full grid place-items-center text-xs font-bold text-neutral-700">{sellerInitials}</div>;
+            })()}
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-neutral-900 truncate">{sellerName}</p>
+            <p className="text-xs text-neutral-500 truncate">{formatLocation(listing.location)}</p>
+          </div>
+        </div>
+
         {/* Divider */}
-        <div className="h-px bg-neutral-200 mb-3 sm:mb-4" />
+        <div className="h-px bg-neutral-200 mb-3 sm:mb-4 mt-3 sm:mt-4" />
 
         {/* Price & CTA */}
         <div className="flex items-end justify-between gap-2">
