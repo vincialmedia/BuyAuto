@@ -120,7 +120,22 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
         if (fetched) {
           setResolvedListing((prev) => {
             const prevObj = prev && typeof prev === "object" ? prev : null;
-            const merged = { ...(prevObj ?? {}), ...(fetched as unknown as SuccessListingSummaryInput) } as SuccessListingSummaryInput;
+            const fetchedObj = fetched as unknown as SuccessListingSummaryInput;
+
+            const merged = { ...(prevObj ?? {}), ...(fetchedObj ?? {}) } as SuccessListingSummaryInput;
+
+            if ((merged.deal_type == null || merged.deal_type === "") && prevObj?.deal_type) {
+              merged.deal_type = prevObj.deal_type;
+            }
+
+            if ((merged.financing_type == null || merged.financing_type === "") && prevObj?.financing_type) {
+              merged.financing_type = prevObj.financing_type;
+            }
+
+            if (merged.leasing_offer == null && prevObj?.leasing_offer != null) {
+              merged.leasing_offer = prevObj.leasing_offer;
+            }
+
             return merged;
           });
         } else if (draft) {
