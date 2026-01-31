@@ -507,10 +507,10 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
                 <div className="text-sm text-neutral-600">Depot / Anzahlung</div>
                 <div className="text-sm font-medium text-neutral-900">
                   {variant === "lease_takeover" ? formatChf(getNumber(listing.deposit_chf)) : null}
-                  {variant === "lease_takeover_offer"
+                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") && takeoverOfferEnabled
                     ? formatChf(getNumber(leasingOffer?.lease_takeover_offer?.deposit_chf))
                     : null}
-                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") ? "-" : null}
+                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") && !takeoverOfferEnabled ? "-" : null}
                 </div>
               </div>
 
