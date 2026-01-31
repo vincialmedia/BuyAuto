@@ -382,3 +382,69 @@ export async function getModelsForBrand(brand: string): Promise<string[]> {
     return [];
   }
 }
+
+export async function getSimilarListings(listing: ListingDetail, limit: number = 6): Promise<Listing[]> {
+  try {
+    const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+
+    let query = supabase
+      .from("listings")
+      .select("*")
+      .in("status", PUBLIC_LISTING_STATUSES)
+      .neq("id", listing.id)
+      .eq("deal_type", dealType);
+
+    if (typeof listing.brand === "string" && listing.brand.trim() !== "") {
+      query = query.eq("brand", listing.brand);
+    }
+
+    if (typeof listing.model === "string" && listing.model.trim() !== "") {
+      query = query.eq("model", listing.model);
+    }
+
+    const { data, error } = await query
+      .order("premium", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error("Error fetching similar listings:", error);
+      return [];
+    }
+
+    return (data ?? []).map((r) => transformPublicRowToListing(r as unknown as PublicListingRow));
+  } catch (error) {
+    console.error("Get similar listings error:", error);
+    return [];
+  }
+}
+
+export async function getUserListingById(id: string): Promise<ListingDetail | null> {
+  try {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching user listing by ID:", error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return transformPublicRowToListingDetail(data as unknown as PublicListingRow);
+  } catch (error) {
+    console.error("Get user listing by ID error:", error);
+    return null;
+  }
+}
