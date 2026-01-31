@@ -10,6 +10,13 @@ type SellerType = "private" | "garage";
 type DealType = "lease_takeover" | "direct_purchase";
 type FinancingType = "cash" | "leasing";
 
+type SummaryVariant =
+  | "lease_takeover"
+  | "direct_purchase_cash"
+  | "direct_purchase_leasing"
+  | "lease_takeover_offer"
+  | "unknown";
+
 export interface SuccessListingSummaryInput {
   id?: string | null;
 
@@ -56,14 +63,30 @@ export interface SuccessListingSummaryProps {
   planLabel?: string | null;
 }
 
+type LeaseTakeoverOfferShape = Partial<{
+  enabled: boolean;
+  price_per_month_chf: number;
+  remaining_months: number;
+  deposit_chf: number;
+  remaining_km?: number;
+  pickup_canton_code: string;
+}>;
+
+type LeasingOfferShape = Partial<{
+  enabled: boolean;
+  interest_rate_pct: number;
+  down_payment_pct: number;
+  no_down_payment: boolean;
+  min_term_months: number;
+  max_term_months: number;
+  km_options: number[];
+  residual_pct_adjustment_pp: number;
+  lease_takeover_offer: LeaseTakeoverOfferShape;
+}>;
+
 function formatChf(value: number | null | undefined): string {
   if (typeof value !== "number" || !Number.isFinite(value)) return "-";
   return `CHF ${value.toLocaleString("de-CH")}`;
-}
-
-function formatChfMoney(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
-  return `CHF ${value.toFixed(2)}`;
 }
 
 function formatKm(value: number | null | undefined): string {
@@ -81,82 +104,109 @@ function getString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value : null;
 }
 
-function getDealLabel(dealType: DealType | null): string {
-  if (dealType === "direct_purchase") return "Direktkauf";
-  if (dealType === "lease_takeover") return "Leasingübernahme";
-  return "Inserat";
-}
-
 function getSellerLabel(sellerType: SellerType | undefined): string {
   if (sellerType === "garage") return "Garage";
   return "Privat";
 }
 
-function getPricing(args: {
+function getVariant(input: {
   dealType: DealType | null;
   financingType: FinancingType | null;
+  leasingOffer: LeasingOfferShape | null;
+}): SummaryVariant {
+  const { dealType, financingType, leasingOffer } = input;
+
+  const takeoverOfferEnabled = leasingOffer?.lease_takeover_offer?.enabled === true;
+
+  if (dealType === "lease_takeover") return "lease_takeover";
+
+  if (takeoverOfferEnabled) {
+    return "lease_takeover_offer";
+  }
+
+  if (dealType === "direct_purchase") {
+    if (financingType === "leasing") return "direct_purchase_leasing";
+    if (financingType === "cash") return "direct_purchase_cash";
+  }
+
+  return "unknown";
+}
+
+function getDealLabel(variant: SummaryVariant): string {
+  if (variant === "direct_purchase_cash") return "Direktkauf · Cash";
+  if (variant === "direct_purchase_leasing") return "Direktkauf · Leasing";
+  if (variant === "lease_takeover_offer") return "Leasingübernahme (Angebot)";
+  if (variant === "lease_takeover") return "Leasingübernahme";
+  return "Inserat";
+}
+
+function getPrimaryPricing(args: {
+  variant: SummaryVariant;
   purchasePriceChf: number | null;
   pricePerMonthChf: number | null;
   year: number | null;
   mileageKm: number | null;
-  leasingOffer: unknown | null;
+  leasingOffer: LeasingOfferShape | null;
 }): { primary: { label: string; value: string }; secondary?: { label: string; value: string } } {
-  const { dealType, financingType, purchasePriceChf, pricePerMonthChf, year, mileageKm, leasingOffer } = args;
+  const { variant, purchasePriceChf, pricePerMonthChf, year, mileageKm, leasingOffer } = args;
 
-  if (dealType === "direct_purchase") {
+  if (variant === "lease_takeover_offer") {
+    const takeover = leasingOffer?.lease_takeover_offer ?? null;
+    const monthly = getNumber(takeover?.price_per_month_chf);
+    return {
+      primary: { label: "Monatliche Rate", value: monthly ? `${formatChf(monthly)} / Monat` : "-" },
+    };
+  }
+
+  if (variant === "lease_takeover") {
+    return {
+      primary: { label: "Monatliche Rate", value: pricePerMonthChf ? `${formatChf(pricePerMonthChf)} / Monat` : "-" },
+    };
+  }
+
+  if (variant === "direct_purchase_cash") {
+    return { primary: { label: "Kaufpreis", value: formatChf(purchasePriceChf) } };
+  }
+
+  if (variant === "direct_purchase_leasing") {
     const primary = { label: "Kaufpreis", value: formatChf(purchasePriceChf) };
 
-    if (financingType === "leasing") {
-      const offer = leasingOffer as Partial<{
-        interest_rate_pct: number;
-        down_payment_pct: number;
-        no_down_payment: boolean;
-        min_term_months: number;
-        residual_pct_adjustment_pp: number;
-      }> | null;
+    const offer = leasingOffer ?? null;
+    const interestRatePct = getNumber(offer?.interest_rate_pct);
+    const minTermMonths = getNumber(offer?.min_term_months) ?? 60;
+    const noDownPayment = offer?.no_down_payment === true;
+    const downPaymentPct = noDownPayment ? 0 : getNumber(offer?.down_payment_pct) ?? 5;
+    const residualAdj = getNumber(offer?.residual_pct_adjustment_pp);
 
-      const interestRatePct = getNumber(offer?.interest_rate_pct);
-      const minTermMonths = getNumber(offer?.min_term_months) ?? 60;
-      const downPaymentPct =
-        offer?.no_down_payment === true ? 0 : getNumber(offer?.down_payment_pct) ?? 5;
-      const residualAdj = getNumber(offer?.residual_pct_adjustment_pp);
+    const canEstimate =
+      typeof purchasePriceChf === "number" &&
+      typeof year === "number" &&
+      typeof mileageKm === "number" &&
+      typeof interestRatePct === "number";
 
-      const canEstimate =
-        typeof purchasePriceChf === "number" &&
-        typeof year === "number" &&
-        typeof mileageKm === "number" &&
-        typeof interestRatePct === "number";
+    if (canEstimate) {
+      const teaser = estimateTeaserMonthlyRateChf({
+        priceChf: purchasePriceChf,
+        year,
+        mileageKm,
+        interestRatePct,
+        residualPctAdjustmentPp: residualAdj,
+        termMonths: minTermMonths,
+        downPaymentPct,
+      });
 
-      if (canEstimate) {
-        const teaser = estimateTeaserMonthlyRateChf({
-          priceChf: purchasePriceChf,
-          year,
-          mileageKm,
-          interestRatePct,
-          residualPctAdjustmentPp: residualAdj,
-          termMonths: minTermMonths,
-          downPaymentPct,
-        });
-
-        if (typeof teaser === "number" && Number.isFinite(teaser) && teaser > 0) {
-          return {
-            primary,
-            secondary: { label: "Leasing ab", value: `CHF ${teaser.toLocaleString("de-CH")} / Monat` },
-          };
-        }
+      if (typeof teaser === "number" && Number.isFinite(teaser) && teaser > 0) {
+        return {
+          primary,
+          secondary: { label: "Leasing ab", value: `CHF ${teaser.toLocaleString("de-CH")} / Monat` },
+        };
       }
-
-      return { primary };
     }
 
     return { primary };
   }
 
-  const primary = {
-    label: "Monatliche Rate",
-    value: pricePerMonthChf ? `${formatChf(pricePerMonthChf)} / Monat` : "-",
-  };
-  return { primary };
+  return { primary: { label: "Preis", value: "-" } };
 }
 
 export function SuccessListingSummary({ listing, sellerType, planLabel }: SuccessListingSummaryProps) {
@@ -165,8 +215,12 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
   const brand = getString(listing.brand) ?? "-";
   const model = getString(listing.model) ?? "";
   const title = getString(listing.title);
+
   const dealType = (listing.deal_type ?? null) as DealType | null;
   const financingType = (listing.financing_type ?? null) as FinancingType | null;
+
+  const leasingOffer = (listing.leasing_offer ?? null) as LeasingOfferShape | null;
+  const variant = getVariant({ dealType, financingType, leasingOffer });
 
   const year = getNumber(listing.year);
   const mileageKm = getNumber(listing.mileage_km ?? listing.km ?? listing.mileage);
@@ -182,16 +236,15 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
   const mainImageUrl = images[safeActiveIndex] ?? images[coverIndex] ?? null;
 
   const pricing = useMemo(() => {
-    return getPricing({
-      dealType,
-      financingType,
+    return getPrimaryPricing({
+      variant,
       purchasePriceChf,
       pricePerMonthChf,
       year,
       mileageKm,
-      leasingOffer: listing.leasing_offer ?? null,
+      leasingOffer,
     });
-  }, [dealType, financingType, purchasePriceChf, pricePerMonthChf, year, mileageKm, listing.leasing_offer]);
+  }, [variant, purchasePriceChf, pricePerMonthChf, year, mileageKm, leasingOffer]);
 
   const sections = useMemo(() => {
     const out: Array<{ title: string; rows: Array<{ label: string; value: string }> }> = [];
@@ -210,55 +263,49 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
 
     const angebotRows: Array<{ label: string; value: string }> = [];
 
-    if (dealType === "direct_purchase") {
-      if (typeof purchasePriceChf === "number") angebotRows.push({ label: "Kaufpreis", value: formatChf(purchasePriceChf) });
+    if (variant === "direct_purchase_cash") {
+      angebotRows.push({ label: "Kaufpreis", value: formatChf(purchasePriceChf) });
+      angebotRows.push({ label: "Finanzierung", value: "Cash" });
+    }
 
-      if (financingType === "leasing") {
-        if (pricing.secondary) angebotRows.push({ label: pricing.secondary.label, value: pricing.secondary.value });
+    if (variant === "direct_purchase_leasing") {
+      angebotRows.push({ label: "Kaufpreis", value: formatChf(purchasePriceChf) });
+      angebotRows.push({ label: "Finanzierung", value: "Leasing" });
+      if (pricing.secondary) angebotRows.push({ label: pricing.secondary.label, value: pricing.secondary.value });
 
-        const offer = listing.leasing_offer as Partial<{
-          interest_rate_pct: number;
-          down_payment_pct: number;
-          no_down_payment: boolean;
-          min_term_months: number;
-          max_term_months: number;
-          km_options: number[];
-          residual_pct_adjustment_pp: number;
-        }> | null;
+      const offer = leasingOffer ?? null;
+      const interestRatePct = getNumber(offer?.interest_rate_pct);
+      if (typeof interestRatePct === "number") angebotRows.push({ label: "Zinssatz", value: `${interestRatePct}%` });
 
-        const interestRatePct = getNumber(offer?.interest_rate_pct);
-        if (typeof interestRatePct === "number") angebotRows.push({ label: "Zinssatz", value: `${interestRatePct}%` });
+      if (offer?.no_down_payment === true) {
+        angebotRows.push({ label: "Anzahlung", value: "Keine Anzahlung" });
+      } else {
+        const downPaymentPct = getNumber(offer?.down_payment_pct);
+        if (typeof downPaymentPct === "number") angebotRows.push({ label: "Anzahlung", value: `${downPaymentPct}%` });
+      }
 
-        if (offer?.no_down_payment === true) {
-          angebotRows.push({ label: "Anzahlung", value: "Keine Anzahlung" });
-        } else {
-          const downPaymentPct = getNumber(offer?.down_payment_pct);
-          if (typeof downPaymentPct === "number") angebotRows.push({ label: "Anzahlung", value: `${downPaymentPct}%` });
+      const minTerm = getNumber(offer?.min_term_months);
+      const maxTerm = getNumber(offer?.max_term_months);
+      if (typeof minTerm === "number" && typeof maxTerm === "number") {
+        angebotRows.push({ label: "Laufzeit", value: `${minTerm}–${maxTerm} Monate` });
+      } else if (typeof minTerm === "number") {
+        angebotRows.push({ label: "Laufzeit", value: `${minTerm} Monate` });
+      }
+
+      if (Array.isArray(offer?.km_options) && offer.km_options.length > 0) {
+        const opts = offer.km_options.filter((n) => typeof n === "number" && Number.isFinite(n));
+        if (opts.length > 0) {
+          angebotRows.push({ label: "KM-Optionen", value: opts.map((n) => `${n.toLocaleString("de-CH")} km/Jahr`).join(", ") });
         }
+      }
 
-        const minTerm = getNumber(offer?.min_term_months);
-        const maxTerm = getNumber(offer?.max_term_months);
-        if (typeof minTerm === "number" && typeof maxTerm === "number") {
-          angebotRows.push({ label: "Laufzeit", value: `${minTerm}–${maxTerm} Monate` });
-        } else if (typeof minTerm === "number") {
-          angebotRows.push({ label: "Laufzeit", value: `${minTerm} Monate` });
-        }
-
-        if (Array.isArray(offer?.km_options) && offer!.km_options!.length > 0) {
-          const opts = offer!.km_options!.filter((n) => typeof n === "number" && Number.isFinite(n));
-          if (opts.length > 0) {
-            angebotRows.push({ label: "KM-Optionen", value: opts.map((n) => `${n.toLocaleString("de-CH")} km/Jahr`).join(", ") });
-          }
-        }
-
-        const residualAdj = getNumber(offer?.residual_pct_adjustment_pp);
-        if (typeof residualAdj === "number" && residualAdj !== 0) {
-          angebotRows.push({ label: "Restwert Anpassung", value: `${residualAdj > 0 ? "+" : ""}${residualAdj} Prozentpunkte` });
-        }
+      const residualAdj = getNumber(offer?.residual_pct_adjustment_pp);
+      if (typeof residualAdj === "number" && residualAdj !== 0) {
+        angebotRows.push({ label: "Restwert Anpassung", value: `${residualAdj > 0 ? "+" : ""}${residualAdj} Prozentpunkte` });
       }
     }
 
-    if (dealType === "lease_takeover") {
+    if (variant === "lease_takeover") {
       if (typeof pricePerMonthChf === "number") angebotRows.push({ label: "Monatliche Rate", value: `${formatChf(pricePerMonthChf)} / Monat` });
 
       const remainingMonths = getNumber(listing.remaining_months);
@@ -271,10 +318,29 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
       if (typeof depositChf === "number") angebotRows.push({ label: "Depot / Anzahlung", value: formatChf(depositChf) });
     }
 
+    if (variant === "lease_takeover_offer") {
+      const takeover = leasingOffer?.lease_takeover_offer ?? null;
+
+      const monthly = getNumber(takeover?.price_per_month_chf);
+      if (typeof monthly === "number") angebotRows.push({ label: "Monatliche Rate", value: `${formatChf(monthly)} / Monat` });
+
+      const remainingMonths = getNumber(takeover?.remaining_months);
+      if (typeof remainingMonths === "number") angebotRows.push({ label: "Restlaufzeit", value: `${remainingMonths} Monate` });
+
+      const remainingKm = getNumber(takeover?.remaining_km);
+      if (typeof remainingKm === "number") angebotRows.push({ label: "Verbleibende KM", value: formatKm(remainingKm) });
+
+      const depositChf = getNumber(takeover?.deposit_chf);
+      if (typeof depositChf === "number") angebotRows.push({ label: "Depot / Anzahlung", value: formatChf(depositChf) });
+
+      const pickup = getString(takeover?.pickup_canton_code);
+      if (pickup) angebotRows.push({ label: "Abholung", value: pickup });
+    }
+
     if (angebotRows.length > 0) out.push({ title: "Angebot", rows: angebotRows });
 
     const listingRows: Array<{ label: string; value: string }> = [];
-    listingRows.push({ label: "Inserat-Typ", value: getDealLabel(dealType) });
+    listingRows.push({ label: "Inserat-Typ", value: getDealLabel(variant) });
     if (sellerType) listingRows.push({ label: "Verkäufer", value: getSellerLabel(sellerType) });
     if (typeof listing.premium === "boolean") listingRows.push({ label: "Premium", value: listing.premium ? "Ja" : "Nein" });
     if (planLabel) listingRows.push({ label: "Plan", value: planLabel });
@@ -282,9 +348,15 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
     if (listingRows.length > 0) out.push({ title: "Inserat", rows: listingRows });
 
     return out;
-  }, [dealType, financingType, listing, mileageKm, planLabel, pricing.secondary, pricePerMonthChf, purchasePriceChf, sellerType, year]);
+  }, [variant, year, mileageKm, listing, purchasePriceChf, pricePerMonthChf, pricing.secondary, sellerType, planLabel, leasingOffer]);
 
   const description = getString(listing.description);
+
+  const showPriceDetails =
+    variant === "direct_purchase_cash" ||
+    variant === "direct_purchase_leasing" ||
+    variant === "lease_takeover" ||
+    variant === "lease_takeover_offer";
 
   return (
     <div className="space-y-6">
@@ -308,7 +380,7 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
 
           <div className="absolute left-4 top-4 flex gap-2">
             <Badge className="bg-white/80 text-neutral-900 border-white/60 backdrop-blur">
-              {getDealLabel(dealType)}
+              {getDealLabel(variant)}
             </Badge>
             {sellerType && (
               <Badge className="bg-white/80 text-neutral-900 border-white/60 backdrop-blur">
@@ -399,25 +471,43 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
         </div>
       </div>
 
-      {typeof listing.price_per_month_chf === "number" || typeof listing.purchase_price_chf === "number" ? (
+      {showPriceDetails ? (
         <Card className="rounded-3xl border-neutral-200/60 shadow-sm">
           <CardContent className="p-6">
             <div className="text-sm font-semibold text-neutral-900">Preise (Details)</div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-sm text-neutral-600">Kaufpreis</div>
-                <div className="text-sm font-medium text-neutral-900">{formatChf(purchasePriceChf)}</div>
+                <div className="text-sm font-medium text-neutral-900">
+                  {variant === "direct_purchase_cash" || variant === "direct_purchase_leasing" ? formatChf(purchasePriceChf) : "-"}
+                </div>
               </div>
+
               <div className="flex items-center justify-between gap-3">
                 <div className="text-sm text-neutral-600">Rate / Monat</div>
                 <div className="text-sm font-medium text-neutral-900">
-                  {pricePerMonthChf ? `${formatChf(pricePerMonthChf)} / Monat` : "-"}
+                  {variant === "lease_takeover" ? (pricePerMonthChf ? `${formatChf(pricePerMonthChf)} / Monat` : "-") : null}
+                  {variant === "lease_takeover_offer"
+                    ? (() => {
+                        const monthly = getNumber(leasingOffer?.lease_takeover_offer?.price_per_month_chf);
+                        return monthly ? `${formatChf(monthly)} / Monat` : "-";
+                      })()
+                    : null}
+                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") ? "-" : null}
                 </div>
               </div>
+
               <div className="flex items-center justify-between gap-3">
                 <div className="text-sm text-neutral-600">Depot / Anzahlung</div>
-                <div className="text-sm font-medium text-neutral-900">{formatChf(getNumber(listing.deposit_chf))}</div>
+                <div className="text-sm font-medium text-neutral-900">
+                  {variant === "lease_takeover" ? formatChf(getNumber(listing.deposit_chf)) : null}
+                  {variant === "lease_takeover_offer"
+                    ? formatChf(getNumber(leasingOffer?.lease_takeover_offer?.deposit_chf))
+                    : null}
+                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") ? "-" : null}
+                </div>
               </div>
+
               <div className="flex items-center justify-between gap-3">
                 <div className="text-sm text-neutral-600">Premium</div>
                 <div className="text-sm font-medium text-neutral-900">{listing.premium ? "Ja" : "Nein"}</div>

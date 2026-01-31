@@ -118,7 +118,11 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
       try {
         const fetched = await getListingByIdForOwner(listingId, user);
         if (fetched) {
-          setResolvedListing(fetched as unknown as SuccessListingSummaryInput);
+          setResolvedListing((prev) => {
+            const prevObj = prev && typeof prev === "object" ? prev : null;
+            const merged = { ...(prevObj ?? {}), ...(fetched as unknown as SuccessListingSummaryInput) } as SuccessListingSummaryInput;
+            return merged;
+          });
         } else if (draft) {
           setResolvedListing(draft as unknown as SuccessListingSummaryInput);
         }
