@@ -45,21 +45,21 @@ export default function ProgressBar() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-medium text-neutral-600">
-          Schritt {currentIndex + 1} von {steps.length}
-        </p>
-        <p className="text-xs font-medium text-neutral-600 text-right">{currentLabel}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-neutral-600">
+            Schritt <span className="text-neutral-900">{currentIndex + 1}</span> von{" "}
+            <span className="text-neutral-900">{steps.length}</span>
+          </p>
+        </div>
+        <p className="text-xs font-medium text-neutral-600 text-right leading-snug">{currentLabel}</p>
       </div>
 
-      <div className="h-2 w-full rounded-full bg-neutral-200 overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-primary to-primary/80"
-          style={{ width: `${progressPct}%` }}
-        />
+      <div className="h-2.5 w-full rounded-full bg-neutral-200/80 overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-primary to-primary/80" style={{ width: `${progressPct}%` }} />
       </div>
 
-      <div className="hidden md:flex items-center justify-between gap-3">
+      <div className="hidden lg:flex items-center justify-between gap-3">
         {steps.map((step, idx) => {
           const isActive = idx === currentIndex;
           const isDone = idx < currentIndex;

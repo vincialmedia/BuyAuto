@@ -391,11 +391,11 @@ export default function ListingWizard() {
 
   return (
     <WizardContext.Provider value={contextValue}>
-      <div className="min-h-[100svh] bg-neutral-50">
+      <div className="min-h-[100svh] bg-gradient-to-b from-white to-neutral-50">
         <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-          <Card className="bg-white border border-neutral-200/60 shadow-xl rounded-3xl overflow-hidden">
-            <div className="px-6 sm:px-8 py-6 border-b border-neutral-200/60">
-              <div className="flex items-start justify-between gap-4">
+          <Card className="bg-white border border-neutral-200/60 shadow-[0_24px_70px_-40px_rgba(0,0,0,0.45)] rounded-3xl overflow-hidden">
+            <div className="px-5 sm:px-8 py-5 sm:py-7 border-b border-neutral-200/60">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="min-w-0">
                   <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
                     Inserat erstellen
@@ -405,11 +405,11 @@ export default function ListingWizard() {
                   </p>
                 </div>
 
-                <div className="shrink-0 flex items-center gap-2">
+                <div className="shrink-0 flex items-center gap-2 sm:pt-1">
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-2xl h-10 px-3 sm:px-4"
+                    className="rounded-2xl h-10 px-3 sm:px-4 border-neutral-200 bg-white hover:bg-neutral-50"
                     onClick={onSaveDraft}
                     disabled={!canSaveDraft || isSavingDraft}
                   >
@@ -420,12 +420,12 @@ export default function ListingWizard() {
                 </div>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-5 sm:mt-6">
                 <ProgressBar />
               </div>
             </div>
 
-            <div className="px-6 sm:px-8 py-6 sm:py-8">
+            <div className="px-5 sm:px-8 py-6 sm:py-8">
               {isLoadingFromQuery ? (
                 <div className="text-sm text-neutral-600">Lade Entwurf...</div>
               ) : (
@@ -439,6 +439,10 @@ export default function ListingWizard() {
               )}
             </div>
           </Card>
+
+          <div className="mt-4 text-xs text-neutral-500">
+            Tipp: Speichere zwischendurch deinen Entwurf – du kannst später jederzeit weitermachen.
+          </div>
         </div>
       </div>
     </WizardContext.Provider>
