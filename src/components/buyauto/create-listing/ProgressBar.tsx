@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWizard } from "./ListingWizard";
 
@@ -38,6 +37,11 @@ export default function ProgressBar() {
   }, [currentStep, steps]);
 
   const currentLabel = steps[currentIndex]?.label ?? "Schritt";
+  const progressPct = useMemo(() => {
+    const denom = steps.length;
+    if (denom <= 0) return 0;
+    return Math.round(((currentIndex + 1) / denom) * 100);
+  }, [currentIndex, steps.length]);
 
   return (
     <div className="space-y-3">
@@ -45,49 +49,38 @@ export default function ProgressBar() {
         <p className="text-xs font-medium text-neutral-600">
           Schritt {currentIndex + 1} von {steps.length}
         </p>
-        <p className="text-xs font-medium text-neutral-600 truncate">{currentLabel}</p>
+        <p className="text-xs font-medium text-neutral-600 text-right">{currentLabel}</p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="h-2 w-full rounded-full bg-neutral-200 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-primary to-primary/80"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      <div className="hidden md:flex items-center justify-between gap-3">
         {steps.map((step, idx) => {
-          const isDone = idx < currentIndex;
           const isActive = idx === currentIndex;
+          const isDone = idx < currentIndex;
 
           return (
-            <div key={step.id} className="flex items-center gap-2 min-w-0 flex-1">
+            <div key={step.id} className="flex items-center gap-2 min-w-0">
               <div
                 aria-current={isActive ? "step" : undefined}
-                className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold border transition-colors shrink-0",
-                  isDone
-                    ? "bg-gradient-to-r from-primary to-primary/80 border-primary text-white shadow-sm"
-                    : isActive
-                      ? "bg-primary/10 border-primary text-primary"
-                      : "bg-white border-neutral-200 text-neutral-500"
-                )}
+                className={[
+                  "h-2.5 w-2.5 rounded-full",
+                  isDone ? "bg-primary" : isActive ? "bg-primary/70" : "bg-neutral-300",
+                ].join(" ")}
+              />
+              <p
+                className={[
+                  "text-xs leading-tight min-w-0",
+                  isActive ? "text-neutral-900 font-medium" : isDone ? "text-neutral-700" : "text-neutral-500",
+                ].join(" ")}
               >
-                {idx + 1}
-              </div>
-
-              <div className="min-w-0 hidden md:block">
-                <p
-                  className={cn(
-                    "text-xs leading-tight",
-                    isDone ? "text-neutral-900" : isActive ? "text-neutral-900" : "text-neutral-500"
-                  )}
-                >
-                  {step.label}
-                </p>
-              </div>
-
-              {idx < steps.length - 1 && (
-                <div
-                  className={cn(
-                    "h-1 flex-1 rounded-full transition-colors",
-                    isDone ? "bg-gradient-to-r from-primary to-primary/80" : "bg-neutral-200"
-                  )}
-                />
-              )}
+                {step.label}
+              </p>
             </div>
           );
         })}
