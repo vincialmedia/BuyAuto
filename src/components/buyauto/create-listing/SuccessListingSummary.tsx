@@ -233,16 +233,51 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
   const safeActiveIndex = images.length > 0 ? Math.max(0, Math.min(images.length - 1, activeIndex)) : 0;
   const mainImageUrl = images[safeActiveIndex] ?? images[coverIndex] ?? null;
 
-  const pricing = useMemo(() => {
-    return getPrimaryPricing({
-      variant,
-      purchasePriceChf,
-      pricePerMonthChf,
-      year,
-      mileageKm,
-      leasingOffer,
-    });
-  }, [variant, purchasePriceChf, pricePerMonthChf, year, mileageKm, leasingOffer]);
+  // Compute capability label
+  let capabilityLabel = "";
+  if (variant === "lease_takeover") {
+    capabilityLabel = "pro Monat";
+  } else {
+    // direct purchase
+    if (variant === "direct_purchase_leasing" && takeoverOfferEnabled) {
+      capabilityLabel = "Leasing & Leasing Übernahme möglich";
+    } else if (variant === "direct_purchase_leasing") {
+      capabilityLabel = "Leasing möglich";
+    } else if (takeoverOfferEnabled) {
+      capabilityLabel = "Leasing Übernahme möglich";
+    }
+    // cash only -> blank
+  }
+
+  // Leasing calculator teaser
+  const leasingTeaser = useMemo(() => {
+    if (variant === "direct_purchase_leasing" && purchasePriceChf && year && mileageKm && leasingOffer) {
+        const interestRatePct = getNumber(leasingOffer.interest_rate_pct);
+        const minTermMonths = getNumber(leasingOffer.min_term_months) ?? 60;
+        const noDownPayment = leasingOffer.no_down_payment === true;
+        const downPaymentPct = noDownPayment ? 0 : getNumber(leasingOffer.down_payment_pct) ?? 5;
+        const residualAdj = getNumber(leasingOffer.residual_pct_adjustment_pp);
+
+        const canEstimate =
+          typeof purchasePriceChf === "number" &&
+          typeof year === "number" &&
+          typeof mileageKm === "number" &&
+          typeof interestRatePct === "number";
+
+        if (canEstimate) {
+          return estimateTeaserMonthlyRateChf({
+            priceChf: purchasePriceChf,
+            year,
+            mileageKm,
+            interestRatePct: interestRatePct!,
+            residualPctAdjustmentPp: residualAdj,
+            termMonths: minTermMonths,
+            downPaymentPct,
+          });
+        }
+    }
+    return null;
+  }, [variant, purchasePriceChf, year, mileageKm, leasingOffer]);
 
   const sections = useMemo(() => {
     const out: Array<{ title: string; rows: Array<{ label: string; value: string }> }> = [];
@@ -259,105 +294,18 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
 
     if (fahrzeugRows.length > 0) out.push({ title: "Fahrzeug", rows: fahrzeugRows });
 
-    const angebotRows: Array<{ label: string; value: string }> = [];
-
-    if (variant === "direct_purchase_cash") {
-      angebotRows.push({ label: "Kaufpreis", value: formatChf(purchasePriceChf) });
-      angebotRows.push({ label: "Finanzierung", value: "Cash" });
-    }
-
-    if (variant === "direct_purchase_leasing") {
-      angebotRows.push({ label: "Kaufpreis", value: formatChf(purchasePriceChf) });
-      angebotRows.push({ label: "Finanzierung", value: "Leasing" });
-      if (pricing.secondary) angebotRows.push({ label: pricing.secondary.label, value: pricing.secondary.value });
-
-      const offer = leasingOffer ?? null;
-      const interestRatePct = getNumber(offer?.interest_rate_pct);
-      if (typeof interestRatePct === "number") angebotRows.push({ label: "Zinssatz", value: `${interestRatePct}%` });
-
-      if (offer?.no_down_payment === true) {
-        angebotRows.push({ label: "Anzahlung", value: "Keine Anzahlung" });
-      } else {
-        const downPaymentPct = getNumber(offer?.down_payment_pct);
-        if (typeof downPaymentPct === "number") angebotRows.push({ label: "Anzahlung", value: `${downPaymentPct}%` });
-      }
-
-      const minTerm = getNumber(offer?.min_term_months);
-      const maxTerm = getNumber(offer?.max_term_months);
-      if (typeof minTerm === "number" && typeof maxTerm === "number") {
-        angebotRows.push({ label: "Laufzeit", value: `${minTerm}–${maxTerm} Monate` });
-      } else if (typeof minTerm === "number") {
-        angebotRows.push({ label: "Laufzeit", value: `${minTerm} Monate` });
-      }
-
-      if (Array.isArray(offer?.km_options) && offer.km_options.length > 0) {
-        const opts = offer.km_options.filter((n) => typeof n === "number" && Number.isFinite(n));
-        if (opts.length > 0) {
-          angebotRows.push({ label: "KM-Optionen", value: opts.map((n) => `${n.toLocaleString("de-CH")} km/Jahr`).join(", ") });
-        }
-      }
-
-      const residualAdj = getNumber(offer?.residual_pct_adjustment_pp);
-      if (typeof residualAdj === "number" && residualAdj !== 0) {
-        angebotRows.push({ label: "Restwert Anpassung", value: `${residualAdj > 0 ? "+" : ""}${residualAdj} Prozentpunkte` });
-      }
-    }
-
-    if (variant === "lease_takeover") {
-      if (typeof pricePerMonthChf === "number") angebotRows.push({ label: "Monatliche Rate", value: `${formatChf(pricePerMonthChf)} / Monat` });
-
-      const remainingMonths = getNumber(listing.remaining_months);
-      if (typeof remainingMonths === "number") angebotRows.push({ label: "Restlaufzeit", value: `${remainingMonths} Monate` });
-
-      const remainingKm = getNumber(listing.remaining_km);
-      if (typeof remainingKm === "number") angebotRows.push({ label: "Verbleibende KM", value: formatKm(remainingKm) });
-
-      const depositChf = getNumber(listing.deposit_chf);
-      if (typeof depositChf === "number") angebotRows.push({ label: "Depot / Anzahlung", value: formatChf(depositChf) });
-    }
-
-    if (angebotRows.length > 0) out.push({ title: "Angebot", rows: angebotRows });
-
-    if (takeoverOfferEnabled && (variant === "direct_purchase_cash" || variant === "direct_purchase_leasing")) {
-      const takeover = leasingOffer?.lease_takeover_offer ?? null;
-
-      const takeoverRows: Array<{ label: string; value: string }> = [];
-
-      const monthly = getNumber(takeover?.price_per_month_chf);
-      takeoverRows.push({ label: "Monatliche Rate", value: typeof monthly === "number" ? `${formatChf(monthly)} / Monat` : "-" });
-
-      const remainingMonths = getNumber(takeover?.remaining_months);
-      takeoverRows.push({ label: "Restlaufzeit", value: typeof remainingMonths === "number" ? `${remainingMonths} Monate` : "-" });
-
-      const remainingKm = getNumber(takeover?.remaining_km);
-      if (typeof remainingKm === "number") takeoverRows.push({ label: "Verbleibende KM", value: formatKm(remainingKm) });
-
-      const depositChf = getNumber(takeover?.deposit_chf);
-      takeoverRows.push({ label: "Depot / Anzahlung", value: typeof depositChf === "number" ? formatChf(depositChf) : "-" });
-
-      const pickup = getCantonName(getString(takeover?.pickup_canton_code));
-      if (pickup) takeoverRows.push({ label: "Abholung", value: pickup });
-
-      out.push({ title: "Leasingübernahme-Angebot", rows: takeoverRows });
-    }
-
+    // Listing Meta Info
     const listingRows: Array<{ label: string; value: string }> = [];
-    listingRows.push({ label: "Inserat-Typ", value: getDealLabel(variant) });
     if (sellerType) listingRows.push({ label: "Verkäufer", value: getSellerLabel(sellerType) });
     if (typeof listing.premium === "boolean") listingRows.push({ label: "Premium", value: listing.premium ? "Ja" : "Nein" });
     if (planLabel) listingRows.push({ label: "Plan", value: planLabel });
 
-    if (listingRows.length > 0) out.push({ title: "Inserat", rows: listingRows });
+    if (listingRows.length > 0) out.push({ title: "Details", rows: listingRows });
 
     return out;
-  }, [variant, year, mileageKm, listing, purchasePriceChf, pricePerMonthChf, pricing.secondary, sellerType, planLabel, leasingOffer]);
+  }, [variant, year, mileageKm, listing, purchasePriceChf, pricePerMonthChf, sellerType, planLabel, leasingOffer]);
 
   const description = getString(listing.description);
-
-  const showPriceDetails =
-    variant === "direct_purchase_cash" ||
-    variant === "direct_purchase_leasing" ||
-    variant === "lease_takeover";
 
   return (
     <div className="space-y-6">
@@ -380,19 +328,6 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
           </div>
 
           <div className="absolute left-4 top-4 flex gap-2">
-            <Badge className="bg-white/80 text-neutral-900 border-white/60 backdrop-blur">
-              {getDealLabel(variant)}
-            </Badge>
-            {takeoverOfferEnabled && (variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") ? (
-              <Badge className="bg-white/80 text-neutral-900 border-white/60 backdrop-blur">
-                Leasingübernahme-Angebot
-              </Badge>
-            ) : null}
-            {sellerType && (
-              <Badge className="bg-white/80 text-neutral-900 border-white/60 backdrop-blur">
-                {getSellerLabel(sellerType)}
-              </Badge>
-            )}
             {listing.premium ? (
               <Badge className="bg-red-500 text-white border-red-500">Premium</Badge>
             ) : null}
@@ -425,30 +360,38 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
           </div>
         ) : null}
 
-        <div className="px-6 pb-6">
-          <div className="pt-6">
-            <div className="text-2xl font-bold tracking-tight text-neutral-900">
-              {brand} {model}
+        <div className="px-6 pb-6 md:px-8 md:pb-8">
+          {/* Sleek Header */}
+          <div className="pt-6 flex justify-between items-start mb-8">
+            <div>
+              <div className="text-2xl font-bold tracking-tight text-neutral-900">
+                {brand} {model}
+              </div>
+              <div className="mt-1 text-sm text-neutral-500">{getCantonName(listing.canton_code) || title || "-"}</div>
             </div>
-            {title ? <div className="mt-1 text-sm text-neutral-600">{title}</div> : null}
+            <div className="text-right">
+               {variant === "lease_takeover" ? (
+                  <>
+                    <p className="text-2xl font-bold tracking-tight text-neutral-900">
+                      {formatChf(pricePerMonthChf)}
+                    </p>
+                    <p className="text-sm text-neutral-500 mt-1">{capabilityLabel}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold tracking-tight text-neutral-900">
+                      {formatChf(purchasePriceChf)}
+                    </p>
+                    {capabilityLabel && <p className="text-sm text-neutral-500 mt-1">{capabilityLabel}</p>}
+                  </>
+                )}
+            </div>
           </div>
 
-          <Separator className="my-6" />
+          <Separator className="my-8 border-neutral-100" />
 
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-1">
-              <div className="text-sm text-neutral-500">{pricing.primary.label}</div>
-              <div className="mt-1 text-2xl font-bold tracking-tight text-neutral-900">
-                {pricing.primary.value}
-              </div>
-              {pricing.secondary ? (
-                <div className="mt-2 text-sm font-medium text-neutral-700">
-                  {pricing.secondary.label}: <span className="text-neutral-900">{pricing.secondary.value}</span>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="md:col-span-2 grid gap-6 sm:grid-cols-2">
+          {/* Details Grid */}
+          <div className="grid gap-8 md:grid-cols-2 mb-8">
               {sections.map((section) => (
                 <div key={section.title} className="space-y-3">
                   <div className="text-sm font-semibold text-neutral-900">{section.title}</div>
@@ -462,72 +405,118 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
                   </div>
                 </div>
               ))}
-            </div>
+          </div>
+
+          {/* Confirmation Blocks */}
+          <div className="space-y-6">
+             {/* Leasing Conditions */}
+             {variant === "direct_purchase_leasing" && leasingOffer && (
+                <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
+                  <div className="flex justify-between items-baseline mb-4">
+                    <h4 className="font-semibold text-neutral-900 text-sm">Leasing-Konditionen</h4>
+                    {leasingTeaser && leasingTeaser > 0 && (
+                      <span className="text-sm font-medium text-neutral-900">
+                        ab CHF {leasingTeaser.toLocaleString('de-CH')} / Monat
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 gap-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Zinssatz</span>
+                      <span className="text-neutral-900">{getNumber(leasingOffer.interest_rate_pct)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Anzahlung</span>
+                      <span className="text-neutral-900">
+                        {leasingOffer.no_down_payment ? "Keine Anzahlung" : `${getNumber(leasingOffer.down_payment_pct)}%`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Laufzeit</span>
+                      <span className="text-neutral-900">
+                        {getNumber(leasingOffer.min_term_months)}–{getNumber(leasingOffer.max_term_months)} Monate
+                      </span>
+                    </div>
+                    {leasingOffer.km_options && leasingOffer.km_options.length > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">KM-Optionen</span>
+                        <span className="text-neutral-900 text-right max-w-[50%] truncate">
+                          {leasingOffer.km_options.filter((k: number) => typeof k === 'number').map((k: number) => `${(k/1000).toFixed(0)}k`).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+             )}
+
+             {/* Lease Takeover Offer */}
+             {takeoverOfferEnabled && leasingOffer?.lease_takeover_offer && (
+                <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
+                  <h4 className="font-semibold text-neutral-900 text-sm mb-4">Leasingübernahme-Angebot</h4>
+                  <div className="grid grid-cols-1 gap-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Monatliche Rate</span>
+                      <span className="text-neutral-900 font-medium">CHF {getNumber(leasingOffer.lease_takeover_offer.price_per_month_chf)?.toLocaleString('de-CH')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Restlaufzeit</span>
+                      <span className="text-neutral-900">{getNumber(leasingOffer.lease_takeover_offer.remaining_months)} Monate</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Depot / Anzahlung</span>
+                      <span className="text-neutral-900">CHF {getNumber(leasingOffer.lease_takeover_offer.deposit_chf)?.toLocaleString('de-CH')}</span>
+                    </div>
+                    {getNumber(leasingOffer.lease_takeover_offer.remaining_km) && (
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Verbleibende KM</span>
+                        <span className="text-neutral-900">{getNumber(leasingOffer.lease_takeover_offer.remaining_km)?.toLocaleString('de-CH')} km</span>
+                      </div>
+                    )}
+                    {getString(leasingOffer.lease_takeover_offer.pickup_canton_code) && (
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Abholung</span>
+                        <span className="text-neutral-900">{getCantonName(getString(leasingOffer.lease_takeover_offer.pickup_canton_code))}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+             )}
+
+             {/* Pure Lease Takeover (for deal_type=lease_takeover) - Values Summary */}
+             {variant === "lease_takeover" && (
+                <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
+                   <h4 className="font-semibold text-neutral-900 text-sm mb-4">Vertragsdaten</h4>
+                   <div className="grid grid-cols-1 gap-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Restlaufzeit</span>
+                        <span className="text-neutral-900">{getNumber(listing.remaining_months)} Monate</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Depot / Anzahlung</span>
+                        <span className="text-neutral-900">CHF {getNumber(listing.deposit_chf)?.toLocaleString('de-CH') ?? '-'}</span>
+                      </div>
+                      {getNumber(listing.remaining_km) && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-500">Verbleibende KM</span>
+                          <span className="text-neutral-900">{getNumber(listing.remaining_km)?.toLocaleString('de-CH')} km</span>
+                        </div>
+                      )}
+                   </div>
+                </div>
+             )}
           </div>
 
           {description ? (
             <>
-              <Separator className="my-6" />
+              <Separator className="my-8 border-neutral-100" />
               <div className="space-y-2">
                 <div className="text-sm font-semibold text-neutral-900">Beschreibung</div>
-                <div className="text-sm text-neutral-700 whitespace-pre-line">{description}</div>
+                <div className="text-sm text-neutral-700 whitespace-pre-line leading-relaxed">{description}</div>
               </div>
             </>
           ) : null}
         </div>
       </div>
-
-      {showPriceDetails ? (
-        <Card className="rounded-3xl border-neutral-200/60 shadow-sm">
-          <CardContent className="p-6">
-            <div className="text-sm font-semibold text-neutral-900">Preise (Details)</div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-neutral-600">Kaufpreis</div>
-                <div className="text-sm font-medium text-neutral-900">
-                  {variant === "direct_purchase_cash" || variant === "direct_purchase_leasing" ? formatChf(purchasePriceChf) : "-"}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-neutral-600">Rate / Monat</div>
-                <div className="text-sm font-medium text-neutral-900">
-                  {variant === "lease_takeover" ? (pricePerMonthChf ? `${formatChf(pricePerMonthChf)} / Monat` : "-") : null}
-                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") && takeoverOfferEnabled
-                    ? (() => {
-                        const monthly = getNumber(leasingOffer?.lease_takeover_offer?.price_per_month_chf);
-                        return monthly ? `Leasingübernahme-Angebot: ${formatChf(monthly)} / Monat` : "-";
-                      })()
-                    : null}
-                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") && !takeoverOfferEnabled ? "-" : null}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-neutral-600">Depot / Anzahlung</div>
-                <div className="text-sm font-medium text-neutral-900">
-                  {variant === "lease_takeover" ? formatChf(getNumber(listing.deposit_chf)) : null}
-                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") && takeoverOfferEnabled
-                    ? formatChf(getNumber(leasingOffer?.lease_takeover_offer?.deposit_chf))
-                    : null}
-                  {(variant === "direct_purchase_cash" || variant === "direct_purchase_leasing") && !takeoverOfferEnabled ? "-" : null}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-neutral-600">Premium</div>
-                <div className="text-sm font-medium text-neutral-900">{listing.premium ? "Ja" : "Nein"}</div>
-              </div>
-            </div>
-
-            {planLabel ? (
-              <div className="mt-4 text-sm text-neutral-600">
-                Plan: <span className="font-medium text-neutral-900">{planLabel}</span>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }
