@@ -37,32 +37,42 @@ export default function ProgressBar() {
     return idx >= 0 ? idx : 0;
   }, [currentStep, steps]);
 
+  const currentLabel = steps[currentIndex]?.label ?? "Schritt";
+
   return (
-    <div className="w-full">
+    <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium text-neutral-600">
+          Schritt {currentIndex + 1} von {steps.length}
+        </p>
+        <p className="text-xs font-medium text-neutral-600 truncate">{currentLabel}</p>
+      </div>
+
+      <div className="flex items-center gap-2">
         {steps.map((step, idx) => {
           const isDone = idx < currentIndex;
           const isActive = idx === currentIndex;
 
           return (
-            <div key={step.id} className="flex items-center gap-3 flex-1 min-w-0">
+            <div key={step.id} className="flex items-center gap-2 min-w-0 flex-1">
               <div
+                aria-current={isActive ? "step" : undefined}
                 className={cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium border transition-colors shrink-0",
+                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold border transition-colors shrink-0",
                   isDone
-                    ? "bg-red-500 border-red-500 text-white"
+                    ? "bg-gradient-to-r from-primary to-primary/80 border-primary text-white shadow-sm"
                     : isActive
-                      ? "bg-white border-red-500 text-red-600"
+                      ? "bg-primary/10 border-primary text-primary"
                       : "bg-white border-neutral-200 text-neutral-500"
                 )}
               >
                 {idx + 1}
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 hidden md:block">
                 <p
                   className={cn(
-                    "text-sm truncate",
+                    "text-xs leading-tight",
                     isDone ? "text-neutral-900" : isActive ? "text-neutral-900" : "text-neutral-500"
                   )}
                 >
@@ -73,8 +83,8 @@ export default function ProgressBar() {
               {idx < steps.length - 1 && (
                 <div
                   className={cn(
-                    "h-[2px] flex-1 rounded-full transition-colors",
-                    isDone ? "bg-red-500" : "bg-neutral-200"
+                    "h-1 flex-1 rounded-full transition-colors",
+                    isDone ? "bg-gradient-to-r from-primary to-primary/80" : "bg-neutral-200"
                   )}
                 />
               )}

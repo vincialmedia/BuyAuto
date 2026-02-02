@@ -408,51 +408,58 @@ export default function ListingWizard() {
 
   return (
     <WizardContext.Provider value={contextValue}>
-      <div className="min-h-screen bg-white">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-8">
-          <div className="flex items-start justify-between gap-4 mb-8">
-            <div className="text-left">
-              <h1 className="text-3xl md:text-4xl font-light text-neutral-900 mb-3 tracking-tight">
-                Inserat erstellen
-              </h1>
-              <p className="text-neutral-600 font-light leading-relaxed">
-                Erstelle dein Inserat in wenigen Schritten
-              </p>
-            </div>
+      <div className="min-h-screen bg-neutral-50">
+        <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+          <Card className="bg-white border border-neutral-200/60 shadow-lg rounded-3xl overflow-hidden">
+            <div className="px-6 sm:px-8 pt-7 pb-6 border-b border-neutral-200/60">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
+                    Inserat erstellen
+                  </h1>
+                  <p className="mt-2 text-sm sm:text-base text-neutral-600">
+                    In wenigen Schritten zum fertigen Inserat.
+                  </p>
+                </div>
 
-            <div className="shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-2xl"
-                onClick={onSaveDraft}
-                disabled={isSavingDraft || isLoadingFromQuery || !hasAnyUserInput(data)}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {isSavingDraft ? "Speichern..." : "Speichern (Entwurf)"}
-              </Button>
-            </div>
-          </div>
-
-          <ProgressBar />
-
-          <div className="mt-8">
-            <Card className="bg-white border border-neutral-200/40 shadow-sm rounded-lg overflow-hidden">
-              <div className="p-6 md:p-8">
-                {isLoadingFromQuery ? (
-                  <div className="text-sm text-neutral-600">Lade Entwurf...</div>
-                ) : (
-                  <>
-                    {currentStep === 1 && <Step1_VehicleData />}
-                    {currentStep === 2 && <Step2_LeasingDetails />}
-                    {currentStep === 3 && !isGarage && <Step3_PlanSelection />}
-                    {currentStep === 4 && <Step4_Images />}
-                    {currentStep === 5 && <Step5_PreviewAndPay />}
-                  </>
-                )}
+                <div className="shrink-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-2xl"
+                    onClick={onSaveDraft}
+                    disabled={isSavingDraft || isLoadingFromQuery || !hasAnyUserInput(data)}
+                  >
+                    <Save className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      {isSavingDraft ? "Speichern..." : "Entwurf speichern"}
+                    </span>
+                    <span className="sr-only sm:hidden">
+                      {isSavingDraft ? "Speichern..." : "Entwurf speichern"}
+                    </span>
+                  </Button>
+                </div>
               </div>
-            </Card>
-          </div>
+
+              <div className="mt-6">
+                <ProgressBar />
+              </div>
+            </div>
+
+            <div className="px-6 sm:px-8 py-6 sm:py-8">
+              {isLoadingFromQuery ? (
+                <div className="text-sm text-neutral-600">Lade Entwurf...</div>
+              ) : (
+                <>
+                  {currentStep === 1 && <Step1_VehicleData />}
+                  {currentStep === 2 && <Step2_LeasingDetails />}
+                  {currentStep === 3 && !isGarage && <Step3_PlanSelection />}
+                  {currentStep === 4 && <Step4_Images />}
+                  {currentStep === 5 && <Step5_PreviewAndPay />}
+                </>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
     </WizardContext.Provider>

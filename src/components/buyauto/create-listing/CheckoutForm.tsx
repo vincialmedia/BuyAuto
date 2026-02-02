@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { Button } from "@/components/ui/button";
 
 interface CheckoutFormProps {
   onSuccess: () => void;
@@ -28,49 +28,49 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       confirmParams: {
         return_url: `${window.location.origin}/inserat-erstellen?payment_confirmed=true`,
       },
-      redirect: 'if_required',
+      redirect: "if_required",
     });
 
     if (error) {
-      if (error.type === 'card_error' || error.type === 'validation_error') {
-        setMessage(error.message || 'An unexpected error occurred.');
+      if (error.type === "card_error" || error.type === "validation_error") {
+        setMessage(error.message || "Die Zahlung konnte nicht verarbeitet werden.");
       } else {
-        setMessage('An unexpected error occurred.');
+        setMessage("Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.");
       }
-    } else {
-      // Payment succeeded, call onSuccess callback
-      onSuccess();
+      setIsLoading(false);
+      return;
     }
 
+    onSuccess();
     setIsLoading(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement 
+      <PaymentElement
         options={{
-          layout: 'tabs'
+          layout: "tabs",
         }}
       />
-      
+
       {message && (
-        <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-200">
+        <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-2xl border border-destructive/20">
           {message}
         </div>
       )}
-      
+
       <Button
         disabled={isLoading || !stripe || !elements}
         type="submit"
-        className="w-full bg-red-500 hover:bg-red-600"
+        className="w-full rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:opacity-95"
       >
         {isLoading ? (
           <>
-            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
             Zahlung wird verarbeitet...
           </>
         ) : (
-          'Jetzt bezahlen'
+          "Jetzt bezahlen"
         )}
       </Button>
     </form>

@@ -31,7 +31,7 @@ const PaymentWidget = dynamic(
     ssr: false,
     loading: () => (
       <div className="text-center py-8">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         <p className="mt-2 text-neutral-600">Loading payment form...</p>
       </div>
     )
@@ -590,7 +590,7 @@ export default function Step5_PreviewAndPay() {
   if (!mounted) {
     return (
       <div className="text-center py-8">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         <p className="mt-2 text-neutral-600">Laden...</p>
       </div>
     );
@@ -638,7 +638,7 @@ export default function Step5_PreviewAndPay() {
                   </div>
                   <div className="absolute left-4 top-4 flex gap-2">
                     {isPremium && (
-                      <Badge className="bg-red-500 text-white border-red-500">
+                      <Badge className="bg-gradient-to-r from-primary to-primary/80 text-white border-0">
                         <Star className="w-4 h-4 mr-1" />
                         Premium
                       </Badge>
@@ -858,7 +858,7 @@ export default function Step5_PreviewAndPay() {
           </div>
 
           <div className="flex justify-between pt-6">
-            <Button variant="outline" onClick={prevStep}>
+            <Button variant="outline" onClick={prevStep} className="rounded-2xl">
               Zurück
             </Button>
             
@@ -885,7 +885,7 @@ export default function Step5_PreviewAndPay() {
                 <Button 
                   onClick={handleGaragePublish} 
                   disabled={isPublishingGarage}
-                  className="bg-blue-600 hover:bg-blue-700 text-white min-w-[200px]"
+                  className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 min-w-[200px]"
                 >
                   {isPublishingGarage ? (
                     <>
@@ -904,7 +904,7 @@ export default function Step5_PreviewAndPay() {
               <Button 
                 onClick={handlePreparePayment} 
                 disabled={isPreparingPayment}
-                className="bg-red-500 hover:bg-red-600 min-w-[200px]"
+                className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 min-w-[200px]"
               >
                 {isPreparingPayment ? (
                   <>

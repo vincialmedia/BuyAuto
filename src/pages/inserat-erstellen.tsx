@@ -14,9 +14,7 @@ export default function CreateListingPage() {
         <meta name="robots" content="index, follow" />
       </Head>
       
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
-        <ListingWizard />
-      </div>
+      <ListingWizard />
     </>
   );
 }
