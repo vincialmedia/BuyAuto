@@ -32,7 +32,7 @@ export function Step1Form() {
   const { toast } = useToast();
   const { user, profileLoading } = useAuth();
 
-  const { data, updateData, nextStep, draftId, setDraftId } = useWizard();
+  const { data, updateData, nextStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,9 +71,40 @@ export function Step1Form() {
     setValue,
     watch,
     trigger,
+    getValues,
   } = form;
 
   const selectedMake = watch("brand");
+
+  useEffect(() => {
+    registerDraftSnapshotter(() => {
+      const values = getValues();
+
+      const yearNum = Number(values.year);
+      const year = Number.isFinite(yearNum) ? yearNum : data.year;
+
+      const title =
+        values.brand && values.model && year
+          ? `${values.brand} ${values.model} ${year}`
+          : (data as any)?.title;
+
+      return {
+        brand: values.brand || "",
+        model: values.model || "",
+        year,
+        km: Number(values.km ?? 0),
+        body: values.body || "",
+        fuel: values.fuel || "",
+        gearbox: values.gearbox || "",
+        description: values.description || "",
+        title,
+      } as any;
+    });
+
+    return () => {
+      registerDraftSnapshotter(() => ({}));
+    };
+  }, [data, getValues, registerDraftSnapshotter]);
 
   useEffect(() => {
     updateData({

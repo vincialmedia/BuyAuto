@@ -1,7 +1,7 @@
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -117,7 +117,7 @@ function calculateRemainingMonths(endDate: Date): number {
 
 export function LeaseTakeoverFinancingDetails() {
   const router = useRouter();
-  const { data, updateData, nextStep, prevStep, draftId, setDraftId } = useWizard();
+  const { data, updateData, nextStep, prevStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isUpdatingListing, setIsUpdatingListing] = useState(false);
@@ -131,6 +131,7 @@ export function LeaseTakeoverFinancingDetails() {
     formState: { errors },
     watch,
     setValue,
+    getValues,
   } = useForm<LeasingDetailsForm>({
     resolver: zodResolver(leasingDetailsSchema),
     defaultValues: {
@@ -141,6 +142,35 @@ export function LeaseTakeoverFinancingDetails() {
       remaining_km: data.remaining_km || 0,
     },
   });
+
+  useEffect(() => {
+    registerDraftSnapshotter(() => {
+      const values = getValues();
+
+      return {
+        deal_type: "lease_takeover",
+        financing_type: null,
+        leasing_offer: null,
+        price_per_month_chf:
+          typeof values.price_per_month_chf === "number" && Number.isFinite(values.price_per_month_chf)
+            ? values.price_per_month_chf
+            : undefined,
+        remaining_months:
+          typeof values.remaining_months === "number" && Number.isFinite(values.remaining_months)
+            ? values.remaining_months
+            : undefined,
+        deposit_chf:
+          typeof values.deposit_chf === "number" && Number.isFinite(values.deposit_chf) ? values.deposit_chf : undefined,
+        remaining_km:
+          typeof values.remaining_km === "number" && Number.isFinite(values.remaining_km) ? values.remaining_km : undefined,
+        location: typeof values.location === "string" ? values.location : "",
+      } as any;
+    });
+
+    return () => {
+      registerDraftSnapshotter(() => ({}));
+    };
+  }, [getValues, registerDraftSnapshotter]);
 
   const onSubmit = async (formData: LeasingDetailsForm) => {
     if (!user) {

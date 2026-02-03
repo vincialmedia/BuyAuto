@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ interface WizardContextType {
   setGuestImageFiles: (files: File[]) => void;
   draftId: string | null;
   setDraftId: (id: string | null) => void;
+  registerDraftSnapshotter: (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => void;
 }
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined);
@@ -68,6 +69,8 @@ const createEmptyListingData = (): ListingData => ({
 });
 
 const hasAnyUserInput = (data: ListingData) => {
+  const anyData = data as any;
+
   return Boolean(
     (data.brand && data.brand.trim().length > 0) ||
       (data.model && data.model.trim().length > 0) ||
@@ -79,8 +82,12 @@ const hasAnyUserInput = (data: ListingData) => {
       (typeof data.km === "number" && data.km > 0) ||
       (typeof data.price_per_month_chf === "number" && data.price_per_month_chf > 0) ||
       (typeof data.deposit_chf === "number" && data.deposit_chf > 0) ||
+      (typeof anyData?.purchase_price_chf === "number" && anyData.purchase_price_chf > 0) ||
+      (data.price_plan && data.price_plan !== "standard") ||
+      data.premium === true ||
       (Array.isArray(data.images) && data.images.length > 0) ||
-      ((data as any)?.leasing_offer?.lease_takeover_offer?.enabled === true)
+      (anyData?.leasing_offer?.enabled === true) ||
+      (anyData?.leasing_offer?.lease_takeover_offer?.enabled === true)
   );
 };
 
@@ -181,6 +188,15 @@ export default function ListingWizard() {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingFromQuery, setIsLoadingFromQuery] = useState(true);
 
+  const draftSnapshotterRef = useRef<() => Partial<ListingData> | Promise<Partial<ListingData>>>(() => ({}));
+
+  const registerDraftSnapshotter = useCallback(
+    (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => {
+      draftSnapshotterRef.current = snapshotter;
+    },
+    []
+  );
+
   const updateData = useCallback((updates: Partial<ListingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
   }, []);
@@ -236,8 +252,20 @@ export default function ListingWizard() {
       setGuestImageFiles,
       draftId,
       setDraftId,
+      registerDraftSnapshotter,
     }),
-    [data, updateData, currentStep, nextStep, prevStep, isComplete, getMaxPhotos, guestImageFiles, draftId]
+    [
+      data,
+      updateData,
+      currentStep,
+      nextStep,
+      prevStep,
+      isComplete,
+      getMaxPhotos,
+      guestImageFiles,
+      draftId,
+      registerDraftSnapshotter,
+    ]
   );
 
   useEffect(() => {
@@ -311,17 +339,16 @@ export default function ListingWizard() {
       return;
     }
 
-    if (!hasAnyUserInput(data)) {
-      toast({
-        title: "Noch nichts zu speichern",
-        description: "Fülle mindestens ein Feld aus, um einen Entwurf zu speichern.",
-      });
-      return;
-    }
-
     setIsSavingDraft(true);
     try {
-      let draftData: Partial<ListingData> = data;
+      let livePatch: Partial<ListingData> = {};
+      try {
+        livePatch = (await Promise.resolve(draftSnapshotterRef.current?.() ?? {})) ?? {};
+      } catch (e) {
+        console.warn("Could not capture live draft snapshot:", e);
+      }
+
+      let draftData: Partial<ListingData> = { ...data, ...livePatch };
 
       if (draftId) {
         try {
@@ -334,31 +361,15 @@ export default function ListingWizard() {
         }
       }
 
-      const listingId =
-        typeof (draftData as any)?.id === "string" && (draftData as any).id.length > 0
-          ? ((draftData as any).id as string)
-          : typeof data.id === "string" && data.id.length > 0
-            ? data.id
-            : null;
-
-      if (listingId) {
-        try {
-          const listing = await getListingByIdForOwner(listingId, user);
-          if (listing) {
-            const patch = toWizardPatchFromListing(listing, draftData as ListingData);
-
-            const safePatch = { ...(patch as any) };
-            if ("images" in safePatch) delete safePatch.images;
-            if ("cover_image_index" in safePatch) delete safePatch.cover_image_index;
-
-            draftData = { ...(draftData as any), ...safePatch };
-
-            updateData(draftData);
-          }
-        } catch (e) {
-          console.warn("Could not refresh listing before saving draft:", e);
-        }
+      if (!hasAnyUserInput(draftData as ListingData)) {
+        toast({
+          title: "Noch nichts zu speichern",
+          description: "Fülle mindestens ein Feld aus, um einen Entwurf zu speichern.",
+        });
+        return;
       }
+
+      updateData(draftData);
 
       if (!draftId) {
         const created = await createListingDraft({ user, data: draftData });
@@ -387,7 +398,7 @@ export default function ListingWizard() {
     return <SuccessScreen draft={data} />;
   }
 
-  const canSaveDraft = Boolean(user && !isLoadingFromQuery && hasAnyUserInput(data));
+  const canSaveDraft = Boolean(user && !isLoadingFromQuery);
 
   return (
     <WizardContext.Provider value={contextValue}>

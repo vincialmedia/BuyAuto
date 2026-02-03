@@ -415,10 +415,28 @@ export default function Step5_PreviewAndPay() {
         }),
       });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Fehler bei der Vorbereitung.');
+      let result: any = null;
+      try {
+        result = await response.json();
+      } catch {
+        result = null;
+      }
 
-      setClientSecret(result.clientSecret);
+      if (!response.ok) {
+        const msg =
+          (result && (result.error || result.message)) ||
+          (response.status === 401 || response.status === 403
+            ? "Nicht autorisiert. Bitte Seite neu laden oder im neuen Tab öffnen und erneut versuchen."
+            : `Fehler bei der Vorbereitung (HTTP ${response.status}).`);
+        throw new Error(msg);
+      }
+
+      const nextClientSecret = result?.clientSecret;
+      if (typeof nextClientSecret !== "string" || nextClientSecret.length === 0) {
+        throw new Error("Keine Zahlungs-Session erhalten. Bitte Seite neu laden und erneut versuchen.");
+      }
+
+      setClientSecret(nextClientSecret);
       setPaymentInitiated(true);
 
     } catch (error: any) {

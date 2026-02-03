@@ -226,7 +226,7 @@ const directPurchaseFinancingSchema = z
   });
 
 export function DirectPurchaseFinancingDetails() {
-  const { data, updateData, nextStep, prevStep, draftId } = useWizard();
+  const { data, updateData, nextStep, prevStep, draftId, registerDraftSnapshotter } = useWizard();
   const { user, profile, profileLoading } = useAuth();
   const { toast } = useToast();
 
@@ -273,6 +273,7 @@ export function DirectPurchaseFinancingDetails() {
     setValue,
     trigger,
     clearErrors,
+    getValues,
   } = useForm<DirectPurchaseFinancingForm>({
     resolver: zodResolver(directPurchaseFinancingSchema),
     defaultValues: {
@@ -303,6 +304,68 @@ export function DirectPurchaseFinancingDetails() {
   const noDownPayment = Boolean(watch("no_down_payment"));
   const residualAdjustmentPp = clampPp(toNumberOrUndefined(watch("residual_pct_adjustment_pp")) ?? 0);
   const leaseTakeoverEnabled = Boolean(watch("lease_takeover_enabled"));
+
+  useEffect(() => {
+    registerDraftSnapshotter(() => {
+      const values = getValues();
+
+      const leasingEnabledNow = Boolean(values.leasing_enabled);
+      const leaseTakeoverEnabledNow = Boolean(values.lease_takeover_enabled);
+
+      const purchasePriceChf =
+        typeof values.purchase_price_chf === "number" && Number.isFinite(values.purchase_price_chf)
+          ? values.purchase_price_chf
+          : undefined;
+
+      const leaseTakeoverOffer =
+        leaseTakeoverEnabledNow === true
+          ? {
+              enabled: true,
+              price_per_month_chf: Math.round(toNumberOrUndefined(values.lease_takeover_price_per_month_chf) ?? 0),
+              remaining_months: Math.floor(toNumberOrUndefined(values.lease_takeover_remaining_months) ?? 0),
+              deposit_chf: Math.round(toNumberOrUndefined(values.lease_takeover_deposit_chf) ?? 0),
+              remaining_km: toNumberOrUndefined(values.lease_takeover_remaining_km),
+              pickup_canton_code: String(values.lease_takeover_pickup_canton_code ?? "").trim(),
+            }
+          : undefined;
+
+      const leasingOffer =
+        leasingEnabledNow
+          ? {
+              enabled: true,
+              interest_rate_pct: toNumberOrUndefined(values.interest_rate_pct) ?? 0,
+              down_payment_pct: Boolean(values.no_down_payment) ? 0 : toNumberOrUndefined(values.down_payment_pct) ?? 0,
+              no_down_payment: Boolean(values.no_down_payment),
+              min_term_months: toNumberOrUndefined(values.min_term_months) ?? 0,
+              max_term_months: toNumberOrUndefined(values.max_term_months) ?? 0,
+              km_options: DEFAULT_KM_OPTIONS,
+              residual_pct_adjustment_pp: clampPp(toNumberOrUndefined(values.residual_pct_adjustment_pp) ?? 0),
+              lease_takeover_offer: leaseTakeoverOffer,
+            }
+          : leaseTakeoverOffer
+            ? {
+                enabled: false,
+                interest_rate_pct: 0,
+                down_payment_pct: 0,
+                no_down_payment: false,
+                min_term_months: 0,
+                max_term_months: 0,
+                lease_takeover_offer: leaseTakeoverOffer,
+              }
+            : null;
+
+      return {
+        deal_type: "direct_purchase",
+        financing_type: leasingEnabledNow ? "leasing" : "cash",
+        leasing_offer: leasingOffer,
+        purchase_price_chf: purchasePriceChf,
+      } as any;
+    });
+
+    return () => {
+      registerDraftSnapshotter(() => ({}));
+    };
+  }, [getValues, registerDraftSnapshotter]);
 
   useEffect(() => {
     if (!isGarage) {

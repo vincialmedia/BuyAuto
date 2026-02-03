@@ -20,7 +20,7 @@ const planMapping: Record<Plan, PricePlanId> = {
 };
 
 export default function Step3_PlanSelection() {
-  const { data, updateData, nextStep, prevStep } = useWizard();
+  const { data, updateData, nextStep, prevStep, registerDraftSnapshotter } = useWizard();
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const isGarage = profile?.role === "garage";
@@ -34,6 +34,18 @@ export default function Step3_PlanSelection() {
     const newTotal = calculateTotal(selectedPlan, isPremium);
     setTotal(newTotal);
   }, [selectedPlan, isPremium]);
+
+  useEffect(() => {
+    registerDraftSnapshotter(() => ({
+      price_plan: selectedPlan,
+      premium: isPremium,
+      price_paid_chf: total,
+    } as any));
+
+    return () => {
+      registerDraftSnapshotter(() => ({}));
+    };
+  }, [isPremium, registerDraftSnapshotter, selectedPlan, total]);
 
   useEffect(() => {
     if (isGarage) {
