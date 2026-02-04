@@ -363,6 +363,30 @@ export type Database = {
           },
         ]
       }
+      makes: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          normalized_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          normalized_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          normalized_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       message_attachments: {
         Row: {
           created_at: string
@@ -429,6 +453,41 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      models: {
+        Row: {
+          created_at: string
+          id: string
+          make_id: string
+          name: string
+          normalized_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          make_id: string
+          name: string
+          normalized_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          make_id?: string
+          name?: string
+          normalized_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "models_make_id_fkey"
+            columns: ["make_id"]
+            isOneToOne: false
+            referencedRelation: "makes"
             referencedColumns: ["id"]
           },
         ]
@@ -501,6 +560,102 @@ export type Database = {
           vorname?: string
         }
         Relationships: []
+      }
+      variants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          model_id: string
+          name: string
+          normalized_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          model_id: string
+          name: string
+          normalized_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          model_id?: string
+          name?: string
+          normalized_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variants_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_aliases: {
+        Row: {
+          alias: string
+          created_at: string
+          entity_type: string
+          id: string
+          make_id: string | null
+          model_id: string | null
+          normalized_alias: string
+          source: string
+          variant_id: string | null
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          entity_type: string
+          id?: string
+          make_id?: string | null
+          model_id?: string | null
+          normalized_alias: string
+          source?: string
+          variant_id?: string | null
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          entity_type?: string
+          id?: string
+          make_id?: string | null
+          model_id?: string | null
+          normalized_alias?: string
+          source?: string
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_aliases_make_id_fkey"
+            columns: ["make_id"]
+            isOneToOne: false
+            referencedRelation: "makes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_aliases_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_aliases_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "variants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_catalog: {
         Row: {
@@ -626,7 +781,17 @@ export type Database = {
       get_my_role: { Args: never; Returns: string }
       get_service_role_key: { Args: never; Returns: string }
       get_user_role: { Args: { user_id: string }; Returns: string }
+      normalize_vehicle_name: { Args: { input: string }; Returns: string }
       publish_garage_listing: { Args: { listing_id: string }; Returns: Json }
+      resolve_make_id: { Args: { p_make_text: string }; Returns: string }
+      resolve_model_id: {
+        Args: { p_make_id: string; p_model_text: string }
+        Returns: string
+      }
+      resolve_variant_id: {
+        Args: { p_model_id: string; p_variant_text: string }
+        Returns: string
+      }
       search_published_listings: {
         Args: {
           limit_count?: number
