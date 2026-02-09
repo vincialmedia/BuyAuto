@@ -18,6 +18,12 @@ import { VehicleBasicsSection, type CanonicalOption, type VehicleStepFormValues 
 import type { DealType, FinancingType, ListingData } from "@/lib/buyauto/types";
 
 const vehicleStepSchema = z.object({
+  vin: z
+    .string()
+    .min(17, "VIN muss 17 Zeichen haben")
+    .max(17, "VIN muss 17 Zeichen haben")
+    .regex(/^[A-Z0-9]{17}$/, "VIN muss 17 Zeichen (A-Z, 0-9) haben"),
+
   make_id: z.string().min(1, "Marke ist erforderlich"),
   model_id: z.string().min(1, "Modell ist erforderlich"),
   variant_id: z.string().min(1, "Variante ist erforderlich"),
@@ -25,7 +31,7 @@ const vehicleStepSchema = z.object({
   year: z.number().int().min(1900, "Bitte ein gültiges Jahr eingeben"),
   km: z.number().int().min(0, "Kilometerstand ist erforderlich"),
 
-  fuel: z.string().min(1, "Antrieb ist erforderlich"),
+  fuel: z.string().min(1, "Treibstoff ist erforderlich"),
   gearbox: z.string().min(1, "Getriebe ist erforderlich"),
   body: z.string().min(1, "Karosserie ist erforderlich"),
 
@@ -40,7 +46,7 @@ const vehicleStepSchema = z.object({
       .max(2000, "Bitte eine gültige Leistung eingeben")
   ),
 
-  drivetrain: z.string().min(1, "Drivetrain ist erforderlich"),
+  drivetrain: z.string().min(1, "Antrieb ist erforderlich"),
 
   first_registration: z
     .string()
@@ -89,8 +95,14 @@ export function Step1Form() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [vinInput, setVinInput] = useState<string>("");
+  const [vinInput, setVinInput] = useState<string>(typeof (data as any)?.vin === "string" ? (data as any).vin : "");
   const [vinLoading, setVinLoading] = useState(false);
+  const [vinStatus, setVinStatus] = useState<"idle" | "loading" | "success" | "error">(
+    typeof (data as any)?.vin === "string" && (data as any)?.make_id && (data as any)?.model_id
+      ? "success"
+      : "idle"
+  );
+  const [vinError, setVinError] = useState<string | null>(null);
 
   const [makes, setMakes] = useState<CanonicalOption[]>([]);
   const [models, setModels] = useState<CanonicalOption[]>([]);
@@ -110,6 +122,8 @@ export function Step1Form() {
   const form = useForm<VehicleStepFormValues>({
     resolver: zodResolver(vehicleStepSchema),
     defaultValues: {
+      vin: (data as any).vin || "",
+
       make_id: (data as any).make_id || "",
       model_id: (data as any).model_id || "",
       variant_id: (data as any).variant_id || "",
@@ -153,6 +167,9 @@ export function Step1Form() {
   const selectedMake = useMemo(() => makes.find((m) => m.id === selectedMakeId) ?? null, [makes, selectedMakeId]);
   const selectedModel = useMemo(() => models.find((m) => m.id === selectedModelId) ?? null, [models, selectedModelId]);
   const selectedVariant = useMemo(() => variants.find((v) => v.id === watch("variant_id")) ?? null, [variants, watch]);
+
+  const isVinReady = vinStatus === "success";
+  const fieldsDisabled = !isVinReady;
 
   useEffect(() => {
     const loadMakes = async () => {
@@ -285,8 +302,10 @@ export function Step1Form() {
     return current === initial;
   };
 
-  const applyVinAutofill = (payload: VinDecodeResponse) => {
-    if (payload.make_id && shouldAutofill("make_id")) {
+  const applyVinAutofill = (payload: VinDecodeResponse, vin: string) => {
+    setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
+
+    if (payload.make_id) {
       setValue("make_id", payload.make_id, { shouldValidate: true });
       setValue("model_id", "", { shouldValidate: false });
       setValue("variant_id", "", { shouldValidate: false });
@@ -298,31 +317,31 @@ export function Step1Form() {
       if (payload.variant_id) setPendingVariantId(payload.variant_id);
     }
 
-    if (typeof payload.year === "number" && Number.isFinite(payload.year) && shouldAutofill("year")) {
+    if (typeof payload.year === "number" && Number.isFinite(payload.year)) {
       setValue("year", payload.year, { shouldValidate: true });
     }
 
-    if (typeof payload.power_hp === "number" && Number.isFinite(payload.power_hp) && shouldAutofill("power_hp")) {
+    if (typeof payload.power_hp === "number" && Number.isFinite(payload.power_hp)) {
       setValue("power_hp", Math.round(payload.power_hp), { shouldValidate: true });
     }
 
-    if (payload.fuel && shouldAutofill("fuel")) {
+    if (payload.fuel) {
       setValue("fuel", payload.fuel, { shouldValidate: true });
     }
 
-    if (payload.transmission && shouldAutofill("gearbox")) {
+    if (payload.transmission) {
       setValue("gearbox", payload.transmission, { shouldValidate: true });
     }
 
-    if (payload.body_type && shouldAutofill("body")) {
+    if (payload.body_type) {
       setValue("body", payload.body_type, { shouldValidate: true });
     }
 
-    if (payload.drivetrain && shouldAutofill("drivetrain")) {
+    if (payload.drivetrain) {
       setValue("drivetrain", payload.drivetrain, { shouldValidate: true });
     }
 
-    if (payload.first_registration && shouldAutofill("first_registration")) {
+    if (payload.first_registration) {
       setValue("first_registration", payload.first_registration, { shouldValidate: true });
     }
   };
@@ -330,8 +349,8 @@ export function Step1Form() {
   const onDecodeVin = async () => {
     if (!user) {
       toast({
-        title: "Nicht angemeldet",
-        description: "Bitte zuerst anmelden.",
+        title: "Bitte anmelden",
+        description: "Um ein Inserat zu erstellen, musst du eingeloggt sein.",
         variant: "destructive",
       });
       return;
@@ -339,25 +358,42 @@ export function Step1Form() {
 
     const vin = vinInput.trim().toUpperCase();
     setVinInput(vin);
+    setVinError(null);
 
     if (!vin) {
+      setVinStatus("error");
+      setVinError("Bitte gib deine VIN ein.");
       toast({
         title: "VIN fehlt",
-        description: "Bitte eine VIN eingeben.",
+        description: "Bitte gib die VIN (17 Zeichen) ein.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/^[A-Z0-9]{17}$/.test(vin)) {
+      setVinStatus("error");
+      setVinError("VIN muss 17 Zeichen (A-Z, 0-9) haben.");
+      toast({
+        title: "Ungültige VIN",
+        description: "Die VIN muss genau 17 Zeichen haben (A–Z, 0–9).",
         variant: "destructive",
       });
       return;
     }
 
     setVinLoading(true);
+    setVinStatus("loading");
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
       if (!token) {
+        setVinStatus("error");
+        setVinError("Bitte melde dich erneut an.");
         toast({
           title: "Nicht angemeldet",
-          description: "Bitte erneut anmelden.",
+          description: "Bitte melde dich erneut an.",
           variant: "destructive",
         });
         return;
@@ -375,32 +411,47 @@ export function Step1Form() {
       const json = (await resp.json()) as VinDecodeResponse & { error?: string; message?: string };
 
       if (!resp.ok) {
+        const msg = json?.message || json?.error || "Bitte prüfe die VIN und versuche es erneut.";
+        setVinStatus("error");
+        setVinError(msg);
+
         toast({
           title: "VIN Decode fehlgeschlagen",
-          description: json?.message || json?.error || "Bitte prüfen Sie die VIN und versuchen Sie es erneut.",
+          description: msg,
           variant: "destructive",
         });
         return;
       }
 
-      applyVinAutofill(json);
+      applyVinAutofill(json, vin);
+
+      setVinStatus("success");
+      setVinError(null);
 
       toast({
-        title: "Daten geladen",
+        title: "Fahrzeugdaten geladen",
         description: json.cached ? "VIN-Daten aus dem Cache geladen." : "VIN-Daten erfolgreich geladen.",
       });
+
+      if (!json.make_id || !json.model_id) {
+        setVinStatus("error");
+        setVinError("Die VIN konnte nicht eindeutig auf Marke/Modell gemappt werden. Bitte kontaktiere den Support.");
+        return;
+      }
 
       if (!json.variant_id) {
         toast({
           title: "Variante fehlt",
-          description: "Bitte wählen Sie eine Variante manuell aus, bevor Sie fortfahren.",
+          description: "Bitte wähle jetzt eine Variante aus, bevor du weitergehst.",
           variant: "destructive",
         });
       }
     } catch {
+      setVinStatus("error");
+      setVinError("VIN-Daten konnten nicht geladen werden.");
       toast({
         title: "Fehler",
-        description: "VIN Daten konnten nicht geladen werden.",
+        description: "VIN-Daten konnten nicht geladen werden.",
         variant: "destructive",
       });
     } finally {
@@ -440,8 +491,8 @@ export function Step1Form() {
   const onSubmit = async (values: VehicleStepFormValues) => {
     if (!user) {
       toast({
-        title: "Nicht angemeldet",
-        description: "Sie müssen angemeldet sein, um ein Inserat zu erstellen.",
+        title: "Bitte anmelden",
+        description: "Um ein Inserat zu erstellen, musst du eingeloggt sein.",
         variant: "destructive",
       });
       return;
@@ -449,20 +500,34 @@ export function Step1Form() {
 
     if (profileLoading) return;
 
-    const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
-    const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
-    const variantName = variants.find((v) => v.id === values.variant_id)?.name ?? "";
-
-    if (!makeName || !modelName) {
+    if (vinStatus !== "success") {
       toast({
-        title: "Unvollständig",
-        description: "Bitte Marke und Modell auswählen.",
+        title: "VIN erforderlich",
+        description: "Bitte zuerst die VIN eingeben und „Daten laden“ klicken.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!values.variant_id || !variantName) {
+    if (!values.vin || !/^[A-Z0-9]{17}$/.test(values.vin)) {
+      toast({
+        title: "Ungültige VIN",
+        description: "Bitte lade die Fahrzeugdaten erneut über die VIN.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!values.make_id || !values.model_id) {
+      toast({
+        title: "Fahrzeugdaten fehlen",
+        description: "Bitte VIN erneut laden.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!values.variant_id) {
       toast({
         title: "Variante fehlt",
         description: "Bitte eine Variante auswählen.",
@@ -481,6 +546,8 @@ export function Step1Form() {
 
       updateData({
         ...values,
+        vin: values.vin,
+
         deal_type: nextDealType,
         financing_type: nextFinancingType,
         leasing_offer: nextDealType === "lease_takeover" ? null : (data as any).leasing_offer,
@@ -499,7 +566,7 @@ export function Step1Form() {
         gearbox: values.gearbox,
         body: values.body,
         location: values.location,
-        power_hp: Number(values.power_hp),
+        power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Number(values.power_hp) : null,
         drivetrain: values.drivetrain,
         first_registration: values.first_registration ?? null,
         description: values.description || "",
@@ -508,6 +575,8 @@ export function Step1Form() {
       if (isNewListing) {
         const nextDraftData: Partial<ListingData> = {
           ...(data as any),
+          vin: values.vin,
+
           deal_type: nextDealType,
           financing_type: nextFinancingType,
           leasing_offer: nextDealType === "lease_takeover" ? null : (data as any).leasing_offer,
@@ -527,9 +596,10 @@ export function Step1Form() {
           location: values.location as any,
           title: generatedTitle as any,
 
-          power_hp: Number(values.power_hp) as any,
+          power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
           drivetrain: values.drivetrain as any,
           first_registration: values.first_registration ?? null,
+
           description: values.description || "",
         };
 
@@ -560,6 +630,7 @@ export function Step1Form() {
         financing_type: nextFinancingType,
         leasing_offer: nextDealType === "lease_takeover" ? null : ((data as any).leasing_offer ?? null),
 
+        vin: values.vin,
         make_id: values.make_id as any,
         model_id: values.model_id as any,
         variant_id: values.variant_id as any,
@@ -572,6 +643,9 @@ export function Step1Form() {
         gearbox: values.gearbox,
         body: values.body,
         location: values.location,
+        power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
+        drivetrain: values.drivetrain,
+        first_registration: values.first_registration ?? null,
         description: values.description || undefined,
         title: generatedTitle,
       };
@@ -618,33 +692,37 @@ export function Step1Form() {
     return <div className="text-sm text-neutral-600">Lade Profil...</div>;
   }
 
+  const canProceed = isVinReady && Boolean(watch("make_id")) && Boolean(watch("model_id")) && Boolean(watch("variant_id"));
+
   return (
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Fahrzeugdaten</h2>
-        <p className="text-neutral-600 font-light leading-relaxed">Basisdaten zum Fahrzeug</p>
+        <p className="text-neutral-600 font-light leading-relaxed">Wir laden die Fahrzeugdaten per VIN – danach kannst du alles prüfen.</p>
       </div>
 
-      <div className="rounded-3xl border border-neutral-200/60 bg-white p-4 md:p-6 shadow-sm space-y-3">
+      <div className="rounded-3xl border border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 p-4 md:p-6 shadow-sm space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
           <div className="space-y-2">
-            <LabelVin />
+            <div className="text-sm font-medium text-neutral-900">VIN (Fahrgestellnummer) *</div>
             <Input
               value={vinInput}
               onChange={(e) => setVinInput(e.target.value)}
-              placeholder="VIN (17 Zeichen)"
-              className="uppercase bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+              placeholder="z.B. WBA... (17 Zeichen)"
+              className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl"
               autoComplete="off"
+              inputMode="text"
             />
+            <div className="text-xs text-neutral-700/80 font-light">
+              Pflichtfeld – wir laden die Fahrzeugdaten automatisch.
+            </div>
+            {vinError ? <div className="text-sm text-red-600">{vinError}</div> : null}
           </div>
 
-          <Button type="button" onClick={onDecodeVin} disabled={vinLoading} className="rounded-2xl">
+          <Button type="button" onClick={onDecodeVin} disabled={vinLoading} className="rounded-2xl h-12 px-6">
             {vinLoading ? "Lade..." : "Daten laden"}
           </Button>
         </div>
-        <p className="text-xs text-neutral-500 font-light">
-          VIN Decode lädt vorhandene Daten und erstellt fehlende Varianten automatisch (unter bestehendem Basis-Modell).
-        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
@@ -660,16 +738,24 @@ export function Step1Form() {
           loadingMakes={loadingMakes}
           loadingModels={loadingModels}
           loadingVariants={loadingVariants}
+          disableAllFields={fieldsDisabled}
+          lockMakeModel={isVinReady}
         />
 
         <div className="flex items-center justify-between pt-2">
           <Button type="button" variant="outline" onClick={onBack} className="rounded-2xl">
             Zurück
           </Button>
-          <Button type="submit" className="rounded-2xl" disabled={isSubmitting}>
+          <Button type="submit" className="rounded-2xl" disabled={isSubmitting || !canProceed}>
             {isSubmitting ? "Speichern..." : "Weiter zu Finanzierungsdetails"}
           </Button>
         </div>
+
+        {!canProceed ? (
+          <div className="text-sm text-neutral-600">
+            {isVinReady ? "Bitte wähle eine Variante aus, bevor du weitergehst." : "Bitte zuerst VIN eingeben und Daten laden."}
+          </div>
+        ) : null}
       </form>
     </div>
   );

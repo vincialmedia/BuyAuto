@@ -672,40 +672,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (model_id && providerTrim) {
-      const { data: variantId, error: variantErr } = await supabaseAdmin.rpc("resolve_variant_id", {
-        p_model_id: model_id,
-        p_variant_text: providerTrim,
-      });
-      if (variantErr) {
-        console.error("resolve_variant_id error", { vin: maskVin(vin) });
-      } else {
-        variant_id = (variantId as string | null) ?? null;
-      }
-    }
-
     if (model_id && providerTrim && !variant_id && !isLikelyJunkVariant(providerTrim)) {
       const cleanName = String(providerTrim).trim().replace(/\s+/g, " ");
       const normalized_name = normalizeText(cleanName);
+      const nowIso = new Date().toISOString();
 
-      const { data: upsertedVariant, error: upsertErr } = await supabaseAdmin
+      const { data: existingVariant, error: existingErr } = await supabaseAdmin
         .from("variants")
-        .upsert(
-          {
+        .select("id,name,normalized_name")
+        .eq("model_id", model_id)
+        .eq("normalized_name", normalized_name)
+        .maybeSingle();
+
+      if (existingErr) {
+        console.error("variants lookup error", { vin: maskVin(vin) });
+      }
+
+      if (existingVariant?.id) {
+        variant_id = existingVariant.id as string;
+      } else {
+        const { data: insertedVariant, error: insertErr } = await supabaseAdmin
+          .from("variants")
+          .insert({
             model_id,
             name: cleanName,
             normalized_name,
             is_active: true,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "model_id,normalized_name" }
-        )
-        .select("id,name,normalized_name")
-        .single();
+            source: "vincario",
+            updated_at: nowIso,
+          })
+          .select("id,name,normalized_name")
+          .single();
 
-      if (!upsertErr && upsertedVariant?.id) {
-        variant_id = upsertedVariant.id as string;
+        if (!insertErr && insertedVariant?.id) {
+          variant_id = insertedVariant.id as string;
+        } else if ((insertErr as any)?.code === "23505") {
+          const { data: conflictVariant } = await supabaseAdmin
+            .from("variants")
+            .select("id,name,normalized_name")
+            .eq("model_id", model_id)
+            .eq("normalized_name", normalized_name)
+            .maybeSingle();
 
+          if (conflictVariant?.id) {
+            variant_id = conflictVariant.id as string;
+          }
+        }
+      }
+
+      if (variant_id) {
         const normalized_alias = normalizeText(cleanName);
 
         await supabaseAdmin.from("vehicle_aliases").upsert(

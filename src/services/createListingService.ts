@@ -15,6 +15,12 @@ export type ListingUpdatePayload = Partial<{
   make_id?: string | null;
   model_id?: string | null;
   variant_id?: string | null;
+
+  vin?: string | null;
+  power_hp?: number | null;
+  drivetrain?: string | null;
+  first_registration?: string | null;
+
   year?: number;
   mileage_km?: number;
   remaining_km?: number | null;

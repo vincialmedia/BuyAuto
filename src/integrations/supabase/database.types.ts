@@ -257,9 +257,11 @@ export type Database = {
           deal_type: Database["public"]["Enums"]["deal_type"]
           deposit_chf: number | null
           description: string | null
+          drivetrain: string | null
           duration_days: number | null
           expires_at: string | null
           financing_type: Database["public"]["Enums"]["financing_type"] | null
+          first_registration: string | null
           fuel: string
           garage_id: string | null
           gearbox: string
@@ -274,6 +276,7 @@ export type Database = {
           model_id: string | null
           moderation_note: string | null
           payment_status: string | null
+          power_hp: number | null
           premium: boolean
           premium_until: string | null
           price_paid_chf: number | null
@@ -293,6 +296,7 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
           variant_id: string | null
+          vin: string | null
           year: number
         }
         Insert: {
@@ -306,9 +310,11 @@ export type Database = {
           deal_type?: Database["public"]["Enums"]["deal_type"]
           deposit_chf?: number | null
           description?: string | null
+          drivetrain?: string | null
           duration_days?: number | null
           expires_at?: string | null
           financing_type?: Database["public"]["Enums"]["financing_type"] | null
+          first_registration?: string | null
           fuel: string
           garage_id?: string | null
           gearbox: string
@@ -323,6 +329,7 @@ export type Database = {
           model_id?: string | null
           moderation_note?: string | null
           payment_status?: string | null
+          power_hp?: number | null
           premium?: boolean
           premium_until?: string | null
           price_paid_chf?: number | null
@@ -342,6 +349,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           variant_id?: string | null
+          vin?: string | null
           year: number
         }
         Update: {
@@ -355,9 +363,11 @@ export type Database = {
           deal_type?: Database["public"]["Enums"]["deal_type"]
           deposit_chf?: number | null
           description?: string | null
+          drivetrain?: string | null
           duration_days?: number | null
           expires_at?: string | null
           financing_type?: Database["public"]["Enums"]["financing_type"] | null
+          first_registration?: string | null
           fuel?: string
           garage_id?: string | null
           gearbox?: string
@@ -372,6 +382,7 @@ export type Database = {
           model_id?: string | null
           moderation_note?: string | null
           payment_status?: string | null
+          power_hp?: number | null
           premium?: boolean
           premium_until?: string | null
           price_paid_chf?: number | null
@@ -391,6 +402,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           variant_id?: string | null
+          vin?: string | null
           year?: number
         }
         Relationships: [
@@ -630,6 +642,7 @@ export type Database = {
           model_id: string
           name: string
           normalized_name: string
+          source: string
           updated_at: string
         }
         Insert: {
@@ -639,6 +652,7 @@ export type Database = {
           model_id: string
           name: string
           normalized_name: string
+          source?: string
           updated_at?: string
         }
         Update: {
@@ -648,6 +662,7 @@ export type Database = {
           model_id?: string
           name?: string
           normalized_name?: string
+          source?: string
           updated_at?: string
         }
         Relationships: [

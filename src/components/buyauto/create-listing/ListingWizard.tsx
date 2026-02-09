@@ -66,6 +66,14 @@ const createEmptyListingData = (): ListingData => ({
   images: [],
   cover_image_index: 0,
   ui_version: "v2",
+
+  vin: "",
+  power_hp: null,
+  drivetrain: "",
+  first_registration: null,
+  make_id: null,
+  model_id: null,
+  variant_id: null,
 });
 
 const hasAnyUserInput = (data: ListingData) => {
@@ -125,6 +133,14 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
     images: wizardData.images,
     cover_image_index: wizardData.cover_image_index,
     leasing_offer: (wizardData as unknown as { leasing_offer?: unknown }).leasing_offer as any,
+
+    vin: (wizardData as any)?.vin ?? null,
+    make_id: (wizardData as any)?.make_id ?? null,
+    model_id: (wizardData as any)?.model_id ?? null,
+    variant_id: (wizardData as any)?.variant_id ?? null,
+    power_hp: (wizardData as any)?.power_hp ?? null,
+    drivetrain: (wizardData as any)?.drivetrain ?? null,
+    first_registration: (wizardData as any)?.first_registration ?? null,
   };
 };
 
@@ -171,6 +187,14 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     cover_image_index: typeof listing?.cover_image_index === "number" ? listing.cover_image_index : prev.cover_image_index,
 
     status: listing?.status ?? (prev as any)?.status,
+
+    vin: listing?.vin ?? (prev as any)?.vin,
+    make_id: listing?.make_id ?? (prev as any)?.make_id,
+    model_id: listing?.model_id ?? (prev as any)?.model_id,
+    variant_id: listing?.variant_id ?? (prev as any)?.variant_id,
+    power_hp: typeof listing?.power_hp === "number" ? listing.power_hp : (prev as any)?.power_hp,
+    drivetrain: listing?.drivetrain ?? (prev as any)?.drivetrain,
+    first_registration: listing?.first_registration ?? (prev as any)?.first_registration,
   };
 };
 

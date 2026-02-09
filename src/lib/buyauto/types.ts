@@ -72,6 +72,17 @@ export interface ListingData {
   deal_type?: DealType;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOffer | null;
+
+  vin?: string | null;
+
+  make_id?: string | null;
+  model_id?: string | null;
+  variant_id?: string | null;
+
+  power_hp?: number | null;
+  drivetrain?: string | null;
+  first_registration?: string | null;
+
   brand?: string;
   model?: string;
   year?: number;
