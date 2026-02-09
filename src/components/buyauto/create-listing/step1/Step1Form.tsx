@@ -538,6 +538,10 @@ export function Step1Form() {
 
     setIsSubmitting(true);
     try {
+      const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
+      const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
+      const variantName = variants.find((v) => v.id === values.variant_id)?.name ?? "";
+
       const generatedTitle = `${makeName} ${variantName || modelName}`.trim();
       const isNewListing = !(data as any).id;
 
