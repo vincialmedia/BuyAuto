@@ -49,9 +49,12 @@ function isValidVin(vin: string): boolean {
 
 type ControlSumMode = "WITH_PIPES" | "NO_PIPES";
 
-function computeControlSum(params: { vin: string; apiKey: string; secretKey: string; mode: ControlSumMode }): string {
-  const { vin, apiKey, secretKey, mode } = params;
-  const raw = mode === "WITH_PIPES" ? `${vin}|${apiKey}|${apiKey}|${secretKey}` : `${vin}${apiKey}${apiKey}${secretKey}`;
+function computeControlSum(params: { vin: string; id: string; apiKey: string; secretKey: string; mode: ControlSumMode }): string {
+  const { vin, id, apiKey, secretKey, mode } = params;
+
+  const raw =
+    mode === "WITH_PIPES" ? `${vin}|${id}|${apiKey}|${secretKey}` : `${vin}${id}${apiKey}${secretKey}`;
+
   return createHash("sha1").update(raw).digest("hex").slice(0, 10);
 }
 
@@ -60,15 +63,17 @@ function getEnv() {
   const apiKey = process.env.VINCARIO_API_KEY;
   const secretKey = process.env.VINCARIO_SECRET_KEY;
 
+  const id = process.env.VINCARIO_ID ?? apiKey;
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!baseUrl || !apiKey || !secretKey || !supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+  if (!baseUrl || !apiKey || !secretKey || !id || !supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
     return null;
   }
 
-  return { baseUrl, apiKey, secretKey, supabaseUrl, supabaseAnonKey, serviceRoleKey };
+  return { baseUrl, id, apiKey, secretKey, supabaseUrl, supabaseAnonKey, serviceRoleKey };
 }
 
 function pickString(obj: unknown, keys: string[]): string | null {
@@ -144,12 +149,46 @@ function isTruthyBooleanLike(v: unknown): boolean {
   return false;
 }
 
+function normalizeProviderMessage(s: string): string {
+  return String(s ?? "").trim();
+}
+
 function extractProviderMessage(decoded: Json): string | null {
-  return (
-    deepPickString(decoded, ["message", "Message", "error_message", "errorMessage", "msg", "Msg", "detail", "Detail"]) ??
-    pickString(decoded, ["message", "Message", "error_message", "errorMessage"]) ??
-    null
-  );
+  const message =
+    deepPickString(decoded, [
+      "message",
+      "Message",
+      "error_message",
+      "errorMessage",
+      "error_description",
+      "errorDescription",
+      "msg",
+      "Msg",
+      "detail",
+      "Detail",
+      "reason",
+      "Reason",
+      "status_message",
+      "statusMessage",
+      "error_text",
+      "errorText",
+    ]) ??
+    pickString(decoded, ["message", "Message", "error_message", "errorMessage", "error_description", "errorDescription"]) ??
+    null;
+
+  if (message) {
+    const norm = normalizeText(message);
+    if (norm === "true" || norm === "false") return null;
+    return normalizeProviderMessage(message);
+  }
+
+  const err = (decoded as Json)["error"];
+  if (typeof err === "string") {
+    const norm = normalizeText(err);
+    if (norm && norm !== "true" && norm !== "false") return normalizeProviderMessage(err);
+  }
+
+  return null;
 }
 
 function getProviderErrorInfo(decoded: Json | null): { isError: boolean; message: string | null; invalidControlSum: boolean } {
@@ -302,13 +341,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: cached, error: cacheErr } = await supabaseAdmin
-    .from("vin_cache")
-    .select("*")
-    .eq("vin", vin)
-    .maybeSingle();
+  const { data: cached, error: cacheErr } = await supabaseAdmin.from("vin_cache").select("*").eq("vin", vin).maybeSingle();
 
-  if (!cacheErr && cached?.status === "success" && cached?.normalized_payload) {
+  if (!cacheErr && cached?.status === "success") {
     const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as Json | null) ?? null);
 
     if (providerInfo.isError) {
@@ -329,7 +364,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
           { onConflict: "vin" }
         );
-    } else {
+    } else if (cached.normalized_payload) {
       const updatedAt = cached.updated_at ? new Date(cached.updated_at) : null;
       const ageOk =
         updatedAt && Number.isFinite(updatedAt.getTime())
@@ -348,9 +383,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const base = env.baseUrl.replace(/\/$/, "");
 
-  const requestDecode = async (mode: ControlSumMode): Promise<{ decoded: Json | null; httpOk: boolean; httpStatus: number | null; providerInfo: { isError: boolean; message: string | null; invalidControlSum: boolean } }> => {
-    const controlSum = computeControlSum({ vin, apiKey: env.apiKey, secretKey: env.secretKey, mode });
-    const url = `${base}/${env.apiKey}/${controlSum}/decode/${vin}.json`;
+  const requestDecode = async (
+    mode: ControlSumMode
+  ): Promise<{
+    decoded: Json | null;
+    httpOk: boolean;
+    httpStatus: number | null;
+    providerInfo: { isError: boolean; message: string | null; invalidControlSum: boolean };
+  }> => {
+    const controlSum = computeControlSum({ vin, id: env.id, apiKey: env.apiKey, secretKey: env.secretKey, mode });
+    const url = `${base}/${env.id}/${controlSum}/decode/${vin}.json`;
 
     try {
       const resp = await fetch(url, { method: "GET" });
@@ -423,10 +465,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     deepPickString(decoded, ["trim", "Trim", "version", "Version", "variant", "Variant", "derivative", "Derivative"]) ??
     pickString(decoded, ["trim", "version", "variant", "derivative"]);
 
-  const rawYear =
-    deepPickNumber(decoded, ["year", "Year", "model_year", "modelYear", "production_year"]) ??
-    (providerModel ? null : null);
-  const year = rawYear && rawYear >= 1900 && rawYear <= 2100 ? Math.floor(rawYear) : null;
+  const rawYear = deepPickNumber(decoded, ["year", "Year", "model_year", "modelYear", "production_year"]) ?? null;
+  const year = rawYear && rawYear >= 1990 && rawYear <= 2030 ? Math.floor(rawYear) : null;
 
   const rawFuel = deepPickString(decoded, ["fuel", "Fuel", "fuel_type", "fuelType", "engine_fuel"]) ?? null;
   const rawTransmission = deepPickString(decoded, ["transmission", "Transmission", "gearbox", "Gearbox"]) ?? null;
