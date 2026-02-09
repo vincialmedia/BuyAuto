@@ -24,7 +24,8 @@ interface NormalizedVinPayload {
   provider_trim?: string | null;
 }
 
-const CACHE_MAX_AGE_DAYS = 30;
+const SUCCESS_CACHE_MAX_AGE_DAYS = 30;
+const FAILED_CACHE_MAX_AGE_MINUTES = 5;
 
 function maskVin(vin: string): string {
   const safe = String(vin ?? "");
@@ -52,8 +53,7 @@ type ControlSumMode = "WITH_PIPES" | "NO_PIPES";
 function computeControlSum(params: { vin: string; id: string; apiKey: string; secretKey: string; mode: ControlSumMode }): string {
   const { vin, id, apiKey, secretKey, mode } = params;
 
-  const raw =
-    mode === "WITH_PIPES" ? `${vin}|${id}|${apiKey}|${secretKey}` : `${vin}${id}${apiKey}${secretKey}`;
+  const raw = mode === "WITH_PIPES" ? `${vin}|${id}|${apiKey}|${secretKey}` : `${vin}${id}${apiKey}${secretKey}`;
 
   return createHash("sha1").update(raw).digest("hex").slice(0, 10);
 }
@@ -196,8 +196,10 @@ function getProviderErrorInfo(decoded: Json | null): { isError: boolean; message
 
   const providerError =
     isTruthyBooleanLike((decoded as Json)["error"]) ||
+    isTruthyBooleanLike((decoded as Json)["Error"]) ||
     isTruthyBooleanLike((decoded as Json)["provider_error"]) ||
-    isTruthyBooleanLike((decoded as Json)["providerError"]);
+    isTruthyBooleanLike((decoded as Json)["providerError"]) ||
+    isTruthyBooleanLike((decoded as Json)["ProviderError"]);
 
   const message = extractProviderMessage(decoded);
   const invalidControlSum = !!message && /invalid control sum/i.test(message);
@@ -303,6 +305,13 @@ async function safeParseJson(resp: Response): Promise<Json | null> {
   }
 }
 
+function isFresh(updatedAt: string | null | undefined, maxAgeMs: number): boolean {
+  if (!updatedAt) return false;
+  const d = new Date(updatedAt);
+  if (!Number.isFinite(d.getTime())) return false;
+  return Date.now() - d.getTime() < maxAgeMs;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -343,6 +352,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { data: cached, error: cacheErr } = await supabaseAdmin.from("vin_cache").select("*").eq("vin", vin).maybeSingle();
 
+  const successFresh = cached?.status === "success"
+    ? isFresh(cached.updated_at as string | null | undefined, SUCCESS_CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000)
+    : false;
+
+  const failedFresh = cached?.status === "failed"
+    ? isFresh(cached.updated_at as string | null | undefined, FAILED_CACHE_MAX_AGE_MINUTES * 60 * 1000)
+    : false;
+
   if (!cacheErr && cached?.status === "success") {
     const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as Json | null) ?? null);
 
@@ -364,21 +381,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
           { onConflict: "vin" }
         );
-    } else if (cached.normalized_payload) {
-      const updatedAt = cached.updated_at ? new Date(cached.updated_at) : null;
-      const ageOk =
-        updatedAt && Number.isFinite(updatedAt.getTime())
-          ? Date.now() - updatedAt.getTime() < CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
-          : false;
-
-      if (ageOk) {
-        return res.status(200).json({
-          ...((cached.normalized_payload as unknown as NormalizedVinPayload) ?? {}),
-          vin,
-          cached: true,
-        });
-      }
+    } else if (cached.normalized_payload && successFresh) {
+      return res.status(200).json({
+        ...((cached.normalized_payload as unknown as NormalizedVinPayload) ?? {}),
+        vin,
+        cached: true,
+      });
     }
+  }
+
+  if (!cacheErr && cached?.status === "failed" && failedFresh) {
+    return res.status(502).json({
+      error: "VIN decode failed",
+      message: (cached.error_message as string | null) ?? "VIN decode failed",
+      cached: true,
+    });
   }
 
   const base = env.baseUrl.replace(/\/$/, "");
@@ -422,7 +439,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
 
   let decodedAttempt = await requestDecode("WITH_PIPES");
-
   if (decodedAttempt.providerInfo.invalidControlSum) {
     decodedAttempt = await requestDecode("NO_PIPES");
   }
