@@ -35,6 +35,9 @@ export const createListingDraft = async (params: {
     .insert({
       user_id: user.id,
       data,
+      make_id: (data as any)?.make_id ?? null,
+      model_id: (data as any)?.model_id ?? null,
+      variant_id: (data as any)?.variant_id ?? null,
       updated_at: new Date().toISOString(),
     })
     .select("*")
@@ -58,6 +61,9 @@ export const updateListingDraft = async (params: {
     .from("listing_drafts")
     .update({
       data,
+      make_id: (data as any)?.make_id ?? null,
+      model_id: (data as any)?.model_id ?? null,
+      variant_id: (data as any)?.variant_id ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", draftId)

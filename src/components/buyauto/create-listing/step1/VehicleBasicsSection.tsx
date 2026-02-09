@@ -1,30 +1,41 @@
 import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormTrigger, UseFormWatch } from "react-hook-form";
 import { useEffect, useMemo } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+export interface CanonicalOption {
+  id: string;
+  name: string;
+}
 
 export interface VehicleStepFormValues {
-  brand: string;
-  model: string;
+  make_id: string;
+  model_id: string;
+  variant_id: string;
+
   year: number;
   km: number;
+
+  fuel: string;
   gearbox: string;
   body: string;
-  fuel: string;
+
+  location: string;
+  power_hp?: number | null;
+  drivetrain?: string | null;
+  first_registration?: string | null;
+
   description?: string;
 }
 
 const bodyTypes = ["Limousine", "Kombi", "SUV", "Cabrio"];
 const fuelTypes = ["Benzin", "Diesel", "Hybrid", "Elektro"];
 const gearboxTypes = ["Automatik", "Manuell"];
+
+const drivetrainTypes = ["Frontantrieb", "Heckantrieb", "Allrad"];
 
 export interface VehicleBasicsSectionProps {
   register: UseFormRegister<VehicleStepFormValues>;
@@ -33,45 +44,20 @@ export interface VehicleBasicsSectionProps {
   watch: UseFormWatch<VehicleStepFormValues>;
   errors: FieldErrors<VehicleStepFormValues>;
 
-  makes: string[];
-  models: string[];
+  makes: CanonicalOption[];
+  models: CanonicalOption[];
+  variants: CanonicalOption[];
+
   loadingMakes: boolean;
   loadingModels: boolean;
-
-  makeOpen: boolean;
-  setMakeOpen: (open: boolean) => void;
-  modelOpen: boolean;
-  setModelOpen: (open: boolean) => void;
-
-  makeSearch: string;
-  setMakeSearch: (val: string) => void;
-  modelSearch: string;
-  setModelSearch: (val: string) => void;
+  loadingVariants: boolean;
 }
 
 export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
-  const {
-    register,
-    setValue,
-    trigger,
-    watch,
-    errors,
-    makes,
-    models,
-    loadingMakes,
-    loadingModels,
-    makeOpen,
-    setMakeOpen,
-    modelOpen,
-    setModelOpen,
-    makeSearch,
-    setMakeSearch,
-    modelSearch,
-    setModelSearch,
-  } = props;
+  const { register, setValue, trigger, watch, errors, makes, models, variants, loadingMakes, loadingModels, loadingVariants } = props;
 
-  const selectedMake = watch("brand");
-  const selectedModel = watch("model");
+  const selectedMakeId = watch("make_id");
+  const selectedModelId = watch("model_id");
   const descriptionLength = (watch("description") ?? "").length;
 
   const currentYear = new Date().getFullYear();
@@ -88,110 +74,99 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="brand" className="text-sm font-medium text-neutral-700">
-            Marke *
-          </Label>
-          <Popover open={makeOpen} onOpenChange={setMakeOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={makeOpen}
-                className="w-full justify-between bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-                disabled={loadingMakes}
-              >
-                {selectedMake || (loadingMakes ? "Lädt..." : "Marke auswählen")}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Marke suchen..." value={makeSearch} onValueChange={setMakeSearch} />
-                <CommandList>
-                  <CommandEmpty>Keine Marke gefunden.</CommandEmpty>
-                  <CommandGroup>
-                    {makes.map((make) => (
-                      <CommandItem
-                        key={make}
-                        value={make}
-                        onSelect={(currentValue) => {
-                          setValue("brand", currentValue, { shouldValidate: true });
-                          setValue("model", "", { shouldValidate: false });
-                          setMakeOpen(false);
-                          setMakeSearch("");
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", selectedMake === make ? "opacity-100" : "opacity-0")} />
-                        {make}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          {errors.brand && <p className="text-sm text-red-500 font-light">{errors.brand.message as string}</p>}
+          <Label className="text-sm font-medium text-neutral-700">Marke *</Label>
+          <Select
+            value={selectedMakeId || ""}
+            onValueChange={(value) => {
+              setValue("make_id", value, { shouldValidate: true, shouldDirty: true });
+              setValue("model_id", "", { shouldValidate: false, shouldDirty: true });
+              setValue("variant_id", "", { shouldValidate: false, shouldDirty: true });
+            }}
+          >
+            <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+              <SelectValue placeholder={loadingMakes ? "Lädt..." : "Marke auswählen"} />
+            </SelectTrigger>
+            <SelectContent>
+              {(makes ?? []).map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.make_id && <p className="text-sm text-red-500 font-light">{errors.make_id.message as string}</p>}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="model" className="text-sm font-medium text-neutral-700">
-            Modell *
-          </Label>
-          <Popover open={modelOpen} onOpenChange={setModelOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={modelOpen}
-                className="w-full justify-between bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-                disabled={!selectedMake || loadingModels}
-              >
-                {selectedModel || (loadingModels ? "Lädt..." : !selectedMake ? "Zuerst Marke wählen" : "Modell auswählen")}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Modell suchen..." value={modelSearch} onValueChange={setModelSearch} />
-                <CommandList>
-                  <CommandEmpty>Kein Modell gefunden.</CommandEmpty>
-                  <CommandGroup>
-                    {models.map((model) => (
-                      <CommandItem
-                        key={model}
-                        value={model}
-                        onSelect={(currentValue) => {
-                          setValue("model", currentValue, { shouldValidate: true });
-                          setModelOpen(false);
-                          setModelSearch("");
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", selectedModel === model ? "opacity-100" : "opacity-0")} />
-                        {model}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          {errors.model && <p className="text-sm text-red-500 font-light">{errors.model.message as string}</p>}
+          <Label className="text-sm font-medium text-neutral-700">Modell (Basis) *</Label>
+          <Select
+            value={selectedModelId || ""}
+            onValueChange={(value) => {
+              setValue("model_id", value, { shouldValidate: true, shouldDirty: true });
+              setValue("variant_id", "", { shouldValidate: false, shouldDirty: true });
+            }}
+            disabled={!selectedMakeId || loadingModels}
+          >
+            <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+              <SelectValue placeholder={!selectedMakeId ? "Zuerst Marke wählen" : loadingModels ? "Lädt..." : "Modell auswählen"} />
+            </SelectTrigger>
+            <SelectContent>
+              {(models ?? []).map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.model_id && <p className="text-sm text-red-500 font-light">{errors.model_id.message as string}</p>}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="year" className="text-sm font-medium text-neutral-700">
-            Baujahr *
-          </Label>
-          <Select value={watch("year")?.toString()} onValueChange={(value) => setValue("year", parseInt(value, 10), { shouldValidate: true })}>
+          <Label className="text-sm font-medium text-neutral-700">Variante (Trim) *</Label>
+          <Select
+            value={watch("variant_id") || ""}
+            onValueChange={(value) => setValue("variant_id", value, { shouldValidate: true, shouldDirty: true })}
+            disabled={!selectedModelId || loadingVariants}
+          >
+            <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+              <SelectValue placeholder={!selectedModelId ? "Zuerst Modell wählen" : loadingVariants ? "Lädt..." : "Variante auswählen"} />
+            </SelectTrigger>
+            <SelectContent>
+              {(variants ?? []).map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.variant_id && <p className="text-sm text-red-500 font-light">{errors.variant_id.message as string}</p>}
+          {selectedModelId && !loadingVariants && (variants ?? []).length === 0 ? (
+            <p className="text-xs text-neutral-500 font-light">Keine Varianten vorhanden. Mit VIN werden Varianten automatisch erstellt.</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-neutral-700">Standort *</Label>
+          <Input
+            {...register("location")}
+            placeholder="z.B. Zürich"
+            className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+          />
+          {errors.location && <p className="text-sm text-red-500 font-light">{errors.location.message as string}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-neutral-700">Baujahr *</Label>
+          <Select value={String(watch("year") ?? "")} onValueChange={(value) => setValue("year", parseInt(value, 10), { shouldValidate: true, shouldDirty: true })}>
             <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
               <SelectValue placeholder="Jahr auswählen" />
             </SelectTrigger>
             <SelectContent>
               {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
+                <SelectItem key={year} value={String(year)}>
                   {year}
                 </SelectItem>
               ))}
@@ -213,7 +188,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
               onChange={(e) => {
                 const value = e.target.value.replace(/[^0-9]/g, "");
-                setValue("km", value ? parseInt(value, 10) : 0, { shouldValidate: true });
+                setValue("km", value ? parseInt(value, 10) : 0, { shouldValidate: true, shouldDirty: true });
                 e.target.value = value;
               }}
               onBlur={(e) => {
@@ -235,10 +210,25 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="gearbox" className="text-sm font-medium text-neutral-700">
-            Getriebe *
-          </Label>
-          <Select value={watch("gearbox")} onValueChange={(value) => setValue("gearbox", value, { shouldValidate: true })}>
+          <Label className="text-sm font-medium text-neutral-700">Antrieb (Fuel) *</Label>
+          <Select value={watch("fuel")} onValueChange={(value) => setValue("fuel", value, { shouldValidate: true, shouldDirty: true })}>
+            <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+              <SelectValue placeholder="Antrieb auswählen" />
+            </SelectTrigger>
+            <SelectContent>
+              {fuelTypes.map((f) => (
+                <SelectItem key={f} value={f}>
+                  {f}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.fuel && <p className="text-sm text-red-500 font-light">{errors.fuel.message as string}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-neutral-700">Getriebe *</Label>
+          <Select value={watch("gearbox")} onValueChange={(value) => setValue("gearbox", value, { shouldValidate: true, shouldDirty: true })}>
             <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
               <SelectValue placeholder="Getriebe auswählen" />
             </SelectTrigger>
@@ -254,10 +244,8 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="body" className="text-sm font-medium text-neutral-700">
-            Karosserie *
-          </Label>
-          <Select value={watch("body")} onValueChange={(value) => setValue("body", value, { shouldValidate: true })}>
+          <Label className="text-sm font-medium text-neutral-700">Karosserie *</Label>
+          <Select value={watch("body")} onValueChange={(value) => setValue("body", value, { shouldValidate: true, shouldDirty: true })}>
             <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
               <SelectValue placeholder="Karosserie auswählen" />
             </SelectTrigger>
@@ -273,31 +261,57 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="fuel" className="text-sm font-medium text-neutral-700">
-            Antrieb *
-          </Label>
-          <Select value={watch("fuel")} onValueChange={(value) => setValue("fuel", value, { shouldValidate: true })}>
+          <Label className="text-sm font-medium text-neutral-700">Leistung (PS) *</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="z.B. 306"
+            className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+            value={watch("power_hp") == null ? "" : String(watch("power_hp"))}
+            onChange={(e) => {
+              const num = e.target.value === "" ? null : Number(e.target.value);
+              setValue("power_hp", Number.isFinite(num as number) ? (num as number) : null, { shouldValidate: true, shouldDirty: true });
+            }}
+          />
+          {errors.power_hp && <p className="text-sm text-red-500 font-light">{errors.power_hp.message as string}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-neutral-700">Drivetrain *</Label>
+          <Select
+            value={watch("drivetrain") ?? ""}
+            onValueChange={(value) => setValue("drivetrain", value, { shouldValidate: true, shouldDirty: true })}
+          >
             <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-              <SelectValue placeholder="Antrieb auswählen" />
+              <SelectValue placeholder="Drivetrain auswählen" />
             </SelectTrigger>
             <SelectContent>
-              {fuelTypes.map((f) => (
-                <SelectItem key={f} value={f}>
-                  {f}
+              {drivetrainTypes.map((d) => (
+                <SelectItem key={d} value={d}>
+                  {d}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {errors.fuel && <p className="text-sm text-red-500 font-light">{errors.fuel.message as string}</p>}
+          {errors.drivetrain && <p className="text-sm text-red-500 font-light">{errors.drivetrain.message as string}</p>}
+          <p className="text-[11px] text-neutral-500 font-light">Temporäre Liste (TODO: DB-enum Endpoint).</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-neutral-700">Erstzulassung (optional)</Label>
+          <Input
+            type="month"
+            className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+            value={watch("first_registration") ?? ""}
+            onChange={(e) => setValue("first_registration", e.target.value || null, { shouldValidate: true, shouldDirty: true })}
+          />
+          {errors.first_registration && <p className="text-sm text-red-500 font-light">{errors.first_registration.message as string}</p>}
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description" className="text-sm font-medium text-neutral-700">
-          Fahrzeugbeschreibung (optional)
-        </Label>
+        <Label className="text-sm font-medium text-neutral-700">Fahrzeugbeschreibung (optional)</Label>
         <Textarea
-          id="description"
           {...register("description")}
           placeholder="Beschreiben Sie Ihr Fahrzeug: Besonderheiten, Ausstattung, Zustand, etc. (Max. 2000 Zeichen)"
           className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm min-h-[120px] resize-y"
