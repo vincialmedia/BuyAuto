@@ -24,8 +24,8 @@ export interface VehicleStepFormValues {
   body: string;
 
   location: string;
-  power_hp?: number | null;
-  drivetrain?: string | null;
+  power_hp: number | undefined;
+  drivetrain: string;
   first_registration?: string | null;
 
   description?: string;
@@ -269,8 +269,8 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
             className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
             value={watch("power_hp") == null ? "" : String(watch("power_hp"))}
             onChange={(e) => {
-              const num = e.target.value === "" ? null : Number(e.target.value);
-              setValue("power_hp", Number.isFinite(num as number) ? (num as number) : null, { shouldValidate: true, shouldDirty: true });
+              const num = e.target.value === "" ? undefined : Number(e.target.value);
+              setValue("power_hp", Number.isFinite(num as number) ? (num as number) : undefined, { shouldValidate: true, shouldDirty: true });
             }}
           />
           {errors.power_hp && <p className="text-sm text-red-500 font-light">{errors.power_hp.message as string}</p>}

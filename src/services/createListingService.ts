@@ -12,6 +12,9 @@ export type ListingUpdatePayload = Partial<{
   leasing_offer?: LeasingOfferPayload | null;
   brand?: string;
   model?: string;
+  make_id?: string | null;
+  model_id?: string | null;
+  variant_id?: string | null;
   year?: number;
   mileage_km?: number;
   remaining_km?: number | null;

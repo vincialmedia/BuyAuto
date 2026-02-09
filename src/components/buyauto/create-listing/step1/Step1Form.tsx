@@ -31,15 +31,16 @@ const vehicleStepSchema = z.object({
 
   location: z.string().min(1, "Standort ist erforderlich"),
 
-  power_hp: z
-    .number()
-    .int()
-    .min(1, "Leistung ist erforderlich")
-    .max(2000, "Bitte eine gültige Leistung eingeben")
-    .nullable()
-    .optional(),
+  power_hp: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : v),
+    z
+      .number()
+      .int()
+      .min(1, "Leistung ist erforderlich")
+      .max(2000, "Bitte eine gültige Leistung eingeben")
+  ),
 
-  drivetrain: z.string().min(1, "Drivetrain ist erforderlich").nullable().optional(),
+  drivetrain: z.string().min(1, "Drivetrain ist erforderlich"),
 
   first_registration: z
     .string()
@@ -119,8 +120,8 @@ export function Step1Form() {
 
       location: (data as any).location || "",
 
-      power_hp: typeof (data as any).power_hp === "number" ? (data as any).power_hp : null,
-      drivetrain: typeof (data as any).drivetrain === "string" ? (data as any).drivetrain : null,
+      power_hp: typeof (data as any).power_hp === "number" ? (data as any).power_hp : undefined,
+      drivetrain: typeof (data as any).drivetrain === "string" ? (data as any).drivetrain : "",
       first_registration: typeof (data as any).first_registration === "string" ? (data as any).first_registration : null,
 
       description: data.description || "",
@@ -465,8 +466,8 @@ export function Step1Form() {
         gearbox: values.gearbox,
         body: values.body,
         location: values.location,
-        power_hp: values.power_hp ?? null,
-        drivetrain: values.drivetrain ?? null,
+        power_hp: Number(values.power_hp),
+        drivetrain: values.drivetrain,
         first_registration: values.first_registration ?? null,
         description: values.description || "",
       } as any);
@@ -493,8 +494,8 @@ export function Step1Form() {
           location: values.location as any,
           title: generatedTitle as any,
 
-          power_hp: values.power_hp ?? null,
-          drivetrain: values.drivetrain ?? null,
+          power_hp: Number(values.power_hp) as any,
+          drivetrain: values.drivetrain as any,
           first_registration: values.first_registration ?? null,
           description: values.description || "",
         };

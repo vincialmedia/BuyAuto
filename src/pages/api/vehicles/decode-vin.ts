@@ -166,6 +166,17 @@ function mapBodyType(raw: string | null): string | null {
   return null;
 }
 
+function mapDrivetrain(raw: string | null): string | null {
+  const v = normalizeText(raw ?? "");
+  if (!v) return null;
+
+  if (/(awd|4wd|4x4|allrad|all wheel|4matic|quattro|xdrive)/i.test(v)) return "Allrad";
+  if (/(rwd|rear|heck|hinterrad)/i.test(v)) return "Heckantrieb";
+  if (/(fwd|front|vorder|frontantrieb)/i.test(v)) return "Frontantrieb";
+
+  return null;
+}
+
 function normalizeFirstRegistration(raw: string | null): string | null {
   const s = String(raw ?? "").trim();
   if (!s) return null;
@@ -355,7 +366,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const fuel = mapFuel(rawFuel);
   const transmission = mapTransmission(rawTransmission);
   const body_type = mapBodyType(rawBody);
-  const drivetrain = rawDrivetrain ? String(rawDrivetrain) : null;
+  const drivetrain = mapDrivetrain(rawDrivetrain);
 
   const powerHpRaw = deepPickNumber(decoded, ["power_hp", "powerHp", "hp", "HP"]) ?? null;
   const power_hp = powerHpRaw && powerHpRaw > 0 && powerHpRaw < 2000 ? Math.round(powerHpRaw) : null;

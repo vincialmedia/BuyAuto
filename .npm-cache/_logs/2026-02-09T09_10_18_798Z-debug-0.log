@@ -5,14 +5,14 @@
 4 silly config load:file:/app/.npmrc
 5 silly config load:file:/home/softgen/.npmrc
 6 silly config load:file:/usr/local/etc/npmrc
-7 verbose title npm exec supabase gen types typescript --project-id fgalkhfopecwsryracre --schema public
-8 verbose argv "exec" "--" "supabase" "gen" "types" "typescript" "--project-id" "fgalkhfopecwsryracre" "--schema" "public"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-02-09T06_50_54_196Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-02-09T06_50_54_196Z-debug-0.log
+7 verbose title npm exec stylelint **/*.css --allow-empty-input
+8 verbose argv "exec" "--yes" "--" "stylelint" "**/*.css" "--allow-empty-input"
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-02-09T09_10_18_798Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-02-09T09_10_18_798Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
-14 http fetch GET 200 https://registry.npmjs.org/supabase 64ms (cache revalidated)
+14 http fetch GET 200 https://registry.npmjs.org/stylelint 69ms (cache revalidated)
 15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 16 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 17 verbose cwd /app
