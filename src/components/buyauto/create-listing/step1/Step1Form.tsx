@@ -339,12 +339,12 @@ export function Step1Form() {
         body: JSON.stringify({ vin }),
       });
 
-      const json = (await resp.json()) as VinDecodeResponse & { error?: string };
+      const json = (await resp.json()) as VinDecodeResponse & { error?: string; message?: string };
 
       if (!resp.ok) {
         toast({
           title: "VIN Decode fehlgeschlagen",
-          description: "Bitte prüfen Sie die VIN und versuchen Sie es erneut.",
+          description: json?.message || json?.error || "Bitte prüfen Sie die VIN und versuchen Sie es erneut.",
           variant: "destructive",
         });
         return;

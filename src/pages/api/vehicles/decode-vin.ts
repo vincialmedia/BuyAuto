@@ -47,9 +47,11 @@ function isValidVin(vin: string): boolean {
   return /^[A-Z0-9]{17}$/.test(vin);
 }
 
-function computeControlSum(params: { vin: string; apiKey: string; secretKey: string }): string {
-  const { vin, apiKey, secretKey } = params;
-  const raw = `${vin}${apiKey}${apiKey}${secretKey}`;
+type ControlSumMode = "WITH_PIPES" | "NO_PIPES";
+
+function computeControlSum(params: { vin: string; apiKey: string; secretKey: string; mode: ControlSumMode }): string {
+  const { vin, apiKey, secretKey, mode } = params;
+  const raw = mode === "WITH_PIPES" ? `${vin}|${apiKey}|${apiKey}|${secretKey}` : `${vin}${apiKey}${apiKey}${secretKey}`;
   return createHash("sha1").update(raw).digest("hex").slice(0, 10);
 }
 
@@ -130,6 +132,38 @@ function deepPickNumber(obj: unknown, candidateKeys: string[]): number | null {
   }
 
   return null;
+}
+
+function isTruthyBooleanLike(v: unknown): boolean {
+  if (v === true) return true;
+  if (typeof v === "string") {
+    const s = v.trim().toLowerCase();
+    return s === "true" || s === "1" || s === "yes";
+  }
+  if (typeof v === "number") return v === 1;
+  return false;
+}
+
+function extractProviderMessage(decoded: Json): string | null {
+  return (
+    deepPickString(decoded, ["message", "Message", "error_message", "errorMessage", "msg", "Msg", "detail", "Detail"]) ??
+    pickString(decoded, ["message", "Message", "error_message", "errorMessage"]) ??
+    null
+  );
+}
+
+function getProviderErrorInfo(decoded: Json | null): { isError: boolean; message: string | null; invalidControlSum: boolean } {
+  if (!decoded) return { isError: true, message: "Vincario returned no data", invalidControlSum: false };
+
+  const providerError =
+    isTruthyBooleanLike((decoded as Json)["error"]) ||
+    isTruthyBooleanLike((decoded as Json)["provider_error"]) ||
+    isTruthyBooleanLike((decoded as Json)["providerError"]);
+
+  const message = extractProviderMessage(decoded);
+  const invalidControlSum = !!message && /invalid control sum/i.test(message);
+
+  return { isError: providerError || invalidControlSum, message, invalidControlSum };
 }
 
 function mapFuel(raw: string | null): string | null {
@@ -275,53 +309,89 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .maybeSingle();
 
   if (!cacheErr && cached?.status === "success" && cached?.normalized_payload) {
-    const updatedAt = cached.updated_at ? new Date(cached.updated_at) : null;
-    const ageOk =
-      updatedAt && Number.isFinite(updatedAt.getTime())
-        ? Date.now() - updatedAt.getTime() < CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
-        : false;
+    const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as Json | null) ?? null);
 
-    if (ageOk) {
-      return res.status(200).json({
-        ...((cached.normalized_payload as unknown as NormalizedVinPayload) ?? {}),
-        vin,
-        cached: true,
-      });
-    }
-  }
-
-  const controlSum = computeControlSum({ vin, apiKey: env.apiKey, secretKey: env.secretKey });
-  const base = env.baseUrl.replace(/\/$/, "");
-  const url = `${base}/${env.apiKey}/${controlSum}/decode/${vin}.json`;
-
-  let decoded: Json | null = null;
-  let status: "success" | "failed" = "failed";
-  let errorMessage: string | null = null;
-
-  try {
-    const resp = await fetch(url, { method: "GET" });
-
-    if (!resp.ok) {
-      status = "failed";
-      errorMessage = `Vincario request failed (${resp.status})`;
-      console.error("Vincario decode request failed", { status: resp.status, vin: maskVin(vin) });
+    if (providerInfo.isError) {
+      await supabaseAdmin
+        .from("vin_cache")
+        .upsert(
+          {
+            vin,
+            status: "failed",
+            provider: "vincario",
+            decoded_payload: (cached.decoded_payload as unknown as Json | null) ?? null,
+            normalized_payload: null,
+            make_id: null,
+            model_id: null,
+            variant_id: null,
+            error_message: providerInfo.message ?? "Vincario provider error",
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "vin" }
+        );
     } else {
-      decoded = await safeParseJson(resp);
-      if (!decoded) {
-        status = "failed";
-        errorMessage = "Vincario returned invalid JSON";
-        console.error("Vincario decode invalid JSON", { vin: maskVin(vin) });
-      } else {
-        status = "success";
+      const updatedAt = cached.updated_at ? new Date(cached.updated_at) : null;
+      const ageOk =
+        updatedAt && Number.isFinite(updatedAt.getTime())
+          ? Date.now() - updatedAt.getTime() < CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+          : false;
+
+      if (ageOk) {
+        return res.status(200).json({
+          ...((cached.normalized_payload as unknown as NormalizedVinPayload) ?? {}),
+          vin,
+          cached: true,
+        });
       }
     }
-  } catch (e) {
-    status = "failed";
-    errorMessage = "Vincario request error";
-    console.error("Vincario decode request error", { vin: maskVin(vin), message: e instanceof Error ? e.message : "unknown" });
   }
 
-  if (status === "failed" || !decoded) {
+  const base = env.baseUrl.replace(/\/$/, "");
+
+  const requestDecode = async (mode: ControlSumMode): Promise<{ decoded: Json | null; httpOk: boolean; httpStatus: number | null; providerInfo: { isError: boolean; message: string | null; invalidControlSum: boolean } }> => {
+    const controlSum = computeControlSum({ vin, apiKey: env.apiKey, secretKey: env.secretKey, mode });
+    const url = `${base}/${env.apiKey}/${controlSum}/decode/${vin}.json`;
+
+    try {
+      const resp = await fetch(url, { method: "GET" });
+      const decoded = await safeParseJson(resp);
+      const providerInfo = getProviderErrorInfo(decoded);
+
+      if (!resp.ok) {
+        const msg = providerInfo.message ?? `Vincario request failed (${resp.status})`;
+        return {
+          decoded,
+          httpOk: false,
+          httpStatus: resp.status,
+          providerInfo: { ...providerInfo, isError: true, message: msg },
+        };
+      }
+
+      return { decoded, httpOk: true, httpStatus: resp.status, providerInfo };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "unknown";
+      return {
+        decoded: null,
+        httpOk: false,
+        httpStatus: null,
+        providerInfo: { isError: true, message: `Vincario request error: ${msg}`, invalidControlSum: false },
+      };
+    }
+  };
+
+  let decodedAttempt = await requestDecode("WITH_PIPES");
+
+  if (decodedAttempt.providerInfo.invalidControlSum) {
+    decodedAttempt = await requestDecode("NO_PIPES");
+  }
+
+  const decoded = decodedAttempt.decoded;
+  const providerInfo = decodedAttempt.providerInfo;
+
+  if (!decoded || providerInfo.isError) {
+    const errMsg = providerInfo.message ?? "VIN decode failed";
+    console.error("Vincario decode failed", { vin: maskVin(vin), message: errMsg });
+
     await supabaseAdmin
       .from("vin_cache")
       .upsert(
@@ -334,13 +404,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           make_id: null,
           model_id: null,
           variant_id: null,
-          error_message: errorMessage,
+          error_message: errMsg,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "vin" }
       );
 
-    return res.status(502).json({ error: "VIN decode failed" });
+    return res.status(502).json({ error: "VIN decode failed", message: errMsg });
   }
 
   const providerMake =
@@ -371,7 +441,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const powerHpRaw = deepPickNumber(decoded, ["power_hp", "powerHp", "hp", "HP"]) ?? null;
   const power_hp = powerHpRaw && powerHpRaw > 0 && powerHpRaw < 2000 ? Math.round(powerHpRaw) : null;
 
-  const firstRegRaw = deepPickString(decoded, ["first_registration", "firstRegistration", "registration_date", "registrationDate"]) ?? null;
+  const firstRegRaw =
+    deepPickString(decoded, ["first_registration", "firstRegistration", "registration_date", "registrationDate"]) ?? null;
   const first_registration = normalizeFirstRegistration(firstRegRaw);
 
   let make_id: string | null = null;
