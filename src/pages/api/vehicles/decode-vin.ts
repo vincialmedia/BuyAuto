@@ -5,7 +5,8 @@ import type { Database } from "@/integrations/supabase/types";
 
 type SupabaseDbClient = SupabaseClient<Database>;
 
-type Json = Record<string, unknown>;
+type JsonObject = Record<string, unknown>;
+type SupabaseJson = string | number | boolean | null | { [key: string]: SupabaseJson } | SupabaseJson[];
 
 interface NormalizedVinPayload {
   vin: string;
@@ -357,7 +358,7 @@ function normalizeProviderMessage(s: string): string {
   return String(s ?? "").trim();
 }
 
-function extractProviderMessage(decoded: Json): string | null {
+function extractProviderMessage(decoded: JsonObject): string | null {
   const message =
     deepPickString(decoded, [
       "message",
@@ -386,7 +387,7 @@ function extractProviderMessage(decoded: Json): string | null {
     return normalizeProviderMessage(message);
   }
 
-  const err = (decoded as Json)["error"];
+  const err = (decoded as JsonObject)["error"];
   if (typeof err === "string") {
     const norm = normalizeText(err);
     if (norm && norm !== "true" && norm !== "false") return normalizeProviderMessage(err);
@@ -395,15 +396,15 @@ function extractProviderMessage(decoded: Json): string | null {
   return null;
 }
 
-function getProviderErrorInfo(decoded: Json | null): { isError: boolean; message: string | null; invalidControlSum: boolean } {
+function getProviderErrorInfo(decoded: JsonObject | null): { isError: boolean; message: string | null; invalidControlSum: boolean } {
   if (!decoded) return { isError: true, message: "Vincario returned no data", invalidControlSum: false };
 
   const providerError =
-    isTruthyBooleanLike((decoded as Json)["error"]) ||
-    isTruthyBooleanLike((decoded as Json)["Error"]) ||
-    isTruthyBooleanLike((decoded as Json)["provider_error"]) ||
-    isTruthyBooleanLike((decoded as Json)["providerError"]) ||
-    isTruthyBooleanLike((decoded as Json)["ProviderError"]);
+    isTruthyBooleanLike((decoded as JsonObject)["error"]) ||
+    isTruthyBooleanLike((decoded as JsonObject)["Error"]) ||
+    isTruthyBooleanLike((decoded as JsonObject)["provider_error"]) ||
+    isTruthyBooleanLike((decoded as JsonObject)["providerError"]) ||
+    isTruthyBooleanLike((decoded as JsonObject)["ProviderError"]);
 
   const message = extractProviderMessage(decoded);
   const invalidControlSum = !!message && /invalid control sum/i.test(message);
@@ -508,10 +509,10 @@ function isLikelyJunkVariant(trim: string): boolean {
   return false;
 }
 
-async function safeParseJson(resp: Response): Promise<Json | null> {
+async function safeParseJson(resp: Response): Promise<JsonObject | null> {
   try {
     const data = (await resp.json()) as unknown;
-    if (data && typeof data === "object") return data as Json;
+    if (data && typeof data === "object") return data as JsonObject;
     return null;
   } catch {
     return null;
@@ -564,7 +565,7 @@ function deepPickDecodeArray(obj: unknown): Array<Record<string, unknown>> | nul
   return null;
 }
 
-function buildDecodeLabelMap(decoded: Json): Record<string, string> {
+function buildDecodeLabelMap(decoded: JsonObject): Record<string, string> {
   const arr = deepPickDecodeArray(decoded);
   if (!arr) return {};
 
@@ -619,7 +620,7 @@ type ProviderExtract = {
   rawFirstRegistration: string | null;
 };
 
-function extractProviderFields(decoded: Json): ProviderExtract {
+function extractProviderFields(decoded: JsonObject): ProviderExtract {
   const decodeMap = buildDecodeLabelMap(decoded);
 
   const makeFromMap = mapGet(decodeMap, ["Make", "Marque", "Brand", "Manufacturer", "Make (Marque)", "Vehicle Make", "Vehicle Brand"]);
@@ -770,7 +771,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ? isFresh(cached.updated_at as string | null | undefined, FAILED_CACHE_MAX_AGE_MINUTES * 60 * 1000)
       : false;
 
-  const normalizeAndPersist = async (decoded: Json, options: { cachedFlag: boolean }) => {
+  const normalizeAndPersist = async (decoded: JsonObject, options: { cachedFlag: boolean }) => {
     const providerInfo = getProviderErrorInfo(decoded);
     if (providerInfo.isError) {
       const errMsg = providerInfo.message ?? "VIN decode failed";
@@ -783,7 +784,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             vin,
             status: "failed",
             provider: "vincario",
-            decoded_payload: decoded,
+            decoded_payload: decoded as unknown as SupabaseJson,
             normalized_payload: null,
             make_id: null,
             model_id: null,
@@ -839,7 +840,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             vin,
             status: "failed",
             provider: "vincario",
-            decoded_payload: decoded,
+            decoded_payload: decoded as unknown as SupabaseJson,
             normalized_payload: null,
             make_id: null,
             model_id: null,
@@ -896,8 +897,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             vin,
             status: "failed",
             provider: "vincario",
-            decoded_payload: decoded,
-            normalized_payload: normalized_payload as unknown as Json,
+            decoded_payload: decoded as unknown as SupabaseJson,
+            normalized_payload: normalized_payload as unknown as SupabaseJson,
             make_id: null,
             model_id: null,
             variant_id: null,
@@ -953,8 +954,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               vin,
               status: "failed",
               provider: "vincario",
-              decoded_payload: decoded,
-              normalized_payload: normalized_payload as unknown as Json,
+              decoded_payload: decoded as unknown as SupabaseJson,
+              normalized_payload: normalized_payload as unknown as SupabaseJson,
               make_id,
               model_id: null,
               variant_id: null,
@@ -1015,8 +1016,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             vin,
             status: "failed",
             provider: "vincario",
-            decoded_payload: decoded,
-            normalized_payload: normalized_payload as unknown as Json,
+            decoded_payload: decoded as unknown as SupabaseJson,
+            normalized_payload: normalized_payload as unknown as SupabaseJson,
             make_id,
             model_id: null,
             variant_id: null,
@@ -1134,8 +1135,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           vin,
           status: "success",
           provider: "vincario",
-          decoded_payload: decoded,
-          normalized_payload: normalized_payload as unknown as Json,
+          decoded_payload: decoded as unknown as SupabaseJson,
+          normalized_payload: normalized_payload as unknown as SupabaseJson,
           make_id,
           model_id,
           variant_id,
@@ -1149,7 +1150,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
 
   if (!cacheErr && cached?.status === "success") {
-    const cachedNormalized = (cached.normalized_payload as unknown as Json | null) ?? null;
+    const cachedNormalized = (cached.normalized_payload as unknown as JsonObject | null) ?? null;
     const normalizedUseful = cachedNormalized ? hasUsefulNormalizedData(cachedNormalized) : false;
 
     if (cachedNormalized && successFresh && normalizedUseful) {
@@ -1160,7 +1161,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    const cachedDecoded = (cached.decoded_payload as unknown as Json | null) ?? null;
+    const cachedDecoded = (cached.decoded_payload as unknown as JsonObject | null) ?? null;
 
     if (cachedDecoded && (successFresh || !normalizedUseful)) {
       const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
@@ -1172,7 +1173,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (!cacheErr && cached?.status === "failed" && failedFresh) {
-    const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as Json | null) ?? null);
+    const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as JsonObject | null) ?? null);
     const isInvalidControlSum =
       providerInfo.invalidControlSum || /invalid control sum/i.test(String((cached.error_message as string | null) ?? ""));
 
@@ -1194,7 +1195,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const requestDecode = async (
     mode: ControlSumMode
   ): Promise<{
-    decoded: Json | null;
+    decoded: JsonObject | null;
     httpOk: boolean;
     httpStatus: number | null;
     providerInfo: { isError: boolean; message: string | null; invalidControlSum: boolean };
@@ -1249,7 +1250,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           vin,
           status: "failed",
           provider: "vincario",
-          decoded_payload: decoded,
+          decoded_payload: decoded as unknown as SupabaseJson,
           normalized_payload: null,
           make_id: null,
           model_id: null,
