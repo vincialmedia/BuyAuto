@@ -71,6 +71,10 @@ type VinDecodeResponse = {
   body_type?: string | null;
   first_registration?: string | null;
 
+  provider_make?: string | null;
+  provider_model?: string | null;
+  provider_trim?: string | null;
+
   cached?: boolean;
 };
 
@@ -303,9 +307,11 @@ export function Step1Form() {
   };
 
   const applyVinAutofill = (payload: VinDecodeResponse, vin: string) => {
-    setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
+    if (shouldAutofill("vin")) {
+      setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
+    }
 
-    if (payload.make_id) {
+    if (payload.make_id && shouldAutofill("make_id")) {
       setValue("make_id", payload.make_id, { shouldValidate: true });
       setValue("model_id", "", { shouldValidate: false });
       setValue("variant_id", "", { shouldValidate: false });
@@ -313,35 +319,35 @@ export function Step1Form() {
       setPendingModelId(payload.model_id ?? null);
       setPendingVariantId(payload.variant_id ?? null);
     } else {
-      if (payload.model_id) setPendingModelId(payload.model_id);
-      if (payload.variant_id) setPendingVariantId(payload.variant_id);
+      if (payload.model_id && shouldAutofill("model_id")) setPendingModelId(payload.model_id);
+      if (payload.variant_id && shouldAutofill("variant_id")) setPendingVariantId(payload.variant_id);
     }
 
-    if (typeof payload.year === "number" && Number.isFinite(payload.year)) {
+    if (typeof payload.year === "number" && Number.isFinite(payload.year) && shouldAutofill("year")) {
       setValue("year", payload.year, { shouldValidate: true });
     }
 
-    if (typeof payload.power_hp === "number" && Number.isFinite(payload.power_hp)) {
+    if (typeof payload.power_hp === "number" && Number.isFinite(payload.power_hp) && shouldAutofill("power_hp")) {
       setValue("power_hp", Math.round(payload.power_hp), { shouldValidate: true });
     }
 
-    if (payload.fuel) {
+    if (payload.fuel && shouldAutofill("fuel")) {
       setValue("fuel", payload.fuel, { shouldValidate: true });
     }
 
-    if (payload.transmission) {
+    if (payload.transmission && shouldAutofill("gearbox")) {
       setValue("gearbox", payload.transmission, { shouldValidate: true });
     }
 
-    if (payload.body_type) {
+    if (payload.body_type && shouldAutofill("body")) {
       setValue("body", payload.body_type, { shouldValidate: true });
     }
 
-    if (payload.drivetrain) {
+    if (payload.drivetrain && shouldAutofill("drivetrain")) {
       setValue("drivetrain", payload.drivetrain, { shouldValidate: true });
     }
 
-    if (payload.first_registration) {
+    if (payload.first_registration && shouldAutofill("first_registration")) {
       setValue("first_registration", payload.first_registration, { shouldValidate: true });
     }
   };
@@ -410,7 +416,15 @@ export function Step1Form() {
 
       const json = (await resp.json()) as VinDecodeResponse & { error?: string; message?: string };
 
+      const providerPatch = {
+        provider_make: json?.provider_make ?? null,
+        provider_model: json?.provider_model ?? null,
+        provider_trim: json?.provider_trim ?? null,
+      };
+
       if (!resp.ok) {
+        updateData(providerPatch as any);
+
         const msg = json?.message || json?.error || "Bitte prüfe die VIN und versuche es erneut.";
         setVinStatus("error");
         setVinError(msg);
@@ -423,9 +437,13 @@ export function Step1Form() {
         return;
       }
 
+      updateData(providerPatch as any);
+
       applyVinAutofill(json, vin);
 
-      setVinStatus("success");
+      const canUnlock = Boolean(json.make_id) && Boolean(json.model_id);
+
+      setVinStatus(canUnlock ? "success" : "error");
       setVinError(null);
 
       toast({
@@ -433,8 +451,7 @@ export function Step1Form() {
         description: json.cached ? "VIN-Daten aus dem Cache geladen." : "VIN-Daten erfolgreich geladen.",
       });
 
-      if (!json.make_id || !json.model_id) {
-        setVinStatus("error");
+      if (!canUnlock) {
         setVinError("Die VIN konnte nicht eindeutig auf Marke/Modell gemappt werden. Bitte kontaktiere den Support.");
         return;
       }
@@ -471,6 +488,9 @@ export function Step1Form() {
 
       return {
         ...values,
+        provider_make: (data as any)?.provider_make ?? null,
+        provider_model: (data as any)?.provider_model ?? null,
+        provider_trim: (data as any)?.provider_trim ?? null,
         brand: makeName || (data as any)?.brand,
         model: modelName || (data as any)?.model,
         title,

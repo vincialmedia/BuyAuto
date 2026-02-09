@@ -27,6 +27,209 @@ interface NormalizedVinPayload {
 const SUCCESS_CACHE_MAX_AGE_DAYS = 30;
 const FAILED_CACHE_MAX_AGE_MINUTES = 5;
 
+const MAPPING_ERROR_PREFIX = "MAPPING:";
+
+function buildMappingError(message: string): string {
+  return `${MAPPING_ERROR_PREFIX}${message}`;
+}
+
+function isMappingErrorMessage(message: unknown): boolean {
+  return typeof message === "string" && message.startsWith(MAPPING_ERROR_PREFIX);
+}
+
+function stripMappingPrefix(message: string): string {
+  return message.startsWith(MAPPING_ERROR_PREFIX) ? message.slice(MAPPING_ERROR_PREFIX.length) : message;
+}
+
+function shouldAutoCreateBaseModel(providerModel: string | null): boolean {
+  const raw = String(providerModel ?? "").trim();
+  if (!raw) return false;
+
+  if (raw.length < 2 || raw.length > 40) return false;
+
+  const norm = normalizeText(raw);
+  if (!norm) return false;
+
+  if (!/[a-zäöüß]/i.test(norm)) return false;
+
+  if (/\b\d\.\d\b/.test(norm)) return false;
+
+  if (/^\d{3,4}$/.test(norm)) return false;
+
+  if (/\b\d{3}[a-z]\b/i.test(norm)) return false;
+
+  if (/\b\d{2,4}\s?(ps|hp|kw)\b/i.test(norm)) return false;
+
+  const blocked = [
+    "4matic",
+    "quattro",
+    "xdrive",
+    "awd",
+    "4wd",
+    "4x4",
+    "allrad",
+    "amg",
+    "amg line",
+    "line",
+    "m sport",
+    "msport",
+    "s line",
+    "sline",
+    "r line",
+    "rline",
+    "gti",
+    "tsi",
+    "tdi",
+    "tfs i",
+    "tfsi",
+    "cdi",
+    "dci",
+    "hdi",
+    "bluehdi",
+    "bluetec",
+    "facelift",
+    "lci",
+    "sport",
+    "edition",
+    "performance",
+    "limited",
+    "premium",
+    "luxury",
+  ];
+
+  for (const token of blocked) {
+    if (norm.includes(normalizeText(token))) return false;
+  }
+
+  return true;
+}
+
+function isUnknownColumnError(err: unknown, column: string): boolean {
+  const msg = String((err as any)?.message ?? "");
+  const lower = msg.toLowerCase();
+  const c = column.toLowerCase();
+  return lower.includes(`'${c}'`) || lower.includes(`"${c}"`) || lower.includes(` ${c} `) || lower.includes(`could not find the '${c}' column`);
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  const code = String((err as any)?.code ?? "");
+  return code === "23505";
+}
+
+async function insertModelAlias(params: {
+  supabaseAdmin: ReturnType<typeof createClient>;
+  makeId: string;
+  modelId: string;
+  alias: string;
+  normalizedAlias: string;
+}) {
+  const { supabaseAdmin, makeId, modelId, alias, normalizedAlias } = params;
+
+  const attempt = await supabaseAdmin.from("vehicle_aliases").insert({
+    entity_type: "model",
+    make_id: makeId,
+    model_id: modelId,
+    alias,
+    normalized_alias: normalizedAlias,
+    source: "vincario",
+  });
+
+  if (!attempt.error) return;
+
+  if (isUniqueViolation(attempt.error)) return;
+
+  if (isUnknownColumnError(attempt.error, "source")) {
+    const retry = await supabaseAdmin.from("vehicle_aliases").insert({
+      entity_type: "model",
+      make_id: makeId,
+      model_id: modelId,
+      alias,
+      normalized_alias: normalizedAlias,
+    });
+    if (retry.error && !isUniqueViolation(retry.error)) {
+      console.error("vehicle_aliases insert (model alias) failed", { message: retry.error.message });
+    }
+    return;
+  }
+
+  console.error("vehicle_aliases insert (model alias) failed", { message: attempt.error.message });
+}
+
+async function createBaseModel(params: { supabaseAdmin: ReturnType<typeof createClient>; makeId: string; providerModel: string }) {
+  const { supabaseAdmin, makeId, providerModel } = params;
+
+  const cleanName = String(providerModel).trim().replace(/\s+/g, " ");
+  const normalized_name = normalizeText(cleanName);
+  const nowIso = new Date().toISOString();
+
+  const primary = await supabaseAdmin
+    .from("models")
+    .insert({
+      make_id: makeId,
+      name: cleanName,
+      normalized_name,
+      is_active: true,
+      source: "vincario",
+      updated_at: nowIso,
+    })
+    .select("id,name,normalized_name")
+    .single();
+
+  if (!primary.error && primary.data?.id) {
+    return primary.data.id as string;
+  }
+
+  if (primary.error && (isUnknownColumnError(primary.error, "source") || isUnknownColumnError(primary.error, "is_active") || isUnknownColumnError(primary.error, "updated_at"))) {
+    const retry = await supabaseAdmin
+      .from("models")
+      .insert({
+        make_id: makeId,
+        name: cleanName,
+        normalized_name,
+      })
+      .select("id,name,normalized_name")
+      .single();
+
+    if (!retry.error && retry.data?.id) {
+      return retry.data.id as string;
+    }
+
+    if (retry.error && isUniqueViolation(retry.error)) {
+      const { data: existing } = await supabaseAdmin
+        .from("models")
+        .select("id")
+        .eq("make_id", makeId)
+        .eq("normalized_name", normalized_name)
+        .maybeSingle();
+      if (existing?.id) return existing.id as string;
+    }
+
+    if (retry.error) {
+      console.error("models insert retry failed", { message: retry.error.message });
+    }
+
+    return null;
+  }
+
+  if (primary.error && isUniqueViolation(primary.error)) {
+    const { data: existing } = await supabaseAdmin
+      .from("models")
+      .select("id")
+      .eq("make_id", makeId)
+      .eq("normalized_name", normalized_name)
+      .maybeSingle();
+
+    if (existing?.id) return existing.id as string;
+    return null;
+  }
+
+  if (primary.error) {
+    console.error("models insert failed", { message: primary.error.message });
+  }
+
+  return null;
+}
+
 function maskVin(vin: string): string {
   const safe = String(vin ?? "");
   if (safe.length <= 6) return "***";
@@ -487,6 +690,8 @@ function hasUsefulNormalizedData(payload: unknown): boolean {
   if (!payload || typeof payload !== "object") return false;
   const p = payload as Record<string, unknown>;
 
+  if (!p["make_id"] || !p["model_id"]) return false;
+
   const keys: Array<keyof NormalizedVinPayload> = [
     "make_id",
     "model_id",
@@ -660,7 +865,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (make_id && providerModel) {
+    if (!make_id) {
+      const msg = "Marke konnte aus der VIN nicht erkannt werden. Bitte kontaktiere den Support.";
+      const error_message = buildMappingError(msg);
+
+      const normalized_payload: NormalizedVinPayload = {
+        vin,
+        make_id: null,
+        model_id: null,
+        variant_id: null,
+        year,
+        fuel,
+        transmission,
+        drivetrain,
+        power_hp,
+        body_type,
+        first_registration,
+        provider_make: providerMake ?? null,
+        provider_model: providerModel ?? null,
+        provider_trim: providerTrim ?? null,
+      };
+
+      await supabaseAdmin
+        .from("vin_cache")
+        .upsert(
+          {
+            vin,
+            status: "failed",
+            provider: "vincario",
+            decoded_payload: decoded,
+            normalized_payload: normalized_payload as unknown as Json,
+            make_id: null,
+            model_id: null,
+            variant_id: null,
+            error_message,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "vin" }
+        );
+
+      return { ok: false as const, status: 422, error: msg, payload: normalized_payload };
+    }
+
+    if (providerModel) {
       const { data: modelId, error: modelErr } = await supabaseAdmin.rpc("resolve_model_id", {
         p_make_id: make_id,
         p_model_text: providerModel,
@@ -670,6 +917,109 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else {
         model_id = (modelId as string | null) ?? null;
       }
+    }
+
+    if (!model_id) {
+      const canSeed = shouldAutoCreateBaseModel(providerModel);
+
+      if (!canSeed || !providerModel) {
+        const msg = "Modell konnte aus der VIN nicht erkannt werden. Bitte kontaktiere den Support.";
+        const error_message = buildMappingError(msg);
+
+        const normalized_payload: NormalizedVinPayload = {
+          vin,
+          make_id,
+          model_id: null,
+          variant_id: null,
+          year,
+          fuel,
+          transmission,
+          drivetrain,
+          power_hp,
+          body_type,
+          first_registration,
+          provider_make: providerMake ?? null,
+          provider_model: providerModel ?? null,
+          provider_trim: providerTrim ?? null,
+        };
+
+        await supabaseAdmin
+          .from("vin_cache")
+          .upsert(
+            {
+              vin,
+              status: "failed",
+              provider: "vincario",
+              decoded_payload: decoded,
+              normalized_payload: normalized_payload as unknown as Json,
+              make_id,
+              model_id: null,
+              variant_id: null,
+              error_message,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "vin" }
+          );
+
+        return { ok: false as const, status: 422, error: msg, payload: normalized_payload };
+      }
+
+      const createdModelId = await createBaseModel({ supabaseAdmin, makeId: make_id, providerModel });
+      if (createdModelId) {
+        model_id = createdModelId;
+
+        const alias = String(providerModel).trim().replace(/\s+/g, " ");
+        const normalized_alias = normalizeText(alias);
+        await insertModelAlias({
+          supabaseAdmin,
+          makeId: make_id,
+          modelId: model_id,
+          alias,
+          normalizedAlias: normalized_alias,
+        });
+      }
+    }
+
+    if (!model_id) {
+      const msg = "Modell konnte aus der VIN nicht erkannt werden. Bitte kontaktiere den Support.";
+      const error_message = buildMappingError(msg);
+
+      const normalized_payload: NormalizedVinPayload = {
+        vin,
+        make_id,
+        model_id: null,
+        variant_id: null,
+        year,
+        fuel,
+        transmission,
+        drivetrain,
+        power_hp,
+        body_type,
+        first_registration,
+        provider_make: providerMake ?? null,
+        provider_model: providerModel ?? null,
+        provider_trim: providerTrim ?? null,
+      };
+
+      await supabaseAdmin
+        .from("vin_cache")
+        .upsert(
+          {
+            vin,
+            status: "failed",
+            provider: "vincario",
+            decoded_payload: decoded,
+            normalized_payload: normalized_payload as unknown as Json,
+            make_id,
+            model_id: null,
+            variant_id: null,
+            error_message,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "vin" }
+        );
+
+      return { ok: false as const, status: 422, error: msg, payload: normalized_payload };
     }
 
     if (model_id && providerTrim && !variant_id && !isLikelyJunkVariant(providerTrim)) {
@@ -716,6 +1066,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           if (conflictVariant?.id) {
             variant_id = conflictVariant.id as string;
+          }
+        } else if (insertErr && isUnknownColumnError(insertErr, "source")) {
+          const { data: insertedVariant2, error: insertErr2 } = await supabaseAdmin
+            .from("variants")
+            .insert({
+              model_id,
+              name: cleanName,
+              normalized_name,
+              is_active: true,
+              updated_at: nowIso,
+            })
+            .select("id,name,normalized_name")
+            .single();
+
+          if (!insertErr2 && insertedVariant2?.id) {
+            variant_id = insertedVariant2.id as string;
           }
         }
       }
@@ -804,9 +1170,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       providerInfo.invalidControlSum || /invalid control sum/i.test(String((cached.error_message as string | null) ?? ""));
 
     if (!isInvalidControlSum) {
-      return res.status(502).json({
+      const rawMsg = (cached.error_message as string | null) ?? "VIN decode failed";
+      const isMapping = isMappingErrorMessage(rawMsg);
+      const message = isMapping ? stripMappingPrefix(rawMsg) : rawMsg;
+
+      return res.status(isMapping ? 422 : 502).json({
         error: "VIN decode failed",
-        message: (cached.error_message as string | null) ?? "VIN decode failed",
+        message,
         cached: true,
       });
     }
@@ -888,7 +1258,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const normResult = await normalizeAndPersist(decoded, { cachedFlag: false });
   if (!normResult.ok) {
-    return res.status(normResult.status).json({ error: "VIN decode failed", message: normResult.error });
+    const payload = (normResult as any).payload as NormalizedVinPayload | undefined;
+
+    return res.status(normResult.status).json({
+      error: "VIN decode failed",
+      message: normResult.error,
+      provider_make: payload?.provider_make ?? null,
+      provider_model: payload?.provider_model ?? null,
+      provider_trim: payload?.provider_trim ?? null,
+    });
   }
 
   return res.status(200).json({ ...normResult.payload, cached: false });
