@@ -50,10 +50,10 @@ function isValidVin(vin: string): boolean {
 
 type ControlSumMode = "WITH_PIPES" | "NO_PIPES";
 
-function computeControlSum(params: { vin: string; id: string; apiKey: string; secretKey: string; mode: ControlSumMode }): string {
-  const { vin, id, apiKey, secretKey, mode } = params;
+function computeControlSum(params: { vin: string; operation: string; apiKey: string; secretKey: string; mode: ControlSumMode }): string {
+  const { vin, operation, apiKey, secretKey, mode } = params;
 
-  const raw = mode === "WITH_PIPES" ? `${vin}|${id}|${apiKey}|${secretKey}` : `${vin}${id}${apiKey}${secretKey}`;
+  const raw = mode === "WITH_PIPES" ? `${vin}|${operation}|${apiKey}|${secretKey}` : `${vin}${operation}${apiKey}${secretKey}`;
 
   return createHash("sha1").update(raw).digest("hex").slice(0, 10);
 }
@@ -63,17 +63,15 @@ function getEnv() {
   const apiKey = process.env.VINCARIO_API_KEY;
   const secretKey = process.env.VINCARIO_SECRET_KEY;
 
-  const id = process.env.VINCARIO_ID ?? apiKey;
-
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!baseUrl || !apiKey || !secretKey || !id || !supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+  if (!baseUrl || !apiKey || !secretKey || !supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
     return null;
   }
 
-  return { baseUrl, id, apiKey, secretKey, supabaseUrl, supabaseAnonKey, serviceRoleKey };
+  return { baseUrl, apiKey, secretKey, supabaseUrl, supabaseAnonKey, serviceRoleKey };
 }
 
 function pickString(obj: unknown, keys: string[]): string | null {
@@ -391,11 +389,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (!cacheErr && cached?.status === "failed" && failedFresh) {
-    return res.status(502).json({
-      error: "VIN decode failed",
-      message: (cached.error_message as string | null) ?? "VIN decode failed",
-      cached: true,
-    });
+    const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as Json | null) ?? null);
+    const isInvalidControlSum =
+      providerInfo.invalidControlSum || /invalid control sum/i.test(String((cached.error_message as string | null) ?? ""));
+
+    if (!isInvalidControlSum) {
+      return res.status(502).json({
+        error: "VIN decode failed",
+        message: (cached.error_message as string | null) ?? "VIN decode failed",
+        cached: true,
+      });
+    }
   }
 
   const base = env.baseUrl.replace(/\/$/, "");
@@ -408,8 +412,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     httpStatus: number | null;
     providerInfo: { isError: boolean; message: string | null; invalidControlSum: boolean };
   }> => {
-    const controlSum = computeControlSum({ vin, id: env.id, apiKey: env.apiKey, secretKey: env.secretKey, mode });
-    const url = `${base}/${env.id}/${controlSum}/decode/${vin}.json`;
+    const operation = "decode";
+    const controlSum = computeControlSum({ vin, operation, apiKey: env.apiKey, secretKey: env.secretKey, mode });
+    const url = `${base}/${env.apiKey}/${controlSum}/decode/${vin}.json`;
 
     try {
       const resp = await fetch(url, { method: "GET" });
