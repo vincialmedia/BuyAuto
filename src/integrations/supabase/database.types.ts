@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -147,24 +147,55 @@ export type Database = {
           created_at: string
           data: Json
           id: string
+          make_id: string | null
+          model_id: string | null
           updated_at: string
           user_id: string
+          variant_id: string | null
         }
         Insert: {
           created_at?: string
           data?: Json
           id?: string
+          make_id?: string | null
+          model_id?: string | null
           updated_at?: string
           user_id: string
+          variant_id?: string | null
         }
         Update: {
           created_at?: string
           data?: Json
           id?: string
+          make_id?: string | null
+          model_id?: string | null
           updated_at?: string
           user_id?: string
+          variant_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "listing_drafts_make_id_fkey"
+            columns: ["make_id"]
+            isOneToOne: false
+            referencedRelation: "makes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_drafts_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_drafts_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "variants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       listing_inquiries: {
         Row: {
@@ -237,8 +268,10 @@ export type Database = {
           is_premium: boolean | null
           leasing_offer: Json | null
           location: string | null
+          make_id: string | null
           mileage_km: number
           model: string
+          model_id: string | null
           moderation_note: string | null
           payment_status: string | null
           premium: boolean
@@ -259,6 +292,7 @@ export type Database = {
           ui_version: string | null
           updated_at: string | null
           user_id: string | null
+          variant_id: string | null
           year: number
         }
         Insert: {
@@ -283,8 +317,10 @@ export type Database = {
           is_premium?: boolean | null
           leasing_offer?: Json | null
           location?: string | null
+          make_id?: string | null
           mileage_km: number
           model: string
+          model_id?: string | null
           moderation_note?: string | null
           payment_status?: string | null
           premium?: boolean
@@ -305,6 +341,7 @@ export type Database = {
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
+          variant_id?: string | null
           year: number
         }
         Update: {
@@ -329,8 +366,10 @@ export type Database = {
           is_premium?: boolean | null
           leasing_offer?: Json | null
           location?: string | null
+          make_id?: string | null
           mileage_km?: number
           model?: string
+          model_id?: string | null
           moderation_note?: string | null
           payment_status?: string | null
           premium?: boolean
@@ -351,6 +390,7 @@ export type Database = {
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
+          variant_id?: string | null
           year?: number
         }
         Relationships: [
@@ -359,6 +399,27 @@ export type Database = {
             columns: ["garage_id"]
             isOneToOne: false
             referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_make_id_fkey"
+            columns: ["make_id"]
+            isOneToOne: false
+            referencedRelation: "makes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "variants"
             referencedColumns: ["id"]
           },
         ]
@@ -677,6 +738,70 @@ export type Database = {
           model?: string
         }
         Relationships: []
+      }
+      vin_cache: {
+        Row: {
+          created_at: string
+          decoded_payload: Json | null
+          error_message: string | null
+          make_id: string | null
+          model_id: string | null
+          normalized_payload: Json | null
+          provider: string
+          status: string
+          updated_at: string
+          variant_id: string | null
+          vin: string
+        }
+        Insert: {
+          created_at?: string
+          decoded_payload?: Json | null
+          error_message?: string | null
+          make_id?: string | null
+          model_id?: string | null
+          normalized_payload?: Json | null
+          provider?: string
+          status?: string
+          updated_at?: string
+          variant_id?: string | null
+          vin: string
+        }
+        Update: {
+          created_at?: string
+          decoded_payload?: Json | null
+          error_message?: string | null
+          make_id?: string | null
+          model_id?: string | null
+          normalized_payload?: Json | null
+          provider?: string
+          status?: string
+          updated_at?: string
+          variant_id?: string | null
+          vin?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vin_cache_make_id_fkey"
+            columns: ["make_id"]
+            isOneToOne: false
+            referencedRelation: "makes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vin_cache_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vin_cache_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "variants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
