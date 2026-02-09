@@ -221,7 +221,7 @@ function mapTransmission(raw: string | null): string | null {
   const v = normalizeText(raw ?? "");
   if (!v) return null;
 
-  if (/(auto|automatik|at|dsg|tiptronic|cvt)/i.test(v)) return "Automatik";
+  if (/(auto|automatik|automatic|at|dsg|tiptronic|cvt)/i.test(v)) return "Automatik";
   if (/(manual|manuell|mt)/i.test(v)) return "Manuell";
 
   return null;
@@ -275,6 +275,15 @@ function normalizeFirstRegistration(raw: string | null): string | null {
   return null;
 }
 
+function parseNumberFromText(raw: string | null): number | null {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  const m = s.match(/(-?\d+(\.\d+)?)/);
+  if (!m) return null;
+  const num = Number(m[1]);
+  return Number.isFinite(num) ? num : null;
+}
+
 function isLikelyJunkVariant(trim: string): boolean {
   const raw = String(trim ?? "").trim();
   if (!raw) return true;
@@ -308,6 +317,199 @@ function isFresh(updatedAt: string | null | undefined, maxAgeMs: number): boolea
   const d = new Date(updatedAt);
   if (!Number.isFinite(d.getTime())) return false;
   return Date.now() - d.getTime() < maxAgeMs;
+}
+
+function deepPickDecodeArray(obj: unknown): Array<Record<string, unknown>> | null {
+  if (!obj) return null;
+
+  const visited = new Set<unknown>();
+  const stack: unknown[] = [obj];
+
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || typeof current !== "object") continue;
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    const asRec = current as Record<string, unknown>;
+    const candidates = [asRec["decode"], asRec["Decode"], asRec["DECODE"]];
+
+    for (const candidate of candidates) {
+      if (!Array.isArray(candidate)) continue;
+
+      const isLabelValueArray = candidate.some((x) => {
+        if (!x || typeof x !== "object") return false;
+        const r = x as Record<string, unknown>;
+        const label = r["label"] ?? r["Label"] ?? r["LABEL"];
+        const value = r["value"] ?? r["Value"] ?? r["VALUE"];
+        return typeof label === "string" && (typeof value === "string" || typeof value === "number" || typeof value === "boolean");
+      });
+
+      if (isLabelValueArray) {
+        return candidate.filter((x) => !!x && typeof x === "object") as Array<Record<string, unknown>>;
+      }
+    }
+
+    for (const v of Object.values(asRec)) {
+      if (v && typeof v === "object") stack.push(v);
+    }
+  }
+
+  return null;
+}
+
+function buildDecodeLabelMap(decoded: Json): Record<string, string> {
+  const arr = deepPickDecodeArray(decoded);
+  if (!arr) return {};
+
+  const map: Record<string, string> = {};
+  for (const row of arr) {
+    const rawLabel = row["label"] ?? row["Label"] ?? row["LABEL"];
+    const rawValue = row["value"] ?? row["Value"] ?? row["VALUE"];
+
+    const label = typeof rawLabel === "string" ? String(rawLabel).trim() : "";
+    const value = rawValue;
+
+    if (!label) continue;
+    if (value == null) continue;
+
+    const key = normalizeText(label);
+    const val =
+      typeof value === "string"
+        ? value.trim()
+        : typeof value === "number"
+          ? String(value)
+          : typeof value === "boolean"
+            ? String(value)
+            : "";
+
+    if (!val) continue;
+    map[key] = val;
+  }
+
+  return map;
+}
+
+function mapGet(map: Record<string, string>, labels: string[]): string | null {
+  for (const label of labels) {
+    const k = normalizeText(label);
+    const v = map[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+type ProviderExtract = {
+  providerMake: string | null;
+  providerModel: string | null;
+  providerTrim: string | null;
+
+  rawYear: number | null;
+  rawFuel: string | null;
+  rawTransmission: string | null;
+  rawBody: string | null;
+  rawDrivetrain: string | null;
+  rawPowerHp: number | null;
+  rawFirstRegistration: string | null;
+};
+
+function extractProviderFields(decoded: Json): ProviderExtract {
+  const decodeMap = buildDecodeLabelMap(decoded);
+
+  const makeFromMap = mapGet(decodeMap, ["Make", "Marque", "Brand", "Manufacturer", "Make (Marque)", "Vehicle Make", "Vehicle Brand"]);
+  const modelFromMap = mapGet(decodeMap, ["Model", "Model Name", "Series", "Family", "Vehicle Model", "Vehicle Model Name"]);
+  const trimFromMap = mapGet(decodeMap, ["Trim", "Trim Level", "Version", "Variant", "Derivative", "Sub Model", "Submodel", "Model Variant", "Model Version"]);
+  const yearFromMapText = mapGet(decodeMap, ["Model Year", "Year", "Production Year", "Build Year", "Model year"]);
+  const fuelFromMap = mapGet(decodeMap, ["Fuel Type - Primary", "Fuel Type", "Fuel", "Engine Fuel", "Fuel type"]);
+  const transmissionFromMap = mapGet(decodeMap, ["Transmission", "Gearbox", "Transmission Type"]);
+  const bodyFromMap = mapGet(decodeMap, ["Body", "Body Type", "Body Style", "Vehicle Type"]);
+  const drivetrainFromMap = mapGet(decodeMap, ["Drive", "Drivetrain", "Drive Type", "Wheel Drive", "Driven Wheels"]);
+  const hpFromMapText = mapGet(decodeMap, ["Engine Power (HP)", "Engine Power HP", "Power (HP)", "Power HP", "HP", "Horsepower"]);
+  const firstRegFromMap = mapGet(decodeMap, ["Made", "First Registration", "Registration Date", "First Registered", "Date of first registration"]);
+
+  const rawYearFromMap = yearFromMapText ? parseNumberFromText(yearFromMapText) : null;
+  const rawYear = rawYearFromMap && Number.isFinite(rawYearFromMap) ? Math.floor(rawYearFromMap) : null;
+
+  const rawPowerFromMap = hpFromMapText ? parseNumberFromText(hpFromMapText) : null;
+  const rawPowerHp = rawPowerFromMap && Number.isFinite(rawPowerFromMap) ? rawPowerFromMap : null;
+
+  const providerMake =
+    makeFromMap ??
+    deepPickString(decoded, ["make", "Make", "brand", "Brand", "manufacturer", "Manufacturer", "marque", "Marque"]) ??
+    pickString(decoded, ["make", "brand", "manufacturer", "marque"]);
+
+  const providerModel =
+    modelFromMap ??
+    deepPickString(decoded, ["model", "Model", "model_name", "modelName", "series", "Series", "family", "Family"]) ??
+    pickString(decoded, ["model", "series", "family"]);
+
+  const providerTrim =
+    trimFromMap ??
+    deepPickString(decoded, ["trim", "Trim", "trim_level", "trimLevel", "version", "Version", "variant", "Variant", "derivative", "Derivative", "sub_model", "subModel"]) ??
+    pickString(decoded, ["trim", "trim_level", "version", "variant", "derivative", "sub_model"]);
+
+  const rawYearFallback = deepPickNumber(decoded, ["year", "Year", "model_year", "modelYear", "production_year", "build_year"]) ?? null;
+
+  const rawFuel =
+    fuelFromMap ?? (deepPickString(decoded, ["fuel", "Fuel", "fuel_type", "fuelType", "engine_fuel", "engineFuel"]) ?? null);
+
+  const rawTransmission =
+    transmissionFromMap ?? (deepPickString(decoded, ["transmission", "Transmission", "gearbox", "Gearbox", "transmission_type", "transmissionType"]) ?? null);
+
+  const rawBody =
+    bodyFromMap ?? (deepPickString(decoded, ["body_type", "bodyType", "body", "Body", "body_style", "bodyStyle", "vehicle_type", "vehicleType"]) ?? null);
+
+  const rawDrivetrain =
+    drivetrainFromMap ??
+    (deepPickString(decoded, ["drivetrain", "drive", "drive_type", "driveType", "wheel_drive", "wheelDrive", "driven_wheels", "drivenWheels"]) ?? null);
+
+  const rawPowerHpFallback = deepPickNumber(decoded, ["power_hp", "powerHp", "hp", "HP", "horsepower"]) ?? null;
+
+  const rawFirstRegistration =
+    firstRegFromMap ??
+    (deepPickString(decoded, ["first_registration", "firstRegistration", "registration_date", "registrationDate", "made", "Made"]) ?? null);
+
+  return {
+    providerMake: providerMake ?? null,
+    providerModel: providerModel ?? null,
+    providerTrim: providerTrim ?? null,
+    rawYear: rawYear ?? (rawYearFallback && Number.isFinite(rawYearFallback) ? Math.floor(rawYearFallback) : null),
+    rawFuel,
+    rawTransmission,
+    rawBody,
+    rawDrivetrain,
+    rawPowerHp: rawPowerHp ?? (rawPowerHpFallback && Number.isFinite(rawPowerHpFallback) ? rawPowerHpFallback : null),
+    rawFirstRegistration,
+  };
+}
+
+function hasUsefulNormalizedData(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const p = payload as Record<string, unknown>;
+
+  const keys: Array<keyof NormalizedVinPayload> = [
+    "make_id",
+    "model_id",
+    "variant_id",
+    "year",
+    "fuel",
+    "transmission",
+    "drivetrain",
+    "power_hp",
+    "body_type",
+    "first_registration",
+    "provider_make",
+    "provider_model",
+    "provider_trim",
+  ];
+
+  return keys.some((k) => {
+    const v = p[k as string];
+    if (v == null) return false;
+    if (typeof v === "string") return v.trim().length > 0;
+    if (typeof v === "number") return Number.isFinite(v);
+    return true;
+  });
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -350,18 +552,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { data: cached, error: cacheErr } = await supabaseAdmin.from("vin_cache").select("*").eq("vin", vin).maybeSingle();
 
-  const successFresh = cached?.status === "success"
-    ? isFresh(cached.updated_at as string | null | undefined, SUCCESS_CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000)
-    : false;
+  const successFresh =
+    cached?.status === "success"
+      ? isFresh(cached.updated_at as string | null | undefined, SUCCESS_CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000)
+      : false;
 
-  const failedFresh = cached?.status === "failed"
-    ? isFresh(cached.updated_at as string | null | undefined, FAILED_CACHE_MAX_AGE_MINUTES * 60 * 1000)
-    : false;
+  const failedFresh =
+    cached?.status === "failed"
+      ? isFresh(cached.updated_at as string | null | undefined, FAILED_CACHE_MAX_AGE_MINUTES * 60 * 1000)
+      : false;
 
-  if (!cacheErr && cached?.status === "success") {
-    const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as Json | null) ?? null);
-
+  const normalizeAndPersist = async (decoded: Json, options: { cachedFlag: boolean }) => {
+    const providerInfo = getProviderErrorInfo(decoded);
     if (providerInfo.isError) {
+      const errMsg = providerInfo.message ?? "VIN decode failed";
+      console.error("Vincario provider error", { vin: maskVin(vin), message: errMsg });
+
       await supabaseAdmin
         .from("vin_cache")
         .upsert(
@@ -369,22 +575,211 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             vin,
             status: "failed",
             provider: "vincario",
-            decoded_payload: (cached.decoded_payload as unknown as Json | null) ?? null,
+            decoded_payload: decoded,
             normalized_payload: null,
             make_id: null,
             model_id: null,
             variant_id: null,
-            error_message: providerInfo.message ?? "Vincario provider error",
+            error_message: errMsg,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "vin" }
         );
-    } else if (cached.normalized_payload && successFresh) {
+
+      return { ok: false as const, status: 502, error: errMsg };
+    }
+
+    const extracted = extractProviderFields(decoded);
+
+    const rawYear = extracted.rawYear;
+    const year = rawYear && rawYear >= 1990 && rawYear <= 2030 ? Math.floor(rawYear) : null;
+
+    const fuel = mapFuel(extracted.rawFuel);
+    const transmission = mapTransmission(extracted.rawTransmission);
+    const body_type = mapBodyType(extracted.rawBody);
+    const drivetrain = mapDrivetrain(extracted.rawDrivetrain);
+
+    const powerHpRaw = extracted.rawPowerHp;
+    const power_hp = powerHpRaw && powerHpRaw > 0 && powerHpRaw < 2000 ? Math.round(powerHpRaw) : null;
+
+    const first_registration = normalizeFirstRegistration(extracted.rawFirstRegistration);
+
+    const providerMake = extracted.providerMake;
+    const providerModel = extracted.providerModel;
+    const providerTrim = extracted.providerTrim;
+
+    const hasAnyUseful =
+      !!providerMake ||
+      !!providerModel ||
+      !!providerTrim ||
+      year != null ||
+      !!fuel ||
+      !!transmission ||
+      !!drivetrain ||
+      !!body_type ||
+      power_hp != null ||
+      !!first_registration;
+
+    if (!hasAnyUseful) {
+      const errMsg = "Vincario decode returned no usable fields";
+      console.error("Vincario decode empty", { vin: maskVin(vin) });
+
+      await supabaseAdmin
+        .from("vin_cache")
+        .upsert(
+          {
+            vin,
+            status: "failed",
+            provider: "vincario",
+            decoded_payload: decoded,
+            normalized_payload: null,
+            make_id: null,
+            model_id: null,
+            variant_id: null,
+            error_message: errMsg,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "vin" }
+        );
+
+      return { ok: false as const, status: 502, error: errMsg };
+    }
+
+    let make_id: string | null = null;
+    let model_id: string | null = null;
+    let variant_id: string | null = null;
+
+    if (providerMake) {
+      const { data: makeId, error: makeErr } = await supabaseAdmin.rpc("resolve_make_id", {
+        p_make_text: providerMake,
+      });
+      if (makeErr) {
+        console.error("resolve_make_id error", { vin: maskVin(vin) });
+      } else {
+        make_id = (makeId as string | null) ?? null;
+      }
+    }
+
+    if (make_id && providerModel) {
+      const { data: modelId, error: modelErr } = await supabaseAdmin.rpc("resolve_model_id", {
+        p_make_id: make_id,
+        p_model_text: providerModel,
+      });
+      if (modelErr) {
+        console.error("resolve_model_id error", { vin: maskVin(vin) });
+      } else {
+        model_id = (modelId as string | null) ?? null;
+      }
+    }
+
+    if (model_id && providerTrim) {
+      const { data: variantId, error: variantErr } = await supabaseAdmin.rpc("resolve_variant_id", {
+        p_model_id: model_id,
+        p_variant_text: providerTrim,
+      });
+      if (variantErr) {
+        console.error("resolve_variant_id error", { vin: maskVin(vin) });
+      } else {
+        variant_id = (variantId as string | null) ?? null;
+      }
+    }
+
+    if (model_id && providerTrim && !variant_id && !isLikelyJunkVariant(providerTrim)) {
+      const cleanName = String(providerTrim).trim().replace(/\s+/g, " ");
+      const normalized_name = normalizeText(cleanName);
+
+      const { data: upsertedVariant, error: upsertErr } = await supabaseAdmin
+        .from("variants")
+        .upsert(
+          {
+            model_id,
+            name: cleanName,
+            normalized_name,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "model_id,normalized_name" }
+        )
+        .select("id,name,normalized_name")
+        .single();
+
+      if (!upsertErr && upsertedVariant?.id) {
+        variant_id = upsertedVariant.id as string;
+
+        const normalized_alias = normalizeText(cleanName);
+
+        await supabaseAdmin.from("vehicle_aliases").upsert(
+          {
+            entity_type: "variant",
+            model_id,
+            variant_id,
+            alias: cleanName,
+            normalized_alias,
+            source: "vincario",
+          },
+          { onConflict: "model_id,normalized_alias" }
+        );
+      }
+    }
+
+    const normalized_payload: NormalizedVinPayload = {
+      vin,
+      make_id,
+      model_id,
+      variant_id,
+      year,
+      fuel,
+      transmission,
+      drivetrain,
+      power_hp,
+      body_type,
+      first_registration,
+      provider_make: providerMake ?? null,
+      provider_model: providerModel ?? null,
+      provider_trim: providerTrim ?? null,
+    };
+
+    await supabaseAdmin
+      .from("vin_cache")
+      .upsert(
+        {
+          vin,
+          status: "success",
+          provider: "vincario",
+          decoded_payload: decoded,
+          normalized_payload: normalized_payload as unknown as Json,
+          make_id,
+          model_id,
+          variant_id,
+          error_message: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "vin" }
+      );
+
+    return { ok: true as const, payload: normalized_payload, cachedFlag: options.cachedFlag };
+  };
+
+  if (!cacheErr && cached?.status === "success") {
+    const cachedNormalized = (cached.normalized_payload as unknown as Json | null) ?? null;
+    const normalizedUseful = cachedNormalized ? hasUsefulNormalizedData(cachedNormalized) : false;
+
+    if (cachedNormalized && successFresh && normalizedUseful) {
       return res.status(200).json({
-        ...((cached.normalized_payload as unknown as NormalizedVinPayload) ?? {}),
+        ...(cachedNormalized as unknown as NormalizedVinPayload),
         vin,
         cached: true,
       });
+    }
+
+    const cachedDecoded = (cached.decoded_payload as unknown as Json | null) ?? null;
+
+    if (cachedDecoded && (successFresh || !normalizedUseful)) {
+      const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
+      if (!result.ok) {
+        return res.status(result.status).json({ error: "VIN decode failed", message: result.error, cached: true });
+      }
+      return res.status(200).json({ ...result.payload, vin, cached: true });
     }
   }
 
@@ -476,147 +871,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(502).json({ error: "VIN decode failed", message: errMsg });
   }
 
-  const providerMake =
-    deepPickString(decoded, ["make", "Make", "brand", "Brand", "manufacturer", "Manufacturer"]) ??
-    pickString(decoded, ["make", "brand", "manufacturer"]);
-  const providerModel =
-    deepPickString(decoded, ["model", "Model", "model_name", "modelName", "series", "Series", "family"]) ??
-    pickString(decoded, ["model", "series", "family"]);
-  const providerTrim =
-    deepPickString(decoded, ["trim", "Trim", "version", "Version", "variant", "Variant", "derivative", "Derivative"]) ??
-    pickString(decoded, ["trim", "version", "variant", "derivative"]);
-
-  const rawYear = deepPickNumber(decoded, ["year", "Year", "model_year", "modelYear", "production_year"]) ?? null;
-  const year = rawYear && rawYear >= 1990 && rawYear <= 2030 ? Math.floor(rawYear) : null;
-
-  const rawFuel = deepPickString(decoded, ["fuel", "Fuel", "fuel_type", "fuelType", "engine_fuel"]) ?? null;
-  const rawTransmission = deepPickString(decoded, ["transmission", "Transmission", "gearbox", "Gearbox"]) ?? null;
-  const rawBody = deepPickString(decoded, ["body_type", "bodyType", "body", "Body", "body_style", "bodyStyle"]) ?? null;
-  const rawDrivetrain = deepPickString(decoded, ["drivetrain", "drive", "drive_type", "driveType", "wheel_drive"]) ?? null;
-
-  const fuel = mapFuel(rawFuel);
-  const transmission = mapTransmission(rawTransmission);
-  const body_type = mapBodyType(rawBody);
-  const drivetrain = mapDrivetrain(rawDrivetrain);
-
-  const powerHpRaw = deepPickNumber(decoded, ["power_hp", "powerHp", "hp", "HP"]) ?? null;
-  const power_hp = powerHpRaw && powerHpRaw > 0 && powerHpRaw < 2000 ? Math.round(powerHpRaw) : null;
-
-  const firstRegRaw =
-    deepPickString(decoded, ["first_registration", "firstRegistration", "registration_date", "registrationDate"]) ?? null;
-  const first_registration = normalizeFirstRegistration(firstRegRaw);
-
-  let make_id: string | null = null;
-  let model_id: string | null = null;
-  let variant_id: string | null = null;
-
-  if (providerMake) {
-    const { data: makeId, error: makeErr } = await supabaseAdmin.rpc("resolve_make_id", {
-      p_make_text: providerMake,
-    });
-    if (makeErr) {
-      console.error("resolve_make_id error", { vin: maskVin(vin) });
-    } else {
-      make_id = (makeId as string | null) ?? null;
-    }
+  const normResult = await normalizeAndPersist(decoded, { cachedFlag: false });
+  if (!normResult.ok) {
+    return res.status(normResult.status).json({ error: "VIN decode failed", message: normResult.error });
   }
 
-  if (make_id && providerModel) {
-    const { data: modelId, error: modelErr } = await supabaseAdmin.rpc("resolve_model_id", {
-      p_make_id: make_id,
-      p_model_text: providerModel,
-    });
-    if (modelErr) {
-      console.error("resolve_model_id error", { vin: maskVin(vin) });
-    } else {
-      model_id = (modelId as string | null) ?? null;
-    }
-  }
-
-  if (model_id && providerTrim) {
-    const { data: variantId, error: variantErr } = await supabaseAdmin.rpc("resolve_variant_id", {
-      p_model_id: model_id,
-      p_variant_text: providerTrim,
-    });
-    if (variantErr) {
-      console.error("resolve_variant_id error", { vin: maskVin(vin) });
-    } else {
-      variant_id = (variantId as string | null) ?? null;
-    }
-  }
-
-  if (model_id && providerTrim && !variant_id && !isLikelyJunkVariant(providerTrim)) {
-    const cleanName = String(providerTrim).trim().replace(/\s+/g, " ");
-    const normalized_name = normalizeText(cleanName);
-
-    const { data: upsertedVariant, error: upsertErr } = await supabaseAdmin
-      .from("variants")
-      .upsert(
-        {
-          model_id,
-          name: cleanName,
-          normalized_name,
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "model_id,normalized_name" }
-      )
-      .select("id,name,normalized_name")
-      .single();
-
-    if (!upsertErr && upsertedVariant?.id) {
-      variant_id = upsertedVariant.id as string;
-
-      const normalized_alias = normalizeText(cleanName);
-
-      await supabaseAdmin.from("vehicle_aliases").upsert(
-        {
-          entity_type: "variant",
-          model_id,
-          variant_id,
-          alias: cleanName,
-          normalized_alias,
-          source: "vincario",
-        },
-        { onConflict: "model_id,normalized_alias" }
-      );
-    }
-  }
-
-  const normalized_payload: NormalizedVinPayload = {
-    vin,
-    make_id,
-    model_id,
-    variant_id,
-    year,
-    fuel,
-    transmission,
-    drivetrain,
-    power_hp,
-    body_type,
-    first_registration,
-    provider_make: providerMake ?? null,
-    provider_model: providerModel ?? null,
-    provider_trim: providerTrim ?? null,
-  };
-
-  await supabaseAdmin
-    .from("vin_cache")
-    .upsert(
-      {
-        vin,
-        status: "success",
-        provider: "vincario",
-        decoded_payload: decoded,
-        normalized_payload: normalized_payload as unknown as Json,
-        make_id,
-        model_id,
-        variant_id,
-        error_message: null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "vin" }
-    );
-
-  return res.status(200).json({ ...normalized_payload, cached: false });
+  return res.status(200).json({ ...normResult.payload, cached: false });
 }

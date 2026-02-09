@@ -5,14 +5,14 @@
 4 silly config load:file:/app/.npmrc
 5 silly config load:file:/home/softgen/.npmrc
 6 silly config load:file:/usr/local/etc/npmrc
-7 verbose title npm exec stylelint **/*.css --allow-empty-input
-8 verbose argv "exec" "--yes" "--" "stylelint" "**/*.css" "--allow-empty-input"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-02-09T12_26_11_231Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-02-09T12_26_11_231Z-debug-0.log
+7 verbose title npm exec supabase login --token sbp_oauth_1bacabbe6329ad912d75999415008bb0bc7be907
+8 verbose argv "exec" "--" "supabase" "login" "--token" "sbp_oauth_1bacabbe6329ad912d75999415008bb0bc7be907"
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-02-09T14_18_46_241Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-02-09T14_18_46_241Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
-14 http fetch GET 200 https://registry.npmjs.org/stylelint 81ms (cache revalidated)
+14 http fetch GET 200 https://registry.npmjs.org/supabase 75ms (cache revalidated)
 15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 16 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 17 verbose cwd /app

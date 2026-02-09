@@ -100,6 +100,9 @@ export function Step1Form() {
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
 
+  const [pendingModelId, setPendingModelId] = useState<string | null>(null);
+  const [pendingVariantId, setPendingVariantId] = useState<string | null>(null);
+
   const defaultYear = useMemo(() => {
     return typeof data.year === "number" && Number.isFinite(data.year) ? data.year : new Date().getFullYear();
   }, [data.year]);
@@ -223,6 +226,39 @@ export function Step1Form() {
     void loadVariants();
   }, [selectedModelId, toast]);
 
+  useEffect(() => {
+    if (!pendingModelId) return;
+    if (!selectedMakeId) return;
+
+    const exists = models.some((m) => m.id === pendingModelId);
+    if (!exists) return;
+
+    if (!shouldAutofill("model_id")) {
+      setPendingModelId(null);
+      return;
+    }
+
+    setValue("model_id", pendingModelId, { shouldValidate: true });
+    setValue("variant_id", "", { shouldValidate: false });
+    setPendingModelId(null);
+  }, [models, pendingModelId, selectedMakeId, setValue]);
+
+  useEffect(() => {
+    if (!pendingVariantId) return;
+    if (!selectedModelId) return;
+
+    const exists = variants.some((v) => v.id === pendingVariantId);
+    if (!exists) return;
+
+    if (!shouldAutofill("variant_id")) {
+      setPendingVariantId(null);
+      return;
+    }
+
+    setValue("variant_id", pendingVariantId, { shouldValidate: true });
+    setPendingVariantId(null);
+  }, [pendingVariantId, selectedModelId, setValue, variants]);
+
   const shouldAutofill = (field: keyof VehicleStepFormValues): boolean => {
     const dirty = (dirtyFields as any)?.[field] === true;
     if (dirty) return false;
@@ -254,15 +290,12 @@ export function Step1Form() {
       setValue("make_id", payload.make_id, { shouldValidate: true });
       setValue("model_id", "", { shouldValidate: false });
       setValue("variant_id", "", { shouldValidate: false });
-    }
 
-    if (payload.model_id && shouldAutofill("model_id")) {
-      setValue("model_id", payload.model_id, { shouldValidate: true });
-      setValue("variant_id", "", { shouldValidate: false });
-    }
-
-    if (payload.variant_id && shouldAutofill("variant_id")) {
-      setValue("variant_id", payload.variant_id, { shouldValidate: true });
+      setPendingModelId(payload.model_id ?? null);
+      setPendingVariantId(payload.variant_id ?? null);
+    } else {
+      if (payload.model_id) setPendingModelId(payload.model_id);
+      if (payload.variant_id) setPendingVariantId(payload.variant_id);
     }
 
     if (typeof payload.year === "number" && Number.isFinite(payload.year) && shouldAutofill("year")) {
