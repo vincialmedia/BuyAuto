@@ -1,6 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
+import type { Database } from "@/integrations/supabase/types";
+
+type SupabaseDbClient = SupabaseClient<Database>;
 
 type Json = Record<string, unknown>;
 
@@ -117,7 +120,7 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 async function insertModelAlias(params: {
-  supabaseAdmin: ReturnType<typeof createClient>;
+  supabaseAdmin: SupabaseDbClient;
   makeId: string;
   modelId: string;
   alias: string;
@@ -132,7 +135,7 @@ async function insertModelAlias(params: {
     alias,
     normalized_alias: normalizedAlias,
     source: "vincario",
-  });
+  } as any);
 
   if (!attempt.error) return;
 
@@ -145,7 +148,7 @@ async function insertModelAlias(params: {
       model_id: modelId,
       alias,
       normalized_alias: normalizedAlias,
-    });
+    } as any);
     if (retry.error && !isUniqueViolation(retry.error)) {
       console.error("vehicle_aliases insert (model alias) failed", { message: retry.error.message });
     }
@@ -155,7 +158,7 @@ async function insertModelAlias(params: {
   console.error("vehicle_aliases insert (model alias) failed", { message: attempt.error.message });
 }
 
-async function createBaseModel(params: { supabaseAdmin: ReturnType<typeof createClient>; makeId: string; providerModel: string }) {
+async function createBaseModel(params: { supabaseAdmin: SupabaseDbClient; makeId: string; providerModel: string }) {
   const { supabaseAdmin, makeId, providerModel } = params;
 
   const cleanName = String(providerModel).trim().replace(/\s+/g, " ");
@@ -171,7 +174,7 @@ async function createBaseModel(params: { supabaseAdmin: ReturnType<typeof create
       is_active: true,
       source: "vincario",
       updated_at: nowIso,
-    })
+    } as any)
     .select("id,name,normalized_name")
     .single();
 
@@ -186,7 +189,7 @@ async function createBaseModel(params: { supabaseAdmin: ReturnType<typeof create
         make_id: makeId,
         name: cleanName,
         normalized_name,
-      })
+      } as any)
       .select("id,name,normalized_name")
       .single();
 
@@ -751,7 +754,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const supabaseAdmin = createClient(env.supabaseUrl, env.serviceRoleKey, {
+  const supabaseAdmin = createClient<Database>(env.supabaseUrl, env.serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
@@ -970,13 +973,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const alias = String(providerModel).trim().replace(/\s+/g, " ");
         const normalized_alias = normalizeText(alias);
-        await insertModelAlias({
-          supabaseAdmin,
-          makeId: make_id,
-          modelId: model_id,
-          alias,
-          normalizedAlias: normalized_alias,
-        });
+        await supabaseAdmin.from("vehicle_aliases").upsert(
+          {
+            entity_type: "model",
+            make_id: make_id,
+            model_id,
+            alias,
+            normalized_alias,
+            source: "vincario",
+          },
+          { onConflict: "model_id,normalized_alias" }
+        );
       }
     }
 
@@ -1050,7 +1057,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             is_active: true,
             source: "vincario",
             updated_at: nowIso,
-          })
+          } as any)
           .select("id,name,normalized_name")
           .single();
 
@@ -1076,7 +1083,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               normalized_name,
               is_active: true,
               updated_at: nowIso,
-            })
+            } as any)
             .select("id,name,normalized_name")
             .single();
 
@@ -1097,7 +1104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             alias: cleanName,
             normalized_alias,
             source: "vincario",
-          },
+          } as any,
           { onConflict: "model_id,normalized_alias" }
         );
       }
