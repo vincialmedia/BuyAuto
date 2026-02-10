@@ -517,6 +517,45 @@ function normalizeBmwDriveTrim(raw: string): string {
   return `${num}${suf} ${drive}`.trim();
 }
 
+function deepPickFirstRegexMatch(obj: unknown, re: RegExp): string | null {
+  if (!obj) return null;
+
+  const visited = new Set<unknown>();
+  const stack: unknown[] = [obj];
+
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || typeof current !== "object") continue;
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    const asRec = current as Record<string, unknown>;
+    for (const v of Object.values(asRec)) {
+      if (typeof v === "string") {
+        const m = v.match(re);
+        if (m?.[0]) return m[0];
+        continue;
+      }
+      if (v && typeof v === "object") {
+        stack.push(v);
+      }
+    }
+  }
+
+  return null;
+}
+
+function deriveBmwTrimFromDecoded(decoded: JsonObject): string | null {
+  const token =
+    deepPickFirstRegexMatch(decoded, /\b(xdrive|sdrive)\s?\d{2,3}[a-z]{0,2}\b/i) ??
+    deepPickFirstRegexMatch(decoded, /\b(xdrive|sdrive)\s*-\s*\d{2,3}[a-z]{0,2}\b/i);
+
+  if (!token) return null;
+
+  const normalized = normalizeBmwDriveTrim(token);
+  return normalized && !isLikelyJunkVariant(normalized) ? normalized : null;
+}
+
 function deriveTrimFromVehicleSpec(params: {
   vehicleSpec: string;
   providerMake: string | null;
@@ -830,11 +869,15 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
         })
       : null;
 
+  const bmwFallbackTrim =
+    !trimFromMap && !derivedTrim && normalizeText(providerMake ?? "") === "bmw" ? deriveBmwTrimFromDecoded(decoded) : null;
+
   const providerTrim =
     trimFromMap ??
     deepPickString(decoded, ["trim", "Trim", "trim_level", "trimLevel", "version", "Version", "variant", "Variant", "derivative", "Derivative", "sub_model", "subModel"]) ??
     pickString(decoded, ["trim", "trim_level", "version", "variant", "derivative", "sub_model"]) ??
-    derivedTrim;
+    derivedTrim ??
+    bmwFallbackTrim;
 
   const rawYearFallback = deepPickNumber(decoded, ["year", "Year", "model_year", "modelYear", "production_year", "build_year"]) ?? null;
 
