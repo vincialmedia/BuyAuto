@@ -183,14 +183,25 @@ async function createBaseModel(params: { supabaseAdmin: SupabaseDbClient; makeId
     return primary.data.id as string;
   }
 
-  if (primary.error && (isUnknownColumnError(primary.error, "source") || isUnknownColumnError(primary.error, "is_active") || isUnknownColumnError(primary.error, "updated_at"))) {
+  if (
+    primary.error &&
+    (isUnknownColumnError(primary.error, "source") ||
+      isUnknownColumnError(primary.error, "is_active") ||
+      isUnknownColumnError(primary.error, "updated_at") ||
+      isUnknownColumnError(primary.error, "normalized_name"))
+  ) {
+    const minimalInsert: Record<string, unknown> = {
+      make_id: makeId,
+      name: cleanName,
+    };
+
+    if (!isUnknownColumnError(primary.error, "normalized_name")) {
+      minimalInsert["normalized_name"] = normalized_name;
+    }
+
     const retry = await supabaseAdmin
       .from("models")
-      .insert({
-        make_id: makeId,
-        name: cleanName,
-        normalized_name,
-      } as any)
+      .insert(minimalInsert as any)
       .select("id,name,normalized_name")
       .single();
 
@@ -199,13 +210,14 @@ async function createBaseModel(params: { supabaseAdmin: SupabaseDbClient; makeId
     }
 
     if (retry.error && isUniqueViolation(retry.error)) {
-      const { data: existing } = await supabaseAdmin
-        .from("models")
-        .select("id")
-        .eq("make_id", makeId)
-        .eq("normalized_name", normalized_name)
-        .maybeSingle();
-      if (existing?.id) return existing.id as string;
+      const q = supabaseAdmin.from("models").select("id").eq("make_id", makeId);
+      if (minimalInsert["normalized_name"]) {
+        const { data: existing } = await q.eq("normalized_name", normalized_name).maybeSingle();
+        if (existing?.id) return existing.id as string;
+      } else {
+        const { data: existing } = await q.eq("name", cleanName).maybeSingle();
+        if (existing?.id) return existing.id as string;
+      }
     }
 
     if (retry.error) {
@@ -216,13 +228,8 @@ async function createBaseModel(params: { supabaseAdmin: SupabaseDbClient; makeId
   }
 
   if (primary.error && isUniqueViolation(primary.error)) {
-    const { data: existing } = await supabaseAdmin
-      .from("models")
-      .select("id")
-      .eq("make_id", makeId)
-      .eq("normalized_name", normalized_name)
-      .maybeSingle();
-
+    const q = supabaseAdmin.from("models").select("id").eq("make_id", makeId);
+    const { data: existing } = await q.eq("normalized_name", normalized_name).maybeSingle();
     if (existing?.id) return existing.id as string;
     return null;
   }
@@ -1075,16 +1082,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (conflictVariant?.id) {
             variant_id = conflictVariant.id as string;
           }
-        } else if (insertErr && isUnknownColumnError(insertErr, "source")) {
+        } else if (
+          insertErr &&
+          (isUnknownColumnError(insertErr, "source") ||
+            isUnknownColumnError(insertErr, "is_active") ||
+            isUnknownColumnError(insertErr, "updated_at") ||
+            isUnknownColumnError(insertErr, "normalized_name"))
+        ) {
+          const minimalInsert: Record<string, unknown> = { model_id, name: cleanName };
+          if (!isUnknownColumnError(insertErr, "normalized_name")) {
+            minimalInsert["normalized_name"] = normalized_name;
+          }
+
           const { data: insertedVariant2, error: insertErr2 } = await supabaseAdmin
             .from("variants")
-            .insert({
-              model_id,
-              name: cleanName,
-              normalized_name,
-              is_active: true,
-              updated_at: nowIso,
-            } as any)
+            .insert(minimalInsert as any)
             .select("id,name,normalized_name")
             .single();
 
@@ -1149,7 +1161,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return { ok: true as const, payload: normalized_payload, cachedFlag: options.cachedFlag };
   };
 
-  if (!cacheErr && cached?.status === "success") {
+  if (!cacheErr && cached?.status === "success" && cached?.make_id && cached?.model_id) {
     const cachedNormalized = (cached.normalized_payload as unknown as JsonObject | null) ?? null;
     const normalizedUseful = cachedNormalized ? hasUsefulNormalizedData(cachedNormalized) : false;
 
@@ -1166,7 +1178,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (cachedDecoded && (successFresh || !normalizedUseful)) {
       const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
       if (!result.ok) {
-        return res.status(result.status).json({ error: "VIN decode failed", message: result.error, cached: true });
+        return res.status(result.status).json({
+          error: "VIN decode failed",
+          message: result.error,
+          provider_make: (result as any)?.payload?.provider_make ?? null,
+          provider_model: (result as any)?.payload?.provider_model ?? null,
+          provider_trim: (result as any)?.payload?.provider_trim ?? null,
+          cached: true,
+        });
+      }
+      return res.status(200).json({ ...result.payload, vin, cached: true });
+    }
+  }
+
+  if (!cacheErr && cached?.status === "success" && (!cached?.make_id || !cached?.model_id)) {
+    const cachedDecoded = (cached.decoded_payload as unknown as JsonObject | null) ?? null;
+    if (cachedDecoded) {
+      const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
+      if (!result.ok) {
+        return res.status(result.status).json({
+          error: "VIN decode failed",
+          message: result.error,
+          provider_make: (result as any)?.payload?.provider_make ?? null,
+          provider_model: (result as any)?.payload?.provider_model ?? null,
+          provider_trim: (result as any)?.payload?.provider_trim ?? null,
+          cached: true,
+        });
       }
       return res.status(200).json({ ...result.payload, vin, cached: true });
     }
