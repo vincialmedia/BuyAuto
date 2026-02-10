@@ -548,15 +548,25 @@ function deriveTrimFromVehicleSpec(params: {
 
   const tokens = rawTokens.filter((t) => {
     const cleaned = t.replace(/[(),]/g, "");
-
     if (!cleaned) return false;
+
     if (/^\d{2,}$/.test(cleaned)) return false;
 
-    const upper = cleaned.toUpperCase();
-    const looksLikeUpperCode = /^[A-Z0-9]{3,}$/.test(upper) && /[A-Z]/.test(upper) && /\d/.test(upper);
-    if (looksLikeUpperCode) return false;
-
     if (/^[A-Z]\d[A-Z]$/i.test(cleaned)) return false;
+
+    if (/^(xdrive|sdrive)\d{2,3}[a-z]{0,2}$/i.test(cleaned)) return true;
+
+    if (/^\d{2,3}[a-z]{1,2}$/i.test(cleaned)) return true;
+
+    const upper = cleaned.toUpperCase();
+
+    const looksLikeInternalCode =
+      /^[A-Z0-9]{5,}$/.test(upper) &&
+      /[A-Z]/.test(upper) &&
+      /\d/.test(upper) &&
+      (/\d{4,}/.test(upper) || /^[A-Z]{2,}\d{3,}/.test(upper));
+
+    if (looksLikeInternalCode) return false;
 
     return true;
   });
