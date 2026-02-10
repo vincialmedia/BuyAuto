@@ -568,6 +568,19 @@ function normalizeBmwDriveTrim(raw: string): string {
   return `${num}${suf} ${drive}`.trim();
 }
 
+function normalizeMercedesAmgTrim(raw: string): string {
+  const s = String(raw ?? "").trim().replace(/\s+/g, " ");
+  if (!s) return s;
+
+  const m1 = s.match(/^amg\s+([a-z]{2,6})\s?(\d{2,3})$/i);
+  if (m1) return `${m1[1].toUpperCase()} ${m1[2]} AMG`;
+
+  const m2 = s.match(/^([a-z]{2,6})\s?(\d{2,3})\s*amg$/i);
+  if (m2) return `${m2[1].toUpperCase()} ${m2[2]} AMG`;
+
+  return s;
+}
+
 function deepPickFirstRegexMatch(obj: unknown, re: RegExp): string | null {
   if (!obj) return null;
 
@@ -910,6 +923,15 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
     deepPickString(decoded, ["model", "Model", "model_name", "modelName", "series", "Series", "family", "Family"]) ??
     pickString(decoded, ["model", "series", "family"]);
 
+  const modelSegments = String(providerModel ?? "")
+    .split(/[,;/|]+/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const baseModelFromSegments = modelSegments[0] ?? null;
+  const possibleVariantFromModel =
+    modelSegments.length > 1 ? modelSegments.find((seg) => seg && seg !== baseModelFromSegments && /\d/.test(seg)) ?? null : null;
+
   const derivedTrim =
     !trimFromMap && vehicleSpecFromMap
       ? deriveTrimFromVehicleSpec({
@@ -923,12 +945,26 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
   const bmwFallbackTrim =
     !trimFromMap && !derivedTrim && normalizeText(providerMake ?? "") === "bmw" ? deriveBmwTrimFromDecoded(decoded) : null;
 
-  const providerTrim =
+  let providerTrim =
     trimFromMap ??
     deepPickString(decoded, ["trim", "Trim", "trim_level", "trimLevel", "version", "Version", "variant", "Variant", "derivative", "Derivative", "sub_model", "subModel"]) ??
     pickString(decoded, ["trim", "trim_level", "version", "variant", "derivative", "sub_model"]) ??
     derivedTrim ??
     bmwFallbackTrim;
+
+  const isMercedes = normalizeText(providerMake ?? "").includes("mercedes");
+
+  if (possibleVariantFromModel) {
+    const trimNorm = normalizeText(providerTrim ?? "");
+    const looksLikeCompactAmg = isMercedes && /^amg\s+[a-z]{2,6}\d{2,3}$/.test(trimNorm.replace(/\s+/g, ""));
+    if (!providerTrim || looksLikeCompactAmg) {
+      providerTrim = possibleVariantFromModel;
+    }
+  }
+
+  if (isMercedes && providerTrim) {
+    providerTrim = normalizeMercedesAmgTrim(providerTrim);
+  }
 
   const rawYearFallback = deepPickNumber(decoded, ["year", "Year", "model_year", "modelYear", "production_year", "build_year"]) ?? null;
 
@@ -1092,6 +1128,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const providerModel = extracted.providerModel;
     const providerTrim = extracted.providerTrim;
 
+    const providerModelFirstPart =
+      providerModel && /[,;/|]/.test(providerModel) ? providerModel.split(/[,;/|]+/g)[0]?.trim() : null;
+    const providerModelForResolve = providerModelFirstPart || providerModel;
+
     const hasAnyUseful =
       !!providerMake ||
       !!providerModel ||
@@ -1186,8 +1226,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return { ok: false as const, status: 422, error: msg, payload: normalized_payload };
     }
 
-    if (providerModel) {
-      const candidates = buildModelTextCandidates({ providerModel, providerTrim });
+    if (providerModelForResolve) {
+      const candidates = buildModelTextCandidates({ providerModel: providerModelForResolve, providerTrim });
 
       for (const candidate of candidates) {
         const { data: modelId, error: modelErr } = await supabaseAdmin.rpc("resolve_model_id", {
@@ -1461,30 +1501,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  if (!cacheErr && cached?.status === "failed" && failedFresh) {
+  if (!cacheErr && cached?.status === "failed") {
     const cachedDecoded = (cached.decoded_payload as unknown as JsonObject | null) ?? null;
-
-    if (cachedDecoded) {
+    const rawMsg = (cached.error_message as string | null) ?? "";
+    if (cachedDecoded && isMappingErrorMessage(rawMsg)) {
       const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
       if (result.ok) {
         return res.status(200).json({ ...result.payload, vin, cached: true });
       }
-    }
-
-    const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as JsonObject | null) ?? null);
-    const isInvalidControlSum =
-      providerInfo.invalidControlSum || /invalid control sum/i.test(String((cached.error_message as string | null) ?? ""));
-
-    if (!isInvalidControlSum) {
-      const rawMsg = (cached.error_message as string | null) ?? "VIN decode failed";
-      const isMapping = isMappingErrorMessage(rawMsg);
-      const message = isMapping ? stripMappingPrefix(rawMsg) : rawMsg;
-
-      return res.status(isMapping ? 422 : 502).json({
-        error: "VIN decode failed",
-        message,
-        cached: true,
-      });
     }
   }
 
