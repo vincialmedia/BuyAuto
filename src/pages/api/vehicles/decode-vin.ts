@@ -528,6 +528,18 @@ function deriveTrimFromVehicleSpec(params: {
   const spec = String(vehicleSpec ?? "").trim();
   if (!spec) return null;
 
+  const isBmw = normalizeText(providerMake ?? "") === "bmw";
+  if (isBmw) {
+    const compact = spec.replace(/[(),]/g, " ").replace(/\s+/g, " ").trim();
+    const bmwDrive = compact.match(/\b(xdrive|sdrive)\s?(\d{2,3})([a-z]{0,2})\b/i);
+    if (bmwDrive) {
+      const drive = bmwDrive[1].toLowerCase().startsWith("x") ? "xDrive" : "sDrive";
+      const num = bmwDrive[2];
+      const suf = (bmwDrive[3] ?? "").toLowerCase();
+      return `${num}${suf} ${drive}`.trim();
+    }
+  }
+
   const removalCandidates = [providerMake, providerModel, modelFromMap]
     .map((s) => String(s ?? "").trim())
     .filter(Boolean)
@@ -633,6 +645,8 @@ function deepPickDecodeArray(obj: unknown): Array<Record<string, unknown>> | nul
   const visited = new Set<unknown>();
   const stack: unknown[] = [obj];
 
+  const decodeArrays: Array<Array<Record<string, unknown>>> = [];
+
   while (stack.length) {
     const current = stack.pop();
     if (!current || typeof current !== "object") continue;
@@ -654,7 +668,7 @@ function deepPickDecodeArray(obj: unknown): Array<Record<string, unknown>> | nul
       });
 
       if (isLabelValueArray) {
-        return candidate.filter((x) => !!x && typeof x === "object") as Array<Record<string, unknown>>;
+        decodeArrays.push(candidate.filter((x) => !!x && typeof x === "object") as Array<Record<string, unknown>>);
       }
     }
 
@@ -663,7 +677,61 @@ function deepPickDecodeArray(obj: unknown): Array<Record<string, unknown>> | nul
     }
   }
 
-  return null;
+  if (!decodeArrays.length) return null;
+
+  const importantLabels = new Set(
+    [
+      "make",
+      "marque",
+      "brand",
+      "manufacturer",
+      "model",
+      "model name",
+      "series",
+      "family",
+      "vehicle model",
+      "vehicle model name",
+      "trim",
+      "trim level",
+      "version",
+      "variant",
+      "derivative",
+      "vehicle specification",
+      "vehicle spec",
+      "vehicle description",
+      "specification",
+    ].map((s) => normalizeText(s))
+  );
+
+  const scoreArray = (arr: Array<Record<string, unknown>>) => {
+    let score = 0;
+    for (const row of arr) {
+      const rawLabel = row["label"] ?? row["Label"] ?? row["LABEL"];
+      const label = typeof rawLabel === "string" ? normalizeText(rawLabel) : "";
+      if (label && importantLabels.has(label)) score += 1;
+    }
+    return score;
+  };
+
+  let best = decodeArrays[0];
+  let bestScore = scoreArray(best);
+
+  for (let i = 1; i < decodeArrays.length; i++) {
+    const cand = decodeArrays[i];
+    const candScore = scoreArray(cand);
+
+    if (candScore > bestScore) {
+      best = cand;
+      bestScore = candScore;
+      continue;
+    }
+
+    if (candScore === bestScore && cand.length > best.length) {
+      best = cand;
+    }
+  }
+
+  return best;
 }
 
 function buildDecodeLabelMap(decoded: JsonObject): Record<string, string> {
