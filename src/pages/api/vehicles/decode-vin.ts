@@ -498,6 +498,90 @@ function parseNumberFromText(raw: string | null): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
+function escapeRegExp(input: string): string {
+  return String(input ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeBmwDriveTrim(raw: string): string {
+  const cleaned = String(raw ?? "").trim().replace(/[(),]/g, "");
+  if (!cleaned) return cleaned;
+
+  const compact = cleaned.replace(/[\s_-]+/g, "");
+  const m = compact.match(/^(xdrive|sdrive)(\d{2,3})([a-z]{0,2})$/i);
+  if (!m) return cleaned;
+
+  const drive = m[1].toLowerCase().startsWith("x") ? "xDrive" : "sDrive";
+  const num = m[2];
+  const suf = (m[3] ?? "").toLowerCase();
+
+  return `${num}${suf} ${drive}`.trim();
+}
+
+function deriveTrimFromVehicleSpec(params: {
+  vehicleSpec: string;
+  providerMake: string | null;
+  providerModel: string | null;
+  modelFromMap: string | null;
+}): string | null {
+  const { vehicleSpec, providerMake, providerModel, modelFromMap } = params;
+
+  const spec = String(vehicleSpec ?? "").trim();
+  if (!spec) return null;
+
+  const removalCandidates = [providerMake, providerModel, modelFromMap]
+    .map((s) => String(s ?? "").trim())
+    .filter(Boolean)
+    .flatMap((s) => {
+      const withoutParens = s.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+      return withoutParens && withoutParens !== s ? [s, withoutParens] : [s];
+    });
+
+  let rest = spec;
+  for (const token of removalCandidates) {
+    if (!token) continue;
+    const re = new RegExp(`\\b${escapeRegExp(token)}\\b`, "ig");
+    rest = rest.replace(re, " ").replace(/\s+/g, " ").trim();
+  }
+
+  const rawTokens = rest.split(/\s+/).map((t) => t.trim()).filter(Boolean);
+  if (!rawTokens.length) return null;
+
+  const tokens = rawTokens.filter((t) => {
+    const cleaned = t.replace(/[(),]/g, "");
+
+    if (!cleaned) return false;
+    if (/^\d{2,}$/.test(cleaned)) return false;
+
+    const upper = cleaned.toUpperCase();
+    const looksLikeUpperCode = /^[A-Z0-9]{3,}$/.test(upper) && /[A-Z]/.test(upper) && /\d/.test(upper);
+    if (looksLikeUpperCode) return false;
+
+    if (/^[A-Z]\d[A-Z]$/i.test(cleaned)) return false;
+
+    return true;
+  });
+
+  if (!tokens.length) return null;
+
+  const t0 = tokens[0];
+  const t1 = tokens[1];
+
+  if (/^(xdrive|sdrive)\d/i.test(t0)) {
+    return normalizeBmwDriveTrim(t0);
+  }
+
+  if (/^\d{2,3}[a-z]{0,2}$/i.test(t0) && t1 && /^(xdrive|sdrive)$/i.test(t1)) {
+    const drive = t1.toLowerCase().startsWith("x") ? "xDrive" : "sDrive";
+    return `${t0.toLowerCase()} ${drive}`.trim();
+  }
+
+  if (t1 && /^[A-Z]{2,4}$/i.test(t1) && /\d/.test(t0)) {
+    return `${t0} ${t1}`.trim();
+  }
+
+  return t0.trim();
+}
+
 function isLikelyJunkVariant(trim: string): boolean {
   const raw = String(trim ?? "").trim();
   if (!raw) return true;
@@ -633,6 +717,7 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
   const makeFromMap = mapGet(decodeMap, ["Make", "Marque", "Brand", "Manufacturer", "Make (Marque)", "Vehicle Make", "Vehicle Brand"]);
   const modelFromMap = mapGet(decodeMap, ["Model", "Model Name", "Series", "Family", "Vehicle Model", "Vehicle Model Name"]);
   const trimFromMap = mapGet(decodeMap, ["Trim", "Trim Level", "Version", "Variant", "Derivative", "Sub Model", "Submodel", "Model Variant", "Model Version"]);
+  const vehicleSpecFromMap = mapGet(decodeMap, ["Vehicle Specification", "Vehicle Spec", "Vehicle Description", "Specification"]);
   const yearFromMapText = mapGet(decodeMap, ["Model Year", "Year", "Production Year", "Build Year", "Model year"]);
   const fuelFromMap = mapGet(decodeMap, ["Fuel Type - Primary", "Fuel Type", "Fuel", "Engine Fuel", "Fuel type"]);
   const transmissionFromMap = mapGet(decodeMap, ["Transmission", "Gearbox", "Transmission Type"]);
@@ -657,10 +742,21 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
     deepPickString(decoded, ["model", "Model", "model_name", "modelName", "series", "Series", "family", "Family"]) ??
     pickString(decoded, ["model", "series", "family"]);
 
+  const derivedTrim =
+    !trimFromMap && vehicleSpecFromMap
+      ? deriveTrimFromVehicleSpec({
+          vehicleSpec: vehicleSpecFromMap,
+          providerMake: providerMake ?? null,
+          providerModel: providerModel ?? null,
+          modelFromMap: modelFromMap ?? null,
+        })
+      : null;
+
   const providerTrim =
     trimFromMap ??
     deepPickString(decoded, ["trim", "Trim", "trim_level", "trimLevel", "version", "Version", "variant", "Variant", "derivative", "Derivative", "sub_model", "subModel"]) ??
-    pickString(decoded, ["trim", "trim_level", "version", "variant", "derivative", "sub_model"]);
+    pickString(decoded, ["trim", "trim_level", "version", "variant", "derivative", "sub_model"]) ??
+    derivedTrim;
 
   const rawYearFallback = deepPickNumber(decoded, ["year", "Year", "model_year", "modelYear", "production_year", "build_year"]) ?? null;
 
@@ -1165,6 +1261,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cachedNormalized = (cached.normalized_payload as unknown as JsonObject | null) ?? null;
     const normalizedUseful = cachedNormalized ? hasUsefulNormalizedData(cachedNormalized) : false;
 
+    const cachedDecoded = (cached.decoded_payload as unknown as JsonObject | null) ?? null;
+    const cachedProviderTrim =
+      cachedNormalized && typeof (cachedNormalized as any)?.provider_trim === "string"
+        ? String((cachedNormalized as any).provider_trim).trim()
+        : "";
+
+    if (cachedDecoded && successFresh && !cached?.variant_id && !cachedProviderTrim) {
+      const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
+      if (!result.ok) {
+        return res.status(result.status).json({
+          error: "VIN decode failed",
+          message: result.error,
+          provider_make: (result as any)?.payload?.provider_make ?? null,
+          provider_model: (result as any)?.payload?.provider_model ?? null,
+          provider_trim: (result as any)?.payload?.provider_trim ?? null,
+          cached: true,
+        });
+      }
+      return res.status(200).json({ ...result.payload, vin, cached: true });
+    }
+
     if (cachedNormalized && successFresh && normalizedUseful) {
       return res.status(200).json({
         ...(cachedNormalized as unknown as NormalizedVinPayload),
@@ -1172,8 +1289,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         cached: true,
       });
     }
-
-    const cachedDecoded = (cached.decoded_payload as unknown as JsonObject | null) ?? null;
 
     if (cachedDecoded && (successFresh || !normalizedUseful)) {
       const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
