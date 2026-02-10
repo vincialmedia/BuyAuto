@@ -257,6 +257,57 @@ function normalizeText(input: string): string {
     .trim();
 }
 
+function buildModelTextCandidates(params: { providerModel: string | null; providerTrim: string | null }): string[] {
+  const { providerModel, providerTrim } = params;
+
+  const blocked = new Set(["amg", "4matic", "4matic+", "line", "facelift"]);
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  const add = (raw: string | null | undefined) => {
+    const s = String(raw ?? "").trim().replace(/\s+/g, " ");
+    if (!s) return;
+
+    const norm = normalizeText(s);
+    if (!norm || blocked.has(norm)) return;
+
+    if (seen.has(norm)) return;
+    seen.add(norm);
+    out.push(s);
+  };
+
+  add(providerModel);
+  if (providerModel) {
+    for (const part of providerModel.split(/[,;/|]+/g)) add(part);
+    const first = providerModel.split(/\s+/)[0];
+    add(first);
+  }
+
+  add(providerTrim);
+  if (providerTrim) {
+    for (const token of providerTrim.split(/\s+/g)) {
+      const cleaned = token.replace(/[^A-Za-z0-9]+/g, "").trim();
+      if (!cleaned) continue;
+
+      // GLE53 -> GLE
+      const m = cleaned.match(/^([A-Za-z]{2,6})\d{1,3}[A-Za-z]{0,2}$/);
+      if (m?.[1]) add(m[1]);
+
+      add(cleaned);
+    }
+  }
+
+  // Also add first word of each multi-word candidate (e.g. "GLE 53 AMG" -> "GLE")
+  const extra: string[] = [];
+  for (const c of out) {
+    const first = c.split(/\s+/)[0];
+    if (first && first !== c) extra.push(first);
+  }
+  for (const e of extra) add(e);
+
+  return out;
+}
+
 function isValidVin(vin: string): boolean {
   if (vin.length !== 17) return false;
   return /^[A-Z0-9]{17}$/.test(vin);
@@ -1136,79 +1187,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (providerModel) {
-      const { data: modelId, error: modelErr } = await supabaseAdmin.rpc("resolve_model_id", {
-        p_make_id: make_id,
-        p_model_text: providerModel,
-      });
-      if (modelErr) {
-        console.error("resolve_model_id error", { vin: maskVin(vin) });
-      } else {
-        model_id = (modelId as string | null) ?? null;
+      const candidates = buildModelTextCandidates({ providerModel, providerTrim });
+
+      for (const candidate of candidates) {
+        const { data: modelId, error: modelErr } = await supabaseAdmin.rpc("resolve_model_id", {
+          p_make_id: make_id,
+          p_model_text: candidate,
+        });
+
+        if (modelErr) {
+          console.error("resolve_model_id error", { vin: maskVin(vin) });
+          continue;
+        }
+
+        const resolved = (modelId as string | null) ?? null;
+        if (resolved) {
+          model_id = resolved;
+          break;
+        }
       }
-    }
+    } else if (providerTrim) {
+      const candidates = buildModelTextCandidates({ providerModel: null, providerTrim });
 
-    if (!model_id) {
-      const canSeed = shouldAutoCreateBaseModel(providerModel);
+      for (const candidate of candidates) {
+        const { data: modelId, error: modelErr } = await supabaseAdmin.rpc("resolve_model_id", {
+          p_make_id: make_id,
+          p_model_text: candidate,
+        });
 
-      if (!canSeed || !providerModel) {
-        const msg = "Modell konnte aus der VIN nicht erkannt werden. Bitte kontaktiere den Support.";
-        const error_message = buildMappingError(msg);
+        if (modelErr) {
+          console.error("resolve_model_id error", { vin: maskVin(vin) });
+          continue;
+        }
 
-        const normalized_payload: NormalizedVinPayload = {
-          vin,
-          make_id,
-          model_id: null,
-          variant_id: null,
-          year,
-          fuel,
-          transmission,
-          drivetrain,
-          power_hp,
-          body_type,
-          first_registration,
-          provider_make: providerMake ?? null,
-          provider_model: providerModel ?? null,
-          provider_trim: providerTrim ?? null,
-        };
-
-        await supabaseAdmin
-          .from("vin_cache")
-          .upsert(
-            {
-              vin,
-              status: "failed",
-              provider: "vincario",
-              decoded_payload: decoded as unknown as SupabaseJson,
-              normalized_payload: normalized_payload as unknown as SupabaseJson,
-              make_id,
-              model_id: null,
-              variant_id: null,
-              error_message,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "vin" }
-          );
-
-        return { ok: false as const, status: 422, error: msg, payload: normalized_payload };
-      }
-
-      const createdModelId = await createBaseModel({ supabaseAdmin, makeId: make_id, providerModel });
-      if (createdModelId) {
-        model_id = createdModelId;
-
-        const alias = String(providerModel).trim().replace(/\s+/g, " ");
-        const normalized_alias = normalizeText(alias);
-        await supabaseAdmin.from("vehicle_aliases").upsert(
-          {
-            entity_type: "model",
-            make_id: make_id,
-            model_id,
-            alias,
-            normalized_alias,
-            source: "vincario",
-          },
-          { onConflict: "model_id,normalized_alias" }
-        );
+        const resolved = (modelId as string | null) ?? null;
+        if (resolved) {
+          model_id = resolved;
+          break;
+        }
       }
     }
 
@@ -1446,6 +1462,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (!cacheErr && cached?.status === "failed" && failedFresh) {
+    const cachedDecoded = (cached.decoded_payload as unknown as JsonObject | null) ?? null;
+
+    if (cachedDecoded) {
+      const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
+      if (result.ok) {
+        return res.status(200).json({ ...result.payload, vin, cached: true });
+      }
+    }
+
     const providerInfo = getProviderErrorInfo((cached.decoded_payload as unknown as JsonObject | null) ?? null);
     const isInvalidControlSum =
       providerInfo.invalidControlSum || /invalid control sum/i.test(String((cached.error_message as string | null) ?? ""));
