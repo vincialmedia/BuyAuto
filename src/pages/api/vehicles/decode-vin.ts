@@ -120,6 +120,101 @@ function isUniqueViolation(err: unknown): boolean {
   return code === "23505";
 }
 
+async function insertMakeAlias(params: {
+  supabaseAdmin: SupabaseDbClient;
+  makeId: string;
+  alias: string;
+  normalizedAlias: string;
+}) {
+  const { supabaseAdmin, makeId, alias, normalizedAlias } = params;
+
+  const attempt = await supabaseAdmin.from("vehicle_aliases").insert({
+    entity_type: "make",
+    make_id: makeId,
+    alias,
+    normalized_alias: normalizedAlias,
+    source: "vincario",
+  } as any);
+
+  if (!attempt.error) return;
+  if (isUniqueViolation(attempt.error)) return;
+
+  if (isUnknownColumnError(attempt.error, "source")) {
+    const retry = await supabaseAdmin.from("vehicle_aliases").insert({
+      entity_type: "make",
+      make_id: makeId,
+      alias,
+      normalized_alias: normalizedAlias,
+    } as any);
+    if (retry.error && !isUniqueViolation(retry.error)) {
+      console.error("vehicle_aliases insert (make alias) failed", { message: retry.error.message });
+    }
+    return;
+  }
+
+  console.error("vehicle_aliases insert (make alias) failed", { message: attempt.error.message });
+}
+
+async function createMake(params: { supabaseAdmin: SupabaseDbClient; providerMake: string }) {
+  const { supabaseAdmin, providerMake } = params;
+
+  const cleanName = String(providerMake).trim().replace(/\s+/g, " ");
+  const normalized_name = normalizeText(cleanName);
+  const nowIso = new Date().toISOString();
+
+  const primary = await supabaseAdmin
+    .from("makes")
+    .insert({
+      name: cleanName,
+      normalized_name,
+      updated_at: nowIso,
+    } as any)
+    .select("id,name,normalized_name")
+    .single();
+
+  if (!primary.error && primary.data?.id) {
+    return primary.data.id as string;
+  }
+
+  if (primary.error && isUnknownColumnError(primary.error, "updated_at")) {
+    const retry = await supabaseAdmin
+      .from("makes")
+      .insert({
+        name: cleanName,
+        normalized_name,
+      } as any)
+      .select("id,name,normalized_name")
+      .single();
+
+    if (!retry.error && retry.data?.id) {
+      return retry.data.id as string;
+    }
+
+    if (retry.error && isUniqueViolation(retry.error)) {
+      const { data: existing } = await supabaseAdmin.from("makes").select("id").eq("normalized_name", normalized_name).maybeSingle();
+      if (existing?.id) return existing.id as string;
+    }
+
+    if (retry.error) {
+      console.error("makes insert retry failed", { message: retry.error.message });
+    }
+
+    return null;
+  }
+
+  if (primary.error && isUniqueViolation(primary.error)) {
+    const { data: existing } = await supabaseAdmin.from("makes").select("id").eq("normalized_name", normalized_name).maybeSingle();
+    if (existing?.id) return existing.id as string;
+    return null;
+  }
+
+  if (primary.error) {
+    console.error("makes insert failed", { message: primary.error.message });
+  }
+
+  return null;
+}
+
 async function insertModelAlias(params: {
   supabaseAdmin: SupabaseDbClient;
   makeId: string;
@@ -139,7 +234,6 @@ async function insertModelAlias(params: {
   } as any);
 
   if (!attempt.error) return;
-
   if (isUniqueViolation(attempt.error)) return;
 
   if (isUnknownColumnError(attempt.error, "source")) {
@@ -159,7 +253,7 @@ async function insertModelAlias(params: {
   console.error("vehicle_aliases insert (model alias) failed", { message: attempt.error.message });
 }
 
-async function createBaseModel(params: { supabaseAdmin: SupabaseDbClient; makeId: string; providerModel: string }) {
+async function createModel(params: { supabaseAdmin: SupabaseDbClient; makeId: string; providerModel: string }) {
   const { supabaseAdmin, makeId, providerModel } = params;
 
   const cleanName = String(providerModel).trim().replace(/\s+/g, " ");
@@ -183,41 +277,42 @@ async function createBaseModel(params: { supabaseAdmin: SupabaseDbClient; makeId
     return primary.data.id as string;
   }
 
+  if (primary.error && isUniqueViolation(primary.error)) {
+    const { data: existing } = await supabaseAdmin
+      .from("models")
+      .select("id")
+      .eq("make_id", makeId)
+      .eq("normalized_name", normalized_name)
+      .maybeSingle();
+
+    if (existing?.id) return existing.id as string;
+    return null;
+  }
+
   if (
     primary.error &&
-    (isUnknownColumnError(primary.error, "source") ||
-      isUnknownColumnError(primary.error, "is_active") ||
+    (isUnknownColumnError(primary.error, "is_active") ||
+      isUnknownColumnError(primary.error, "source") ||
       isUnknownColumnError(primary.error, "updated_at") ||
       isUnknownColumnError(primary.error, "normalized_name"))
   ) {
-    const minimalInsert: Record<string, unknown> = {
-      make_id: makeId,
-      name: cleanName,
-    };
-
+    const minimalInsert: Record<string, unknown> = { make_id: makeId, name: cleanName };
     if (!isUnknownColumnError(primary.error, "normalized_name")) {
       minimalInsert["normalized_name"] = normalized_name;
     }
 
-    const retry = await supabaseAdmin
-      .from("models")
-      .insert(minimalInsert as any)
-      .select("id,name,normalized_name")
-      .single();
+    const retry = await supabaseAdmin.from("models").insert(minimalInsert as any).select("id,name,normalized_name").single();
 
-    if (!retry.error && retry.data?.id) {
-      return retry.data.id as string;
-    }
+    if (!retry.error && retry.data?.id) return retry.data.id as string;
 
     if (retry.error && isUniqueViolation(retry.error)) {
-      const q = supabaseAdmin.from("models").select("id").eq("make_id", makeId);
-      if (minimalInsert["normalized_name"]) {
-        const { data: existing } = await q.eq("normalized_name", normalized_name).maybeSingle();
-        if (existing?.id) return existing.id as string;
-      } else {
-        const { data: existing } = await q.eq("name", cleanName).maybeSingle();
-        if (existing?.id) return existing.id as string;
-      }
+      const { data: existing } = await supabaseAdmin
+        .from("models")
+        .select("id")
+        .eq("make_id", makeId)
+        .eq("normalized_name", normalized_name)
+        .maybeSingle();
+      if (existing?.id) return existing.id as string;
     }
 
     if (retry.error) {
@@ -227,18 +322,23 @@ async function createBaseModel(params: { supabaseAdmin: SupabaseDbClient; makeId
     return null;
   }
 
-  if (primary.error && isUniqueViolation(primary.error)) {
-    const q = supabaseAdmin.from("models").select("id").eq("make_id", makeId);
-    const { data: existing } = await q.eq("normalized_name", normalized_name).maybeSingle();
-    if (existing?.id) return existing.id as string;
-    return null;
-  }
-
   if (primary.error) {
     console.error("models insert failed", { message: primary.error.message });
   }
 
   return null;
+}
+
+function pickSeedBaseModelName(params: { providerModel: string; providerTrim: string | null }): string {
+  const { providerModel, providerTrim } = params;
+
+  const candidates = buildModelTextCandidates({ providerModel, providerTrim });
+  for (const c of candidates) {
+    if (shouldAutoCreateBaseModel(c)) return String(c).trim().replace(/\s+/g, " ");
+  }
+
+  const first = candidates[0] ?? providerModel;
+  return String(first).trim().replace(/\s+/g, " ");
 }
 
 function maskVin(vin: string): string {
@@ -578,7 +678,21 @@ function normalizeMercedesAmgTrim(raw: string): string {
   const m2 = s.match(/^([a-z]{2,6})\s?(\d{2,3})\s*amg$/i);
   if (m2) return `${m2[1].toUpperCase()} ${m2[2]} AMG`;
 
+  const m3 = s.match(/^([a-z]{2,6})(\d{2,3})\s*amg$/i);
+  if (m3) return `${m3[1].toUpperCase()} ${m3[2]} AMG`;
+
   return s;
+}
+
+function normalizeProviderTrimForResponse(params: { providerMake: string | null; providerTrim: string | null }): string | null {
+  const { providerMake, providerTrim } = params;
+  const trim = String(providerTrim ?? "").trim();
+  if (!trim) return null;
+
+  const makeNorm = normalizeText(providerMake ?? "");
+  if (makeNorm.includes("mercedes")) return normalizeMercedesAmgTrim(trim);
+
+  return trim;
 }
 
 function deepPickFirstRegexMatch(obj: unknown, re: RegExp): string | null {
@@ -618,6 +732,23 @@ function deriveBmwTrimFromDecoded(decoded: JsonObject): string | null {
 
   const normalized = normalizeBmwDriveTrim(token);
   return normalized && !isLikelyJunkVariant(normalized) ? normalized : null;
+}
+
+function deriveMercedesBaseModelNameFromTrimLikeModel(modelText: string): string | null {
+  const compact = String(modelText ?? "").trim().replace(/\s+/g, " ");
+  if (!compact) return null;
+
+  const m = compact.match(/^([A-Za-z]{1,3})\s?\d{2,3}\b/);
+  if (!m?.[1]) return null;
+
+  const token = m[1].toUpperCase();
+  const classFamilies = new Set(["A", "B", "C", "E", "S"]);
+  const directFamilies = new Set(["GLA", "GLB", "GLC", "GLE", "GLS", "CLA", "CLS", "G"]);
+
+  if (classFamilies.has(token)) return `${token}-Class`;
+  if (directFamilies.has(token)) return token;
+
+  return null;
 }
 
 function deriveTrimFromVehicleSpec(params: {
@@ -669,9 +800,9 @@ function deriveTrimFromVehicleSpec(params: {
 
     if (/^[A-Z]\d[A-Z]$/i.test(cleaned)) return false;
 
-    if (/^(xdrive|sdrive)\d{2,3}[a-z]{0,2}$/i.test(cleaned)) return true;
+    if (/^(xdrive|sdrive)\d/i.test(cleaned)) return true;
 
-    if (/^\d{2,3}[a-z]{1,2}$/i.test(cleaned)) return true;
+    if (/^\d{2,3}[a-z]{0,2}$/i.test(cleaned)) return true;
 
     const upper = cleaned.toUpperCase();
 
@@ -788,6 +919,9 @@ function deepPickDecodeArray(obj: unknown): Array<Record<string, unknown>> | nul
       "marque",
       "brand",
       "manufacturer",
+      "make (marque)",
+      "vehicle make",
+      "vehicle brand",
       "model",
       "model name",
       "series",
@@ -918,7 +1052,7 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
     deepPickString(decoded, ["make", "Make", "brand", "Brand", "manufacturer", "Manufacturer", "marque", "Marque"]) ??
     pickString(decoded, ["make", "brand", "manufacturer", "marque"]);
 
-  const providerModel =
+  let providerModel =
     modelFromMap ??
     deepPickString(decoded, ["model", "Model", "model_name", "modelName", "series", "Series", "family", "Family"]) ??
     pickString(decoded, ["model", "series", "family"]);
@@ -954,11 +1088,29 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
 
   const isMercedes = normalizeText(providerMake ?? "").includes("mercedes");
 
-  if (possibleVariantFromModel) {
-    const trimNorm = normalizeText(providerTrim ?? "");
-    const looksLikeCompactAmg = isMercedes && /^amg\s+[a-z]{2,6}\d{2,3}$/.test(trimNorm.replace(/\s+/g, ""));
-    if (!providerTrim || looksLikeCompactAmg) {
-      providerTrim = possibleVariantFromModel;
+  if (isMercedes && providerModel) {
+    const providerModelCompact = String(providerModel).trim().replace(/\s+/g, " ");
+    const modelLooksLikeTrim = /\bAMG\b/i.test(providerModelCompact) && /\b\d{2,3}\b/.test(providerModelCompact);
+
+    const trimCompactToken = String(providerTrim ?? "")
+      .trim()
+      .replace(/\s+/g, "")
+      .toLowerCase();
+
+    const trimLooksCompactMercedesToken = !!trimCompactToken && /^amg[a-z]{1,4}\d{2,3}[a-z0-9]{0,3}$/.test(trimCompactToken);
+
+    if (modelLooksLikeTrim) {
+      const derivedBase = deriveMercedesBaseModelNameFromTrimLikeModel(providerModelCompact);
+      if (derivedBase) {
+        providerModel = derivedBase;
+        if (!providerTrim || trimLooksCompactMercedesToken) {
+          providerTrim = providerModelCompact;
+        }
+      } else {
+        if (!providerTrim || trimLooksCompactMercedesToken) {
+          providerTrim = providerModelCompact;
+        }
+      }
     }
   }
 
@@ -1126,7 +1278,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const providerMake = extracted.providerMake;
     const providerModel = extracted.providerModel;
-    const providerTrim = extracted.providerTrim;
+    let providerTrim = extracted.providerTrim;
 
     const providerModelFirstPart =
       providerModel && /[,;/|]/.test(providerModel) ? providerModel.split(/[,;/|]+/g)[0]?.trim() : null;
@@ -1181,6 +1333,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error("resolve_make_id error", { vin: maskVin(vin) });
       } else {
         make_id = (makeId as string | null) ?? null;
+      }
+    }
+
+    if (!make_id && providerMake) {
+      const createdMakeId = await createMake({ supabaseAdmin, providerMake });
+      if (createdMakeId) {
+        make_id = createdMakeId;
+        await insertMakeAlias({
+          supabaseAdmin,
+          makeId: createdMakeId,
+          alias: String(providerMake).trim().replace(/\s+/g, " "),
+          normalizedAlias: normalizeText(String(providerMake).trim().replace(/\s+/g, " ")),
+        });
       }
     }
 
@@ -1264,6 +1429,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (resolved) {
           model_id = resolved;
           break;
+        }
+      }
+    }
+
+    if (!model_id) {
+      const seedModelName = providerModelForResolve ? pickSeedBaseModelName({ providerModel: providerModelForResolve, providerTrim }) : null;
+
+      if (seedModelName) {
+        const createdModelId = await createModel({ supabaseAdmin, makeId: make_id, providerModel: seedModelName });
+        if (createdModelId) {
+          model_id = createdModelId;
+
+          const providerModelClean = String(providerModelForResolve ?? "").trim().replace(/\s+/g, " ");
+          if (providerModelClean) {
+            await insertModelAlias({
+              supabaseAdmin,
+              makeId: make_id,
+              modelId: createdModelId,
+              alias: providerModelClean,
+              normalizedAlias: normalizeText(providerModelClean),
+            });
+          }
+
+          if (seedModelName && normalizeText(seedModelName) !== normalizeText(providerModelClean)) {
+            await insertModelAlias({
+              supabaseAdmin,
+              makeId: make_id,
+              modelId: createdModelId,
+              alias: seedModelName,
+              normalizedAlias: normalizeText(seedModelName),
+            });
+          }
+
+          if (!providerTrim && providerModelForResolve) {
+            const maybeTrim = String(providerModelForResolve).trim().replace(/\s+/g, " ");
+            if (maybeTrim && normalizeText(maybeTrim) !== normalizeText(seedModelName) && !isLikelyJunkVariant(maybeTrim)) {
+              providerTrim = maybeTrim;
+            }
+          }
         }
       }
     }
@@ -1460,8 +1664,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (cachedNormalized && successFresh && normalizedUseful) {
+      const cachedPayload = cachedNormalized as unknown as NormalizedVinPayload;
+
       return res.status(200).json({
-        ...(cachedNormalized as unknown as NormalizedVinPayload),
+        ...cachedPayload,
+        provider_trim: normalizeProviderTrimForResponse({
+          providerMake: cachedPayload.provider_make ?? null,
+          providerTrim: cachedPayload.provider_trim ?? null,
+        }),
         vin,
         cached: true,
       });

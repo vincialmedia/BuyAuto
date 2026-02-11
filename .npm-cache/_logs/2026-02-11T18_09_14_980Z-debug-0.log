@@ -1,0 +1,23 @@
+0 verbose cli /usr/local/bin/node /usr/local/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.9.4
+2 info using node@v22.21.1
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/app/.npmrc
+5 silly config load:file:/home/softgen/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm exec supabase login --token sbp_oauth_f2011bcd439e2f8cab560654eb3b2191d52104cb
+8 verbose argv "exec" "--" "supabase" "login" "--token" "sbp_oauth_f2011bcd439e2f8cab560654eb3b2191d52104cb"
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-02-11T18_09_14_980Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-02-11T18_09_14_980Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+14 http fetch GET 200 https://registry.npmjs.org/supabase 92ms (cache revalidated)
+15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+16 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+17 verbose cwd /app
+18 verbose os Linux 6.8.0-90-generic
+19 verbose node v22.21.1
+20 verbose npm  v10.9.4
+21 verbose exit 0
+22 info ok
