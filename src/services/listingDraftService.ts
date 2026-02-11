@@ -24,24 +24,55 @@ const coerceDraft = (row: ListingDraftRow): ListingDraft => {
   };
 };
 
+function isUnknownColumnError(err: unknown, column: string): boolean {
+  const msg = String((err as any)?.message ?? "");
+  const lower = msg.toLowerCase();
+  const c = column.toLowerCase();
+  return lower.includes(`could not find the '${c}' column`) || lower.includes(`"${c}"`) || lower.includes(`'${c}'`);
+}
+
+function buildDraftWriteColumns(data: Partial<ListingData>): Record<string, unknown> {
+  const anyData = data as any;
+
+  return {
+    make_id: anyData?.make_id ?? null,
+    model_id: anyData?.model_id ?? null,
+    variant_id: anyData?.variant_id ?? null,
+    variant_text: typeof anyData?.variant_text === "string" ? anyData.variant_text : null,
+    catalog_confidence: typeof anyData?.catalog_confidence === "string" ? anyData.catalog_confidence : null,
+    catalog_needs_review: typeof anyData?.catalog_needs_review === "boolean" ? anyData.catalog_needs_review : false,
+  };
+}
+
 export const createListingDraft = async (params: {
   user: User;
   data: Partial<ListingData>;
 }): Promise<ListingDraft> => {
   const { user, data } = params;
 
-  const { data: created, error } = await supabase
-    .from("listing_drafts")
-    .insert({
+  const basePayload: Record<string, unknown> = {
+    user_id: user.id,
+    data,
+    ...buildDraftWriteColumns(data),
+    updated_at: new Date().toISOString(),
+  };
+
+  let { data: created, error } = await supabase.from("listing_drafts").insert(basePayload as any).select("*").single();
+
+  if (error && (isUnknownColumnError(error, "variant_text") || isUnknownColumnError(error, "catalog_confidence") || isUnknownColumnError(error, "catalog_needs_review"))) {
+    const fallbackPayload: Record<string, unknown> = {
       user_id: user.id,
       data,
       make_id: (data as any)?.make_id ?? null,
       model_id: (data as any)?.model_id ?? null,
       variant_id: (data as any)?.variant_id ?? null,
       updated_at: new Date().toISOString(),
-    })
-    .select("*")
-    .single();
+    };
+
+    const retry = await supabase.from("listing_drafts").insert(fallbackPayload as any).select("*").single();
+    created = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     throw error;
@@ -57,19 +88,40 @@ export const updateListingDraft = async (params: {
 }): Promise<ListingDraft> => {
   const { user, draftId, data } = params;
 
-  const { data: updated, error } = await supabase
+  const basePayload: Record<string, unknown> = {
+    data,
+    ...buildDraftWriteColumns(data),
+    updated_at: new Date().toISOString(),
+  };
+
+  let { data: updated, error } = await supabase
     .from("listing_drafts")
-    .update({
+    .update(basePayload as any)
+    .eq("id", draftId)
+    .eq("user_id", user.id)
+    .select("*")
+    .single();
+
+  if (error && (isUnknownColumnError(error, "variant_text") || isUnknownColumnError(error, "catalog_confidence") || isUnknownColumnError(error, "catalog_needs_review"))) {
+    const fallbackPayload: Record<string, unknown> = {
       data,
       make_id: (data as any)?.make_id ?? null,
       model_id: (data as any)?.model_id ?? null,
       variant_id: (data as any)?.variant_id ?? null,
       updated_at: new Date().toISOString(),
-    })
-    .eq("id", draftId)
-    .eq("user_id", user.id)
-    .select("*")
-    .single();
+    };
+
+    const retry = await supabase
+      .from("listing_drafts")
+      .update(fallbackPayload as any)
+      .eq("id", draftId)
+      .eq("user_id", user.id)
+      .select("*")
+      .single();
+
+    updated = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     throw error;

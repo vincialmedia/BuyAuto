@@ -63,6 +63,10 @@ type VinDecodeResponse = {
   model_id: string | null;
   variant_id: string | null;
 
+  variant_text?: string | null;
+  catalog_confidence?: "high" | "medium" | "low" | null;
+  catalog_needs_review?: boolean | null;
+
   year?: number | null;
   fuel?: string | null;
   transmission?: string | null;
@@ -107,6 +111,9 @@ export function Step1Form() {
       : "idle"
   );
   const [vinError, setVinError] = useState<string | null>(null);
+  const [vinMappingComplete, setVinMappingComplete] = useState<boolean>(
+    Boolean(typeof (data as any)?.vin === "string" && (data as any)?.make_id && (data as any)?.model_id)
+  );
 
   const [makes, setMakes] = useState<CanonicalOption[]>([]);
   const [models, setModels] = useState<CanonicalOption[]>([]);
@@ -173,7 +180,7 @@ export function Step1Form() {
   const selectedVariant = useMemo(() => variants.find((v) => v.id === watch("variant_id")) ?? null, [variants, watch]);
 
   const isVinReady = vinStatus === "success";
-  const fieldsDisabled = !isVinReady;
+  const fieldsDisabled = false;
 
   useEffect(() => {
     const loadMakes = async () => {
@@ -420,6 +427,9 @@ export function Step1Form() {
         provider_make: json?.provider_make ?? null,
         provider_model: json?.provider_model ?? null,
         provider_trim: json?.provider_trim ?? null,
+        variant_text: json?.variant_text ?? null,
+        catalog_confidence: json?.catalog_confidence ?? null,
+        catalog_needs_review: json?.catalog_needs_review ?? null,
       };
 
       if (!resp.ok) {
@@ -441,19 +451,23 @@ export function Step1Form() {
 
       applyVinAutofill(json, vin);
 
-      const canUnlock = Boolean(json.make_id) && Boolean(json.model_id);
+      const canAutofillMakeModel = Boolean(json.make_id) && Boolean(json.model_id);
+      setVinMappingComplete(canAutofillMakeModel);
 
-      setVinStatus(canUnlock ? "success" : "error");
+      setVinStatus("success");
       setVinError(null);
 
       toast({
-        title: "Fahrzeugdaten geladen",
+        title: "VIN-Daten geladen",
         description: json.cached ? "VIN-Daten aus dem Cache geladen." : "VIN-Daten erfolgreich geladen.",
       });
 
-      if (!canUnlock) {
-        setVinError("Die VIN konnte nicht eindeutig auf Marke/Modell gemappt werden. Bitte kontaktiere den Support.");
-        return;
+      if (!json.make_id || !json.model_id) {
+        toast({
+          title: "Bitte prüfen",
+          description: "Marke/Modell konnten nicht eindeutig bestimmt werden. Bitte wähle sie manuell aus.",
+          variant: "destructive",
+        });
       }
 
       if (!json.variant_id) {
@@ -491,6 +505,9 @@ export function Step1Form() {
         provider_make: (data as any)?.provider_make ?? null,
         provider_model: (data as any)?.provider_model ?? null,
         provider_trim: (data as any)?.provider_trim ?? null,
+        variant_text: (data as any)?.variant_text ?? null,
+        catalog_confidence: (data as any)?.catalog_confidence ?? null,
+        catalog_needs_review: (data as any)?.catalog_needs_review ?? null,
         brand: makeName || (data as any)?.brand,
         model: modelName || (data as any)?.model,
         title,
@@ -520,19 +537,10 @@ export function Step1Form() {
 
     if (profileLoading) return;
 
-    if (vinStatus !== "success") {
-      toast({
-        title: "VIN erforderlich",
-        description: "Bitte zuerst die VIN eingeben und „Daten laden“ klicken.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!values.vin || !/^[A-Z0-9]{17}$/.test(values.vin)) {
       toast({
         title: "Ungültige VIN",
-        description: "Bitte lade die Fahrzeugdaten erneut über die VIN.",
+        description: "Bitte gib eine gültige VIN ein (17 Zeichen).",
         variant: "destructive",
       });
       return;
@@ -716,7 +724,7 @@ export function Step1Form() {
     return <div className="text-sm text-neutral-600">Lade Profil...</div>;
   }
 
-  const canProceed = isVinReady && Boolean(watch("make_id")) && Boolean(watch("model_id")) && Boolean(watch("variant_id"));
+  const canProceed = Boolean(watch("vin")) && Boolean(watch("make_id")) && Boolean(watch("model_id")) && Boolean(watch("variant_id"));
 
   return (
     <div className="space-y-8">
@@ -763,7 +771,7 @@ export function Step1Form() {
           loadingModels={loadingModels}
           loadingVariants={loadingVariants}
           disableAllFields={fieldsDisabled}
-          lockMakeModel={isVinReady}
+          lockMakeModel={vinMappingComplete}
         />
 
         <div className="flex items-center justify-between pt-2">
@@ -777,7 +785,7 @@ export function Step1Form() {
 
         {!canProceed ? (
           <div className="text-sm text-neutral-600">
-            {isVinReady ? "Bitte wähle eine Variante aus, bevor du weitergehst." : "Bitte zuerst VIN eingeben und Daten laden."}
+            Bitte fülle VIN, Marke, Modell und Variante aus, bevor du weitergehst.
           </div>
         ) : null}
       </form>
