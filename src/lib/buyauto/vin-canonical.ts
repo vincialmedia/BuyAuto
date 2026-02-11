@@ -26,8 +26,26 @@ export function normalizeVehicleWords(input: string): string {
   return s.replace(/[^a-z0-9.]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function normalizeWhitespacePreserveCase(input: string): string {
+  const s = toAsciiComparable(input).trim();
+  return s.replace(/[^A-Za-z0-9.]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function cleanCanonicalName(input: string): string {
   return String(input ?? "").trim().replace(/\s+/g, " ");
+}
+
+function titleCaseWords(input: string): string {
+  const s = cleanCanonicalName(input);
+  if (!s) return s;
+  return s
+    .split(" ")
+    .map((w) => {
+      if (!w) return w;
+      if (w.toUpperCase() === w && /[A-Z]/.test(w)) return w;
+      return w.slice(0, 1).toUpperCase() + w.slice(1).toLowerCase();
+    })
+    .join(" ");
 }
 
 export function canonicalizeMakeText(rawMake: string): { canonicalName: string; normalizedKey: string; rawKey: string } {
@@ -50,7 +68,7 @@ export function canonicalizeMakeText(rawMake: string): { canonicalName: string; 
         ? "Mercedes-Benz"
         : mappedKey === "alfaromeo"
           ? "Alfa Romeo"
-          : raw;
+          : titleCaseWords(raw);
 
   return { canonicalName, normalizedKey: mappedKey, rawKey };
 }
@@ -59,22 +77,28 @@ const TRIM_TOKENS = new Set(
   [
     "amg",
     "msport",
+    "m sport",
     "m",
     "rs",
     "sline",
+    "s line",
     "rline",
+    "r line",
     "gti",
     "gtd",
     "st",
     "cupra",
     "typer",
+    "type r",
     "nline",
+    "n line",
     "performance",
     "edition",
     "premium",
     "sport",
     "line",
     "pack",
+    "long range",
     "long",
     "range",
     "plaid",
@@ -132,12 +156,12 @@ export function isTrimLikeModelString(rawModel: string): boolean {
   if (matchesEnginePatterns(raw)) return true;
 
   const words = normalizeVehicleWords(raw);
-  const compactTokens = words.split(" ").map((t) => normalizeVehicleKey(t)).filter(Boolean);
+  const tokens = words.split(" ").map((t) => normalizeVehicleKey(t)).filter(Boolean);
 
-  const hasLongRange = compactTokens.includes("long") && compactTokens.includes("range");
+  const hasLongRange = tokens.includes("long") && tokens.includes("range");
   if (hasLongRange) return true;
 
-  for (const token of compactTokens) {
+  for (const token of tokens) {
     if (!token) continue;
 
     if (DRIVE_TOKENS.has(token)) return true;
@@ -145,7 +169,6 @@ export function isTrimLikeModelString(rawModel: string): boolean {
     if (TRIM_TOKENS.has(token)) return true;
 
     if (/^\d{3}[a-z]{0,2}$/i.test(token)) return true;
-
     if (/^\d{1,2}[a-z]{1,3}$/i.test(token) && /\d/.test(token)) return true;
   }
 
@@ -163,15 +186,42 @@ function formatFamilyToken(token: string): string {
     return lettersUpper;
   }
 
-  if (/^[a-z]{1,4}$/i.test(t)) return t.toUpperCase();
+  if (/^[a-z]{1,5}$/i.test(t)) return t.toUpperCase();
 
-  return t.slice(0, 1).toUpperCase() + t.slice(1).toLowerCase();
+  return t.slice(0, 1).toUpperCase() + t.slice(1);
 }
 
-function tokenizeModel(rawModel: string): string[] {
-  const s = normalizeVehicleWords(rawModel);
-  const tokens = s.match(/[a-z]+|\d+(?:\.\d+)?/gi);
-  return (tokens ?? []).map((t) => t.trim()).filter(Boolean);
+type Tokenization = {
+  displayTokens: string[];
+  comparableTokens: string[];
+};
+
+function tokenizeAligned(rawModel: string): Tokenization {
+  const display = normalizeWhitespacePreserveCase(rawModel);
+  const comparable = normalizeVehicleWords(rawModel);
+
+  const displayTokens = display ? display.split(" ").map((t) => t.trim()).filter(Boolean) : [];
+  const comparableTokens = comparable ? comparable.split(" ").map((t) => t.trim()).filter(Boolean) : [];
+
+  if (displayTokens.length === comparableTokens.length) {
+    return { displayTokens, comparableTokens };
+  }
+
+  const raw = String(rawModel ?? "").trim().replace(/\s+/g, " ");
+  const rawTokens = raw.split(" ").map((t) => t.trim()).filter(Boolean);
+  const rawComparableTokens = normalizeVehicleWords(raw).split(" ").filter(Boolean);
+
+  if (rawTokens.length === rawComparableTokens.length) {
+    return { displayTokens: rawTokens, comparableTokens: rawComparableTokens };
+  }
+
+  return { displayTokens, comparableTokens };
+}
+
+function startsWithAlphabeticFamilyToken(comparableTokens: string[]): boolean {
+  const first = String(comparableTokens?.[0] ?? "").trim();
+  if (!first) return false;
+  return /^[a-z]/i.test(first);
 }
 
 function deriveMercedesFamily(rawModel: string): { family: string; stripPrefixTokens: number } | null {
@@ -197,14 +247,17 @@ function deriveMercedesFamily(rawModel: string): { family: string; stripPrefixTo
 
 function deriveBmwFamily(rawModel: string): { family: string } | null {
   const raw = toAsciiComparable(rawModel).trim().toUpperCase().replace(/\s+/g, " ");
-  const m = raw.match(/^(\d)\d{2}[A-Z]{0,2}\b/);
-  if (!m?.[1]) return null;
 
-  const series = m[1];
-  return { family: `${series} Series` };
+  const mSeries = raw.match(/^(\d)\d{2}[A-Z]{0,2}\b/);
+  if (mSeries?.[1]) return { family: `${mSeries[1]} Series` };
+
+  const mEr = raw.match(/^(\d)\s?ER\b/);
+  if (mEr?.[1]) return { family: `${mEr[1]} Series` };
+
+  return null;
 }
 
-function isStopToken(token: string): boolean {
+function isStopTokenComparable(token: string): boolean {
   const key = normalizeVehicleKey(token);
 
   if (TRIM_TOKENS.has(key)) return true;
@@ -228,7 +281,7 @@ export function deriveModelFamily(params: {
   catalogConfidence: CatalogConfidence;
   catalogNeedsReview: boolean;
 } {
-  const raw = String(params.rawModel ?? "").trim();
+  const raw = String(params.rawModel ?? "").trim().replace(/\s+/g, " ");
   if (!raw) {
     return {
       familyName: null,
@@ -239,17 +292,22 @@ export function deriveModelFamily(params: {
   }
 
   const makeKey = normalizeVehicleKey(params.providerMake ?? "");
+  const { displayTokens, comparableTokens } = tokenizeAligned(raw);
 
   if (makeKey.includes("mercedes")) {
     const mer = deriveMercedesFamily(raw);
     if (mer) {
-      const tokens = tokenizeModel(raw);
-      const remainder = tokens.slice(mer.stripPrefixTokens).join(" ").trim();
+      let strip = mer.stripPrefixTokens;
+
+      const next = displayTokens[strip] ? normalizeVehicleKey(displayTokens[strip]) : "";
+      if (next === "klasse" || next === "class") strip = Math.min(displayTokens.length, strip + 1);
+
+      const remainder = displayTokens.slice(strip).join(" ").trim();
       return {
         familyName: mer.family,
         variantText: remainder || null,
         catalogConfidence: remainder ? "medium" : "high",
-        catalogNeedsReview: Boolean(remainder),
+        catalogNeedsReview: Boolean(remainder) ? true : false,
       };
     }
   }
@@ -257,20 +315,31 @@ export function deriveModelFamily(params: {
   if (makeKey === "bmw") {
     const bmw = deriveBmwFamily(raw);
     if (bmw) {
+      const display = normalizeWhitespacePreserveCase(raw);
       return {
         familyName: bmw.family,
-        variantText: raw,
+        variantText: display || raw,
         catalogConfidence: "medium",
         catalogNeedsReview: true,
       };
     }
   }
 
-  const tokens = tokenizeModel(raw);
-  if (!tokens.length) {
+  if (!displayTokens.length || !comparableTokens.length) {
+    const display = normalizeWhitespacePreserveCase(raw);
     return {
       familyName: null,
-      variantText: raw,
+      variantText: display || raw,
+      catalogConfidence: "low",
+      catalogNeedsReview: true,
+    };
+  }
+
+  if (!startsWithAlphabeticFamilyToken(comparableTokens)) {
+    const display = normalizeWhitespacePreserveCase(raw);
+    return {
+      familyName: null,
+      variantText: display || raw,
       catalogConfidence: "low",
       catalogNeedsReview: true,
     };
@@ -279,10 +348,10 @@ export function deriveModelFamily(params: {
   const family: string[] = [];
   let stopAt = 0;
 
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
+  for (let i = 0; i < comparableTokens.length; i++) {
+    const token = comparableTokens[i];
     const tokenKey = normalizeVehicleKey(token);
-    const next = tokens[i + 1];
+    const next = comparableTokens[i + 1];
     const nextKey = next ? normalizeVehicleKey(next) : "";
 
     if (tokenKey === "long" && nextKey === "range") {
@@ -290,39 +359,22 @@ export function deriveModelFamily(params: {
       break;
     }
 
-    if (family.length > 0 && isStopToken(token)) {
+    if (family.length > 0 && isStopTokenComparable(token)) {
       stopAt = i;
       break;
     }
 
-    if (family.length === 0) {
-      if (/^\d+(\.\d+)?$/.test(token)) {
-        return {
-          familyName: null,
-          variantText: raw,
-          catalogConfidence: "low",
-          catalogNeedsReview: true,
-        };
-      }
-    }
-
-    if (family.length === 1 && normalizeVehicleKey(family[0]) === "model" && /^\d$/.test(token)) {
-      family.push(token);
-      stopAt = i + 1;
-      continue;
-    }
-
-    family.push(token);
+    family.push(displayTokens[i] ?? token);
     stopAt = i + 1;
 
     if (family.length >= 3) break;
   }
 
   const familyName = family.map(formatFamilyToken).join(" ").trim();
-  const remainder = tokens.slice(stopAt).join(" ").trim();
+  const remainder = displayTokens.slice(stopAt).join(" ").trim();
 
   const trimLike = isTrimLikeModelString(raw);
-  const needsReview = trimLike && Boolean(remainder);
+  const needsReview = trimLike;
 
   return {
     familyName: familyName || null,

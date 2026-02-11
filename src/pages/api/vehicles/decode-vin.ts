@@ -170,7 +170,7 @@ async function createMake(params: { supabaseAdmin: SupabaseDbClient; providerMak
   const { supabaseAdmin, providerMake } = params;
 
   const cleanName = String(providerMake).trim().replace(/\s+/g, " ");
-  const normalized_name = normalizeText(cleanName);
+  const normalized_name = normalizeVehicleKey(cleanName);
   const nowIso = new Date().toISOString();
 
   const primary = await supabaseAdmin
@@ -268,7 +268,7 @@ async function createModel(params: { supabaseAdmin: SupabaseDbClient; makeId: st
   const { supabaseAdmin, makeId, providerModel } = params;
 
   const cleanName = String(providerModel).trim().replace(/\s+/g, " ");
-  const normalized_name = normalizeText(cleanName);
+  const normalized_name = normalizeVehicleKey(cleanName);
   const nowIso = new Date().toISOString();
 
   const primary = await supabaseAdmin
@@ -1048,7 +1048,7 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
   const fuelFromMap = mapGet(decodeMap, ["Fuel Type - Primary", "Fuel Type", "Fuel", "Engine Fuel", "Fuel type"]);
   const transmissionFromMap = mapGet(decodeMap, ["Transmission", "Gearbox", "Transmission Type"]);
   const bodyFromMap = mapGet(decodeMap, ["Body", "Body Type", "Body Style", "Vehicle Type"]);
-  const drivetrainFromMap = mapGet(decodeMap, ["Drive", "Drivetrain", "Drive Type", "Wheel Drive", "Driven Wheels"]);
+  const drivetrainFromMap = mapGet(decodeMap, ["Drivetrain", "Drive", "Drive Type", "Wheel Drive", "Driven Wheels"]);
   const hpFromMapText = mapGet(decodeMap, ["Engine Power (HP)", "Engine Power HP", "Power (HP)", "Power HP", "HP", "Horsepower"]);
   const firstRegFromMap = mapGet(decodeMap, ["Made", "First Registration", "Registration Date", "First Registered", "Date of first registration"]);
 
@@ -1167,8 +1167,6 @@ function extractProviderFields(decoded: JsonObject): ProviderExtract {
 function hasUsefulNormalizedData(payload: unknown): boolean {
   if (!payload || typeof payload !== "object") return false;
   const p = payload as Record<string, unknown>;
-
-  if (!p["make_id"]) return false;
 
   const keys: Array<keyof NormalizedVinPayload> = [
     "make_id",
@@ -1293,12 +1291,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const providerMakeRaw = extracted.providerMake;
     const providerModel = extracted.providerModel;
-    const providerTrim = extracted.providerTrim;
+    let providerTrim = extracted.providerTrim;
 
     const makeCanon = providerMakeRaw ? canonicalizeMakeText(providerMakeRaw) : null;
     const providerMake = makeCanon?.canonicalName ?? providerMakeRaw;
     const makeAliasKey = makeCanon?.rawKey ?? (providerMakeRaw ? normalizeVehicleKey(providerMakeRaw) : "");
     const makeKey = makeCanon?.normalizedKey ?? (providerMakeRaw ? normalizeVehicleKey(providerMakeRaw) : "");
+
+    let make_id: string | null = null;
+    let model_id: string | null = null;
+    let variant_id: string | null = null;
 
     const providerModelFirstPart =
       providerModel && /[,;/|]/.test(providerModel) ? providerModel.split(/[,;/|]+/g)[0]?.trim() : null;
@@ -1311,150 +1313,151 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let modelFamilyName: string | null =
       typeof providerModelForResolve === "string" && providerModelForResolve.trim().length > 0 ? providerModelForResolve.trim() : null;
 
-    if (modelFamilyName && isTrimLikeModelString(modelFamilyName)) {
+    const rawModelForFamily = modelFamilyName;
+    let modelDerivedFromTrimLike = false;
+
+    if (modelFamilyName) {
       const derived = deriveModelFamily({ rawModel: modelFamilyName, providerMake: providerMake ?? null });
-      modelFamilyName = derived.familyName;
-      variant_text = derived.variantText;
-      catalog_confidence = derived.catalogConfidence;
-      catalog_needs_review = derived.catalogNeedsReview;
+
+      if (isTrimLikeModelString(modelFamilyName)) {
+        modelFamilyName = derived.familyName;
+        variant_text = derived.variantText ?? null;
+
+        catalog_confidence = derived.catalogConfidence;
+        catalog_needs_review = true;
+        modelDerivedFromTrimLike = true;
+
+        if (!modelFamilyName) {
+          variant_text = variant_text ?? rawModelForFamily ?? null;
+        }
+      } else {
+        modelFamilyName = derived.familyName ?? modelFamilyName;
+      }
     }
 
     if ((!modelFamilyName || modelFamilyName.trim().length < 2) && providerTrim && isTrimLikeModelString(providerTrim)) {
       const derived = deriveModelFamily({ rawModel: providerTrim, providerMake: providerMake ?? null });
+
       if (!modelFamilyName && derived.familyName) {
         modelFamilyName = derived.familyName;
       }
-      variant_text = derived.variantText ?? providerTrim;
+
+      if (!variant_text) variant_text = derived.variantText ?? providerTrim;
       catalog_confidence = derived.catalogConfidence;
       catalog_needs_review = true;
+      modelDerivedFromTrimLike = true;
+    }
+
+    if (providerTrim) {
+      providerTrim = normalizeProviderTrimForResponse({ providerMake: providerMake ?? null, providerTrim }) ?? providerTrim;
     }
 
     if (!variant_text && providerTrim && !isLikelyJunkVariant(providerTrim)) {
       variant_text = providerTrim.trim();
     }
 
-    const hasAnyUseful =
-      !!providerMake ||
-      !!providerModel ||
-      !!providerTrim ||
-      !!variant_text ||
-      year != null ||
-      !!fuel ||
-      !!transmission ||
-      !!drivetrain ||
-      !!body_type ||
-      power_hp != null ||
-      !!first_registration;
+    if (makeKey) {
+      const aliasAttempt = await supabaseAdmin
+        .from("vehicle_aliases")
+        .select("make_id")
+        .eq("entity_type", "make")
+        .eq("normalized_alias", makeAliasKey || makeKey)
+        .maybeSingle();
 
-    if (!hasAnyUseful) {
-      const errMsg = "Vincario decode returned no usable fields";
-      console.error("Vincario decode empty", { vin: maskVin(vin) });
+      make_id = (aliasAttempt.data?.make_id as string | null) ?? null;
 
-      await supabaseAdmin
-        .from("vin_cache")
-        .upsert(
-          {
-            vin,
-            status: "failed",
-            provider: "vincario",
-            decoded_payload: decoded as unknown as SupabaseJson,
-            normalized_payload: null,
-            make_id: null,
-            model_id: null,
-            variant_id: null,
-            error_message: errMsg,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "vin" }
-        );
-
-      return { ok: false as const, status: 502, error: errMsg };
-    }
-
-    let make_id: string | null = null;
-    let model_id: string | null = null;
-    let variant_id: string | null = null;
-
-    if (providerMake) {
-      const { data: makeId, error: makeErr } = await supabaseAdmin.rpc("resolve_make_id", {
-        p_make_text: providerMake,
-      });
-      if (makeErr) {
-        console.error("resolve_make_id error", { vin: maskVin(vin) });
-      } else {
-        make_id = (makeId as string | null) ?? null;
+      if (!make_id) {
+        const { data: existingMake } = await supabaseAdmin.from("makes").select("id").eq("normalized_name", makeKey).maybeSingle();
+        make_id = (existingMake?.id as string | null) ?? null;
       }
-    }
 
-    if (!make_id && providerMake) {
-      const createdMakeId = await createMake({ supabaseAdmin, providerMake });
-      if (createdMakeId) {
-        make_id = createdMakeId;
+      if (!make_id && providerMake) {
+        make_id = await createMake({ supabaseAdmin, providerMake });
+      }
 
-        const aliasRaw = String(providerMakeRaw ?? providerMake).trim().replace(/\s+/g, " ");
-        const canonicalRaw = String(providerMake).trim().replace(/\s+/g, " ");
-
-        if (aliasRaw) {
-          await insertMakeAlias({
-            supabaseAdmin,
-            makeId: createdMakeId,
-            alias: aliasRaw,
-            normalizedAlias: makeAliasKey || normalizeVehicleKey(aliasRaw),
-          });
+      if (make_id) {
+        if (providerMakeRaw && makeAliasKey) {
+          await insertMakeAlias({ supabaseAdmin, makeId: make_id, alias: providerMakeRaw, normalizedAlias: makeAliasKey });
         }
-
-        if (canonicalRaw && normalizeVehicleKey(canonicalRaw) !== normalizeVehicleKey(aliasRaw)) {
-          await insertMakeAlias({
-            supabaseAdmin,
-            makeId: createdMakeId,
-            alias: canonicalRaw,
-            normalizedAlias: makeKey || normalizeVehicleKey(canonicalRaw),
-          });
+        if (providerMake && makeKey && makeKey !== makeAliasKey) {
+          await insertMakeAlias({ supabaseAdmin, makeId: make_id, alias: providerMake, normalizedAlias: makeKey });
         }
       }
     }
 
     if (make_id && modelFamilyName && modelFamilyName.trim().length >= 2) {
-      const { data: modelId, error: modelErr } = await supabaseAdmin.rpc("resolve_model_id", {
-        p_make_id: make_id,
-        p_model_text: modelFamilyName,
-      });
+      const modelKey = normalizeVehicleKey(modelFamilyName);
 
-      if (modelErr) {
-        console.error("resolve_model_id error", { vin: maskVin(vin) });
-      } else {
-        model_id = (modelId as string | null) ?? null;
+      const aliasAttempt = await supabaseAdmin
+        .from("vehicle_aliases")
+        .select("model_id")
+        .eq("entity_type", "model")
+        .eq("make_id", make_id)
+        .eq("normalized_alias", modelKey)
+        .maybeSingle();
+
+      model_id = (aliasAttempt.data?.model_id as string | null) ?? null;
+
+      if (!model_id) {
+        const { data: existingModel } = await supabaseAdmin
+          .from("models")
+          .select("id")
+          .eq("make_id", make_id)
+          .eq("normalized_name", modelKey)
+          .maybeSingle();
+
+        model_id = (existingModel?.id as string | null) ?? null;
       }
 
       if (!model_id) {
-        const createdModelId = await createModel({ supabaseAdmin, makeId: make_id, providerModel: modelFamilyName });
-        if (createdModelId) {
-          model_id = createdModelId;
+        model_id = await createModel({ supabaseAdmin, makeId: make_id, providerModel: modelFamilyName });
+      }
 
-          const aliasModel = String(modelFamilyName).trim().replace(/\s+/g, " ");
-          if (aliasModel) {
+      if (model_id) {
+        await insertModelAlias({ supabaseAdmin, makeId: make_id, modelId: model_id, alias: modelFamilyName, normalizedAlias: modelKey });
+
+        if (modelDerivedFromTrimLike && providerModelForResolve) {
+          const rawKey = normalizeVehicleKey(providerModelForResolve);
+          if (rawKey && rawKey !== modelKey) {
             await insertModelAlias({
               supabaseAdmin,
               makeId: make_id,
-              modelId: createdModelId,
-              alias: aliasModel,
-              normalizedAlias: normalizeVehicleKey(aliasModel),
+              modelId: model_id,
+              alias: providerModelForResolve,
+              normalizedAlias: rawKey,
             });
           }
-        } else {
-          catalog_confidence = "low";
-          catalog_needs_review = true;
         }
+      }
+    } else {
+      if (rawModelForFamily && isTrimLikeModelString(rawModelForFamily)) {
+        catalog_needs_review = true;
+        catalog_confidence = "low";
       }
     }
 
-    const variantCandidate =
-      variant_text && !isLikelyJunkVariant(variant_text) ? variant_text : providerTrim && !isLikelyJunkVariant(providerTrim) ? providerTrim : null;
+    const canonicalVariantCandidate = (() => {
+      const remainder = variant_text && !isLikelyJunkVariant(variant_text) ? variant_text.trim() : null;
 
-    if (model_id && variantCandidate) {
+      if (modelDerivedFromTrimLike && providerModelForResolve && !isLikelyJunkVariant(providerModelForResolve)) {
+        return providerModelForResolve.trim().replace(/\s+/g, " ");
+      }
+
+      if (modelFamilyName && remainder) {
+        const fam = modelFamilyName.trim().replace(/\s+/g, " ");
+        if (remainder.toLowerCase().startsWith(fam.toLowerCase() + " ")) return remainder;
+        return `${fam} ${remainder}`.trim();
+      }
+
+      if (providerTrim && !isLikelyJunkVariant(providerTrim)) return providerTrim.trim().replace(/\s+/g, " ");
+
+      return remainder;
+    })();
+
+    if (model_id && canonicalVariantCandidate && !isLikelyJunkVariant(canonicalVariantCandidate)) {
       const { data: resolvedVariantId, error: vErr } = await supabaseAdmin.rpc("resolve_variant_id", {
         p_model_id: model_id,
-        p_variant_text: variantCandidate,
+        p_variant_text: canonicalVariantCandidate,
       });
 
       if (vErr) {
@@ -1464,8 +1467,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (model_id && variantCandidate && !variant_id) {
-      const cleanName = String(variantCandidate).trim().replace(/\s+/g, " ");
+    if (model_id && canonicalVariantCandidate && !variant_id && !isLikelyJunkVariant(canonicalVariantCandidate)) {
+      const cleanName = String(canonicalVariantCandidate).trim().replace(/\s+/g, " ");
       const normalized_name = normalizeVehicleKey(cleanName);
       const nowIso = new Date().toISOString();
 
@@ -1484,11 +1487,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (!insertErr && insertedVariant?.id) {
         variant_id = insertedVariant.id as string;
+      } else if (insertErr) {
+        console.error("variants insert failed", { message: insertErr.message });
       }
     }
 
-    if (variant_id && model_id && variantCandidate) {
-      const cleanName = String(variantCandidate).trim().replace(/\s+/g, " ");
+    if (variant_id && model_id && canonicalVariantCandidate) {
+      const cleanName = String(canonicalVariantCandidate).trim().replace(/\s+/g, " ");
       await supabaseAdmin.from("vehicle_aliases").upsert(
         {
           entity_type: "variant",
