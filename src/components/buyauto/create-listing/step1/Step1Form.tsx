@@ -111,9 +111,6 @@ export function Step1Form() {
       : "idle"
   );
   const [vinError, setVinError] = useState<string | null>(null);
-  const [vinMappingComplete, setVinMappingComplete] = useState<boolean>(
-    Boolean(typeof (data as any)?.vin === "string" && (data as any)?.make_id && (data as any)?.model_id)
-  );
 
   const [makes, setMakes] = useState<CanonicalOption[]>([]);
   const [models, setModels] = useState<CanonicalOption[]>([]);
@@ -451,9 +448,6 @@ export function Step1Form() {
 
       applyVinAutofill(json, vin);
 
-      const canAutofillMakeModel = Boolean(json.make_id) && Boolean(json.model_id);
-      setVinMappingComplete(canAutofillMakeModel);
-
       setVinStatus("success");
       setVinError(null);
 
@@ -761,7 +755,6 @@ export function Step1Form() {
           loadingModels={loadingModels}
           loadingVariants={loadingVariants}
           disableAllFields={fieldsDisabled}
-          lockMakeModel={vinMappingComplete}
         />
 
         <div className="flex items-center justify-between pt-2">
