@@ -160,7 +160,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
             <div className="space-y-2">
               <Label className="text-sm font-medium text-neutral-700">Variante (Trim)</Label>
               <Select
-                value={watch("variant_id") || ""}
+                value={selectedModelId ? (watch("variant_id") ? watch("variant_id") : VARIANT_NONE_VALUE) : ""}
                 onValueChange={(value) =>
                   setValue("variant_id", value === VARIANT_NONE_VALUE ? "" : value, { shouldValidate: true, shouldDirty: true })
                 }

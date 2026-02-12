@@ -720,28 +720,25 @@ export function Step1Form() {
         <div className="space-y-2">
           <div className="text-sm font-medium text-neutral-900">VIN (Fahrgestellnummer) *</div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-end">
-            <Input
-              value={vinInput}
-              onChange={(e) => setVinInput(e.target.value)}
-              placeholder="z.B. WBA... (17 Zeichen)"
-              className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl md:flex-1"
-              autoComplete="off"
-              inputMode="text"
-            />
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+              <Input
+                value={vinInput}
+                onChange={(e) => setVinInput(e.target.value)}
+                placeholder="z.B. WBA... (17 Zeichen)"
+                className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl md:flex-1"
+                autoComplete="off"
+                inputMode="text"
+              />
 
-            <Button
-              type="button"
-              onClick={onDecodeVin}
-              disabled={vinLoading}
-              className="rounded-2xl h-12 px-6 md:shrink-0"
-            >
-              {vinLoading ? "Lade..." : "Daten laden"}
-            </Button>
+              <Button type="button" onClick={onDecodeVin} disabled={vinLoading} className="rounded-2xl h-12 px-6 md:shrink-0">
+                {vinLoading ? "Lade..." : "Daten laden"}
+              </Button>
+            </div>
+
+            <div className="text-xs text-neutral-700/80 font-light">Pflichtfeld – wir laden die Fahrzeugdaten automatisch.</div>
+            {vinError ? <div className="text-sm text-red-600">{vinError}</div> : null}
           </div>
-
-          <div className="text-xs text-neutral-700/80 font-light">Pflichtfeld – wir laden die Fahrzeugdaten automatisch.</div>
-          {vinError ? <div className="text-sm text-red-600">{vinError}</div> : null}
         </div>
       </div>
 
