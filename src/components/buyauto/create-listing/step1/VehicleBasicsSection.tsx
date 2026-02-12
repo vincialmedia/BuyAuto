@@ -187,9 +187,9 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               <Label className="text-sm font-medium text-neutral-700">Standort *</Label>
               <Input
                 {...register("location")}
-                placeholder="z.B. Zürich"
+                placeholder="z.B. Schlieren, ZH"
                 disabled={disableAllFields}
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm placeholder:text-neutral-400"
               />
               {errors.location && <p className="text-sm text-red-500 font-light">{errors.location.message as string}</p>}
             </div>

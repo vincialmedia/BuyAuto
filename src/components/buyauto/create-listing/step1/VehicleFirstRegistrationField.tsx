@@ -16,7 +16,7 @@ export function VehicleFirstRegistrationField(props: VehicleFirstRegistrationFie
       <Label className="text-sm font-medium text-neutral-700">Erstzulassung (optional)</Label>
       <Input
         type="month"
-        lang="de"
+        lang="de-CH"
         disabled={disabled}
         className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
         value={value ?? ""}
