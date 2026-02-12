@@ -38,6 +38,7 @@ const fuelTypes = ["Benzin", "Diesel", "Hybrid", "Elektro"];
 const gearboxTypes = ["Automatik", "Manuell"];
 
 const drivetrainTypes = ["Frontantrieb", "Heckantrieb", "Allrad"];
+const VARIANT_NONE_VALUE = "__none__";
 
 export interface VehicleBasicsSectionProps {
   register: UseFormRegister<VehicleStepFormValues>;
@@ -160,13 +161,16 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               <Label className="text-sm font-medium text-neutral-700">Variante (Trim)</Label>
               <Select
                 value={watch("variant_id") || ""}
-                onValueChange={(value) => setValue("variant_id", value, { shouldValidate: true, shouldDirty: true })}
+                onValueChange={(value) =>
+                  setValue("variant_id", value === VARIANT_NONE_VALUE ? "" : value, { shouldValidate: true, shouldDirty: true })
+                }
                 disabled={disableAllFields || !selectedModelId || loadingVariants}
               >
                 <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                   <SelectValue placeholder={!selectedModelId ? "Zuerst Modell wählen" : loadingVariants ? "Lädt..." : "Variante auswählen"} />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={VARIANT_NONE_VALUE}>Ohne Variante</SelectItem>
                   {(variants ?? []).map((v) => (
                     <SelectItem key={v.id} value={v.id}>
                       {v.name}
