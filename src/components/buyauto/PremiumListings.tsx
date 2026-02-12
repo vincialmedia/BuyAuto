@@ -13,9 +13,9 @@ import { searchListings } from "@/services/listingsService";
 type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme";
 
 function getDealTypeLabel(listing: Listing): DealTypeLabel {
-  if (listing.deal_type === "direct_purchase") return "Direktkauf";
+  if (listing.deal_type === "lease_takeover") return "Leasingübernahme";
   if (listing.financing_type === "leasing") return "Leasing";
-  return "Leasingübernahme";
+  return "Direktkauf";
 }
 
 export default function PremiumListings() {
@@ -158,15 +158,24 @@ export default function PremiumListings() {
       );
     }
 
-    const takeoverPrice = listing.pricePerMonthCHF;
-    const deposit =
-      typeof listing.depositCHF === "number" && listing.depositCHF > 0 ? listing.depositCHF : null;
+    const mainMonthly = listing.pricePerMonthCHF;
+    const deposit = typeof listing.depositCHF === "number" && listing.depositCHF > 0 ? listing.depositCHF : null;
 
     return (
       <div className="text-right">
         <div className="text-xs font-medium text-neutral-500">{getDealTypeLabel(listing)}</div>
-        <div className="text-2xl font-bold text-amber-600">{formatPrice(takeoverPrice)}</div>
+
+        <div className="text-2xl font-bold text-amber-600">{formatPrice(mainMonthly)}</div>
         <div className="text-sm text-neutral-500">/ Monat</div>
+
+        {hasTakeoverMonthly && (
+          <div className="mt-1 text-xs text-neutral-500">
+            <span className="text-neutral-500">Übernahme ab </span>
+            <span className="font-medium text-neutral-700">{formatPrice(takeoverOffer!.price_per_month_chf)}</span>
+            <span className="text-neutral-500"> / Monat</span>
+          </div>
+        )}
+
         <div className="text-xs text-neutral-500 mt-1">
           {deposit ? `Einmalige Kaution: ${formatPrice(deposit)}` : "Keine Kaution"}
         </div>
