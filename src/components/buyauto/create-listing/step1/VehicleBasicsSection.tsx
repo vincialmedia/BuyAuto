@@ -56,7 +56,6 @@ export interface VehicleBasicsSectionProps {
   loadingVariants: boolean;
 
   disableAllFields?: boolean;
-  lockMakeModel?: boolean;
 }
 
 export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
@@ -73,7 +72,6 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
     loadingModels,
     loadingVariants,
     disableAllFields = false,
-    lockMakeModel = false,
   } = props;
 
   const selectedMakeId = watch("make_id");
@@ -111,12 +109,11 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               <Select
                 value={selectedMakeId || ""}
                 onValueChange={(value) => {
-                  if (lockMakeModel) return;
                   setValue("make_id", value, { shouldValidate: true, shouldDirty: true });
                   setValue("model_id", "", { shouldValidate: false, shouldDirty: true });
                   setValue("variant_id", "", { shouldValidate: false, shouldDirty: true });
                 }}
-                disabled={disableAllFields || lockMakeModel}
+                disabled={disableAllFields}
               >
                 <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                   <SelectValue placeholder={loadingMakes ? "Lädt..." : "Marke auswählen"} />
@@ -137,11 +134,10 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               <Select
                 value={selectedModelId || ""}
                 onValueChange={(value) => {
-                  if (lockMakeModel) return;
                   setValue("model_id", value, { shouldValidate: true, shouldDirty: true });
                   setValue("variant_id", "", { shouldValidate: false, shouldDirty: true });
                 }}
-                disabled={disableAllFields || lockMakeModel || !selectedMakeId || loadingModels}
+                disabled={disableAllFields || !selectedMakeId || loadingModels}
               >
                 <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
                   <SelectValue placeholder={!selectedMakeId ? "Zuerst Marke wählen" : loadingModels ? "Lädt..." : "Modell auswählen"} />
