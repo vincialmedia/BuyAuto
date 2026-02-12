@@ -721,17 +721,22 @@ export function Step1Form() {
           <div className="text-sm font-medium text-neutral-900">VIN (Fahrgestellnummer) *</div>
 
           <div className="flex flex-col gap-2">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-stretch">
               <Input
                 value={vinInput}
                 onChange={(e) => setVinInput(e.target.value)}
                 placeholder="z.B. WBA... (17 Zeichen)"
-                className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl md:flex-1"
+                className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl w-full"
                 autoComplete="off"
                 inputMode="text"
               />
 
-              <Button type="button" onClick={onDecodeVin} disabled={vinLoading} className="rounded-2xl h-12 px-6 md:shrink-0">
+              <Button
+                type="button"
+                onClick={onDecodeVin}
+                disabled={vinLoading}
+                className="rounded-2xl h-12 px-6 w-full md:w-auto whitespace-nowrap"
+              >
                 {vinLoading ? "Lade..." : "Daten laden"}
               </Button>
             </div>

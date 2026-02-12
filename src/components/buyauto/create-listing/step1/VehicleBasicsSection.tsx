@@ -160,14 +160,16 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
             <div className="space-y-2">
               <Label className="text-sm font-medium text-neutral-700">Variante (Trim)</Label>
               <Select
-                value={selectedModelId ? (watch("variant_id") ? watch("variant_id") : VARIANT_NONE_VALUE) : ""}
+                value={selectedModelId ? (watch("variant_id") ?? "") : ""}
                 onValueChange={(value) =>
                   setValue("variant_id", value === VARIANT_NONE_VALUE ? "" : value, { shouldValidate: true, shouldDirty: true })
                 }
                 disabled={disableAllFields || !selectedModelId || loadingVariants}
               >
                 <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-                  <SelectValue placeholder={!selectedModelId ? "Zuerst Modell wählen" : loadingVariants ? "Lädt..." : "Variante auswählen"} />
+                  <SelectValue
+                    placeholder={!selectedModelId ? "Zuerst Modell wählen" : loadingVariants ? "Lädt..." : "Variante auswählen (optional)"}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={VARIANT_NONE_VALUE}>Ohne Variante</SelectItem>
