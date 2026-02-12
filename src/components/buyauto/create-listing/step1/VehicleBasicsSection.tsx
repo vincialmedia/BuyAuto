@@ -33,7 +33,7 @@ export interface VehicleStepFormValues {
   description?: string;
 }
 
-const bodyTypes = ["Limousine", "Kombi", "SUV", "Cabrio"];
+const bodyTypes = ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"];
 const fuelTypes = ["Benzin", "Diesel", "Hybrid", "Elektro"];
 const gearboxTypes = ["Automatik", "Manuell"];
 
@@ -157,7 +157,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Variante (Trim) *</Label>
+              <Label className="text-sm font-medium text-neutral-700">Variante (Trim)</Label>
               <Select
                 value={watch("variant_id") || ""}
                 onValueChange={(value) => setValue("variant_id", value, { shouldValidate: true, shouldDirty: true })}
@@ -346,13 +346,13 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 </SelectContent>
               </Select>
               {errors.drivetrain && <p className="text-sm text-red-500 font-light">{errors.drivetrain.message as string}</p>}
-              <p className="text-[11px] text-neutral-500 font-light">Temporäre Liste (TODO: DB-enum Endpoint).</p>
             </div>
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-neutral-700">Erstzulassung (optional)</Label>
               <Input
                 type="month"
+                lang="de-CH"
                 disabled={disableAllFields}
                 className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
                 value={watch("first_registration") ?? ""}

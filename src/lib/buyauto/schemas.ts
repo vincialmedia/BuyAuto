@@ -64,7 +64,7 @@ export const vehicleDataSchema = z
       .max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
     km: kmInput,
     purchase_price_chf: numberInput.optional(),
-    body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio"].includes(val), {
+    body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"].includes(val), {
       message: "Bitte wählen Sie eine gültige Karosserie",
     }),
     fuel: z.string().refine((val) => ["Benzin", "Diesel", "Hybrid", "Elektro"].includes(val), {
@@ -103,7 +103,7 @@ export const listingStep1Schema = z
       .min(1990, "Baujahr muss mindestens 1990 sein")
       .max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
     km: kmInput,
-    body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio"].includes(val), {
+    body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"].includes(val), {
       message: "Bitte wählen Sie eine gültige Karosserie",
     }),
     fuel: z.string().refine((val) => ["Benzin", "Diesel", "Hybrid", "Elektro"].includes(val), {

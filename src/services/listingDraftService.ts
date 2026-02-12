@@ -45,7 +45,13 @@ export async function createListingDraft(params: { user: any; data: any }) {
 
   let inserted = await supabase.from("listing_drafts").insert(withColumns as any).select("*").single();
 
-  if (inserted.error && String(inserted.error.message ?? "").toLowerCase().includes("could not find the 'variant_text' column")) {
+  const insertedMsg = String(inserted.error?.message ?? "").toLowerCase();
+  if (
+    inserted.error &&
+    (insertedMsg.includes("could not find the 'variant_text' column") ||
+      insertedMsg.includes("could not find the 'catalog_confidence' column") ||
+      insertedMsg.includes("could not find the 'catalog_needs_review' column"))
+  ) {
     inserted = await supabase.from("listing_drafts").insert(baseRow as any).select("*").single();
   }
 
@@ -74,7 +80,13 @@ export async function updateListingDraft(params: { user: any; draftId: string; d
 
   let updated = await supabase.from("listing_drafts").update(patchWithColumns as any).eq("id", draftId).eq("user_id", user.id).select("*").single();
 
-  if (updated.error && String(updated.error.message ?? "").toLowerCase().includes("could not find the 'variant_text' column")) {
+  const updatedMsg = String(updated.error?.message ?? "").toLowerCase();
+  if (
+    updated.error &&
+    (updatedMsg.includes("could not find the 'variant_text' column") ||
+      updatedMsg.includes("could not find the 'catalog_confidence' column") ||
+      updatedMsg.includes("could not find the 'catalog_needs_review' column"))
+  ) {
     updated = await supabase.from("listing_drafts").update(basePatch as any).eq("id", draftId).eq("user_id", user.id).select("*").single();
   }
 

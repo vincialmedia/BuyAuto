@@ -9,3 +9,6 @@ alter table public.listing_drafts
 
 create index if not exists listing_drafts_catalog_needs_review_idx
   on public.listing_drafts (catalog_needs_review);
+
+create index if not exists listing_drafts_catalog_confidence_idx
+  on public.listing_drafts (catalog_confidence);

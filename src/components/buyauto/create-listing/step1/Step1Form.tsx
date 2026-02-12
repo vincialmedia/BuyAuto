@@ -26,7 +26,7 @@ const vehicleStepSchema = z.object({
 
   make_id: z.string().min(1, "Marke ist erforderlich"),
   model_id: z.string().min(1, "Modell ist erforderlich"),
-  variant_id: z.string().min(1, "Variante ist erforderlich"),
+  variant_id: z.string().optional(),
 
   year: z.number().int().min(1900, "Bitte ein gültiges Jahr eingeben"),
   km: z.number().int().min(0, "Kilometerstand ist erforderlich"),
@@ -469,14 +469,6 @@ export function Step1Form() {
           variant: "destructive",
         });
       }
-
-      if (!json.variant_id) {
-        toast({
-          title: "Variante fehlt",
-          description: "Bitte wähle jetzt eine Variante aus, bevor du weitergehst.",
-          variant: "destructive",
-        });
-      }
     } catch {
       setVinStatus("error");
       setVinError("VIN-Daten konnten nicht geladen werden.");
@@ -555,15 +547,6 @@ export function Step1Form() {
       return;
     }
 
-    if (!values.variant_id) {
-      toast({
-        title: "Variante fehlt",
-        description: "Bitte eine Variante auswählen.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
@@ -586,7 +569,7 @@ export function Step1Form() {
 
         make_id: values.make_id,
         model_id: values.model_id,
-        variant_id: values.variant_id,
+        variant_id: values.variant_id ? values.variant_id : null,
 
         brand: makeName,
         model: modelName,
@@ -615,7 +598,7 @@ export function Step1Form() {
 
           make_id: values.make_id as any,
           model_id: values.model_id as any,
-          variant_id: values.variant_id as any,
+          variant_id: values.variant_id ? (values.variant_id as any) : null,
 
           brand: makeName as any,
           model: modelName as any,
@@ -665,7 +648,7 @@ export function Step1Form() {
         vin: values.vin,
         make_id: values.make_id as any,
         model_id: values.model_id as any,
-        variant_id: values.variant_id as any,
+        variant_id: values.variant_id ? (values.variant_id as any) : null,
 
         brand: makeName,
         model: modelName,
@@ -724,7 +707,7 @@ export function Step1Form() {
     return <div className="text-sm text-neutral-600">Lade Profil...</div>;
   }
 
-  const canProceed = Boolean(watch("vin")) && Boolean(watch("make_id")) && Boolean(watch("model_id")) && Boolean(watch("variant_id"));
+  const canProceed = Boolean(watch("vin")) && Boolean(watch("make_id")) && Boolean(watch("model_id"));
 
   return (
     <div className="space-y-8">
@@ -785,7 +768,7 @@ export function Step1Form() {
 
         {!canProceed ? (
           <div className="text-sm text-neutral-600">
-            Bitte fülle VIN, Marke, Modell und Variante aus, bevor du weitergehst.
+            Bitte fülle VIN, Marke und Modell aus, bevor du weitergehst.
           </div>
         ) : null}
       </form>
