@@ -4,7 +4,8 @@ import { useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { VehicleDescriptionField } from "@/components/buyauto/create-listing/step1/VehicleDescriptionField";
+import { VehicleFirstRegistrationField } from "@/components/buyauto/create-listing/step1/VehicleFirstRegistrationField";
 
 export interface CanonicalOption {
   id: string;
@@ -351,33 +352,21 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Erstzulassung (optional)</Label>
-              <Input
-                type="month"
-                lang="de-CH"
+              <VehicleFirstRegistrationField
+                value={watch("first_registration")}
                 disabled={disableAllFields}
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-                value={watch("first_registration") ?? ""}
-                onChange={(e) => setValue("first_registration", e.target.value || null, { shouldValidate: true, shouldDirty: true })}
+                error={errors.first_registration?.message as string | undefined}
+                onChange={(value) => setValue("first_registration", value, { shouldValidate: true, shouldDirty: true })}
               />
-              {errors.first_registration && <p className="text-sm text-red-500 font-light">{errors.first_registration.message as string}</p>}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-neutral-700">Fahrzeugbeschreibung (optional)</Label>
-            <Textarea
-              {...register("description")}
-              disabled={disableAllFields}
-              placeholder="Beschreibe dein Fahrzeug: Besonderheiten, Ausstattung, Zustand, etc. (Max. 2000 Zeichen)"
-              className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm min-h-[120px] resize-y"
-              rows={5}
-            />
-            <div className="flex justify-between items-center">
-              {errors.description && <p className="text-sm text-red-500 font-light">{errors.description.message as string}</p>}
-              <p className="text-xs text-neutral-500 ml-auto">{descriptionLength}/2000 Zeichen</p>
-            </div>
-          </div>
+          <VehicleDescriptionField
+            registration={register("description")}
+            disabled={disableAllFields}
+            error={errors.description?.message as string | undefined}
+            descriptionLength={descriptionLength}
+          />
         </div>
       </div>
     </div>
