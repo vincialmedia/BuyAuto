@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,11 +16,21 @@ interface SearchFormProps {
   variant?: "default" | "hero";
 }
 
+type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
+
+function getSaleTypeLabel(option: SaleTypeOption): string {
+  if (option === "lease_takeover") return "Leasingübernahme";
+  if (option === "leasing") return "Leasing";
+  if (option === "direct_purchase") return "Direktkauf";
+  return "Alle";
+}
+
 export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const router = useRouter();
   const isHero = variant === "hero";
 
-  // State for filter values
+  const [saleType, setSaleType] = useState<SaleTypeOption>("all");
+
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
@@ -31,16 +41,37 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const [selectedGearbox, setSelectedGearbox] = useState("");
   const [noDeposit, setNoDeposit] = useState(false);
 
-  // State for dynamic dropdowns
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
-  
-  // State for UI
+
   const [expandedFilters, setExpandedFilters] = useState(false);
 
-  // Fetch brands on mount
+  const isMixed = saleType === "all";
+  const isLeaseTakeover = saleType === "lease_takeover";
+  const isDirectPurchase = saleType === "direct_purchase" || saleType === "leasing";
+
+  const sliderConfig = useMemo(() => {
+    if (isLeaseTakeover) {
+      return {
+        min: 200,
+        max: 2000,
+        step: 50,
+        label: "Maximaler Preis pro Monat",
+        maxSuffix: "+",
+      };
+    }
+
+    return {
+      min: 5000,
+      max: 200000,
+      step: 1000,
+      label: "Maximaler Kaufpreis",
+      maxSuffix: "+",
+    };
+  }, [isLeaseTakeover]);
+
   useEffect(() => {
     const fetchBrands = async () => {
       setLoadingBrands(true);
@@ -51,7 +82,6 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
     fetchBrands();
   }, []);
 
-  // Fetch models when brand changes
   useEffect(() => {
     if (selectedBrand) {
       const fetchModels = async () => {
@@ -66,39 +96,65 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
     }
   }, [selectedBrand]);
 
+  useEffect(() => {
+    if (!isLeaseTakeover) {
+      setSelectedRestlaufzeit("");
+    }
+  }, [isLeaseTakeover]);
+
+  useEffect(() => {
+    setPriceRange([sliderConfig.max]);
+  }, [sliderConfig.max]);
+
   const handleBrandChange = (brand: string) => {
     setSelectedBrand(brand);
     setSelectedModel("");
   };
 
-  // Dynamic gradient calculation based on price
   const calculateGradientOpacity = () => {
     const price = priceRange[0];
-    const maxPrice = 2000;
-    const percentage = price / maxPrice;
-    return Math.min(percentage * 0.8, 0.8); // Cap at 0.8 opacity
+    const percentage = price / sliderConfig.max;
+    return Math.min(percentage * 0.8, 0.8);
   };
+
+  const formatChf = (value: number) => `CHF ${value.toLocaleString("de-CH")}`;
+
+  const isPriceFilterActive = !isMixed && priceRange[0] < sliderConfig.max;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const queryParams: Record<string, string | string[]> = {
-      page: '1'
+      page: "1",
     };
-    
+
+    if (saleType === "lease_takeover") {
+      queryParams.dealType = "lease_takeover";
+    } else if (saleType === "direct_purchase") {
+      queryParams.dealType = "direct_purchase";
+      queryParams.financingType = "cash";
+    } else if (saleType === "leasing") {
+      queryParams.dealType = "direct_purchase";
+      queryParams.financingType = "leasing";
+    }
+
     if (selectedBrand) queryParams.brand = selectedBrand;
     if (selectedModel) queryParams.model = selectedModel;
     if (selectedYear) queryParams.yearMin = selectedYear;
-    if (priceRange[0] < 2000) queryParams.priceMax = priceRange[0].toString();
+
+    if (isPriceFilterActive) queryParams.priceMax = priceRange[0].toString();
+
     if (noDeposit) queryParams.noDeposit = "true";
     if (selectedBody) queryParams.body = [selectedBody];
     if (selectedFuel) queryParams.fuel = [selectedFuel];
     if (selectedGearbox) queryParams.gearbox = [selectedGearbox];
 
-    if (selectedRestlaufzeit) {
+    if (isLeaseTakeover && selectedRestlaufzeit) {
       const monthsMap: Record<string, { min?: number; max?: number }> = {
-        "0-6": { max: 6 }, "7-12": { min: 7, max: 12 },
-        "13-24": { min: 13, max: 24 }, "24+": { min: 24 },
+        "0-6": { max: 6 },
+        "7-12": { min: 7, max: 12 },
+        "13-24": { min: 13, max: 24 },
+        "24+": { min: 24 },
       };
       const monthsFilter = monthsMap[selectedRestlaufzeit];
       if (monthsFilter) {
@@ -106,17 +162,15 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
         if (monthsFilter.max) queryParams.monthsMax = monthsFilter.max.toString();
       }
     }
-    
+
     router.push({
-      pathname: '/suche',
-      query: queryParams
+      pathname: "/suche",
+      query: queryParams,
     });
   };
 
-  // Styles based on variant
-  // Lighter Glass Theme: Higher opacity white background, cleaner borders
-  const cardStyles = isHero 
-    ? "bg-white/25 backdrop-blur-xl border-white/30 shadow-2xl shadow-black/10" 
+  const cardStyles = isHero
+    ? "bg-white/25 backdrop-blur-xl border-white/30 shadow-2xl shadow-black/10"
     : "bg-white/90 backdrop-blur-md border-white/30 shadow-2xl shadow-neutral-900/20 dark:bg-zinc-900/90 dark:border-zinc-700/30";
 
   const inputStyles = isHero
@@ -134,8 +188,19 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   return (
     <Card className={cn("rounded-3xl p-6 md:p-8 max-w-4xl mx-auto border transition-all duration-300", cardStyles)}>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Main filters in clean grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Select value={saleType} onValueChange={(v) => setSaleType(v as SaleTypeOption)}>
+            <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
+              <SelectValue placeholder="Verkaufsart" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-neutral-200">
+              <SelectItem value="all" className="font-medium">Alle</SelectItem>
+              <SelectItem value="lease_takeover" className="font-medium">Leasingübernahme</SelectItem>
+              <SelectItem value="direct_purchase" className="font-medium">Direktkauf</SelectItem>
+              <SelectItem value="leasing" className="font-medium">Leasing</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={selectedBrand} onValueChange={handleBrandChange} disabled={loadingBrands}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
               <SelectValue placeholder="Marke" />
@@ -174,64 +239,70 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
             </SelectContent>
           </Select>
 
-          <Select value={selectedRestlaufzeit} onValueChange={setSelectedRestlaufzeit}>
+          <Select value={selectedRestlaufzeit} onValueChange={setSelectedRestlaufzeit} disabled={!isLeaseTakeover}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-              <SelectValue placeholder="Restlaufzeit" />
+              <SelectValue placeholder={isLeaseTakeover ? "Restlaufzeit" : "Nur Leasingübernahme"} />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
-              <SelectItem value="0-6" className="font-medium hover:underline hover:decoration-neutral-400 transition-all">≤ 6 Monate</SelectItem>
-              <SelectItem value="7-12" className="font-medium hover:underline hover:decoration-neutral-400 transition-all">7-12 Monate</SelectItem>
-              <SelectItem value="13-24" className="font-medium hover:underline hover:decoration-neutral-400 transition-all">13-24 Monate</SelectItem>
-              <SelectItem value="24+" className="font-medium hover:underline hover:decoration-neutral-400 transition-all">≥ 24 Monate</SelectItem>
+              <SelectItem value="0-6" className="font-medium">≤ 6 Monate</SelectItem>
+              <SelectItem value="7-12" className="font-medium">7-12 Monate</SelectItem>
+              <SelectItem value="13-24" className="font-medium">13-24 Monate</SelectItem>
+              <SelectItem value="24+" className="font-medium">≥ 24 Monate</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {/* Dynamic Price Slider with Gradient Background */}
         <div className="relative">
           <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
-            Maximaler Preis pro Monat: CHF {priceRange[0].toLocaleString("de-CH")}{priceRange[0] === 2000 ? '+' : ''}
+            {sliderConfig.label}:{" "}
+            {formatChf(priceRange[0])}
+            {priceRange[0] === sliderConfig.max ? sliderConfig.maxSuffix : ""}
+            {isLeaseTakeover ? "" : ""}
           </label>
-          
-          {/* Dynamic gradient background behind slider */}
-          <div 
+
+          <div
             className="absolute inset-x-0 top-12 h-2 rounded-full transition-all duration-500"
             style={{
-              background: `linear-gradient(to right, 
-                rgb(163 163 163 / 0.3) 0%, 
-                rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${(priceRange[0] / 2000) * 100}%, 
-                rgb(220 38 38 / ${calculateGradientOpacity()}) ${(priceRange[0] / 2000) * 100}%, 
-                rgb(163 163 163 / 0.1) 100%)`
+              background: `linear-gradient(to right,
+                rgb(163 163 163 / 0.3) 0%,
+                rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${(priceRange[0] / sliderConfig.max) * 100}%,
+                rgb(220 38 38 / ${calculateGradientOpacity()}) ${(priceRange[0] / sliderConfig.max) * 100}%,
+                rgb(163 163 163 / 0.1) 100%)`,
             }}
           />
-          
+
           <div className="relative pt-2">
-            <Slider 
-              value={priceRange} 
-              onValueChange={setPriceRange} 
-              max={2000} 
-              min={200} 
-              step={50}
-              className="w-full"
+            <Slider
+              value={priceRange}
+              onValueChange={setPriceRange}
+              max={sliderConfig.max}
+              min={sliderConfig.min}
+              step={sliderConfig.step}
+              className={cn("w-full", isMixed && "opacity-50 pointer-events-none")}
             />
           </div>
-          
+
           <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
-            <span>CHF 200</span>
-            <span>CHF 2'000+</span>
+            <span>{formatChf(sliderConfig.min)}</span>
+            <span>{formatChf(sliderConfig.max)}{sliderConfig.maxSuffix}</span>
           </div>
+
+          {isMixed && (
+            <p className={cn("mt-3 text-xs font-medium", subTextStyles)}>
+              Wähle zuerst eine Verkaufsart, um Preise zu filtern.
+            </p>
+          )}
         </div>
 
-        {/* Expandable Filters */}
         <Collapsible open={expandedFilters} onOpenChange={setExpandedFilters}>
           <CollapsibleTrigger asChild>
-            <Button 
-              type="button" 
-              variant="ghost" 
+            <Button
+              type="button"
+              variant="ghost"
               className={cn(
                 "w-full justify-between h-12 rounded-xl font-medium border transition-colors",
-                isHero 
-                  ? "text-white hover:bg-white/20 border-white/30 hover:text-white hover:border-white/40" 
+                isHero
+                  ? "text-white hover:bg-white/20 border-white/30 hover:text-white hover:border-white/40"
                   : "text-neutral-700 hover:bg-neutral-100 border-neutral-300"
               )}
             >
@@ -242,7 +313,17 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
               <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", iconStyles, expandedFilters ? "rotate-180" : "")} />
             </Button>
           </CollapsibleTrigger>
+
           <CollapsibleContent className="space-y-6 pt-6">
+            <div className={cn("rounded-2xl border p-4", isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white")}>
+              <div className={cn("text-sm font-semibold mb-1", isHero ? "text-white" : "text-neutral-900")}>
+                Verkaufsart
+              </div>
+              <div className={cn("text-xs", isHero ? "text-neutral-200" : "text-neutral-600")}>
+                Aktuell: <span className={cn("font-semibold", isHero ? "text-white" : "text-neutral-900")}>{getSaleTypeLabel(saleType)}</span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select value={selectedBody} onValueChange={setSelectedBody}>
                 <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
@@ -255,7 +336,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   <SelectItem value="Cabrio" className="font-medium">Cabrio</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Select value={selectedFuel} onValueChange={setSelectedFuel}>
                 <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
                   <SelectValue placeholder="Antrieb" />
@@ -267,7 +348,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   <SelectItem value="Elektro" className="font-medium">Elektro</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Select value={selectedGearbox} onValueChange={setSelectedGearbox}>
                 <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
                   <SelectValue placeholder="Getriebe" />
@@ -278,11 +359,11 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className={cn("flex items-center space-x-3 p-4 rounded-xl border", checkboxContainerStyles)}>
-              <Checkbox 
-                id="no-deposit" 
-                checked={noDeposit} 
+              <Checkbox
+                id="no-deposit"
+                checked={noDeposit}
                 onCheckedChange={(checked) => setNoDeposit(!!checked)}
                 className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
               />
@@ -293,9 +374,8 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Submit Button - more compact */}
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-semibold text-base shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5"
         >
           <Search className="h-4 w-4 mr-3" />

@@ -1,19 +1,25 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { searchListings } from "@/services/listingsService";
 import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import { debounce } from "@/lib/utils";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
 
-// Dynamically import the filter bar to reduce initial bundle size on mobile
 const DynamicFilterBar = dynamic(() => import("@/components/buyauto/search/DynamicFilterBar"), {
-  ssr: true, // Still render on server for SEO
+  ssr: true,
   loading: () => (
     <div className="h-16 bg-white border-b border-neutral-200 animate-pulse" />
   ),
 });
+
+function getSaleTypeLabel(query: SearchQuery): string {
+  if (!query.dealType) return "Fahrzeuge";
+  if (query.dealType === "lease_takeover") return "Leasingübernahme";
+  if (query.financingType === "leasing") return "Leasing";
+  return "Direktkauf";
+}
 
 export default function SearchPage() {
   const router = useRouter();
@@ -27,13 +33,14 @@ export default function SearchPage() {
     const newQuery: SearchQuery = {};
     if (query.brand) newQuery.brand = query.brand as string;
     if (query.model) newQuery.model = query.model as string;
-    if (query.yearMin) newQuery.yearMin = parseInt(query.yearMin as string);
-    if (query.priceMin) newQuery.priceMin = parseInt(query.priceMin as string);
-    if (query.priceMax) newQuery.priceMax = parseInt(query.priceMax as string);
-    if (query.monthsMin) newQuery.monthsMin = parseInt(query.monthsMin as string);
-    if (query.monthsMax) newQuery.monthsMax = parseInt(query.monthsMax as string);
-    if (query.kmMax) newQuery.kmMax = parseInt(query.kmMax as string);
-    if (query.page) newQuery.page = parseInt(query.page as string);
+    if (query.yearMin) newQuery.yearMin = parseInt(query.yearMin as string, 10);
+    if (query.yearMax) newQuery.yearMax = parseInt(query.yearMax as string, 10);
+    if (query.priceMin) newQuery.priceMin = parseInt(query.priceMin as string, 10);
+    if (query.priceMax) newQuery.priceMax = parseInt(query.priceMax as string, 10);
+    if (query.monthsMin) newQuery.monthsMin = parseInt(query.monthsMin as string, 10);
+    if (query.monthsMax) newQuery.monthsMax = parseInt(query.monthsMax as string, 10);
+    if (query.kmMax) newQuery.kmMax = parseInt(query.kmMax as string, 10);
+    if (query.page) newQuery.page = parseInt(query.page as string, 10);
     if (query.sort) newQuery.sort = query.sort as SearchQuery["sort"];
     if (query.body) newQuery.body = Array.isArray(query.body) ? query.body : [query.body];
     if (query.fuel) newQuery.fuel = Array.isArray(query.fuel) ? query.fuel : [query.fuel];
@@ -52,11 +59,6 @@ export default function SearchPage() {
       }
     }
 
-    // Default: the marketplace search is leasing-takeover first (matches UI + filters)
-    if (!newQuery.dealType) {
-      newQuery.dealType = "lease_takeover";
-    }
-
     return newQuery;
   }, []);
 
@@ -65,11 +67,7 @@ export default function SearchPage() {
     for (const key in query) {
       const value = query[key as keyof SearchQuery];
 
-      // Keep URL clean: omit default dealType
-      if (key === "dealType" && value === "lease_takeover") continue;
-
-      // financingType only relevant for direct purchase
-      if (key === "financingType" && (query.dealType ?? "lease_takeover") !== "direct_purchase") continue;
+      if (key === "financingType" && (query.dealType ?? undefined) !== "direct_purchase") continue;
 
       if (value !== undefined && value !== null && (Array.isArray(value) ? value.length > 0 : value !== "")) {
         urlQuery[key] = value;
@@ -97,21 +95,16 @@ export default function SearchPage() {
     setSearchQuery(newQuery);
     router.push({ pathname: router.pathname, query: buildUrlQuery(newQuery) }, undefined, { shallow: true, scroll: false });
 
-    // Smooth scroll to top with offset for sticky header
     const headerOffset = 100;
-    const elementPosition = 0;
-    const offsetPosition = elementPosition - headerOffset;
-
     window.scrollTo({
-      top: offsetPosition,
-      behavior: "smooth"
+      top: 0 - headerOffset,
+      behavior: "smooth",
     });
   }, [searchQuery, router, buildUrlQuery]);
 
   const handleResetFilters = useCallback(() => {
-    const resetQuery: SearchQuery = { page: 1, dealType: "lease_takeover" };
+    const resetQuery: SearchQuery = {};
     setSearchQuery(resetQuery);
-    // URL stays clean (dealType omitted because it's default)
     router.push({ pathname: router.pathname, query: {} }, undefined, { shallow: true });
   }, [router]);
 
@@ -121,7 +114,7 @@ export default function SearchPage() {
       setSearchQuery(parsedQuery);
       setIsInitialized(true);
     }
-  }, [router.isReady, isInitialized, parseQueryFromUrl]);
+  }, [router.isReady, isInitialized, parseQueryFromUrl, router.query]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -154,37 +147,73 @@ export default function SearchPage() {
   const totalResults = searchResults?.total || 0;
   const currentPage = searchResults?.page || 1;
   const totalPages = Math.ceil(totalResults / (searchResults?.pageSize || 12));
-  const pageTitle = totalResults > 0 ? `Auto Leasingübernahme – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz` : "Auto Leasingübernahme – Fahrzeuge suchen | BuyAuto Schweiz";
-  const metaDescription = "Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto.";
+
+  const saleTypeLabel = useMemo(() => getSaleTypeLabel(searchQuery), [searchQuery]);
+
+  const pageTitle =
+    totalResults > 0
+      ? `${saleTypeLabel} – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz`
+      : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
+
+  const metaDescription =
+    saleTypeLabel === "Leasingübernahme"
+      ? "Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto."
+      : saleTypeLabel === "Leasing"
+        ? "Leasing in der Schweiz: Entdecke Fahrzeuge mit aktivem Leasing-Angebot von privaten Anbietern und Garagen – transparent, schnell und direkt über BuyAuto."
+        : saleTypeLabel === "Direktkauf"
+          ? "Direktkauf in der Schweiz: Finde Fahrzeuge von privaten Anbietern und Garagen – transparent, schnell und direkt über BuyAuto."
+          : "Finde Fahrzeuge in der Schweiz: Leasingübernahme, Direktkauf und Leasing-Angebote – transparent, schnell und direkt über BuyAuto.";
 
   const generateJsonLd = () => {
     if (!searchResults || searchResults.items.length === 0) return null;
+
     return {
       "@context": "https://schema.org",
       "@type": "ItemList",
-      "name": "Auto Leasingübernahme Suchresultate",
+      "name": `BuyAuto Suchresultate – ${saleTypeLabel}`,
       "description": metaDescription,
       "numberOfItems": totalResults,
-      "itemListElement": searchResults.items.map((listing, index) => ({
-        "@type": "ListItem",
-        "position": (currentPage - 1) * 12 + index + 1,
-        "item": {
-          "@type": "Car",
-          "name": `${listing.brand} ${listing.model}`,
-          "brand": { "@type": "Brand", "name": listing.brand },
-          "model": listing.model,
-          "vehicleModelDate": listing.year,
-          "mileageFromOdometer": { "@type": "QuantitativeValue", "value": listing.mileageKm, "unitCode": "KMT" },
-          "fuelType": listing.fuel,
-          "vehicleTransmission": listing.gearbox,
-          "offers": {
-            "@type": "Offer",
-            "price": listing.pricePerMonthCHF,
-            "priceCurrency": "CHF",
-            "priceSpecification": { "@type": "UnitPriceSpecification", "price": listing.pricePerMonthCHF, "priceCurrency": "CHF", "unitText": "MONTH" }
-          }
-        }
-      }))
+      "itemListElement": searchResults.items.map((listing, index) => {
+        const dealType = listing.deal_type ?? "lease_takeover";
+        const isDirectPurchase = dealType === "direct_purchase";
+        const priceCandidate = isDirectPurchase ? listing.purchasePriceCHF : listing.pricePerMonthCHF;
+        const price = typeof priceCandidate === "number" && priceCandidate > 0 ? priceCandidate : null;
+
+        const offer = price
+          ? {
+              "@type": "Offer",
+              "price": price,
+              "priceCurrency": "CHF",
+              "availability": "https://schema.org/InStock",
+              ...(isDirectPurchase
+                ? {}
+                : {
+                    "priceSpecification": {
+                      "@type": "UnitPriceSpecification",
+                      "price": price,
+                      "priceCurrency": "CHF",
+                      "unitText": "MONTH",
+                    },
+                  }),
+            }
+          : undefined;
+
+        return {
+          "@type": "ListItem",
+          "position": (currentPage - 1) * 12 + index + 1,
+          "item": {
+            "@type": "Car",
+            "name": `${listing.brand} ${listing.model}`,
+            "brand": { "@type": "Brand", "name": listing.brand },
+            "model": listing.model,
+            "vehicleModelDate": listing.year,
+            "mileageFromOdometer": { "@type": "QuantitativeValue", "value": listing.mileageKm, "unitCode": "KMT" },
+            "fuelType": listing.fuel,
+            "vehicleTransmission": listing.gearbox,
+            ...(offer ? { "offers": offer } : {}),
+          },
+        };
+      }),
     };
   };
 
@@ -203,7 +232,6 @@ export default function SearchPage() {
       </Head>
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
-        {/* Filter Bar - Sticky behavior */}
         <div className={`transition-all duration-300 ${filterBarSticky ? "fixed top-0 left-0 right-0 z-50 shadow-lg" : "relative z-40"}`}>
           <DynamicFilterBar
             searchQuery={searchQuery}
@@ -211,10 +239,8 @@ export default function SearchPage() {
           />
         </div>
 
-        {/* Main Content */}
         <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`${filterBarSticky ? "pt-24" : "pt-8"} pb-16 transition-all duration-300`}>
-            {/* Results Header */}
             {!isLoading && searchResults && (
               <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
@@ -236,12 +262,10 @@ export default function SearchPage() {
                   )}
                 </p>
 
-                {/* Subtle divider */}
                 <div className="mt-4 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
               </div>
             )}
 
-            {/* Results List */}
             <VerticalResultsList
               listings={searchResults?.items || []}
               currentPage={currentPage}

@@ -251,21 +251,37 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     const page = searchQuery.page || 1;
     const offset = (page - 1) * pageSize;
 
-    const effectiveDealType = (searchQuery.dealType ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+    const inferredDealType: "lease_takeover" | "direct_purchase" | undefined =
+      searchQuery.dealType ??
+      ((typeof searchQuery.monthsMin === "number" || typeof searchQuery.monthsMax === "number")
+        ? "lease_takeover"
+        : searchQuery.financingType
+          ? "direct_purchase"
+          : undefined);
+
+    const effectiveDealType = inferredDealType;
+    const isMixed = !effectiveDealType;
     const isDirectPurchase = effectiveDealType === "direct_purchase";
+    const isLeaseTakeover = effectiveDealType === "lease_takeover";
     const priceColumn = isDirectPurchase ? "purchase_price_chf" : "price_per_month_chf";
 
     let query = supabase
       .from("listings")
       .select("*", { count: "exact" })
-      .in("status", PUBLIC_LISTING_STATUSES)
-      .eq("deal_type", effectiveDealType);
+      .in("status", PUBLIC_LISTING_STATUSES);
 
-    if (
-      searchQuery.financingType &&
-      effectiveDealType === "direct_purchase"
-    ) {
-      query = query.eq("financing_type", searchQuery.financingType);
+    if (effectiveDealType) {
+      query = query.eq("deal_type", effectiveDealType);
+    }
+
+    if (effectiveDealType === "direct_purchase") {
+      if (searchQuery.financingType === "leasing") {
+        query = query
+          .eq("financing_type", "leasing")
+          .contains("leasing_offer", { enabled: true });
+      } else if (searchQuery.financingType === "cash") {
+        query = query.or("financing_type.eq.cash,financing_type.is.null");
+      }
     }
 
     if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
@@ -273,11 +289,12 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
     if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
 
-    if (typeof searchQuery.priceMin === "number") query = query.gte(priceColumn, searchQuery.priceMin);
-    if (typeof searchQuery.priceMax === "number") query = query.lte(priceColumn, searchQuery.priceMax);
+    if (!isMixed) {
+      if (typeof searchQuery.priceMin === "number") query = query.gte(priceColumn, searchQuery.priceMin);
+      if (typeof searchQuery.priceMax === "number") query = query.lte(priceColumn, searchQuery.priceMax);
+    }
 
-    // Only relevant for leasing takeover (direct purchase has no remaining_months)
-    if (!isDirectPurchase) {
+    if (isLeaseTakeover) {
       if (typeof searchQuery.monthsMin === "number") query = query.gte("remaining_months", searchQuery.monthsMin);
       if (typeof searchQuery.monthsMax === "number") query = query.lte("remaining_months", searchQuery.monthsMax);
     }
@@ -291,12 +308,13 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     if (searchQuery.noDeposit) query = query.is("deposit_chf", null);
 
     const sortOrder = searchQuery.sort || "relevance";
-    if (sortOrder === "priceAsc") query = query.order(priceColumn, { ascending: true, nullsFirst: false });
-    else if (sortOrder === "priceDesc") query = query.order(priceColumn, { ascending: false, nullsFirst: false });
+
+    if (!isMixed && sortOrder === "priceAsc") query = query.order(priceColumn, { ascending: true, nullsFirst: false });
+    else if (!isMixed && sortOrder === "priceDesc") query = query.order(priceColumn, { ascending: false, nullsFirst: false });
     else if (sortOrder === "dateDesc") query = query.order("created_at", { ascending: false });
     else if (sortOrder === "yearDesc") query = query.order("year", { ascending: false });
-    else if (!isDirectPurchase && sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });
-    else if (!isDirectPurchase && sortOrder === "monthsDesc") query = query.order("remaining_months", { ascending: false });
+    else if (isLeaseTakeover && sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });
+    else if (isLeaseTakeover && sortOrder === "monthsDesc") query = query.order("remaining_months", { ascending: false });
     else if (sortOrder === "kmAsc") query = query.order("mileage_km", { ascending: true });
     else query = query.order("premium", { ascending: false }).order("created_at", { ascending: false });
 
