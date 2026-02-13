@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
-import { getBrands, getModelsForBrand } from "@/services/listingsService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { getBrands, getModelsForBrand } from "@/services/listingsService";
 
 interface SearchFormProps {
   variant?: "default" | "hero";
@@ -26,6 +27,10 @@ function getRestlaufzeitLabel(option: RestlaufzeitOption): string {
   return "Alle";
 }
 
+function formatChf(value: number): string {
+  return `CHF ${value.toLocaleString("de-CH")}`;
+}
+
 export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const router = useRouter();
   const isHero = variant === "hero";
@@ -38,13 +43,13 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const [includeLeaseTakeovers, setIncludeLeaseTakeovers] = useState(false);
 
   const [selectedRestlaufzeit, setSelectedRestlaufzeit] = useState<RestlaufzeitOption>("");
+  const [noDeposit, setNoDeposit] = useState(false);
 
   const [priceRange, setPriceRange] = useState<number[]>([2000]);
 
   const [selectedBody, setSelectedBody] = useState("");
   const [selectedFuel, setSelectedFuel] = useState("");
   const [selectedGearbox, setSelectedGearbox] = useState("");
-  const [noDeposit, setNoDeposit] = useState(false);
 
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
@@ -75,21 +80,24 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
       setBrands(brandsData);
       setLoadingBrands(false);
     };
+
     fetchBrands();
   }, []);
 
   useEffect(() => {
-    if (selectedBrand) {
-      const fetchModels = async () => {
-        setLoadingModels(true);
-        const modelsData = await getModelsForBrand(selectedBrand);
-        setModels(modelsData);
-        setLoadingModels(false);
-      };
-      fetchModels();
-    } else {
+    if (!selectedBrand) {
       setModels([]);
+      return;
     }
+
+    const fetchModels = async () => {
+      setLoadingModels(true);
+      const modelsData = await getModelsForBrand(selectedBrand);
+      setModels(modelsData);
+      setLoadingModels(false);
+    };
+
+    fetchModels();
   }, [selectedBrand]);
 
   useEffect(() => {
@@ -99,6 +107,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   useEffect(() => {
     if (!leaseTakeoversOnly) {
       setSelectedRestlaufzeit("");
+      setNoDeposit(false);
     }
   }, [leaseTakeoversOnly]);
 
@@ -107,22 +116,19 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
     setSelectedModel("");
   };
 
+  const isPriceFilterActive =
+    monthlyPriceEnabled && (priceRange[0] ?? sliderConfig.max) < sliderConfig.max;
+
   const calculateGradientOpacity = () => {
     const price = priceRange[0] ?? sliderConfig.max;
     const percentage = price / sliderConfig.max;
     return Math.min(percentage * 0.8, 0.8);
   };
 
-  const formatChf = (value: number) => `CHF ${value.toLocaleString("de-CH")}`;
-
-  const isPriceFilterActive = monthlyPriceEnabled && (priceRange[0] ?? sliderConfig.max) < sliderConfig.max;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const queryParams: Record<string, string | string[]> = {
-      page: "1",
-    };
+    const queryParams: Record<string, string | string[]> = { page: "1" };
 
     if (leasingOffersOnly) {
       queryParams.dealType = "direct_purchase";
@@ -137,9 +143,11 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
     if (selectedModel) queryParams.model = selectedModel;
     if (selectedYear) queryParams.yearMin = selectedYear;
 
-    if (isPriceFilterActive) queryParams.priceMax = (priceRange[0] ?? sliderConfig.max).toString();
+    if (isPriceFilterActive) {
+      queryParams.priceMax = (priceRange[0] ?? sliderConfig.max).toString();
+    }
 
-    if (noDeposit && leaseTakeoversOnly) queryParams.noDeposit = "true";
+    if (leaseTakeoversOnly && noDeposit) queryParams.noDeposit = "true";
     if (selectedBody) queryParams.body = [selectedBody];
     if (selectedFuel) queryParams.fuel = [selectedFuel];
     if (selectedGearbox) queryParams.gearbox = [selectedGearbox];
@@ -151,17 +159,14 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
         "13-24": { min: 13, max: 24 },
         "24+": { min: 24 },
       };
+
       const monthsFilter = monthsMap[selectedRestlaufzeit];
-      if (monthsFilter) {
-        if (monthsFilter.min) queryParams.monthsMin = monthsFilter.min.toString();
-        if (monthsFilter.max) queryParams.monthsMax = monthsFilter.max.toString();
-      }
+
+      if (monthsFilter?.min) queryParams.monthsMin = monthsFilter.min.toString();
+      if (monthsFilter?.max) queryParams.monthsMax = monthsFilter.max.toString();
     }
 
-    router.push({
-      pathname: "/suche",
-      query: queryParams,
-    });
+    router.push({ pathname: "/suche", query: queryParams });
   };
 
   const cardStyles = isHero
@@ -176,10 +181,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const subTextStyles = isHero ? "text-neutral-200" : "text-neutral-500";
   const iconStyles = isHero ? "text-neutral-200" : "text-neutral-500";
 
-  const checkboxContainerStyles = isHero
-    ? "bg-white/15 border-white/25"
-    : "bg-neutral-50 border-neutral-200";
-
+  const checkboxContainerStyles = isHero ? "bg-white/15 border-white/25" : "bg-neutral-50 border-neutral-200";
   const checkboxLabelStyles = isHero ? "text-white" : "text-neutral-800";
   const checkboxHintStyles = isHero ? "text-neutral-200" : "text-neutral-600";
 
@@ -218,10 +220,18 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
               <SelectValue placeholder="Jahr" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
-              <SelectItem value="2023" className="font-medium">ab 2023</SelectItem>
-              <SelectItem value="2022" className="font-medium">ab 2022</SelectItem>
-              <SelectItem value="2020" className="font-medium">ab 2020</SelectItem>
-              <SelectItem value="2018" className="font-medium">ab 2018</SelectItem>
+              <SelectItem value="2023" className="font-medium">
+                ab 2023
+              </SelectItem>
+              <SelectItem value="2022" className="font-medium">
+                ab 2022
+              </SelectItem>
+              <SelectItem value="2020" className="font-medium">
+                ab 2020
+              </SelectItem>
+              <SelectItem value="2018" className="font-medium">
+                ab 2018
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -232,7 +242,13 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className={cn("flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors", checkboxContainerStyles, isHero ? "hover:bg-white/20" : "hover:bg-neutral-50")}>
+            <label
+              className={cn(
+                "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors",
+                checkboxContainerStyles,
+                isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
+              )}
+            >
               <Checkbox
                 id="leasing-offers"
                 checked={includeLeasingOffers}
@@ -245,7 +261,13 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
               </span>
             </label>
 
-            <label className={cn("flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors", checkboxContainerStyles, isHero ? "hover:bg-white/20" : "hover:bg-neutral-50")}>
+            <label
+              className={cn(
+                "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors",
+                checkboxContainerStyles,
+                isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
+              )}
+            >
               <Checkbox
                 id="lease-takeovers"
                 checked={includeLeaseTakeovers}
@@ -269,8 +291,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
         {monthlyPriceEnabled && (
           <div className="relative">
             <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
-              {sliderConfig.label}:{" "}
-              {formatChf(priceRange[0] ?? sliderConfig.max)}
+              {sliderConfig.label}: {formatChf(priceRange[0] ?? sliderConfig.max)}
               {(priceRange[0] ?? sliderConfig.max) === sliderConfig.max ? sliderConfig.maxSuffix : ""}
             </label>
 
@@ -298,7 +319,10 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
             <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
               <span>{formatChf(sliderConfig.min)}</span>
-              <span>{formatChf(sliderConfig.max)}{sliderConfig.maxSuffix}</span>
+              <span>
+                {formatChf(sliderConfig.max)}
+                {sliderConfig.maxSuffix}
+              </span>
             </div>
 
             {monthlyBundle && (
@@ -325,7 +349,13 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                 <SlidersHorizontal className={cn("h-4 w-4", iconStyles)} />
                 Erweiterte Filter
               </span>
-              <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", iconStyles, expandedFilters ? "rotate-180" : "")} />
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 transition-transform duration-200",
+                  iconStyles,
+                  expandedFilters ? "rotate-180" : ""
+                )}
+              />
             </Button>
           </CollapsibleTrigger>
 
@@ -337,11 +367,21 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                     <SelectValue placeholder="Restlaufzeit" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-neutral-200">
-                    <SelectItem value="" className="font-medium">Alle</SelectItem>
-                    <SelectItem value="0-6" className="font-medium">{getRestlaufzeitLabel("0-6")}</SelectItem>
-                    <SelectItem value="7-12" className="font-medium">{getRestlaufzeitLabel("7-12")}</SelectItem>
-                    <SelectItem value="13-24" className="font-medium">{getRestlaufzeitLabel("13-24")}</SelectItem>
-                    <SelectItem value="24+" className="font-medium">{getRestlaufzeitLabel("24+")}</SelectItem>
+                    <SelectItem value="" className="font-medium">
+                      Alle
+                    </SelectItem>
+                    <SelectItem value="0-6" className="font-medium">
+                      {getRestlaufzeitLabel("0-6")}
+                    </SelectItem>
+                    <SelectItem value="7-12" className="font-medium">
+                      {getRestlaufzeitLabel("7-12")}
+                    </SelectItem>
+                    <SelectItem value="13-24" className="font-medium">
+                      {getRestlaufzeitLabel("13-24")}
+                    </SelectItem>
+                    <SelectItem value="24+" className="font-medium">
+                      {getRestlaufzeitLabel("24+")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -365,10 +405,18 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   <SelectValue placeholder="Karosserie" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
-                  <SelectItem value="Limousine" className="font-medium">Limousine</SelectItem>
-                  <SelectItem value="Kombi" className="font-medium">Kombi</SelectItem>
-                  <SelectItem value="SUV" className="font-medium">SUV</SelectItem>
-                  <SelectItem value="Cabrio" className="font-medium">Cabrio</SelectItem>
+                  <SelectItem value="Limousine" className="font-medium">
+                    Limousine
+                  </SelectItem>
+                  <SelectItem value="Kombi" className="font-medium">
+                    Kombi
+                  </SelectItem>
+                  <SelectItem value="SUV" className="font-medium">
+                    SUV
+                  </SelectItem>
+                  <SelectItem value="Cabrio" className="font-medium">
+                    Cabrio
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -377,10 +425,18 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   <SelectValue placeholder="Antrieb" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
-                  <SelectItem value="Benzin" className="font-medium">Benzin</SelectItem>
-                  <SelectItem value="Diesel" className="font-medium">Diesel</SelectItem>
-                  <SelectItem value="Hybrid" className="font-medium">Hybrid</SelectItem>
-                  <SelectItem value="Elektro" className="font-medium">Elektro</SelectItem>
+                  <SelectItem value="Benzin" className="font-medium">
+                    Benzin
+                  </SelectItem>
+                  <SelectItem value="Diesel" className="font-medium">
+                    Diesel
+                  </SelectItem>
+                  <SelectItem value="Hybrid" className="font-medium">
+                    Hybrid
+                  </SelectItem>
+                  <SelectItem value="Elektro" className="font-medium">
+                    Elektro
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -389,22 +445,15 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   <SelectValue placeholder="Getriebe" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
-                  <SelectItem value="Automatik" className="font-medium">Automatik</SelectItem>
-                  <SelectItem value="Manuell" className="font-medium">Manuell</SelectItem>
+                  <SelectItem value="Automatik" className="font-medium">
+                    Automatik
+                  </SelectItem>
+                  <SelectItem value="Manuell" className="font-medium">
+                    Manuell
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            {(leasingOffersOnly || monthlyBundle) && (
-              <div className={cn("rounded-2xl border p-4", isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white")}>
-                <div className={cn("text-sm font-semibold mb-1", isHero ? "text-white" : "text-neutral-900")}>
-                  Hinweis
-                </div>
-                <div className={cn("text-xs", isHero ? "text-neutral-200" : "text-neutral-600")}>
-                  “Keine Kaution” und Restlaufzeit sind nur für Leasingübernahmen relevant.
-                </div>
-              </div>
-            )}
           </CollapsibleContent>
         </Collapsible>
 

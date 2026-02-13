@@ -278,7 +278,7 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       .in("status", PUBLIC_LISTING_STATUSES);
 
     if (monthlyOnly) {
-      query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing)");
+      query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing,leasing_offer->>enabled.eq.true)");
     } else if (effectiveDealType) {
       query = query.eq("deal_type", effectiveDealType);
     }
