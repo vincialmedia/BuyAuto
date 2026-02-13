@@ -251,30 +251,39 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     const page = searchQuery.page || 1;
     const offset = (page - 1) * pageSize;
 
+    const monthlyOnly = searchQuery.monthlyOnly === true;
+
+    const hasMonthsFilter = typeof searchQuery.monthsMin === "number" || typeof searchQuery.monthsMax === "number";
+    const isLeasingOfferFilter = searchQuery.dealType === "direct_purchase" && searchQuery.financingType === "leasing";
+
     const inferredDealType: "lease_takeover" | "direct_purchase" | undefined =
       searchQuery.dealType ??
-      ((typeof searchQuery.monthsMin === "number" || typeof searchQuery.monthsMax === "number")
-        ? "lease_takeover"
-        : searchQuery.financingType
-          ? "direct_purchase"
-          : undefined);
+      (hasMonthsFilter ? "lease_takeover" : searchQuery.financingType ? "direct_purchase" : undefined);
 
     const effectiveDealType = inferredDealType;
-    const isMixed = !effectiveDealType;
-    const isDirectPurchase = effectiveDealType === "direct_purchase";
+    const isMixed = !monthlyOnly && !effectiveDealType;
     const isLeaseTakeover = effectiveDealType === "lease_takeover";
-    const priceColumn = isDirectPurchase ? "purchase_price_chf" : "price_per_month_chf";
+    const isDirectPurchase = effectiveDealType === "direct_purchase";
+
+    const priceMode: "monthly" | "purchase" | "none" =
+      monthlyOnly || isLeaseTakeover || isLeasingOfferFilter ? "monthly" : isDirectPurchase ? "purchase" : "none";
+
+    const monthlyPriceColumn = "price_per_month_chf";
+    const purchasePriceColumn = "purchase_price_chf";
+    const priceColumn = priceMode === "monthly" ? monthlyPriceColumn : purchasePriceColumn;
 
     let query = supabase
       .from("listings")
       .select("*", { count: "exact" })
       .in("status", PUBLIC_LISTING_STATUSES);
 
-    if (effectiveDealType) {
+    if (monthlyOnly) {
+      query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing)");
+    } else if (effectiveDealType) {
       query = query.eq("deal_type", effectiveDealType);
     }
 
-    if (effectiveDealType === "direct_purchase") {
+    if (!monthlyOnly && effectiveDealType === "direct_purchase") {
       if (searchQuery.financingType === "leasing") {
         query = query
           .eq("financing_type", "leasing")
@@ -289,7 +298,7 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
     if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
 
-    if (!isMixed) {
+    if (priceMode !== "none") {
       if (typeof searchQuery.priceMin === "number") query = query.gte(priceColumn, searchQuery.priceMin);
       if (typeof searchQuery.priceMax === "number") query = query.lte(priceColumn, searchQuery.priceMax);
     }
@@ -309,8 +318,8 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
 
     const sortOrder = searchQuery.sort || "relevance";
 
-    if (!isMixed && sortOrder === "priceAsc") query = query.order(priceColumn, { ascending: true, nullsFirst: false });
-    else if (!isMixed && sortOrder === "priceDesc") query = query.order(priceColumn, { ascending: false, nullsFirst: false });
+    if (priceMode !== "none" && sortOrder === "priceAsc") query = query.order(priceColumn, { ascending: true, nullsFirst: false });
+    else if (priceMode !== "none" && sortOrder === "priceDesc") query = query.order(priceColumn, { ascending: false, nullsFirst: false });
     else if (sortOrder === "dateDesc") query = query.order("created_at", { ascending: false });
     else if (sortOrder === "yearDesc") query = query.order("year", { ascending: false });
     else if (isLeaseTakeover && sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });

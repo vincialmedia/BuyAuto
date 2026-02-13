@@ -16,12 +16,13 @@ interface SearchFormProps {
   variant?: "default" | "hero";
 }
 
-type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
+type RestlaufzeitOption = "" | "0-6" | "7-12" | "13-24" | "24+";
 
-function getSaleTypeLabel(option: SaleTypeOption): string {
-  if (option === "lease_takeover") return "Leasingübernahme";
-  if (option === "leasing") return "Leasing";
-  if (option === "direct_purchase") return "Direktkauf";
+function getRestlaufzeitLabel(option: RestlaufzeitOption): string {
+  if (option === "0-6") return "≤ 6 Monate";
+  if (option === "7-12") return "7–12 Monate";
+  if (option === "13-24") return "13–24 Monate";
+  if (option === "24+") return "≥ 24 Monate";
   return "Alle";
 }
 
@@ -29,13 +30,17 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const router = useRouter();
   const isHero = variant === "hero";
 
-  const [saleType, setSaleType] = useState<SaleTypeOption>("all");
-
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [selectedRestlaufzeit, setSelectedRestlaufzeit] = useState("");
-  const [priceRange, setPriceRange] = useState([2000]);
+
+  const [includeLeasingOffers, setIncludeLeasingOffers] = useState(false);
+  const [includeLeaseTakeovers, setIncludeLeaseTakeovers] = useState(false);
+
+  const [selectedRestlaufzeit, setSelectedRestlaufzeit] = useState<RestlaufzeitOption>("");
+
+  const [priceRange, setPriceRange] = useState<number[]>([2000]);
+
   const [selectedBody, setSelectedBody] = useState("");
   const [selectedFuel, setSelectedFuel] = useState("");
   const [selectedGearbox, setSelectedGearbox] = useState("");
@@ -48,29 +53,20 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
   const [expandedFilters, setExpandedFilters] = useState(false);
 
-  const isMixed = saleType === "all";
-  const isLeaseTakeover = saleType === "lease_takeover";
-  const isDirectPurchase = saleType === "direct_purchase" || saleType === "leasing";
+  const monthlyPriceEnabled = includeLeasingOffers || includeLeaseTakeovers;
+  const leaseTakeoversOnly = includeLeaseTakeovers && !includeLeasingOffers;
+  const leasingOffersOnly = includeLeasingOffers && !includeLeaseTakeovers;
+  const monthlyBundle = includeLeasingOffers && includeLeaseTakeovers;
 
   const sliderConfig = useMemo(() => {
-    if (isLeaseTakeover) {
-      return {
-        min: 200,
-        max: 2000,
-        step: 50,
-        label: "Maximaler Preis pro Monat",
-        maxSuffix: "+",
-      };
-    }
-
     return {
-      min: 5000,
-      max: 200000,
-      step: 1000,
-      label: "Maximaler Kaufpreis",
+      min: 200,
+      max: 2000,
+      step: 50,
+      label: "Maximaler Preis pro Monat",
       maxSuffix: "+",
     };
-  }, [isLeaseTakeover]);
+  }, []);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -97,14 +93,14 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   }, [selectedBrand]);
 
   useEffect(() => {
-    if (!isLeaseTakeover) {
-      setSelectedRestlaufzeit("");
-    }
-  }, [isLeaseTakeover]);
-
-  useEffect(() => {
     setPriceRange([sliderConfig.max]);
   }, [sliderConfig.max]);
+
+  useEffect(() => {
+    if (!leaseTakeoversOnly) {
+      setSelectedRestlaufzeit("");
+    }
+  }, [leaseTakeoversOnly]);
 
   const handleBrandChange = (brand: string) => {
     setSelectedBrand(brand);
@@ -112,14 +108,14 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   };
 
   const calculateGradientOpacity = () => {
-    const price = priceRange[0];
+    const price = priceRange[0] ?? sliderConfig.max;
     const percentage = price / sliderConfig.max;
     return Math.min(percentage * 0.8, 0.8);
   };
 
   const formatChf = (value: number) => `CHF ${value.toLocaleString("de-CH")}`;
 
-  const isPriceFilterActive = !isMixed && priceRange[0] < sliderConfig.max;
+  const isPriceFilterActive = monthlyPriceEnabled && (priceRange[0] ?? sliderConfig.max) < sliderConfig.max;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,28 +124,27 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
       page: "1",
     };
 
-    if (saleType === "lease_takeover") {
-      queryParams.dealType = "lease_takeover";
-    } else if (saleType === "direct_purchase") {
-      queryParams.dealType = "direct_purchase";
-      queryParams.financingType = "cash";
-    } else if (saleType === "leasing") {
+    if (leasingOffersOnly) {
       queryParams.dealType = "direct_purchase";
       queryParams.financingType = "leasing";
+    } else if (leaseTakeoversOnly) {
+      queryParams.dealType = "lease_takeover";
+    } else if (monthlyBundle) {
+      queryParams.monthlyOnly = "true";
     }
 
     if (selectedBrand) queryParams.brand = selectedBrand;
     if (selectedModel) queryParams.model = selectedModel;
     if (selectedYear) queryParams.yearMin = selectedYear;
 
-    if (isPriceFilterActive) queryParams.priceMax = priceRange[0].toString();
+    if (isPriceFilterActive) queryParams.priceMax = (priceRange[0] ?? sliderConfig.max).toString();
 
-    if (noDeposit) queryParams.noDeposit = "true";
+    if (noDeposit && leaseTakeoversOnly) queryParams.noDeposit = "true";
     if (selectedBody) queryParams.body = [selectedBody];
     if (selectedFuel) queryParams.fuel = [selectedFuel];
     if (selectedGearbox) queryParams.gearbox = [selectedGearbox];
 
-    if (isLeaseTakeover && selectedRestlaufzeit) {
+    if (leaseTakeoversOnly && selectedRestlaufzeit) {
       const monthsMap: Record<string, { min?: number; max?: number }> = {
         "0-6": { max: 6 },
         "7-12": { min: 7, max: 12 },
@@ -185,22 +180,13 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
     ? "bg-white/15 border-white/25"
     : "bg-neutral-50 border-neutral-200";
 
+  const checkboxLabelStyles = isHero ? "text-white" : "text-neutral-800";
+  const checkboxHintStyles = isHero ? "text-neutral-200" : "text-neutral-600";
+
   return (
     <Card className={cn("rounded-3xl p-6 md:p-8 max-w-4xl mx-auto border transition-all duration-300", cardStyles)}>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Select value={saleType} onValueChange={(v) => setSaleType(v as SaleTypeOption)}>
-            <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-              <SelectValue placeholder="Verkaufsart" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-neutral-200">
-              <SelectItem value="all" className="font-medium">Alle</SelectItem>
-              <SelectItem value="lease_takeover" className="font-medium">Leasingübernahme</SelectItem>
-              <SelectItem value="direct_purchase" className="font-medium">Direktkauf</SelectItem>
-              <SelectItem value="leasing" className="font-medium">Leasing</SelectItem>
-            </SelectContent>
-          </Select>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Select value={selectedBrand} onValueChange={handleBrandChange} disabled={loadingBrands}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
               <SelectValue placeholder="Marke" />
@@ -238,61 +224,90 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
               <SelectItem value="2018" className="font-medium">ab 2018</SelectItem>
             </SelectContent>
           </Select>
-
-          <Select value={selectedRestlaufzeit} onValueChange={setSelectedRestlaufzeit} disabled={!isLeaseTakeover}>
-            <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-              <SelectValue placeholder={isLeaseTakeover ? "Restlaufzeit" : "Nur Leasingübernahme"} />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-neutral-200">
-              <SelectItem value="0-6" className="font-medium">≤ 6 Monate</SelectItem>
-              <SelectItem value="7-12" className="font-medium">7-12 Monate</SelectItem>
-              <SelectItem value="13-24" className="font-medium">13-24 Monate</SelectItem>
-              <SelectItem value="24+" className="font-medium">≥ 24 Monate</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
-        <div className="relative">
-          <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
-            {sliderConfig.label}:{" "}
-            {formatChf(priceRange[0])}
-            {priceRange[0] === sliderConfig.max ? sliderConfig.maxSuffix : ""}
-            {isLeaseTakeover ? "" : ""}
-          </label>
-
-          <div
-            className="absolute inset-x-0 top-12 h-2 rounded-full transition-all duration-500"
-            style={{
-              background: `linear-gradient(to right,
-                rgb(163 163 163 / 0.3) 0%,
-                rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${(priceRange[0] / sliderConfig.max) * 100}%,
-                rgb(220 38 38 / ${calculateGradientOpacity()}) ${(priceRange[0] / sliderConfig.max) * 100}%,
-                rgb(163 163 163 / 0.1) 100%)`,
-            }}
-          />
-
-          <div className="relative pt-2">
-            <Slider
-              value={priceRange}
-              onValueChange={setPriceRange}
-              max={sliderConfig.max}
-              min={sliderConfig.min}
-              step={sliderConfig.step}
-              className={cn("w-full", isMixed && "opacity-50 pointer-events-none")}
-            />
+        <div className={cn("rounded-2xl border p-4", isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white")}>
+          <div className={cn("text-sm font-semibold mb-3", isHero ? "text-white" : "text-neutral-900")}>
+            Monatliche Angebote
           </div>
 
-          <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
-            <span>{formatChf(sliderConfig.min)}</span>
-            <span>{formatChf(sliderConfig.max)}{sliderConfig.maxSuffix}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className={cn("flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors", checkboxContainerStyles, isHero ? "hover:bg-white/20" : "hover:bg-neutral-50")}>
+              <Checkbox
+                id="leasing-offers"
+                checked={includeLeasingOffers}
+                onCheckedChange={(checked) => setIncludeLeasingOffers(!!checked)}
+                className="mt-0.5 border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+              />
+              <span className="space-y-0.5">
+                <span className={cn("block text-sm font-semibold", checkboxLabelStyles)}>Leasingangebote</span>
+                <span className={cn("block text-xs", checkboxHintStyles)}>Fahrzeuge mit aktiviertem Leasing-Angebot</span>
+              </span>
+            </label>
+
+            <label className={cn("flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors", checkboxContainerStyles, isHero ? "hover:bg-white/20" : "hover:bg-neutral-50")}>
+              <Checkbox
+                id="lease-takeovers"
+                checked={includeLeaseTakeovers}
+                onCheckedChange={(checked) => setIncludeLeaseTakeovers(!!checked)}
+                className="mt-0.5 border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+              />
+              <span className="space-y-0.5">
+                <span className={cn("block text-sm font-semibold", checkboxLabelStyles)}>Leasingübernahmen</span>
+                <span className={cn("block text-xs", checkboxHintStyles)}>Bestehende Leasingverträge übernehmen</span>
+              </span>
+            </label>
           </div>
 
-          {isMixed && (
+          {!monthlyPriceEnabled && (
             <p className={cn("mt-3 text-xs font-medium", subTextStyles)}>
-              Wähle zuerst eine Verkaufsart, um Preise zu filtern.
+              Wähle Leasingangebote oder Leasingübernahmen, um nach monatlichen Preisen zu filtern.
             </p>
           )}
         </div>
+
+        {monthlyPriceEnabled && (
+          <div className="relative">
+            <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
+              {sliderConfig.label}:{" "}
+              {formatChf(priceRange[0] ?? sliderConfig.max)}
+              {(priceRange[0] ?? sliderConfig.max) === sliderConfig.max ? sliderConfig.maxSuffix : ""}
+            </label>
+
+            <div
+              className="absolute inset-x-0 top-12 h-2 rounded-full transition-all duration-500"
+              style={{
+                background: `linear-gradient(to right,
+                  rgb(163 163 163 / 0.3) 0%,
+                  rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
+                  rgb(220 38 38 / ${calculateGradientOpacity()}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
+                  rgb(163 163 163 / 0.1) 100%)`,
+              }}
+            />
+
+            <div className="relative pt-2">
+              <Slider
+                value={priceRange}
+                onValueChange={setPriceRange}
+                max={sliderConfig.max}
+                min={sliderConfig.min}
+                step={sliderConfig.step}
+                className="w-full"
+              />
+            </div>
+
+            <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
+              <span>{formatChf(sliderConfig.min)}</span>
+              <span>{formatChf(sliderConfig.max)}{sliderConfig.maxSuffix}</span>
+            </div>
+
+            {monthlyBundle && (
+              <p className={cn("mt-3 text-xs font-medium", subTextStyles)}>
+                Filter gilt für Leasingangebote und Leasingübernahmen.
+              </p>
+            )}
+          </div>
+        )}
 
         <Collapsible open={expandedFilters} onOpenChange={setExpandedFilters}>
           <CollapsibleTrigger asChild>
@@ -315,14 +330,34 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
           </CollapsibleTrigger>
 
           <CollapsibleContent className="space-y-6 pt-6">
-            <div className={cn("rounded-2xl border p-4", isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white")}>
-              <div className={cn("text-sm font-semibold mb-1", isHero ? "text-white" : "text-neutral-900")}>
-                Verkaufsart
+            {leaseTakeoversOnly && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Select value={selectedRestlaufzeit} onValueChange={(v) => setSelectedRestlaufzeit(v as RestlaufzeitOption)}>
+                  <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
+                    <SelectValue placeholder="Restlaufzeit" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-neutral-200">
+                    <SelectItem value="" className="font-medium">Alle</SelectItem>
+                    <SelectItem value="0-6" className="font-medium">{getRestlaufzeitLabel("0-6")}</SelectItem>
+                    <SelectItem value="7-12" className="font-medium">{getRestlaufzeitLabel("7-12")}</SelectItem>
+                    <SelectItem value="13-24" className="font-medium">{getRestlaufzeitLabel("13-24")}</SelectItem>
+                    <SelectItem value="24+" className="font-medium">{getRestlaufzeitLabel("24+")}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className={cn("flex items-center space-x-3 p-4 rounded-xl border", checkboxContainerStyles)}>
+                  <Checkbox
+                    id="no-deposit"
+                    checked={noDeposit}
+                    onCheckedChange={(checked) => setNoDeposit(!!checked)}
+                    className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                  />
+                  <label htmlFor="no-deposit" className={cn("text-sm font-medium cursor-pointer", labelStyles)}>
+                    Keine Kaution
+                  </label>
+                </div>
               </div>
-              <div className={cn("text-xs", isHero ? "text-neutral-200" : "text-neutral-600")}>
-                Aktuell: <span className={cn("font-semibold", isHero ? "text-white" : "text-neutral-900")}>{getSaleTypeLabel(saleType)}</span>
-              </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select value={selectedBody} onValueChange={setSelectedBody}>
@@ -360,17 +395,16 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
               </Select>
             </div>
 
-            <div className={cn("flex items-center space-x-3 p-4 rounded-xl border", checkboxContainerStyles)}>
-              <Checkbox
-                id="no-deposit"
-                checked={noDeposit}
-                onCheckedChange={(checked) => setNoDeposit(!!checked)}
-                className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-              />
-              <label htmlFor="no-deposit" className={cn("text-sm font-medium cursor-pointer", labelStyles)}>
-                Keine Kaution
-              </label>
-            </div>
+            {(leasingOffersOnly || monthlyBundle) && (
+              <div className={cn("rounded-2xl border p-4", isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white")}>
+                <div className={cn("text-sm font-semibold mb-1", isHero ? "text-white" : "text-neutral-900")}>
+                  Hinweis
+                </div>
+                <div className={cn("text-xs", isHero ? "text-neutral-200" : "text-neutral-600")}>
+                  “Keine Kaution” und Restlaufzeit sind nur für Leasingübernahmen relevant.
+                </div>
+              </div>
+            )}
           </CollapsibleContent>
         </Collapsible>
 

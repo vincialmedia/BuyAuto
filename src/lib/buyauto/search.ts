@@ -13,6 +13,7 @@ export interface SearchQuery {
   kmMax?: number;
   monthsMin?: number;
   monthsMax?: number;
+  monthlyOnly?: boolean;
   canton?: string[];
   fuel?: string[];
   gearbox?: string[];

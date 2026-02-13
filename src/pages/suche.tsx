@@ -48,6 +48,7 @@ export default function SearchPage() {
     if (query.canton) newQuery.canton = Array.isArray(query.canton) ? query.canton : [query.canton];
     if (query.noDeposit) newQuery.noDeposit = query.noDeposit === "true";
     if (query.premiumOnly) newQuery.premiumOnly = query.premiumOnly === "true";
+    if (query.monthlyOnly) newQuery.monthlyOnly = query.monthlyOnly === "true";
 
     const dealType = query.dealType;
     if (dealType === "lease_takeover" || dealType === "direct_purchase") {
@@ -68,6 +69,7 @@ export default function SearchPage() {
       const value = query[key as keyof SearchQuery];
 
       if (key === "financingType" && (query.dealType ?? undefined) !== "direct_purchase") continue;
+      if (key === "monthlyOnly" && value !== true) continue;
 
       if (value !== undefined && value !== null && (Array.isArray(value) ? value.length > 0 : value !== "")) {
         urlQuery[key] = value;
