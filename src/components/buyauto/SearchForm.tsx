@@ -101,8 +101,10 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   }, [selectedBrand]);
 
   useEffect(() => {
-    setPriceRange([sliderConfig.max]);
-  }, [sliderConfig.max]);
+    if (!monthlyPriceEnabled) {
+      setPriceRange([sliderConfig.max]);
+    }
+  }, [monthlyPriceEnabled, sliderConfig.max]);
 
   useEffect(() => {
     if (!leaseTakeoversOnly) {
@@ -236,7 +238,12 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
           </Select>
         </div>
 
-        <div className={cn("rounded-2xl border p-4", isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white")}>
+        <div
+          className={cn(
+            "rounded-2xl border p-4",
+            isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white"
+          )}
+        >
           <div className={cn("text-sm font-semibold mb-3", isHero ? "text-white" : "text-neutral-900")}>
             Monatliche Angebote
           </div>
@@ -281,57 +288,56 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
             </label>
           </div>
 
-          {!monthlyPriceEnabled && (
+          {!monthlyPriceEnabled ? (
             <p className={cn("mt-3 text-xs font-medium", subTextStyles)}>
-              Wähle Leasingangebote oder Leasingübernahmen, um nach monatlichen Preisen zu filtern.
+              Wähle <span className={cn("font-semibold", isHero ? "text-white" : "text-neutral-900")}>Leasingangebote</span> oder{" "}
+              <span className={cn("font-semibold", isHero ? "text-white" : "text-neutral-900")}>Leasingübernahmen</span>, um nach monatlichen Preisen zu filtern.
             </p>
-          )}
-        </div>
+          ) : (
+            <div className="mt-5">
+              <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
+                {sliderConfig.label}: {formatChf(priceRange[0] ?? sliderConfig.max)}
+                {(priceRange[0] ?? sliderConfig.max) === sliderConfig.max ? sliderConfig.maxSuffix : ""}
+              </label>
 
-        {monthlyPriceEnabled && (
-          <div className="relative">
-            <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
-              {sliderConfig.label}: {formatChf(priceRange[0] ?? sliderConfig.max)}
-              {(priceRange[0] ?? sliderConfig.max) === sliderConfig.max ? sliderConfig.maxSuffix : ""}
-            </label>
-
-            <div
-              className="absolute inset-x-0 top-12 h-2 rounded-full transition-all duration-500"
-              style={{
-                background: `linear-gradient(to right,
+              <div
+                className="absolute inset-x-0 top-12 h-2 rounded-full transition-all duration-500"
+                style={{
+                  background: `linear-gradient(to right,
                   rgb(163 163 163 / 0.3) 0%,
                   rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
                   rgb(220 38 38 / ${calculateGradientOpacity()}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
                   rgb(163 163 163 / 0.1) 100%)`,
-              }}
-            />
-
-            <div className="relative pt-2">
-              <Slider
-                value={priceRange}
-                onValueChange={setPriceRange}
-                max={sliderConfig.max}
-                min={sliderConfig.min}
-                step={sliderConfig.step}
-                className="w-full"
+                }}
               />
-            </div>
 
-            <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
-              <span>{formatChf(sliderConfig.min)}</span>
-              <span>
-                {formatChf(sliderConfig.max)}
-                {sliderConfig.maxSuffix}
-              </span>
-            </div>
+              <div className="relative pt-2">
+                <Slider
+                  value={priceRange}
+                  onValueChange={setPriceRange}
+                  max={sliderConfig.max}
+                  min={sliderConfig.min}
+                  step={sliderConfig.step}
+                  className="w-full"
+                />
+              </div>
 
-            {monthlyBundle && (
-              <p className={cn("mt-3 text-xs font-medium", subTextStyles)}>
-                Filter gilt für Leasingangebote und Leasingübernahmen.
-              </p>
-            )}
-          </div>
-        )}
+              <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
+                <span>{formatChf(sliderConfig.min)}</span>
+                <span>
+                  {formatChf(sliderConfig.max)}
+                  {sliderConfig.maxSuffix}
+                </span>
+              </div>
+
+              {monthlyBundle && (
+                <p className={cn("mt-3 text-xs font-medium", subTextStyles)}>
+                  Filter gilt für Leasingangebote und Leasingübernahmen.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         <Collapsible open={expandedFilters} onOpenChange={setExpandedFilters}>
           <CollapsibleTrigger asChild>
