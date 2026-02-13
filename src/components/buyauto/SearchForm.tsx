@@ -244,82 +244,37 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
             isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white"
           )}
         >
-          <div className={cn("text-sm font-semibold mb-3", isHero ? "text-white" : "text-neutral-900")}>
-            Monatliche Angebote
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label
-              className={cn(
-                "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors",
-                checkboxContainerStyles,
-                isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
-              )}
-            >
-              <Checkbox
-                id="leasing-offers"
-                checked={includeLeasingOffers}
-                onCheckedChange={(checked) => setIncludeLeasingOffers(!!checked)}
-                className="mt-0.5 border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-              />
-              <span className="space-y-0.5">
-                <span className={cn("block text-sm font-semibold", checkboxLabelStyles)}>Leasingangebote</span>
-                <span className={cn("block text-xs", checkboxHintStyles)}>Fahrzeuge mit aktiviertem Leasing-Angebot</span>
-              </span>
-            </label>
-
-            <label
-              className={cn(
-                "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors",
-                checkboxContainerStyles,
-                isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
-              )}
-            >
-              <Checkbox
-                id="lease-takeovers"
-                checked={includeLeaseTakeovers}
-                onCheckedChange={(checked) => setIncludeLeaseTakeovers(!!checked)}
-                className="mt-0.5 border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-              />
-              <span className="space-y-0.5">
-                <span className={cn("block text-sm font-semibold", checkboxLabelStyles)}>Leasingübernahmen</span>
-                <span className={cn("block text-xs", checkboxHintStyles)}>Bestehende Leasingverträge übernehmen</span>
-              </span>
-            </label>
-          </div>
-
-          {!monthlyPriceEnabled ? (
-            <p className={cn("mt-3 text-xs font-medium", subTextStyles)}>
-              Wähle <span className={cn("font-semibold", isHero ? "text-white" : "text-neutral-900")}>Leasingangebote</span> oder{" "}
-              <span className={cn("font-semibold", isHero ? "text-white" : "text-neutral-900")}>Leasingübernahmen</span>, um nach monatlichen Preisen zu filtern.
-            </p>
-          ) : (
-            <div className="mt-5">
+          <div className={cn("space-y-4")}>
+            <div>
               <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
                 {sliderConfig.label}: {formatChf(priceRange[0] ?? sliderConfig.max)}
                 {(priceRange[0] ?? sliderConfig.max) === sliderConfig.max ? sliderConfig.maxSuffix : ""}
               </label>
 
-              <div
-                className="absolute inset-x-0 top-12 h-2 rounded-full transition-all duration-500"
-                style={{
-                  background: `linear-gradient(to right,
-                  rgb(163 163 163 / 0.3) 0%,
-                  rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
-                  rgb(220 38 38 / ${calculateGradientOpacity()}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
-                  rgb(163 163 163 / 0.1) 100%)`,
-                }}
-              />
-
               <div className="relative pt-2">
-                <Slider
-                  value={priceRange}
-                  onValueChange={setPriceRange}
-                  max={sliderConfig.max}
-                  min={sliderConfig.min}
-                  step={sliderConfig.step}
-                  className="w-full"
-                />
+                {monthlyPriceEnabled && (
+                  <div
+                    className="absolute inset-x-0 top-3 h-2 rounded-full transition-all duration-500"
+                    style={{
+                      background: `linear-gradient(to right,
+                      rgb(163 163 163 / 0.3) 0%,
+                      rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
+                      rgb(220 38 38 / ${calculateGradientOpacity()}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
+                      rgb(163 163 163 / 0.1) 100%)`,
+                    }}
+                  />
+                )}
+
+                <div className={cn(!monthlyPriceEnabled && "opacity-60 pointer-events-none")}>
+                  <Slider
+                    value={priceRange}
+                    onValueChange={setPriceRange}
+                    max={sliderConfig.max}
+                    min={sliderConfig.min}
+                    step={sliderConfig.step}
+                    className="w-full"
+                  />
+                </div>
               </div>
 
               <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
@@ -336,7 +291,55 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                 </p>
               )}
             </div>
-          )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-colors",
+                  checkboxContainerStyles,
+                  isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
+                )}
+              >
+                <Checkbox
+                  id="leasing-offers"
+                  checked={includeLeasingOffers}
+                  onCheckedChange={(checked) => setIncludeLeasingOffers(!!checked)}
+                  className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                />
+                <span className="min-w-0">
+                  <span className={cn("block text-sm font-semibold leading-tight", checkboxLabelStyles)}>
+                    Leasingangebote
+                  </span>
+                  <span className={cn("hidden md:block text-xs leading-tight", checkboxHintStyles)}>
+                    Fahrzeuge mit aktiviertem Leasing-Angebot
+                  </span>
+                </span>
+              </label>
+
+              <label
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-colors",
+                  checkboxContainerStyles,
+                  isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
+                )}
+              >
+                <Checkbox
+                  id="lease-takeovers"
+                  checked={includeLeaseTakeovers}
+                  onCheckedChange={(checked) => setIncludeLeaseTakeovers(!!checked)}
+                  className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                />
+                <span className="min-w-0">
+                  <span className={cn("block text-sm font-semibold leading-tight", checkboxLabelStyles)}>
+                    Leasingübernahmen
+                  </span>
+                  <span className={cn("hidden md:block text-xs leading-tight", checkboxHintStyles)}>
+                    Bestehende Leasingverträge übernehmen
+                  </span>
+                </span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <Collapsible open={expandedFilters} onOpenChange={setExpandedFilters}>
