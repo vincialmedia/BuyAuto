@@ -45,7 +45,8 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const [selectedRestlaufzeit, setSelectedRestlaufzeit] = useState<RestlaufzeitOption>("");
   const [noDeposit, setNoDeposit] = useState(false);
 
-  const [priceRange, setPriceRange] = useState<number[]>([2000]);
+  const [monthlyPriceRange, setMonthlyPriceRange] = useState<number[]>([2000]);
+  const [purchasePriceRange, setPurchasePriceRange] = useState<number[]>([500000]);
 
   const [selectedBody, setSelectedBody] = useState("");
   const [selectedFuel, setSelectedFuel] = useState("");
@@ -64,14 +65,27 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const monthlyBundle = includeLeasingOffers && includeLeaseTakeovers;
 
   const sliderConfig = useMemo(() => {
+    if (monthlyPriceEnabled) {
+      return {
+        min: 200,
+        max: 2000,
+        step: 50,
+        label: "Maximaler Monatlicher Preis",
+        maxSuffix: "+",
+      };
+    }
+
     return {
-      min: 200,
-      max: 2000,
-      step: 50,
-      label: "Maximaler Preis pro Monat",
+      min: 5000,
+      max: 500000,
+      step: 5000,
+      label: "Maximaler Preis",
       maxSuffix: "+",
     };
-  }, []);
+  }, [monthlyPriceEnabled]);
+
+  const activePriceRange = monthlyPriceEnabled ? monthlyPriceRange : purchasePriceRange;
+  const setActivePriceRange = monthlyPriceEnabled ? setMonthlyPriceRange : setPurchasePriceRange;
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -101,12 +115,6 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   }, [selectedBrand]);
 
   useEffect(() => {
-    if (!monthlyPriceEnabled) {
-      setPriceRange([sliderConfig.max]);
-    }
-  }, [monthlyPriceEnabled, sliderConfig.max]);
-
-  useEffect(() => {
     if (!leaseTakeoversOnly) {
       setSelectedRestlaufzeit("");
       setNoDeposit(false);
@@ -118,11 +126,10 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
     setSelectedModel("");
   };
 
-  const isPriceFilterActive =
-    monthlyPriceEnabled && (priceRange[0] ?? sliderConfig.max) < sliderConfig.max;
+  const isPriceFilterActive = (activePriceRange[0] ?? sliderConfig.max) < sliderConfig.max;
 
   const calculateGradientOpacity = () => {
-    const price = priceRange[0] ?? sliderConfig.max;
+    const price = activePriceRange[0] ?? sliderConfig.max;
     const percentage = price / sliderConfig.max;
     return Math.min(percentage * 0.8, 0.8);
   };
@@ -139,6 +146,9 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
       queryParams.dealType = "lease_takeover";
     } else if (monthlyBundle) {
       queryParams.monthlyOnly = "true";
+    } else {
+      queryParams.dealType = "direct_purchase";
+      queryParams.financingType = "cash";
     }
 
     if (selectedBrand) queryParams.brand = selectedBrand;
@@ -146,7 +156,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
     if (selectedYear) queryParams.yearMin = selectedYear;
 
     if (isPriceFilterActive) {
-      queryParams.priceMax = (priceRange[0] ?? sliderConfig.max).toString();
+      queryParams.priceMax = (activePriceRange[0] ?? sliderConfig.max).toString();
     }
 
     if (leaseTakeoversOnly && noDeposit) queryParams.noDeposit = "true";
@@ -244,11 +254,11 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
             isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white"
           )}
         >
-          <div className={cn("space-y-4")}>
+          <div className={cn("space-y-3")}>
             <div>
-              <label className={cn("block text-sm font-semibold mb-4 tracking-wide", labelStyles)}>
-                {sliderConfig.label}: {formatChf(priceRange[0] ?? sliderConfig.max)}
-                {(priceRange[0] ?? sliderConfig.max) === sliderConfig.max ? sliderConfig.maxSuffix : ""}
+              <label className={cn("block text-sm font-semibold mb-3 tracking-wide", labelStyles)}>
+                {sliderConfig.label}: {formatChf(activePriceRange[0] ?? sliderConfig.max)}
+                {(activePriceRange[0] ?? sliderConfig.max) === sliderConfig.max ? sliderConfig.maxSuffix : ""}
               </label>
 
               <div className="relative pt-2">
@@ -258,23 +268,21 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                     style={{
                       background: `linear-gradient(to right,
                       rgb(163 163 163 / 0.3) 0%,
-                      rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
-                      rgb(220 38 38 / ${calculateGradientOpacity()}) ${((priceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
+                      rgb(239 68 68 / ${calculateGradientOpacity() * 0.4}) ${((activePriceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
+                      rgb(220 38 38 / ${calculateGradientOpacity()}) ${((activePriceRange[0] ?? sliderConfig.max) / sliderConfig.max) * 100}%,
                       rgb(163 163 163 / 0.1) 100%)`,
                     }}
                   />
                 )}
 
-                <div className={cn(!monthlyPriceEnabled && "opacity-60 pointer-events-none")}>
-                  <Slider
-                    value={priceRange}
-                    onValueChange={setPriceRange}
-                    max={sliderConfig.max}
-                    min={sliderConfig.min}
-                    step={sliderConfig.step}
-                    className="w-full"
-                  />
-                </div>
+                <Slider
+                  value={activePriceRange}
+                  onValueChange={setActivePriceRange}
+                  max={sliderConfig.max}
+                  min={sliderConfig.min}
+                  step={sliderConfig.step}
+                  className="w-full"
+                />
               </div>
 
               <div className={cn("flex justify-between text-xs font-medium mt-2", subTextStyles)}>
@@ -284,18 +292,12 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   {sliderConfig.maxSuffix}
                 </span>
               </div>
-
-              {monthlyBundle && (
-                <p className={cn("mt-3 text-xs font-medium", subTextStyles)}>
-                  Filter gilt für Leasingangebote und Leasingübernahmen.
-                </p>
-              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label
                 className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-colors",
+                  "flex items-center gap-2 px-2.5 py-2 rounded-xl border cursor-pointer transition-colors",
                   checkboxContainerStyles,
                   isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
                 )}
@@ -310,15 +312,12 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   <span className={cn("block text-sm font-semibold leading-tight", checkboxLabelStyles)}>
                     Leasingangebote
                   </span>
-                  <span className={cn("hidden md:block text-xs leading-tight", checkboxHintStyles)}>
-                    Fahrzeuge mit aktiviertem Leasing-Angebot
-                  </span>
                 </span>
               </label>
 
               <label
                 className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-colors",
+                  "flex items-center gap-2 px-2.5 py-2 rounded-xl border cursor-pointer transition-colors",
                   checkboxContainerStyles,
                   isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
                 )}
@@ -333,12 +332,15 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   <span className={cn("block text-sm font-semibold leading-tight", checkboxLabelStyles)}>
                     Leasingübernahmen
                   </span>
-                  <span className={cn("hidden md:block text-xs leading-tight", checkboxHintStyles)}>
-                    Bestehende Leasingverträge übernehmen
-                  </span>
                 </span>
               </label>
             </div>
+
+            {monthlyBundle && (
+              <p className={cn("text-xs font-medium", subTextStyles)}>
+                Filter gilt für Leasingangebote und Leasingübernahmen.
+              </p>
+            )}
           </div>
         </div>
 
