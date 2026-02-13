@@ -1,8 +1,8 @@
-
 import { Button } from "@/components/ui/button";
-import { Car, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function SlimHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -12,10 +12,17 @@ export default function SlimHeader() {
       <div className="max-w-[2000px] mx-auto px-4 md:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14">
           {/* Logo - Minimal and clean */}
-          <div className="flex items-center space-x-2">
-            <Car className="h-5 w-5 text-red-500" />
-            <span className="text-base font-semibold text-neutral-900 tracking-tight">BuyAuto</span>
-          </div>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/buyauto-logo.png"
+              alt="BuyAuto Logo"
+              width={120}
+              height={32}
+              className="h-6 w-auto"
+              priority
+              sizes="120px"
+            />
+          </Link>
 
           {/* Desktop Navigation - Ultra minimal */}
           <nav className="hidden md:flex items-center space-x-6">

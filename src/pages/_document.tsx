@@ -5,7 +5,7 @@ export default function Document() {
     <Html lang="de-CH">
       <Head>
         {/* Favicon - The little red car */}
-        <link rel="icon" href="/Untitled_design_7_.png" />
+        <link rel="icon" href="/buyauto-logo.png" />
         <link rel="apple-touch-icon" href="/buyauto-logo.png" />
         
         {/* Preconnect to Supabase storage for faster image loading */}

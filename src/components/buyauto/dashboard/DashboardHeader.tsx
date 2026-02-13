@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { LogOut, Car } from "lucide-react";
+import { LogOut } from "lucide-react";
+import Image from "next/image";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -29,13 +29,16 @@ export default function DashboardHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center group-hover:bg-red-600 transition-colors">
-              <Car className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-neutral-900 group-hover:text-red-500 transition-colors">
-              BuyAuto
-            </span>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/buyauto-logo.png"
+              alt="BuyAuto Logo"
+              width={140}
+              height={36}
+              className="h-8 w-auto"
+              priority
+              sizes="140px"
+            />
           </Link>
 
           {/* User Actions */}

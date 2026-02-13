@@ -96,7 +96,7 @@ export default function Header() {
                 <div className="w-[120px] md:w-[160px] h-0 flex items-center justify-center">
                   <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[120px] md:w-[160px] h-24 md:h-32">
                     <Image
-                      src="/Untitled_design_6_.webp"
+                      src="/buyauto-logo.png"
                       alt="BuyAuto Logo"
                       fill
                       className="object-contain object-left"

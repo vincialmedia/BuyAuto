@@ -59,7 +59,7 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-6 group hover:opacity-80 transition-opacity">
               <img 
-                src="/Untitled_design_6_.png" 
+                src="/buyauto-logo.png" 
                 alt="BuyAuto Logo" 
                 className="w-[100px] h-auto"
               />
