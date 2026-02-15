@@ -88,23 +88,14 @@ export default function Header() {
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center relative z-50">
               <Link href="/" className="relative block">
-                {/* 
-                  Container preserves space in flow (optional, can be smaller) 
-                  but we use absolute positioning for the image to allow overlap
-                  without affecting header height.
-                */}
-                <div className="w-[120px] md:w-[160px] h-0 flex items-center justify-center">
-                  <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[120px] md:w-[160px] h-24 md:h-32">
-                    <Image
-                      src="/buyauto-logo.png"
-                      alt="BuyAuto Logo"
-                      fill
-                      className="object-contain object-left"
-                      priority
-                      sizes="(max-width: 768px) 120px, 160px"
-                    />
-                  </div>
-                </div>
+                <Image
+                  src="/buyauto-logo.png"
+                  alt="BuyAuto Logo"
+                  width={160}
+                  height={64}
+                  priority
+                  className="w-[120px] md:w-[160px] h-auto bg-transparent"
+                />
               </Link>
             </div>
 

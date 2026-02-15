@@ -2,6 +2,7 @@ import { Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 
 // Dynamically import NewsletterSignup to reduce initial footer bundle size
 // It is at the bottom of the page, so immediate loading is not critical
@@ -58,10 +59,13 @@ export function Footer() {
           {/* Swiss company info */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-6 group hover:opacity-80 transition-opacity">
-              <img 
-                src="/buyauto-logo.png" 
-                alt="BuyAuto Logo" 
-                className="w-[100px] h-auto"
+              <Image
+                src="/buyauto-logo.png"
+                alt="BuyAuto Logo"
+                width={100}
+                height={40}
+                className="w-[100px] h-auto bg-transparent"
+                priority={false}
               />
             </Link>
             <p className="text-neutral-300 mb-8 leading-relaxed font-light text-lg max-w-md">
