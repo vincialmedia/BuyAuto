@@ -61,10 +61,10 @@ export function Footer() {
             <Link href="/" className="flex items-center space-x-2 mb-6 group hover:opacity-80 transition-opacity">
               <Image
                 src="/buyauto-logo.png"
-                alt="BuyAuto Logo"
-                width={100}
+                alt="BuyAuto"
+                width={160}
                 height={40}
-                className="w-[100px] h-auto bg-transparent"
+                className="h-8 w-auto bg-transparent"
                 priority={false}
               />
             </Link>

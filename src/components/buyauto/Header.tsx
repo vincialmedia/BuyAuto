@@ -90,11 +90,12 @@ export default function Header() {
               <Link href="/" className="relative block">
                 <Image
                   src="/buyauto-logo.png"
-                  alt="BuyAuto Logo"
-                  width={160}
-                  height={64}
+                  alt="BuyAuto"
+                  width={220}
+                  height={60}
                   priority
-                  className="w-[120px] md:w-[160px] h-auto bg-transparent"
+                  className="h-8 md:h-10 w-auto bg-transparent"
+                  sizes="(max-width: 768px) 120px, 160px"
                 />
               </Link>
             </div>
