@@ -170,16 +170,22 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
                     </div>
                     <div className="mt-2 flex items-center justify-between">
                       <span>Inserate</span>
-                      <span className="font-semibold text-neutral-900">{currentPlan?.listing_limit ?? garage?.listing_limit ?? "—"}</span>
+                      <span className="font-semibold text-neutral-900">
+                        {currentPlan?.code === "custom" ? "100+" : (currentPlan?.listing_limit ?? garage?.listing_limit ?? "—")}
+                      </span>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
                       <span>Premium / Monat</span>
-                      <span className="font-semibold text-neutral-900">{currentPlan?.premium_included_per_month ?? 0}</span>
+                      <span className="font-semibold text-neutral-900">
+                        {currentPlan?.code === "custom" ? "nach Bedarf" : (currentPlan?.premium_included_per_month ?? 0)}
+                      </span>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
                       <span>Premium genutzt {periodYYYYMM ? `(${periodYYYYMM})` : ""}</span>
                       <span className="font-semibold text-neutral-900">
-                        {(credits?.credits_used ?? 0).toString()} / {(credits?.credits_included ?? (currentPlan?.premium_included_per_month ?? 0)).toString()}
+                        {currentPlan?.code === "custom"
+                          ? "nach Bedarf"
+                          : `${(credits?.credits_used ?? 0).toString()} / ${(credits?.credits_included ?? (currentPlan?.premium_included_per_month ?? 0)).toString()}`}
                       </span>
                     </div>
                   </div>

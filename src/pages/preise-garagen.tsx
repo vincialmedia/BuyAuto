@@ -1,6 +1,6 @@
 import type { GetServerSideProps } from "next";
 
-export default function PreiseGaragenRedirectPage() {
+export default function PreiseGaragenRedirect() {
   return null;
 }
 
