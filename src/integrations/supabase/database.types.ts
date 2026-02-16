@@ -80,6 +80,204 @@ export type Database = {
           },
         ]
       }
+      dealer_plan_changes: {
+        Row: {
+          created_at: string
+          dealer_id: string
+          effective_date: string
+          from_plan_id: string | null
+          id: string
+          notes: string | null
+          requested_at: string
+          status: Database["public"]["Enums"]["dealer_plan_change_status"]
+          to_plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dealer_id: string
+          effective_date?: string
+          from_plan_id?: string | null
+          id?: string
+          notes?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["dealer_plan_change_status"]
+          to_plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dealer_id?: string
+          effective_date?: string
+          from_plan_id?: string | null
+          id?: string
+          notes?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["dealer_plan_change_status"]
+          to_plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dealer_plan_changes_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dealer_plan_changes_from_plan_id_fkey"
+            columns: ["from_plan_id"]
+            isOneToOne: false
+            referencedRelation: "dealer_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dealer_plan_changes_to_plan_id_fkey"
+            columns: ["to_plan_id"]
+            isOneToOne: false
+            referencedRelation: "dealer_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dealer_plans: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          id: string
+          listing_limit: number | null
+          monthly_price_chf: number | null
+          name: string
+          onboarding_included: boolean
+          onboarding_note: string | null
+          premium_included_per_month: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          listing_limit?: number | null
+          monthly_price_chf?: number | null
+          name: string
+          onboarding_included?: boolean
+          onboarding_note?: string | null
+          premium_included_per_month?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          listing_limit?: number | null
+          monthly_price_chf?: number | null
+          name?: string
+          onboarding_included?: boolean
+          onboarding_note?: string | null
+          premium_included_per_month?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dealer_premium_credits: {
+        Row: {
+          created_at: string
+          credits_included: number
+          credits_used: number
+          dealer_id: string
+          id: string
+          period_yyyymm: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credits_included?: number
+          credits_used?: number
+          dealer_id: string
+          id?: string
+          period_yyyymm: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credits_included?: number
+          credits_used?: number
+          dealer_id?: string
+          id?: string
+          period_yyyymm?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dealer_premium_credits_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dealer_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          dealer_id: string
+          end_date: string | null
+          id: string
+          plan_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["dealer_subscription_status"]
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          dealer_id: string
+          end_date?: string | null
+          id?: string
+          plan_id: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["dealer_subscription_status"]
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          dealer_id?: string
+          end_date?: string | null
+          id?: string
+          plan_id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["dealer_subscription_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dealer_subscriptions_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: true
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dealer_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "dealer_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debug_logs: {
         Row: {
           created_at: string | null
@@ -903,6 +1101,14 @@ export type Database = {
       }
     }
     Functions: {
+      ensure_dealer_premium_credits: {
+        Args: { dealer_id: string }
+        Returns: undefined
+      }
+      garage_set_listing_premium_with_credit: {
+        Args: { listing_id: string }
+        Returns: Json
+      }
       get_all_users_with_profiles: {
         Args: never
         Returns: {
@@ -926,6 +1132,10 @@ export type Database = {
       get_user_role: { Args: { user_id: string }; Returns: string }
       normalize_vehicle_name: { Args: { input: string }; Returns: string }
       publish_garage_listing: { Args: { listing_id: string }; Returns: Json }
+      request_dealer_plan_change: {
+        Args: { dealer_id: string; to_plan_code: string }
+        Returns: Json
+      }
       resolve_make_id: { Args: { p_make_text: string }; Returns: string }
       resolve_model_id: {
         Args: { p_make_id: string; p_model_text: string }
@@ -982,6 +1192,16 @@ export type Database = {
     }
     Enums: {
       deal_type: "lease_takeover" | "direct_purchase"
+      dealer_plan_change_status:
+        | "requested"
+        | "approved"
+        | "rejected"
+        | "applied"
+      dealer_subscription_status:
+        | "active"
+        | "pending_change"
+        | "canceled"
+        | "past_due"
       financing_type: "cash" | "leasing"
       listing_status:
         | "pending"
@@ -1122,6 +1342,18 @@ export const Constants = {
   public: {
     Enums: {
       deal_type: ["lease_takeover", "direct_purchase"],
+      dealer_plan_change_status: [
+        "requested",
+        "approved",
+        "rejected",
+        "applied",
+      ],
+      dealer_subscription_status: [
+        "active",
+        "pending_change",
+        "canceled",
+        "past_due",
+      ],
       financing_type: ["cash", "leasing"],
       listing_status: [
         "pending",
