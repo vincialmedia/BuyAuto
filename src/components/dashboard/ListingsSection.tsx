@@ -255,7 +255,7 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
           </div>
           <h3 className="text-lg font-medium text-neutral-900 mb-1">Keine Inserate gefunden</h3>
           <p className="text-neutral-500 text-center max-w-sm mb-6">
-            Sie haben noch keine Leasingübernahmen inseriert. Erstellen Sie jetzt Ihr erstes Inserat.
+            Du hast noch keine Leasingübernahmen inseriert. Erstelle jetzt dein erstes Inserat.
           </p>
           <Button 
             className="bg-red-600 hover:bg-red-700"
@@ -274,7 +274,7 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
       {isGarage && (
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
            <div>
-             <h4 className="font-semibold text-blue-900">Ihr Garagen-Status</h4>
+             <h4 className="font-semibold text-blue-900">Dein Garagen-Status</h4>
              <p className="text-sm text-blue-700">
                Aktive Inserate: <strong>{activeCount}</strong> / {limit}
              </p>
