@@ -7,8 +7,8 @@
 6 silly config load:file:/usr/local/etc/npmrc
 7 verbose title npm exec eslint --no-error-on-unmatched-pattern --quiet --rule @next/next/no-html-link-for-pages: error src/
 8 verbose argv "exec" "--" "eslint" "--no-error-on-unmatched-pattern" "--quiet" "--rule" "@next/next/no-html-link-for-pages: error" "src/"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-02-15T17_39_49_974Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-02-15T17_39_49_974Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-02-16T07_45_21_885Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-02-16T07_45_21_885Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 verbose cwd /app
