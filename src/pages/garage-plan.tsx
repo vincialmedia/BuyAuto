@@ -1,548 +1,351 @@
+import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { Check, ChevronRight, Crown, Mail, Loader2 } from "lucide-react";
+import { Check, Mail, ArrowRight, Loader2 } from "lucide-react";
+import Header from "@/components/buyauto/Header";
+import { Footer } from "@/components/buyauto/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-type PlanCode = "starter" | "growth" | "pro" | "custom";
+const includedFeatures = [
+  "Garage-Profilseite + Inventar-Seite",
+  "Inserate erstellen & verwalten",
+  "VIN-PreFill (wo verfügbar)",
+  "Leasing-Rechner direkt im Inserat",
+  "Deal-Chat pro Fahrzeug (Chat + Dokumente)",
+  "Basis-Statistiken: Views & Anfragen",
+];
 
-type DealerPlan = {
-  id: string;
-  code: string;
-  name: string;
-  monthly_price_chf: number | null;
-  listing_limit: number | null;
-  premium_included_per_month: number | null;
-  onboarding_included: boolean;
-  onboarding_note: string | null;
-};
-
-type PrepareOk = { ok: true; clientSecret: string; paymentIntentId: string; amountChf: number };
-type PrepareErr = { ok: false; error: string };
-type PrepareResponse = PrepareOk | PrepareErr;
-
-const PaymentWidget = dynamic(() => import("@/components/buyauto/create-listing/PaymentWidget"), {
-  ssr: false,
-  loading: () => (
-    <div className="text-center py-10">
-      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      <p className="mt-3 text-neutral-600">Lade Zahlungsformular…</p>
-    </div>
-  ),
-});
-
-function normalizePlan(input: unknown): PlanCode | null {
-  const raw = typeof input === "string" ? input.trim().toLowerCase() : "";
-  if (raw === "starter" || raw === "growth" || raw === "pro" || raw === "custom") return raw;
-  return null;
-}
-
-function isSafeNextPath(input: unknown): input is string {
-  return typeof input === "string" && input.startsWith("/");
-}
-
-function formatChf(amount: number | null): string {
-  if (typeof amount !== "number" || !Number.isFinite(amount)) return "—";
-  return `CHF ${amount} / Monat`;
-}
-
-function planCardTopClass(code: string): string {
-  if (code === "growth") return "border-primary/20 bg-gradient-to-b from-primary/[0.06] to-white shadow-lg";
-  return "border-neutral-200/60 bg-white shadow-sm";
-}
-
-function isPrepareOk(input: unknown): input is PrepareOk {
-  if (!input || typeof input !== "object") return false;
-  const r = input as any;
-  return (
-    r.ok === true &&
-    typeof r.clientSecret === "string" &&
-    r.clientSecret.length > 0 &&
-    typeof r.paymentIntentId === "string" &&
-    r.paymentIntentId.length > 0 &&
-    typeof r.amountChf === "number"
-  );
-}
-
-function isPrepareErr(input: unknown): input is PrepareErr {
-  if (!input || typeof input !== "object") return false;
-  const r = input as any;
-  return r.ok === false && typeof r.error === "string";
-}
+const packages = [
+  {
+    code: "starter",
+    name: "Starter",
+    price: "CHF 149",
+    period: "/ Monat",
+    limit: "bis zu 15 Inserate",
+    premiumIncluded: "1 Premium Inserat / Monat inklusive",
+    features: ["Alles aus 'Inklusive'"],
+    cta: "Starter wählen",
+    popular: false,
+  },
+  {
+    code: "growth",
+    name: "Growth",
+    price: "CHF 349",
+    period: "/ Monat",
+    limit: "bis zu 50 Inserate",
+    premiumIncluded: "5 Premium Inserate / Monat inklusive",
+    features: [
+      "Alles aus Starter",
+      "Done-for-you Onboarding",
+      "Du schickst uns dein Inventar, wir erledigen den Rest.",
+    ],
+    cta: "Growth wählen",
+    popular: true,
+  },
+  {
+    code: "pro",
+    name: "Pro",
+    price: "CHF 599",
+    period: "/ Monat",
+    limit: "bis zu 100 Inserate",
+    premiumIncluded: "10 Premium Inserate / Monat inklusive",
+    features: ["Alles aus Growth", "Done-for-you Onboarding (priorisiert)"],
+    cta: "Pro wählen",
+    popular: false,
+  },
+];
 
 export default function GaragePlanPage() {
   const router = useRouter();
-  const { user, loading, profile, profileLoading } = useAuth();
-
-  const selectedFromQuery = useMemo(() => normalizePlan(router.query.plan), [router.query.plan]);
-  const safeNext = useMemo(() => (isSafeNextPath(router.query.next) ? router.query.next : "/inserat-erstellen"), [router.query.next]);
-
-  const [currentGaragePlanSnapshot, setCurrentGaragePlanSnapshot] = useState<string | null>(null);
-
-  const [plans, setPlans] = useState<DealerPlan[]>([]);
-  const [plansLoading, setPlansLoading] = useState(true);
-
-  const [banner, setBanner] = useState<{ kind: "idle" } | { kind: "error"; message: string } | { kind: "success"; message: string }>({
-    kind: "idle",
-  });
-
-  const [step, setStep] = useState<"select" | "pay">("select");
-  const [pickedPlan, setPickedPlan] = useState<PlanCode | null>(selectedFromQuery);
-  const [busy, setBusy] = useState(false);
-
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  const [amountChf, setAmountChf] = useState<number>(0);
-
-  const authRedirectUrl = useMemo(() => {
-    const qp = new URLSearchParams();
-    if (selectedFromQuery) qp.set("plan", selectedFromQuery);
-    qp.set("next", safeNext);
-    return `/auth?redirect=${encodeURIComponent(`/garage-plan?${qp.toString()}`)}`;
-  }, [safeNext, selectedFromQuery]);
+  const { user, profile } = useAuth();
+  const userRole = profile?.role;
+  const [loading, setLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadPlans() {
-      setPlansLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("dealer_plans")
-          .select("id, code, name, monthly_price_chf, listing_limit, premium_included_per_month, onboarding_included, onboarding_note, active")
-          .eq("active", true);
-
-        if (error) throw error;
-
-        const rows = (Array.isArray(data) ? data : []) as Array<DealerPlan & { active: boolean }>;
-        const normalized = rows
-          .map((r) => ({
-            id: r.id,
-            code: r.code,
-            name: r.name,
-            monthly_price_chf: r.monthly_price_chf,
-            listing_limit: r.listing_limit,
-            premium_included_per_month: r.premium_included_per_month,
-            onboarding_included: r.onboarding_included,
-            onboarding_note: r.onboarding_note,
-          }))
-          .sort((a, b) => {
-            const aCustom = a.code === "custom";
-            const bCustom = b.code === "custom";
-            if (aCustom && !bCustom) return 1;
-            if (!aCustom && bCustom) return -1;
-            const ap = typeof a.monthly_price_chf === "number" ? a.monthly_price_chf : 999999;
-            const bp = typeof b.monthly_price_chf === "number" ? b.monthly_price_chf : 999999;
-            return ap - bp;
-          });
-
-        if (!cancelled) setPlans(normalized);
-      } catch (e: any) {
-        if (!cancelled) setBanner({ kind: "error", message: `Konnte Pakete nicht laden: ${typeof e?.message === "string" ? e.message : "Unbekannter Fehler"}` });
-      } finally {
-        if (!cancelled) setPlansLoading(false);
-      }
-    }
-
-    void loadPlans();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (loading || profileLoading) return;
-
-    if (!user) return;
-    if (profile?.role !== "garage") return;
-
-    let cancelled = false;
-
-    async function checkGarage() {
-      try {
-        const { data: garage, error: garageError } = await supabase
-          .from("garages")
-          .select("id, plan")
-          .eq("owner_user_id", user.id)
-          .maybeSingle();
-
-        if (garageError) throw garageError;
-
-        const snapshotPlan = String(garage?.plan ?? "no_plan").trim().toLowerCase();
-
-        if (!cancelled) {
-          setCurrentGaragePlanSnapshot(snapshotPlan);
-        }
-
-        const hasPlan = snapshotPlan !== "free" && snapshotPlan !== "no_plan" && snapshotPlan !== "no plan";
-        if (hasPlan) {
-          await router.replace(safeNext);
-        }
-      } catch (e: any) {
-        if (!cancelled) {
-          setBanner({ kind: "error", message: `Konnte Garage nicht laden: ${typeof e?.message === "string" ? e.message : "Unbekannter Fehler"}` });
-        }
-      }
-    }
-
-    void checkGarage();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loading, profileLoading, profile?.role, router, safeNext, user]);
-
-  async function handleActivateGarage() {
-    setBanner({ kind: "idle" });
-    setBusy(true);
-    try {
-      const { error } = await supabase.rpc("upgrade_to_garage", {});
-      if (error) throw error;
-
-      setBanner({ kind: "success", message: "Dein Garage-Konto ist aktiv. Als nächstes: Paket auswählen und bezahlen." });
-      await router.replace(`/garage-plan?next=${encodeURIComponent(safeNext)}`);
-    } catch (e: any) {
-      setBanner({ kind: "error", message: `Aktivierung fehlgeschlagen: ${typeof e?.message === "string" ? e.message : "Unbekannter Fehler"}` });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handlePickAndPay(code: PlanCode) {
-    setBanner({ kind: "idle" });
-
     if (!user) {
-      await router.push(authRedirectUrl);
+      router.push("/auth?mode=login");
       return;
     }
 
-    if (profile?.role !== "garage") {
-      setBanner({ kind: "error", message: "Dieses Paket ist für Garagen. Bitte aktiviere zuerst dein Garage-Konto." });
+    if (userRole !== "garage") {
+      toast.error("Zugriff verweigert", {
+        description: "Diese Seite ist nur für Garagen verfügbar.",
+      });
+      router.push("/");
       return;
     }
+  }, [user, userRole, router]);
 
-    if (code === "custom") return;
+  const handleSelectPlan = async (planCode: string) => {
+    if (!user) return;
 
-    setBusy(true);
+    setLoading(true);
+    setSelectedPlan(planCode);
+
     try {
+      // Step 1: Prepare payment session
       const response = await fetch("/api/dealer/prepare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan_code: code }),
+        body: JSON.stringify({ planCode }),
       });
-
-      const json = (await response.json().catch(() => null)) as unknown;
-
-      if (isPrepareErr(json)) {
-        throw new Error(json.error);
-      }
 
       if (!response.ok) {
-        throw new Error("Zahlung konnte nicht vorbereitet werden.");
+        const error = await response.json();
+        throw new Error(error.error || "Fehler beim Vorbereiten der Zahlung");
       }
 
-      if (!isPrepareOk(json)) {
-        throw new Error("Zahlung konnte nicht vorbereitet werden.");
+      const { sessionId, url } = await response.json();
+
+      if (!url) {
+        throw new Error("Keine Zahlungs-URL erhalten");
       }
 
-      setPickedPlan(code);
-      setClientSecret(json.clientSecret);
-      setPaymentIntentId(json.paymentIntentId);
-      setAmountChf(json.amountChf);
-      setStep("pay");
-    } catch (e: any) {
-      setBanner({ kind: "error", message: `Zahlung konnte nicht gestartet werden: ${typeof e?.message === "string" ? e.message : "Unbekannter Fehler"}` });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handlePaymentSuccess() {
-    if (!paymentIntentId) {
-      setBanner({ kind: "error", message: "Zahlung bestätigt, aber PaymentIntent fehlt. Bitte neu laden." });
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const response = await fetch("/api/dealer/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payment_intent_id: paymentIntentId }),
+      // Step 2: Redirect to Stripe Checkout
+      window.location.href = url;
+    } catch (error: any) {
+      console.error("Plan selection error:", error);
+      toast.error("Fehler", {
+        description: error.message || "Bitte versuche es später erneut.",
       });
-
-      const result = (await response.json().catch(() => null)) as unknown as { ok?: boolean; error?: string };
-
-      if (!response.ok || !result?.ok) {
-        throw new Error(typeof result?.error === "string" ? result.error : "Plan konnte nicht aktiviert werden.");
-      }
-
-      await router.replace(safeNext);
-    } catch (e: any) {
-      setBanner({ kind: "error", message: `Plan-Aktivierung fehlgeschlagen: ${typeof e?.message === "string" ? e.message : "Unbekannter Fehler"}` });
-    } finally {
-      setBusy(false);
+      setLoading(false);
+      setSelectedPlan(null);
     }
-  }
+  };
 
-  const isLoadingAuth = loading || profileLoading;
+  if (!user || userRole !== "garage") {
+    return null;
+  }
 
   return (
     <>
       <Head>
-        <title>Garage Paket wählen | BuyAuto</title>
-        <meta name="robots" content="noindex,nofollow" />
+        <title>BuyAuto – Wähle dein Paket</title>
+        <meta
+          name="description"
+          content="Wähle das passende Paket für deine Garage. Inserate, VIN-PreFill, Leasing-Rechner und Deal-Chat pro Fahrzeug."
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="bg-neutral-50/60">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700">
-              Pakete für Garagen <span className="h-1 w-1 rounded-full bg-neutral-300" /> direkt online aktivieren
+      <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
+        <Header />
+
+        {/* Hero - Compressed */}
+        <section className="relative pt-24 pb-8 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 mb-3">
+              Wähle dein Paket
+            </h1>
+            <p className="text-2xl md:text-3xl font-bold text-neutral-800 mb-2">
+              Mehr Anfragen. Weniger Aufwand.
+            </p>
+            <p className="text-lg text-neutral-600 mb-6 max-w-3xl mx-auto">
+              Dein Inventar online – mit VIN-PreFill, Leasing-Rechner und
+              Deal-Chat pro Fahrzeug.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
+              {[
+                "VIN-PreFill (wo verfügbar)",
+                "Leasing-Rechner im Inserat",
+                "Deal-Chat inkl. Dokumentenversand",
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-center gap-2 text-neutral-700"
+                >
+                  <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">{item}</span>
+                </div>
+              ))}
             </div>
-            <h1 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-neutral-900">Paket auswählen</h1>
-            <p className="mt-3 text-neutral-600">Wähle dein Paket, bezahle direkt per Stripe – und erstelle danach sofort dein Inserat.</p>
           </div>
+        </section>
 
-          {banner.kind !== "idle" && (
-            <div
-              className={cn(
-                "mt-6 rounded-2xl border px-4 py-3 text-sm",
-                banner.kind === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                  : "border-red-200 bg-red-50 text-red-900"
-              )}
-            >
-              {banner.message}
+        {/* Included in every package - Compressed */}
+        <section className="py-8 px-4 bg-neutral-50">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl font-bold text-center text-neutral-900 mb-2">
+              In jedem Paket inklusive
+            </h2>
+            <p className="text-center text-neutral-600 mb-6 max-w-2xl mx-auto text-sm">
+              Diese Features bekommst du in allen Paketen – von Starter bis
+              Pro.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {includedFeatures.map((feature, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-3 bg-white p-4 rounded-2xl shadow-sm"
+                >
+                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-neutral-700 font-medium text-sm">
+                    {feature}
+                  </span>
+                </div>
+              ))}
             </div>
-          )}
 
-          <div className="mt-8">
-            {isLoadingAuth ? (
-              <div className="flex items-center gap-2 text-sm text-neutral-600">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Lade…
-              </div>
-            ) : !user ? (
-              <div className="rounded-3xl border border-neutral-200/60 bg-white p-6 shadow-sm">
-                <div className="text-sm font-semibold text-neutral-900">Bevor du startest</div>
-                <div className="mt-1 text-sm text-neutral-600">Bitte melde dich an oder erstelle ein Konto, um dein Garage-Paket zu aktivieren.</div>
-                <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                  <Button asChild className="rounded-2xl h-11">
-                    <Link href={authRedirectUrl}>Jetzt anmelden / Konto erstellen</Link>
-                  </Button>
-                  <Button asChild variant="secondary" className="rounded-2xl h-11">
-                    <a href="mailto:hello@buyauto.ch">Kontakt aufnehmen</a>
-                  </Button>
-                </div>
-              </div>
-            ) : profile?.role !== "garage" ? (
-              <div className="rounded-3xl border border-neutral-200/60 bg-white p-6 shadow-sm">
-                <div className="text-sm font-semibold text-neutral-900">Garage-Konto aktivieren</div>
-                <div className="mt-1 text-sm text-neutral-600">
-                  Dieses Paket-System ist für Garagen. Aktiviere kurz dein Garage-Konto – danach kannst du dein Paket auswählen.
-                </div>
-                <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                  <Button onClick={() => void handleActivateGarage()} disabled={busy} className="rounded-2xl h-11">
-                    {busy ? "Aktiviere…" : "Garage-Konto aktivieren"}
-                  </Button>
-                  <Button asChild variant="secondary" className="rounded-2xl h-11">
-                    <a href="mailto:hello@buyauto.ch">Kontakt aufnehmen</a>
-                  </Button>
-                </div>
-              </div>
-            ) : step === "pay" && clientSecret ? (
-              <div className="rounded-3xl border border-neutral-200/60 bg-white p-6 shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-lg font-bold tracking-tight text-neutral-900">Bezahlung abschliessen</div>
-                    <div className="mt-1 text-sm text-neutral-600">
-                      Paket: <span className="font-semibold text-neutral-900">{pickedPlan}</span> · Betrag:{" "}
-                      <span className="font-semibold text-neutral-900">CHF {amountChf}</span>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <p className="text-xs text-amber-900">
+                <strong>Wichtig:</strong> Leads können nicht garantiert werden
+                – aber du bekommst eine saubere Präsenz + direkten Kanal für
+                Anfragen.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Packages - Compressed */}
+        <section id="packages" className="py-8 px-4">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-neutral-900 mb-2">
+              Wähle dein Paket
+            </h2>
+            <p className="text-center text-neutral-600 mb-8 max-w-2xl mx-auto text-sm">
+              Transparent, fair, monatlich kündbar.
+            </p>
+
+            {/* Main 3 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {packages.map((pkg) => (
+                <div
+                  key={pkg.code}
+                  className={`relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 flex flex-col ${
+                    pkg.popular ? "ring-2 ring-primary" : ""
+                  }`}
+                >
+                  {pkg.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
+                      Meist gewählt
                     </div>
+                  )}
+
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-neutral-900 mb-2">
+                      {pkg.name}
+                    </h3>
+                    <div className="flex items-baseline gap-1 mb-1">
+                      <span className="text-3xl font-bold text-neutral-900">
+                        {pkg.price}
+                      </span>
+                      <span className="text-neutral-600 text-sm">{pkg.period}</span>
+                    </div>
+                    <p className="text-xs text-neutral-600 font-medium">
+                      {pkg.limit}
+                    </p>
+                    <p className="text-xs text-primary font-semibold mt-1">
+                      {pkg.premiumIncluded}
+                    </p>
                   </div>
+
+                  <div className="flex-1 mb-4">
+                    <ul className="space-y-2">
+                      {pkg.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                          <span className="text-xs text-neutral-700">
+                            {feature}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
                   <Button
-                    variant="outline"
-                    className="rounded-2xl"
-                    onClick={() => {
-                      setStep("select");
-                      setClientSecret(null);
-                      setPaymentIntentId(null);
-                    }}
-                    disabled={busy}
+                    size="lg"
+                    className="w-full h-12 text-sm"
+                    variant={pkg.popular ? "default" : "outline"}
+                    onClick={() => handleSelectPlan(pkg.code)}
+                    disabled={loading}
                   >
-                    Zurück
+                    {loading && selectedPlan === pkg.code ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Wird geladen...
+                      </>
+                    ) : (
+                      pkg.cta
+                    )}
                   </Button>
                 </div>
+              ))}
+            </div>
 
-                <div className="mt-6">
-                  <PaymentWidget clientSecret={clientSecret} totalAmount={amountChf} onSuccess={handlePaymentSuccess} />
+            {/* 100+ floating bar */}
+            <div className="bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-3xl shadow-2xl p-6 text-white">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold mb-1">
+                    100+ Inserate oder Spezialanforderungen?
+                  </h3>
+                  <p className="text-neutral-300 text-sm">
+                    Für grosse Bestände, mehrere Standorte oder
+                    Spezialprozesse. Individuelles Angebot auf Anfrage.
+                  </p>
                 </div>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="flex-shrink-0 h-12 px-6"
+                  asChild
+                >
+                  <a href="mailto:kontakt@buyauto.ch">
+                    <Mail className="w-5 h-5 mr-2" />
+                    Kontakt aufnehmen
+                  </a>
+                </Button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <Card className="rounded-3xl border-neutral-200/60 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="text-lg font-bold tracking-tight text-neutral-900">In jedem Paket inklusive</div>
-                        <div className="mt-1 text-sm text-neutral-600">Marketplace-Setup + Deal-Chat pro Fahrzeug.</div>
-                      </div>
-                      <div className="text-xs text-neutral-500 text-right">
-                        Garage-Status:{" "}
-                        <span className="font-semibold text-neutral-700">
-                          {currentGaragePlanSnapshot
-                            ? currentGaragePlanSnapshot === "free" ||
-                              currentGaragePlanSnapshot === "no_plan" ||
-                              currentGaragePlanSnapshot === "no plan"
-                              ? "Kein Paket"
-                              : currentGaragePlanSnapshot
-                            : "—"}
-                        </span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="grid gap-2 sm:grid-cols-2 text-sm text-neutral-700">
-                    {[
-                      "Garage-Profilseite + Inventar-Seite",
-                      "Inserate erstellen & verwalten",
-                      "VIN-PreFill (wo verfügbar)",
-                      "Leasing-Rechner direkt im Inserat",
-                      "Deal-Chat pro Fahrzeug (Chat + Dokumente)",
-                      "Basis-Statistiken: Views & Anfragen",
-                    ].map((t) => (
-                      <div key={t} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
-                        <div>{t}</div>
-                      </div>
-                    ))}
-                    <div className="sm:col-span-2 mt-2 text-xs text-neutral-500">
-                      Wichtig: Leads können nicht garantiert werden – aber du bekommst eine saubere Präsenz + direkten Kanal für Anfragen.
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-3xl border-neutral-200/60 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <div className="text-lg font-bold tracking-tight text-neutral-900">Pakete</div>
-                    <div className="mt-1 text-sm text-neutral-600">Wähle das Paket, das zu deinem Bestand passt.</div>
-                  </CardHeader>
-                  <CardContent>
-                    {plansLoading ? (
-                      <div className="flex items-center gap-2 text-sm text-neutral-600">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Lade Pakete…
-                      </div>
-                    ) : (
-                      <div className="grid gap-4 lg:grid-cols-4">
-                        {plans.map((p) => {
-                          const code = normalizePlan(p.code) ?? "starter";
-                          const isGrowth = p.code === "growth";
-                          const isCustom = p.code === "custom";
-                          const isPicked = pickedPlan === code;
-
-                          return (
-                            <div
-                              key={p.id}
-                              className={cn("rounded-3xl border overflow-hidden transition-shadow hover:shadow-md", planCardTopClass(p.code))}
-                            >
-                              <div className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <div className="text-lg font-bold tracking-tight text-neutral-900">{p.name}</div>
-                                      {isGrowth ? (
-                                        <Badge className="rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0">
-                                          Meist gewählt
-                                        </Badge>
-                                      ) : null}
-                                    </div>
-                                    <div className="mt-2 text-2xl font-bold tracking-tight text-neutral-900">
-                                      {isCustom ? "Individuell" : formatChf(p.monthly_price_chf)}
-                                    </div>
-                                    <div className="mt-1 text-sm text-neutral-600">
-                                      {isCustom ? "Für grosse Bestände, mehrere Standorte oder Spezialprozesse." : `bis zu ${p.listing_limit ?? "—"} Inserate`}
-                                    </div>
-                                    <div className="mt-1 text-sm text-neutral-600">
-                                      {isCustom ? "Premium-Kontingent nach Bedarf" : `${p.premium_included_per_month ?? 0} Premium Inserat(e) / Monat inklusive`}
-                                    </div>
-                                  </div>
-
-                                  <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 px-3 py-2 text-xs font-semibold text-neutral-700">
-                                    {p.code.toUpperCase()}
-                                  </div>
-                                </div>
-
-                                <div className="mt-4 space-y-2 text-sm text-neutral-700">
-                                  {p.onboarding_included ? (
-                                    <div className="flex gap-2">
-                                      <ChevronRight className="mt-0.5 h-4 w-4 text-neutral-900" />
-                                      <div>{p.onboarding_note ?? "Done-for-you Onboarding"}</div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex gap-2">
-                                      <ChevronRight className="mt-0.5 h-4 w-4 text-neutral-900" />
-                                      <div>Alles aus „Inklusive“</div>
-                                    </div>
-                                  )}
-                                  <div className="flex gap-2">
-                                    <Crown className="mt-0.5 h-4 w-4 text-amber-600" />
-                                    <div>Premium = Hervorhebung, nicht garantierte Leads.</div>
-                                  </div>
-                                </div>
-
-                                <div className="mt-5">
-                                  {isCustom ? (
-                                    <Button asChild variant="secondary" className="w-full rounded-2xl">
-                                      <a href="mailto:hello@buyauto.ch">
-                                        <Mail className="h-4 w-4 mr-2" />
-                                        Kontakt aufnehmen
-                                      </a>
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      className={cn(
-                                        "w-full rounded-2xl",
-                                        isGrowth ? "bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95" : ""
-                                      )}
-                                      disabled={busy || isPicked}
-                                      onClick={() => void handlePickAndPay(code)}
-                                    >
-                                      {isPicked ? "Ausgewählt" : "Jetzt auswählen & bezahlen"}
-                                    </Button>
-                                  )}
-                                </div>
-
-                                {code === "custom" ? (
-                                  <div className="mt-3 text-xs text-neutral-500">Für 100+ rechnen wir gemeinsam: Standorte, Prozesse, Integrationen und Support.</div>
-                                ) : null}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <div className="mt-6 rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 text-sm text-neutral-600">
-                      Du willst erst vergleichen?{" "}
-                      <Link href="/garage-preise#pakete" className="font-semibold text-neutral-900 underline underline-offset-4">
-                        Zur Preisübersicht
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* Premium section - Compressed */}
+        <section className="py-8 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-center text-neutral-900 mb-3">
+              Was ist ein Premium Inserat?
+            </h2>
+            <p className="text-neutral-600 mb-6 text-center max-w-2xl mx-auto text-sm">
+              Ein Premium Inserat ist visuell hervorgehoben (Premium-Badge +
+              Highlight) und kann zusätzlich in separaten Premium-Bereichen
+              erscheinen (z.B. Startseite / Premium-Sektion), ohne dass wir
+              eine bessere Suchplatzierung versprechen.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {[
+                "Premium-Badge + visuelle Hervorhebung",
+                "Optional: Platzierung in Premium-Sektionen, wenn verfügbar",
+                "Monatliches Premium-Kontingent je nach Paket",
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="bg-white p-4 rounded-2xl shadow-sm flex items-start gap-2"
+                >
+                  <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-neutral-700">{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+              <p className="text-xs text-blue-900">
+                <strong>Hinweis:</strong> Premium = Hervorhebung, nicht
+                garantierte Leads.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <Footer />
       </div>
     </>
   );
