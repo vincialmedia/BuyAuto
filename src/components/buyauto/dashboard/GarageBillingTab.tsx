@@ -8,11 +8,11 @@ import { cn } from "@/lib/utils";
 import type { Garage } from "@/services/garageService";
 import { getActiveDealerPlans, type DealerPlanRow } from "@/services/dealerPlansService";
 import {
+  ensureDealerPremiumCredits,
   getMyDealerPlanChanges,
   getMyDealerPremiumCredits,
   getMyDealerSubscription,
   requestDealerPlanChange,
-  upsertDealerPremiumCreditsRow,
   type DealerPlanChangeRow,
   type DealerPremiumCreditsRow,
   type DealerSubscriptionRow,
@@ -76,21 +76,14 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
     setBanner({ kind: "idle" });
     setLoading(true);
     try {
-      const [p, sub, hist] = await Promise.all([
-        getActiveDealerPlans(),
-        getMyDealerSubscription(garage),
-        getMyDealerPlanChanges(garage),
-      ]);
+      const [p, sub, hist] = await Promise.all([getActiveDealerPlans(), getMyDealerSubscription(garage), getMyDealerPlanChanges(garage)]);
 
       setPlans(p);
       setSubscription(sub);
       setChanges(hist);
 
-      const planForCredits = sub?.plan_id ? p.find((x) => x.id === sub.plan_id) : null;
-      const creditsIncluded = planForCredits?.premium_included_per_month ?? 0;
-
       if (periodYYYYMM) {
-        await upsertDealerPremiumCreditsRow(garage.id, periodYYYYMM, creditsIncluded);
+        await ensureDealerPremiumCredits(garage, periodYYYYMM);
         const c = await getMyDealerPremiumCredits(garage, periodYYYYMM);
         setCredits(c);
       } else {
@@ -131,7 +124,9 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
         <div
           className={cn(
             "rounded-2xl border px-4 py-3 text-sm",
-            banner.kind === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-red-200 bg-red-50 text-red-900"
+            banner.kind === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-red-200 bg-red-50 text-red-900"
           )}
         >
           {banner.message}
@@ -146,12 +141,7 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
                 <div className="text-lg font-bold tracking-tight text-neutral-900">Aktuelles Paket</div>
                 <div className="mt-1 text-sm text-neutral-600">Dein aktueller Stand im Marketplace.</div>
               </div>
-              <Button
-                variant="outline"
-                className="rounded-2xl"
-                onClick={() => void refreshAll()}
-                disabled={loading || busy || !garage}
-              >
+              <Button variant="outline" className="rounded-2xl" onClick={() => void refreshAll()} disabled={loading || busy || !garage}>
                 <RefreshCcw className="h-4 w-4 mr-2" />
                 Aktualisieren
               </Button>
@@ -167,9 +157,7 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
               <>
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold text-neutral-900">{currentPlan?.name ?? "—"}</div>
-                  <Badge className={cn("rounded-full", getPlanBadgeClass(currentPlan?.code ?? ""))}>
-                    {currentPlan?.code ?? "—"}
-                  </Badge>
+                  <Badge className={cn("rounded-full", getPlanBadgeClass(currentPlan?.code ?? ""))}>{currentPlan?.code ?? "—"}</Badge>
                 </div>
 
                 <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
@@ -200,19 +188,12 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
                 <div className="text-xs text-neutral-500">
                   Periode:{" "}
                   <span className="text-neutral-700">
-                    {!hasMounted || !subscription?.current_period_start
-                      ? "—"
-                      : new Date(subscription.current_period_start).toLocaleDateString("de-CH")}{" "}
-                    –{" "}
-                    {!hasMounted || !subscription?.current_period_end
-                      ? "—"
-                      : new Date(subscription.current_period_end).toLocaleDateString("de-CH")}
+                    {!hasMounted || !subscription?.current_period_start ? "—" : new Date(subscription.current_period_start).toLocaleDateString("de-CH")} –{" "}
+                    {!hasMounted || !subscription?.current_period_end ? "—" : new Date(subscription.current_period_end).toLocaleDateString("de-CH")}
                   </span>
                 </div>
 
-                <div className="text-xs text-neutral-500">
-                  Hinweis: Premium ist Hervorhebung – keine garantierten Leads und kein versprochenes Suchranking-Boosting.
-                </div>
+                <div className="text-xs text-neutral-500">Hinweis: Premium ist Hervorhebung – keine garantierten Leads und kein versprochenes Suchranking-Boosting.</div>
 
                 <div className="pt-1">
                   <Button asChild variant="secondary" className="w-full rounded-2xl">
@@ -245,9 +226,7 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="font-semibold text-neutral-900">{p.name}</div>
-                          <div className="mt-1 text-sm text-neutral-600">
-                            {isCustom ? "Individuell" : `${formatChf(p.monthly_price_chf)} / Monat`}
-                          </div>
+                          <div className="mt-1 text-sm text-neutral-600">{isCustom ? "Individuell" : `${formatChf(p.monthly_price_chf)} / Monat`}</div>
                         </div>
                         {p.code === "growth" ? (
                           <Badge className="rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0">Meist gewählt</Badge>
@@ -325,9 +304,7 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
                       <div className="text-sm font-semibold text-neutral-900 truncate">
                         {fromName} → {toName}
                       </div>
-                      <div className="text-xs text-neutral-500">
-                        {new Date(c.requested_at).toLocaleString("de-CH")} · Status: {c.status}
-                      </div>
+                      <div className="text-xs text-neutral-500">{new Date(c.requested_at).toLocaleString("de-CH")} · Status: {c.status}</div>
                     </div>
                     <Badge variant="secondary" className="rounded-full w-fit">
                       {c.status}

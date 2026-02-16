@@ -1101,8 +1101,28 @@ export type Database = {
       }
     }
     Functions: {
-      ensure_dealer_premium_credits: {
-        Args: { dealer_id: string }
+      ensure_dealer_premium_credits:
+        | { Args: { dealer_id: string }; Returns: undefined }
+        | {
+            Args: { dealer_id: string; period_yyyymm: string }
+            Returns: {
+              created_at: string
+              credits_included: number
+              credits_used: number
+              dealer_id: string
+              id: string
+              period_yyyymm: string
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "dealer_premium_credits"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+      ensure_dealer_subscription_exists: {
+        Args: { p_dealer_id: string }
         Returns: undefined
       }
       garage_set_listing_premium_with_credit: {

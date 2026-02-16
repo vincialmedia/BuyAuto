@@ -7,11 +7,7 @@ export type DealerPlanChangeRow = Database["public"]["Tables"]["dealer_plan_chan
 export type DealerPremiumCreditsRow = Database["public"]["Tables"]["dealer_premium_credits"]["Row"];
 
 export async function getMyDealerSubscription(garage: Garage): Promise<DealerSubscriptionRow | null> {
-  const { data, error } = await supabase
-    .from("dealer_subscriptions")
-    .select("*")
-    .eq("dealer_id", garage.id)
-    .maybeSingle();
+  const { data, error } = await supabase.from("dealer_subscriptions").select("*").eq("dealer_id", garage.id).maybeSingle();
 
   if (error) throw error;
   return data ?? null;
@@ -40,21 +36,14 @@ export async function getMyDealerPremiumCredits(garage: Garage, periodYYYYMM: st
   return data ?? null;
 }
 
-export async function upsertDealerPremiumCreditsRow(dealerId: string, periodYYYYMM: string, creditsIncluded: number) {
-  const payload = {
-    dealer_id: dealerId,
+export async function ensureDealerPremiumCredits(garage: Garage, periodYYYYMM: string): Promise<DealerPremiumCreditsRow | null> {
+  const { data, error } = await supabase.rpc("ensure_dealer_premium_credits", {
+    dealer_id: garage.id,
     period_yyyymm: periodYYYYMM,
-    credits_included: Math.max(0, Math.floor(Number(creditsIncluded) || 0)),
-  };
-
-  const { data, error } = await supabase
-    .from("dealer_premium_credits")
-    .upsert(payload, { onConflict: "dealer_id,period_yyyymm" })
-    .select("*");
+  });
 
   if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : null;
-  return row ?? null;
+  return (data as DealerPremiumCreditsRow | null) ?? null;
 }
 
 export async function requestDealerPlanChange(garage: Garage, toPlanCode: string) {
