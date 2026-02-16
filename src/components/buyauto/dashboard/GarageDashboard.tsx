@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { dashboardService, type DashboardStats } from "@/services/dashboardService";
 import { uploadGarageLogo } from "@/services/storageService";
 import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageService";
+import { GarageBillingTab } from "@/components/buyauto/dashboard/GarageBillingTab";
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -286,7 +287,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                   Profil & Logo
                 </TabsTrigger>
                 <TabsTrigger value="plan" className="rounded-xl">
-                  Plan
+                  Zahlung
                 </TabsTrigger>
               </TabsList>
 
@@ -448,86 +449,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
               </TabsContent>
 
               <TabsContent value="plan" className="mt-5">
-                <div className="grid gap-4 lg:grid-cols-3">
-                  <div className="lg:col-span-1 rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
-                    <h2 className="text-lg font-bold tracking-tight text-neutral-900">Aktueller Plan</h2>
-                    <p className="text-sm text-neutral-600 mt-1">Platzhalter (Stripe-Anbindung als nächster Schritt).</p>
-
-                    <div className="mt-4 rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-semibold text-neutral-900">{planLabel}</div>
-                        <Badge variant="secondary" className="rounded-full">
-                          {garage?.listing_limit ?? 10} Slots
-                        </Badge>
-                      </div>
-                      <div className="mt-2 text-sm text-neutral-600">Up-/Downgrades jederzeit möglich.</div>
-                    </div>
-
-                    <div className="mt-4 grid gap-2">
-                      <Button
-                        className="rounded-2xl"
-                        onClick={() =>
-                          setBanner({
-                            kind: "error",
-                            message:
-                              "Plan-Wechsel ist aktuell Placeholder. Wenn du willst, binde ich das direkt an eure bestehenden Billing/Stripe-Flows an.",
-                          })
-                        }
-                      >
-                        Plan ändern
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-2 rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
-                    <h3 className="text-lg font-bold tracking-tight text-neutral-900">Plan Optionen</h3>
-                    <p className="text-sm text-neutral-600 mt-1">Minimaler Vergleich (Platzhalter).</p>
-
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-3xl border border-neutral-200/60 p-5 hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between">
-                          <div className="font-semibold text-neutral-900">Starter</div>
-                          <Badge variant="secondary" className="rounded-full">
-                            10 Slots
-                          </Badge>
-                        </div>
-                        <div className="mt-2 text-sm text-neutral-600">Für kleine Inventare.</div>
-                        <Button
-                          variant="outline"
-                          className="mt-4 w-full rounded-2xl"
-                          onClick={() => setBanner({ kind: "error", message: "Downgrade ist noch nicht angebunden (Placeholder)." })}
-                        >
-                          <ArrowDownRight className="h-4 w-4 mr-2" />
-                          Downgrade
-                        </Button>
-                      </div>
-
-                      <div className="rounded-3xl border border-neutral-200/60 p-5 hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between">
-                          <div className="font-semibold text-neutral-900">Pro</div>
-                          <Badge className="rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0">
-                            25 Slots
-                          </Badge>
-                        </div>
-                        <div className="mt-2 text-sm text-neutral-600">Mehr Slots + Priorität (später).</div>
-                        <Button
-                          className="mt-4 w-full rounded-2xl"
-                          onClick={() => setBanner({ kind: "error", message: "Upgrade ist noch nicht angebunden (Placeholder)." })}
-                        >
-                          <ArrowUpRight className="h-4 w-4 mr-2" />
-                          Upgrade
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                      <div className="text-sm font-semibold text-neutral-900">Nächster Schritt</div>
-                      <div className="text-sm text-neutral-600 mt-1">
-                        Sag mir kurz, ob eure Pläne/Preise aus Stripe kommen (Products/Prices) oder fix sind – dann binde ich Up-/Downgrade sauber ein.
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <GarageBillingTab garage={garage} />
               </TabsContent>
             </Tabs>
           </div>

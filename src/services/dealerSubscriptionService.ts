@@ -40,6 +40,23 @@ export async function getMyDealerPremiumCredits(garage: Garage, periodYYYYMM: st
   return data ?? null;
 }
 
+export async function upsertDealerPremiumCreditsRow(dealerId: string, periodYYYYMM: string, creditsIncluded: number) {
+  const payload = {
+    dealer_id: dealerId,
+    period_yyyymm: periodYYYYMM,
+    credits_included: Math.max(0, Math.floor(Number(creditsIncluded) || 0)),
+  };
+
+  const { data, error } = await supabase
+    .from("dealer_premium_credits")
+    .upsert(payload, { onConflict: "dealer_id,period_yyyymm" })
+    .select("*");
+
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : null;
+  return row ?? null;
+}
+
 export async function requestDealerPlanChange(garage: Garage, toPlanCode: string) {
   const { data, error } = await supabase.rpc("request_dealer_plan_change", {
     dealer_id: garage.id,
