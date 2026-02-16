@@ -44,6 +44,86 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       console.log(`PaymentIntent ${paymentIntent.id} succeeded.`);
       
       const { listing_id } = paymentIntent.metadata;
+
+      const kind = paymentIntent.metadata?.kind;
+      if (kind === 'dealer_plan') {
+        const dealer_id = paymentIntent.metadata?.dealer_id;
+        const plan_code = paymentIntent.metadata?.plan_code;
+
+        if (dealer_id && plan_code) {
+          const { data: plan, error: planError } = await supabaseAdmin
+            .from('dealer_plans')
+            .select('id, code, listing_limit')
+            .eq('code', plan_code)
+            .maybeSingle();
+
+          if (planError) {
+            console.error('Webhook: Failed to fetch dealer plan', planError);
+            break;
+          }
+
+          if (!plan?.id) {
+            console.error('Webhook: Plan not found for code', plan_code);
+            break;
+          }
+
+          const { data: existingSub } = await supabaseAdmin
+            .from('dealer_subscriptions')
+            .select('plan_id')
+            .eq('dealer_id', dealer_id)
+            .maybeSingle();
+
+          const fromPlanId = existingSub?.plan_id ?? null;
+
+          const { error: upsertSubError } = await supabaseAdmin
+            .from('dealer_subscriptions')
+            .upsert(
+              {
+                dealer_id,
+                plan_id: plan.id,
+                status: 'active',
+                current_period_start: new Date().toISOString(),
+                current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                cancel_at_period_end: false,
+              },
+              { onConflict: 'dealer_id' }
+            );
+
+          if (upsertSubError) {
+            console.error('Webhook: Failed to upsert dealer subscription', upsertSubError);
+            break;
+          }
+
+          const { error: garageUpdateError } = await supabaseAdmin
+            .from('garages')
+            .update({
+              plan: plan.code,
+              listing_limit: plan.listing_limit ?? null,
+            })
+            .eq('id', dealer_id);
+
+          if (garageUpdateError) {
+            console.error('Webhook: Failed to update garage snapshot fields', garageUpdateError);
+          }
+
+          const { error: changeError } = await supabaseAdmin
+            .from('dealer_plan_changes')
+            .insert({
+              dealer_id,
+              from_plan_id: fromPlanId,
+              to_plan_id: plan.id,
+              status: 'applied',
+              notes: `Stripe payment_intent ${paymentIntent.id}`,
+            });
+
+          if (changeError) {
+            console.error('Webhook: Failed to insert plan change', changeError);
+          }
+        }
+
+        break;
+      }
+
       if (listing_id) {
         const { error } = await supabaseAdmin
           .from('listings')

@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 export default function Header() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, profile, profileLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNavigatingToCreate, setIsNavigatingToCreate] = useState(false);
 
@@ -52,7 +52,9 @@ export default function Header() {
   const displayName = firstName || user?.email?.split('@')[0] || 'Benutzer';
 
   // Determine the create listing link based on auth state
-  const createListingHref = user ? "/inserat-erstellen" : "/auth?redirect=/inserat-erstellen";
+  const createListingHref = user
+    ? (profile?.role === "garage" ? `/garage-plan?next=${encodeURIComponent("/inserat-erstellen")}` : "/inserat-erstellen")
+    : "/auth?redirect=/inserat-erstellen";
 
   const handleCreateListingClick = async (e: React.MouseEvent) => {
     // If just opening in new tab (cmd/ctrl click), let default behavior happen
@@ -157,7 +159,7 @@ export default function Header() {
 
             {/* Auth Section - Handle loading state properly */}
             <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
-              {loading ? (
+              {loading || profileLoading ? (
                 /* Show loading state instead of login buttons */
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-neutral-200 rounded-full animate-pulse"></div>

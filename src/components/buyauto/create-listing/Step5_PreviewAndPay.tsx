@@ -552,9 +552,9 @@ export default function Step5_PreviewAndPay() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(isLimit ? "/dashboard/garage#zahlung" : "/dashboard/garage")}
+              onClick={() => router.push(isLimit ? `/garage-plan?next=${encodeURIComponent(`/inserat-erstellen?edit=${data.id}`)}` : "/dashboard/garage")}
             >
-              {isLimit ? "Zu Zahlung" : "Verwalten"}
+              {isLimit ? "Paket upgraden" : "Verwalten"}
             </Button>
           ),
         });

@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { SEO } from "@/components/SEO";
-import MainLayout from "@/components/layout/MainLayout";
 import { cn } from "@/lib/utils";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 
@@ -135,9 +134,13 @@ function useStickyCtaVisibility() {
 }
 
 export default function GaragePreisePage() {
-  const startHref = "/garage-onboarding";
+  const startHref = "/garage-plan";
   const packagesAnchor = "#pakete";
   const contactHref = "mailto:hello@buyauto.ch";
+  const nextAfterPlan = "/inserat-erstellen";
+
+  const getPlanHref = (plan: string) =>
+    `${startHref}?plan=${encodeURIComponent(plan)}&next=${encodeURIComponent(nextAfterPlan)}`;
 
   const plans: PlanCard[] = useMemo(
     () => [
@@ -149,7 +152,7 @@ export default function GaragePreisePage() {
         premiumLine: "1 Premium Inserat / Monat inklusive",
         highlights: ["Alles aus „In jedem Paket inklusive“", "Ideal, wenn du sauber starten willst – ohne Setup-Overhead."],
         ctaLabel: "Starter wählen",
-        ctaHref: `${startHref}?plan=starter`,
+        ctaHref: getPlanHref("starter"),
         ctaKind: "secondary",
       },
       {
@@ -160,7 +163,7 @@ export default function GaragePreisePage() {
         premiumLine: "5 Premium Inserate / Monat inklusive",
         highlights: ["Alles aus Starter", "Done-for-you Onboarding", "Du schickst uns dein Inventar, wir erledigen den Rest."],
         ctaLabel: "Growth wählen",
-        ctaHref: `${startHref}?plan=growth`,
+        ctaHref: getPlanHref("growth"),
         ctaKind: "primary",
         badge: "Meist gewählt",
       },
@@ -172,7 +175,7 @@ export default function GaragePreisePage() {
         premiumLine: "10 Premium Inserate / Monat inklusive",
         highlights: ["Alles aus Growth", "Done-for-you Onboarding (priorisiert)", "Für Teams mit konstantem Inventory-Flow."],
         ctaLabel: "Pro wählen",
-        ctaHref: `${startHref}?plan=pro`,
+        ctaHref: getPlanHref("pro"),
         ctaKind: "secondary",
       },
       {
@@ -241,7 +244,7 @@ export default function GaragePreisePage() {
   const { hasMounted, visible } = useStickyCtaVisibility();
 
   return (
-    <MainLayout>
+    <>
       <SEO
         title="BuyAuto – Preise für Garagen"
         description="Pakete für Garagen: Inserate, VIN-PreFill, Leasing-Rechner und Deal-Chat pro Fahrzeug. Done-for-you Onboarding ab Growth."
@@ -274,7 +277,7 @@ export default function GaragePreisePage() {
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
               <Button asChild className="rounded-2xl bg-white text-neutral-900 hover:bg-white/90">
-                <Link href={startHref}>Jetzt starten</Link>
+                <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>Jetzt starten</Link>
               </Button>
               <Button asChild variant="secondary" className="rounded-2xl bg-white/15 text-white hover:bg-white/20 border border-white/20">
                 <a href={packagesAnchor}>Preise ansehen</a>
@@ -305,7 +308,7 @@ export default function GaragePreisePage() {
                   </div>
                 </div>
                 <Button asChild className="rounded-2xl bg-white text-neutral-900 hover:bg-white/90">
-                  <Link href={startHref}>
+                  <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>
                     Starten
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -454,7 +457,7 @@ export default function GaragePreisePage() {
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95">
-              <Link href={startHref}>Jetzt starten</Link>
+              <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>Jetzt starten</Link>
             </Button>
             <Button asChild variant="secondary" className="rounded-2xl">
               <a href={contactHref}>Kontakt aufnehmen</a>
@@ -490,7 +493,7 @@ export default function GaragePreisePage() {
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
               <Button asChild className="rounded-2xl bg-white text-neutral-900 hover:bg-white/90">
-                <Link href={startHref}>Jetzt starten</Link>
+                <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>Jetzt starten</Link>
               </Button>
               <Button asChild variant="secondary" className="rounded-2xl bg-white/15 text-white hover:bg-white/20 border border-white/20">
                 <a href={contactHref}>Kontakt aufnehmen</a>
@@ -517,12 +520,12 @@ export default function GaragePreisePage() {
                 <a href={packagesAnchor}>Preise</a>
               </Button>
               <Button asChild className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95">
-                <Link href={startHref}>Jetzt starten</Link>
+                <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>Jetzt starten</Link>
               </Button>
             </div>
           </div>
         </div>
       ) : null}
-    </MainLayout>
+    </>
   );
 }

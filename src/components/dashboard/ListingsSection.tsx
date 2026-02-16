@@ -145,9 +145,13 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
 
            toast.error(
              isLimit
-               ? "Du hast das Inserate-Limit deines aktuellen Pakets erreicht. Bitte ändere dein Paket unter „Zahlung“."
+               ? "Du hast das Inserate-Limit deines aktuellen Pakets erreicht. Bitte ändere dein Paket."
                : `Publizieren fehlgeschlagen: ${msg}`
            );
+
+           if (isLimit) {
+             router.push(`/garage-plan?next=${encodeURIComponent("/dashboard/garage")}`);
+           }
 
            return;
          }
@@ -280,7 +284,11 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
              </p>
            </div>
            {activeCount >= limit && (
-             <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-100" onClick={() => toast.info("Upgrade coming soon!")}>
+             <Button
+               variant="outline"
+               className="border-blue-200 text-blue-700 hover:bg-blue-100"
+               onClick={() => router.push(`/garage-plan?next=${encodeURIComponent("/dashboard/garage")}`)}
+             >
                Upgrade Paket
              </Button>
            )}
