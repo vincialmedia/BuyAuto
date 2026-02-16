@@ -526,34 +526,39 @@ export default function Step5_PreviewAndPay() {
         .rpc("publish_garage_listing", { listing_id: data.id });
 
       if (error) {
-        const err = error as unknown as {
-          message?: string;
-          details?: string | null;
-          hint?: string | null;
-          code?: string | null;
-        };
+        const msg = (error as unknown as { message?: string }).message ?? "Publizieren fehlgeschlagen.";
+        const isLimit =
+          msg.toLowerCase().includes("limit") ||
+          msg.toLowerCase().includes("listing") ||
+          msg.toLowerCase().includes("slot") ||
+          msg.toLowerCase().includes("quota");
+
+        const description = isLimit
+          ? "Du hast das Inserate-Limit deines aktuellen Pakets erreicht. Bitte ändere dein Paket unter „Zahlung“."
+          : `Publizieren fehlgeschlagen: ${msg}`;
 
         setGaragePublishError({
-          message: err.message || "Unbekannter Fehler.",
-          code: err.code ?? null,
-          details: err.details ?? null,
-          hint: err.hint ?? null,
+          message: description,
+          code: (error as unknown as { code?: string | null }).code ?? null,
+          details: (error as unknown as { details?: string | null }).details ?? null,
+          hint: (error as unknown as { hint?: string | null }).hint ?? null,
         });
-
-        const extra = [err.code ? `Code: ${err.code}` : null, err.details ? `Details: ${err.details}` : null, err.hint ? `Hint: ${err.hint}` : null]
-          .filter(Boolean)
-          .join(" · ");
 
         toast({
           title: "Veröffentlichen fehlgeschlagen",
-          description: extra ? `${err.message || "Unbekannter Fehler."} (${extra})` : (err.message || "Unbekannter Fehler."),
+          description,
           variant: "destructive",
           action: (
-            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/garage")}>
-              Verwalten
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(isLimit ? "/dashboard/garage#zahlung" : "/dashboard/garage")}
+            >
+              {isLimit ? "Zu Zahlung" : "Verwalten"}
             </Button>
-          )
+          ),
         });
+
         return;
       }
 

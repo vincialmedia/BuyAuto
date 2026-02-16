@@ -134,12 +134,22 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
          }
 
          const { error } = await supabase.rpc("publish_garage_listing", { listing_id: listing.id });
+
          if (error) {
-           if (error.message.includes('Limit')) {
-             toast.error("Limit erreicht. Bitte archivieren Sie zuerst ein anderes Inserat.");
-             return;
-           }
-           throw error;
+           const msg = (error as unknown as { message?: string }).message ?? "Publizieren fehlgeschlagen.";
+           const isLimit =
+             msg.toLowerCase().includes("limit") ||
+             msg.toLowerCase().includes("listing") ||
+             msg.toLowerCase().includes("slot") ||
+             msg.toLowerCase().includes("quota");
+
+           toast.error(
+             isLimit
+               ? "Du hast das Inserate-Limit deines aktuellen Pakets erreicht. Bitte ändere dein Paket unter „Zahlung“."
+               : `Publizieren fehlgeschlagen: ${msg}`
+           );
+
+           return;
          }
       } else {
         // Privates: just set back to published/pending? 

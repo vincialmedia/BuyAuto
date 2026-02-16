@@ -14,6 +14,7 @@ import { dashboardService, type DashboardStats } from "@/services/dashboardServi
 import { uploadGarageLogo } from "@/services/storageService";
 import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageService";
 import { GarageBillingTab } from "@/components/buyauto/dashboard/GarageBillingTab";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -53,6 +54,7 @@ function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: s
 
 export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const router = useRouter();
+  const hasMounted = useHasMounted();
 
   const [garage, setGarage] = useState<Garage | null>(initialGarage);
   const [garageLoading, setGarageLoading] = useState(!initialGarage);
@@ -72,7 +74,9 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoProgress, setLogoProgress] = useState<number>(0);
-  const [logoVersion, setLogoVersion] = useState<number>(Date.now());
+  const [logoVersion, setLogoVersion] = useState<number>(0);
+
+  const [tab, setTab] = useState<"inventory" | "profile" | "plan">("inventory");
 
   const planLabel = useMemo(() => {
     const raw = (garage?.plan ?? "").trim();
@@ -84,6 +88,21 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     const url = getStableGarageLogoUrl(garage.id, logoVersion);
     return url || undefined;
   }, [garage?.id, logoVersion]);
+
+  useEffect(() => {
+    if (!hasMounted) return;
+
+    setLogoVersion(Date.now());
+
+    const applyFromHash = () => {
+      const hash = window.location.hash || "";
+      if (hash.toLowerCase() === "#zahlung") setTab("plan");
+    };
+
+    applyFromHash();
+    window.addEventListener("hashchange", applyFromHash);
+    return () => window.removeEventListener("hashchange", applyFromHash);
+  }, [hasMounted]);
 
   useEffect(() => {
     let cancelled = false;
@@ -278,7 +297,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
               </div>
             )}
 
-            <Tabs defaultValue="inventory" className="w-full">
+            <Tabs value={tab} onValueChange={(v) => setTab(v as "inventory" | "profile" | "plan")} className="w-full">
               <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-neutral-100 p-1">
                 <TabsTrigger value="inventory" className="rounded-xl">
                   Inventar

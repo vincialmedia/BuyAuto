@@ -17,6 +17,7 @@ import {
   type DealerPremiumCreditsRow,
   type DealerSubscriptionRow,
 } from "@/services/dealerSubscriptionService";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 
 type BannerState = { kind: "idle" } | { kind: "success"; message: string } | { kind: "error"; message: string };
 
@@ -44,6 +45,8 @@ function getPlanBadgeClass(code: string): string {
 }
 
 export function GarageBillingTab({ garage }: { garage: Garage | null }) {
+  const hasMounted = useHasMounted();
+
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
@@ -53,7 +56,7 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
   const [changes, setChanges] = useState<DealerPlanChangeRow[]>([]);
   const [credits, setCredits] = useState<DealerPremiumCreditsRow | null>(null);
 
-  const periodYYYYMM = useMemo(() => getCurrentPeriodYYYYMM(), []);
+  const periodYYYYMM = useMemo(() => (hasMounted ? getCurrentPeriodYYYYMM() : ""), [hasMounted]);
 
   const planById = useMemo(() => {
     const map = new Map<string, DealerPlanRow>();
@@ -68,6 +71,7 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
 
   async function refreshAll() {
     if (!garage?.id) return;
+    if (!hasMounted) return;
 
     setBanner({ kind: "idle" });
     setLoading(true);
@@ -85,9 +89,13 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
       const planForCredits = sub?.plan_id ? p.find((x) => x.id === sub.plan_id) : null;
       const creditsIncluded = planForCredits?.premium_included_per_month ?? 0;
 
-      await upsertDealerPremiumCreditsRow(garage.id, periodYYYYMM, creditsIncluded);
-      const c = await getMyDealerPremiumCredits(garage, periodYYYYMM);
-      setCredits(c);
+      if (periodYYYYMM) {
+        await upsertDealerPremiumCreditsRow(garage.id, periodYYYYMM, creditsIncluded);
+        const c = await getMyDealerPremiumCredits(garage, periodYYYYMM);
+        setCredits(c);
+      } else {
+        setCredits(null);
+      }
     } catch (e) {
       setBanner({ kind: "error", message: `Konnte Zahlung nicht laden: ${getErrorMessage(e)}` });
     } finally {
@@ -96,9 +104,10 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
   }
 
   useEffect(() => {
+    if (!hasMounted) return;
     void refreshAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [garage?.id]);
+  }, [garage?.id, hasMounted]);
 
   async function handleRequestChange(toCode: string) {
     if (!garage) return;
@@ -180,7 +189,7 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
                       <span className="font-semibold text-neutral-900">{currentPlan?.premium_included_per_month ?? 0}</span>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <span>Premium genutzt ({periodYYYYMM})</span>
+                      <span>Premium genutzt {periodYYYYMM ? `(${periodYYYYMM})` : ""}</span>
                       <span className="font-semibold text-neutral-900">
                         {(credits?.credits_used ?? 0).toString()} / {(credits?.credits_included ?? (currentPlan?.premium_included_per_month ?? 0)).toString()}
                       </span>
@@ -191,8 +200,13 @@ export function GarageBillingTab({ garage }: { garage: Garage | null }) {
                 <div className="text-xs text-neutral-500">
                   Periode:{" "}
                   <span className="text-neutral-700">
-                    {subscription?.current_period_start ? new Date(subscription.current_period_start).toLocaleDateString("de-CH") : "—"} –{" "}
-                    {subscription?.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString("de-CH") : "—"}
+                    {!hasMounted || !subscription?.current_period_start
+                      ? "—"
+                      : new Date(subscription.current_period_start).toLocaleDateString("de-CH")}{" "}
+                    –{" "}
+                    {!hasMounted || !subscription?.current_period_end
+                      ? "—"
+                      : new Date(subscription.current_period_end).toLocaleDateString("de-CH")}
                   </span>
                 </div>
 

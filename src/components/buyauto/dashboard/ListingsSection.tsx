@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
 import DraftsSection from "./DraftsSection";
 import { dashboardService } from "@/services/dashboardService";
+import { setListingPremiumUsingCredit } from "@/services/dealerSubscriptionService";
 
 function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: string | null }): string {
   const dealType = input.deal_type ?? "lease_takeover";

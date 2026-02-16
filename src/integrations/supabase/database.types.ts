@@ -1185,6 +1185,10 @@ export type Database = {
         }[]
       }
       supabase_url: { Args: never; Returns: string }
+      sync_garage_plan_snapshot_from_subscription: {
+        Args: { p_dealer_id: string }
+        Returns: undefined
+      }
       upgrade_to_garage: {
         Args: { p_city: string; p_contact_email: string; p_garage_name: string }
         Returns: Json
