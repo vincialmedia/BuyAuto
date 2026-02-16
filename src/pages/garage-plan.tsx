@@ -136,21 +136,21 @@ export default function GaragePlanPage() {
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
         <Header />
 
-        {/* Hero - Compressed */}
-        <section className="relative pt-24 pb-8 px-4">
+        {/* Hero - Ultra Compressed */}
+        <section className="relative pt-4 pb-2 px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 mb-3">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-2">
               Wähle dein Paket
             </h1>
-            <p className="text-2xl md:text-3xl font-bold text-neutral-800 mb-2">
+            <p className="text-xl md:text-2xl font-bold text-neutral-800 mb-1">
               Mehr Anfragen. Weniger Aufwand.
             </p>
-            <p className="text-lg text-neutral-600 mb-6 max-w-3xl mx-auto">
+            <p className="text-base text-neutral-600 mb-4 max-w-3xl mx-auto">
               Dein Inventar online – mit VIN-PreFill, Leasing-Rechner und
               Deal-Chat pro Fahrzeug.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 max-w-3xl mx-auto">
               {[
                 "VIN-PreFill (wo verfügbar)",
                 "Leasing-Rechner im Inserat",
@@ -160,26 +160,26 @@ export default function GaragePlanPage() {
                   key={i}
                   className="flex items-center justify-center gap-2 text-neutral-700"
                 >
-                  <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="text-sm font-medium">{item}</span>
+                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span className="text-xs font-medium">{item}</span>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Included in every package - Compressed */}
-        <section className="py-8 px-4 bg-neutral-50">
+        {/* Included in every package - Ultra Compressed */}
+        <section className="py-2 px-4 bg-neutral-50">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-2xl font-bold text-center text-neutral-900 mb-2">
+            <h2 className="text-xl font-bold text-center text-neutral-900 mb-1">
               In jedem Paket inklusive
             </h2>
-            <p className="text-center text-neutral-600 mb-6 max-w-2xl mx-auto text-sm">
+            <p className="text-center text-neutral-600 mb-3 max-w-2xl mx-auto text-xs">
               Diese Features bekommst du in allen Paketen – von Starter bis
               Pro.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               {includedFeatures.map((feature, i) => (
                 <div
                   key={i}
@@ -203,13 +203,13 @@ export default function GaragePlanPage() {
           </div>
         </section>
 
-        {/* Packages - Compressed */}
-        <section id="packages" className="py-8 px-4">
+        {/* Packages - Ultra Compressed */}
+        <section id="packages" className="py-2 px-4">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold text-center text-neutral-900 mb-2">
+            <h2 className="text-2xl font-bold text-center text-neutral-900 mb-1">
               Wähle dein Paket
             </h2>
-            <p className="text-center text-neutral-600 mb-8 max-w-2xl mx-auto text-sm">
+            <p className="text-center text-neutral-600 mb-4 max-w-2xl mx-auto text-xs">
               Transparent, fair, monatlich kündbar.
             </p>
 
