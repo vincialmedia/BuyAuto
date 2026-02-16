@@ -1,531 +1,490 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import Head from "next/head";
 import Link from "next/link";
-import { Check, ChevronRight, Crown, FileText, MessageSquare, Sparkles } from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
+import { Check, Mail, ArrowRight } from "lucide-react";
+import Header from "@/components/buyauto/Header";
+import { Footer } from "@/components/buyauto/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { SEO } from "@/components/SEO";
-import { cn } from "@/lib/utils";
-import { useHasMounted } from "@/hooks/use-has-mounted";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
-type PlanCard = {
-  code: "starter" | "growth" | "pro" | "custom";
-  name: string;
-  priceLine: string;
-  limitLine: string;
-  premiumLine: string;
-  highlights: string[];
-  ctaLabel: string;
-  ctaHref: string;
-  ctaKind: "primary" | "secondary" | "mail";
-  badge?: string;
-};
+const includedFeatures = [
+  "Garage-Profilseite + Inventar-Seite",
+  "Inserate erstellen & verwalten",
+  "VIN-PreFill (wo verfügbar)",
+  "Leasing-Rechner direkt im Inserat",
+  "Deal-Chat pro Fahrzeug (Chat + Dokumente)",
+  "Basis-Statistiken: Views & Anfragen",
+];
 
-function SectionTitle({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow?: string;
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="mx-auto max-w-2xl text-center">
-      {eyebrow ? <div className="text-xs font-semibold tracking-[0.2em] text-neutral-500 uppercase">{eyebrow}</div> : null}
-      <h2 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">{title}</h2>
-      {description ? <p className="mt-3 text-base text-neutral-600 leading-relaxed">{description}</p> : null}
-    </div>
-  );
-}
+const packages = [
+  {
+    code: "starter",
+    name: "Starter",
+    price: "CHF 149",
+    period: "/ Monat",
+    limit: "bis zu 15 Inserate",
+    premiumIncluded: "1 Premium Inserat / Monat inklusive",
+    features: ["Alles aus 'Inklusive'"],
+    cta: "Starter wählen",
+    popular: false,
+  },
+  {
+    code: "growth",
+    name: "Growth",
+    price: "CHF 349",
+    period: "/ Monat",
+    limit: "bis zu 50 Inserate",
+    premiumIncluded: "5 Premium Inserate / Monat inklusive",
+    features: [
+      "Alles aus Starter",
+      "Done-for-you Onboarding",
+      "Du schickst uns dein Inventar, wir erledigen den Rest.",
+    ],
+    cta: "Growth wählen",
+    popular: true,
+  },
+  {
+    code: "pro",
+    name: "Pro",
+    price: "CHF 599",
+    period: "/ Monat",
+    limit: "bis zu 100 Inserate",
+    premiumIncluded: "10 Premium Inserate / Monat inklusive",
+    features: ["Alles aus Growth", "Done-for-you Onboarding (priorisiert)"],
+    cta: "Pro wählen",
+    popular: false,
+  },
+];
 
-function PricingCard({ plan }: { plan: PlanCard }) {
-  const isPrimary = plan.code === "growth";
-  const isMail = plan.ctaKind === "mail";
+const onboardingSteps = [
+  {
+    step: 1,
+    title: "Du schickst uns dein Inventar",
+    items: [
+      "Fahrzeugliste (CSV/Excel oder Link)",
+      "Fotos (Ordner/Drive/WeTransfer)",
+      "Welche Fahrzeuge leasingfähig sind",
+      "Leasing-Konditionen (Monate, KM, Anzahlung, Rate/Zins falls vorhanden)",
+    ],
+  },
+  {
+    step: 2,
+    title: "Wir erstellen die Inserate",
+    items: [
+      "Wir übernehmen Struktur, Grunddaten, Bilder-Reihenfolge und setzen den Leasing-Rechner korrekt.",
+    ],
+  },
+  {
+    step: 3,
+    title: "Du bekommst Anfragen",
+    items: [
+      "Anfragen landen im Deal-Chat pro Fahrzeug – inkl. Dokumentenversand.",
+    ],
+  },
+];
 
-  const topClass = isPrimary
-    ? "border-primary/20 bg-gradient-to-b from-primary/[0.06] to-white shadow-lg"
-    : "border-neutral-200/60 bg-white shadow-sm";
-
-  const priceClass = isPrimary ? "text-neutral-900" : "text-neutral-900";
-
-  const button = isMail ? (
-    <Button asChild variant="secondary" className="w-full rounded-2xl">
-      <a href={plan.ctaHref}>{plan.ctaLabel}</a>
-    </Button>
-  ) : (
-    <Button
-      asChild
-      className={cn(
-        "w-full rounded-2xl",
-        plan.ctaKind === "primary" ? "bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95" : ""
-      )}
-      variant={plan.ctaKind === "primary" ? "default" : "secondary"}
-    >
-      <Link href={plan.ctaHref}>{plan.ctaLabel}</Link>
-    </Button>
-  );
-
-  return (
-    <Card className={cn("rounded-3xl overflow-hidden transition-shadow hover:shadow-md", topClass)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="text-lg font-bold tracking-tight text-neutral-900">{plan.name}</div>
-              {plan.badge ? (
-                <Badge className="rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0">
-                  {plan.badge}
-                </Badge>
-              ) : null}
-            </div>
-            <div className={cn("mt-2 text-2xl sm:text-3xl font-bold tracking-tight", priceClass)}>{plan.priceLine}</div>
-            <div className="mt-1 text-sm text-neutral-600">{plan.limitLine}</div>
-            <div className="mt-1 text-sm text-neutral-600">{plan.premiumLine}</div>
-          </div>
-
-          <div className={cn("rounded-2xl border px-3 py-2 text-xs font-semibold", isPrimary ? "border-primary/20 bg-white/70" : "border-neutral-200/60 bg-neutral-50")}>
-            {plan.code.toUpperCase()}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-0">
-        <div className="mt-3 space-y-2 text-sm text-neutral-700">
-          {plan.highlights.map((h) => (
-            <div key={h} className="flex gap-2">
-              <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
-              <div>{h}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-5">{button}</div>
-
-        {plan.code === "custom" ? (
-          <div className="mt-3 text-xs text-neutral-500">
-            Für 100+ rechnen wir gemeinsam: mehrere Standorte, Spezialprozesse, Schnittstellen und Support.
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
-function useStickyCtaVisibility() {
-  const hasMounted = useHasMounted();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (!hasMounted) return;
-
-    const handler = () => {
-      const y = window.scrollY || 0;
-      setVisible(y > 520);
-    };
-
-    handler();
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
-  }, [hasMounted]);
-
-  return { hasMounted, visible };
-}
+const faqs = [
+  {
+    question: "Was zählt als Inserat?",
+    answer:
+      "Ein Inserat = ein Fahrzeug. Jedes aktive Fahrzeug zählt zu deinem Limit.",
+  },
+  {
+    question: "Kann ich upgraden/downgraden?",
+    answer:
+      "Ja, jederzeit. Upgrades sind sofort aktiv. Downgrades greifen am Ende der aktuellen Abrechnungsperiode.",
+  },
+  {
+    question: "Gibt es eine Mindestlaufzeit?",
+    answer:
+      "Nein. Alle Pakete sind monatlich kündbar. Keine Setup-Gebühren, keine Mindestlaufzeit.",
+  },
+  {
+    question: "Wie funktioniert der Deal-Chat?",
+    answer:
+      "Jedes Inserat hat einen eigenen Chat. Interessenten können Fragen stellen, Dokumente anfragen. Du kannst direkt Verträge, Gutachten etc. hochladen – alles in einem Thread.",
+  },
+  {
+    question: "Welche Daten braucht ihr fürs Onboarding?",
+    answer:
+      "Fahrzeugliste (Excel/CSV), Fotos, Leasing-Infos (welche Autos leasingfähig sind + Konditionen). Wir melden uns nach deiner Anmeldung mit einem Onboarding-Formular.",
+  },
+  {
+    question: "Garantiert BuyAuto Leads?",
+    answer:
+      "Nein. BuyAuto ist ein Marktplatz – keine Lead-Garantie. Du bekommst eine saubere Präsenz, Tools (VIN-PreFill, Leasing-Rechner, Deal-Chat) und direkten Kanal für Anfragen. Leads hängen von deinem Inventar, Preisen und Marktlage ab.",
+  },
+  {
+    question: "Wie setze ich Premium Inserate ein?",
+    answer:
+      "Premium Inserate bekommen ein Badge + visuelle Hervorhebung. Sie können in Premium-Sektionen (z.B. Startseite) erscheinen – keine garantierte Suchplatzierung. Nutze Premium für deine wichtigsten Fahrzeuge.",
+  },
+  {
+    question: "Welche Zahlungsarten gibt es?",
+    answer:
+      "Kreditkarte (Visa, Mastercard, Amex). Zahlung wird monatlich automatisch abgebucht.",
+  },
+  {
+    question: "Was passiert bei Kündigung?",
+    answer:
+      "Deine Inserate bleiben bis zum Ende der bezahlten Periode aktiv. Danach werden sie automatisch deaktiviert. Du behältst Zugriff auf deine Daten und kannst sie exportieren.",
+  },
+];
 
 export default function GaragePreisePage() {
-  const startHref = "/garage-plan";
-  const packagesAnchor = "#pakete";
-  const contactHref = "mailto:hello@buyauto.ch";
-  const nextAfterPlan = "/inserat-erstellen";
-
-  const getPlanHref = (plan: string) =>
-    `${startHref}?plan=${encodeURIComponent(plan)}&next=${encodeURIComponent(nextAfterPlan)}`;
-
-  const plans: PlanCard[] = useMemo(
-    () => [
-      {
-        code: "starter",
-        name: "Starter",
-        priceLine: "CHF 149 / Monat",
-        limitLine: "bis zu 15 Inserate",
-        premiumLine: "1 Premium Inserat / Monat inklusive",
-        highlights: ["Alles aus „In jedem Paket inklusive“", "Ideal, wenn du sauber starten willst – ohne Setup-Overhead."],
-        ctaLabel: "Starter wählen",
-        ctaHref: getPlanHref("starter"),
-        ctaKind: "secondary",
-      },
-      {
-        code: "growth",
-        name: "Growth",
-        priceLine: "CHF 349 / Monat",
-        limitLine: "bis zu 50 Inserate",
-        premiumLine: "5 Premium Inserate / Monat inklusive",
-        highlights: ["Alles aus Starter", "Done-for-you Onboarding", "Du schickst uns dein Inventar, wir erledigen den Rest."],
-        ctaLabel: "Growth wählen",
-        ctaHref: getPlanHref("growth"),
-        ctaKind: "primary",
-        badge: "Meist gewählt",
-      },
-      {
-        code: "pro",
-        name: "Pro",
-        priceLine: "CHF 599 / Monat",
-        limitLine: "bis zu 100 Inserate",
-        premiumLine: "10 Premium Inserate / Monat inklusive",
-        highlights: ["Alles aus Growth", "Done-for-you Onboarding (priorisiert)", "Für Teams mit konstantem Inventory-Flow."],
-        ctaLabel: "Pro wählen",
-        ctaHref: getPlanHref("pro"),
-        ctaKind: "secondary",
-      },
-      {
-        code: "custom",
-        name: "100+",
-        priceLine: "Individuell",
-        limitLine: "Für grosse Bestände, mehrere Standorte oder Spezialprozesse.",
-        premiumLine: "Premium-Kontingent nach Bedarf",
-        highlights: ["Setup & Prozesse gemeinsam definieren", "Onboarding nach Datenlage & Bestand", "Optional: individuelle Integrationen"],
-        ctaLabel: "Kontakt aufnehmen",
-        ctaHref: contactHref,
-        ctaKind: "mail",
-      },
-    ],
-    []
-  );
-
-  const includes = [
-    { icon: <FileText className="h-5 w-5 text-neutral-900" />, title: "Garage-Profilseite + Inventar-Seite", desc: "Dein Auftritt als Garage – und ein sauberer Überblick über dein Inventory." },
-    { icon: <Check className="h-5 w-5 text-neutral-900" />, title: "Inserate erstellen & verwalten", desc: "Status, Laufzeit und Premium-Optionen direkt im Dashboard." },
-    { icon: <Sparkles className="h-5 w-5 text-neutral-900" />, title: "VIN-PreFill (wo verfügbar)", desc: "Schneller live – weniger Tipparbeit bei Grunddaten." },
-    { icon: <ChevronRight className="h-5 w-5 text-neutral-900" />, title: "Leasing-Rechner direkt im Inserat", desc: "Klare Konditionen – weniger Rückfragen, bessere Gespräche." },
-    { icon: <MessageSquare className="h-5 w-5 text-neutral-900" />, title: "Deal-Chat pro Fahrzeug (Chat + Dokumente)", desc: "Kommunikation und Dokumente pro Inserat – strukturiert, nachvollziehbar." },
-    { icon: <Crown className="h-5 w-5 text-neutral-900" />, title: "Basis-Statistiken: Views & Anfragen", desc: "Sieh, was läuft – und was du optimieren solltest." },
-  ];
-
-  const faqs: Array<{ q: string; a: string }> = [
-    {
-      q: "Was zählt als Inserat?",
-      a: "Ein Inserat ist ein Fahrzeug, das in deinem Inventory sichtbar ist (egal ob aktiv oder pending). Archivierte/gelöschte Inserate zählen nicht.",
-    },
-    {
-      q: "Kann ich upgraden/downgraden?",
-      a: "Ja. Du kannst dein Paket im Garage-Dashboard unter „Zahlung“ ändern. Wir protokollieren jede Änderung transparent.",
-    },
-    {
-      q: "Gibt es eine Mindestlaufzeit?",
-      a: "Nein. Monatlich kündbar – ohne Setup-Falle.",
-    },
-    {
-      q: "Wie funktioniert der Deal-Chat?",
-      a: "Jede Anfrage ist an ein Fahrzeug gebunden. Chat + Dokumente bleiben im Kontext des Inserats – statt in verstreuten E-Mails.",
-    },
-    {
-      q: "Welche Daten braucht ihr fürs Onboarding?",
-      a: "Fahrzeugliste (CSV/Excel oder Link), Fotos (Ordner/Drive/WeTransfer), Leasingfähigkeit pro Fahrzeug und die wichtigsten Konditionen (Monate, KM, Anzahlung, Rate/Zins falls vorhanden).",
-    },
-    {
-      q: "Garantiert BuyAuto Leads?",
-      a: "Nein. Leads können nicht garantiert werden – aber du bekommst eine saubere Präsenz + einen direkten Kanal für Anfragen.",
-    },
-    {
-      q: "Wie setze ich Premium Inserate ein?",
-      a: "Premium eignet sich für Fahrzeuge mit hoher Marge, knapper Verfügbarkeit oder für Modelle, die du aktiv pushen willst. Das Kontingent pro Monat hängt vom Paket ab.",
-    },
-    {
-      q: "Welche Zahlungsarten gibt es?",
-      a: "Aktuell: Paketverwaltung im Dashboard. Payment-Integration folgt – die Paketlogik ist bereits vorbereitet.",
-    },
-    {
-      q: "Was passiert bei Kündigung?",
-      a: "Dein Paket läuft bis zum Periodenende. Danach kannst du keine neuen Inserate veröffentlichen, wenn du über dem Limit bist; bestehende Inhalte bleiben nachvollziehbar.",
-    },
-  ];
-
-  const { hasMounted, visible } = useStickyCtaVisibility();
+  const [email, setEmail] = useState("");
 
   return (
     <>
-      <SEO
-        title="BuyAuto – Preise für Garagen"
-        description="Pakete für Garagen: Inserate, VIN-PreFill, Leasing-Rechner und Deal-Chat pro Fahrzeug. Done-for-you Onboarding ab Growth."
-      />
-
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-neutral-950" />
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-45"
-          style={{ backgroundImage: "url(/20251209_0003_Handshake_in_Zurich_simple_compose_01kc036j1cff881r0wzwemf48h.png)" }}
+      <Head>
+        <title>BuyAuto – Preise für Garagen</title>
+        <meta
+          name="description"
+          content="Pakete für Garagen: Inserate, VIN-PreFill, Leasing-Rechner und Deal-Chat pro Fahrzeug. Done-for-you Onboarding ab Growth."
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/80 to-transparent" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
 
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-16 sm:pt-20 pb-10 sm:pb-14">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-4 py-2 text-white/90 text-xs font-semibold">
-              Marketplace für Direktkauf & Leasing
-              <span className="h-1 w-1 rounded-full bg-white/40" />
-              für Garagen in der Schweiz
+      <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
+        <Header />
+
+        {/* Hero */}
+        <section className="relative pt-32 pb-20 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-neutral-900 mb-6">
+              Preise für Garagen
+            </h1>
+            <p className="text-3xl md:text-4xl font-bold text-neutral-800 mb-4">
+              Mehr Anfragen. Weniger Aufwand.
+            </p>
+            <p className="text-xl text-neutral-600 mb-3 max-w-3xl mx-auto">
+              Dein Inventar online – mit VIN-PreFill, Leasing-Rechner und
+              Deal-Chat pro Fahrzeug.
+            </p>
+            <p className="text-base text-neutral-500 mb-8 max-w-2xl mx-auto">
+              Marketplace für Direktkauf & Leasing – mit klaren Inseraten und
+              direktem Kontakt.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <Button size="lg" className="text-lg px-8" asChild>
+                <Link href="/auth?mode=register&type=garage">
+                  Jetzt starten
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8"
+                onClick={() => {
+                  document
+                    .getElementById("packages")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                Preise ansehen
+              </Button>
             </div>
 
-            <h1 className="mt-5 text-4xl sm:text-5xl font-bold tracking-tight text-white">Preise für Garagen</h1>
-            <p className="mt-4 text-xl sm:text-2xl font-semibold text-white/95">Mehr Anfragen. Weniger Aufwand.</p>
-            <p className="mt-3 text-base sm:text-lg text-white/80 leading-relaxed">
-              Dein Inventar online – mit VIN-PreFill, Leasing-Rechner und Deal-Chat pro Fahrzeug.
-            </p>
-            <p className="mt-2 text-sm text-white/70">
-              Marketplace für Direktkauf & Leasing – mit klaren Inseraten und direktem Kontakt.
-            </p>
-
-            <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild className="rounded-2xl bg-white text-neutral-900 hover:bg-white/90">
-                <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>Jetzt starten</Link>
-              </Button>
-              <Button asChild variant="secondary" className="rounded-2xl bg-white/15 text-white hover:bg-white/20 border border-white/20">
-                <a href={packagesAnchor}>Preise ansehen</a>
-              </Button>
-            </div>
-
-            <div className="mt-8 grid gap-2 sm:grid-cols-3 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
               {[
                 "VIN-PreFill (wo verfügbar)",
                 "Leasing-Rechner im Inserat",
                 "Deal-Chat inkl. Dokumentenversand",
-              ].map((t) => (
-                <div key={t} className="rounded-2xl bg-white/10 border border-white/15 px-4 py-3 text-sm text-white/90">
-                  <div className="flex items-start gap-2">
-                    <Check className="h-4 w-4 mt-0.5 text-emerald-300" />
-                    <div>{t}</div>
-                  </div>
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-center gap-2 text-neutral-700"
+                >
+                  <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Included in every package */}
+        <section className="py-20 px-4 bg-neutral-50">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-neutral-900 mb-4">
+              In jedem Paket inklusive
+            </h2>
+            <p className="text-center text-neutral-600 mb-12 max-w-2xl mx-auto">
+              Diese Features bekommst du in allen Paketen – von Starter bis
+              Pro.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {includedFeatures.map((feature, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-3 bg-white p-6 rounded-2xl shadow-sm"
+                >
+                  <Check className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-neutral-700 font-medium">
+                    {feature}
+                  </span>
                 </div>
               ))}
             </div>
 
-            <div className="mt-10 rounded-3xl bg-white/25 backdrop-blur-xl border border-white/30 shadow-2xl px-4 py-4 sm:px-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="text-left">
-                  <div className="text-sm font-semibold text-white">Done-for-you Onboarding ab Growth</div>
-                  <div className="text-sm text-white/80 mt-1">
-                    Du schickst uns dein Inventar – wir strukturieren, erstellen und bringen dich schnell live.
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+              <p className="text-sm text-amber-900">
+                <strong>Wichtig:</strong> Leads können nicht garantiert werden
+                – aber du bekommst eine saubere Präsenz + direkten Kanal für
+                Anfragen.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Packages */}
+        <section id="packages" className="py-20 px-4">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-4xl font-bold text-center text-neutral-900 mb-4">
+              Wähle dein Paket
+            </h2>
+            <p className="text-center text-neutral-600 mb-16 max-w-2xl mx-auto">
+              Transparent, fair, monatlich kündbar.
+            </p>
+
+            {/* Main 3 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+              {packages.map((pkg) => (
+                <div
+                  key={pkg.code}
+                  className={`relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-shadow duration-300 p-8 flex flex-col ${
+                    pkg.popular ? "ring-2 ring-primary" : ""
+                  }`}
+                >
+                  {pkg.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-sm font-bold px-4 py-1 rounded-full">
+                      Meist gewählt
+                    </div>
+                  )}
+
+                  <div className="mb-6">
+                    <h3 className="text-2xl font-bold text-neutral-900 mb-2">
+                      {pkg.name}
+                    </h3>
+                    <div className="flex items-baseline gap-1 mb-2">
+                      <span className="text-4xl font-bold text-neutral-900">
+                        {pkg.price}
+                      </span>
+                      <span className="text-neutral-600">{pkg.period}</span>
+                    </div>
+                    <p className="text-sm text-neutral-600 font-medium">
+                      {pkg.limit}
+                    </p>
+                    <p className="text-sm text-primary font-semibold mt-1">
+                      {pkg.premiumIncluded}
+                    </p>
                   </div>
+
+                  <div className="flex-1 mb-6">
+                    <ul className="space-y-3">
+                      {pkg.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-neutral-700">
+                            {feature}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full h-12"
+                    variant={pkg.popular ? "default" : "outline"}
+                    asChild
+                  >
+                    <Link href="/auth?mode=register&type=garage">
+                      {pkg.cta}
+                    </Link>
+                  </Button>
                 </div>
-                <Button asChild className="rounded-2xl bg-white text-neutral-900 hover:bg-white/90">
-                  <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>
-                    Starten
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Link>
+              ))}
+            </div>
+
+            {/* 100+ floating bar */}
+            <div className="bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-3xl shadow-2xl p-8 text-white">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-2">
+                    100+ Inserate oder Spezialanforderungen?
+                  </h3>
+                  <p className="text-neutral-300">
+                    Für grosse Bestände, mehrere Standorte oder
+                    Spezialprozesse. Individuelles Angebot auf Anfrage.
+                  </p>
+                </div>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="flex-shrink-0 h-12 px-8"
+                  asChild
+                >
+                  <a href="mailto:kontakt@buyauto.ch">
+                    <Mail className="w-5 h-5 mr-2" />
+                    Kontakt aufnehmen
+                  </a>
                 </Button>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <section className="py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle eyebrow="Leistung" title="In jedem Paket inklusive" />
+        {/* Premium section */}
+        <section className="py-20 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-neutral-900 mb-6">
+              Was ist ein Premium Inserat?
+            </h2>
+            <p className="text-neutral-600 mb-8 text-center max-w-2xl mx-auto">
+              Ein Premium Inserat ist visuell hervorgehoben (Premium-Badge +
+              Highlight) und kann zusätzlich in separaten Premium-Bereichen
+              erscheinen (z.B. Startseite / Premium-Sektion), ohne dass wir
+              eine bessere Suchplatzierung versprechen.
+            </p>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {includes.map((b) => (
-              <Card key={b.title} className="rounded-3xl border-neutral-200/60 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-2xl bg-neutral-100 border border-neutral-200/60 p-2">{b.icon}</div>
-                    <div>
-                      <div className="font-semibold text-neutral-900">{b.title}</div>
-                      <div className="mt-1 text-sm text-neutral-600 leading-relaxed">{b.desc}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {[
+                "Premium-Badge + visuelle Hervorhebung",
+                "Optional: Platzierung in Premium-Sektionen, wenn verfügbar",
+                "Monatliches Premium-Kontingent je nach Paket",
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="bg-white p-6 rounded-2xl shadow-sm flex items-start gap-3"
+                >
+                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-neutral-700">{item}</span>
+                </div>
+              ))}
+            </div>
 
-          <div className="mt-8 rounded-3xl border border-neutral-200/60 bg-neutral-50 p-5">
-            <div className="text-sm font-semibold text-neutral-900">Wichtig</div>
-            <div className="mt-1 text-sm text-neutral-600">
-              Leads können nicht garantiert werden – aber du bekommst eine saubere Präsenz + direkten Kanal für Anfragen.
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+              <p className="text-sm text-blue-900">
+                <strong>Hinweis:</strong> Premium = Hervorhebung, nicht
+                garantierte Leads.
+              </p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="pakete" className="py-16 sm:py-20 bg-neutral-50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle
-            eyebrow="Pakete"
-            title="Wähle das Paket, das zu deinem Bestand passt"
-            description="Upgrade/Downgrade jederzeit im Dashboard. Growth ist perfekt, wenn du schnell und sauber live willst."
-          />
+        {/* Done-for-you onboarding */}
+        <section className="py-20 px-4">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-neutral-900 mb-4">
+              So bist du schnell live
+            </h2>
+            <p className="text-center text-neutral-600 mb-12 max-w-2xl mx-auto">
+              Mit Done-for-you Onboarding (ab Growth) übernehmen wir das Setup
+              für dich.
+            </p>
 
-          <div className="mt-10 grid gap-4 lg:grid-cols-4">
-            {plans.map((p) => (
-              <PricingCard key={p.code} plan={p} />
-            ))}
-          </div>
-
-          <div className="mt-8 rounded-3xl border border-neutral-200/60 bg-white p-5">
-            <div className="text-sm font-semibold text-neutral-900">Hinweis zu Premium</div>
-            <div className="mt-1 text-sm text-neutral-600">
-              Premium = Hervorhebung. Keine garantierten Leads und kein versprochenes Suchranking-Boosting.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle
-            eyebrow="Premium"
-            title="Was ist ein Premium Inserat?"
-            description="Premium ist visuell hervorgehoben (Badge + Highlight) und kann zusätzlich in separaten Premium-Sektionen erscheinen – ohne dass wir eine bessere Suchplatzierung versprechen."
-          />
-
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {[
-              { title: "Premium-Badge + visuelle Hervorhebung", icon: <Crown className="h-5 w-5 text-amber-600" /> },
-              { title: "Optional: Platzierung in Premium-Sektionen (wenn verfügbar)", icon: <Sparkles className="h-5 w-5 text-amber-600" /> },
-              { title: "Monatliches Premium-Kontingent je nach Paket", icon: <Check className="h-5 w-5 text-amber-600" /> },
-            ].map((b) => (
-              <Card key={b.title} className="rounded-3xl border-neutral-200/60 shadow-sm">
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-2xl bg-amber-50 border border-amber-200/60 p-2">{b.icon}</div>
-                    <div className="font-semibold text-neutral-900">{b.title}</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {onboardingSteps.map((step) => (
+                <div
+                  key={step.step}
+                  className="bg-white rounded-2xl shadow-lg p-8"
+                >
+                  <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                    {step.step}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="mt-8 rounded-3xl bg-neutral-950 text-white p-6 sm:p-8">
-            <div className="text-lg font-bold tracking-tight">Kurz gesagt</div>
-            <div className="mt-2 text-white/80">
-              Premium = Hervorhebung, nicht garantierte Leads. Nutze Premium für Fahrzeuge, die du aktiv pushen willst.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 sm:py-20 bg-neutral-50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle eyebrow="Onboarding" title="So bist du schnell live" />
-
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {[
-              {
-                step: "Step 1",
-                title: "Du schickst uns dein Inventar",
-                bullets: [
-                  "Fahrzeugliste (CSV/Excel oder Link)",
-                  "Fotos (Ordner/Drive/WeTransfer)",
-                  "Welche Fahrzeuge leasingfähig sind",
-                  "Leasing-Konditionen (Monate, KM, Anzahlung, Rate/Zins falls vorhanden)",
-                ],
-              },
-              {
-                step: "Step 2",
-                title: "Wir erstellen die Inserate",
-                bullets: [
-                  "Struktur + Grunddaten",
-                  "Bilder-Reihenfolge sauber setzen",
-                  "Leasing-Rechner korrekt konfigurieren",
-                ],
-              },
-              {
-                step: "Step 3",
-                title: "Du bekommst Anfragen",
-                bullets: ["Anfragen landen im Deal-Chat pro Fahrzeug", "inkl. Dokumentenversand", "klarer Kontext pro Inserat"],
-              },
-            ].map((s) => (
-              <Card key={s.step} className="rounded-3xl border-neutral-200/60 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="inline-flex items-center rounded-full bg-neutral-100 border border-neutral-200/60 px-3 py-1 text-xs font-semibold text-neutral-700">
-                    {s.step}
-                  </div>
-                  <div className="mt-3 text-lg font-bold tracking-tight text-neutral-900">{s.title}</div>
-                  <div className="mt-4 space-y-2 text-sm text-neutral-700">
-                    {s.bullets.map((b) => (
-                      <div key={b} className="flex gap-2">
-                        <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
-                        <div>{b}</div>
-                      </div>
+                  <h3 className="text-xl font-bold text-neutral-900 mb-4">
+                    {step.title}
+                  </h3>
+                  <ul className="space-y-2">
+                    {step.items.map((item, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-sm text-neutral-600"
+                      >
+                        <ArrowRight className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
                     ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
+        </section>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95">
-              <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>Jetzt starten</Link>
-            </Button>
-            <Button asChild variant="secondary" className="rounded-2xl">
-              <a href={contactHref}>Kontakt aufnehmen</a>
-            </Button>
-          </div>
-        </div>
-      </section>
+        {/* FAQ */}
+        <section className="py-20 px-4 bg-neutral-50">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-neutral-900 mb-12">
+              Häufige Fragen
+            </h2>
 
-      <section className="py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle eyebrow="FAQ" title="Häufige Fragen" />
-
-          <div className="mt-10 mx-auto max-w-3xl">
-            <Accordion type="single" collapsible className="w-full">
-              {faqs.map((f, idx) => (
-                <AccordionItem key={f.q} value={`faq-${idx}`} className="border-neutral-200/60">
-                  <AccordionTrigger className="text-left text-neutral-900">{f.q}</AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed">{f.a}</AccordionContent>
+            <Accordion type="single" collapsible className="space-y-4">
+              {faqs.map((faq, i) => (
+                <AccordionItem
+                  key={i}
+                  value={`item-${i}`}
+                  className="bg-white rounded-2xl shadow-sm px-6"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:text-primary py-6">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-neutral-600 pb-6">
+                    {faq.answer}
+                  </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="py-16 sm:py-20 bg-neutral-950">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 sm:p-10 text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Bereit, dein Inventar live zu bringen?</h2>
-            <p className="mt-3 text-white/75 max-w-2xl mx-auto">
-              Monatlich kündbar. Keine Setup-Falle.
+        {/* Final CTA */}
+        <section className="py-20 px-4">
+          <div className="max-w-4xl mx-auto text-center bg-gradient-to-r from-primary to-primary/80 rounded-3xl shadow-2xl p-12 text-white">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Bereit, dein Inventar live zu bringen?
+            </h2>
+            <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
+              Monatlich kündbar. Keine Setup-Falle. Starte noch heute.
             </p>
 
-            <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild className="rounded-2xl bg-white text-neutral-900 hover:bg-white/90">
-                <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>Jetzt starten</Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="text-lg px-8 h-12"
+                asChild
+              >
+                <Link href="/auth?mode=register&type=garage">
+                  Jetzt starten
+                </Link>
               </Button>
-              <Button asChild variant="secondary" className="rounded-2xl bg-white/15 text-white hover:bg-white/20 border border-white/20">
-                <a href={contactHref}>Kontakt aufnehmen</a>
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 h-12 bg-white/10 text-white border-white/30 hover:bg-white/20"
+                asChild
+              >
+                <a href="mailto:kontakt@buyauto.ch">Kontakt aufnehmen</a>
               </Button>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {hasMounted ? (
-        <div
-          className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 border-t border-neutral-200 bg-white/80 backdrop-blur-md transition-transform duration-300",
-            visible ? "translate-y-0" : "translate-y-full"
-          )}
-        >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-neutral-900 truncate">Pakete für Garagen</div>
-              <div className="text-xs text-neutral-600 truncate">Done-for-you Onboarding ab Growth. Premium = Hervorhebung.</div>
-            </div>
-            <div className="flex gap-2">
-              <Button asChild variant="secondary" className="rounded-2xl">
-                <a href={packagesAnchor}>Preise</a>
-              </Button>
-              <Button asChild className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95">
-                <Link href={`${startHref}?next=${encodeURIComponent(nextAfterPlan)}`}>Jetzt starten</Link>
-              </Button>
-            </div>
+            <p className="text-sm text-white/70 mt-8">
+              Monatlich kündbar. Keine Setup-Falle.
+            </p>
           </div>
-        </div>
-      ) : null}
+        </section>
+
+        <Footer />
+      </div>
     </>
   );
 }

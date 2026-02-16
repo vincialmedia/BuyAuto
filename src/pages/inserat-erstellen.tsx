@@ -42,8 +42,8 @@ export default function CreateListingPage() {
 
         if (garageError) throw garageError;
 
-        const garagePlan = garage?.plan ?? "free";
-        const hasSnapshotPlan = garagePlan !== "free";
+        const snapshotPlan = String(garage?.plan ?? "no_plan").trim().toLowerCase();
+        const hasSnapshotPlan = snapshotPlan !== "free" && snapshotPlan !== "no_plan" && snapshotPlan !== "no plan";
 
         if (hasSnapshotPlan) {
           if (!cancelled) setGate({ kind: "allowed" });

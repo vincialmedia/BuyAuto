@@ -176,12 +176,14 @@ export default function GaragePlanPage() {
 
         if (garageError) throw garageError;
 
+        const snapshotPlan = String(garage?.plan ?? "no_plan").trim().toLowerCase();
+
         if (!cancelled) {
-          setCurrentGaragePlanSnapshot(garage?.plan ?? null);
+          setCurrentGaragePlanSnapshot(snapshotPlan);
         }
 
-        const snapshotPlan = garage?.plan ?? "free";
-        if (snapshotPlan !== "free") {
+        const hasPlan = snapshotPlan !== "free" && snapshotPlan !== "no_plan" && snapshotPlan !== "no plan";
+        if (hasPlan) {
           await router.replace(safeNext);
         }
       } catch (e: any) {
@@ -395,7 +397,16 @@ export default function GaragePlanPage() {
                         <div className="mt-1 text-sm text-neutral-600">Marketplace-Setup + Deal-Chat pro Fahrzeug.</div>
                       </div>
                       <div className="text-xs text-neutral-500 text-right">
-                        Garage-Status: <span className="font-semibold text-neutral-700">{currentGaragePlanSnapshot ?? "—"}</span>
+                        Garage-Status:{" "}
+                        <span className="font-semibold text-neutral-700">
+                          {currentGaragePlanSnapshot
+                            ? currentGaragePlanSnapshot === "free" ||
+                              currentGaragePlanSnapshot === "no_plan" ||
+                              currentGaragePlanSnapshot === "no plan"
+                              ? "Kein Paket"
+                              : currentGaragePlanSnapshot
+                            : "—"}
+                        </span>
                       </div>
                     </div>
                   </CardHeader>
