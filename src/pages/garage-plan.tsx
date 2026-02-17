@@ -3,8 +3,6 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Check, Mail, ArrowRight, Loader2 } from "lucide-react";
-import Header from "@/components/buyauto/Header";
-import { Footer } from "@/components/buyauto/Footer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +25,7 @@ const packages = [
     period: "/ Monat",
     limit: "bis zu 15 Inserate",
     premiumIncluded: "1 Premium Inserat / Monat inklusive",
-    features: ["Alles aus 'Inklusive'"],
+    features: ["Basis-Funktionen inklusive"],
     cta: "Starter wählen",
     popular: false,
   },
@@ -133,125 +131,58 @@ export default function GaragePlanPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
-        <Header />
-
-        {/* Hero - Ultra Compressed */}
-        <section className="relative pt-4 pb-2 px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-2">
-              Wähle dein Paket
-            </h1>
-            <p className="text-xl md:text-2xl font-bold text-neutral-800 mb-1">
-              Mehr Anfragen. Weniger Aufwand.
-            </p>
-            <p className="text-base text-neutral-600 mb-4 max-w-3xl mx-auto">
-              Dein Inventar online – mit VIN-PreFill, Leasing-Rechner und
-              Deal-Chat pro Fahrzeug.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 max-w-3xl mx-auto">
-              {[
-                "VIN-PreFill (wo verfügbar)",
-                "Leasing-Rechner im Inserat",
-                "Deal-Chat inkl. Dokumentenversand",
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-center gap-2 text-neutral-700"
-                >
-                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span className="text-xs font-medium">{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="bg-gradient-to-b from-neutral-50 to-white">
+        {/* Hero - Ultra Compact */}
+        <section className="pt-8 pb-6 px-4 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-2">
+            Wähle dein Paket
+          </h1>
+          <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+            Mehr Anfragen. Weniger Aufwand. Sofort loslegen.
+          </p>
         </section>
 
-        {/* Included in every package - Ultra Compressed */}
-        <section className="py-2 px-4 bg-neutral-50">
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-xl font-bold text-center text-neutral-900 mb-1">
-              In jedem Paket inklusive
-            </h2>
-            <p className="text-center text-neutral-600 mb-3 max-w-2xl mx-auto text-xs">
-              Diese Features bekommst du in allen Paketen – von Starter bis
-              Pro.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              {includedFeatures.map((feature, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 bg-white p-4 rounded-2xl shadow-sm"
-                >
-                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-neutral-700 font-medium text-sm">
-                    {feature}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <p className="text-xs text-amber-900">
-                <strong>Wichtig:</strong> Leads können nicht garantiert werden
-                – aber du bekommst eine saubere Präsenz + direkten Kanal für
-                Anfragen.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Packages - Ultra Compressed */}
-        <section id="packages" className="py-2 px-4">
+        {/* Packages - Main Focus */}
+        <section id="packages" className="pb-12 px-4">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-2xl font-bold text-center text-neutral-900 mb-1">
-              Wähle dein Paket
-            </h2>
-            <p className="text-center text-neutral-600 mb-4 max-w-2xl mx-auto text-xs">
-              Transparent, fair, monatlich kündbar.
-            </p>
-
-            {/* Main 3 cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
               {packages.map((pkg) => (
                 <div
                   key={pkg.code}
-                  className={`relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 flex flex-col ${
-                    pkg.popular ? "ring-2 ring-primary" : ""
+                  className={`relative bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 flex flex-col border ${
+                    pkg.popular ? "border-primary ring-1 ring-primary" : "border-neutral-100"
                   }`}
                 >
                   {pkg.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                       Meist gewählt
                     </div>
                   )}
 
-                  <div className="mb-4">
+                  <div className="mb-6 text-center">
                     <h3 className="text-xl font-bold text-neutral-900 mb-2">
                       {pkg.name}
                     </h3>
-                    <div className="flex items-baseline gap-1 mb-1">
-                      <span className="text-3xl font-bold text-neutral-900">
+                    <div className="flex items-baseline justify-center gap-1 mb-1">
+                      <span className="text-4xl font-bold text-neutral-900">
                         {pkg.price}
                       </span>
-                      <span className="text-neutral-600 text-sm">{pkg.period}</span>
+                      <span className="text-neutral-500 text-sm">{pkg.period}</span>
                     </div>
-                    <p className="text-xs text-neutral-600 font-medium">
+                    <p className="text-sm font-medium text-neutral-900 mb-2">
                       {pkg.limit}
                     </p>
-                    <p className="text-xs text-primary font-semibold mt-1">
+                     <div className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold">
                       {pkg.premiumIncluded}
-                    </p>
+                    </div>
                   </div>
 
-                  <div className="flex-1 mb-4">
-                    <ul className="space-y-2">
+                  <div className="flex-1 mb-6">
+                    <ul className="space-y-3">
                       {pkg.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                          <span className="text-xs text-neutral-700">
+                        <li key={i} className="flex items-start gap-3">
+                          <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                          <span className="text-sm text-neutral-600">
                             {feature}
                           </span>
                         </li>
@@ -261,7 +192,7 @@ export default function GaragePlanPage() {
 
                   <Button
                     size="lg"
-                    className="w-full h-12 text-sm"
+                    className="w-full"
                     variant={pkg.popular ? "default" : "outline"}
                     onClick={() => handleSelectPlan(pkg.code)}
                     disabled={loading}
@@ -279,73 +210,53 @@ export default function GaragePlanPage() {
               ))}
             </div>
 
-            {/* 100+ floating bar */}
-            <div className="bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-3xl shadow-2xl p-6 text-white">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-1">
-                    100+ Inserate oder Spezialanforderungen?
-                  </h3>
-                  <p className="text-neutral-300 text-sm">
-                    Für grosse Bestände, mehrere Standorte oder
-                    Spezialprozesse. Individuelles Angebot auf Anfrage.
-                  </p>
-                </div>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="flex-shrink-0 h-12 px-6"
-                  asChild
-                >
-                  <a href="mailto:kontakt@buyauto.ch">
-                    <Mail className="w-5 h-5 mr-2" />
-                    Kontakt aufnehmen
-                  </a>
-                </Button>
+            {/* Included in every package - Moved Down */}
+            <div className="max-w-4xl mx-auto mb-12">
+              <div className="text-center mb-6">
+                 <h2 className="text-lg font-semibold text-neutral-900">
+                  In allen Paketen inklusive
+                </h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {includedFeatures.map((feature, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 bg-white p-3 rounded-xl border border-neutral-100 shadow-sm"
+                  >
+                    <div className="bg-green-50 p-1.5 rounded-full">
+                       <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    </div>
+                    <span className="text-neutral-700 font-medium text-sm">
+                      {feature}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* Premium section - Compressed */}
-        <section className="py-8 px-4 bg-neutral-50">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-center text-neutral-900 mb-3">
-              Was ist ein Premium Inserat?
-            </h2>
-            <p className="text-neutral-600 mb-6 text-center max-w-2xl mx-auto text-sm">
-              Ein Premium Inserat ist visuell hervorgehoben (Premium-Badge +
-              Highlight) und kann zusätzlich in separaten Premium-Bereichen
-              erscheinen (z.B. Startseite / Premium-Sektion), ohne dass wir
-              eine bessere Suchplatzierung versprechen.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              {[
-                "Premium-Badge + visuelle Hervorhebung",
-                "Optional: Platzierung in Premium-Sektionen, wenn verfügbar",
-                "Monatliches Premium-Kontingent je nach Paket",
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="bg-white p-4 rounded-2xl shadow-sm flex items-start gap-2"
-                >
-                  <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-xs text-neutral-700">{item}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-              <p className="text-xs text-blue-900">
-                <strong>Hinweis:</strong> Premium = Hervorhebung, nicht
-                garantierte Leads.
-              </p>
+             {/* Enterprise / Contact */}
+            <div className="max-w-3xl mx-auto bg-neutral-900 rounded-2xl p-6 text-white text-center md:text-left md:flex md:items-center md:justify-between gap-6">
+              <div>
+                <h3 className="text-lg font-bold mb-1">
+                  Grosskunde? Mehr als 100 Fahrzeuge?
+                </h3>
+                <p className="text-neutral-400 text-sm">
+                  Wir bieten individuelle Lösungen und Schnittstellen-Anbindungen.
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                className="mt-4 md:mt-0 flex-shrink-0"
+                asChild
+              >
+                <a href="mailto:kontakt@buyauto.ch">
+                  Kontakt aufnehmen
+                </a>
+              </Button>
             </div>
           </div>
         </section>
-
-        <Footer />
       </div>
     </>
   );

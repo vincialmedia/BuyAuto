@@ -1,16 +1,29 @@
+# Duplicate Header Fix Plan
 
-# Plan to Remove Duplicate Header
+## Problem
+The `GaragePlanPage` (`src/pages/garage-plan.tsx`) displays a double header and double footer.
 
-## 1. Objective
-Remove the secondary header banner appearing on the dashboard page to leave only the single, main site header.
+## Root Cause
+- `src/pages/_app.tsx` wraps all pages in `MainLayout`.
+- `MainLayout` renders `<Header />` and `<Footer />`.
+- `garage-plan.tsx` explicitly renders `<Header />` and `<Footer />` again.
 
-## 2. Analysis
-- **Problem:** The dashboard page (`/dashboard`) displays two header components.
-- **Cause:** The page component at `src/pages/dashboard.tsx` explicitly renders a `<DashboardHeader />`. This is in addition to the primary `<Header />` that is likely rendered by a global layout component (e.g., in `_app.tsx`).
-- **Desired State:** Only the main, site-wide navigation header should be visible on the dashboard page.
+## Solution
+Modify `src/pages/garage-plan.tsx`:
 
-## 3. Implementation Steps
-1.  **Edit Page Component:** Open the file `src/pages/dashboard.tsx`.
-2.  **Locate Redundant Code:** Find the JSX tag `<DashboardHeader />`.
-3.  **Remove Redundant Code:** Delete the entire `<DashboardHeader />` line from the file.
-4.  **Verification:** Confirm that all necessary user actions (like "Logout") are available within the main header's user menu. The dashboard page should now render cleanly with only one header.
+1.  **Remove Imports**:
+    - Remove `import Header from "@/components/buyauto/Header";`
+    - Remove `import { Footer } from "@/components/buyauto/Footer";`
+
+2.  **Remove Components**:
+    - Remove `<Header />` JSX tag.
+    - Remove `<Footer />` JSX tag.
+
+3.  **Adjust Layout Wrapper**:
+    - Remove the outer `div`'s `min-h-screen` and `flex-col` classes (layout handles this).
+    - Remove the internal `<main>` tag (layout handles this).
+    - Keep the background gradient styling on a wrapper `div` to maintain the visual design.
+
+## Verification
+- Navigate to `/garage-plan` (or try to create a listing without a package).
+- Verify only one navigation bar and one footer are visible.
