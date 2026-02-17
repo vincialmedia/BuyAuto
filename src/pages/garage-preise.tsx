@@ -2,8 +2,6 @@ import { useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { Check, Mail, ArrowRight } from "lucide-react";
-import Header from "@/components/buyauto/Header";
-import { Footer } from "@/components/buyauto/Footer";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -151,8 +149,6 @@ export default function GaragePreisePage() {
       </Head>
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
-        <Header />
-
         {/* Hero */}
         <section className="relative pt-32 pb-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
@@ -482,8 +478,6 @@ export default function GaragePreisePage() {
             </p>
           </div>
         </section>
-
-        <Footer />
       </div>
     </>
   );
