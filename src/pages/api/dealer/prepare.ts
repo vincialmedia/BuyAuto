@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
 import { stripe } from "@/lib/stripe-server";
-import crypto from "crypto";
 
 type PrepareBody = {
   plan_code?: string;
@@ -74,16 +73,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const garageId = garage.id;
     const amountInCents = Math.round(priceChf * 100);
 
-    const idempotencyKey = crypto
-      .createHash("sha256")
-      .update(`${garageId}-${planCode}-${session.user.id}-${crypto.randomUUID()}`)
-      .digest("hex");
+    // Determine base URL for redirection
+    const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';
+    const host = req.headers.host;
+    // Prioritize Host header to support dynamic preview URLs
+    const origin = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
 
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: amountInCents,
-        currency: "chf",
-        automatic_payment_methods: { enabled: true },
+    // Create Stripe Checkout Session
+    const checkoutSession = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "chf",
+            product_data: {
+              name: `BuyAuto - ${plan.code.charAt(0).toUpperCase() + plan.code.slice(1)} Paket`,
+              description: "Monatliches Abonnement",
+            },
+            unit_amount: amountInCents,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment", // Treating as one-time payment that activates a 30-day period manually via webhook
+      success_url: `${origin}/dashboard/garage?payment_success=true`,
+      cancel_url: `${origin}/billing/cancel`,
+      payment_intent_data: {
         metadata: {
           kind: "dealer_plan",
           dealer_id: garageId,
@@ -91,22 +106,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           plan_id: plan.id,
           user_id: session.user.id,
         },
-        statement_descriptor: "BUYAUTO",
       },
-      { idempotencyKey }
-    );
+    });
 
-    if (!paymentIntent?.client_secret) {
-      return res.status(500).json({ ok: false, error: "Payment session could not be initialized" });
+    if (!checkoutSession.url) {
+      return res.status(500).json({ ok: false, error: "Could not generate payment URL" });
     }
 
     return res.status(200).json({
       ok: true,
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-      amountChf: priceChf,
+      url: checkoutSession.url,
     });
+
   } catch (e: unknown) {
+    console.error("Payment preparation error:", e);
     return res.status(500).json({ ok: false, error: getErrorMessage(e) });
   }
 }
