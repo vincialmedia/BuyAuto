@@ -73,6 +73,9 @@ export default function AuthForm() {
         lastName: data.lastName,
         newsletterConsent: data.newsletterConsent,
         accountType: data.accountType,
+        garageName: data.garageName,
+        city: data.city,
+        contactEmail: data.contactEmail,
       };
       
       await authService.signUp(signUpData);
