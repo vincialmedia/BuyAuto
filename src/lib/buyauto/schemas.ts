@@ -7,6 +7,9 @@ export const loginSchema = z.object({
 
 export const registerSchema = z
   .object({
+    accountType: z.enum(["private", "garage"], {
+      required_error: "Kontotyp ist erforderlich",
+    }).default("private"),
     firstName: z.string().optional(),
     lastName: z.string().optional(),
     email: z.string().email("Gültige E-Mail-Adresse eingeben"),
