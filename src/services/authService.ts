@@ -11,6 +11,7 @@ interface SignUpData {
   firstName?: string;
   lastName?: string;
   newsletterConsent?: boolean;
+  accountType?: "private" | "garage";
 }
 
 const authService = {
@@ -57,7 +58,7 @@ const authService = {
     return data;
   },
 
-  async signUp({ email, password, firstName, lastName, newsletterConsent }: SignUpData) {
+  async signUp({ email, password, firstName, lastName, newsletterConsent, accountType }: SignUpData) {
     console.log("Starting sign up process");
     
     const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
@@ -70,6 +71,7 @@ const authService = {
           first_name: firstName,
           last_name: lastName,
           full_name: fullName,
+          role: accountType || "private",
         },
       },
     });
