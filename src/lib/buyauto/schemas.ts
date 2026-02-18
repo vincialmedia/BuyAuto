@@ -16,10 +16,41 @@ export const registerSchema = z
     password: z.string().min(8, "Passwort muss mindestens 8 Zeichen haben"),
     confirmPassword: z.string().min(1, "Passwort bestätigen ist erforderlich"),
     newsletterConsent: z.boolean().optional(),
+    // Garage-specific fields
+    garageName: z.string().optional(),
+    city: z.string().optional(),
+    contactEmail: z.string().email("Gültige E-Mail-Adresse eingeben").optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwörter stimmen nicht überein",
     path: ["confirmPassword"],
+  })
+  .refine((data) => {
+    if (data.accountType === "garage") {
+      return data.garageName && data.garageName.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: "Garagenname ist erforderlich",
+    path: ["garageName"],
+  })
+  .refine((data) => {
+    if (data.accountType === "garage") {
+      return data.city && data.city.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: "Ort ist erforderlich",
+    path: ["city"],
+  })
+  .refine((data) => {
+    if (data.accountType === "garage") {
+      return data.contactEmail && data.contactEmail.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: "Kontakt-E-Mail ist erforderlich",
+    path: ["contactEmail"],
   });
 
 export const resetPasswordSchema = z.object({
