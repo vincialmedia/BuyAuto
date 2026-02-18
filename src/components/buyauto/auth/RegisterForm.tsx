@@ -182,6 +182,71 @@ export default function RegisterForm({
           )}
         />
 
+        {/* Garage-specific fields - Only shown when Garage is selected */}
+        {selectedAccountType === "garage" && (
+          <>
+            <FormField
+              control={form.control}
+              name="garageName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-neutral-700 font-medium">Garagenname / Firma</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Auto Muster AG"
+                      className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 text-sm" />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-neutral-700 font-medium">Ort</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Zürich"
+                        className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="contactEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-neutral-700 font-medium">Kontakt E-Mail</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="info@muster-garage.ch"
+                        className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
+        )}
+
         <FormField
           control={form.control}
           name="password"
