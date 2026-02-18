@@ -1,15 +1,15 @@
-
 "use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { registerSchema, type RegisterFormData } from "@/lib/buyauto/schemas";
+import { cn } from "@/lib/utils";
 
 interface RegisterFormProps {
   onRegister: (data: RegisterFormData) => void;
@@ -27,6 +27,7 @@ export default function RegisterForm({
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      accountType: "private",
       firstName: "",
       lastName: "",
       email: "",
@@ -35,6 +36,8 @@ export default function RegisterForm({
     },
   });
 
+  const selectedAccountType = form.watch("accountType");
+
   const onSubmit = (data: RegisterFormData) => {
     onRegister(data);
   };
@@ -42,6 +45,83 @@ export default function RegisterForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Account Type Selection */}
+        <FormField
+          control={form.control}
+          name="accountType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-neutral-700 font-medium">Kontotyp</FormLabel>
+              <FormControl>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Private User Card */}
+                  <button
+                    type="button"
+                    onClick={() => field.onChange("private")}
+                    disabled={isLoading}
+                    className={cn(
+                      "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
+                      selectedAccountType === "private"
+                        ? "border-red-500 bg-red-50 shadow-lg shadow-red-500/20"
+                        : "border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-md"
+                    )}
+                  >
+                    <User className={cn(
+                      "h-8 w-8 mb-2",
+                      selectedAccountType === "private" ? "text-red-500" : "text-neutral-400"
+                    )} />
+                    <span className={cn(
+                      "text-sm font-medium",
+                      selectedAccountType === "private" ? "text-red-600" : "text-neutral-700"
+                    )}>
+                      Privatkunde
+                    </span>
+                    {selectedAccountType === "private" && (
+                      <div className="absolute top-2 right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Garage Card */}
+                  <button
+                    type="button"
+                    onClick={() => field.onChange("garage")}
+                    disabled={isLoading}
+                    className={cn(
+                      "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
+                      selectedAccountType === "garage"
+                        ? "border-red-500 bg-red-50 shadow-lg shadow-red-500/20"
+                        : "border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-md"
+                    )}
+                  >
+                    <Building2 className={cn(
+                      "h-8 w-8 mb-2",
+                      selectedAccountType === "garage" ? "text-red-500" : "text-neutral-400"
+                    )} />
+                    <span className={cn(
+                      "text-sm font-medium",
+                      selectedAccountType === "garage" ? "text-red-600" : "text-neutral-700"
+                    )}>
+                      Garage/Händler
+                    </span>
+                    {selectedAccountType === "garage" && (
+                      <div className="absolute top-2 right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </FormControl>
+              <FormMessage className="text-red-500 text-sm" />
+            </FormItem>
+          )}
+        />
+
         <div className="grid grid-cols-2 gap-3">
           <FormField
             control={form.control}
