@@ -71,6 +71,8 @@ export default function AuthForm() {
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
+        newsletterConsent: data.newsletterConsent,
+        accountType: data.accountType,
       };
       
       await authService.signUp(signUpData);
