@@ -6,7 +6,6 @@ import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -18,6 +17,7 @@ interface SearchFormProps {
 }
 
 type RestlaufzeitOption = "" | "0-6" | "7-12" | "13-24" | "24+";
+type DealTypeMode = "all" | "direct_purchase_only" | "leasing_only" | "lease_takeover_only";
 
 function getRestlaufzeitLabel(option: RestlaufzeitOption): string {
   if (option === "0-6") return "≤ 6 Monate";
@@ -31,6 +31,13 @@ function formatChf(value: number): string {
   return `CHF ${value.toLocaleString("de-CH")}`;
 }
 
+function getModeLabel(mode: DealTypeMode): string {
+  if (mode === "direct_purchase_only") return "Direktkauf";
+  if (mode === "leasing_only") return "Leasingangebote";
+  if (mode === "lease_takeover_only") return "Leasingübernahmen";
+  return "Alle";
+}
+
 export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const router = useRouter();
   const isHero = variant === "hero";
@@ -39,8 +46,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
 
-  const [includeLeasingOffers, setIncludeLeasingOffers] = useState(false);
-  const [includeLeaseTakeovers, setIncludeLeaseTakeovers] = useState(false);
+  const [dealMode, setDealMode] = useState<DealTypeMode>("all");
 
   const [selectedRestlaufzeit, setSelectedRestlaufzeit] = useState<RestlaufzeitOption>("");
   const [noDeposit, setNoDeposit] = useState(false);
@@ -59,10 +65,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
   const [expandedFilters, setExpandedFilters] = useState(false);
 
-  const monthlyPriceEnabled = includeLeasingOffers || includeLeaseTakeovers;
-  const leaseTakeoversOnly = includeLeaseTakeovers && !includeLeasingOffers;
-  const leasingOffersOnly = includeLeasingOffers && !includeLeaseTakeovers;
-  const monthlyBundle = includeLeasingOffers && includeLeaseTakeovers;
+  const monthlyPriceEnabled = dealMode === "leasing_only" || dealMode === "lease_takeover_only";
 
   const sliderConfig = useMemo(() => {
     if (monthlyPriceEnabled) {
@@ -115,11 +118,11 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   }, [selectedBrand]);
 
   useEffect(() => {
-    if (!leaseTakeoversOnly) {
+    if (dealMode !== "lease_takeover_only") {
       setSelectedRestlaufzeit("");
       setNoDeposit(false);
     }
-  }, [leaseTakeoversOnly]);
+  }, [dealMode]);
 
   const handleBrandChange = (brand: string) => {
     setSelectedBrand(brand);
@@ -134,21 +137,22 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
     return Math.min(percentage * 0.8, 0.8);
   };
 
+  const handleModeClick = (mode: DealTypeMode) => {
+    setDealMode((prev) => (prev === mode ? "all" : mode));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const queryParams: Record<string, string | string[]> = { page: "1" };
 
-    if (leasingOffersOnly) {
+    if (dealMode === "direct_purchase_only") {
+      queryParams.dealType = "direct_purchase";
+    } else if (dealMode === "leasing_only") {
       queryParams.dealType = "direct_purchase";
       queryParams.financingType = "leasing";
-    } else if (leaseTakeoversOnly) {
+    } else if (dealMode === "lease_takeover_only") {
       queryParams.dealType = "lease_takeover";
-    } else if (monthlyBundle) {
-      queryParams.monthlyOnly = "true";
-    } else {
-      queryParams.dealType = "direct_purchase";
-      queryParams.financingType = "cash";
     }
 
     if (selectedBrand) queryParams.brand = selectedBrand;
@@ -159,12 +163,12 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
       queryParams.priceMax = (activePriceRange[0] ?? sliderConfig.max).toString();
     }
 
-    if (leaseTakeoversOnly && noDeposit) queryParams.noDeposit = "true";
+    if (dealMode === "lease_takeover_only" && noDeposit) queryParams.noDeposit = "true";
     if (selectedBody) queryParams.body = [selectedBody];
     if (selectedFuel) queryParams.fuel = [selectedFuel];
     if (selectedGearbox) queryParams.gearbox = [selectedGearbox];
 
-    if (leaseTakeoversOnly && selectedRestlaufzeit) {
+    if (dealMode === "lease_takeover_only" && selectedRestlaufzeit) {
       const monthsMap: Record<string, { min?: number; max?: number }> = {
         "0-6": { max: 6 },
         "7-12": { min: 7, max: 12 },
@@ -193,9 +197,18 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const subTextStyles = isHero ? "text-neutral-200" : "text-neutral-500";
   const iconStyles = isHero ? "text-neutral-200" : "text-neutral-500";
 
-  const checkboxContainerStyles = isHero ? "bg-white/15 border-white/25" : "bg-neutral-50 border-neutral-200";
-  const checkboxLabelStyles = isHero ? "text-white" : "text-neutral-800";
-  const checkboxHintStyles = isHero ? "text-neutral-200" : "text-neutral-600";
+  const pillBase = cn(
+    "h-10 rounded-full px-4 text-sm font-semibold border transition-colors",
+    isHero ? "border-white/25" : "border-neutral-200"
+  );
+
+  const pillInactive = isHero
+    ? "bg-white/10 text-white hover:bg-white/15"
+    : "bg-white text-neutral-800 hover:bg-neutral-50";
+
+  const pillActive = isHero
+    ? "bg-white/25 text-white border-white/40"
+    : "bg-neutral-900 text-white border-neutral-900";
 
   return (
     <Card className={cn("rounded-3xl p-6 md:p-8 max-w-4xl mx-auto border transition-all duration-300", cardStyles)}>
@@ -248,13 +261,8 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
           </Select>
         </div>
 
-        <div
-          className={cn(
-            "rounded-2xl border p-4",
-            isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white"
-          )}
-        >
-          <div className={cn("space-y-3")}>
+        <div className={cn("rounded-2xl border p-4", isHero ? "border-white/25 bg-white/10" : "border-neutral-200 bg-white")}>
+          <div className="space-y-4">
             <div>
               <label className={cn("block text-sm font-semibold mb-3 tracking-wide", labelStyles)}>
                 {sliderConfig.label}: {formatChf(activePriceRange[0] ?? sliderConfig.max)}
@@ -294,53 +302,35 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <label
-                className={cn(
-                  "flex items-center gap-2 px-2.5 py-2 rounded-xl border cursor-pointer transition-colors",
-                  checkboxContainerStyles,
-                  isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
-                )}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={() => handleModeClick("direct_purchase_only")}
+                className={cn(pillBase, dealMode === "direct_purchase_only" ? pillActive : pillInactive)}
               >
-                <Checkbox
-                  id="leasing-offers"
-                  checked={includeLeasingOffers}
-                  onCheckedChange={(checked) => setIncludeLeasingOffers(!!checked)}
-                  className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-                />
-                <span className="min-w-0">
-                  <span className={cn("block text-sm font-semibold leading-tight", checkboxLabelStyles)}>
-                    Leasingangebote
-                  </span>
-                </span>
-              </label>
-
-              <label
-                className={cn(
-                  "flex items-center gap-2 px-2.5 py-2 rounded-xl border cursor-pointer transition-colors",
-                  checkboxContainerStyles,
-                  isHero ? "hover:bg-white/20" : "hover:bg-neutral-50"
-                )}
+                {dealMode === "direct_purchase_only" ? getModeLabel("direct_purchase_only") : `Nur ${getModeLabel("direct_purchase_only")}`}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleModeClick("leasing_only")}
+                className={cn(pillBase, dealMode === "leasing_only" ? pillActive : pillInactive)}
               >
-                <Checkbox
-                  id="lease-takeovers"
-                  checked={includeLeaseTakeovers}
-                  onCheckedChange={(checked) => setIncludeLeaseTakeovers(!!checked)}
-                  className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-                />
-                <span className="min-w-0">
-                  <span className={cn("block text-sm font-semibold leading-tight", checkboxLabelStyles)}>
-                    Leasingübernahmen
-                  </span>
-                </span>
-              </label>
+                {dealMode === "leasing_only" ? getModeLabel("leasing_only") : `Nur ${getModeLabel("leasing_only")}`}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleModeClick("lease_takeover_only")}
+                className={cn(pillBase, dealMode === "lease_takeover_only" ? pillActive : pillInactive)}
+              >
+                {dealMode === "lease_takeover_only"
+                  ? getModeLabel("lease_takeover_only")
+                  : `Nur ${getModeLabel("lease_takeover_only")}`}
+              </Button>
             </div>
 
-            {monthlyBundle && (
-              <p className={cn("text-xs font-medium", subTextStyles)}>
-                Filter gilt für Leasingangebote und Leasingübernahmen.
-              </p>
-            )}
+            <p className={cn("text-xs font-medium", subTextStyles)}>
+              {dealMode === "all" ? "Suche über alle Deal Types." : `Filter aktiv: ${getModeLabel(dealMode)}.`}
+            </p>
           </div>
         </div>
 
@@ -361,17 +351,13 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                 Erweiterte Filter
               </span>
               <ChevronDown
-                className={cn(
-                  "h-4 w-4 transition-transform duration-200",
-                  iconStyles,
-                  expandedFilters ? "rotate-180" : ""
-                )}
+                className={cn("h-4 w-4 transition-transform duration-200", iconStyles, expandedFilters ? "rotate-180" : "")}
               />
             </Button>
           </CollapsibleTrigger>
 
           <CollapsibleContent className="space-y-6 pt-6">
-            {leaseTakeoversOnly && (
+            {dealMode === "lease_takeover_only" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select value={selectedRestlaufzeit} onValueChange={(v) => setSelectedRestlaufzeit(v as RestlaufzeitOption)}>
                   <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
@@ -396,17 +382,17 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                   </SelectContent>
                 </Select>
 
-                <div className={cn("flex items-center space-x-3 p-4 rounded-xl border", checkboxContainerStyles)}>
-                  <Checkbox
-                    id="no-deposit"
-                    checked={noDeposit}
-                    onCheckedChange={(checked) => setNoDeposit(!!checked)}
-                    className="border-neutral-400 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-                  />
-                  <label htmlFor="no-deposit" className={cn("text-sm font-medium cursor-pointer", labelStyles)}>
-                    Keine Kaution
-                  </label>
-                </div>
+                <Button
+                  type="button"
+                  onClick={() => setNoDeposit((v) => !v)}
+                  className={cn(
+                    "h-12 rounded-xl border font-semibold justify-start px-4 transition-colors",
+                    isHero ? "border-white/25 bg-white/10 text-white hover:bg-white/15" : "border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50",
+                    noDeposit ? (isHero ? "ring-2 ring-white/40" : "ring-2 ring-neutral-900/20") : ""
+                  )}
+                >
+                  Keine Kaution
+                </Button>
               </div>
             )}
 
