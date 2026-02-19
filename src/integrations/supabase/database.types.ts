@@ -301,34 +301,58 @@ export type Database = {
           city: string | null
           contact_email: string | null
           created_at: string | null
+          description: string | null
           garage_name: string
+          google_reviews_snippet: Json | null
+          header_image_url: string | null
           id: string
           listing_limit: number | null
+          opening_hours: Json | null
           owner_user_id: string
+          phone_number: string | null
           plan: string | null
+          services: string[] | null
+          slug: string | null
           updated_at: string | null
+          website_url: string | null
         }
         Insert: {
           city?: string | null
           contact_email?: string | null
           created_at?: string | null
+          description?: string | null
           garage_name: string
+          google_reviews_snippet?: Json | null
+          header_image_url?: string | null
           id?: string
           listing_limit?: number | null
+          opening_hours?: Json | null
           owner_user_id: string
+          phone_number?: string | null
           plan?: string | null
+          services?: string[] | null
+          slug?: string | null
           updated_at?: string | null
+          website_url?: string | null
         }
         Update: {
           city?: string | null
           contact_email?: string | null
           created_at?: string | null
+          description?: string | null
           garage_name?: string
+          google_reviews_snippet?: Json | null
+          header_image_url?: string | null
           id?: string
           listing_limit?: number | null
+          opening_hours?: Json | null
           owner_user_id?: string
+          phone_number?: string | null
           plan?: string | null
+          services?: string[] | null
+          slug?: string | null
           updated_at?: string | null
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -494,6 +518,7 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
           variant_id: string | null
+          view_count: number | null
           vin: string | null
           year: number
         }
@@ -547,6 +572,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           variant_id?: string | null
+          view_count?: number | null
           vin?: string | null
           year: number
         }
@@ -600,6 +626,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           variant_id?: string | null
+          view_count?: number | null
           vin?: string | null
           year?: number
         }
@@ -1150,6 +1177,10 @@ export type Database = {
       get_my_role: { Args: never; Returns: string }
       get_service_role_key: { Args: never; Returns: string }
       get_user_role: { Args: { user_id: string }; Returns: string }
+      increment_listing_view: {
+        Args: { p_listing_id: string }
+        Returns: undefined
+      }
       normalize_vehicle_name: { Args: { input: string }; Returns: string }
       publish_garage_listing: { Args: { listing_id: string }; Returns: Json }
       request_dealer_plan_change: {

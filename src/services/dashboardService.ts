@@ -36,6 +36,7 @@ export interface DashboardListing {
   created_by: string | null;
   user_id: string | null;
   deposit_chf: number | null;
+  view_count: number;
 }
 
 export interface DashboardStats {
@@ -43,6 +44,7 @@ export interface DashboardStats {
   pending: number;
   sold: number;
   expired: number;
+  totalViews: number;
 }
 
 function normalizeDealFields<T extends { deal_type?: unknown; financing_type?: unknown }>(
@@ -58,7 +60,9 @@ function normalizeDealFields<T extends { deal_type?: unknown; financing_type?: u
 
 async function getUserListings(): Promise<ListingDetail[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       console.log("No user session found for dashboard.");
@@ -113,10 +117,10 @@ async function getUserListings(): Promise<ListingDetail[]> {
         (Array.isArray(dbListing.images) && dbListing.images.length > 0
           ? dbListing.images[dbListing.cover_image_index || 0]
           : ""),
+      view_count: dbListing.view_count || 0,
     }));
 
     return listings;
-
   } catch (error) {
     console.error("Dashboard getUserListings unexpected error:", error);
     return [];
@@ -126,12 +130,14 @@ async function getUserListings(): Promise<ListingDetail[]> {
 export const dashboardService = {
   getUserListings,
   async getDashboardStats(): Promise<DashboardStats> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
     const { data, error } = await supabase
       .from("listings")
-      .select("status")
+      .select("status, view_count")
       .or(`created_by.eq.${user.id},user_id.eq.${user.id}`);
 
     if (error) throw error;
@@ -141,6 +147,7 @@ export const dashboardService = {
       pending: 0,
       sold: 0,
       expired: 0,
+      totalViews: 0,
     };
 
     data?.forEach((listing) => {
@@ -148,6 +155,8 @@ export const dashboardService = {
       else if (listing.status === "pending") stats.pending++;
       else if (listing.status === "sold") stats.sold++;
       else if (listing.status === "expired") stats.expired++;
+
+      stats.totalViews += listing.view_count || 0;
     });
 
     return stats;
@@ -159,22 +168,14 @@ export const dashboardService = {
 };
 
 async function updateListing(id: string, updates: any) {
-  const { data, error } = await supabase
-    .from('listings')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+  const { data, error } = await supabase.from("listings").update(updates).eq("id", id).select().single();
 
   if (error) throw error;
   return data;
 }
 
 async function deleteListing(id: string) {
-  const { error } = await supabase
-    .from('listings')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from("listings").delete().eq("id", id);
 
   if (error) {
     console.error("Error deleting listing:", error);
@@ -193,14 +194,14 @@ async function extendListing(id: string) {
   // Extend by 30 days
   const nextMonth = new Date();
   nextMonth.setDate(nextMonth.getDate() + 30);
-  
+
   const { error } = await supabase
-    .from('listings')
-    .update({ 
+    .from("listings")
+    .update({
       expires_at: nextMonth.toISOString(),
-      status: 'active'
+      status: "active",
     })
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) {
     console.error("Error extending listing:", error);
