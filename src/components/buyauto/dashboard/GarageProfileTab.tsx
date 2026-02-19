@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Camera, Loader2, Building2, ExternalLink } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,39 @@ function getErrorMessage(error: unknown): string {
   return "Unbekannter Fehler";
 }
 
+function getSiteOrigin(): string {
+  if (typeof window === "undefined") return "https://buyauto.ch";
+  return window.location.origin || "https://buyauto.ch";
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // ignore and fallback
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.top = "0";
+    textarea.style.left = "0";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function GarageProfileTab({
   garage,
   onUpdate,
@@ -74,6 +107,10 @@ export function GarageProfileTab({
 
   const [newService, setNewService] = useState("");
 
+  const [shareOrigin, setShareOrigin] = useState("https://buyauto.ch");
+  const [copyingPublicUrl, setCopyingPublicUrl] = useState(false);
+  const [copyingEmbed, setCopyingEmbed] = useState(false);
+
   useEffect(() => {
     if (!garage) return;
     setProfileDraft({
@@ -91,6 +128,10 @@ export function GarageProfileTab({
   }, [garage?.id]);
 
   useEffect(() => {
+    setShareOrigin(getSiteOrigin());
+  }, []);
+
+  useEffect(() => {
     if (!slugManuallyEdited && profileDraft.garage_name) {
       const generated = generateSlugFromName(profileDraft.garage_name);
       setProfileDraft((p) => ({ ...p, slug: generated }));
@@ -102,6 +143,47 @@ export function GarageProfileTab({
     profileDraft.slug.trim().length >= 2 &&
     (profileDraft.contact_email.trim().length === 0 || profileDraft.contact_email.includes("@")) &&
     (profileDraft.website_url.trim().length === 0 || profileDraft.website_url.startsWith("http"));
+
+  const dealerSlug = profileDraft.slug.trim();
+  const publicProfileUrl = dealerSlug ? `${shareOrigin}/${dealerSlug}` : "";
+  const embedUrl = dealerSlug ? `${shareOrigin}/embed/garage/${dealerSlug}` : "";
+
+  const embedSnippet = useMemo(() => {
+    if (!dealerSlug) return "";
+    const iframeId = `buyauto-dealer-${dealerSlug.replace(/[^a-z0-9_-]/gi, "") || "widget"}`;
+
+    return `<iframe id="${iframeId}" src="${embedUrl}" style="width:100%;border:0;display:block;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+<script>
+(function(){
+  var iframe=document.getElementById("${iframeId}");
+  if(!iframe) return;
+  function onMessage(e){
+    if(!e || !e.data) return;
+    if(e.data.type!=="buyauto:resize") return;
+    if(e.data.id!=="${iframeId}") return;
+    if(typeof e.data.height!=="number") return;
+    iframe.style.height = Math.max(480, Math.ceil(e.data.height)) + "px";
+  }
+  window.addEventListener("message", onMessage, false);
+})();
+</script>`;
+  }, [dealerSlug, embedUrl]);
+
+  async function handleCopyPublicUrl() {
+    if (!publicProfileUrl) return;
+    setCopyingPublicUrl(true);
+    const ok = await copyToClipboard(publicProfileUrl);
+    setCopyingPublicUrl(false);
+    setBanner(ok ? { kind: "success", message: "Profil-Link kopiert." } : { kind: "error", message: "Kopieren fehlgeschlagen." });
+  }
+
+  async function handleCopyEmbed() {
+    if (!embedSnippet) return;
+    setCopyingEmbed(true);
+    const ok = await copyToClipboard(embedSnippet);
+    setCopyingEmbed(false);
+    setBanner(ok ? { kind: "success", message: "Embed-Code kopiert." } : { kind: "error", message: "Kopieren fehlgeschlagen." });
+  }
 
   async function handleSaveProfile() {
     setBanner({ kind: "idle" });
@@ -347,6 +429,66 @@ export function GarageProfileTab({
             <div className="text-sm text-neutral-600 mt-1">Querformat (1200×400px) sieht professionell aus.</div>
           </div>
         </div>
+      </div>
+
+      {/* Share Panel */}
+      <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Öffentliches Profil & Embed</h3>
+            <p className="text-sm text-neutral-600 mt-1">Teilen Sie Ihren Profil-Link oder binden Sie Ihr Inserate-Widget ein</p>
+          </div>
+        </div>
+
+        {dealerSlug ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-neutral-900">Profil-Link</div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-2xl"
+                    onClick={() => void handleCopyPublicUrl()}
+                    disabled={copyingPublicUrl}
+                  >
+                    {copyingPublicUrl ? "Kopiere…" : "Kopieren"}
+                  </Button>
+                  <Button asChild className="rounded-2xl">
+                    <a href={publicProfileUrl} target="_blank" rel="noreferrer">
+                      Öffnen <ExternalLink className="h-4 w-4 ml-2" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+              <div className="text-sm text-neutral-700 break-all">{publicProfileUrl}</div>
+            </div>
+
+            <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-neutral-900">White-Label Embed (auto Höhe)</div>
+                <Button
+                  variant="outline"
+                  className="rounded-2xl"
+                  onClick={() => void handleCopyEmbed()}
+                  disabled={copyingEmbed}
+                >
+                  {copyingEmbed ? "Kopiere…" : "Code kopieren"}
+                </Button>
+              </div>
+              <div className="text-xs text-neutral-600">
+                Tipp: Sie können Standard-Filter via URL setzen, z.B. <span className="font-mono">{embedUrl}?saleType=leasing</span>
+              </div>
+              <pre className="max-h-[260px] overflow-auto rounded-2xl border border-neutral-200/60 bg-white p-3 text-xs text-neutral-800 whitespace-pre-wrap break-words">
+                {embedSnippet}
+              </pre>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 text-sm text-neutral-700">
+            Speichern Sie zuerst Ihre <span className="font-semibold">Profil-URL</span> (Slug). Danach erscheint hier Ihr öffentlicher Profil-Link und der Embed-Code.
+          </div>
+        )}
       </div>
 
       {/* Basic Info Section */}
