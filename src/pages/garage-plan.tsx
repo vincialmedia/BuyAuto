@@ -6,6 +6,12 @@ import { Check, Loader2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const includedFeatures = [
   "Garage-Profilseite + Inventar",
@@ -170,7 +176,7 @@ export default function GaragePlanPage() {
                       {pkg.premiumIncluded}
                    </div>
                    {pkg.features.map((feat, i) => (
-                     <div key={i} className="flex items-start gap-2 text-sm text-neutral-600 px-2">
+                     <div key={i} className="flex items-start gap-2 text-sm text-neutral-600">
                         <Check className="w-4 h-4 text-neutral-400 mt-0.5" />
                         <span>{feat}</span>
                      </div>
@@ -192,21 +198,97 @@ export default function GaragePlanPage() {
             ))}
           </div>
 
-          {/* Features List (Compact) */}
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6 mb-8 shadow-sm">
-             <h3 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
-               <Info className="w-4 h-4 text-neutral-400" />
-               In allen Paketen enthalten:
-             </h3>
-             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-2 gap-x-4">
-               {includedFeatures.map((feat, i) => (
-                 <div key={i} className="flex items-center gap-2 text-sm text-neutral-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    {feat}
-                 </div>
-               ))}
-             </div>
-          </div>
+          {/* Included in every package - Ultra Compressed */}
+          <section className="bg-neutral-50 py-2 border-y border-neutral-200">
+            <div className="container mx-auto px-4 max-w-5xl">
+              <h3 className="text-lg font-bold text-center mb-2">In jedem Paket inklusive</h3>
+              <p className="text-center text-neutral-500 mb-3 text-sm">
+                Diese Features bekommst du in allen Paketen – von Starter bis Pro.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <TooltipProvider>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">Garage-Profilseite + Inventar-Seite</span>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs">
+                          Du hast eine öffentliche Garage-Seite, die du wie eine Website anpassen und per iFrame auf deiner eigenen Website einbinden kannst.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">Inserate erstellen & verwalten</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">VIN-PreFill (wo verfügbar)</span>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs">
+                          Fahrzeugdaten werden automatisch basierend auf der Fahrgestellnummer ausgefüllt.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">Leasing-Rechner direkt im Inserat</span>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs">
+                          Potenzielle Kunden können Leasingraten direkt berechnen und Anfragen stellen, was automatisch ein Angebot erstellt und eine Leasing-Anfrage bei dir eröffnet.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">Deal-Chat pro Fahrzeug (Chat + Dokumente)</span>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs">
+                          Du kannst mit Leads chatten, Dokumente hochladen und direkt pro Fahrzeug anfordern.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">Basis-Statistiken: Views & Anfragen</span>
+                    </div>
+                  </div>
+                </TooltipProvider>
+              </div>
+
+              <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-2 text-center text-xs text-blue-800">
+                <span className="font-semibold">Hinweis:</span> Leads können nicht garantiert werden – aber du bekommst eine saubere Präsenz + direkten Kanal für Anfragen.
+              </div>
+            </div>
+          </section>
 
           {/* Enterprise Link */}
           <div className="text-center">
