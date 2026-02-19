@@ -1,73 +1,90 @@
-import { GetServerSideProps } from 'next';
-import { supabase } from '@/integrations/supabase/client';
+import { GetServerSideProps } from "next";
+import { supabase } from "@/integrations/supabase/client";
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  // Fetch dynamic slugs from Supabase
-  const { data: listings } = await supabase
-    .from('listings')
-    .select('id, make, model')
-    .eq('status', 'active');
+  const baseUrl = "https://www.buyauto.ch";
+  const lastmod = new Date().toISOString();
 
-  // Define static pages
+  const { data: listings } = await supabase
+    .from("listings")
+    .select("id")
+    .in("status", ["published"]);
+
+  const { data: garages } = await supabase
+    .from("garages")
+    .select("slug")
+    .not("slug", "is", null);
+
   const staticPages = [
-    '',
-    '/suche',
-    '/inserat-erstellen',
-    '/leasing-concierge',
-    '/leasinguebernahme',
-    '/leasinguebernahme-kosten',
-    '/leasingvertrag-uebertragen',
-    '/leasinguebernahme-vs-neues-leasing',
-    '/leasinguebernahme-vs-autoabo',
-    '/auto-abo-kuendigen',
-    '/auto-abo-vs-leasing-kosten',
-    '/leasing-abgeben-schweiz',
-    '/autoscout24-alternative-leasinguebernahme',
-    '/carify-alternativen', // Keeping this for reference, but it will 301 to the new page
-    '/auto-abos-im-vergleich',
-    '/datenschutz',
-    '/agb',
+    "",
+    "/suche",
+    "/inserat-erstellen",
+    "/leasing-concierge",
+    "/leasinguebernahme",
+    "/leasinguebernahme-kosten",
+    "/leasingvertrag-uebertragen",
+    "/leasinguebernahme-vs-neues-leasing",
+    "/leasinguebernahme-vs-autoabo",
+    "/auto-abo-kuendigen",
+    "/auto-abo-vs-leasing-kosten",
+    "/leasing-abgeben-schweiz",
+    "/autoscout24-alternative-leasinguebernahme",
+    "/carify-alternativen",
+    "/auto-abos-im-vergleich",
+    "/datenschutz",
+    "/agb",
   ];
 
-  // Build the XML
-  const baseUrl = 'https://www.buyauto.ch';
-  
   const staticUrls = staticPages
     .map((page) => {
       return `
       <url>
         <loc>${baseUrl}${page}</loc>
-        <lastmod>${new Date().toISOString()}</lastmod>
+        <lastmod>${lastmod}</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>${page === '' ? '1.0' : '0.8'}</priority>
+        <priority>${page === "" ? "1.0" : "0.8"}</priority>
       </url>
     `;
     })
-    .join('');
+    .join("");
 
-  const dynamicUrls = (listings || [])
+  const listingUrls = (listings || [])
     .map((listing) => {
       return `
       <url>
         <loc>${baseUrl}/fahrzeug/${listing.id}</loc>
-        <lastmod>${new Date().toISOString()}</lastmod>
+        <lastmod>${lastmod}</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.9</priority>
       </url>
     `;
     })
-    .join('');
+    .join("");
+
+  const garageUrls = (garages || [])
+    .map((g) => (typeof g.slug === "string" ? g.slug.trim() : ""))
+    .filter((slug) => slug.length > 0)
+    .map((slug) => {
+      return `
+      <url>
+        <loc>${baseUrl}/${slug}</loc>
+        <lastmod>${lastmod}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+      </url>
+    `;
+    })
+    .join("");
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       ${staticUrls}
-      ${dynamicUrls}
+      ${garageUrls}
+      ${listingUrls}
     </urlset>
   `;
 
-  // Set header to XML
-  res.setHeader('Content-Type', 'text/xml');
-  // Send the XML to the browser
+  res.setHeader("Content-Type", "text/xml");
   res.write(sitemap);
   res.end();
 
@@ -76,7 +93,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   };
 };
 
-// Default export is required for Next.js pages
 export default function Sitemap() {
   return null;
 }

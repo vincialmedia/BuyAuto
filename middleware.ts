@@ -2,11 +2,32 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/integrations/supabase/types";
 
+const RESERVED_ROOT_SLUGS = new Set([
+  "api",
+  "auth",
+  "admin",
+  "dashboard",
+  "suche",
+  "fahrzeug",
+  "inserat-erstellen",
+  "billing",
+  "agb",
+  "datenschutz",
+  "sitemap.xml",
+  "robots.txt",
+]);
+
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
   if (pathname === "/carify-alternativen") {
     return NextResponse.redirect(new URL("/auto-abos-im-vergleich", req.url), 301);
+  }
+
+  const rootSegment = pathname.split("/").filter(Boolean)[0];
+
+  if (rootSegment && RESERVED_ROOT_SLUGS.has(rootSegment)) {
+    return NextResponse.next();
   }
 
   const res = NextResponse.next();

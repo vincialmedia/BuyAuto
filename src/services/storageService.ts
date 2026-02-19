@@ -336,3 +336,24 @@ export async function uploadGarageHeaderImage(
     throw error;
   }
 }
+
+export async function getGarageLogoUrl(garageId: string): Promise<string> {
+  try {
+    const basePath = `garage-logos/${garageId}/logo`;
+    const { data: mediumData } = supabase.storage
+      .from(LISTING_IMAGES_BUCKET)
+      .getPublicUrl(`${basePath}_medium.webp`);
+    return mediumData.publicUrl;
+  } catch (error) {
+    console.error("Error getting garage logo URL:", error);
+    throw error;
+  }
+}
+
+export function getGarageLogoPublicUrl(garageId: string): string {
+  const { data } = supabase.storage
+    .from(LISTING_IMAGES_BUCKET)
+    .getPublicUrl(`garage-logos/${garageId}/logo_medium.webp`);
+
+  return data.publicUrl;
+}
