@@ -14,7 +14,7 @@ type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
 interface PublicDealerInventoryProps {
   garageId: string;
   className?: string;
-  initialQuery?: Partial<SearchQuery>;
+  initialQuery?: Partial<SearchQuery> & { saleType?: string };
 }
 
 function deriveSaleType(query: SearchQuery): SaleTypeOption {
@@ -39,11 +39,35 @@ function getCurrentYear(): number {
   return new Date().getFullYear();
 }
 
+function parseInitialSaleType(value: string | undefined): Partial<SearchQuery> {
+  const v = (value || "").trim();
+  if (v === "lease_takeover") return { dealType: "lease_takeover", financingType: undefined };
+  if (v === "leasing") return { dealType: "direct_purchase", financingType: "leasing" };
+  if (v === "direct_purchase") return { dealType: "direct_purchase", financingType: "cash" };
+  if (v === "all") return { dealType: undefined, financingType: undefined };
+  return {};
+}
+
+function postHeightToParent() {
+  if (typeof window === "undefined") return;
+  if (window.top === window.self) return;
+
+  const height = document.documentElement?.scrollHeight ?? document.body?.scrollHeight;
+  if (typeof height !== "number" || !Number.isFinite(height)) return;
+
+  window.parent.postMessage({ type: "BUY_AUTO_IFRAME_HEIGHT", height }, "*");
+}
+
 export function PublicDealerInventory({ garageId, className, initialQuery }: PublicDealerInventoryProps) {
-  const [query, setQuery] = useState<SearchQuery>({
-    page: 1,
-    sort: "dateDesc",
-    ...initialQuery,
+  const [query, setQuery] = useState<SearchQuery>(() => {
+    const base: SearchQuery = {
+      page: 1,
+      sort: "dateDesc",
+      ...(initialQuery || {}),
+    };
+
+    const saleTypePatch = parseInitialSaleType(initialQuery?.saleType);
+    return { ...base, ...saleTypePatch };
   });
 
   const [results, setResults] = useState<SearchResult | null>(null);
@@ -73,6 +97,10 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
       if (cancelled) return;
       setResults(next);
       setLoading(false);
+
+      requestAnimationFrame(() => {
+        postHeightToParent();
+      });
     }
 
     run();
@@ -81,6 +109,13 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
       cancelled = true;
     };
   }, [garageId, query]);
+
+  useEffect(() => {
+    postHeightToParent();
+    const onResize = () => postHeightToParent();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const total = results?.total ?? 0;
   const page = results?.page ?? query.page ?? 1;
@@ -202,10 +237,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
               </SelectContent>
             </Select>
 
-            <Select
-              value={query.yearMin ? `${query.yearMin}` : "all"}
-              onValueChange={handleYearChange}
-            >
+            <Select value={query.yearMin ? `${query.yearMin}` : "all"} onValueChange={handleYearChange}>
               <SelectTrigger className="h-9 w-[150px] rounded-2xl text-sm">
                 <SelectValue placeholder="Jahr" />
               </SelectTrigger>
@@ -219,11 +251,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
               </SelectContent>
             </Select>
 
-            <Select
-              value={query.priceMin ? `${query.priceMin}` : "all"}
-              onValueChange={(v) => handlePriceChange(v, "min")}
-              disabled={isMixed}
-            >
+            <Select value={query.priceMin ? `${query.priceMin}` : "all"} onValueChange={(v) => handlePriceChange(v, "min")} disabled={isMixed}>
               <SelectTrigger className="h-9 w-[160px] rounded-2xl text-sm">
                 <SelectValue placeholder={priceMinPlaceholder} />
               </SelectTrigger>
@@ -237,11 +265,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
               </SelectContent>
             </Select>
 
-            <Select
-              value={query.priceMax ? `${query.priceMax}` : "all"}
-              onValueChange={(v) => handlePriceChange(v, "max")}
-              disabled={isMixed}
-            >
+            <Select value={query.priceMax ? `${query.priceMax}` : "all"} onValueChange={(v) => handlePriceChange(v, "max")} disabled={isMixed}>
               <SelectTrigger className="h-9 w-[160px] rounded-2xl text-sm">
                 <SelectValue placeholder={priceMaxPlaceholder} />
               </SelectTrigger>
@@ -255,11 +279,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
               </SelectContent>
             </Select>
 
-            <Select
-              value={isLeaseTakeover && query.monthsMax ? `${query.monthsMax}` : "all"}
-              onValueChange={handleMonthsMaxChange}
-              disabled={!isLeaseTakeover}
-            >
+            <Select value={isLeaseTakeover && query.monthsMax ? `${query.monthsMax}` : "all"} onValueChange={handleMonthsMaxChange} disabled={!isLeaseTakeover}>
               <SelectTrigger className="h-9 w-[170px] rounded-2xl text-sm">
                 <SelectValue placeholder={isLeaseTakeover ? "Max. Laufzeit" : "Nur Leasingübernahme"} />
               </SelectTrigger>
@@ -295,11 +315,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
               </SelectContent>
             </Select>
 
-            <Button
-              variant="outline"
-              className="h-9 rounded-2xl"
-              onClick={() => setQuery({ page: 1, sort: "dateDesc" })}
-            >
+            <Button variant="outline" className="h-9 rounded-2xl" onClick={() => setQuery({ page: 1, sort: "dateDesc" })}>
               Zurücksetzen
             </Button>
           </div>
@@ -323,9 +339,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
         {!loading && results && results.items.length === 0 ? (
           <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-10 text-center">
             <h3 className="text-base font-semibold text-neutral-900">Keine Fahrzeuge gefunden</h3>
-            <p className="mt-2 text-sm text-neutral-600">
-              Passe die Filter an oder setze sie zurück, um weitere Fahrzeuge zu sehen.
-            </p>
+            <p className="mt-2 text-sm text-neutral-600">Passe die Filter an oder setze sie zurück, um weitere Fahrzeuge zu sehen.</p>
           </div>
         ) : null}
 
@@ -334,9 +348,14 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {results.items.map((listing) => {
                 const href = `/fahrzeug/${listing.id}`;
-                const priceLine = listing.deal_type === "direct_purchase"
-                  ? (typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0 ? formatChf(listing.purchasePriceCHF) : null)
-                  : (typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0 ? `${formatChf(listing.pricePerMonthCHF)}/Monat` : null);
+                const priceLine =
+                  listing.deal_type === "direct_purchase"
+                    ? typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0
+                      ? formatChf(listing.purchasePriceCHF)
+                      : null
+                    : typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
+                      ? `${formatChf(listing.pricePerMonthCHF)}/Monat`
+                      : null;
 
                 return (
                   <Link
@@ -366,9 +385,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
                         </div>
 
                         {listing.premium ? (
-                          <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[11px] font-semibold text-white">
-                            Premium
-                          </span>
+                          <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[11px] font-semibold text-white">Premium</span>
                         ) : null}
                       </div>
 
@@ -383,14 +400,10 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
                           <div className="text-xs uppercase tracking-wide text-neutral-500">
                             {getSaleTypeLabel(deriveSaleType({ dealType: listing.deal_type, financingType: listing.financing_type ?? undefined }))}
                           </div>
-                          <div className="mt-1 text-sm font-bold text-neutral-900">
-                            {priceLine ?? "Preis auf Anfrage"}
-                          </div>
+                          <div className="mt-1 text-sm font-bold text-neutral-900">{priceLine ?? "Preis auf Anfrage"}</div>
                         </div>
 
-                        <span className="text-sm font-semibold text-primary underline underline-offset-4">
-                          Details
-                        </span>
+                        <span className="text-sm font-semibold text-primary underline underline-offset-4">Details</span>
                       </div>
                     </div>
                   </Link>
@@ -405,21 +418,11 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="h-9 rounded-2xl"
-                  onClick={() => goToPage(page - 1)}
-                  disabled={page <= 1}
-                >
+                <Button variant="outline" className="h-9 rounded-2xl" onClick={() => goToPage(page - 1)} disabled={page <= 1}>
                   <ChevronLeft className="mr-2 h-4 w-4" />
                   Zurück
                 </Button>
-                <Button
-                  variant="outline"
-                  className="h-9 rounded-2xl"
-                  onClick={() => goToPage(page + 1)}
-                  disabled={page >= totalPages}
-                >
+                <Button variant="outline" className="h-9 rounded-2xl" onClick={() => goToPage(page + 1)} disabled={page >= totalPages}>
                   Weiter
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>

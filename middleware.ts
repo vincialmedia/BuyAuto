@@ -39,8 +39,9 @@ export async function middleware(req: NextRequest) {
 
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isAdminRoute = pathname.startsWith("/admin");
+  const isEmbedRoute = pathname.startsWith("/embed/");
 
-  if (!user && (isDashboardRoute || isAdminRoute)) {
+  if (!isEmbedRoute && !user && (isDashboardRoute || isAdminRoute)) {
     const redirectTarget = encodeURIComponent(`${pathname}${search}`);
     return NextResponse.redirect(new URL(`/auth?redirect=${redirectTarget}`, req.url));
   }
