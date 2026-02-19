@@ -26,7 +26,6 @@ import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, M
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
-import DraftsSection from "./DraftsSection";
 import { dashboardService } from "@/services/dashboardService";
 import { setListingPremiumUsingCredit } from "@/services/dealerSubscriptionService";
 
@@ -167,8 +166,6 @@ export default function ListingsSection() {
 
   return (
     <div className="space-y-6">
-      <DraftsSection />
-
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-neutral-900">Meine Inserate</h2>
@@ -178,7 +175,7 @@ export default function ListingsSection() {
         </div>
         <Button
           onClick={() => router.push('/inserat-erstellen')}
-          className="bg-red-500 hover:bg-red-600 text-white"
+          className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
         >
           <Plus className="mr-2 h-4 w-4" />
           Neues Inserat erstellen
@@ -186,7 +183,7 @@ export default function ListingsSection() {
       </div>
 
       {listings.length === 0 ? (
-        <Card className="border-neutral-200/60">
+        <Card className="border-neutral-200/60 rounded-3xl">
           <CardContent className="p-12 text-center">
             <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-neutral-400" />
@@ -199,7 +196,7 @@ export default function ListingsSection() {
             </p>
             <Button
               onClick={() => router.push('/inserat-erstellen')}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
             >
               Erstes Inserat erstellen
             </Button>
@@ -216,7 +213,7 @@ export default function ListingsSection() {
             return (
               <Card 
                 key={listing.id} 
-                className={`border-neutral-200/60 hover:shadow-md transition-all ${
+                className={`border-neutral-200/60 rounded-3xl hover:shadow-md transition-all ${
                   expired ? 'opacity-75' : ''
                 } ${premium ? 'ring-2 ring-amber-200/50 bg-gradient-to-r from-amber-50/30 to-white' : ''}`}
               >
@@ -259,6 +256,10 @@ export default function ListingsSection() {
                               <MapPin className="w-4 h-4" />
                               {listing.location}
                             </div>
+                            <div className="flex items-center gap-1">
+                              <Eye className="w-4 h-4" />
+                              <span>{listing.view_count || 0} Aufrufe</span>
+                            </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-3">
                             <StatusBadge status={listing.status} expiresAt={listing.expires_at} />
@@ -277,12 +278,13 @@ export default function ListingsSection() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}>
+                          <Button variant="ghost" size="sm" className="rounded-2xl" onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}>
                             <Eye className="w-4 h-4 mr-2" /> Vorschau
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
+                            className="rounded-2xl"
                             onClick={() => handleEdit(listing.id)}
                           >
                             <Edit className="w-4 h-4 mr-2" />

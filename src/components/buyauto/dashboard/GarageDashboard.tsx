@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { ArrowDownRight, ArrowUpRight, Building2, Camera, Crown, Loader2 } from "lucide-react";
+import { Building2, Crown, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ListingsSection from "@/components/buyauto/dashboard/ListingsSection";
+import DraftsSection from "@/components/buyauto/dashboard/DraftsSection";
+import { GarageBillingTab } from "@/components/buyauto/dashboard/GarageBillingTab";
+import { GarageProfileTab } from "@/components/buyauto/dashboard/GarageProfileTab";
+import { GarageStatsTab } from "@/components/buyauto/dashboard/GarageStatsTab";
 import { cn } from "@/lib/utils";
 import { dashboardService, type DashboardStats } from "@/services/dashboardService";
-import { uploadGarageLogo } from "@/services/storageService";
 import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageService";
-import { GarageBillingTab } from "@/components/buyauto/dashboard/GarageBillingTab";
 import { useHasMounted } from "@/hooks/use-has-mounted";
+import { ListingDetail } from "@/lib/buyauto/types";
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -43,15 +44,6 @@ function getStableGarageLogoUrl(garageId: string, version?: number): string {
   return version ? `${url}?v=${version}` : url;
 }
 
-function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: string | null }): string {
-  const dealType = input.deal_type ?? "lease_takeover";
-  if (dealType === "direct_purchase") {
-    if (input.financing_type === "leasing") return "Direktkauf · Leasing";
-    return "Direktkauf · Barzahlung";
-  }
-  return "Leasingübernahme";
-}
-
 export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const router = useRouter();
   const hasMounted = useHasMounted();
@@ -61,26 +53,29 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  
+  // We need to fetch listings here to pass them to the stats tab
+  // ListingsSection fetches its own listings, but for the stats tab to work 
+  // without duplicate fetches inside tabs, we ideally hoist state or let each fetch
+  // For simplicity and avoiding complex prop drilling into ListingsSection (which has its own state),
+  // we will fetch basic listing data for stats separately or just let the Stats component fetch.
+  // Actually, let's fetch listings once at the top level to share with Stats tab
+  // ListingsSection and DraftsSection manage their own CRUD state, so we might have some duplication
+  // but it's cleaner than refactoring the massive ListingsSection right now.
+  // BETTER APPROACH: Let GarageStatsTab fetch its data or pass it if available.
+  // To follow the user request "view counter per Listing", we'll fetch all listings here for the stats tab.
+  const [allListingsForStats, setAllListingsForStats] = useState<ListingDetail[]>([]);
 
-  const [profileDraft, setProfileDraft] = useState({
-    garage_name: initialGarage?.garage_name ?? "",
-    city: initialGarage?.city ?? "",
-    contact_email: initialGarage?.contact_email ?? "",
-  });
-
-  const [profileSaving, setProfileSaving] = useState(false);
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
-
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [logoProgress, setLogoProgress] = useState<number>(0);
   const [logoVersion, setLogoVersion] = useState<number>(0);
 
-  const [tab, setTab] = useState<"inventory" | "profile" | "plan">("inventory");
+  const [mainTab, setMainTab] = useState<"inventory" | "profile" | "subscription" | "stats">("inventory");
+  const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts">("active");
 
   const planLabel = useMemo(() => {
     const raw = (garage?.plan ?? "").trim();
-    return raw || "free";
+    if (!raw || raw === "No_Plan") return "Kein Plan";
+    return raw;
   }, [garage?.plan]);
 
   const logoUrl = useMemo(() => {
@@ -96,7 +91,8 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
 
     const applyFromHash = () => {
       const hash = window.location.hash || "";
-      if (hash.toLowerCase() === "#zahlung") setTab("plan");
+      if (hash.toLowerCase() === "#zahlung") setMainTab("subscription");
+      if (hash.toLowerCase() === "#stats") setMainTab("stats");
     };
 
     applyFromHash();
@@ -116,11 +112,6 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
         if (cancelled) return;
 
         setGarage(g);
-        setProfileDraft({
-          garage_name: g?.garage_name ?? "",
-          city: g?.city ?? "",
-          contact_email: g?.contact_email ?? "",
-        });
       } catch (e) {
         if (cancelled) return;
         setBanner({ kind: "error", message: `Garage-Profil konnte nicht geladen werden: ${getErrorMessage(e)}` });
@@ -135,15 +126,21 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     };
   }, [initialGarage]);
 
+  // Load stats and listings for the stats tab
   useEffect(() => {
     let cancelled = false;
 
-    async function loadStats() {
+    async function loadData() {
       setStatsLoading(true);
       try {
-        const s = await dashboardService.getDashboardStats();
+        const [s, l] = await Promise.all([
+          dashboardService.getDashboardStats(),
+          dashboardService.getUserListings()
+        ]);
+        
         if (cancelled) return;
         setStats(s);
+        setAllListingsForStats(l);
       } catch {
         if (cancelled) return;
         setStats(null);
@@ -152,66 +149,22 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
       }
     }
 
-    loadStats();
+    loadData();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  useEffect(() => {
-    if (!garage) return;
-    setProfileDraft({
-      garage_name: garage.garage_name ?? "",
-      city: garage.city ?? "",
-      contact_email: garage.contact_email ?? "",
-    });
-  }, [garage?.id]);
-
-  const canSaveProfile = useMemo(() => {
-    const nameOk = profileDraft.garage_name.trim().length >= 2;
-    const emailOk = profileDraft.contact_email.trim().length === 0 || profileDraft.contact_email.includes("@");
-    return nameOk && emailOk;
-  }, [profileDraft.contact_email, profileDraft.garage_name]);
-
-  async function handleSaveProfile() {
+  async function handleUpdateGarage(updates: Partial<Garage>) {
     setBanner({ kind: "idle" });
-    setProfileSaving(true);
 
     try {
-      const updated = await updateMyGarage({
-        garage_name: profileDraft.garage_name.trim(),
-        city: profileDraft.city.trim() ? profileDraft.city.trim() : null,
-        contact_email: profileDraft.contact_email.trim() ? profileDraft.contact_email.trim() : null,
-      });
-
+      const updated = await updateMyGarage(updates);
       setGarage(updated);
       setBanner({ kind: "success", message: "Garage-Daten gespeichert." });
     } catch (e) {
       setBanner({ kind: "error", message: `Speichern fehlgeschlagen: ${getErrorMessage(e)}` });
-    } finally {
-      setProfileSaving(false);
-    }
-  }
-
-  async function handlePickLogo(file: File) {
-    if (!garage?.id) {
-      setBanner({ kind: "error", message: "Kein Garage-Profil gefunden. Bitte Seite neu laden." });
-      return;
-    }
-
-    setBanner({ kind: "idle" });
-    setLogoUploading(true);
-    setLogoProgress(0);
-
-    try {
-      await uploadGarageLogo(file, garage.id, setLogoProgress);
-      setLogoVersion(Date.now());
-      setBanner({ kind: "success", message: "Logo aktualisiert (sichtbar auf deinen Inseraten)." });
-    } catch (e) {
-      setBanner({ kind: "error", message: `Upload fehlgeschlagen: ${getErrorMessage(e)}` });
-    } finally {
-      setLogoUploading(false);
-      setLogoProgress(0);
+      throw e;
     }
   }
 
@@ -219,7 +172,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     { label: "Aktiv", value: stats?.active ?? 0 },
     { label: "In Prüfung", value: stats?.pending ?? 0 },
     { label: "Verkauft", value: stats?.sold ?? 0 },
-    { label: "Abgelaufen", value: stats?.expired ?? 0 },
+    { label: "Aufrufe", value: stats?.totalViews ?? 0 }, // Updated to use totalViews from service
   ];
 
   return (
@@ -248,7 +201,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                       {planLabel}
                     </Badge>
                   </div>
-                  <p className="text-white/80 text-sm mt-1">Inventar verwalten, Plan anpassen und Profil pflegen.</p>
+                  <p className="text-white/80 text-sm mt-1">Inventar verwalten, Profil pflegen und Plan anpassen.</p>
                 </div>
               </div>
 
@@ -297,178 +250,81 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
               </div>
             )}
 
-            <Tabs value={tab} onValueChange={(v) => setTab(v as "inventory" | "profile" | "plan")} className="w-full">
-              <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-neutral-100 p-1">
-                <TabsTrigger value="inventory" className="rounded-xl">
+            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "inventory" | "profile" | "subscription" | "stats")} className="w-full">
+              <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-neutral-100 p-1.5 h-auto">
+                <TabsTrigger value="inventory" className="rounded-xl px-6 py-3 text-base font-semibold">
                   Inventar
                 </TabsTrigger>
-                <TabsTrigger value="profile" className="rounded-xl">
-                  Profil & Logo
+                <TabsTrigger value="profile" className="rounded-xl px-6 py-3 text-base font-semibold">
+                  Profil Daten
                 </TabsTrigger>
-                <TabsTrigger value="plan" className="rounded-xl">
-                  Zahlung
+                <TabsTrigger value="subscription" className="rounded-xl px-6 py-3 text-base font-semibold">
+                  Abonnemente
+                </TabsTrigger>
+                <TabsTrigger value="stats" className="rounded-xl px-6 py-3 text-base font-semibold">
+                  Statistiken
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="inventory" className="mt-5">
                 <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-4 sm:p-6">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-4 mb-6">
                     <div>
-                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">Inserate</h2>
-                      <p className="text-sm text-neutral-600 mt-1">Verwalte Status, Laufzeit und Premium-Optionen.</p>
+                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">Inserate Verwalten</h2>
+                      <p className="text-sm text-neutral-600 mt-1">Status, Laufzeit und Premium-Optionen.</p>
                     </div>
                   </div>
 
-                  <div className="mt-6">
-                    <ListingsSection />
+                  {/* Sub-tabs for Active vs Drafts */}
+                  <div className="flex gap-3 mb-6">
+                    <Button
+                      onClick={() => setInventorySubTab("active")}
+                      variant={inventorySubTab === "active" ? "default" : "outline"}
+                      className="rounded-2xl px-8 py-6 text-base font-semibold"
+                      size="lg"
+                    >
+                      Aktive Inserate
+                    </Button>
+                    <Button
+                      onClick={() => setInventorySubTab("drafts")}
+                      variant={inventorySubTab === "drafts" ? "default" : "outline"}
+                      className="rounded-2xl px-8 py-6 text-base font-semibold"
+                      size="lg"
+                    >
+                      Entwürfe
+                    </Button>
                   </div>
+
+                  {inventorySubTab === "active" ? (
+                    <ListingsSection />
+                  ) : (
+                    <DraftsSection />
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="profile" className="mt-5">
-                <div className="grid gap-4 lg:grid-cols-5">
-                  <div className="lg:col-span-2 rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h2 className="text-lg font-bold tracking-tight text-neutral-900">Logo</h2>
-                        <p className="text-sm text-neutral-600 mt-1">Wird auf deinen Inseraten angezeigt.</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        className="rounded-2xl"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={garageLoading || logoUploading}
-                      >
-                        {logoUploading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Upload…
-                          </>
-                        ) : (
-                          <>
-                            <Camera className="h-4 w-4 mr-2" />
-                            Logo wählen
-                          </>
-                        )}
-                      </Button>
-                    </div>
-
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) void handlePickLogo(file);
-                        e.currentTarget.value = "";
-                      }}
-                    />
-
-                    <div className="mt-5 flex items-center gap-4">
-                      <Avatar className="h-20 w-20 rounded-3xl border border-neutral-200/60">
-                        <AvatarImage src={logoUrl} alt={garage?.garage_name ?? "Logo"} />
-                        <AvatarFallback className="bg-neutral-100 text-neutral-700">
-                          <Building2 className="h-6 w-6" />
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-neutral-900 truncate">{garage?.garage_name ?? "—"}</div>
-                        <div className="text-sm text-neutral-600 truncate">{garage?.city ?? "Standort nicht gesetzt"}</div>
-
-                        {logoUploading && (
-                          <div className="mt-2">
-                            <div className="h-2 w-48 rounded-full bg-neutral-100 overflow-hidden">
-                              <div
-                                className="h-full bg-primary transition-[width]"
-                                style={{ width: `${Math.max(5, Math.min(100, logoProgress))}%` }}
-                              />
-                            </div>
-                            <div className="mt-1 text-xs text-neutral-500">{logoProgress}%</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-5 rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                      <div className="text-sm font-semibold text-neutral-900">Tipp</div>
-                      <div className="text-sm text-neutral-600 mt-1">Quadratisch (z.B. 800×800) wirkt am saubersten.</div>
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-3 rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h2 className="text-lg font-bold tracking-tight text-neutral-900">Garage Details</h2>
-                        <p className="text-sm text-neutral-600 mt-1">Diese Angaben sind für dein Dashboard relevant.</p>
-                      </div>
-                      <Button
-                        onClick={() => void handleSaveProfile()}
-                        className="rounded-2xl"
-                        disabled={garageLoading || profileSaving || !canSaveProfile}
-                      >
-                        {profileSaving ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Speichern…
-                          </>
-                        ) : (
-                          "Speichern"
-                        )}
-                      </Button>
-                    </div>
-
-                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="garage_name">Garagenname</Label>
-                        <Input
-                          id="garage_name"
-                          value={profileDraft.garage_name}
-                          onChange={(e) => setProfileDraft((p) => ({ ...p, garage_name: e.target.value }))}
-                          placeholder="z.B. Garage Muster AG"
-                          className="rounded-2xl"
-                          disabled={garageLoading}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="city">Stadt</Label>
-                        <Input
-                          id="city"
-                          value={profileDraft.city}
-                          onChange={(e) => setProfileDraft((p) => ({ ...p, city: e.target.value }))}
-                          placeholder="z.B. Zürich"
-                          className="rounded-2xl"
-                          disabled={garageLoading}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="contact_email">Kontakt E-Mail</Label>
-                        <Input
-                          id="contact_email"
-                          value={profileDraft.contact_email}
-                          onChange={(e) => setProfileDraft((p) => ({ ...p, contact_email: e.target.value }))}
-                          placeholder="z.B. sales@garage.ch"
-                          className="rounded-2xl"
-                          disabled={garageLoading}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-5 rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                      <div className="text-sm font-semibold text-neutral-900">Hinweis</div>
-                      <div className="text-sm text-neutral-600 mt-1">
-                        Zusätzliche öffentliche Profilfelder können wir als nächstes ergänzen.
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <GarageProfileTab
+                  garage={garage}
+                  onUpdate={handleUpdateGarage}
+                  logoUrl={logoUrl}
+                  logoVersion={logoVersion}
+                  onLogoVersionChange={setLogoVersion}
+                />
               </TabsContent>
 
-              <TabsContent value="plan" className="mt-5">
+              <TabsContent value="subscription" className="mt-5">
                 <GarageBillingTab garage={garage} />
+              </TabsContent>
+
+              <TabsContent value="stats" className="mt-5">
+                <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-4 sm:p-6">
+                  <div className="mb-6">
+                    <h2 className="text-lg font-bold tracking-tight text-neutral-900">Statistiken</h2>
+                    <p className="text-sm text-neutral-600 mt-1">Detaillierte Einblicke in Ihre Inserate.</p>
+                  </div>
+                  <GarageStatsTab listings={allListingsForStats} />
+                </div>
               </TabsContent>
             </Tabs>
           </div>

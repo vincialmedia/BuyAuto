@@ -54,6 +54,8 @@ export interface Listing {
   seller_avatar_url?: string | null;
   garage_id?: string | null;
   garage_name?: string | null;
+
+  view_count?: number;
 }
 
 export type PricePlanId = "free30" | "standard" | "extended" | "unlimited";
