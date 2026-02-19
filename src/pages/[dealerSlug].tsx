@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SEO } from "@/components/SEO";
 import { getGarageBySlug } from "@/services/garageService";
 import { getGarageLogoPublicUrl } from "@/services/storageService";
+import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
 
 type PublicGarage = NonNullable<Awaited<ReturnType<typeof getGarageBySlug>>>;
 
@@ -179,6 +180,10 @@ export default function DealerMicrositePage(props: PageProps) {
             </div>
           </div>
         </header>
+
+        <section className="mx-auto max-w-6xl px-6 pb-16 md:pb-24">
+          <PublicDealerInventory garageId={garage.id} />
+        </section>
 
         <section className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <div className="grid gap-10 md:grid-cols-3">

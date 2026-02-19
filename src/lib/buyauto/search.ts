@@ -23,6 +23,7 @@ export interface SearchQuery {
   sort?: "relevance" | "priceAsc" | "priceDesc" | "yearDesc" | "monthsAsc" | "monthsDesc" | "kmAsc" | "dateDesc";
   dealType?: "lease_takeover" | "direct_purchase";
   financingType?: "cash" | "leasing";
+  garageId?: string;
 }
 
 export type SearchResult = {

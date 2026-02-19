@@ -355,6 +355,117 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
   }
 }
 
+export async function searchDealerListings(garageId: string, searchQuery: SearchQuery): Promise<SearchResult> {
+  try {
+    const pageSize = 12;
+    const page = searchQuery.page || 1;
+    const offset = (page - 1) * pageSize;
+
+    const monthlyOnly = searchQuery.monthlyOnly === true;
+
+    const hasMonthsFilter = typeof searchQuery.monthsMin === "number" || typeof searchQuery.monthsMax === "number";
+    const isLeasingOfferFilter = searchQuery.dealType === "direct_purchase" && searchQuery.financingType === "leasing";
+
+    const inferredDealType: "lease_takeover" | "direct_purchase" | undefined =
+      searchQuery.dealType ??
+      (hasMonthsFilter ? "lease_takeover" : searchQuery.financingType ? "direct_purchase" : undefined);
+
+    const effectiveDealType = inferredDealType;
+    const isMixed = !monthlyOnly && !effectiveDealType;
+    const isLeaseTakeover = effectiveDealType === "lease_takeover";
+    const isDirectPurchase = effectiveDealType === "direct_purchase";
+
+    const priceMode: "monthly" | "purchase" | "none" =
+      monthlyOnly || isLeaseTakeover || isLeasingOfferFilter ? "monthly" : isDirectPurchase ? "purchase" : "none";
+
+    const monthlyPriceColumn = "price_per_month_chf";
+    const purchasePriceColumn = "purchase_price_chf";
+    const priceColumn = priceMode === "monthly" ? monthlyPriceColumn : purchasePriceColumn;
+
+    let query = supabase
+      .from("listings")
+      .select("*", { count: "exact" })
+      .in("status", PUBLIC_LISTING_STATUSES)
+      .eq("garage_id", garageId);
+
+    if (monthlyOnly) {
+      query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing,leasing_offer->>enabled.eq.true)");
+    } else if (effectiveDealType) {
+      query = query.eq("deal_type", effectiveDealType);
+    }
+
+    if (!monthlyOnly && effectiveDealType === "direct_purchase") {
+      if (searchQuery.financingType === "leasing") {
+        query = query
+          .eq("financing_type", "leasing")
+          .contains("leasing_offer", { enabled: true });
+      } else if (searchQuery.financingType === "cash") {
+        query = query.or("financing_type.eq.cash,financing_type.is.null");
+      }
+    }
+
+    if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
+    if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
+    if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
+    if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
+
+    if (priceMode !== "none") {
+      if (typeof searchQuery.priceMin === "number") query = query.gte(priceColumn, searchQuery.priceMin);
+      if (typeof searchQuery.priceMax === "number") query = query.lte(priceColumn, searchQuery.priceMax);
+    }
+
+    if (isLeaseTakeover) {
+      if (typeof searchQuery.monthsMin === "number") query = query.gte("remaining_months", searchQuery.monthsMin);
+      if (typeof searchQuery.monthsMax === "number") query = query.lte("remaining_months", searchQuery.monthsMax);
+    }
+
+    if (typeof searchQuery.kmMax === "number") query = query.lte("mileage_km", searchQuery.kmMax);
+    if (searchQuery.canton?.length) query = query.in("canton_code", searchQuery.canton);
+    if (searchQuery.fuel?.length) query = query.in("fuel", searchQuery.fuel);
+    if (searchQuery.gearbox?.length) query = query.in("gearbox", searchQuery.gearbox);
+    if (searchQuery.body?.length) query = query.in("body", searchQuery.body);
+    if (searchQuery.premiumOnly) query = query.eq("premium", true);
+    if (searchQuery.noDeposit) query = query.is("deposit_chf", null);
+
+    const sortOrder = searchQuery.sort || "dateDesc";
+
+    if (priceMode !== "none" && sortOrder === "priceAsc") query = query.order(priceColumn, { ascending: true, nullsFirst: false });
+    else if (priceMode !== "none" && sortOrder === "priceDesc") query = query.order(priceColumn, { ascending: false, nullsFirst: false });
+    else if (sortOrder === "dateDesc") query = query.order("created_at", { ascending: false });
+    else if (sortOrder === "yearDesc") query = query.order("year", { ascending: false });
+    else if (isLeaseTakeover && sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });
+    else if (isLeaseTakeover && sortOrder === "monthsDesc") query = query.order("remaining_months", { ascending: false });
+    else if (sortOrder === "kmAsc") query = query.order("mileage_km", { ascending: true });
+    else query = query.order("premium", { ascending: false }).order("created_at", { ascending: false });
+
+    query = query.range(offset, offset + pageSize - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error("Dealer search query error:", { garageId, error });
+      throw error;
+    }
+
+    const items = (data || []).map((r) => transformPublicRowToListing(r as unknown as PublicListingRow));
+
+    return {
+      items,
+      total: count || 0,
+      page,
+      pageSize,
+    };
+  } catch (error) {
+    console.error("Search dealer listings error:", error);
+    return {
+      items: [],
+      total: 0,
+      page: searchQuery.page || 1,
+      pageSize: 12,
+    };
+  }
+}
+
 export async function getBrands(): Promise<string[]> {
   try {
     const { data, error } = await supabase
