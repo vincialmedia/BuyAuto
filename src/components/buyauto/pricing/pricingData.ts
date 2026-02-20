@@ -3,7 +3,7 @@ export const garageIncludedFeatures = [
     key: "public_profile",
     label: "Garage-Profilseite + Inventar-Seite",
     tooltip:
-      "Du hast eine öffentliche Garage-Seite, die du wie eine Website anpassen und per iFrame auf deiner eigenen Website einbinden kannst.",
+      "Du hast eine öffentliche Garage-Seite, die du wie eine Website anpassen und per iFrame auf deiner eigenen Website anpassen und per iFrame auf deiner eigenen Website einbinden kannst.",
   },
   { key: "manage_listings", label: "Inserate erstellen & verwalten" },
   {
