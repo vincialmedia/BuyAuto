@@ -1,9 +1,15 @@
-export const garageIncludedFeatures = [
+export interface GarageIncludedFeature {
+  key: string;
+  label: string;
+  tooltip?: string;
+}
+
+export const garageIncludedFeatures: GarageIncludedFeature[] = [
   {
     key: "public_profile",
     label: "Garage-Profilseite + Inventar-Seite",
     tooltip:
-      "Du hast eine öffentliche Garage-Seite, die du wie eine Website anpassen und per iFrame auf deiner eigenen Website anpassen und per iFrame auf deiner eigenen Website einbinden kannst.",
+      "Du hast eine öffentliche Garage-Seite, die du wie eine Website anpassen und per iFrame auf deiner eigenen Website einbinden kannst.",
   },
   { key: "manage_listings", label: "Inserate erstellen & verwalten" },
   {
@@ -25,7 +31,7 @@ export const garageIncludedFeatures = [
       "Du kannst mit Leads chatten, Dokumente hochladen und direkt pro Fahrzeug anfordern.",
   },
   { key: "basic_stats", label: "Basis-Statistiken: Views & Anfragen" },
-] as const;
+];
 
 export type GaragePackageCode = "starter" | "growth" | "pro";
 
