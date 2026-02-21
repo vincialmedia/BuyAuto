@@ -11,7 +11,7 @@ interface GarageBillingTabProps {
   garage: Garage | null;
 }
 
-// Updated plans based on src/pages/garage-preise.tsx
+// Updated plans based on src/pages/preise.tsx
 const PLANS = [
   {
     id: "starter",
