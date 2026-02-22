@@ -38,7 +38,7 @@ const PLANS = [
     premiumIncluded: "5 Premium Inserate / Monat inklusive",
     features: [
       "Alles aus Starter",
-      "Done-for-you Onboarding",
+      "Kompletter Bestand hochladen*",
       "Inventar-Import Service",
       "Priorisierter Support"
     ],

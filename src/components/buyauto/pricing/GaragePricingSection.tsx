@@ -88,7 +88,7 @@ export function GaragePricingSection() {
                     className="flex items-start gap-2 text-sm text-neutral-700"
                   >
                     <Check className="mt-0.5 h-4 w-4 text-neutral-400 flex-shrink-0" />
-                    <span>{feat}</span>
+                    <span>{feat === "Done-for-you Onboarding*" ? "Kompletter Bestand hochladen*" : feat}</span>
                   </div>
                 ))}
               </div>
