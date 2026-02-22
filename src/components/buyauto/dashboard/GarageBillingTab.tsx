@@ -217,6 +217,9 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
             );
           })}
         </div>
+        <p className="mt-4 text-xs text-neutral-500">
+          * Wir bringen dich komplett an den Start und übernehmen den Upload deines Inventars für dich.
+        </p>
       </div>
 
       {/* Enterprise / Contact Section */}

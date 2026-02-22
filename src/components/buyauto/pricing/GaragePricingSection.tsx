@@ -100,6 +100,9 @@ export function GaragePricingSection() {
           </Card>
         ))}
       </div>
+      <p className="text-center text-xs text-neutral-500">
+        * Wir bringen dich komplett an den Start und übernehmen den Upload deines Inventars für dich.
+      </p>
 
       <section className="rounded-3xl border border-neutral-200/70 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
         <div className="p-6 md:p-7">
