@@ -71,8 +71,8 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
                 body: "Anfragen & Deal-Chat sind immer ans Inserat gekoppelt.",
               },
               {
-                title: "Schlankes Setup",
-                body: "Schnell live – privat oder als Garage.",
+                title: "Voll Viele Funktionen",
+                body: "ALLES um den Kauf und Verkauf so schnell wie möglich zu machen",
               },
               {
                 title: "Transparente Preise",
