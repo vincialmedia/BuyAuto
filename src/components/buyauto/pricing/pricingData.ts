@@ -63,7 +63,7 @@ export const garagePackages: Array<{
     period: "/ Monat",
     limit: "bis 50 Inserate",
     premiumIncluded: "5 Premium / Monat",
-    features: ["Für wachsende Bestände", "Done-for-you Onboarding"],
+    features: ["Für wachsende Bestände", "Kompletter Bestand hochladen"],
     cta: "Growth wählen",
     popular: true,
   },

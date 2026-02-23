@@ -43,7 +43,7 @@ const packages = [
     premiumIncluded: "5 Premium / Monat",
     features: [
       "Für wachsende Bestände",
-      "Done-for-you Onboarding",
+      "Kompletter Bestand hochladen",
     ],
     cta: "Wählen",
     popular: true,
