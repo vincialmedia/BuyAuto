@@ -41,10 +41,7 @@ const packages = [
     period: "/ Monat",
     limit: "bis 50 Inserate",
     premiumIncluded: "5 Premium / Monat",
-    features: [
-      "Für wachsende Bestände",
-      "Kompletter Bestand hochladen",
-    ],
+    features: ["Für wachsende Bestände", "Kompletter Bestand hochladen"],
     cta: "Wählen",
     popular: true,
   },
@@ -141,15 +138,14 @@ export default function GaragePlanPage() {
         </div>
 
         <div className="max-w-6xl mx-auto px-4 mt-8">
-          
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {packages.map((pkg) => (
               <div
                 key={pkg.code}
                 className={`relative bg-white rounded-2xl p-6 flex flex-col border transition-all duration-200 ${
-                  pkg.popular 
-                    ? "border-primary shadow-md ring-1 ring-primary/10" 
+                  pkg.popular
+                    ? "border-primary shadow-md ring-1 ring-primary/10"
                     : "border-neutral-200 shadow-sm hover:border-neutral-300"
                 }`}
               >
@@ -160,9 +156,13 @@ export default function GaragePlanPage() {
                 )}
 
                 <div className="text-center mb-4">
-                  <h3 className="text-lg font-bold text-neutral-900">{pkg.name}</h3>
+                  <h3 className="text-lg font-bold text-neutral-900">
+                    {pkg.name}
+                  </h3>
                   <div className="flex items-baseline justify-center gap-1 mt-1">
-                    <span className="text-3xl font-bold text-neutral-900">{pkg.price}</span>
+                    <span className="text-3xl font-bold text-neutral-900">
+                      {pkg.price}
+                    </span>
                     <span className="text-neutral-400 text-xs">{pkg.period}</span>
                   </div>
                   <div className="text-sm font-medium text-neutral-700 mt-2 bg-neutral-100 py-1 px-2 rounded-lg inline-block">
@@ -171,20 +171,44 @@ export default function GaragePlanPage() {
                 </div>
 
                 <div className="flex-1 space-y-3 mb-6">
-                   <div className="flex items-center gap-2 text-sm text-primary font-medium bg-primary/5 p-2 rounded-lg">
-                      <Check className="w-4 h-4" />
-                      {pkg.premiumIncluded}
-                   </div>
-                   {pkg.features.map((feat, i) => (
-                     <div key={i} className="flex items-start gap-2 text-sm text-neutral-600">
+                  <div className="flex items-center gap-2 text-sm text-primary font-medium bg-primary/5 p-2 rounded-lg">
+                    <Check className="w-4 h-4" />
+                    {pkg.premiumIncluded}
+                  </div>
+
+                  <TooltipProvider>
+                    {pkg.features.map((feat, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 text-sm text-neutral-600"
+                      >
                         <Check className="w-4 h-4 text-neutral-400 mt-0.5" />
-                        <span>{feat}</span>
-                     </div>
-                   ))}
+                        {feat === "Kompletter Bestand hochladen" ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span>{feat}</span>
+                            <Tooltip>
+                              <TooltipTrigger className="inline-flex items-center">
+                                <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs text-xs">
+                                Wir laden Deinen kompletten Bestand für dich hoch um dir einen schnellen Start zu geben (Nur Anfangsbestand)
+                              </TooltipContent>
+                            </Tooltip>
+                          </span>
+                        ) : (
+                          <span>{feat}</span>
+                        )}
+                      </div>
+                    ))}
+                  </TooltipProvider>
                 </div>
 
                 <Button
-                  className={`w-full ${pkg.popular ? "bg-primary hover:bg-primary/90" : "bg-neutral-900 hover:bg-neutral-800"}`}
+                  className={`w-full ${
+                    pkg.popular
+                      ? "bg-primary hover:bg-primary/90"
+                      : "bg-neutral-900 hover:bg-neutral-800"
+                  }`}
                   onClick={() => handleSelectPlan(pkg.code)}
                   disabled={loading}
                 >
@@ -201,7 +225,9 @@ export default function GaragePlanPage() {
           {/* Included in every package - Ultra Compressed */}
           <section className="bg-neutral-50 py-2 border-y border-neutral-200">
             <div className="container mx-auto px-4 max-w-5xl">
-              <h3 className="text-lg font-bold text-center mb-2">In jedem Paket inklusive</h3>
+              <h3 className="text-lg font-bold text-center mb-2">
+                In jedem Paket inklusive
+              </h3>
               <p className="text-center text-neutral-500 mb-3 text-sm">
                 Diese Features bekommst du in allen Paketen – von Starter bis Pro.
               </p>
@@ -211,13 +237,17 @@ export default function GaragePlanPage() {
                   <div className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">Garage-Profilseite + Inventar-Seite</span>
+                      <span className="text-sm font-medium">
+                        Garage-Profilseite + Inventar-Seite
+                      </span>
                       <Tooltip>
                         <TooltipTrigger>
                           <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs text-xs">
-                          Du hast eine öffentliche Garage-Seite, die du wie eine Website anpassen und per iFrame auf deiner eigenen Website einbinden kannst.
+                          Du hast eine öffentliche Garage-Seite, die du wie eine
+                          Website anpassen und per iFrame auf deiner eigenen Website
+                          einbinden kannst.
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -226,20 +256,25 @@ export default function GaragePlanPage() {
                   <div className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">Inserate erstellen & verwalten</span>
+                      <span className="text-sm font-medium">
+                        Inserate erstellen & verwalten
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">VIN-PreFill (wo verfügbar)</span>
+                      <span className="text-sm font-medium">
+                        VIN-PreFill (wo verfügbar)
+                      </span>
                       <Tooltip>
                         <TooltipTrigger>
                           <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs text-xs">
-                          Fahrzeugdaten werden automatisch basierend auf der Fahrgestellnummer ausgefüllt.
+                          Fahrzeugdaten werden automatisch basierend auf der
+                          Fahrgestellnummer ausgefüllt.
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -248,13 +283,17 @@ export default function GaragePlanPage() {
                   <div className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">Leasing-Rechner direkt im Inserat</span>
+                      <span className="text-sm font-medium">
+                        Leasing-Rechner direkt im Inserat
+                      </span>
                       <Tooltip>
                         <TooltipTrigger>
                           <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs text-xs">
-                          Potenzielle Kunden können Leasingraten direkt berechnen und Anfragen stellen, was automatisch ein Angebot erstellt und eine Leasing-Anfrage bei dir eröffnet.
+                          Potenzielle Kunden können Leasingraten direkt berechnen
+                          und Anfragen stellen, was automatisch ein Angebot erstellt
+                          und eine Leasing-Anfrage bei dir eröffnet.
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -263,13 +302,16 @@ export default function GaragePlanPage() {
                   <div className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">Deal-Chat pro Fahrzeug (Chat + Dokumente)</span>
+                      <span className="text-sm font-medium">
+                        Deal-Chat pro Fahrzeug (Chat + Dokumente)
+                      </span>
                       <Tooltip>
                         <TooltipTrigger>
                           <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-primary transition-colors cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs text-xs">
-                          Du kannst mit Leads chatten, Dokumente hochladen und direkt pro Fahrzeug anfordern.
+                          Du kannst mit Leads chatten, Dokumente hochladen und
+                          direkt pro Fahrzeug anfordern.
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -278,14 +320,18 @@ export default function GaragePlanPage() {
                   <div className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">Basis-Statistiken: Views & Anfragen</span>
+                      <span className="text-sm font-medium">
+                        Basis-Statistiken: Views & Anfragen
+                      </span>
                     </div>
                   </div>
                 </TooltipProvider>
               </div>
 
               <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-2 text-center text-xs text-blue-800">
-                <span className="font-semibold">Hinweis:</span> Leads können nicht garantiert werden – aber du bekommst eine saubere Präsenz + direkten Kanal für Anfragen.
+                <span className="font-semibold">Hinweis:</span> Leads können nicht
+                garantiert werden – aber du bekommst eine saubere Präsenz + direkten
+                Kanal für Anfragen.
               </div>
             </div>
           </section>
@@ -293,10 +339,16 @@ export default function GaragePlanPage() {
           {/* Enterprise Link */}
           <div className="text-center">
             <p className="text-xs text-neutral-400">
-              Mehr als 100 Fahrzeuge? <a href="mailto:kontakt@buyauto.ch" className="text-neutral-600 underline hover:text-neutral-900">Kontaktiere uns</a> für eine Enterprise-Lösung.
+              Mehr als 100 Fahrzeuge?{" "}
+              <a
+                href="mailto:kontakt@buyauto.ch"
+                className="text-neutral-600 underline hover:text-neutral-900"
+              >
+                Kontaktiere uns
+              </a>{" "}
+              für eine Enterprise-Lösung.
             </p>
           </div>
-
         </div>
       </div>
     </>
