@@ -24,7 +24,7 @@ export interface AdminListing {
   canton_code: string;
   premium: boolean;
   premium_until: string | null;
-  status: 'pending' | 'published' | 'rejected' | 'expired';
+  status: "pending" | "published" | "rejected" | "expired" | "archived" | "active";
   moderation_note: string | null;
   created_at: string;
   created_by: string | null;
@@ -37,6 +37,8 @@ export interface AdminListing {
   cover_image_url: string | null;
   description: string | null;
   remaining_km: number | null;
+  archived_at?: string | null;
+  owner_profile?: { id: string; email: string | null; full_name: string | null; role?: string | null } | null;
 }
 
 export interface AdminStats {
@@ -139,8 +141,35 @@ export const adminService = {
     const total = count || 0;
     const totalPages = Math.ceil(total / limit);
 
+    const listings = (data as AdminListing[]) || [];
+
+    const ownerIds = Array.from(
+      new Set(
+        listings
+          .map((l) => l.created_by)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    if (ownerIds.length === 0) {
+      return { listings, total, page, totalPages };
+    }
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id,email,full_name,role")
+      .in("id", ownerIds);
+
+    if (!profilesError && Array.isArray(profiles)) {
+      const map = new Map(profiles.map((p) => [p.id, p]));
+      for (const listing of listings) {
+        const ownerId = listing.created_by;
+        listing.owner_profile = ownerId ? (map.get(ownerId) as any) : null;
+      }
+    }
+
     return {
-      listings: data as AdminListing[],
+      listings,
       total,
       page,
       totalPages
@@ -383,5 +412,46 @@ export const adminService = {
     // Process all refunds in parallel but don't wait for completion
     // This prevents blocking the UI if some refunds are slow
     Promise.allSettled(refundPromises);
+  },
+
+  /**
+   * Archive (soft-delete) a listing: removes from public view and schedules auto deletion.
+   */
+  async archiveListing(id: string, moderationNote?: string): Promise<AdminListing> {
+    const note =
+      typeof moderationNote === "string" && moderationNote.trim().length > 0
+        ? moderationNote.trim()
+        : null;
+
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "archived",
+        moderation_note: note,
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as AdminListing;
+  },
+
+  /**
+   * Restore an archived listing back to pending (re-moderation).
+   */
+  async restoreArchivedListing(id: string): Promise<AdminListing> {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "pending",
+        moderation_note: null,
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as AdminListing;
   }
 };
