@@ -121,14 +121,16 @@ export function ListingDetailsModal({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return <Badge variant="secondary" className="bg-amber-100 text-amber-800">Wartend</Badge>;
-      case 'published':
+      case "published":
         return <Badge variant="default" className="bg-emerald-100 text-emerald-800">Freigegeben</Badge>;
-      case 'rejected':
+      case "rejected":
         return <Badge variant="destructive">Abgelehnt</Badge>;
-      case 'expired':
+      case "expired":
         return <Badge variant="outline">Abgelaufen</Badge>;
+      case "archived":
+        return <Badge variant="outline" className="bg-neutral-100 text-neutral-700">Archiviert</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -366,7 +368,7 @@ export function ListingDetailsModal({
               <div className="space-y-2">
                 {editing ? (
                   <Select
-                    value={editData.status || ''}
+                    value={editData.status || ""}
                     onValueChange={(value) => setEditData({ ...editData, status: value as any })}
                   >
                     <SelectTrigger>
@@ -377,6 +379,7 @@ export function ListingDetailsModal({
                       <SelectItem value="published">Freigegeben</SelectItem>
                       <SelectItem value="rejected">Abgelehnt</SelectItem>
                       <SelectItem value="expired">Abgelaufen</SelectItem>
+                      <SelectItem value="archived">Archiviert</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (
@@ -421,17 +424,53 @@ export function ListingDetailsModal({
 
         {/* Action Buttons */}
         <div className="flex justify-between pt-6 border-t">
-          <div className="flex space-x-2">
-            {listing.status === 'pending' && !editing && (
-              <>
-                <Button
-                  onClick={handleApprove}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Freigeben
-                </Button>
-              </>
+          <div className="flex flex-wrap gap-2">
+            {listing.status === "pending" && !editing && (
+              <Button
+                onClick={handleApprove}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Freigeben
+              </Button>
+            )}
+
+            {!editing && listing.status !== "archived" && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    await adminService.archiveListing(listing.id, "Archiviert durch Admin");
+                    toast({ title: "Archiviert", description: "Inserat wurde archiviert (30 Tage Aufbewahrung)." });
+                    onUpdate();
+                    onOpenChange(false);
+                  } catch (error) {
+                    console.error("Error archiving listing:", error);
+                    toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht archiviert werden." });
+                  }
+                }}
+              >
+                Archivieren
+              </Button>
+            )}
+
+            {!editing && listing.status === "archived" && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    await adminService.restoreArchivedListing(listing.id);
+                    toast({ title: "Wiederhergestellt", description: "Inserat wurde zurück auf 'pending' gesetzt." });
+                    onUpdate();
+                    onOpenChange(false);
+                  } catch (error) {
+                    console.error("Error restoring listing:", error);
+                    toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht wiederhergestellt werden." });
+                  }
+                }}
+              >
+                Restore
+              </Button>
             )}
           </div>
 

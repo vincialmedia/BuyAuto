@@ -285,6 +285,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
             <thead className="border-b border-neutral-200 bg-neutral-50">
               <tr>
                 <th className="text-left p-4">Fahrzeug</th>
+                <th className="text-left p-4">Uploader</th>
                 <th className="text-left p-4">Listing-Preis</th>
                 <th className="text-left p-4">Plan</th>
                 <th className="text-left p-4">Status</th>
@@ -297,14 +298,14 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center">
+                  <td colSpan={9} className="p-8 text-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-500 border-t-transparent mx-auto mb-2"></div>
                     <span className="text-neutral-600">Lade Inserate...</span>
                   </td>
                 </tr>
               ) : listings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-neutral-600">
+                  <td colSpan={9} className="p-8 text-center text-neutral-600">
                     Keine Inserate gefunden
                   </td>
                 </tr>
@@ -317,6 +318,11 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                           <div className="font-medium">{listing.brand} {listing.model}</div>
                           <div className="text-sm text-muted-foreground">{listing.year} &middot; {listing.canton_code}</div>
                         </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="text-sm text-neutral-700">
+                        {listing.owner_profile?.email || "—"}
                       </div>
                     </td>
                     <td className="p-4">
