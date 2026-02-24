@@ -469,6 +469,7 @@ export type Database = {
       }
       listings: {
         Row: {
+          archived_at: string | null
           body: string
           brand: string
           canton_code: string | null
@@ -523,6 +524,7 @@ export type Database = {
           year: number
         }
         Insert: {
+          archived_at?: string | null
           body: string
           brand: string
           canton_code?: string | null
@@ -577,6 +579,7 @@ export type Database = {
           year: number
         }
         Update: {
+          archived_at?: string | null
           body?: string
           brand?: string
           canton_code?: string | null
