@@ -188,6 +188,8 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
         return <Badge variant="destructive">Abgelehnt</Badge>;
       case 'expired':
         return <Badge variant="outline">Abgelaufen</Badge>;
+      case 'archived':
+        return <Badge variant="outline" className="bg-neutral-100 text-neutral-700">Archiviert</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -212,6 +214,7 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                 <SelectItem value="published">Freigegeben</SelectItem>
                 <SelectItem value="rejected">Abgelehnt</SelectItem>
                 <SelectItem value="expired">Abgelaufen</SelectItem>
+                <SelectItem value="archived">Archiviert</SelectItem>
                 <SelectItem value="all">Alle</SelectItem>
               </SelectContent>
             </Select>
@@ -303,6 +306,7 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                 <th className="text-left p-4">Fahrzeug</th>
                 <th className="text-left p-4">Listing-Preis</th>
                 <th className="text-left p-4">Plan</th>
+                <th className="text-left p-4">Owner</th>
                 <th className="text-left p-4">Standort</th>
                 <th className="text-left p-4">Status</th>
                 <th className="text-left p-4">Erstellt</th>
@@ -312,7 +316,7 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center">
+                  <td colSpan={9} className="p-8 text-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-500 border-t-transparent mx-auto mb-2"></div>
                     <span className="text-neutral-600">Lade Inserate...</span>
                   </td>
@@ -330,8 +334,8 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                       <Checkbox
                         checked={selectedIds.includes(listing.id)}
                         onCheckedChange={(checked) => {
-                          setSelectedIds(prev => 
-                            checked 
+                          setSelectedIds(prev =>
+                            checked
                               ? [...prev, listing.id]
                               : prev.filter(id => id !== listing.id)
                           );
@@ -371,6 +375,26 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                       </Badge>
                     </td>
                     <td className="p-4">
+                      {listing.owner_profile ? (
+                        <div className="text-sm">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-neutral-500" />
+                            <span className="font-medium text-neutral-900">
+                              {listing.owner_profile.full_name || listing.owner_profile.email || "Unbekannt"}
+                            </span>
+                          </div>
+                          {listing.owner_profile.email && (
+                            <div className="text-xs text-neutral-600 ml-6">{listing.owner_profile.email}</div>
+                          )}
+                          {listing.owner_profile.role && (
+                            <div className="text-xs text-neutral-500 ml-6">{listing.owner_profile.role}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-neutral-500">—</span>
+                      )}
+                    </td>
+                    <td className="p-4">
                       <div className="flex items-center space-x-1 text-neutral-600">
                         <MapPin className="w-4 h-4" />
                         <span>{listing.location}</span>
@@ -392,7 +416,8 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        {listing.status === 'pending' && (
+
+                        {listing.status === "pending" && (
                           <>
                             <Button
                               size="sm"
@@ -409,6 +434,46 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
                               <XCircle className="w-4 h-4" />
                             </Button>
                           </>
+                        )}
+
+                        {listing.status !== "archived" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                await adminService.archiveListing(listing.id, "Archiviert durch Admin");
+                                toast({ title: "Archiviert", description: "Inserat wurde archiviert (30 Tage Aufbewahrung)." });
+                                loadListings();
+                                onStatsUpdate();
+                              } catch (error) {
+                                console.error("Error archiving listing:", error);
+                                toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht archiviert werden." });
+                              }
+                            }}
+                          >
+                            Archivieren
+                          </Button>
+                        )}
+
+                        {listing.status === "archived" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                await adminService.restoreArchivedListing(listing.id);
+                                toast({ title: "Wiederhergestellt", description: "Inserat wurde zurück auf 'pending' gesetzt." });
+                                loadListings();
+                                onStatsUpdate();
+                              } catch (error) {
+                                console.error("Error restoring listing:", error);
+                                toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht wiederhergestellt werden." });
+                              }
+                            }}
+                          >
+                            Restore
+                          </Button>
                         )}
                       </div>
                     </td>
