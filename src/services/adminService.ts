@@ -49,6 +49,55 @@ export interface AdminStats {
   expired: number;
 }
 
+export type PrivateListingType = "free" | "extended" | "unlimited";
+
+export interface AdminBusinessEditableListingUpdate {
+  brand?: string;
+  model?: string;
+  title?: string | null;
+  description?: string | null;
+  year?: number;
+  location?: string;
+  canton_code?: string;
+  mileage_km?: number | null;
+  fuel?: string | null;
+  gearbox?: string | null;
+  body?: string | null;
+  deal_type?: string | null;
+  financing_type?: string | null;
+  purchase_price_chf?: number | null;
+  price_per_month_chf?: number | null;
+  deposit_chf?: number | null;
+  remaining_months?: number | null;
+  remaining_km?: number | null;
+  power_hp?: number | null;
+  drivetrain?: string | null;
+  first_registration?: string | null;
+  vin?: string | null;
+
+  premium?: boolean;
+  premium_until?: string | null;
+  status?: "pending" | "published" | "rejected" | "expired" | "archived" | "active";
+  moderation_note?: string | null;
+
+  images?: any[];
+  cover_image_index?: number;
+  cover_image_url?: string | null;
+
+  duration_days?: number | null;
+  expires_at?: string | null;
+
+  price_plan?: string | null;
+  pricing_plan?: string | null;
+}
+
+function computeExpiresAtFromDuration(durationDays: number | null): string | null {
+  if (!durationDays || durationDays <= 0) return null;
+  const d = new Date();
+  d.setDate(d.getDate() + durationDays);
+  return d.toISOString();
+}
+
 export const adminService = {
   /**
    * Get Supabase admin client with service role key for bypassing RLS
@@ -292,6 +341,36 @@ export const adminService = {
 
     if (error) throw error;
     return data as AdminListing;
+  },
+
+  /**
+   * Update listing details (business-editable fields only)
+   */
+  async updateListingBusinessEditableFields(id: string, updates: AdminBusinessEditableListingUpdate): Promise<AdminListing> {
+    const { data, error } = await supabase
+      .from("listings")
+      .update(updates as any)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as AdminListing;
+  },
+
+  /**
+   * Set private listing type (free/extended/unlimited) by mapping to duration_days/expires_at.
+   * Unlimited -> duration_days = null, expires_at = null.
+   */
+  async setPrivateListingType(id: string, type: PrivateListingType, durationDaysForFree: number, durationDaysForExtended: number): Promise<AdminListing> {
+    let duration_days: number | null = null;
+    if (type === "free") duration_days = durationDaysForFree;
+    if (type === "extended") duration_days = durationDaysForExtended;
+    if (type === "unlimited") duration_days = null;
+
+    const expires_at = type === "unlimited" ? null : computeExpiresAtFromDuration(duration_days);
+
+    return await this.updateListingBusinessEditableFields(id, { duration_days, expires_at });
   },
 
   /**
