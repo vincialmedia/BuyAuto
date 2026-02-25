@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 
 interface StatusBadgeProps {
-  status: "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired";
+  status: "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired" | "archived";
   expiresAt?: string | null;
   className?: string;
 }
@@ -33,8 +33,10 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
         return { text: "Veröffentlicht", variant: "published" as const };
       case "rejected":
         return { text: "Abgelehnt", variant: "rejected" as const };
+      case "archived":
+        return { text: "Archiviert", variant: "archived" as const };
       case "expired":
-        return { text: "Abgelaufen", variant: "expired" as const };
+        return { text: "Archiviert", variant: "archived" as const };
       default:
         return { text: "Unbekannt", variant: "pending" as const };
     }
@@ -51,6 +53,7 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
     published: "bg-emerald-50 text-emerald-700 border-emerald-200",
     rejected: "bg-red-50 text-red-600 border-red-200",
     expired: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
+    archived: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
   };
 
   const label =

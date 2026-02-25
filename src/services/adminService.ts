@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/integrations/supabase/types';
 
 export interface AdminListingFilters {
-  status?: 'pending' | 'published' | 'rejected' | 'expired' | 'all';
+  status?: 'pending' | 'published' | 'rejected' | 'expired' | 'archived' | 'all';
   brand?: string;
   canton?: string;
   premium?: boolean;
@@ -158,7 +158,13 @@ export const adminService = {
 
     // Apply filters
     if (status !== 'all') {
-      query = query.eq('status', status);
+      if (status === "archived") {
+        query = query.in("status", ["archived", "expired"] as any);
+      } else if (status === "expired") {
+        query = query.in("status", ["archived", "expired"] as any);
+      } else {
+        query = query.eq('status', status);
+      }
     }
 
     if (brand) {

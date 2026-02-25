@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -222,8 +223,9 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
         return <Badge variant="default" className="bg-emerald-100 text-emerald-800">Freigegeben</Badge>;
       case 'rejected':
         return <Badge variant="destructive">Abgelehnt</Badge>;
+      case 'archived':
       case 'expired':
-        return <Badge variant="outline">Abgelaufen</Badge>;
+        return <Badge variant="outline" className="bg-neutral-100 text-neutral-800 border-neutral-200/60">Archiviert</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -267,7 +269,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                 <SelectItem value="pending">Wartend</SelectItem>
                 <SelectItem value="published">Freigegeben</SelectItem>
                 <SelectItem value="rejected">Abgelehnt</SelectItem>
-                <SelectItem value="expired">Abgelaufen</SelectItem>
+                <SelectItem value="archived">Archiviert</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -361,7 +363,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                     </td>
                     <td className="p-4">
                       <Select
-                        value={listing.status}
+                        value={listing.status === "expired" ? "archived" : listing.status}
                         onValueChange={(value) => handleStatusChange(listing.id, value)}
                       >
                         <SelectTrigger className="w-32">
@@ -371,7 +373,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                           <SelectItem value="pending">Wartend</SelectItem>
                           <SelectItem value="published">Freigegeben</SelectItem>
                           <SelectItem value="rejected">Abgelehnt</SelectItem>
-                          <SelectItem value="expired">Abgelaufen</SelectItem>
+                          <SelectItem value="archived">Archiviert</SelectItem>
                         </SelectContent>
                       </Select>
                     </td>

@@ -120,7 +120,7 @@ export default function ListingsSection() {
   };
 
   const isExpired = (listing: ListingDetail) => {
-    if (listing.status === 'expired') return true;
+    if (listing.status === 'expired' || listing.status === "archived") return true;
     if (!listing.expires_at) return false;
     return new Date(listing.expires_at) <= new Date();
   };

@@ -154,7 +154,7 @@ export const dashboardService = {
       if (listing.status === "active" || listing.status === "published") stats.active++;
       else if (listing.status === "pending") stats.pending++;
       else if (listing.status === "sold") stats.sold++;
-      else if (listing.status === "expired") stats.expired++;
+      else if (listing.status === "expired" || listing.status === "archived") stats.expired++;
 
       stats.totalViews += listing.view_count || 0;
     });

@@ -6,9 +6,9 @@ const corsHeaders = {
 };
 
 type CleanupResult = {
-  expiredUpdatedCount: number;
+  archivedUpdatedCount: number;
   archivedDeletedCount: number;
-  expiredIds: string[];
+  archivedUpdatedIds: string[];
   archivedDeletedIds: string[];
 };
 
@@ -27,9 +27,9 @@ Deno.serve(async (req) => {
     const cutoffIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const result: CleanupResult = {
-      expiredUpdatedCount: 0,
+      archivedUpdatedCount: 0,
       archivedDeletedCount: 0,
-      expiredIds: [],
+      archivedUpdatedIds: [],
       archivedDeletedIds: [],
     };
 
@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
       .from("listings")
       .select("id")
       .in("status", ["published", "active"])
+      .not("expires_at", "is", null)
       .lt("expires_at", nowIso);
 
     if (fetchExpiredError) {
@@ -45,23 +46,25 @@ Deno.serve(async (req) => {
 
     if (Array.isArray(expiredListings) && expiredListings.length > 0) {
       const expiredIds = expiredListings.map((l) => l.id);
+
       const { error: updateError } = await supabaseAdmin
         .from("listings")
-        .update({ status: "expired" })
+        .update({ status: "archived", archived_at: nowIso })
         .in("id", expiredIds);
 
       if (updateError) {
         throw updateError;
       }
 
-      result.expiredUpdatedCount = expiredIds.length;
-      result.expiredIds = expiredIds;
+      result.archivedUpdatedCount = expiredIds.length;
+      result.archivedUpdatedIds = expiredIds;
     }
 
     const { data: archivedListings, error: fetchArchivedError } = await supabaseAdmin
       .from("listings")
       .select("id")
       .eq("status", "archived")
+      .not("archived_at", "is", null)
       .lt("archived_at", cutoffIso);
 
     if (fetchArchivedError) {
