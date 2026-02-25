@@ -116,7 +116,6 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate }: L
       duration_days: listing.duration_days,
       remaining_months: listing.remaining_months,
       remaining_km: listing.remaining_km,
-      price_paid_chf: listing.price_paid_chf ?? null,
       price_plan: listing.price_plan,
       cover_image_index: listing.cover_image_index,
       cover_image_url: listing.cover_image_url,
@@ -576,19 +575,6 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate }: L
                         <p className="font-medium">{(listing as any).pricing_plan || <span className="text-neutral-400">—</span>}</p>
                       )}
                     </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-sm text-neutral-600">Listing-Preis bezahlt (CHF)</label>
-                    {editing ? (
-                      <Input
-                        type="number"
-                        value={String(editData.price_paid_chf ?? "")}
-                        onChange={(e) => setEditData((p) => ({ ...p, price_paid_chf: safeInt(e.target.value) }))}
-                      />
-                    ) : (
-                      <p className="font-medium text-emerald-700">{formatPriceCHF(listing.price_paid_chf)}</p>
-                    )}
                   </div>
                 </div>
               </div>
