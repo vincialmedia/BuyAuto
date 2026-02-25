@@ -75,6 +75,13 @@ export type Database = {
             foreignKeyName: "conversations_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "listings_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "public_listings"
             referencedColumns: ["id"]
           },
@@ -456,6 +463,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_inquiries_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_public"
             referencedColumns: ["id"]
           },
           {
@@ -1051,6 +1065,203 @@ export type Database = {
       }
     }
     Views: {
+      listings_public: {
+        Row: {
+          archived_at: string | null
+          body: string | null
+          brand: string | null
+          canton_code: string | null
+          cover_image_index: number | null
+          cover_image_url: string | null
+          created_at: string | null
+          created_by: string | null
+          deal_type: Database["public"]["Enums"]["deal_type"] | null
+          deposit_chf: number | null
+          description: string | null
+          drivetrain: string | null
+          duration_days: number | null
+          expires_at: string | null
+          financing_type: Database["public"]["Enums"]["financing_type"] | null
+          first_registration: string | null
+          fuel: string | null
+          garage_id: string | null
+          gearbox: string | null
+          id: string | null
+          images: Json | null
+          is_premium: boolean | null
+          leasing_offer: Json | null
+          location: string | null
+          make_id: string | null
+          mileage_km: number | null
+          model: string | null
+          model_id: string | null
+          moderation_note: string | null
+          payment_status: string | null
+          power_hp: number | null
+          premium: boolean | null
+          premium_until: string | null
+          price_paid_chf: number | null
+          price_per_month_chf: number | null
+          price_plan: string | null
+          pricing_plan: string | null
+          purchase_price_chf: number | null
+          refunded_at: string | null
+          remaining_km: number | null
+          remaining_months: number | null
+          seller_type: string | null
+          status: Database["public"]["Enums"]["listing_status"] | null
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
+          title: string | null
+          ui_version: string | null
+          updated_at: string | null
+          user_id: string | null
+          variant_id: string | null
+          view_count: number | null
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          archived_at?: string | null
+          body?: string | null
+          brand?: string | null
+          canton_code?: string | null
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
+          deposit_chf?: number | null
+          description?: string | null
+          drivetrain?: string | null
+          duration_days?: number | null
+          expires_at?: string | null
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
+          first_registration?: string | null
+          fuel?: string | null
+          garage_id?: string | null
+          gearbox?: string | null
+          id?: string | null
+          images?: Json | null
+          is_premium?: boolean | null
+          leasing_offer?: Json | null
+          location?: string | null
+          make_id?: string | null
+          mileage_km?: number | null
+          model?: string | null
+          model_id?: string | null
+          moderation_note?: string | null
+          payment_status?: string | null
+          power_hp?: number | null
+          premium?: boolean | null
+          premium_until?: string | null
+          price_paid_chf?: number | null
+          price_per_month_chf?: number | null
+          price_plan?: string | null
+          pricing_plan?: string | null
+          purchase_price_chf?: number | null
+          refunded_at?: string | null
+          remaining_km?: number | null
+          remaining_months?: number | null
+          seller_type?: string | null
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          title?: string | null
+          ui_version?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          variant_id?: string | null
+          view_count?: number | null
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          archived_at?: string | null
+          body?: string | null
+          brand?: string | null
+          canton_code?: string | null
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
+          deposit_chf?: number | null
+          description?: string | null
+          drivetrain?: string | null
+          duration_days?: number | null
+          expires_at?: string | null
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
+          first_registration?: string | null
+          fuel?: string | null
+          garage_id?: string | null
+          gearbox?: string | null
+          id?: string | null
+          images?: Json | null
+          is_premium?: boolean | null
+          leasing_offer?: Json | null
+          location?: string | null
+          make_id?: string | null
+          mileage_km?: number | null
+          model?: string | null
+          model_id?: string | null
+          moderation_note?: string | null
+          payment_status?: string | null
+          power_hp?: number | null
+          premium?: boolean | null
+          premium_until?: string | null
+          price_paid_chf?: number | null
+          price_per_month_chf?: number | null
+          price_plan?: string | null
+          pricing_plan?: string | null
+          purchase_price_chf?: number | null
+          refunded_at?: string | null
+          remaining_km?: number | null
+          remaining_months?: number | null
+          seller_type?: string | null
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          title?: string | null
+          ui_version?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          variant_id?: string | null
+          view_count?: number | null
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_make_id_fkey"
+            columns: ["make_id"]
+            isOneToOne: false
+            referencedRelation: "makes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_listings: {
         Row: {
           body: string | null

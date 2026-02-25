@@ -7,9 +7,7 @@ const corsHeaders = {
 
 type CleanupResult = {
   archivedUpdatedCount: number;
-  archivedDeletedCount: number;
   archivedUpdatedIds: string[];
-  archivedDeletedIds: string[];
 };
 
 Deno.serve(async (req) => {
@@ -24,13 +22,10 @@ Deno.serve(async (req) => {
     );
 
     const nowIso = new Date().toISOString();
-    const cutoffIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const result: CleanupResult = {
       archivedUpdatedCount: 0,
-      archivedDeletedCount: 0,
       archivedUpdatedIds: [],
-      archivedDeletedIds: [],
     };
 
     const { data: expiredListings, error: fetchExpiredError } = await supabaseAdmin
@@ -58,33 +53,6 @@ Deno.serve(async (req) => {
 
       result.archivedUpdatedCount = expiredIds.length;
       result.archivedUpdatedIds = expiredIds;
-    }
-
-    const { data: archivedListings, error: fetchArchivedError } = await supabaseAdmin
-      .from("listings")
-      .select("id")
-      .eq("status", "archived")
-      .not("archived_at", "is", null)
-      .lt("archived_at", cutoffIso);
-
-    if (fetchArchivedError) {
-      throw fetchArchivedError;
-    }
-
-    if (Array.isArray(archivedListings) && archivedListings.length > 0) {
-      const archivedIds = archivedListings.map((l) => l.id);
-
-      const { error: deleteError } = await supabaseAdmin
-        .from("listings")
-        .delete()
-        .in("id", archivedIds);
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      result.archivedDeletedCount = archivedIds.length;
-      result.archivedDeletedIds = archivedIds;
     }
 
     return new Response(JSON.stringify({ ok: true, ...result }), {

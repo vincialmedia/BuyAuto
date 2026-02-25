@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 
 interface StatusBadgeProps {
   status: "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired" | "archived";
@@ -55,25 +54,6 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
     expired: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
     archived: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
   };
-
-  const label =
-    status === "draft"
-      ? "Entwurf"
-      : status === "pending"
-        ? "In Prüfung"
-        : status === "published"
-          ? "Online"
-          : status === "rejected"
-            ? "Abgelehnt"
-            : status === "expired"
-              ? "Abgelaufen"
-              : status === "sold"
-                ? "Verkauft"
-                : status === "inactive"
-                  ? "Inaktiv"
-                  : status === "active"
-                    ? "Aktiv"
-                    : "Unbekannt";
 
   return (
     <span

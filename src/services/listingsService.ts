@@ -2,61 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
 
-const PUBLIC_LISTING_STATUSES: string[] = ["published"];
-
-// Database row type for public listings view
-type PublicListingRow = {
-  id: string;
-  ui_version?: string | null;
-  brand: string;
-  model: string;
-  title?: string;
-  description?: string;
-  deal_type?: "lease_takeover" | "direct_purchase";
-  financing_type?: "cash" | "leasing" | null;
-  year: number;
-  price_per_month_chf?: number | null;
-  purchase_price_chf?: number | null;
-  remaining_months?: number | null;
-  remaining_km?: number | null;
-  location: string;
-  canton_code: string;
-  mileage_km: number;
-  fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
-  gearbox: "Automatik" | "Manuell";
-  body: "Limousine" | "Kombi" | "SUV" | "Cabrio";
-  premium: boolean;
-  cover_image_url?: string | null;
-  images?: any;
-  cover_image_index?: number | null;
-  deposit_chf?: number | null;
-  created_at: string;
-  status?: string;
-
-  seller_type?: string | null;
-  seller_name?: string | null;
-  seller_avatar_url?: string | null;
-  garage_id?: string | null;
-  garage_name?: string | null;
-
-  leasing_offer?: any;
-  price_chf?: number | null;
-  price_paid_chf?: number | null;
-};
-
-// Database row type for full listings (dashboard/admin)
-type FullListingRow = PublicListingRow & {
-  status: string;
-  expires_at?: string;
-  duration_days?: number;
-  price_plan?: string;
-  premium_until?: string;
-  created_by?: string;
-  user_id?: string;
-  moderation_note?: string;
-  updated_at?: string;
-  listing_price?: number;
-};
+const PUBLIC_LISTINGS_VIEW = "listings_public";
 
 /**
  * Safely parse images from database JSON field
@@ -224,10 +170,9 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 export async function getPublishedListingById(id: string): Promise<ListingDetail | null> {
   try {
     const { data, error } = await supabase
-      .from("listings")
+      .from(PUBLIC_LISTINGS_VIEW)
       .select("*")
       .eq("id", id)
-      .in("status", PUBLIC_LISTING_STATUSES)
       .single();
 
     if (error) {
@@ -273,9 +218,8 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
     const priceColumn = priceMode === "monthly" ? monthlyPriceColumn : purchasePriceColumn;
 
     let query = supabase
-      .from("listings")
-      .select("*", { count: "exact" })
-      .in("status", PUBLIC_LISTING_STATUSES);
+      .from(PUBLIC_LISTINGS_VIEW)
+      .select("*", { count: "exact" });
 
     if (monthlyOnly) {
       query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing,leasing_offer->>enabled.eq.true)");
@@ -383,9 +327,8 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
     const priceColumn = priceMode === "monthly" ? monthlyPriceColumn : purchasePriceColumn;
 
     let query = supabase
-      .from("listings")
+      .from(PUBLIC_LISTINGS_VIEW)
       .select("*", { count: "exact" })
-      .in("status", PUBLIC_LISTING_STATUSES)
       .eq("garage_id", garageId);
 
     if (monthlyOnly) {
@@ -469,9 +412,8 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
 export async function getBrands(): Promise<string[]> {
   try {
     const { data, error } = await supabase
-      .from("listings")
-      .select("brand")
-      .in("status", PUBLIC_LISTING_STATUSES);
+      .from(PUBLIC_LISTINGS_VIEW)
+      .select("brand");
 
     if (error) {
       console.error("Error fetching brands:", error);
@@ -496,10 +438,9 @@ export async function getBrands(): Promise<string[]> {
 export async function getModelsForBrand(brand: string): Promise<string[]> {
   try {
     const { data, error } = await supabase
-      .from("listings")
+      .from(PUBLIC_LISTINGS_VIEW)
       .select("model")
-      .eq("brand", brand)
-      .in("status", PUBLIC_LISTING_STATUSES);
+      .eq("brand", brand);
 
     if (error) {
       console.error("Error fetching models for brand:", { brand, error });
@@ -526,9 +467,8 @@ export async function getSimilarListings(listing: ListingDetail, limit: number =
     const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
 
     let query = supabase
-      .from("listings")
+      .from(PUBLIC_LISTINGS_VIEW)
       .select("*")
-      .in("status", PUBLIC_LISTING_STATUSES)
       .neq("id", listing.id)
       .eq("deal_type", dealType);
 

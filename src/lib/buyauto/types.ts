@@ -160,7 +160,7 @@ export interface ListingDetail extends Listing {
   canton_code: string;
   cover_image_url?: string;
   image_urls: string[];
-  status: "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired";
+  status: "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired" | "archived";
   created_at: string;
   expires_at: string | null;
   duration_days: number | null;
@@ -201,4 +201,4 @@ export interface SearchFilters {
   requiresDeposit?: boolean;
 }
 
-export type ListingStatus = "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired";
+export type ListingStatus = "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired" | "archived";
