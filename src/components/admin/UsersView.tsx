@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Users, Mail, Calendar, FileText, MoreVertical, KeyRound, Trash2, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Users, Mail, Calendar, FileText, MoreVertical, KeyRound, Trash2, Shield, ChevronLeft, ChevronRight, Building2, ArrowDownRight } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,

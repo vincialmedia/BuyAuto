@@ -1131,6 +1131,11 @@ export type Database = {
       }
     }
     Functions: {
+      admin_downgrade_garage_to_private: {
+        Args: { p_target_user_id: string }
+        Returns: Json
+      }
+      admin_is_admin: { Args: { p_user_id: string }; Returns: boolean }
       ensure_dealer_premium_credits:
         | { Args: { dealer_id: string }; Returns: undefined }
         | {
