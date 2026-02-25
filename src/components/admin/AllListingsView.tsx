@@ -49,6 +49,9 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
   const [selectedListing, setSelectedListing] = useState<AdminListing | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [declineModalOpen, setDeclineModalOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [decliningId, setDecliningId] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -168,6 +171,27 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
   const openDeleteModal = (id: string) => {
     setDeletingId(id);
     setDeleteModalOpen(true);
+  };
+
+  const openDeclineModal = (id: string) => {
+    setDecliningId(id);
+    setDeclineReason("");
+    setDeclineModalOpen(true);
+  };
+
+  const handleDecline = async () => {
+    if (!decliningId) return;
+    try {
+      await adminService.rejectListing(decliningId, declineReason.trim() || "Abgelehnt durch Admin.");
+      toast({ title: "Abgelehnt", description: "Das Inserat wurde abgelehnt und der Uploader benachrichtigt." });
+      setDeclineModalOpen(false);
+      setDecliningId(null);
+      loadListings();
+      onStatsUpdate();
+    } catch (error) {
+      console.error("Error declining listing:", error);
+      toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht abgelehnt werden." });
+    }
   };
 
   const formatDate = (dateString: string | null, status: string) => {
@@ -406,6 +430,10 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                               <Trash2 className="w-4 h-4 mr-2" />
                               Löschen
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openDeclineModal(listing.id)}>
+                              <Minus className="w-4 h-4 mr-2" />
+                              Ablehnen
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -471,6 +499,27 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Löschen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={declineModalOpen} onOpenChange={setDeclineModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Inserat ablehnen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-600">Optional: Grund für die Ablehnung (wird per E-Mail an den Uploader geschickt).</p>
+            <Textarea value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} className="min-h-[120px]" />
+            <div className="flex space-x-2 justify-end">
+              <Button variant="outline" onClick={() => { setDeclineModalOpen(false); setDecliningId(null); }}>
+                Abbrechen
+              </Button>
+              <Button variant="destructive" onClick={handleDecline}>
+                <Minus className="w-4 h-4 mr-2" />
+                Ablehnen
               </Button>
             </div>
           </div>

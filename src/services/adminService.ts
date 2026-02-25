@@ -302,27 +302,12 @@ export const adminService = {
 
     if (error) throw error;
 
-    // Trigger refund after successful listing rejection
     try {
-      const refundResponse = await fetch('/api/billing/refund', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ listing_id: id })
+      await supabase.functions.invoke("listing-status-notification", {
+        body: { record: data, old_record: { status: "pending" } },
       });
-
-      if (!refundResponse.ok) {
-        const refundError = await refundResponse.json();
-        console.error(`Failed to process refund for listing ${id}:`, refundError);
-        // Log error but don't throw - listing rejection was successful
-        console.warn(`Manual refund may be required for listing ${id}. Error: ${refundError.error || 'Unknown error'}`);
-      } else {
-        console.log(`Refund successfully initiated for listing ${id}`);
-      }
-    } catch (refundError) {
-      console.error(`Failed to process refund for listing ${id}:`, refundError);
-      console.warn(`Manual refund may be required for listing ${id}. Please check manually.`);
+    } catch (e) {
+      console.warn("listing-status-notification invoke failed", e);
     }
 
     return data as AdminListing;
