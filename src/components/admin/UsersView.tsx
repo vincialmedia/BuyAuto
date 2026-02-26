@@ -65,6 +65,10 @@ export function UsersView() {
   const [userToChangeRole, setUserToChangeRole] = useState<UserWithStats | null>(null);
   const [targetRole, setTargetRole] = useState<"private" | "garage">("private");
 
+  const [planChangeDialogOpen, setPlanChangeDialogOpen] = useState(false);
+  const [userToChangePlan, setUserToChangePlan] = useState<UserWithStats | null>(null);
+  const [targetPlan, setTargetPlan] = useState<"starter" | "growth" | "pro">("starter");
+
   useEffect(() => {
     loadUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,6 +164,27 @@ export function UsersView() {
     } catch (error) {
       console.error("Error changing role:", error);
       toast.error("Fehler beim Ändern der Rolle");
+    }
+  };
+
+  const openPlanChange = (user: UserWithStats) => {
+    setUserToChangePlan(user);
+    setTargetPlan("starter");
+    setPlanChangeDialogOpen(true);
+  };
+
+  const confirmPlanChange = async () => {
+    if (!userToChangePlan) return;
+
+    try {
+      await userManagementService.adminChangeGaragePlan(userToChangePlan.id, targetPlan);
+      toast.success(`Garage-Plan geändert: ${userToChangePlan.email} → ${targetPlan}`);
+      setPlanChangeDialogOpen(false);
+      setUserToChangePlan(null);
+      await loadUsers();
+    } catch (error) {
+      console.error("Error changing plan:", error);
+      toast.error("Fehler beim Ändern des Garage-Plans");
     }
   };
 
@@ -301,6 +326,10 @@ export function UsersView() {
                         <Building2 className="mr-2 h-4 w-4" />
                         {user.role === "garage" ? "Zu Privat wechseln" : "Zu Garage wechseln"}
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openPlanChange(user)} disabled={user.role !== "garage"}>
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Garage-Plan ändern
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleResetPassword(user)}>
                         <KeyRound className="mr-2 h-4 w-4" />
                         Passwort zurücksetzen
@@ -426,6 +455,37 @@ export function UsersView() {
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction onClick={confirmRoleChange}>
               Wechseln
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={planChangeDialogOpen} onOpenChange={setPlanChangeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Garage-Plan ändern?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Wählen Sie den neuen Plan für <strong>{userToChangePlan?.email}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="mt-4 space-y-3">
+            <Select value={targetPlan} onValueChange={(v) => setTargetPlan(v as any)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Plan auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="starter">Starter</SelectItem>
+                <SelectItem value="growth">Growth</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPlanChange}>
+              Plan ändern
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

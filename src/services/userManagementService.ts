@@ -260,4 +260,30 @@ export const userManagementService = {
       throw new Error(payload?.error || "Failed to update user role");
     }
   },
+
+  async adminChangeGaragePlan(userId: string, planCode: "starter" | "growth" | "pro"): Promise<void> {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) throw sessionError;
+    const token = session?.access_token;
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch("/api/admin/set-garage-plan", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ user_id: userId, plan_code: planCode }),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string; details?: string } | null;
+      const message = payload?.error || "Failed to change garage plan";
+      throw new Error(payload?.details ? `${message}: ${payload.details}` : message);
+    }
+  },
 };
