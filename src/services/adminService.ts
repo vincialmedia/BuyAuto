@@ -552,5 +552,37 @@ export const adminService = {
 
     if (error) throw error;
     return data as AdminListing;
+  },
+
+  async declineListing(id: string, reason: string): Promise<AdminListing> {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({ status: "rejected", moderation_note: reason })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    try {
+      await supabase.functions.invoke("listing-status-notification", {
+        body: { record: data, old_record: { status: "pending" } },
+      });
+    } catch (e) {
+      console.warn("listing-status-notification invoke failed", e);
+    }
+
+    return data as AdminListing;
+  },
+
+  async getListingOwnerProfile(userId: string): Promise<{ id: string; email: string | null; full_name: string | null; role?: string | null } | null> {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id,email,full_name,role")
+      .eq("id", userId)
+      .single();
+
+    if (error) throw error;
+    return data as any;
   }
 };

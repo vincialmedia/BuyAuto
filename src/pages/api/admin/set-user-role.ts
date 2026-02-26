@@ -8,6 +8,8 @@ type Body = {
   role?: "private" | "garage";
 };
 
+type ProfileRoleRow = { role: string | null };
+
 function safeString(input: unknown): string | null {
   if (typeof input === "string" && input.trim().length > 0) return input.trim();
   return null;
@@ -28,7 +30,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (sessionError) return res.status(401).json({ ok: false, error: "Authentication failed" });
   if (!session?.user) return res.status(401).json({ ok: false, error: "Unauthorized" });
 
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", session.user.id).maybeSingle();
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", session.user.id)
+    .maybeSingle<ProfileRoleRow>();
+
   if (!me || me.role !== "admin") return res.status(403).json({ ok: false, error: "Forbidden" });
 
   const body = (req.body ?? {}) as Body;

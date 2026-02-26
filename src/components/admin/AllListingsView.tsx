@@ -183,7 +183,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
   const handleDecline = async () => {
     if (!decliningId) return;
     try {
-      await adminService.rejectListing(decliningId, declineReason.trim() || "Abgelehnt durch Admin.");
+      await adminService.declineListing(decliningId, declineReason.trim() || "Abgelehnt durch Admin.");
       toast({ title: "Abgelehnt", description: "Das Inserat wurde abgelehnt und der Uploader benachrichtigt." });
       setDeclineModalOpen(false);
       setDecliningId(null);
