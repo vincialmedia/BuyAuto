@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Users, Mail, Calendar, FileText, MoreVertical, KeyRound, Trash2, Shield, ChevronLeft, ChevronRight, Building2, ArrowDownRight } from "lucide-react";
+import { Search, Mail, FileText, MoreVertical, KeyRound, Trash2, Shield, ChevronLeft, ChevronRight, Building2, User as UserIcon, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,15 +45,14 @@ export function UsersView() {
   const [users, setUsers] = useState<UserWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<UserFilters>({
-    search: '',
-    role: 'all',
+    search: "",
+    role: "all",
     page: 1,
-    limit: 25
+    limit: 25,
   });
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // Modal states
   const [selectedUser, setSelectedUser] = useState<UserWithStats | null>(null);
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
   const [userListings, setUserListings] = useState<any[]>([]);
@@ -62,8 +61,13 @@ export function UsersView() {
   const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
   const [userToResetPassword, setUserToResetPassword] = useState<UserWithStats | null>(null);
 
+  const [roleChangeDialogOpen, setRoleChangeDialogOpen] = useState(false);
+  const [userToChangeRole, setUserToChangeRole] = useState<UserWithStats | null>(null);
+  const [targetRole, setTargetRole] = useState<"private" | "garage">("private");
+
   useEffect(() => {
     loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.page, filters.role]);
 
   const loadUsers = async () => {
@@ -74,16 +78,16 @@ export function UsersView() {
       setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Fehler beim Laden der Benutzer');
+      console.error("Error loading users:", error);
+      toast.error("Fehler beim Laden der Benutzer");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = () => {
-    setFilters(prev => ({ ...prev, page: 1 }));
-    loadUsers();
+  const handleSearch = async () => {
+    setFilters((prev) => ({ ...prev, page: 1 }));
+    await loadUsers();
   };
 
   const handleViewDetails = async (user: UserWithStats) => {
@@ -93,8 +97,8 @@ export function UsersView() {
       setUserListings(listings);
       setUserDetailsOpen(true);
     } catch (error) {
-      console.error('Error loading user details:', error);
-      toast.error('Fehler beim Laden der Benutzerdetails');
+      console.error("Error loading user details:", error);
+      toast.error("Fehler beim Laden der Benutzerdetails");
     }
   };
 
@@ -112,8 +116,8 @@ export function UsersView() {
       setResetPasswordDialogOpen(false);
       setUserToResetPassword(null);
     } catch (error) {
-      console.error('Error resetting password:', error);
-      toast.error('Fehler beim Zurücksetzen des Passworts');
+      console.error("Error resetting password:", error);
+      toast.error("Fehler beim Zurücksetzen des Passworts");
     }
   };
 
@@ -133,17 +137,63 @@ export function UsersView() {
       setUserDetailsOpen(false);
       loadUsers();
     } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error('Fehler beim Löschen des Benutzers');
+      console.error("Error deleting user:", error);
+      toast.error("Fehler beim Löschen des Benutzers");
+    }
+  };
+
+  const openRoleChange = (user: UserWithStats) => {
+    setUserToChangeRole(user);
+    setTargetRole(user.role === "garage" ? "private" : "garage");
+    setRoleChangeDialogOpen(true);
+  };
+
+  const confirmRoleChange = async () => {
+    if (!userToChangeRole) return;
+
+    try {
+      await userManagementService.setUserRole(userToChangeRole.id, targetRole);
+      toast.success(`Rolle geändert: ${userToChangeRole.email} → ${targetRole === "garage" ? "Garage" : "Privat"}`);
+      setRoleChangeDialogOpen(false);
+      setUserToChangeRole(null);
+      await loadUsers();
+    } catch (error) {
+      console.error("Error changing role:", error);
+      toast.error("Fehler beim Ändern der Rolle");
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-CH', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+    return new Date(dateString).toLocaleDateString("de-CH", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
+  };
+
+  const RoleBadge = ({ role }: { role: string | null }) => {
+    if (role === "admin") {
+      return (
+        <Badge className="bg-emerald-100 text-emerald-700">
+          <Shield className="w-3 h-3 mr-1" />
+          Admin
+        </Badge>
+      );
+    }
+    if (role === "garage") {
+      return (
+        <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+          <Building2 className="w-3 h-3 mr-1" />
+          Garage
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="bg-neutral-100 text-neutral-700">
+        <UserIcon className="w-3 h-3 mr-1" />
+        Privat
+      </Badge>
+    );
   };
 
   if (loading && users.length === 0) {
@@ -161,54 +211,47 @@ export function UsersView() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-neutral-900">Benutzer-Verwaltung</h2>
-          <p className="text-sm text-neutral-600 mt-1">
-            {total} {total === 1 ? 'Benutzer' : 'Benutzer'} insgesamt
-          </p>
+          <p className="text-sm text-neutral-600 mt-1">{total} insgesamt</p>
         </div>
+        <Button variant="outline" onClick={loadUsers} className="w-full sm:w-auto">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Aktualisieren
+        </Button>
       </div>
 
-      {/* Filters */}
       <Card className="p-4">
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search */}
           <div className="flex-1 flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
               <Input
                 placeholder="Suche nach Name oder E-Mail..."
                 value={filters.search}
-                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="pl-9"
               />
             </div>
-            <Button onClick={handleSearch}>
-              Suchen
-            </Button>
+            <Button onClick={handleSearch}>Suchen</Button>
           </div>
 
-          {/* Role Filter */}
-          <Select
-            value={filters.role}
-            onValueChange={(value) => setFilters(prev => ({ ...prev, role: value as any, page: 1 }))}
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
+          <Select value={filters.role} onValueChange={(value) => setFilters((prev) => ({ ...prev, role: value as any, page: 1 }))}>
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Rolle" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle Rollen</SelectItem>
-              <SelectItem value="user">Benutzer</SelectItem>
+              <SelectItem value="private">Privat</SelectItem>
+              <SelectItem value="garage">Garage</SelectItem>
               <SelectItem value="admin">Admins</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </Card>
 
-      {/* Desktop Table */}
       <Card className="hidden md:block overflow-hidden">
         <Table>
           <TableHeader>
@@ -225,11 +268,7 @@ export function UsersView() {
             {users.map((user) => (
               <TableRow key={user.id} className="hover:bg-neutral-50">
                 <TableCell>
-                  <div>
-                    <p className="font-medium text-neutral-900">
-                      {user.full_name || 'Kein Name'}
-                    </p>
-                  </div>
+                  <p className="font-medium text-neutral-900">{user.full_name || "Kein Name"}</p>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2 text-sm text-neutral-600">
@@ -238,31 +277,13 @@ export function UsersView() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge 
-                    variant={user.role === 'admin' ? 'default' : 'secondary'}
-                    className={user.role === 'admin' ? 'bg-emerald-100 text-emerald-700' : ''}
-                  >
-                    {user.role === 'admin' ? (
-                      <><Shield className="w-3 h-3 mr-1" />Admin</>
-                    ) : (
-                      'User'
-                    )}
-                  </Badge>
+                  <RoleBadge role={user.role} />
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-neutral-600">
-                    {formatDate(user.created_at)}
-                  </span>
+                  <span className="text-sm text-neutral-600">{formatDate(user.created_at)}</span>
                 </TableCell>
                 <TableCell className="text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="font-medium text-neutral-900">{user.listings_count}</span>
-                    {user.active_listings > 0 && (
-                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">
-                        {user.active_listings} aktiv
-                      </Badge>
-                    )}
-                  </div>
+                  <span className="font-medium text-neutral-900">{user.listings_count}</span>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -271,20 +292,21 @@ export function UsersView() {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuItem onClick={() => handleViewDetails(user)}>
                         <FileText className="mr-2 h-4 w-4" />
                         Details anzeigen
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openRoleChange(user)} disabled={user.role === "admin"}>
+                        <Building2 className="mr-2 h-4 w-4" />
+                        {user.role === "garage" ? "Zu Privat wechseln" : "Zu Garage wechseln"}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleResetPassword(user)}>
                         <KeyRound className="mr-2 h-4 w-4" />
                         Passwort zurücksetzen
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => handleDelete(user)}
-                        className="text-red-600 focus:text-red-600"
-                      >
+                      <DropdownMenuItem onClick={() => handleDelete(user)} className="text-red-600 focus:text-red-600">
                         <Trash2 className="mr-2 h-4 w-4" />
                         Konto löschen
                       </DropdownMenuItem>
@@ -297,7 +319,6 @@ export function UsersView() {
         </Table>
       </Card>
 
-      {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {users.map((user) => (
           <MobileUserCard
@@ -310,7 +331,6 @@ export function UsersView() {
         ))}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-neutral-600">
@@ -320,7 +340,7 @@ export function UsersView() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setFilters(prev => ({ ...prev, page: prev.page! - 1 }))}
+              onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) - 1 }))}
               disabled={filters.page === 1}
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
@@ -329,7 +349,7 @@ export function UsersView() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setFilters(prev => ({ ...prev, page: prev.page! + 1 }))}
+              onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }))}
               disabled={filters.page === totalPages}
             >
               Weiter
@@ -339,7 +359,6 @@ export function UsersView() {
         </div>
       )}
 
-      {/* User Details Modal */}
       <UserDetailsModal
         isOpen={userDetailsOpen}
         onClose={() => setUserDetailsOpen(false)}
@@ -359,51 +378,54 @@ export function UsersView() {
         }}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Benutzer löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Möchten Sie den Benutzer <strong>{userToDelete?.email}</strong> wirklich löschen?
-              <br /><br />
+              <br />
+              <br />
               <strong className="text-red-600">Diese Aktion kann nicht rückgängig gemacht werden.</strong>
-              <br /><br />
-              Folgendes wird gelöscht:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Benutzerprofil und Authentifizierung</li>
-                <li>Alle Inserate des Benutzers ({userToDelete?.listings_count})</li>
-                <li>Alle zugehörigen Daten</li>
-              </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
               Ja, löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Reset Password Confirmation Dialog */}
       <AlertDialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Passwort zurücksetzen?</AlertDialogTitle>
             <AlertDialogDescription>
               Möchten Sie eine Passwort-Reset-E-Mail an <strong>{userToResetPassword?.email}</strong> senden?
-              <br /><br />
-              Der Benutzer erhält eine E-Mail mit einem Link zum Zurücksetzen des Passworts.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmResetPassword}>
-              E-Mail senden
+            <AlertDialogAction onClick={confirmResetPassword}>E-Mail senden</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={roleChangeDialogOpen} onOpenChange={setRoleChangeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rolle wechseln?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie den Benutzer <strong>{userToChangeRole?.email}</strong> wirklich zu{" "}
+              <strong>{targetRole === "garage" ? "Garage" : "Privat"}</strong> wechseln?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRoleChange}>
+              Wechseln
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

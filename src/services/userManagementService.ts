@@ -212,4 +212,52 @@ export const userManagementService = {
       throw new Error(payload?.details ? `${message}: ${payload.details}` : message);
     }
   },
+
+  async updateUser(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as unknown as UserProfile;
+  },
+
+  async updateUsers(updates: Partial<UserProfile>[], userIds: string[]): Promise<UserProfile[]> {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .in("id", userIds)
+      .select();
+
+    if (error) throw error;
+    return Array.isArray(data) ? (data as unknown as UserProfile[]) : [];
+  },
+
+  async setUserRole(userId: string, role: "private" | "garage"): Promise<void> {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) throw sessionError;
+    const token = session?.access_token;
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch("/api/admin/set-user-role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ user_id: userId, role }),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error || "Failed to update user role");
+    }
+  },
 };
