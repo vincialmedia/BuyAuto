@@ -19,6 +19,7 @@ interface ListingDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  mode?: "default" | "moderation";
 }
 
 type ListingStatus = "pending" | "published" | "rejected" | "expired" | "archived" | "active";
@@ -87,8 +88,9 @@ function guessPrivateListingType(durationDays: number | null, expiresAt: string 
   return "extended";
 }
 
-export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate }: ListingDetailsModalProps) {
+export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mode = "default" }: ListingDetailsModalProps) {
   const { toast } = useToast();
+  const isModeration = mode === "moderation";
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -243,31 +245,33 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate }: L
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {listing.status === "pending" && !editing && (
-                <Button onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Freigeben
-                </Button>
-              )}
+            {!isModeration && (
+              <div className="flex flex-wrap items-center gap-2">
+                {listing.status === "pending" && !editing && (
+                  <Button onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Freigeben
+                  </Button>
+                )}
 
-              {!editing ? (
-                <Button variant="outline" onClick={() => setEditing(true)}>
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Bearbeiten
-                </Button>
-              ) : (
-                <>
-                  <Button variant="outline" disabled={saving} onClick={() => setEditing(false)}>
-                    Abbrechen
+                {!editing ? (
+                  <Button variant="outline" onClick={() => setEditing(true)}>
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Bearbeiten
                   </Button>
-                  <Button disabled={saving} onClick={handleSave}>
-                    <Save className="w-4 h-4 mr-2" />
-                    {saving ? "Speichern..." : "Speichern"}
-                  </Button>
-                </>
-              )}
-            </div>
+                ) : (
+                  <>
+                    <Button variant="outline" disabled={saving} onClick={() => setEditing(false)}>
+                      Abbrechen
+                    </Button>
+                    <Button disabled={saving} onClick={handleSave}>
+                      <Save className="w-4 h-4 mr-2" />
+                      {saving ? "Speichern..." : "Speichern"}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </DialogHeader>
 

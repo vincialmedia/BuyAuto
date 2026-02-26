@@ -41,7 +41,10 @@ async function handler(req: Request): Promise<Response> {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { record, old_record, notification_status } = await req.json();
+    const payload = await req.json().catch(() => ({} as Record<string, unknown>));
+    const record = (payload as any)?.record;
+    const old_record = (payload as any)?.old_record;
+    const notification_status = (payload as any)?.notification_status;
 
     const newStatus: unknown = record?.status;
     const oldStatus: unknown = old_record?.status;
@@ -127,13 +130,13 @@ async function handler(req: Request): Promise<Response> {
 
     if (!resendResponse.ok) {
       console.error("Resend error:", resendData);
-      throw new Error(`Failed to send email`);
+      throw new Error("Failed to send email");
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Status email sent successfully`,
+        message: "Status email sent successfully",
         emailId: resendData.id,
       }),
       {

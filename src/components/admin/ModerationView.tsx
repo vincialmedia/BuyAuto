@@ -403,6 +403,7 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
           listing={selectedListing}
           open={detailsModalOpen}
           onOpenChange={setDetailsModalOpen}
+          mode="moderation"
           onUpdate={() => {
             loadListings();
             onStatsUpdate();
