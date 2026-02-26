@@ -651,5 +651,48 @@ export const adminService = {
     }
 
     return data as AdminListing;
+  },
+
+  async declineToArchiveAndSendRejectionEmail(id: string, reason: string): Promise<AdminListing> {
+    const trimmed = reason.trim();
+    if (!trimmed) {
+      throw new Error("Decline reason is required");
+    }
+
+    const { data: existing, error: existingError } = await supabase
+      .from("listings")
+      .select("status")
+      .eq("id", id)
+      .single();
+    if (existingError) throw existingError;
+
+    const oldStatus = (existing as any)?.status ?? null;
+
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "archived",
+        archived_at: new Date().toISOString(),
+        moderation_note: trimmed,
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    try {
+      await supabase.functions.invoke("listing-status-notification", {
+        body: {
+          record: data,
+          old_record: { status: oldStatus },
+          notification_status: "rejected",
+        },
+      });
+    } catch (e) {
+      console.warn("listing-status-notification invoke failed", e);
+    }
+
+    return data as AdminListing;
   }
 };
