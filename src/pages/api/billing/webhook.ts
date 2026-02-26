@@ -21,6 +21,15 @@ function addDaysIso(baseIso: string, days: number): string | null {
   return new Date(ms + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
+function mapStripeSubscriptionStatus(
+  status: Stripe.Subscription.Status
+): "active" | "pending_change" | "canceled" | "past_due" {
+  if (status === "active") return "active";
+  if (status === "past_due" || status === "unpaid") return "past_due";
+  if (status === "canceled") return "canceled";
+  return "pending_change";
+}
+
 async function applyDealerPlanSnapshot(input: {
   supabaseAdmin: ReturnType<typeof adminService.getSupabaseAdminClient>;
   dealerId: string;
@@ -137,7 +146,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           {
             dealer_id: dealerId,
             plan_id: safeString(metadata.plan_id) ?? null,
-            status: subscription.status === "active" ? "active" : subscription.status,
+            status: mapStripeSubscriptionStatus(subscription.status),
             current_period_start: currentPeriodStartIso,
             current_period_end: currentPeriodEndIso,
             cancel_at_period_end: subscription.cancel_at_period_end ?? false,
@@ -186,7 +195,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           {
             dealer_id: dealerId,
             plan_id: safeString(subMeta.plan_id) ?? null,
-            status: subscription.status === "active" ? "active" : subscription.status,
+            status: mapStripeSubscriptionStatus(subscription.status),
             current_period_start: currentPeriodStartIso,
             current_period_end: currentPeriodEndIso,
             cancel_at_period_end: subscription.cancel_at_period_end ?? false,
@@ -249,7 +258,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const endedAtIso = subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null;
       const graceEndsAtIso = endedAtIso ? addDaysIso(endedAtIso, 5) : null;
 
-      const status = subscription.status === "canceled" ? "canceled" : subscription.status;
+      const status = mapStripeSubscriptionStatus(subscription.status);
 
       const { error } = await supabaseAdmin
         .from("dealer_subscriptions")
