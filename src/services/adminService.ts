@@ -29,6 +29,7 @@ export interface AdminListing {
   created_at: string;
   created_by: string | null;
   user_id: string | null;
+  garage_id?: string | null;
   expires_at: string | null;
   duration_days: number | null;
   price_plan: string;
@@ -89,6 +90,9 @@ export interface AdminBusinessEditableListingUpdate {
 
   price_plan?: string | null;
   pricing_plan?: string | null;
+  user_id?: string | null;
+  created_by?: string | null;
+  garage_id?: string | null;
 }
 
 function computeExpiresAtFromDuration(durationDays: number | null): string | null {
