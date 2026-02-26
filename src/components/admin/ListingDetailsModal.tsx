@@ -92,7 +92,11 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate }: L
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [editData, setEditData] = useState<AdminBusinessEditableListingUpdate>({});
+  const [editData, setEditData] = useState<AdminBusinessEditableListingUpdate>({
+    user_id: listing.user_id,
+    created_by: listing.created_by,
+    garage_id: listing.garage_id,
+  });
   const [activeTab, setActiveTab] = useState<"vehicle" | "offer" | "status" | "images" | "system">("vehicle");
 
   const imagesCount = useMemo(() => (Array.isArray(listing.images) ? listing.images.length : 0), [listing.images]);
@@ -119,6 +123,9 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate }: L
       price_plan: listing.price_plan,
       cover_image_index: listing.cover_image_index,
       cover_image_url: listing.cover_image_url,
+      user_id: listing.user_id,
+      created_by: listing.created_by,
+      garage_id: listing.garage_id,
     });
   }, [listing, open]);
 
