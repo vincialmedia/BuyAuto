@@ -209,6 +209,7 @@ export default function ListingsSection() {
               (listing.images && listing.images[listing.cover_image_index || 0]);
             const expired = isExpired(listing);
             const premium = isPremium(listing);
+            const archived = listing.status === "archived" || listing.status === "expired";
 
             return (
               <Card 
@@ -281,15 +282,17 @@ export default function ListingsSection() {
                           <Button variant="ghost" size="sm" className="rounded-2xl" onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}>
                             <Eye className="w-4 h-4 mr-2" /> Vorschau
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-2xl"
-                            onClick={() => handleEdit(listing.id)}
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Bearbeiten
-                          </Button>
+                          {!archived && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-2xl"
+                              onClick={() => handleEdit(listing.id)}
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Bearbeiten
+                            </Button>
+                          )}
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -298,7 +301,7 @@ export default function ListingsSection() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                              {!premium && (
+                              {!premium && !archived && (
                                 <DropdownMenuItem 
                                   onClick={() => handleUpgrade(listing.id)}
                                   disabled={actionLoading === listing.id}

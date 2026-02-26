@@ -1347,6 +1347,7 @@ export type Database = {
         Returns: Json
       }
       admin_is_admin: { Args: { p_user_id: string }; Returns: boolean }
+      archive_expired_listings: { Args: never; Returns: Json }
       ensure_dealer_premium_credits:
         | { Args: { dealer_id: string }; Returns: undefined }
         | {

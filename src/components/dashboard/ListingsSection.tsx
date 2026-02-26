@@ -297,7 +297,7 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
 
       <div className="grid gap-4">
         {currentListings.map((listing) => (
-          <Card key={listing.id} className={`overflow-hidden border-neutral-200 transition-all hover:shadow-md ${listing.status === 'inactive' ? 'opacity-75 bg-neutral-50' : ''}`}>
+          <Card key={listing.id} className={`overflow-hidden border-neutral-200 transition-all hover:shadow-md ${listing.status === 'inactive' || listing.status === "archived" || listing.status === "expired" ? 'opacity-75 bg-neutral-50' : ''}`}>
             <div className="flex flex-col sm:flex-row">
               {/* Image */}
               <div className="w-full sm:w-48 h-32 sm:h-auto bg-neutral-100 relative">
@@ -358,19 +358,23 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
                       <DropdownMenuItem onClick={() => viewListing(listing.id)}>
                         <Eye className="mr-2 h-4 w-4" /> Ansehen
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEditClick(listing)}>
-                        <Edit2 className="mr-2 h-4 w-4" /> Bearbeiten
-                      </DropdownMenuItem>
+                      {!(listing.status === "archived" || listing.status === "expired") && (
+                        <DropdownMenuItem onClick={() => handleEditClick(listing)}>
+                          <Edit2 className="mr-2 h-4 w-4" /> Bearbeiten
+                        </DropdownMenuItem>
+                      )}
                       
                       {/* Archive / Unarchive Actions */}
-                      {listing.status === 'inactive' ? (
-                        <DropdownMenuItem onClick={() => handleUnarchive(listing)}>
-                          <RotateCcw className="mr-2 h-4 w-4" /> Reaktivieren
-                        </DropdownMenuItem>
-                      ) : (
-                         <DropdownMenuItem onClick={() => handleArchive(listing)}>
-                          <Archive className="mr-2 h-4 w-4" /> Deaktivieren
-                        </DropdownMenuItem>
+                      {!(listing.status === "archived" || listing.status === "expired") && (
+                        listing.status === 'inactive' ? (
+                          <DropdownMenuItem onClick={() => handleUnarchive(listing)}>
+                            <RotateCcw className="mr-2 h-4 w-4" /> Reaktivieren
+                          </DropdownMenuItem>
+                        ) : (
+                           <DropdownMenuItem onClick={() => handleArchive(listing)}>
+                            <Archive className="mr-2 h-4 w-4" /> Deaktivieren
+                          </DropdownMenuItem>
+                        )
                       )}
 
                       <DropdownMenuItem 

@@ -253,38 +253,60 @@ export const adminService = {
     premiumDays?: number;
   } = {}): Promise<AdminListing> {
     const updates: any = {
-      status: 'published',
-      moderation_note: null
+      status: "published",
+      moderation_note: null,
+      archived_at: null,
     };
 
-    // Get the listing to check duration_days
-    const { data: listing } = await supabase
-      .from('listings')
-      .select('duration_days')
-      .eq('id', id)
+    const { data: listing, error: listingError } = await supabase
+      .from("listings")
+      .select("duration_days, expires_at, price_plan, pricing_plan")
+      .eq("id", id)
       .single();
 
-    // Set expires_at based on duration_days
-    if (listing?.duration_days) {
+    if (listingError) throw listingError;
+
+    const effectivePlan = (listing?.pricing_plan ?? listing?.price_plan ?? "standard") as string;
+
+    const derivedDurationDays: number | null =
+      effectivePlan === "unlimited"
+        ? null
+        : effectivePlan === "extended"
+          ? 90
+          : effectivePlan === "free30" || effectivePlan === "premium30"
+            ? 30
+            : 60;
+
+    const finalDurationDays =
+      typeof listing?.duration_days === "number" && Number.isFinite(listing.duration_days)
+        ? listing.duration_days
+        : derivedDurationDays;
+
+    if (listing?.expires_at) {
+      updates.expires_at = listing.expires_at;
+    } else if (finalDurationDays === null) {
+      updates.duration_days = null;
+      updates.expires_at = null;
+    } else if (typeof finalDurationDays === "number" && Number.isFinite(finalDurationDays)) {
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + listing.duration_days);
+      expiresAt.setDate(expiresAt.getDate() + finalDurationDays);
+      updates.duration_days = finalDurationDays;
       updates.expires_at = expiresAt.toISOString();
     }
 
-    // Handle premium activation
     if (options.activatePremium) {
       const premiumDays = options.premiumDays || 30;
       const premiumUntil = new Date();
       premiumUntil.setDate(premiumUntil.getDate() + premiumDays);
-      
+
       updates.premium = true;
       updates.premium_until = premiumUntil.toISOString();
     }
 
     const { data, error } = await supabase
-      .from('listings')
+      .from("listings")
       .update(updates)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 

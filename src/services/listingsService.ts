@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
+import type { Database } from "@/integrations/supabase/types";
+
+type PublicListingRow = Database["public"]["Views"]["listings_public"]["Row"];
 
 const PUBLIC_LISTINGS_VIEW = "listings_public";
 
@@ -50,6 +53,37 @@ function parseImagesFromDatabase(imagesField: any, coverImageUrl?: string): stri
   return imageUrls;
 }
 
+/**
+ * Normalize enum-ish string fields coming from DB views (typed as string)
+ */
+const FUEL_VALUES = ["Benzin", "Diesel", "Hybrid", "Elektro"] as const;
+type FuelValue = (typeof FUEL_VALUES)[number];
+
+const GEARBOX_VALUES = ["Automatik", "Manuell"] as const;
+type GearboxValue = (typeof GEARBOX_VALUES)[number];
+
+const BODY_VALUES = ["Limousine", "Kombi", "SUV", "Cabrio"] as const;
+type BodyValue = (typeof BODY_VALUES)[number];
+
+function isOneOf<T extends readonly string[]>(values: T, input: unknown): input is T[number] {
+  return typeof input === "string" && (values as readonly string[]).includes(input);
+}
+
+function normalizeFuel(input: unknown): FuelValue {
+  if (isOneOf(FUEL_VALUES, input)) return input;
+  return "Benzin";
+}
+
+function normalizeGearbox(input: unknown): GearboxValue {
+  if (isOneOf(GEARBOX_VALUES, input)) return input;
+  return "Automatik";
+}
+
+function normalizeBody(input: unknown): BodyValue {
+  if (isOneOf(BODY_VALUES, input)) return input;
+  return "Limousine";
+}
+
 // Transform public listing row to UI Listing format
 function transformPublicRowToListing(row: PublicListingRow): Listing {
   const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
@@ -68,7 +102,12 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasingOffer ??
     null;
 
-  const leasing_offer = leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
+  const leasing_offer =
+    leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
+
+  const seller_name = (row as unknown as { seller_name?: string | null }).seller_name ?? null;
+  const seller_avatar_url = (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+  const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
   return {
     id: row.id,
@@ -86,9 +125,9 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     remaining_km: row.remaining_km ?? undefined,
     location: row.location,
     mileageKm: row.mileage_km,
-    fuel: row.fuel,
-    gearbox: row.gearbox,
-    body: row.body,
+    fuel: normalizeFuel(row.fuel),
+    gearbox: normalizeGearbox(row.gearbox),
+    body: normalizeBody(row.body),
     premium: row.premium,
     depositCHF: row.deposit_chf ?? null,
     images: imageUrls,
@@ -96,10 +135,10 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     purchasePriceCHF,
 
     seller_type: row.seller_type ?? null,
-    seller_name: row.seller_name ?? null,
-    seller_avatar_url: row.seller_avatar_url ?? null,
+    seller_name,
+    seller_avatar_url,
     garage_id: row.garage_id ?? null,
-    garage_name: row.garage_name ?? null,
+    garage_name,
   };
 }
 
@@ -121,7 +160,12 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasingOffer ??
     null;
 
-  const leasing_offer = leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
+  const leasing_offer =
+    leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
+
+  const seller_name = (row as unknown as { seller_name?: string | null }).seller_name ?? null;
+  const seller_avatar_url = (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+  const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
   return {
     id: row.id,
@@ -139,9 +183,9 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     remaining_km: row.remaining_km ?? undefined,
     location: row.location,
     mileageKm: row.mileage_km,
-    fuel: row.fuel,
-    gearbox: row.gearbox,
-    body: row.body,
+    fuel: normalizeFuel(row.fuel),
+    gearbox: normalizeGearbox(row.gearbox),
+    body: normalizeBody(row.body),
     premium: row.premium,
     depositCHF: row.deposit_chf ?? null,
     images: imageUrls,
@@ -150,7 +194,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url ?? null,
     image_urls: imageUrls,
-    status: ((row.status ?? "published") as ListingDetail["status"]),
+    status: (row.status ?? "published") as ListingDetail["status"],
     created_at: row.created_at,
     expires_at: null,
     duration_days: null,
@@ -158,10 +202,10 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     premium_until: null,
 
     seller_type: row.seller_type ?? null,
-    seller_name: row.seller_name ?? null,
-    seller_avatar_url: row.seller_avatar_url ?? null,
+    seller_name,
+    seller_avatar_url,
     garage_id: row.garage_id ?? null,
-    garage_name: row.garage_name ?? null,
+    garage_name,
   };
 }
 
