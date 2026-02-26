@@ -1,15 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { adminService } from "@/services/adminService";
 import type { AdminListing, AdminListingFilters } from "@/services/adminService";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, CheckCircle, XCircle, Star, Calendar, MapPin, User } from "lucide-react";
+import { Eye, CheckCircle, XCircle, MapPin, Star, User } from "lucide-react";
 import { ListingDetailsModal } from "@/components/admin/ListingDetailsModal";
 import { cantons } from "@/lib/buyauto/data";
 
@@ -18,143 +16,47 @@ interface ModerationViewProps {
 }
 
 export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
+  const { toast } = useToast();
+
   const [listings, setListings] = useState<AdminListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const [filters, setFilters] = useState<AdminListingFilters>({
-    status: 'pending',
+    status: "pending",
     page: 1,
-    limit: 25
+    limit: 25,
   });
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
-  
-  // Modal states
+
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState<AdminListing | null>(null);
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [bulkRejectModalOpen, setBulkRejectModalOpen] = useState(false);
-  
-  const { toast } = useToast();
+
+  const [declineModalOpen, setDeclineModalOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [declineSubmitting, setDeclineSubmitting] = useState(false);
 
   useEffect(() => {
     loadListings();
-  }, [filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.page, filters.limit]);
 
   const loadListings = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getListings(filters);
-      setListings(data.listings);
-      setPagination({
-        total: data.total,
-        totalPages: data.totalPages
-      });
+      const data = await adminService.getListings({ ...filters, status: "pending" });
+      setListings(Array.isArray(data.listings) ? data.listings : []);
+      setPagination({ total: data.total, totalPages: data.totalPages });
     } catch (error) {
-      console.error('Error loading listings:', error);
+      console.error("Error loading moderation listings:", error);
       toast({
         variant: "destructive",
         title: "Fehler",
-        description: "Inserate konnten nicht geladen werden."
+        description: "Inserate konnten nicht geladen werden.",
       });
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleApprove = async (id: string) => {
-    try {
-      await adminService.approveListing(id);
-      toast({
-        title: "Freigegeben",
-        description: "Das Inserat wurde erfolgreich freigegeben."
-      });
-      loadListings();
-      onStatsUpdate();
-    } catch (error) {
-      console.error('Error approving listing:', error);
-      toast({
-        variant: "destructive",
-        title: "Fehler",
-        description: "Inserat konnte nicht freigegeben werden."
-      });
-    }
-  };
-
-  const handleReject = async () => {
-    if (!rejectingId || !rejectReason.trim()) return;
-
-    try {
-      await adminService.rejectListing(rejectingId, rejectReason.trim());
-      toast({
-        title: "Abgelehnt",
-        description: "Das Inserat wurde abgelehnt und die Rückerstattung eingeleitet."
-      });
-      setRejectModalOpen(false);
-      setRejectReason('');
-      setRejectingId(null);
-      loadListings();
-      onStatsUpdate();
-    } catch (error) {
-      console.error('Error rejecting listing:', error);
-      toast({
-        variant: "destructive",
-        title: "Fehler",
-        description: "Inserat konnte nicht abgelehnt werden."
-      });
-    }
-  };
-
-  const handleBulkApprove = async () => {
-    if (selectedIds.length === 0) return;
-
-    try {
-      await adminService.bulkApprove(selectedIds);
-      toast({
-        title: "Freigegeben",
-        description: `${selectedIds.length} Inserate wurden freigegeben.`
-      });
-      setSelectedIds([]);
-      loadListings();
-      onStatsUpdate();
-    } catch (error) {
-      console.error('Error bulk approving:', error);
-      toast({
-        variant: "destructive",
-        title: "Fehler",
-        description: "Inserate konnten nicht freigegeben werden."
-      });
-    }
-  };
-
-  const handleBulkReject = async () => {
-    if (selectedIds.length === 0 || !rejectReason.trim()) return;
-
-    try {
-      await adminService.bulkReject(selectedIds, rejectReason.trim());
-      toast({
-        title: "Abgelehnt",
-        description: `${selectedIds.length} Inserate wurden abgelehnt und Rückerstattungen eingeleitet.`
-      });
-      setBulkRejectModalOpen(false);
-      setRejectReason('');
-      setSelectedIds([]);
-      loadListings();
-      onStatsUpdate();
-    } catch (error) {
-      console.error('Error bulk rejecting:', error);
-      toast({
-        variant: "destructive",
-        title: "Fehler",
-        description: "Inserate konnten nicht abgelehnt werden."
-      });
-    }
-  };
-
-  const openRejectModal = (id: string) => {
-    setRejectingId(id);
-    setRejectModalOpen(true);
   };
 
   const openDetailsModal = (listing: AdminListing) => {
@@ -162,439 +64,340 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
     setDetailsModalOpen(true);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-CH');
-  };
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString("de-CH");
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('de-CH', {
-      style: 'currency',
-      currency: 'CHF'
-    }).format(price);
-  };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF" }).format(price);
 
   const getCantonName = (code: string) => {
-    const canton = cantons.find(c => c.value === code);
+    const canton = cantons.find((c) => c.value === code);
     return canton?.label || code;
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="secondary" className="bg-amber-100 text-amber-800">Wartend</Badge>;
-      case 'published':
-        return <Badge variant="default" className="bg-emerald-100 text-emerald-800">Freigegeben</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Abgelehnt</Badge>;
-      case 'expired':
-        return <Badge variant="outline">Abgelaufen</Badge>;
-      case 'archived':
-        return <Badge variant="outline" className="bg-neutral-100 text-neutral-700">Archiviert</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  const handleAccept = async (id: string) => {
+    try {
+      await adminService.approveListing(id);
+      toast({ title: "Freigegeben", description: "Das Inserat wurde freigegeben." });
+      await loadListings();
+      onStatsUpdate();
+    } catch (error) {
+      console.error("Error approving listing:", error);
+      toast({
+        variant: "destructive",
+        title: "Fehler",
+        description: "Inserat konnte nicht freigegeben werden.",
+      });
     }
   };
 
+  const openDeclineModal = (id: string) => {
+    setDecliningId(id);
+    setDeclineReason("");
+    setDeclineModalOpen(true);
+  };
+
+  const handleDecline = async () => {
+    if (!decliningId) return;
+    const reason = declineReason.trim();
+    if (!reason) return;
+
+    try {
+      setDeclineSubmitting(true);
+      await adminService.declineToArchiveAndSendRejectionEmail(decliningId, reason);
+      toast({
+        title: "Abgelehnt",
+        description: "Inserat wurde archiviert und der Kunde wurde per E-Mail informiert.",
+      });
+      setDeclineModalOpen(false);
+      setDecliningId(null);
+      setDeclineReason("");
+      await loadListings();
+      onStatsUpdate();
+    } catch (error) {
+      console.error("Error declining listing:", error);
+      toast({
+        variant: "destructive",
+        title: "Fehler",
+        description: "Inserat konnte nicht abgelehnt werden.",
+      });
+    } finally {
+      setDeclineSubmitting(false);
+    }
+  };
+
+  const ModerationRowActions = ({ listingId }: { listingId: string }) => (
+    <div className="flex items-center gap-2">
+      <Button size="sm" variant="outline" onClick={() => openDetailsModal(listings.find((l) => l.id === listingId)!)}>
+        <Eye className="h-4 w-4" />
+      </Button>
+      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleAccept(listingId)}>
+        <CheckCircle className="h-4 w-4" />
+      </Button>
+      <Button size="sm" variant="destructive" onClick={() => openDeclineModal(listingId)}>
+        <XCircle className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <Card className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <Card className="p-4 md:p-6">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <label className="text-sm font-medium mb-2 block">Status</label>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => setFilters({ ...filters, status: value as any, page: 1 })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Wartend</SelectItem>
-                <SelectItem value="published">Freigegeben</SelectItem>
-                <SelectItem value="rejected">Abgelehnt</SelectItem>
-                <SelectItem value="expired">Abgelaufen</SelectItem>
-                <SelectItem value="archived">Archiviert</SelectItem>
-                <SelectItem value="all">Alle</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="text-lg font-semibold text-neutral-900">Moderation</div>
+            <div className="text-sm text-neutral-600">Nur wartende Inserate (pending).</div>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Kanton</label>
-            <Select
-              value={filters.canton || 'all'}
-              onValueChange={(value) => setFilters({ ...filters, canton: value === 'all' ? undefined : value, page: 1 })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Alle Kantone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Kantone</SelectItem>
-                {cantons.map((canton) => (
-                  <SelectItem key={canton.value} value={canton.value}>
-                    {canton.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Premium</label>
-            <Select
-              value={filters.premium === undefined ? 'all' : filters.premium ? 'true' : 'false'}
-              onValueChange={(value) => setFilters({ 
-                ...filters, 
-                premium: value === 'all' ? undefined : value === 'true',
-                page: 1 
-              })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle</SelectItem>
-                <SelectItem value="true">Premium</SelectItem>
-                <SelectItem value="false">Standard</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Aktionen</label>
-            <div className="flex space-x-2">
-              {selectedIds.length > 0 && (
-                <>
-                  <Button
-                    size="sm"
-                    onClick={handleBulkApprove}
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    Freigeben ({selectedIds.length})
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => setBulkRejectModalOpen(true)}
-                  >
-                    <XCircle className="w-4 h-4 mr-1" />
-                    Ablehnen ({selectedIds.length})
-                  </Button>
-                </>
-              )}
+          {pagination.total > 0 && (
+            <div className="text-sm text-neutral-600">
+              Total: <span className="font-medium text-neutral-900">{pagination.total}</span>
             </div>
-          </div>
+          )}
         </div>
       </Card>
 
-      {/* Listings Table */}
       <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="border-b border-neutral-200">
-              <tr>
-                <th className="text-left p-4">
-                  <Checkbox
-                    checked={selectedIds.length === listings.length && listings.length > 0}
-                    onCheckedChange={(checked) => {
-                      setSelectedIds(checked ? listings.map(l => l.id) : []);
-                    }}
-                  />
-                </th>
-                <th className="text-left p-4">Fahrzeug</th>
-                <th className="text-left p-4">Listing-Preis</th>
-                <th className="text-left p-4">Plan</th>
-                <th className="text-left p-4">Owner</th>
-                <th className="text-left p-4">Standort</th>
-                <th className="text-left p-4">Status</th>
-                <th className="text-left p-4">Erstellt</th>
-                <th className="text-left p-4">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={9} className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-500 border-t-transparent mx-auto mb-2"></div>
-                    <span className="text-neutral-600">Lade Inserate...</span>
-                  </td>
-                </tr>
-              ) : listings.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="p-8 text-center text-neutral-600">
-                    Keine Inserate gefunden
-                  </td>
-                </tr>
-              ) : (
-                listings.map((listing) => (
-                  <tr key={listing.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                    <td className="p-4">
-                      <Checkbox
-                        checked={selectedIds.includes(listing.id)}
-                        onCheckedChange={(checked) => {
-                          setSelectedIds(prev =>
-                            checked
-                              ? [...prev, listing.id]
-                              : prev.filter(id => id !== listing.id)
-                          );
-                        }}
+        <div className="md:hidden">
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+              <span className="text-neutral-600">Lade Inserate...</span>
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="p-8 text-center text-neutral-600">Keine wartenden Inserate gefunden</div>
+          ) : (
+            <div className="divide-y divide-neutral-100">
+              {listings.map((listing) => (
+                <div key={listing.id} className="p-4">
+                  <div className="flex items-start gap-3">
+                    {listing.cover_image_url ? (
+                      <img
+                        src={listing.cover_image_url}
+                        alt=""
+                        className="h-16 w-24 flex-none rounded-lg object-cover"
                       />
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center space-x-3">
-                        {listing.cover_image_url && (
-                          <img
-                            src={listing.cover_image_url}
-                            alt=""
-                            className="w-12 h-8 object-cover rounded"
-                          />
-                        )}
-                        <div>
-                          <div className="font-medium text-neutral-900">
-                            {listing.brand} {listing.model}
-                          </div>
-                          <div className="text-sm text-neutral-600">
-                            {listing.year} • {listing.title || 'Kein Titel'}
-                          </div>
-                          {listing.premium && (
-                            <Star className="w-4 h-4 text-amber-500 inline" />
-                          )}
+                    ) : (
+                      <div className="h-16 w-24 flex-none rounded-lg bg-neutral-100" />
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="truncate font-medium text-neutral-900">
+                          {listing.brand} {listing.model}
                         </div>
+                        {listing.premium && <Star className="h-4 w-4 flex-none text-amber-500" />}
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="font-medium">
-                        {formatPrice(listing.price_paid_chf || 0)}
+
+                      <div className="mt-1 text-sm text-neutral-600">
+                        {listing.year} • {listing.title || "Kein Titel"}
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <Badge variant="outline" className="text-xs">
-                        {listing.price_plan || 'N/A'}
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      {listing.owner_profile ? (
-                        <div className="text-sm">
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-neutral-500" />
-                            <span className="font-medium text-neutral-900">
-                              {listing.owner_profile.full_name || listing.owner_profile.email || "Unbekannt"}
-                            </span>
-                          </div>
-                          {listing.owner_profile.email && (
-                            <div className="text-xs text-neutral-600 ml-6">{listing.owner_profile.email}</div>
-                          )}
-                          {listing.owner_profile.role && (
-                            <div className="text-xs text-neutral-500 ml-6">{listing.owner_profile.role}</div>
-                          )}
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-600">
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {listing.location} ({getCantonName(listing.canton_code)})
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {listing.price_plan || "N/A"}
+                        </Badge>
+                        <span className="text-xs text-neutral-500">{formatDate(listing.created_at)}</span>
+                      </div>
+
+                      {listing.owner_profile?.email && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-neutral-600">
+                          <User className="h-3.5 w-3.5" />
+                          <span className="truncate">{listing.owner_profile.email}</span>
                         </div>
-                      ) : (
-                        <span className="text-sm text-neutral-500">—</span>
                       )}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center space-x-1 text-neutral-600">
-                        <MapPin className="w-4 h-4" />
-                        <span>{listing.location}</span>
-                        <span className="text-xs">({getCantonName(listing.canton_code)})</span>
+
+                      <div className="mt-3">
+                        <ModerationRowActions listingId={listing.id} />
                       </div>
-                    </td>
-                    <td className="p-4">
-                      {getStatusBadge(listing.status)}
-                    </td>
-                    <td className="p-4 text-sm text-neutral-600">
-                      {formatDate(listing.created_at)}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openDetailsModal(listing)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-                        {listing.status === "pending" && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprove(listing.id)}
-                              className="bg-emerald-600 hover:bg-emerald-700"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => openRejectModal(listing.id)}
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-
-                        {listing.status !== "archived" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={async () => {
-                              try {
-                                await adminService.archiveListing(listing.id, "Archiviert durch Admin");
-                                toast({ title: "Archiviert", description: "Inserat wurde archiviert (30 Tage Aufbewahrung)." });
-                                loadListings();
-                                onStatsUpdate();
-                              } catch (error) {
-                                console.error("Error archiving listing:", error);
-                                toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht archiviert werden." });
-                              }
-                            }}
-                          >
-                            Archivieren
-                          </Button>
-                        )}
-
-                        {listing.status === "archived" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={async () => {
-                              try {
-                                await adminService.restoreArchivedListing(listing.id);
-                                toast({ title: "Wiederhergestellt", description: "Inserat wurde zurück auf 'pending' gesetzt." });
-                                loadListings();
-                                onStatsUpdate();
-                              } catch (error) {
-                                console.error("Error restoring listing:", error);
-                                toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht wiederhergestellt werden." });
-                              }
-                            }}
-                          >
-                            Restore
-                          </Button>
-                        )}
-                      </div>
+        <div className="hidden md:block">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b border-neutral-200">
+                <tr>
+                  <th className="p-4 text-left">Fahrzeug</th>
+                  <th className="p-4 text-left">Listing-Preis</th>
+                  <th className="p-4 text-left">Plan</th>
+                  <th className="p-4 text-left">Owner</th>
+                  <th className="p-4 text-left">Standort</th>
+                  <th className="p-4 text-left">Erstellt</th>
+                  <th className="p-4 text-left">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center">
+                      <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                      <span className="text-neutral-600">Lade Inserate...</span>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : listings.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-neutral-600">
+                      Keine wartenden Inserate gefunden
+                    </td>
+                  </tr>
+                ) : (
+                  listings.map((listing) => (
+                    <tr key={listing.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {listing.cover_image_url && (
+                            <img
+                              src={listing.cover_image_url}
+                              alt=""
+                              className="h-10 w-14 rounded object-cover"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <div className="truncate font-medium text-neutral-900">
+                                {listing.brand} {listing.model}
+                              </div>
+                              {listing.premium && <Star className="h-4 w-4 text-amber-500" />}
+                            </div>
+                            <div className="text-sm text-neutral-600">
+                              {listing.year} • {listing.title || "Kein Titel"}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
 
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="p-4 border-t border-neutral-200 flex justify-between items-center">
-            <div className="text-sm text-neutral-600">
-              Zeige {((filters.page || 1) - 1) * (filters.limit || 25) + 1} bis{' '}
-              {Math.min((filters.page || 1) * (filters.limit || 25), pagination.total)} von{' '}
-              {pagination.total} Inseraten
-            </div>
-            <div className="flex space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={(filters.page || 1) <= 1}
-                onClick={() => setFilters({ ...filters, page: (filters.page || 1) - 1 })}
-              >
-                Zurück
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={(filters.page || 1) >= pagination.totalPages}
-                onClick={() => setFilters({ ...filters, page: (filters.page || 1) + 1 })}
-              >
-                Weiter
-              </Button>
-            </div>
+                      <td className="p-4">
+                        <div className="font-medium">{formatPrice(listing.price_paid_chf || 0)}</div>
+                      </td>
+
+                      <td className="p-4">
+                        <Badge variant="outline" className="text-xs">
+                          {listing.price_plan || "N/A"}
+                        </Badge>
+                      </td>
+
+                      <td className="p-4">
+                        {listing.owner_profile ? (
+                          <div className="text-sm">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-neutral-500" />
+                              <span className="font-medium text-neutral-900">
+                                {listing.owner_profile.full_name || listing.owner_profile.email || "Unbekannt"}
+                              </span>
+                            </div>
+                            {listing.owner_profile.email && (
+                              <div className="ml-6 text-xs text-neutral-600">{listing.owner_profile.email}</div>
+                            )}
+                            {listing.owner_profile.role && (
+                              <div className="ml-6 text-xs text-neutral-500">{listing.owner_profile.role}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-neutral-500">—</span>
+                        )}
+                      </td>
+
+                      <td className="p-4">
+                        <div className="flex items-center gap-1 text-neutral-600">
+                          <MapPin className="h-4 w-4" />
+                          <span className="truncate">{listing.location}</span>
+                          <span className="text-xs">({getCantonName(listing.canton_code)})</span>
+                        </div>
+                      </td>
+
+                      <td className="p-4 text-sm text-neutral-600">{formatDate(listing.created_at)}</td>
+
+                      <td className="p-4">
+                        <ModerationRowActions listingId={listing.id} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-neutral-200 p-4">
+              <div className="text-sm text-neutral-600">
+                Zeige {((filters.page || 1) - 1) * (filters.limit || 25) + 1} bis{" "}
+                {Math.min((filters.page || 1) * (filters.limit || 25), pagination.total)} von{" "}
+                {pagination.total} Inseraten
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={(filters.page || 1) <= 1}
+                  onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) - 1 }))}
+                >
+                  Zurück
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={(filters.page || 1) >= pagination.totalPages}
+                  onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
+                >
+                  Weiter
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </Card>
 
-      {/* Single Reject Modal */}
-      <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
+      <Dialog open={declineModalOpen} onOpenChange={setDeclineModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Inserat ablehnen</DialogTitle>
           </DialogHeader>
+
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">
-                Begründung (erforderlich)
-              </label>
+              <label className="mb-2 block text-sm font-medium">Begründung (erforderlich)</label>
               <Textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
                 placeholder="Bitte geben Sie eine Begründung für die Ablehnung ein..."
                 rows={4}
               />
             </div>
-            <div className="flex space-x-2 justify-end">
+
+            <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setRejectModalOpen(false);
-                  setRejectReason('');
+                  setDeclineModalOpen(false);
+                  setDeclineReason("");
+                  setDecliningId(null);
                 }}
+                disabled={declineSubmitting}
               >
                 Abbrechen
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleReject}
-                disabled={!rejectReason.trim()}
+                onClick={handleDecline}
+                disabled={!declineReason.trim() || declineSubmitting}
               >
-                Ablehnen
+                {declineSubmitting ? "Sende..." : "Ablehnen"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Reject Modal */}
-      <Dialog open={bulkRejectModalOpen} onOpenChange={setBulkRejectModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{selectedIds.length} Inserate ablehnen</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Begründung (erforderlich)
-              </label>
-              <Textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Bitte geben Sie eine Begründung für die Ablehnung ein..."
-                rows={4}
-              />
-            </div>
-            <div className="flex space-x-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setBulkRejectModalOpen(false);
-                  setRejectReason('');
-                }}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleBulkReject}
-                disabled={!rejectReason.trim()}
-              >
-                {selectedIds.length} Inserate ablehnen
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Details Modal */}
       {selectedListing && (
         <ListingDetailsModal
           listing={selectedListing}
