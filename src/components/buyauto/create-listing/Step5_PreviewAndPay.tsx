@@ -469,7 +469,7 @@ export default function Step5_PreviewAndPay() {
       if (garageRow?.id) {
         const { data: updated, error: updateGarageIdError } = await supabase
           .from("listings")
-          .update({ garage_id: garageRow.id })
+          .update({ garage_id: garageRow.id, seller_type: "garage" })
           .eq("id", data.id)
           .eq("created_by", user.id)
           .select("id, garage_id")
@@ -489,39 +489,7 @@ export default function Step5_PreviewAndPay() {
         }
       }
 
-      const { data: statusRow, error: statusFetchError } = await supabase
-        .from("listings")
-        .select("id, status")
-        .eq("id", data.id)
-        .maybeSingle();
-
-      if (statusFetchError) throw statusFetchError;
-
-      if (statusRow?.status === "draft") {
-        const { data: bumped, error: bumpError } = await supabase
-          .from("listings")
-          .update({ status: "pending" })
-          .eq("id", data.id)
-          .eq("status", "draft")
-          .select("id, status")
-          .maybeSingle();
-
-        if (bumpError) throw bumpError;
-
-        const finalStatus = bumped?.status ?? statusRow.status;
-        if (finalStatus !== "pending") {
-          const message = "Konnte Status nicht von Entwurf auf Pending setzen. Bitte neu laden und erneut versuchen.";
-          setGaragePublishError({ message });
-          toast({
-            title: "Veröffentlichen fehlgeschlagen",
-            description: message,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      // Call RPC to enforce limit
+      // Call RPC to enforce limit / entitlements
       const { error } = await supabase
         .rpc("publish_garage_listing", { listing_id: data.id });
 
@@ -561,6 +529,18 @@ export default function Step5_PreviewAndPay() {
 
         return;
       }
+
+      const { data: publishedRow, error: publishError } = await supabase
+        .from("listings")
+        .update({ status: "published", seller_type: "garage" })
+        .eq("id", data.id)
+        .eq("created_by", user.id)
+        .select("id, status")
+        .maybeSingle();
+
+      if (publishError) throw publishError;
+
+      updateData({ status: (publishedRow as any)?.status ?? "published" });
 
       toast({
         title: "Inserat veröffentlicht!",

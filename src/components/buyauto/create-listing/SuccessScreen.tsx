@@ -166,7 +166,15 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
     return null;
   }
 
-  const online = isOnlineStatus(resolvedListing?.status) || Boolean(completed?.id);
+  const isGarage = sellerType === "garage";
+  const isPublished = isOnlineStatus(resolvedListing?.status);
+
+  const title = isGarage ? "Inserat veröffentlicht" : isPublished ? "Inserat veröffentlicht" : "Inserat eingereicht";
+  const description = isGarage
+    ? "Ihr Inserat wurde erfolgreich übermittelt und ist jetzt live."
+    : isPublished
+      ? "Hier ist die Zusammenfassung Ihres Inserats."
+      : "Ihr Inserat wurde zur Überprüfung eingereicht. Sie werden benachrichtigt, sobald es veröffentlicht wird. Dies dauert in der Regel 2-4 Stunden.";
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
@@ -175,12 +183,10 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
       <div className="text-center">
         <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl">
-          {online ? "Inserat erstellt" : "Vielen Dank!"}
+          {title}
         </h1>
         <p className="mt-4 text-lg text-neutral-600">
-          {online
-            ? "Hier ist die Zusammenfassung Ihres Inserats."
-            : "Ihr Inserat wurde zur Überprüfung eingereicht. Sie werden benachrichtigt, sobald es veröffentlicht wird. Dies dauert in der Regel 2-4 Stunden."}
+          {description}
         </p>
       </div>
 
