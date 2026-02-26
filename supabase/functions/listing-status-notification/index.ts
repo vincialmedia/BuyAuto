@@ -59,7 +59,7 @@ async function handler(req: Request): Promise<Response> {
       );
     }
 
-    const ownerId: string | null = record?.created_by ?? null;
+    const ownerId: string | null = record?.created_by ?? record?.user_id ?? null;
 
     if (!ownerId) {
       return new Response(
@@ -96,12 +96,15 @@ async function handler(req: Request): Promise<Response> {
       throw new Error("RESEND_API_KEY not configured");
     }
 
+    const moderationNoteRaw =
+      typeof record?.moderation_note === "string" ? record.moderation_note : null;
+
     const email = buildEmail({
       status: newStatus,
       name: safeName,
       listingTitle: safeListingTitle,
       listingUrl,
-      moderationNote: typeof record?.moderation_note === "string" ? record.moderation_note : null,
+      moderationNote: moderationNoteRaw,
     });
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
