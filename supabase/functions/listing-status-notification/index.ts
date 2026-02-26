@@ -41,7 +41,7 @@ async function handler(req: Request): Promise<Response> {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { record, old_record } = await req.json();
+    const { record, old_record, notification_status } = await req.json();
 
     const newStatus: unknown = record?.status;
     const oldStatus: unknown = old_record?.status;
@@ -99,8 +99,10 @@ async function handler(req: Request): Promise<Response> {
     const moderationNoteRaw =
       typeof record?.moderation_note === "string" ? record.moderation_note : null;
 
+    const emailStatus: ListingStatus = isRelevantStatus(notification_status) ? notification_status : newStatus;
+
     const email = buildEmail({
-      status: newStatus,
+      status: emailStatus,
       name: safeName,
       listingTitle: safeListingTitle,
       listingUrl,
