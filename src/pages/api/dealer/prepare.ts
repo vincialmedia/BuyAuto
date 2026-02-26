@@ -8,7 +8,7 @@ type PrepareBody = {
 };
 
 type GaragePick = Pick<Database["public"]["Tables"]["garages"]["Row"], "id" | "owner_user_id">;
-type PlanPick = Pick<Database["public"]["Tables"]["dealer_plans"]["Row"], "id" | "code" | "monthly_price_chf" | "active">;
+type PlanPick = Pick<Database["public"]["Tables"]["dealer_plans"]["Row"], "id" | "code" | "monthly_price_chf" | "active" | "stripe_price_id">;
 
 function normalizePlanCode(input: unknown): "starter" | "growth" | "pro" | null {
   const raw = typeof input === "string" ? input.trim().toLowerCase() : "";
@@ -55,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: planRaw, error: planError } = await supabase
       .from("dealer_plans")
-      .select("id, code, monthly_price_chf, active")
+      .select("id, code, monthly_price_chf, active, stripe_price_id")
       .eq("code", planCode)
       .eq("active", true)
       .maybeSingle();
@@ -63,49 +63,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (planError) return res.status(500).json({ ok: false, error: "Failed to load plan" });
 
     const plan = (planRaw ?? null) as PlanPick | null;
-    const priceChf = plan?.monthly_price_chf;
 
     if (!plan?.id) return res.status(400).json({ ok: false, error: "Plan not found" });
-    if (typeof priceChf !== "number" || !Number.isFinite(priceChf) || priceChf <= 0) {
-      return res.status(400).json({ ok: false, error: "Plan has no valid price" });
+    if (!plan.stripe_price_id || typeof plan.stripe_price_id !== "string") {
+      return res.status(400).json({ ok: false, error: "Plan is not configured for recurring billing (missing stripe_price_id)" });
     }
 
-    const garageId = garage.id;
-    const amountInCents = Math.round(priceChf * 100);
-
-    // Determine base URL for redirection
-    const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';
+    const protocol = (req.headers["x-forwarded-proto"] as string) || "http";
     const host = req.headers.host;
-    // Prioritize Host header to support dynamic preview URLs
-    const origin = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+    const origin = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    // Create Stripe Checkout Session
     const checkoutSession = await stripe.checkout.sessions.create({
+      mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "chf",
-            product_data: {
-              name: `BuyAuto - ${plan.code.charAt(0).toUpperCase() + plan.code.slice(1)} Paket`,
-              description: "Monatliches Abonnement",
-            },
-            unit_amount: amountInCents,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment", // Treating as one-time payment that activates a 30-day period manually via webhook
+      line_items: [{ price: plan.stripe_price_id, quantity: 1 }],
       success_url: `${origin}/dashboard/garage?payment_success=true`,
       cancel_url: `${origin}/billing/cancel`,
-      payment_intent_data: {
+      subscription_data: {
         metadata: {
           kind: "dealer_plan",
-          dealer_id: garageId,
+          dealer_id: garage.id,
           plan_code: planCode,
           plan_id: plan.id,
           user_id: session.user.id,
         },
+      },
+      metadata: {
+        kind: "dealer_plan",
+        dealer_id: garage.id,
+        plan_code: planCode,
+        plan_id: plan.id,
+        user_id: session.user.id,
       },
     });
 
@@ -113,13 +101,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ ok: false, error: "Could not generate payment URL" });
     }
 
-    return res.status(200).json({
-      ok: true,
-      url: checkoutSession.url,
-    });
-
+    return res.status(200).json({ ok: true, url: checkoutSession.url });
   } catch (e: unknown) {
-    console.error("Payment preparation error:", e);
+    console.error("Dealer subscription prepare error:", e);
     return res.status(500).json({ ok: false, error: getErrorMessage(e) });
   }
 }

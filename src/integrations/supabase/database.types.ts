@@ -87,6 +87,61 @@ export type Database = {
           },
         ]
       }
+      dealer_admin_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dealer_id: string
+          ends_at: string
+          id: string
+          notes: string | null
+          plan_id: string
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dealer_id: string
+          ends_at: string
+          id?: string
+          notes?: string | null
+          plan_id: string
+          starts_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dealer_id?: string
+          ends_at?: string
+          id?: string
+          notes?: string | null
+          plan_id?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dealer_admin_overrides_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dealer_admin_overrides_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dealer_admin_overrides_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "dealer_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dealer_plan_changes: {
         Row: {
           created_at: string
@@ -160,6 +215,7 @@ export type Database = {
           onboarding_included: boolean
           onboarding_note: string | null
           premium_included_per_month: number | null
+          stripe_price_id: string | null
           updated_at: string
         }
         Insert: {
@@ -173,6 +229,7 @@ export type Database = {
           onboarding_included?: boolean
           onboarding_note?: string | null
           premium_included_per_month?: number | null
+          stripe_price_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -186,6 +243,7 @@ export type Database = {
           onboarding_included?: boolean
           onboarding_note?: string | null
           premium_included_per_month?: number | null
+          stripe_price_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -230,42 +288,60 @@ export type Database = {
       }
       dealer_subscriptions: {
         Row: {
+          cancel_at: string | null
           cancel_at_period_end: boolean
+          canceled_at: string | null
           created_at: string
           current_period_end: string
           current_period_start: string
           dealer_id: string
           end_date: string | null
+          ended_at: string | null
+          grace_ends_at: string | null
           id: string
           plan_id: string
           start_date: string
           status: Database["public"]["Enums"]["dealer_subscription_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           updated_at: string
         }
         Insert: {
+          cancel_at?: string | null
           cancel_at_period_end?: boolean
+          canceled_at?: string | null
           created_at?: string
           current_period_end?: string
           current_period_start?: string
           dealer_id: string
           end_date?: string | null
+          ended_at?: string | null
+          grace_ends_at?: string | null
           id?: string
           plan_id: string
           start_date?: string
           status?: Database["public"]["Enums"]["dealer_subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
         }
         Update: {
+          cancel_at?: string | null
           cancel_at_period_end?: boolean
+          canceled_at?: string | null
           created_at?: string
           current_period_end?: string
           current_period_start?: string
           dealer_id?: string
           end_date?: string | null
+          ended_at?: string | null
+          grace_ends_at?: string | null
           id?: string
           plan_id?: string
           start_date?: string
           status?: Database["public"]["Enums"]["dealer_subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
         }
         Relationships: [

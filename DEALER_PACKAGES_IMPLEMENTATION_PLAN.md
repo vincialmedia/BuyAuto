@@ -109,3 +109,76 @@ Stand: 2026-02-16
 - Enforcement:
   - Publish bei Limit: blockiert + CTA sichtbar
   - Premium Credits: wenn 0 → blockiert + CTA sichtbar
+
+---
+
+## 6) NEW: Recurring dealer billing + “Upgrade for how long” + downgrade-to-drafts
+
+### 6.1 Current state (as-is)
+- Dealer package purchase currently uses a one-time Stripe Checkout Session (`mode: "payment"` in `src/pages/api/dealer/prepare.ts`).
+- The system then writes a 30-day access window into `public.dealer_subscriptions` in the webhook / confirm handler.
+- Result: packages are **not recurring** yet. Switching to real Stripe Subscriptions is required.
+
+### 6.2 Target behavior (to-be)
+#### A) Dealer self-serve packages (paid, recurring)
+- Dealers choose a plan and pay with Stripe.
+- Billing is **recurring monthly** (CHF).
+- Plan remains active until canceled or payment fails.
+- Stripe subscription lifecycle becomes the source of truth.
+
+#### B) Admin-only “Upgrade for how long” (free override, no credit card)
+- Duration picker exists **only in the admin dashboard**, not in dealer Pricing checkout.
+- Values: `1, 2, 3, 6, 12, 999` months.
+- Admin can grant a plan “for free” for N months without collecting CC details.
+- Implementation is **DB-driven** using `public.dealer_admin_overrides`:
+  - Create a row `{ dealer_id, plan_id, starts_at, ends_at, notes, created_by }`
+  - This override takes precedence over Stripe subscription status for access checks.
+
+#### C) Subscription/override end + grace rule
+- When a dealer’s Stripe subscription ends OR an admin override ends:
+  - The dealer keeps their current listing statuses for a **5-day grace period**.
+  - After grace ends, all garage listings with status in **`published`, `active`, `inactive`** are converted to **`draft`** and therefore unpublished from the frontend.
+  - To re-publish, the dealer must select a new plan again.
+
+#### D) Downgrade behavior (admin action)
+- When admin downgrades a dealer plan, show a clear banner/toast in dealer dashboard:
+  - “Plan geändert – bitte Inserate in Entwürfen prüfen und erneut veröffentlichen.”
+- Downgrade does **not** instantly unpublish; it follows the same grace mechanism if the change results in loss of entitlement, otherwise it may immediately enforce limits on publish operations.
+
+### 6.3 Data model requirements
+- Store Stripe recurring price ids in DB:
+  - `public.dealer_plans.stripe_price_id` (text) must be populated for starter/growth/pro.
+- Store Stripe linkage + subscription state in `public.dealer_subscriptions`:
+  - `stripe_customer_id`, `stripe_subscription_id` (unique), `cancel_at`, `canceled_at`, `ended_at`, `grace_ends_at` (already present via migrations).
+- Ensure we can compute entitlement by:
+  1) Active admin override (now between starts_at and ends_at) OR
+  2) Active Stripe subscription (status=active and current_period_end in the future; not ended) OR
+  3) If ended: allow until `grace_ends_at`
+
+### 6.4 Stripe implementation (required changes)
+- Update `src/pages/api/dealer/prepare.ts`:
+  - Switch Checkout Session to `mode: "subscription"`
+  - Use plan’s `stripe_price_id`
+  - Include metadata: `{ kind:"dealer_plan", dealer_id, plan_id, plan_code, user_id }`
+- Update `src/pages/api/billing/webhook.ts`:
+  - Handle subscription events:
+    - `checkout.session.completed` (subscription id + customer id)
+    - `invoice.paid` (renewals)
+    - `invoice.payment_failed`
+    - `customer.subscription.updated`
+    - `customer.subscription.deleted`
+  - Map Stripe subscription → `dealer_subscriptions`:
+    - maintain `current_period_start/end`, `status`, `stripe_subscription_id`, `stripe_customer_id`
+    - when subscription ends: set `ended_at` and `grace_ends_at = ended_at + 5 days`
+
+### 6.5 Enforcement job (reliability)
+- Add/update a scheduled Edge Function (recommended new function, similar to `check-expired-listings`) that:
+  1) Finds dealers where (subscription ended OR override expired) AND `grace_ends_at <= now()`
+  2) Converts all affected listings (`published`, `active`, `inactive`) to `draft`
+  3) Logs counts for monitoring
+- This avoids relying solely on webhook timing and guarantees eventual consistency.
+
+### 6.6 Admin dashboard work (scope)
+- Add an admin control to grant/adjust `dealer_admin_overrides` with the duration picker.
+- Add admin control to switch a dealer’s paid plan (Stripe subscription) if needed (future enhancement).
+- Ensure all admin actions are server-side / RPC-gated and audited in DB.
