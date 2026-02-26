@@ -98,6 +98,12 @@ function computeExpiresAtFromDuration(durationDays: number | null): string | nul
   return d.toISOString();
 }
 
+function addMonthsIso(months: number): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString();
+}
+
 export const adminService = {
   /**
    * Get Supabase admin client with service role key for bypassing RLS
@@ -112,6 +118,52 @@ export const adminService = {
         persistSession: false,
       },
     });
+  },
+
+  async listDealerAdminOverrides(dealerId: string) {
+    const { data, error } = await supabase
+      .from("dealer_admin_overrides")
+      .select("id,dealer_id,plan_id,starts_at,ends_at,notes,created_by,created_at")
+      .eq("dealer_id", dealerId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async createDealerAdminOverride(input: {
+    dealerId: string;
+    planId: string;
+    durationMonths: number;
+    notes?: string | null;
+  }) {
+    const duration = input.durationMonths;
+    const endsAt =
+      duration >= 999 ? addMonthsIso(999) : addMonthsIso(Math.max(1, Math.floor(duration)));
+
+    const { data, error } = await supabase
+      .from("dealer_admin_overrides")
+      .insert({
+        dealer_id: input.dealerId,
+        plan_id: input.planId,
+        ends_at: endsAt,
+        notes: input.notes ?? null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async draftDealerListings(dealerId: string) {
+    const { error } = await supabase
+      .from("listings")
+      .update({ status: "draft" as any })
+      .eq("garage_id", dealerId)
+      .in("status", ["published", "active", "inactive"] as any);
+
+    if (error) throw error;
   },
 
   /**
@@ -231,9 +283,6 @@ export const adminService = {
     };
   },
 
-  /**
-   * Get single listing details for admin
-   */
   async getListingDetails(id: string): Promise<AdminListing> {
     const { data, error } = await supabase
       .from('listings')
@@ -245,9 +294,6 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Approve a listing
-   */
   async approveListing(id: string, options: {
     activatePremium?: boolean;
     premiumDays?: number;
@@ -314,9 +360,6 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Reject a listing with reason and trigger refund
-   */
   async rejectListing(id: string, reason: string): Promise<AdminListing> {
     const { data, error } = await supabase
       .from('listings')
@@ -341,9 +384,6 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Update listing details (inline edit)
-   */
   async updateListingDetails(id: string, updates: Partial<AdminListing>): Promise<AdminListing> {
     const { data, error } = await supabase
       .from('listings')
@@ -356,9 +396,6 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Update listing details (business-editable fields only)
-   */
   async updateListingBusinessEditableFields(id: string, updates: AdminBusinessEditableListingUpdate): Promise<AdminListing> {
     const { data, error } = await supabase
       .from("listings")
@@ -371,10 +408,6 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Set private listing type (free/extended/unlimited) by mapping to duration_days/expires_at.
-   * Unlimited -> duration_days = null, expires_at = null.
-   */
   async setPrivateListingType(id: string, type: PrivateListingType, durationDaysForFree: number, durationDaysForExtended: number): Promise<AdminListing> {
     let duration_days: number | null = null;
     if (type === "free") duration_days = durationDaysForFree;
@@ -386,9 +419,6 @@ export const adminService = {
     return await this.updateListingBusinessEditableFields(id, { duration_days, expires_at });
   },
 
-  /**
-   * Toggle premium status
-   */
   async togglePremium(id: string, isPremium: boolean, days?: number): Promise<AdminListing> {
     const updates: any = {
       premium: isPremium
@@ -413,11 +443,7 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Extend listing expiry
-   */
   async extendExpiry(id: string, days: number): Promise<AdminListing> {
-    // Get current expires_at or use current date if null
     const { data: listing } = await supabase
       .from('listings')
       .select('expires_at')
@@ -438,9 +464,6 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Delete a listing
-   */
   async deleteListing(id: string): Promise<void> {
     const { error } = await supabase
       .from('listings')
@@ -450,9 +473,6 @@ export const adminService = {
     if (error) throw error;
   },
 
-  /**
-   * Bulk approve listings
-   */
   async bulkApprove(ids: string[], options: {
     activatePremium?: boolean;
     premiumDays?: number;
@@ -462,11 +482,7 @@ export const adminService = {
     }
   },
 
-  /**
-   * Bulk reject listings with refund processing
-   */
   async bulkReject(ids: string[], reason: string): Promise<void> {
-    // First, update all listing statuses to rejected
     const { error } = await supabase
       .from('listings')
       .update({
@@ -477,7 +493,6 @@ export const adminService = {
 
     if (error) throw error;
 
-    // Then, trigger refunds for each listing
     const refundPromises = ids.map(async (id) => {
       try {
         const refundResponse = await fetch('/api/billing/refund', {
@@ -501,14 +516,9 @@ export const adminService = {
       }
     });
 
-    // Process all refunds in parallel but don't wait for completion
-    // This prevents blocking the UI if some refunds are slow
     Promise.allSettled(refundPromises);
   },
 
-  /**
-   * Archive (soft-delete) a listing: removes from public view and schedules auto deletion.
-   */
   async archiveListing(id: string, moderationNote?: string): Promise<AdminListing> {
     const note =
       typeof moderationNote === "string" && moderationNote.trim().length > 0
@@ -529,9 +539,6 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Restore an archived listing back to pending (re-moderation).
-   */
   async restoreArchivedListing(id: string): Promise<AdminListing> {
     const { data, error } = await supabase
       .from("listings")

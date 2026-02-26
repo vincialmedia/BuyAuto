@@ -54,16 +54,22 @@ Deno.serve(async (req) => {
 
     if (overridesError) throw overridesError;
 
-    const expiredOverrideDealerIds = Array.from(
-      new Set((expiredOverrides ?? []).map((r) => r.dealer_id).filter(Boolean))
+    const overrideGraceEndedDealerIds = Array.from(
+      new Set(
+        (expiredOverrides ?? [])
+          .filter((r) => Boolean(r.dealer_id) && Boolean(r.ends_at) && (r.ends_at as string) <= nowIso)
+          .map((r) => ({ dealerId: r.dealer_id as string, graceEndsAt: addDaysIso(r.ends_at as string, 5) }))
+          .filter((x) => Boolean(x.dealerId) && Boolean(x.graceEndsAt) && (x.graceEndsAt as string) <= nowIso)
+          .map((x) => x.dealerId)
+      )
     );
 
-    result.overridesExpiredCount = expiredOverrideDealerIds.length;
-    result.overridesExpiredDealerIds = expiredOverrideDealerIds;
+    result.overridesExpiredCount = overrideGraceEndedDealerIds.length;
+    result.overridesExpiredDealerIds = overrideGraceEndedDealerIds;
 
     const { data: graceEndedSubs, error: graceError } = await supabaseAdmin
       .from("dealer_subscriptions")
-      .select("dealer_id, ended_at, grace_ends_at, status")
+      .select("dealer_id, grace_ends_at")
       .not("grace_ends_at", "is", null)
       .lte("grace_ends_at", nowIso);
 
@@ -76,7 +82,7 @@ Deno.serve(async (req) => {
     result.subscriptionsGraceEndedCount = graceEndedDealerIds.length;
     result.subscriptionsGraceEndedDealerIds = graceEndedDealerIds;
 
-    const dealersToDraft = Array.from(new Set([...expiredOverrideDealerIds, ...graceEndedDealerIds]));
+    const dealersToDraft = Array.from(new Set([...overrideGraceEndedDealerIds, ...graceEndedDealerIds]));
     if (dealersToDraft.length === 0) {
       return new Response(JSON.stringify({ ok: true, ...result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -86,13 +92,13 @@ Deno.serve(async (req) => {
 
     const { data: affectedListings, error: listError } = await supabaseAdmin
       .from("listings")
-      .select("id, garage_id, status")
+      .select("id")
       .in("garage_id", dealersToDraft)
       .in("status", ["published", "active", "inactive"]);
 
     if (listError) throw listError;
 
-    const listingIds = (affectedListings ?? []).map((l) => l.id);
+    const listingIds = (affectedListings ?? []).map((l) => l.id).filter(Boolean);
     if (listingIds.length > 0) {
       const { error: updateError } = await supabaseAdmin
         .from("listings")
@@ -105,28 +111,13 @@ Deno.serve(async (req) => {
       result.listingsDraftedIds = listingIds;
     }
 
-    for (const sub of graceEndedSubs ?? []) {
-      if (sub.status !== "ended" && sub.status !== "canceled") {
-        const endedAt = sub.ended_at ?? nowIso;
-        const graceEndsAt = sub.grace_ends_at ?? addDaysIso(endedAt, 5);
-
-        await supabaseAdmin
-          .from("dealer_subscriptions")
-          .update({
-            status: "ended",
-            ended_at: endedAt,
-            grace_ends_at: graceEndsAt,
-          })
-          .eq("dealer_id", sub.dealer_id);
-      }
-    }
-
     return new Response(JSON.stringify({ ok: true, ...result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    const message = error && typeof error === "object" && "message" in error ? String((error as any).message) : "Unexpected error";
+    const message =
+      error && typeof error === "object" && "message" in error ? String((error as any).message) : "Unexpected error";
     console.error("enforce-dealer-entitlements error:", error);
     return new Response(JSON.stringify({ ok: false, error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
