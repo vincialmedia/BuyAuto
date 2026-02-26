@@ -219,7 +219,7 @@ function rejectedTemplate(params: {
 }): string {
   const note = params.moderationNote?.trim()
     ? `<div style="background-color:#fff3cd;border-left:4px solid #ffc107;padding:15px;margin:20px 0;">
-         <strong>Grund der Ablehnung:</strong><br>${escapeHtml(params.moderationNote!.trim())}
+         <strong>Grund der Ablehnung:</strong><br>${escapeHtml(params.moderationNote.trim())}
        </div>`
     : "";
 
@@ -266,7 +266,7 @@ function archivedTemplate(params: {
 }): string {
   const note = params.moderationNote?.trim()
     ? `<div style="background-color:#f1f5f9;border-left:4px solid #64748b;padding:15px;margin:20px 0;">
-         <strong>Hinweis:</strong><br>${escapeHtml(params.moderationNote!.trim())}
+         <strong>Hinweis:</strong><br>${escapeHtml(params.moderationNote.trim())}
        </div>`
     : "";
 
