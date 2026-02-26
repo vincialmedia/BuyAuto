@@ -106,6 +106,9 @@ export interface ListingData {
   location?: string;
   canton_code?: string;
   title?: string;
+
+  seller_type?: "private" | "garage" | null;
+  garage_id?: string | null;
   
   price_plan?: PricePlanId;
   pricing_plan?: string;

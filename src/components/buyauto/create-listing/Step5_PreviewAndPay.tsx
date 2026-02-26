@@ -488,7 +488,7 @@ export default function Step5_PreviewAndPay() {
           return;
         }
 
-        updateData({ garage_id: updated.garage_id ?? garageRow.id, seller_type: "garage" } as any);
+        updateData({ garage_id: updated.garage_id ?? garageRow.id, seller_type: "garage" });
       }
 
       // Call RPC to enforce limit / entitlements
@@ -557,7 +557,7 @@ export default function Step5_PreviewAndPay() {
         return;
       }
 
-      updateData({ status: (publishedRow as any)?.status ?? "published", seller_type: "garage" });
+      updateData({ status: publishedRow.status ?? "published", seller_type: publishedRow.seller_type ?? "garage" });
 
       toast({
         title: "Inserat veröffentlicht!",
