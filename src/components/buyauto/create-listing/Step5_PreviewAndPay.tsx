@@ -471,14 +471,14 @@ export default function Step5_PreviewAndPay() {
           .from("listings")
           .update({ garage_id: garageRow.id, seller_type: "garage" })
           .eq("id", data.id)
-          .eq("created_by", user.id)
-          .select("id, garage_id")
+          .select("id, garage_id, seller_type")
           .maybeSingle();
 
         if (updateGarageIdError) throw updateGarageIdError;
 
         if (!updated?.id) {
-          const message = "Konnte garage_id nicht setzen. Inserat nicht gefunden oder keine Berechtigung (created_by stimmt evtl. nicht).";
+          const message =
+            "Konnte garage_id nicht setzen. Inserat nicht gefunden oder keine Berechtigung.";
           setGaragePublishError({ message });
           toast({
             title: "Veröffentlichen fehlgeschlagen",
@@ -487,6 +487,8 @@ export default function Step5_PreviewAndPay() {
           });
           return;
         }
+
+        updateData({ garage_id: updated.garage_id ?? garageRow.id, seller_type: "garage" } as any);
       }
 
       // Call RPC to enforce limit / entitlements
@@ -534,13 +536,28 @@ export default function Step5_PreviewAndPay() {
         .from("listings")
         .update({ status: "published", seller_type: "garage" })
         .eq("id", data.id)
-        .eq("created_by", user.id)
-        .select("id, status")
+        .select("id, status, seller_type")
         .maybeSingle();
 
       if (publishError) throw publishError;
 
-      updateData({ status: (publishedRow as any)?.status ?? "published" });
+      if (!publishedRow?.id) {
+        const message = "Inserat konnte nicht veröffentlicht werden (keine Berechtigung oder Inserat nicht gefunden).";
+        setGaragePublishError({ message });
+        toast({
+          title: "Veröffentlichen fehlgeschlagen",
+          description: message,
+          variant: "destructive",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/garage")}>
+              Verwalten
+            </Button>
+          ),
+        });
+        return;
+      }
+
+      updateData({ status: (publishedRow as any)?.status ?? "published", seller_type: "garage" });
 
       toast({
         title: "Inserat veröffentlicht!",

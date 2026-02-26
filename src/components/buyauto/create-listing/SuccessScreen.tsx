@@ -80,7 +80,12 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
   const [resolvedListing, setResolvedListing] = useState<SuccessListingSummaryInput | null>(draft ? (draft as unknown as SuccessListingSummaryInput) : null);
   const [isLoadingListing, setIsLoadingListing] = useState(false);
 
-  const sellerType = profile?.role === "garage" ? "garage" : "private";
+  const sellerType =
+    (resolvedListing as any)?.seller_type === "garage"
+      ? "garage"
+      : profile?.role === "garage"
+        ? "garage"
+        : "private";
 
   useEffect(() => {
     if (!hasMounted || typeof window === "undefined") return;
@@ -169,9 +174,18 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
   const isGarage = sellerType === "garage";
   const isPublished = isOnlineStatus(resolvedListing?.status);
 
-  const title = isGarage ? "Inserat veröffentlicht" : isPublished ? "Inserat veröffentlicht" : "Inserat eingereicht";
+  const title = isGarage
+    ? isPublished
+      ? "Inserat veröffentlicht"
+      : "Inserat übermittelt"
+    : isPublished
+      ? "Inserat veröffentlicht"
+      : "Inserat eingereicht";
+
   const description = isGarage
-    ? "Ihr Inserat wurde erfolgreich übermittelt und ist jetzt live."
+    ? isPublished
+      ? "Ihr Inserat ist jetzt live."
+      : "Ihr Inserat wurde erfolgreich übermittelt und wird in Kürze veröffentlicht."
     : isPublished
       ? "Hier ist die Zusammenfassung Ihres Inserats."
       : "Ihr Inserat wurde zur Überprüfung eingereicht. Sie werden benachrichtigt, sobald es veröffentlicht wird. Dies dauert in der Regel 2-4 Stunden.";
