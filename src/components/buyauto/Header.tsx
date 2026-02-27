@@ -52,9 +52,7 @@ export default function Header() {
   const displayName = firstName || user?.email?.split('@')[0] || 'Benutzer';
 
   // Determine the create listing link based on auth state
-  const createListingHref = user
-    ? (profile?.role === "garage" ? `/garage-plan?next=${encodeURIComponent("/inserat-erstellen")}` : "/inserat-erstellen")
-    : "/auth?redirect=/inserat-erstellen";
+  const createListingHref = user ? "/inserat-erstellen" : "/auth?redirect=/inserat-erstellen";
 
   const handleCreateListingClick = async (e: React.MouseEvent) => {
     // If just opening in new tab (cmd/ctrl click), let default behavior happen

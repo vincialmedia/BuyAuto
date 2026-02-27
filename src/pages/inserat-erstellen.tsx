@@ -12,7 +12,7 @@ type GateState =
   | { kind: "redirecting" };
 
 function isSafeNextPath(input: unknown): input is string {
-  return typeof input === "string" && input.startsWith("/");
+  return typeof input === "string" && input.startsWith("/") && !input.startsWith("//");
 }
 
 export default function CreateListingPage() {
@@ -23,9 +23,16 @@ export default function CreateListingPage() {
   const nextAfterPlan = useMemo(() => "/inserat-erstellen", []);
 
   useEffect(() => {
+    if (!router.isReady) return;
     if (loading || profileLoading) return;
 
-    if (!user || profile?.role !== "garage") {
+    if (!user) {
+      setGate({ kind: "redirecting" });
+      void router.replace("/auth?redirect=" + encodeURIComponent(nextAfterPlan));
+      return;
+    }
+
+    if (profile?.role !== "garage") {
       setGate({ kind: "allowed" });
       return;
     }
@@ -42,37 +49,37 @@ export default function CreateListingPage() {
 
         if (garageError) throw garageError;
 
-        const snapshotPlan = String(garage?.plan ?? "no_plan").trim().toLowerCase();
-        const hasSnapshotPlan = snapshotPlan !== "free" && snapshotPlan !== "no_plan" && snapshotPlan !== "no plan";
-
-        if (hasSnapshotPlan) {
-          if (!cancelled) setGate({ kind: "allowed" });
-          return;
-        }
-
         const dealerId = garage?.id ?? null;
         if (!dealerId) {
           if (!cancelled) setGate({ kind: "redirecting" });
-          await router.replace(`/garage-plan?next=${encodeURIComponent(nextAfterPlan)}`);
+          await router.replace(`/garage-plan?redirect=${encodeURIComponent(nextAfterPlan)}`);
           return;
         }
 
         const { data: sub, error: subError } = await supabase
           .from("dealer_subscriptions")
-          .select("id, status")
+          .select("id, status, current_period_end")
           .eq("dealer_id", dealerId)
           .maybeSingle();
 
         if (subError) throw subError;
 
-        const hasActiveSub = Boolean(sub?.id) && sub?.status === "active";
-        if (hasActiveSub) {
+        const status = typeof sub?.status === "string" ? sub.status : null;
+        const periodEnd = typeof sub?.current_period_end === "string" ? Date.parse(sub.current_period_end) : null;
+
+        const now = Date.now();
+        const isActiveByStatus = status === "active";
+        const isStillInPaidPeriod = typeof periodEnd === "number" && Number.isFinite(periodEnd) ? periodEnd > now : false;
+
+        const entitled = isActiveByStatus || isStillInPaidPeriod;
+
+        if (entitled) {
           if (!cancelled) setGate({ kind: "allowed" });
           return;
         }
 
         if (!cancelled) setGate({ kind: "redirecting" });
-        await router.replace(`/garage-plan?next=${encodeURIComponent(nextAfterPlan)}`);
+        await router.replace(`/garage-plan?redirect=${encodeURIComponent(nextAfterPlan)}`);
       } catch {
         if (!cancelled) setGate({ kind: "allowed" });
       }
@@ -83,7 +90,7 @@ export default function CreateListingPage() {
     return () => {
       cancelled = true;
     };
-  }, [loading, profileLoading, profile?.role, router, user, nextAfterPlan]);
+  }, [router.isReady, loading, profileLoading, profile?.role, router, user, nextAfterPlan]);
 
   if (gate.kind !== "allowed") {
     return (

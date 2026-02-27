@@ -66,8 +66,14 @@ export default function GaragePlanPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!router.isReady) return;
+    if (profile === undefined) return;
+
     if (!user) {
-      router.push("/auth?mode=login");
+      const legacyNext = typeof router.query.next === "string" ? router.query.next : null;
+      const redirect = typeof router.query.redirect === "string" ? router.query.redirect : null;
+      const target = redirect || legacyNext || "/garage-plan";
+      router.replace("/auth?redirect=" + encodeURIComponent(target));
       return;
     }
 
@@ -75,10 +81,10 @@ export default function GaragePlanPage() {
       toast.error("Zugriff verweigert", {
         description: "Diese Seite ist nur für Garagen verfügbar.",
       });
-      router.push("/");
+      router.replace("/");
       return;
     }
-  }, [user, userRole, router]);
+  }, [user, userRole, router, profile]);
 
   const handleSelectPlan = async (planCode: string) => {
     if (!user) return;
