@@ -1,8 +1,17 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface StatusBadgeProps {
-  status: "draft" | "pending" | "active" | "inactive" | "sold" | "published" | "rejected" | "expired" | "archived";
+  status:
+    | "draft"
+    | "pending"
+    | "active"
+    | "inactive"
+    | "sold"
+    | "published"
+    | "rejected"
+    | "expired"
+    | "archived"
+    | "paused";
   expiresAt?: string | null;
   className?: string;
 }
@@ -26,6 +35,8 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
         return { text: "Aktiv", variant: "active" as const };
       case "inactive":
         return { text: "Inaktiv", variant: "inactive" as const };
+      case "paused":
+        return { text: "Pausiert", variant: "paused" as const };
       case "sold":
         return { text: "Verkauft", variant: "sold" as const };
       case "published":
@@ -35,7 +46,7 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
       case "archived":
         return { text: "Archiviert", variant: "archived" as const };
       case "expired":
-        return { text: "Archiviert", variant: "archived" as const };
+        return { text: "Abgelaufen", variant: "expired" as const };
       default:
         return { text: "Unbekannt", variant: "pending" as const };
     }
@@ -43,23 +54,27 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
 
   const { text, variant } = getStatusDisplay();
 
-  const variants = {
-    draft: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
-    pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-    active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    inactive: "bg-neutral-100 text-neutral-600 border-neutral-200",
-    sold: "bg-blue-50 text-blue-700 border-blue-200",
-    published: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    rejected: "bg-red-50 text-red-600 border-red-200",
-    expired: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
-    archived: "bg-neutral-100 text-neutral-800 border-neutral-200/60",
+  const variants: Record<
+    string,
+    { container: string; dot?: string }
+  > = {
+    draft: { container: "bg-neutral-100 text-neutral-800 border-neutral-200/60" },
+    pending: { container: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    active: { container: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    inactive: { container: "bg-neutral-100 text-neutral-600 border-neutral-200" },
+    paused: { container: "bg-amber-50 text-amber-700 border-amber-200" },
+    sold: { container: "bg-blue-50 text-blue-700 border-blue-200" },
+    published: { container: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    rejected: { container: "bg-red-50 text-red-600 border-red-200" },
+    expired: { container: "bg-neutral-100 text-neutral-800 border-neutral-200/60" },
+    archived: { container: "bg-neutral-100 text-neutral-800 border-neutral-200/60" },
   };
 
   return (
     <span
       className={cn(
         "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors",
-        variants[variant],
+        variants[variant]?.container ?? variants.pending.container,
         className
       )}
     >
