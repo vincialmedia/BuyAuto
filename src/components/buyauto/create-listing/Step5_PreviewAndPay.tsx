@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useRouter } from 'next/router';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -95,19 +96,8 @@ export default function Step5_PreviewAndPay() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [mounted, setMounted] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isPreparingPayment, setIsPreparingPayment] = useState(false);
-  const [paymentInitiated, setPaymentInitiated] = useState(false);
-  const [isPublishingGarage, setIsPublishingGarage] = useState(false);
-  const [garagePublishError, setGaragePublishError] = useState<{
-    message: string;
-    code?: string | null;
-    details?: string | null;
-    hint?: string | null;
-  } | null>(null);
-
   const isGarage = profile?.role === 'garage';
+  const listingStatus = (data as any)?.status as string | undefined;
 
   const dealType = data.deal_type ?? "direct_purchase";
   const financingType = dealType === "direct_purchase" ? (data.financing_type ?? "cash") : null;
@@ -311,7 +301,7 @@ export default function Step5_PreviewAndPay() {
         case 'succeeded':
           toast({ title: "Zahlung erfolgreich!", description: "Ihr Inserat wird bearbeitet." });
           
-          const listingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
+          const listingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listinging_id;
           if (listingId && user) {
             const freshListingData = await getListingByIdForOwner(listingId, user);
             if (freshListingData) {
@@ -454,6 +444,12 @@ export default function Step5_PreviewAndPay() {
   const handleGaragePublish = async () => {
     if (!user || !data.id) return;
 
+    if (listingStatus === "published") {
+      toast({ title: "Inserat ist bereits veröffentlicht", description: "Du findest es im Dashboard." });
+      setIsComplete(true);
+      return;
+    }
+
     setGaragePublishError(null);
     setIsPublishingGarage(true);
     try {
@@ -492,7 +488,7 @@ export default function Step5_PreviewAndPay() {
       }
 
       // Call RPC to enforce limit / entitlements
-      const { error } = await supabase
+      const { data: rpcResult, error } = await supabase
         .rpc("publish_garage_listing", { listing_id: data.id });
 
       if (error) {
@@ -532,32 +528,12 @@ export default function Step5_PreviewAndPay() {
         return;
       }
 
-      const { data: publishedRow, error: publishError } = await supabase
-        .from("listings")
-        .update({ status: "published", seller_type: "garage" })
-        .eq("id", data.id)
-        .select("id, status, seller_type")
-        .maybeSingle();
-
-      if (publishError) throw publishError;
-
-      if (!publishedRow?.id) {
-        const message = "Inserat konnte nicht veröffentlicht werden (keine Berechtigung oder Inserat nicht gefunden).";
-        setGaragePublishError({ message });
-        toast({
-          title: "Veröffentlichen fehlgeschlagen",
-          description: message,
-          variant: "destructive",
-          action: (
-            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/garage")}>
-              Verwalten
-            </Button>
-          ),
-        });
-        return;
+      const typed = rpcResult as Tables<"listings"> | null;
+      if (typed?.id) {
+        updateData({ status: typed.status ?? "published", seller_type: typed.seller_type ?? "garage" } as any);
+      } else {
+        updateData({ status: "published", seller_type: "garage" } as any);
       }
-
-      updateData({ status: publishedRow.status ?? "published", seller_type: publishedRow.seller_type ?? "garage" });
 
       toast({
         title: "Inserat veröffentlicht!",
