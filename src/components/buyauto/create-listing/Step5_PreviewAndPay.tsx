@@ -1,20 +1,20 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import dynamic from 'next/dynamic';
-import { useWizard } from './ListingWizard';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertTriangle, Check, Star, AlertCircle, ExternalLink } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Badge } from '@/components/ui/badge';
-import Image from 'next/image';
-import { pricingPlans, PREMIUM_BOOST_PRICE } from '@/lib/buyauto/stripe_config';
-import type { Plan } from '@/lib/buyauto/stripe_config';
-import { cantons } from '@/lib/buyauto/data';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { useWizard } from "./ListingWizard";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertTriangle, Check, Star } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
+import { pricingPlans, PREMIUM_BOOST_PRICE } from "@/lib/buyauto/stripe_config";
+import type { Plan } from "@/lib/buyauto/stripe_config";
+import { cantons } from "@/lib/buyauto/data";
+import { useToast } from "@/hooks/use-toast";
 import { getListingByIdForOwner } from "@/services/createListingService";
-import type { PaymentIntent } from '@stripe/stripe-js';
-import { supabase } from '@/integrations/supabase/client';
-import { useRouter } from 'next/router';
+import type { PaymentIntent } from "@stripe/stripe-js";
+import { supabase } from "@/integrations/supabase/client";
+import { useRouter } from "next/router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import type { Tables } from "@/integrations/supabase/types";
@@ -95,6 +95,18 @@ export default function Step5_PreviewAndPay() {
   const { user, loading: userLoading, profile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+
+  const [mounted, setMounted] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
+  const [isPreparingPayment, setIsPreparingPayment] = useState(false);
+  const [isPublishingGarage, setIsPublishingGarage] = useState(false);
+  const [garagePublishError, setGaragePublishError] = useState<{
+    message: string;
+    code?: string | null;
+    details?: string | null;
+    hint?: string | null;
+  } | null>(null);
 
   const isGarage = profile?.role === 'garage';
   const listingStatus = (data as any)?.status as string | undefined;
@@ -301,7 +313,7 @@ export default function Step5_PreviewAndPay() {
         case 'succeeded':
           toast({ title: "Zahlung erfolgreich!", description: "Ihr Inserat wird bearbeitet." });
           
-          const listingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listinging_id;
+          const listingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
           if (listingId && user) {
             const freshListingData = await getListingByIdForOwner(listingId, user);
             if (freshListingData) {
