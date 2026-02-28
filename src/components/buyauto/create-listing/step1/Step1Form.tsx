@@ -20,9 +20,9 @@ import type { DealType, FinancingType, ListingData } from "@/lib/buyauto/types";
 const vehicleStepSchema = z.object({
   vin: z
     .string()
-    .min(17, "VIN muss 17 Zeichen haben")
-    .max(17, "VIN muss 17 Zeichen haben")
-    .regex(/^[A-Z0-9]{17}$/, "VIN muss 17 Zeichen (A-Z, 0-9) haben"),
+    .trim()
+    .toUpperCase()
+    .refine((v) => v.length === 0 || /^[A-Z0-9]{17}$/.test(v), "VIN muss 17 Zeichen (A-Z, 0-9) haben"),
 
   make_id: z.string().min(1, "Marke ist erforderlich"),
   model_id: z.string().min(1, "Modell ist erforderlich"),
@@ -368,6 +368,7 @@ export function Step1Form() {
 
     const vin = vinInput.trim().toUpperCase();
     setVinInput(vin);
+    setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
     setVinError(null);
 
     if (!vin) {
@@ -523,10 +524,11 @@ export function Step1Form() {
 
     if (profileLoading) return;
 
-    if (!values.vin || !/^[A-Z0-9]{17}$/.test(values.vin)) {
+    const normalizedVin = (values.vin ?? "").trim().toUpperCase();
+    if (normalizedVin.length > 0 && !/^[A-Z0-9]{17}$/.test(normalizedVin)) {
       toast({
         title: "Ungültige VIN",
-        description: "Bitte gib eine gültige VIN ein (17 Zeichen).",
+        description: "Bitte gib eine gültige VIN ein (17 Zeichen) oder lasse das Feld leer.",
         variant: "destructive",
       });
       return;
@@ -535,7 +537,7 @@ export function Step1Form() {
     if (!values.make_id || !values.model_id) {
       toast({
         title: "Fahrzeugdaten fehlen",
-        description: "Bitte VIN erneut laden.",
+        description: "Bitte wähle mindestens Marke und Modell aus (oder lade sie per VIN).",
         variant: "destructive",
       });
       return;
@@ -555,7 +557,7 @@ export function Step1Form() {
 
       updateData({
         ...values,
-        vin: values.vin,
+        vin: normalizedVin,
 
         deal_type: nextDealType,
         financing_type: nextFinancingType,
@@ -584,7 +586,7 @@ export function Step1Form() {
       if (isNewListing) {
         const nextDraftData: Partial<ListingData> = {
           ...(data as any),
-          vin: values.vin,
+          vin: normalizedVin,
 
           deal_type: nextDealType,
           financing_type: nextFinancingType,
@@ -639,7 +641,7 @@ export function Step1Form() {
         financing_type: nextFinancingType,
         leasing_offer: nextDealType === "lease_takeover" ? null : ((data as any).leasing_offer ?? null),
 
-        vin: values.vin,
+        vin: normalizedVin ? normalizedVin : null,
         make_id: values.make_id as any,
         model_id: values.model_id as any,
         variant_id: values.variant_id ? (values.variant_id as any) : null,
@@ -664,6 +666,7 @@ export function Step1Form() {
       updateData({
         ...payload,
         id: result.id,
+        vin: normalizedVin,
       } as any);
 
       toast({
@@ -673,7 +676,7 @@ export function Step1Form() {
 
       if (draftId) {
         try {
-          await updateListingDraft({ user, draftId, data: { ...(data as any), ...payload } });
+          await updateListingDraft({ user, draftId, data: { ...(data as any), ...payload, vin: normalizedVin } });
         } catch {
           setIsSubmitting(false);
           return;
@@ -701,24 +704,34 @@ export function Step1Form() {
     return <div className="text-sm text-neutral-600">Lade Profil...</div>;
   }
 
-  const canProceed = Boolean(watch("vin")) && Boolean(watch("make_id")) && Boolean(watch("model_id"));
+  const vinOk = typeof vinInput === "string" ? vinInput.trim().length === 0 || /^[A-Z0-9]{17}$/.test(vinInput.trim().toUpperCase()) : true;
+  const canProceed = Boolean(watch("make_id")) && Boolean(watch("model_id")) && vinOk;
 
   return (
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Fahrzeugdaten</h2>
-        <p className="text-neutral-600 font-light leading-relaxed">Wir laden die Fahrzeugdaten per VIN – danach kannst du alles prüfen.</p>
+        <p className="text-neutral-600 font-light leading-relaxed">VIN ist optional – wenn du sie hast, füllen wir viele Felder automatisch aus.</p>
       </div>
 
       <div className="rounded-3xl border border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 p-4 md:p-6 shadow-sm space-y-3">
         <div className="space-y-2">
-          <div className="text-sm font-medium text-neutral-900">VIN (Fahrgestellnummer) *</div>
+          <div className="text-sm font-medium text-neutral-900">VIN (Fahrgestellnummer) (optional)</div>
 
           <div className="flex flex-col gap-2">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-stretch">
               <Input
                 value={vinInput}
-                onChange={(e) => setVinInput(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value.toUpperCase();
+                  setVinInput(next);
+                  setValue("vin", next.trim().toUpperCase(), { shouldValidate: true, shouldDirty: true });
+                }}
+                onBlur={() => {
+                  const normalized = vinInput.trim().toUpperCase();
+                  setVinInput(normalized);
+                  setValue("vin", normalized, { shouldValidate: true, shouldDirty: true });
+                }}
                 placeholder="z.B. WBA... (17 Zeichen)"
                 className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl w-full"
                 autoComplete="off"
@@ -735,7 +748,10 @@ export function Step1Form() {
               </Button>
             </div>
 
-            <div className="text-xs text-neutral-700/80 font-light">Pflichtfeld – wir laden die Fahrzeugdaten automatisch.</div>
+            <div className="text-xs text-neutral-700/80 font-light">Optional – wenn du deine VIN hast, können wir Marke/Modell automatisch erkennen.</div>
+            {vinStatus === "success" ? (
+              <div className="text-xs text-emerald-700 font-light">VIN erkannt – Felder wurden automatisch vorausgefüllt.</div>
+            ) : null}
             {vinError ? <div className="text-sm text-red-600">{vinError}</div> : null}
           </div>
         </div>
@@ -768,7 +784,7 @@ export function Step1Form() {
 
         {!canProceed ? (
           <div className="text-sm text-neutral-600">
-            Bitte fülle VIN, Marke und Modell aus, bevor du weitergehst.
+            Bitte wähle mindestens Marke und Modell aus, bevor du weitergehst.
           </div>
         ) : null}
       </form>
