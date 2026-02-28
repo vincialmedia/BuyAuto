@@ -263,7 +263,8 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
 
     let query = supabase
       .from(PUBLIC_LISTINGS_VIEW)
-      .select("*", { count: "exact" });
+      .select("*", { count: "exact" })
+      .eq("status", "published");
 
     if (monthlyOnly) {
       query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing,leasing_offer->>enabled.eq.true)");
@@ -373,7 +374,8 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
     let query = supabase
       .from(PUBLIC_LISTINGS_VIEW)
       .select("*", { count: "exact" })
-      .eq("garage_id", garageId);
+      .eq("garage_id", garageId)
+      .eq("status", "published");
 
     if (monthlyOnly) {
       query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing,leasing_offer->>enabled.eq.true)");

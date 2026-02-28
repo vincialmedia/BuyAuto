@@ -588,6 +588,8 @@ export type Database = {
           model: string
           model_id: string | null
           moderation_note: string | null
+          pause_until: string | null
+          paused_at: string | null
           payment_status: string | null
           power_hp: number | null
           premium: boolean
@@ -643,6 +645,8 @@ export type Database = {
           model: string
           model_id?: string | null
           moderation_note?: string | null
+          pause_until?: string | null
+          paused_at?: string | null
           payment_status?: string | null
           power_hp?: number | null
           premium?: boolean
@@ -698,6 +702,8 @@ export type Database = {
           model?: string
           model_id?: string | null
           moderation_note?: string | null
+          pause_until?: string | null
+          paused_at?: string | null
           payment_status?: string | null
           power_hp?: number | null
           premium?: boolean
@@ -1424,6 +1430,7 @@ export type Database = {
       }
       admin_is_admin: { Args: { p_user_id: string }; Returns: boolean }
       archive_expired_listings: { Args: never; Returns: Json }
+      archive_listing: { Args: { p_listing_id: string }; Returns: undefined }
       ensure_dealer_premium_credits:
         | { Args: { dealer_id: string }; Returns: undefined }
         | {
@@ -1478,6 +1485,10 @@ export type Database = {
         Returns: undefined
       }
       normalize_vehicle_name: { Args: { input: string }; Returns: string }
+      pause_listing: {
+        Args: { p_listing_id: string; p_pause_days: number }
+        Returns: undefined
+      }
       publish_garage_listing: { Args: { listing_id: string }; Returns: Json }
       request_dealer_plan_change: {
         Args: { dealer_id: string; to_plan_code: string }
@@ -1536,6 +1547,7 @@ export type Database = {
         Args: { p_dealer_id: string }
         Returns: undefined
       }
+      unpause_listing: { Args: { p_listing_id: string }; Returns: undefined }
       upgrade_to_garage: {
         Args: { p_city: string; p_contact_email: string; p_garage_name: string }
         Returns: Json
@@ -1564,6 +1576,7 @@ export type Database = {
         | "expired"
         | "archived"
         | "draft"
+        | "paused"
       service_inquiry_type: "uebernahme_begleiten" | "leasing_exit_full_service"
     }
     CompositeTypes: {
@@ -1716,6 +1729,7 @@ export const Constants = {
         "expired",
         "archived",
         "draft",
+        "paused",
       ],
       service_inquiry_type: [
         "uebernahme_begleiten",
