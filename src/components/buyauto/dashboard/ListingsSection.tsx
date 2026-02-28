@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive } from "lucide-react";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
@@ -46,6 +46,12 @@ export default function ListingsSection() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<string | null>(null);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
+  const [pauseDays, setPauseDays] = useState<number>(30);
+  const [listingToArchive, setListingToArchive] = useState<string | null>(null);
+  const [listingToPause, setListingToPause] = useState<string | null>(null);
+  const [listingToUnpause, setListingToUnpause] = useState<string | null>(null);
 
   const loadUserListings = useCallback(async () => {
     if (!user) return;
@@ -100,6 +106,50 @@ export default function ListingsSection() {
     // In a real app, this would open Stripe checkout
   };
 
+  const handleArchive = useCallback(async (listingId: string) => {
+    setActionLoading(listingId);
+    try {
+      await dashboardService.archiveListing(listingId);
+      await loadUserListings();
+      setArchiveDialogOpen(false);
+      setListingToArchive(null);
+    } catch (error) {
+      console.error("Error archiving listing:", error);
+      alert("Fehler beim Archivieren des Inserats.");
+    } finally {
+      setActionLoading(null);
+    }
+  }, [loadUserListings]);
+
+  const handlePause = useCallback(async (listingId: string, days: number) => {
+    setActionLoading(listingId);
+    try {
+      await dashboardService.pauseListing(listingId, days);
+      await loadUserListings();
+      setPauseDialogOpen(false);
+      setListingToPause(null);
+    } catch (error) {
+      console.error("Error pausing listing:", error);
+      alert("Fehler beim Pausieren des Inserats.");
+    } finally {
+      setActionLoading(null);
+    }
+  }, [loadUserListings]);
+
+  const handleUnpause = useCallback(async (listingId: string) => {
+    setActionLoading(listingId);
+    try {
+      await dashboardService.unpauseListing(listingId);
+      await loadUserListings();
+      setListingToUnpause(null);
+    } catch (error) {
+      console.error("Error unpausing listing:", error);
+      alert("Fehler beim Reaktivieren des Inserats.");
+    } finally {
+      setActionLoading(null);
+    }
+  }, [loadUserListings]);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('de-CH', {
       style: 'currency',
@@ -123,6 +173,10 @@ export default function ListingsSection() {
     if (listing.status === 'expired' || listing.status === "archived") return true;
     if (!listing.expires_at) return false;
     return new Date(listing.expires_at) <= new Date();
+  };
+
+  const isPaused = (listing: ListingDetail) => {
+    return (listing.status as any) === "paused";
   };
 
   const getPlanBadge = (listing: ListingDetail) => {
@@ -319,6 +373,41 @@ export default function ListingsSection() {
                                   Um 90 Tage verlängern
                                 </DropdownMenuItem>
                               )}
+                              {!archived && !isPaused(listing) && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setListingToPause(listing.id);
+                                    setPauseDays(30);
+                                    setPauseDialogOpen(true);
+                                  }}
+                                  disabled={actionLoading === listing.id}
+                                >
+                                  <Pause className="w-4 h-4 mr-2 text-neutral-700" />
+                                  Inserat pausieren
+                                </DropdownMenuItem>
+                              )}
+                              {isPaused(listing) && (
+                                <DropdownMenuItem
+                                  onClick={() => setListingToUnpause(listing.id)}
+                                  disabled={actionLoading === listing.id}
+                                >
+                                  <Play className="w-4 h-4 mr-2 text-emerald-600" />
+                                  Entpausieren
+                                </DropdownMenuItem>
+                              )}
+                              {!archived && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setListingToArchive(listing.id);
+                                    setArchiveDialogOpen(true);
+                                  }}
+                                  disabled={actionLoading === listing.id}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Archive className="w-4 h-4 mr-2" />
+                                  Archivieren
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 onClick={() => {
@@ -360,6 +449,83 @@ export default function ListingsSection() {
               disabled={actionLoading === listingToDelete}
             >
               {actionLoading === listingToDelete ? 'Wird gelöscht...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inserat archivieren</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-semibold text-neutral-900">
+                Dieses Inserat wird dauerhaft archiviert. Diese Aktion kann nicht rückgängig gemacht werden.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setListingToArchive(null)}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => listingToArchive && handleArchive(listingToArchive)}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={actionLoading === listingToArchive}
+            >
+              {actionLoading === listingToArchive ? "Wird archiviert..." : "Ja, archivieren"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inserat pausieren</AlertDialogTitle>
+            <AlertDialogDescription>
+              Während der Pause ist das Inserat nicht sichtbar. Es wird nach Ablauf automatisch wieder aktiviert und die
+              Laufzeit um die Pausenzeit verlängert (max. 90 Tage).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[7, 14, 30, 60, 90].map((d) => (
+              <Button
+                key={d}
+                type="button"
+                variant={pauseDays === d ? "default" : "outline"}
+                className="rounded-2xl"
+                onClick={() => setPauseDays(d)}
+              >
+                {d} Tage
+              </Button>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setListingToPause(null)}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => listingToPause && handlePause(listingToPause, pauseDays)}
+              disabled={actionLoading === listingToPause}
+            >
+              {actionLoading === listingToPause ? "Wird pausiert..." : "Pausieren"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={Boolean(listingToUnpause)} onOpenChange={(open) => { if (!open) setListingToUnpause(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inserat reaktivieren</AlertDialogTitle>
+            <AlertDialogDescription>
+              Wenn du das Inserat wieder aktivierst, verlängert sich das Ablaufdatum um die Pausenzeit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => listingToUnpause && handleUnpause(listingToUnpause)}
+              disabled={actionLoading === listingToUnpause}
+            >
+              {actionLoading === listingToUnpause ? "Wird aktiviert..." : "Reaktivieren"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

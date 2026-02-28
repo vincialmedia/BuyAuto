@@ -23,6 +23,8 @@ export interface DashboardListing {
   premium: boolean;
   is_premium: boolean;
   premium_until: string | null;
+  paused_at?: string | null;
+  pause_until?: string | null;
   expires_at: string | null;
   status: DashboardListingStatus;
   created_at: string;
@@ -129,6 +131,18 @@ async function getUserListings(): Promise<ListingDetail[]> {
 
 export const dashboardService = {
   getUserListings,
+  async archiveListing(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("archive_listing", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async pauseListing(listingId: string, pauseDays: number): Promise<void> {
+    const { error } = await supabase.rpc("pause_listing", { p_listing_id: listingId, p_pause_days: pauseDays });
+    if (error) throw error;
+  },
+  async unpauseListing(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("unpause_listing", { p_listing_id: listingId });
+    if (error) throw error;
+  },
   async getDashboardStats(): Promise<DashboardStats> {
     const {
       data: { user },
