@@ -326,7 +326,11 @@ export default function ListingsSection() {
                             </Badge>
                             {listing.expires_at && (
                               <span className="text-xs text-neutral-500">
-                                Läuft ab: {formatDate(listing.expires_at)}
+                                {isPaused(listing) ? (
+                                  <>Pausiert</>
+                                ) : (
+                                  <>Läuft ab: {formatDate(listing.expires_at)}</>
+                                )}
                               </span>
                             )}
                           </div>
