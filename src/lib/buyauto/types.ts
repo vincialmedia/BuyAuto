@@ -36,7 +36,7 @@ export interface Listing {
   year: number;
   pricePerMonthCHF: number;
   remainingMonths: number;
-  remaining_km?: number;
+  remaining_km?: number | null;
   location: string;
   mileageKm: number;
   fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
@@ -101,7 +101,7 @@ export interface ListingData {
   price_per_month_chf?: number;
   purchase_price_chf?: number | null;
   remaining_months?: number;
-  remaining_km?: number;
+  remaining_km?: number | null;
   deposit_chf?: number;
   location?: string;
   canton_code?: string;

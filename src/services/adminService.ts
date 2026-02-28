@@ -400,6 +400,23 @@ export const adminService = {
     return data as AdminListing;
   },
 
+  async adminUpdateListingStatus(listingId: string, input: { status: "pending" | "published" | "rejected" | "archived"; moderationNote?: string | null }): Promise<void> {
+    const response = await fetch("/api/admin/listings/update-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        listing_id: listingId,
+        status: input.status,
+        moderation_note: input.moderationNote ?? null,
+      }),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error || "Failed to update listing status");
+    }
+  },
+
   async updateListingBusinessEditableFields(id: string, updates: AdminBusinessEditableListingUpdate): Promise<AdminListing> {
     const { data, error } = await supabase
       .from("listings")

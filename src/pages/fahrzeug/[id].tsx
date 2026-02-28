@@ -27,6 +27,7 @@ const serializeListing = (listing: ListingDetail | null): ListingDetail | null =
     imageUrl: listing.imageUrl ?? null,
     depositCHF: listing.depositCHF ?? null,
     cover_image_url: (listing as unknown as { cover_image_url?: string | null }).cover_image_url ?? null,
+    remaining_km: (listing as unknown as { remaining_km?: number | null }).remaining_km ?? null,
   };
 };
 

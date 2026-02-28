@@ -124,7 +124,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      await adminService.updateListingDetails(id, { status: newStatus as any });
+      await adminService.adminUpdateListingStatus(id, { status: newStatus as any });
       toast({
         title: "Status geändert",
         description: `Status wurde auf "${newStatus}" geändert.`
