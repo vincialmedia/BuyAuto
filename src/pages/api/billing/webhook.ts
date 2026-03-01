@@ -118,54 +118,120 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const metadata = session.metadata ?? {};
       const kind = safeString(metadata.kind);
-      if (kind !== "dealer_plan") break;
+      if (kind === "dealer_plan") {
+        const dealerId = safeString(metadata.dealer_id);
+        const planCode = safeString(metadata.plan_code);
+        const stripeCustomerId = typeof session.customer === "string" ? session.customer : null;
+        const stripeSubscriptionId = typeof session.subscription === "string" ? session.subscription : null;
 
-      const dealerId = safeString(metadata.dealer_id);
-      const planCode = safeString(metadata.plan_code);
-      const stripeCustomerId = typeof session.customer === "string" ? session.customer : null;
-      const stripeSubscriptionId = typeof session.subscription === "string" ? session.subscription : null;
+        if (!dealerId || !planCode || !stripeCustomerId || !stripeSubscriptionId) {
+          console.error("Webhook: Missing dealer_plan metadata on checkout.session.completed", {
+            dealerId,
+            planCode,
+            stripeCustomerId,
+            stripeSubscriptionId,
+          });
+          break;
+        }
 
-      if (!dealerId || !planCode || !stripeCustomerId || !stripeSubscriptionId) {
-        console.error("Webhook: Missing dealer_plan metadata on checkout.session.completed", {
-          dealerId,
-          planCode,
-          stripeCustomerId,
-          stripeSubscriptionId,
-        });
+        const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+
+        const currentPeriodStartIso = new Date(subscription.current_period_start * 1000).toISOString();
+        const currentPeriodEndIso = new Date(subscription.current_period_end * 1000).toISOString();
+
+        const { error: upsertSubError } = await supabaseAdmin
+          .from("dealer_subscriptions")
+          .upsert(
+            {
+              dealer_id: dealerId,
+              plan_id: safeString(metadata.plan_id) ?? null,
+              status: mapStripeSubscriptionStatus(subscription.status),
+              current_period_start: currentPeriodStartIso,
+              current_period_end: currentPeriodEndIso,
+              cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+              stripe_customer_id: stripeCustomerId,
+              stripe_subscription_id: stripeSubscriptionId,
+              cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
+              canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+              ended_at: subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null,
+              grace_ends_at: subscription.ended_at ? addDaysIso(new Date(subscription.ended_at * 1000).toISOString(), 5) : null,
+            },
+            { onConflict: "dealer_id" }
+          );
+
+        if (upsertSubError) {
+          console.error("Webhook: Failed to upsert dealer subscription", upsertSubError);
+          break;
+        }
+
+        await applyDealerPlanSnapshot({ supabaseAdmin, dealerId, planCode });
+
         break;
       }
 
-      const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+      if (kind === "listing_premium_upgrade") {
+        const listingId = safeString(metadata.listing_id);
 
-      const currentPeriodStartIso = new Date(subscription.current_period_start * 1000).toISOString();
-      const currentPeriodEndIso = new Date(subscription.current_period_end * 1000).toISOString();
+        if (!listingId) {
+          console.error("Webhook: Missing listing_id for listing_premium_upgrade", { sessionId: session.id });
+          break;
+        }
 
-      const { error: upsertSubError } = await supabaseAdmin
-        .from("dealer_subscriptions")
-        .upsert(
-          {
-            dealer_id: dealerId,
-            plan_id: safeString(metadata.plan_id) ?? null,
-            status: mapStripeSubscriptionStatus(subscription.status),
-            current_period_start: currentPeriodStartIso,
-            current_period_end: currentPeriodEndIso,
-            cancel_at_period_end: subscription.cancel_at_period_end ?? false,
-            stripe_customer_id: stripeCustomerId,
-            stripe_subscription_id: stripeSubscriptionId,
-            cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
-            canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
-            ended_at: subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null,
-            grace_ends_at: subscription.ended_at ? addDaysIso(new Date(subscription.ended_at * 1000).toISOString(), 5) : null,
-          },
-          { onConflict: "dealer_id" }
-        );
+        const paidAmountCents = typeof session.amount_total === "number" ? session.amount_total : null;
+        const amountChf = paidAmountCents ? Math.round(paidAmountCents / 100) : 30;
 
-      if (upsertSubError) {
-        console.error("Webhook: Failed to upsert dealer subscription", upsertSubError);
+        const { error: purchaseUpsertError } = await supabaseAdmin
+          .from("listing_premium_purchases")
+          .upsert(
+            {
+              stripe_checkout_session_id: session.id,
+              listing_id: listingId,
+              user_id: safeString(metadata.user_id),
+              amount_chf: amountChf,
+              currency: "CHF",
+            },
+            { onConflict: "stripe_checkout_session_id" }
+          );
+
+        if (purchaseUpsertError) {
+          console.error("Webhook: Failed to upsert listing_premium_purchases", purchaseUpsertError);
+        }
+
+        const { data: listing, error: listingFetchError } = await supabaseAdmin
+          .from("listings")
+          .select("id, premium_until")
+          .eq("id", listingId)
+          .maybeSingle();
+
+        if (listingFetchError) {
+          console.error("Webhook: Failed to fetch listing for premium upgrade", listingFetchError);
+          break;
+        }
+
+        const nowIso = new Date().toISOString();
+        const baseIso = listing?.premium_until && Date.parse(listing.premium_until) > Date.now() ? listing.premium_until : nowIso;
+        const newPremiumUntil = addDaysIso(baseIso, 30);
+
+        if (!newPremiumUntil) {
+          console.error("Webhook: Failed to compute new premium_until", { listingId, baseIso });
+          break;
+        }
+
+        const { error: listingUpdateError } = await supabaseAdmin
+          .from("listings")
+          .update({
+            premium: true,
+            is_premium: true,
+            premium_until: newPremiumUntil,
+          } as any)
+          .eq("id", listingId);
+
+        if (listingUpdateError) {
+          console.error("Webhook: Failed to update listing to premium", listingUpdateError);
+        }
+
         break;
       }
-
-      await applyDealerPlanSnapshot({ supabaseAdmin, dealerId, planCode });
 
       break;
     }

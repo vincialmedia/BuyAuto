@@ -557,6 +557,58 @@ export type Database = {
           },
         ]
       }
+      listing_premium_purchases: {
+        Row: {
+          amount_chf: number
+          currency: string
+          id: string
+          listing_id: string
+          purchased_at: string
+          stripe_checkout_session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          amount_chf: number
+          currency?: string
+          id?: string
+          listing_id: string
+          purchased_at?: string
+          stripe_checkout_session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          amount_chf?: number
+          currency?: string
+          id?: string
+          listing_id?: string
+          purchased_at?: string
+          stripe_checkout_session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_premium_purchases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_premium_purchases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_premium_purchases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "public_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           archived_at: string | null

@@ -27,7 +27,8 @@ import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
 import { dashboardService } from "@/services/dashboardService";
-import { setListingPremiumUsingCredit } from "@/services/dealerSubscriptionService";
+import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
+import { getMyGarage, type Garage } from "@/services/garageService";
 
 function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: string | null }): string {
   const dealType = input.deal_type ?? "lease_takeover";
@@ -37,6 +38,18 @@ function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: s
   }
   return "Leasingübernahme";
 }
+
+function getPeriodYYYYMMUtc(date = new Date()): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}${m}`;
+}
+
+type PremiumCreditsState = {
+  used: number;
+  included: number;
+  remaining: number;
+};
 
 export default function ListingsSection() {
   const router = useRouter();
@@ -53,6 +66,9 @@ export default function ListingsSection() {
   const [listingToPause, setListingToPause] = useState<string | null>(null);
   const [listingToUnpause, setListingToUnpause] = useState<string | null>(null);
 
+  const [premiumCredits, setPremiumCredits] = useState<PremiumCreditsState | null>(null);
+  const [premiumCreditsLoading, setPremiumCreditsLoading] = useState(false);
+
   const loadUserListings = useCallback(async () => {
     if (!user) return;
 
@@ -68,11 +84,48 @@ export default function ListingsSection() {
     }
   }, [user]);
 
-  useEffect(() => {
-    if(user) {
-      loadUserListings();
+  const loadPremiumCredits = useCallback(async () => {
+    if (!user) return;
+
+    setPremiumCreditsLoading(true);
+    try {
+      const garage = await getMyGarage();
+      if (!garage?.id) {
+        setPremiumCredits({ used: 0, included: 0, remaining: 0 });
+        return;
+      }
+
+      const period = getPeriodYYYYMMUtc();
+      await ensureDealerPremiumCredits(garage as Garage, period);
+      const row = await getMyDealerPremiumCredits(garage as Garage, period);
+
+      const used = Math.max(0, Number(row?.credits_used ?? 0));
+      const included = Math.max(0, Number(row?.credits_included ?? 0));
+      const remaining = Math.max(0, included - used);
+
+      setPremiumCredits({ used, included, remaining });
+    } catch (error) {
+      console.error("Error loading premium credits:", error);
+      setPremiumCredits({ used: 0, included: 0, remaining: 0 });
+    } finally {
+      setPremiumCreditsLoading(false);
     }
-  }, [user, loadUserListings]);
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadUserListings();
+      loadPremiumCredits();
+    }
+  }, [user, loadUserListings, loadPremiumCredits]);
+
+  useEffect(() => {
+    const status = typeof router.query.premium_upgrade === "string" ? router.query.premium_upgrade : null;
+    if (!status) return;
+
+    loadUserListings();
+    loadPremiumCredits();
+  }, [router.query.premium_upgrade, loadUserListings, loadPremiumCredits]);
 
   const handleDelete = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
@@ -91,19 +144,46 @@ export default function ListingsSection() {
       setListingToDelete(null);
     }
   }, []);
-  
+
   const handleEdit = (listingId: string) => {
     router.push(`/inserat-erstellen?edit=${listingId}`);
   };
 
-  const handleUpgrade = async (listingId: string) => {
-    console.log(`Placeholder: Upgrading listing ${listingId}`);
-    // In a real app, this would open Stripe checkout
-  };
-  
+  const handleUpgrade = useCallback(async (listingId: string) => {
+    setActionLoading(listingId);
+
+    try {
+      const remainingFree = premiumCredits?.remaining ?? 0;
+
+      if (remainingFree > 0) {
+        await setListingPremiumUsingCredit(listingId);
+        await Promise.all([loadUserListings(), loadPremiumCredits()]);
+        return;
+      }
+
+      const res = await fetch("/api/billing/premium-upgrade/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listing_id: listingId }),
+      });
+
+      const json = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !json.url) {
+        const message = typeof json.error === "string" ? json.error : "Zahlung konnte nicht gestartet werden.";
+        throw new Error(message);
+      }
+
+      window.location.href = json.url;
+    } catch (error) {
+      console.error("Error upgrading listing to premium:", error);
+      alert("Fehler beim Premium-Upgrade. Bitte versuche es erneut.");
+    } finally {
+      setActionLoading(null);
+    }
+  }, [premiumCredits?.remaining, loadPremiumCredits, loadUserListings]);
+
   const handleExtend = async (listingId: string) => {
     console.log(`Placeholder: Extending listing ${listingId}`);
-    // In a real app, this would open Stripe checkout
   };
 
   const handleArchive = useCallback(async (listingId: string) => {
@@ -151,16 +231,16 @@ export default function ListingsSection() {
   }, [loadUserListings]);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('de-CH', {
-      style: 'currency',
-      currency: 'CHF',
+    return new Intl.NumberFormat("de-CH", {
+      style: "currency",
+      currency: "CHF",
       minimumFractionDigits: 0
     }).format(price);
   };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Unlimitiert";
-    return new Date(dateString).toLocaleDateString('de-CH');
+    return new Date(dateString).toLocaleDateString("de-CH");
   };
 
   const isPremium = (listing: ListingDetail) => {
@@ -170,7 +250,7 @@ export default function ListingsSection() {
   };
 
   const isExpired = (listing: ListingDetail) => {
-    if (listing.status === 'expired' || listing.status === "archived") return true;
+    if (listing.status === "expired" || listing.status === "archived") return true;
     if (!listing.expires_at) return false;
     return new Date(listing.expires_at) <= new Date();
   };
@@ -182,9 +262,9 @@ export default function ListingsSection() {
   const getPlanBadge = (listing: ListingDetail) => {
     if (listing.price_plan) {
       const planNames: { [key: string]: string } = {
-        'standard': 'Standard',
-        'extended': 'Verlängert',
-        'unlimited': 'Unlimitiert',
+        "standard": "Standard",
+        "extended": "Verlängert",
+        "unlimited": "Unlimitiert",
       };
       return planNames[listing.price_plan] || listing.price_plan;
     }
@@ -223,12 +303,27 @@ export default function ListingsSection() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-neutral-900">Meine Inserate</h2>
-          <p className="text-neutral-600">
-            {listings.length} {listings.length === 1 ? 'Inserat' : 'Inserate'} insgesamt
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
+            <p>
+              {listings.length} {listings.length === 1 ? "Inserat" : "Inserate"} insgesamt
+            </p>
+            <span className="text-neutral-300">•</span>
+            <p>
+              Premium inklusive:{" "}
+              {premiumCreditsLoading ? (
+                <span className="inline-block h-4 w-12 rounded bg-neutral-200 align-middle animate-pulse" />
+              ) : (
+                <span className="font-semibold text-neutral-900">
+                  {premiumCredits?.used ?? 0}/{premiumCredits?.included ?? 0}
+                </span>
+              )}
+            </p>
+            <span className="text-neutral-300">•</span>
+            <p>Weitere Upgrades: CHF 30 / Inserat</p>
+          </div>
         </div>
         <Button
-          onClick={() => router.push('/inserat-erstellen')}
+          onClick={() => router.push("/inserat-erstellen")}
           className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -249,7 +344,7 @@ export default function ListingsSection() {
               Erstellen Sie Ihr erstes Inserat und beginnen Sie Ihr Auto zu vermieten.
             </p>
             <Button
-              onClick={() => router.push('/inserat-erstellen')}
+              onClick={() => router.push("/inserat-erstellen")}
               className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
             >
               Erstes Inserat erstellen
@@ -259,18 +354,18 @@ export default function ListingsSection() {
       ) : (
         <div className="grid gap-6">
           {listings.map((listing) => {
-            const coverImage = listing.cover_image_url || 
+            const coverImage = listing.cover_image_url ||
               (listing.images && listing.images[listing.cover_image_index || 0]);
             const expired = isExpired(listing);
             const premium = isPremium(listing);
             const archived = listing.status === "archived" || listing.status === "expired";
 
             return (
-              <Card 
-                key={listing.id} 
+              <Card
+                key={listing.id}
                 className={`border-neutral-200/60 rounded-3xl hover:shadow-md transition-all ${
-                  expired ? 'opacity-75' : ''
-                } ${premium ? 'ring-2 ring-amber-200/50 bg-gradient-to-r from-amber-50/30 to-white' : ''}`}
+                  expired ? "opacity-75" : ""
+                } ${premium ? "ring-2 ring-amber-200/50 bg-gradient-to-r from-amber-50/30 to-white" : ""}`}
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row gap-6">
@@ -333,6 +428,11 @@ export default function ListingsSection() {
                                 )}
                               </span>
                             )}
+                            {premium && listing.premium_until && (
+                              <span className="text-xs text-amber-700">
+                                Premium bis: {formatDate(listing.premium_until)}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -358,18 +458,18 @@ export default function ListingsSection() {
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuContent align="end" className="w-56">
                               {!premium && !archived && (
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => handleUpgrade(listing.id)}
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Crown className="w-4 h-4 mr-2 text-amber-500" />
-                                  Upgrade auf Premium
+                                  {((premiumCredits?.remaining ?? 0) > 0) ? "Upgrade auf Premium (inkl.)" : "Premium für CHF 30 kaufen"}
                                 </DropdownMenuItem>
                               )}
                               {(expired || listing.duration_days !== null) && (
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => handleExtend(listing.id)}
                                   disabled={actionLoading === listing.id}
                                 >
@@ -413,7 +513,7 @@ export default function ListingsSection() {
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => {
                                   setListingToDelete(listing.id);
                                   setDeleteDialogOpen(true);
@@ -441,7 +541,7 @@ export default function ListingsSection() {
           <AlertDialogHeader>
             <AlertDialogTitle>Inserat löschen</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie dieses Inserat dauerhaft löschen möchten? 
+              Sind Sie sicher, dass Sie dieses Inserat dauerhaft löschen möchten?
               Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -452,7 +552,7 @@ export default function ListingsSection() {
               className="bg-red-500 hover:bg-red-600"
               disabled={actionLoading === listingToDelete}
             >
-              {actionLoading === listingToDelete ? 'Wird gelöscht...' : 'Löschen'}
+              {actionLoading === listingToDelete ? "Wird gelöscht..." : "Löschen"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
