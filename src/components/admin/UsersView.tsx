@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export function UsersView() {
   const [users, setUsers] = useState<UserWithStats[]>([]);
@@ -195,7 +196,7 @@ export function UsersView() {
       const {
         data: { session },
         error: sessionError,
-      } = await userManagementService.getSession();
+      } = await supabase.auth.getSession();
 
       if (sessionError) throw sessionError;
 
