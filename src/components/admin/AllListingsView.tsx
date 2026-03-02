@@ -207,6 +207,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
   const handleArchive = async () => {
     if (!archivingId) return;
     try {
+      console.log("[admin] archive listing", { id: archivingId, note: archiveReason });
       await adminService.adminUpdateListingStatus(archivingId, {
         status: "archived",
         moderationNote: archiveReason.trim() || null,
@@ -224,7 +225,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
       toast({
         variant: "destructive",
         title: "Fehler",
-        description: "Inserat konnte nicht archiviert werden.",
+        description: error instanceof Error ? error.message : "Inserat konnte nicht archiviert werden.",
       });
     }
   };
