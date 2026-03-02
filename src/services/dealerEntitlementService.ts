@@ -94,3 +94,21 @@ export function formatDateTimeDeCH(iso: string): string {
     minute: "2-digit",
   });
 }
+
+export function formatDealerEntitlementLabel(entitlement: DealerEntitlement): string {
+  if (entitlement.kind === "trial") {
+    const name = entitlement.planName ?? entitlement.planCode;
+    return `${name} (Trial bis ${formatDateTimeDeCH(entitlement.endsAt)})`;
+  }
+
+  if (entitlement.kind === "subscription") {
+    const name = entitlement.planName ?? entitlement.planCode;
+    return entitlement.endsAt ? `${name} (bis ${formatDateTimeDeCH(entitlement.endsAt)})` : name;
+  }
+
+  if (entitlement.kind === "garage_plan_field") {
+    return entitlement.planName ?? entitlement.planCode;
+  }
+
+  return "Kein Plan";
+}

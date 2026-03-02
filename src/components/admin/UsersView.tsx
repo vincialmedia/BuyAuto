@@ -307,6 +307,7 @@ export function UsersView() {
               <TableHead>E-Mail</TableHead>
               <TableHead>Rolle</TableHead>
               <TableHead>Registriert</TableHead>
+              <TableHead>Plan</TableHead>
               <TableHead className="text-center">Inserate</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
             </TableRow>
@@ -328,6 +329,11 @@ export function UsersView() {
                 </TableCell>
                 <TableCell>
                   <span className="text-sm text-neutral-600">{formatDate(user.created_at)}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-neutral-700">
+                    {user.role === "garage" ? (user.plan_label || "Kein Plan") : "—"}
+                  </span>
                 </TableCell>
                 <TableCell className="text-center">
                   <span className="font-medium text-neutral-900">{user.listings_count}</span>

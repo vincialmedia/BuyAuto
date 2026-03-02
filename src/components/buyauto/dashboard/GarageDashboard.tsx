@@ -16,7 +16,7 @@ import { dashboardService, type DashboardStats } from "@/services/dashboardServi
 import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageService";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { ListingDetail } from "@/lib/buyauto/types";
-import { formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
+import { formatDealerEntitlementLabel, formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -75,14 +75,8 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts">("active");
 
   const planLabel = useMemo(() => {
-    if (entitlement.kind === "trial") {
-      const name = entitlement.planName ?? entitlement.planCode;
-      return `${name} (Trial bis ${formatDateTimeDeCH(entitlement.endsAt)})`;
-    }
-    const raw = (garage?.plan ?? "").trim();
-    if (!raw || raw === "No_Plan" || raw === "no_plan") return "Kein Plan";
-    return raw;
-  }, [garage?.plan]);
+    return formatDealerEntitlementLabel(entitlement);
+  }, [entitlement]);
 
   const logoUrl = useMemo(() => {
     if (!garage?.id) return undefined;
@@ -152,7 +146,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     return () => {
       cancelled = true;
     };
-  }, [garage?.id]);
+  }, [garage]);
 
   // Load stats and listings for the stats tab
   useEffect(() => {
