@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Crown, Check, Zap, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { type Garage } from "@/services/garageService";
+import { formatDateTimeDeCH, getDealerEntitlement } from "@/services/dealerEntitlementService";
 
 interface GarageBillingTabProps {
   garage: Garage | null;
@@ -63,6 +65,9 @@ const PLANS = [
 
 export function GarageBillingTab({ garage }: GarageBillingTabProps) {
   const router = useRouter();
+  const [entitlementLabel, setEntitlementLabel] = useState<string | null>(null);
+  const [entitlementKind, setEntitlementKind] = useState<"trial" | "subscription" | "none">("none");
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
 
   const currentPlanId = useMemo(() => {
     // Normalize the plan ID. If null, empty, or "No_Plan", treat as null.
@@ -70,6 +75,43 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
     if (!raw || raw === "No_Plan") return null;
     return raw.toLowerCase();
   }, [garage?.plan]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const ent = await getDealerEntitlement(garage);
+        if (cancelled) return;
+        if (ent.kind === "trial") {
+          const name = ent.planName ?? ent.planCode;
+          setEntitlementLabel(`${name} (Trial bis ${formatDateTimeDeCH(ent.endsAt)})`);
+          setEntitlementKind("trial");
+          setTrialEndsAt(ent.endsAt);
+          return;
+        }
+        if (ent.kind === "subscription") {
+          const name = ent.planName ?? ent.planCode;
+          setEntitlementLabel(name);
+          setEntitlementKind("subscription");
+          setTrialEndsAt(null);
+          return;
+        }
+        setEntitlementLabel(null);
+        setEntitlementKind("none");
+        setTrialEndsAt(null);
+      } catch {
+        if (!cancelled) {
+          setEntitlementLabel(null);
+          setEntitlementKind("none");
+          setTrialEndsAt(null);
+        }
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [garage?.id]);
 
   const currentPlanDetails = useMemo(() => {
     if (!currentPlanId) return null;
@@ -88,7 +130,9 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
           <div>
             <h3 className="text-lg font-bold tracking-tight text-neutral-900">Aktueller Status</h3>
             <p className="text-sm text-neutral-600 mt-1">
-              {currentPlanId ? (
+              {entitlementLabel ? (
+                <>Sie nutzen aktuell den <span className="font-semibold">{entitlementLabel}</span>.</>
+              ) : currentPlanId ? (
                 <>Sie nutzen aktuell den <span className="font-semibold capitalize">{currentPlanDetails?.name || currentPlanId}</span> Plan.</>
               ) : (
                 "Sie haben noch keinen aktiven Plan ausgewählt."

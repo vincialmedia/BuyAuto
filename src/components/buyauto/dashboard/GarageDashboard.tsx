@@ -16,6 +16,7 @@ import { dashboardService, type DashboardStats } from "@/services/dashboardServi
 import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageService";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { ListingDetail } from "@/lib/buyauto/types";
+import { formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -50,6 +51,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
 
   const [garage, setGarage] = useState<Garage | null>(initialGarage);
   const [garageLoading, setGarageLoading] = useState(!initialGarage);
+  const [entitlement, setEntitlement] = useState<DealerEntitlement>({ kind: "none" });
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -73,8 +75,12 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts">("active");
 
   const planLabel = useMemo(() => {
+    if (entitlement.kind === "trial") {
+      const name = entitlement.planName ?? entitlement.planCode;
+      return `${name} (Trial bis ${formatDateTimeDeCH(entitlement.endsAt)})`;
+    }
     const raw = (garage?.plan ?? "").trim();
-    if (!raw || raw === "No_Plan") return "Kein Plan";
+    if (!raw || raw === "No_Plan" || raw === "no_plan") return "Kein Plan";
     return raw;
   }, [garage?.plan]);
 
@@ -125,6 +131,28 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
       cancelled = true;
     };
   }, [initialGarage]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEntitlement() {
+      if (!garage?.id) {
+        setEntitlement({ kind: "none" });
+        return;
+      }
+      try {
+        const e = await getDealerEntitlement(garage);
+        if (!cancelled) setEntitlement(e);
+      } catch {
+        if (!cancelled) setEntitlement({ kind: "none" });
+      }
+    }
+
+    loadEntitlement();
+    return () => {
+      cancelled = true;
+    };
+  }, [garage?.id]);
 
   // Load stats and listings for the stats tab
   useEffect(() => {
