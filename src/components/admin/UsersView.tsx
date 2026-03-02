@@ -174,21 +174,6 @@ export function UsersView() {
     setPlanChangeDialogOpen(true);
   };
 
-  const confirmPlanChange = async () => {
-    if (!userToChangePlan) return;
-
-    try {
-      await userManagementService.adminChangeGaragePlan(userToChangePlan.id, targetPlan);
-      toast.success(`Garage-Plan geändert: ${userToChangePlan.email} → ${targetPlan}`);
-      setPlanChangeDialogOpen(false);
-      setUserToChangePlan(null);
-      await loadUsers();
-    } catch (error) {
-      console.error("Error changing plan:", error);
-      toast.error("Fehler beim Ändern des Garage-Plans");
-    }
-  };
-
   const approveGarageTrial = async () => {
     if (!userToChangePlan) return;
 
@@ -500,9 +485,9 @@ export function UsersView() {
       <AlertDialog open={planChangeDialogOpen} onOpenChange={setPlanChangeDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Garage-Plan ändern?</AlertDialogTitle>
+            <AlertDialogTitle>Garage-Plan freischalten (30 Tage)?</AlertDialogTitle>
             <AlertDialogDescription>
-              Wählen Sie den neuen Plan für <strong>{userToChangePlan?.email}</strong>.
+              Wählen Sie den Plan für <strong>{userToChangePlan?.email}</strong>. Der Zugriff wird für <strong>30 Tage</strong> freigeschaltet. Danach muss die Garage auf der Zahlungsseite Zahlungsdetails hinterlegen.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -521,11 +506,8 @@ export function UsersView() {
 
           <AlertDialogFooter className="mt-6">
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPlanChange}>
-              Plan ändern
-            </AlertDialogAction>
             <AlertDialogAction onClick={approveGarageTrial}>
-              30 Tage Trial aktivieren
+              30 Tage freischalten
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
