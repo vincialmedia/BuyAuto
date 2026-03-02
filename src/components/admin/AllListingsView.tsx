@@ -53,6 +53,9 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
   const [declineModalOpen, setDeclineModalOpen] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
   const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+  const [archivingId, setArchivingId] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -180,6 +183,12 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
     setDeclineModalOpen(true);
   };
 
+  const openArchiveModal = (id: string) => {
+    setArchivingId(id);
+    setArchiveReason("");
+    setArchiveModalOpen(true);
+  };
+
   const handleDecline = async () => {
     if (!decliningId) return;
     try {
@@ -192,6 +201,31 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
     } catch (error) {
       console.error("Error declining listing:", error);
       toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht abgelehnt werden." });
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!archivingId) return;
+    try {
+      await adminService.adminUpdateListingStatus(archivingId, {
+        status: "archived",
+        moderationNote: archiveReason.trim() || null,
+      });
+      toast({
+        title: "Archiviert",
+        description: "Das Inserat wurde archiviert.",
+      });
+      setArchiveModalOpen(false);
+      setArchivingId(null);
+      loadListings();
+      onStatsUpdate();
+    } catch (error) {
+      console.error("Error archiving listing:", error);
+      toast({
+        variant: "destructive",
+        title: "Fehler",
+        description: "Inserat konnte nicht archiviert werden.",
+      });
     }
   };
 
@@ -425,6 +459,10 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
                               <Plus className="w-4 h-4 mr-2" />
                               +90 Tage
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openArchiveModal(listing.id)}>
+                              <Calendar className="w-4 h-4 mr-2" />
+                              Archivieren
+                            </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => openDeleteModal(listing.id)}
                               className="text-red-600"
@@ -522,6 +560,34 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
               <Button variant="destructive" onClick={handleDecline}>
                 <Minus className="w-4 h-4 mr-2" />
                 Ablehnen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={archiveModalOpen} onOpenChange={setArchiveModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Inserat archivieren</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-600">
+              Optional: Notiz (intern). Das Inserat wird auf "archived" gesetzt.
+            </p>
+            <Textarea value={archiveReason} onChange={(e) => setArchiveReason(e.target.value)} className="min-h-[120px]" />
+            <div className="flex space-x-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setArchiveModalOpen(false);
+                  setArchivingId(null);
+                }}
+              >
+                Abbrechen
+              </Button>
+              <Button variant="destructive" onClick={handleArchive}>
+                Archivieren
               </Button>
             </div>
           </div>
