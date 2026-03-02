@@ -192,9 +192,19 @@ export function UsersView() {
     if (!userToChangePlan) return;
 
     try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await userManagementService.getSession();
+
+      if (sessionError) throw sessionError;
+
+      const token = session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
       const response = await fetch("/api/admin/approve-garage-trial", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ user_id: userToChangePlan.id, plan_code: targetPlan, duration_days: 30 }),
       });
 
