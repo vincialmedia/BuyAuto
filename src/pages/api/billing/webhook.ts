@@ -180,54 +180,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const paidAmountCents = typeof session.amount_total === "number" ? session.amount_total : null;
         const amountChf = paidAmountCents ? Math.round(paidAmountCents / 100) : 30;
 
-        const { error: purchaseUpsertError } = await supabaseAdmin
-          .from("listing_premium_purchases")
-          .upsert(
-            {
-              stripe_checkout_session_id: session.id,
-              listing_id: listingId,
-              user_id: safeString(metadata.user_id),
-              amount_chf: amountChf,
-              currency: "CHF",
-            },
-            { onConflict: "stripe_checkout_session_id" }
-          );
+        const { error: applyError } = await supabaseAdmin.rpc("apply_listing_premium_purchase", {
+          stripe_checkout_session_id: session.id,
+          listing_id: listingId,
+          user_id: safeString(metadata.user_id),
+          amount_chf: amountChf,
+        });
 
-        if (purchaseUpsertError) {
-          console.error("Webhook: Failed to upsert listing_premium_purchases", purchaseUpsertError);
-        }
-
-        const { data: listing, error: listingFetchError } = await supabaseAdmin
-          .from("listings")
-          .select("id, premium_until")
-          .eq("id", listingId)
-          .maybeSingle();
-
-        if (listingFetchError) {
-          console.error("Webhook: Failed to fetch listing for premium upgrade", listingFetchError);
-          break;
-        }
-
-        const nowIso = new Date().toISOString();
-        const baseIso = listing?.premium_until && Date.parse(listing.premium_until) > Date.now() ? listing.premium_until : nowIso;
-        const newPremiumUntil = addDaysIso(baseIso, 30);
-
-        if (!newPremiumUntil) {
-          console.error("Webhook: Failed to compute new premium_until", { listingId, baseIso });
-          break;
-        }
-
-        const { error: listingUpdateError } = await supabaseAdmin
-          .from("listings")
-          .update({
-            premium: true,
-            is_premium: true,
-            premium_until: newPremiumUntil,
-          } as any)
-          .eq("id", listingId);
-
-        if (listingUpdateError) {
-          console.error("Webhook: Failed to update listing to premium", listingUpdateError);
+        if (applyError) {
+          console.error("Webhook: Failed to apply listing premium purchase", { listingId, sessionId: session.id, applyError });
         }
 
         break;

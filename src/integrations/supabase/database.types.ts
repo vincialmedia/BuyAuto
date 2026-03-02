@@ -1481,6 +1481,15 @@ export type Database = {
         Returns: Json
       }
       admin_is_admin: { Args: { p_user_id: string }; Returns: boolean }
+      apply_listing_premium_purchase: {
+        Args: {
+          amount_chf: number
+          listing_id: string
+          stripe_checkout_session_id: string
+          user_id: string
+        }
+        Returns: undefined
+      }
       archive_expired_listings: { Args: never; Returns: Json }
       archive_listing: { Args: { p_listing_id: string }; Returns: undefined }
       ensure_dealer_premium_credits:

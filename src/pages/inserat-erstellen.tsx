@@ -73,6 +73,26 @@ export default function CreateListingPage() {
 
         const entitled = isActiveByStatus || isStillInPaidPeriod;
 
+        if (!entitled) {
+          const { data: overrides, error: overrideError } = await supabase
+            .from("dealer_admin_overrides")
+            .select("id, ends_at")
+            .eq("dealer_id", dealerId)
+            .order("ends_at", { ascending: false })
+            .limit(1);
+
+          if (overrideError) throw overrideError;
+
+          const latest = Array.isArray(overrides) && overrides.length > 0 ? overrides[0] : null;
+          const overrideEnds = latest?.ends_at ? Date.parse(String(latest.ends_at)) : null;
+          const overrideActive = typeof overrideEnds === "number" && Number.isFinite(overrideEnds) ? overrideEnds > now : false;
+
+          if (overrideActive) {
+            if (!cancelled) setGate({ kind: "allowed" });
+            return;
+          }
+        }
+
         if (entitled) {
           if (!cancelled) setGate({ kind: "allowed" });
           return;

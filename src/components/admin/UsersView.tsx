@@ -188,6 +188,32 @@ export function UsersView() {
     }
   };
 
+  const approveGarageTrial = async () => {
+    if (!userToChangePlan) return;
+
+    try {
+      const response = await fetch("/api/admin/approve-garage-trial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userToChangePlan.id, plan_code: targetPlan, duration_days: 30 }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Failed to approve trial");
+      }
+
+      toast.success(`Trial aktiviert (30 Tage): ${userToChangePlan.email} → ${targetPlan}`);
+      setPlanChangeDialogOpen(false);
+      setUserToChangePlan(null);
+      await loadUsers();
+    } catch (error) {
+      console.error("Error approving garage trial:", error);
+      toast.error("Fehler beim Aktivieren des Trials");
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("de-CH", {
       day: "2-digit",
@@ -486,6 +512,9 @@ export function UsersView() {
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction onClick={confirmPlanChange}>
               Plan ändern
+            </AlertDialogAction>
+            <AlertDialogAction onClick={approveGarageTrial}>
+              30 Tage Trial aktivieren
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
