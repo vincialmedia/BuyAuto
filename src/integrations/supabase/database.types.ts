@@ -1492,24 +1492,43 @@ export type Database = {
       }
       archive_expired_listings: { Args: never; Returns: Json }
       archive_listing: { Args: { p_listing_id: string }; Returns: undefined }
-      ensure_dealer_premium_credits: {
-        Args: { p_dealer_id: string; p_period_yyyymm: string }
-        Returns: {
-          created_at: string
-          credits_included: number
-          credits_used: number
-          dealer_id: string
-          id: string
-          period_yyyymm: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "dealer_premium_credits"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      ensure_dealer_premium_credits:
+        | {
+            Args: { p_dealer_id: string }
+            Returns: {
+              created_at: string
+              credits_included: number
+              credits_used: number
+              dealer_id: string
+              id: string
+              period_yyyymm: string
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "dealer_premium_credits"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: { p_dealer_id: string; p_period_yyyymm: string }
+            Returns: {
+              created_at: string
+              credits_included: number
+              credits_used: number
+              dealer_id: string
+              id: string
+              period_yyyymm: string
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "dealer_premium_credits"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       ensure_dealer_premium_credits_v1: {
         Args: { dealer_id: string }
         Returns: undefined
