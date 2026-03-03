@@ -1,0 +1,1 @@
+DROP FUNCTION public.ensure_dealer_premium_credits(uuid, text);

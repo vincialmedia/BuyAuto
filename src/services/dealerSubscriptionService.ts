@@ -38,8 +38,8 @@ export async function getMyDealerPremiumCredits(garage: Garage, periodYYYYMM: st
 
 export async function ensureDealerPremiumCredits(garage: Garage, periodYYYYMM: string): Promise<DealerPremiumCreditsRow | null> {
   const { data, error } = await supabase.rpc("ensure_dealer_premium_credits", {
-    dealer_id: garage.id,
-    period_yyyymm: periodYYYYMM,
+    p_dealer_id: garage.id,
+    p_period_yyyymm: periodYYYYMM,
   });
 
   if (error) {
