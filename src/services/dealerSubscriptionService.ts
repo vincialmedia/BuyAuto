@@ -42,7 +42,18 @@ export async function ensureDealerPremiumCredits(garage: Garage, periodYYYYMM: s
     period_yyyymm: periodYYYYMM,
   });
 
-  if (error) throw error;
+  if (error) {
+    console.error("ensure_dealer_premium_credits RPC error:", {
+      message: error.message,
+      details: (error as any).details,
+      hint: (error as any).hint,
+      code: (error as any).code,
+      garageId: garage.id,
+      periodYYYYMM,
+    });
+    throw error;
+  }
+
   return (data as DealerPremiumCreditsRow | null) ?? null;
 }
 
