@@ -72,7 +72,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
             ? await getUserListingById(id)
             : await getPublishedListingById(id);
 
-          if (!fetchedListing && !isPreview && user) {
+          if (!fetchedListing && isPreview && user) {
             const ownerListing = await getUserListingById(id);
             if (ownerListing) {
               fetchedListing = ownerListing;

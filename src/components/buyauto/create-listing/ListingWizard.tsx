@@ -67,6 +67,8 @@ const createEmptyListingData = (): ListingData => ({
   cover_image_index: 0,
   ui_version: "v2",
 
+  purchase_price_chf: null,
+
   vin: "",
   power_hp: null,
   drivetrain: "",
@@ -123,6 +125,7 @@ const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload =
     body: wizardData.body,
     description: wizardData.description,
     price_per_month_chf: wizardData.price_per_month_chf,
+    purchase_price_chf: (wizardData as any)?.purchase_price_chf ?? null,
     remaining_months: wizardData.remaining_months,
     deposit_chf: wizardData.deposit_chf ?? null,
     location: wizardData.location,
@@ -165,6 +168,13 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     year: typeof listing?.year === "number" ? listing.year : prev.year,
     km: typeof listing?.mileage_km === "number" ? listing.mileage_km : prev.km,
     remaining_km: listing?.remaining_km ?? (prev as any)?.remaining_km,
+
+    purchase_price_chf:
+      typeof listing?.purchase_price_chf === "number"
+        ? listing.purchase_price_chf
+        : typeof (prev as any)?.purchase_price_chf === "number"
+          ? (prev as any).purchase_price_chf
+          : null,
 
     fuel: listing?.fuel ?? prev.fuel,
     gearbox: listing?.gearbox ?? prev.gearbox,
