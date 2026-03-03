@@ -18,6 +18,7 @@ import { useRouter } from "next/router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import type { Tables } from "@/integrations/supabase/types";
+import { deleteListingDraft } from "@/services/listingDraftService";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -91,7 +92,7 @@ function getNumber(value: unknown): number | null {
 const DUMMY_IMAGE_URL = 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&h=600&fit=crop';
 
 export default function Step5_PreviewAndPay() {
-  const { data, updateData, prevStep, setIsComplete } = useWizard();
+  const { data, updateData, prevStep, setIsComplete, draftId, setDraftId } = useWizard();
   const { user, loading: userLoading, profile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -272,6 +273,26 @@ export default function Step5_PreviewAndPay() {
     setMounted(true);
   }, []);
 
+  const clearDraftQueryParam = useCallback(async () => {
+    if (!router.isReady) return;
+    const nextQuery = { ...router.query };
+    delete (nextQuery as Record<string, unknown>).draft;
+    await router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
+  }, [router]);
+
+  const cleanupDraftAfterPublish = useCallback(async () => {
+    if (!user) return;
+    if (typeof draftId !== "string" || draftId.length === 0) return;
+
+    try {
+      await deleteListingDraft({ user, draftId });
+      setDraftId(null);
+      await clearDraftQueryParam();
+    } catch (e) {
+      console.warn("Could not delete draft after publish:", e);
+    }
+  }, [clearDraftQueryParam, draftId, setDraftId, user]);
+
   const handlePaymentConfirmation = useCallback(async (paymentIntentClientSecret: string) => {
     const url = new URL(window.location.href);
     url.searchParams.delete('payment_confirmed');
@@ -330,6 +351,7 @@ export default function Step5_PreviewAndPay() {
               updateData(freshListingData);
             }
           }
+          await cleanupDraftAfterPublish();
           setIsComplete(true);
           break;
         case 'processing':
@@ -351,7 +373,7 @@ export default function Step5_PreviewAndPay() {
         variant: 'destructive' 
       });
     }
-  }, [user, toast, updateData, setIsComplete]);
+  }, [user, toast, updateData, setIsComplete, cleanupDraftAfterPublish]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -401,6 +423,7 @@ export default function Step5_PreviewAndPay() {
         if (error) throw error;
 
         updateData({ payment_status: 'paid' });
+        await cleanupDraftAfterPublish();
         toast({ title: 'Erfolgreich', description: 'Ihr kostenloses Inserat ist bereit.' });
         setIsComplete(true);
         return;
@@ -551,6 +574,7 @@ export default function Step5_PreviewAndPay() {
         title: "Inserat veröffentlicht!",
         description: "Ihr Inserat ist jetzt live.",
       });
+      await cleanupDraftAfterPublish();
       setIsComplete(true);
 
     } catch (error: any) {
@@ -587,11 +611,12 @@ export default function Step5_PreviewAndPay() {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     toast({ 
       title: "Zahlung erfolgreich!", 
       description: "Ihr Inserat wird bearbeitet." 
     });
+    await cleanupDraftAfterPublish();
     setIsComplete(true);
   };
 
