@@ -194,7 +194,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     canton_code: row.canton_code,
     cover_image_url: row.cover_image_url ?? null,
     image_urls: imageUrls,
-    status: (row.status ?? "published") as ListingDetail["status"],
+    status: (row.status ?? "draft") as ListingDetail["status"],
     created_at: row.created_at,
     expires_at: null,
     duration_days: null,
@@ -217,6 +217,7 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
       .from(PUBLIC_LISTINGS_VIEW)
       .select("*")
       .eq("id", id)
+      .eq("status", "published")
       .single();
 
     if (error) {
