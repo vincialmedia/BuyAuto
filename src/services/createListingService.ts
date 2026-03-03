@@ -308,13 +308,10 @@ export const createOrUpdateListing = async (
       ...normalizeDealFieldsForInsert(data),
       user_id: user.id,
       created_by: user.id,
+      status: "draft",
     };
 
     delete listingDataForInsert.id;
-
-    if ("status" in listingDataForInsert) {
-      delete (listingDataForInsert as unknown as { status?: unknown }).status;
-    }
 
     const { data: newListing, error } = await supabase
       .from("listings")
