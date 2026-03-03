@@ -481,6 +481,7 @@ export default function Step5_PreviewAndPay() {
 
     if (listingStatus === "published") {
       toast({ title: "Inserat ist bereits veröffentlicht", description: "Du findest es im Dashboard." });
+      await cleanupDraftAfterPublish();
       setIsComplete(true);
       return;
     }

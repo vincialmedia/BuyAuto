@@ -23,6 +23,7 @@ import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { deleteListingDraft, getMyListingDrafts, type ListingDraft } from "@/services/listingDraftService";
 import StatusBadge from "./StatusBadge";
+import { supabase } from "@/integrations/supabase/client";
 
 const buildDraftTitle = (draft: ListingDraft) => {
   const brand = typeof draft.data.brand === "string" ? draft.data.brand.trim() : "";
@@ -50,6 +51,54 @@ export default function DraftsSection() {
     setLoading(true);
     try {
       const data = await getMyListingDrafts({ user });
+
+      const listingIds = data
+        .map((d) => (d?.data as any)?.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
+
+      if (listingIds.length > 0) {
+        const { data: listings, error } = await supabase
+          .from("listings")
+          .select("id, status")
+          .in("id", listingIds);
+
+        if (error) {
+          console.warn("Could not verify listing status for drafts:", error);
+          setDrafts(data);
+          return;
+        }
+
+        const publishedIds = new Set(
+          (listings ?? [])
+            .filter((l) =>
+              l?.status === "published" ||
+              l?.status === "active" ||
+              l?.status === "pending" ||
+              l?.status === "sold" ||
+              l?.status === "expired" ||
+              l?.status === "archived"
+            )
+            .map((l) => l.id)
+        );
+
+        const staleDrafts = data.filter((d) => {
+          const id = (d?.data as any)?.id;
+          return typeof id === "string" && publishedIds.has(id);
+        });
+
+        if (staleDrafts.length > 0) {
+          void Promise.allSettled(
+            staleDrafts.map((d) => deleteListingDraft({ user, draftId: d.id }))
+          ).then(() => {
+            setDrafts(data.filter((d) => {
+              const id = (d?.data as any)?.id;
+              return !(typeof id === "string" && publishedIds.has(id));
+            }));
+          });
+          return;
+        }
+      }
+
       setDrafts(data);
     } catch (e) {
       console.error("Failed to load listing drafts:", e);
