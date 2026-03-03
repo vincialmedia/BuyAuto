@@ -14,11 +14,19 @@ function safeString(input: unknown): string | null {
   return null;
 }
 
+function firstHeaderValue(value: string | string[] | undefined): string | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return null;
+  const first = raw.split(",")[0]?.trim();
+  return first && first.length > 0 ? first : null;
+}
+
 function getRequestOrigin(req: NextApiRequest): string {
-  const protoHeader = req.headers["x-forwarded-proto"];
-  const proto = Array.isArray(protoHeader) ? protoHeader[0] : protoHeader;
-  const hostHeader = req.headers["x-forwarded-host"] ?? req.headers.host;
-  const host = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
+  const originHeader = firstHeaderValue(req.headers.origin);
+  if (originHeader && /^https?:\/\//i.test(originHeader)) return originHeader;
+
+  const proto = firstHeaderValue(req.headers["x-forwarded-proto"]);
+  const host = firstHeaderValue(req.headers["x-forwarded-host"] ?? req.headers.host);
 
   if (host && proto) return `${proto}://${host}`;
   if (host) return `https://${host}`;
