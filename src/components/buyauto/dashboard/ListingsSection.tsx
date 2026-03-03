@@ -91,13 +91,21 @@ export default function ListingsSection() {
     try {
       const garage = await getMyGarage();
       if (!garage?.id) {
+        console.warn("PremiumCredits: no garage found for current user");
         setPremiumCredits({ used: 0, included: 0, remaining: 0 });
         return;
       }
 
       const period = getPeriodYYYYMMUtc();
-      await ensureDealerPremiumCredits(garage as Garage, period);
+      const ensured = await ensureDealerPremiumCredits(garage as Garage, period);
       const row = await getMyDealerPremiumCredits(garage as Garage, period);
+
+      console.log("PremiumCredits:", {
+        garageId: garage.id,
+        period,
+        ensured,
+        row,
+      });
 
       const used = Math.max(0, Number(row?.credits_used ?? 0));
       const included = Math.max(0, Number(row?.credits_included ?? 0));
