@@ -383,6 +383,9 @@ export default function ListingWizard() {
       }
 
       let draftData: Partial<ListingData> = { ...data, ...livePatch };
+      if (typeof data.id === "string" && data.id.length > 0) {
+        (draftData as any).id = data.id;
+      }
 
       if (draftId) {
         try {
