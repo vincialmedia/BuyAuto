@@ -111,6 +111,25 @@ export const deleteListingDraft = async (params: {
   }
 };
 
+export const deleteListingDraftsForListingId = async (params: {
+  user: User;
+  listingId: string;
+}): Promise<void> => {
+  const { user, listingId } = params;
+
+  if (listingId.length === 0) return;
+
+  const { error } = await supabase
+    .from("listing_drafts")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("data->>id", listingId);
+
+  if (error) {
+    throw error;
+  }
+};
+
 export const getListingDraftById = async (params: {
   user: User;
   draftId: string;

@@ -18,7 +18,7 @@ import { useRouter } from "next/router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import type { Tables } from "@/integrations/supabase/types";
-import { deleteListingDraft } from "@/services/listingDraftService";
+import { deleteListingDraft, deleteListingDraftsForListingId } from "@/services/listingDraftService";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -278,20 +278,30 @@ export default function Step5_PreviewAndPay() {
     const nextQuery = { ...router.query };
     delete (nextQuery as Record<string, unknown>).draft;
     await router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
-  }, [router]);
+  }, [router.isReady, router.pathname, router.query, router.replace]);
 
   const cleanupDraftAfterPublish = useCallback(async () => {
     if (!user) return;
-    if (typeof draftId !== "string" || draftId.length === 0) return;
+
+    const currentDraftId = typeof draftId === "string" ? draftId : null;
+    const listingId = typeof data.id === "string" ? data.id : null;
 
     try {
-      await deleteListingDraft({ user, draftId });
-      setDraftId(null);
-      await clearDraftQueryParam();
+      if (currentDraftId && currentDraftId.length > 0) {
+        await deleteListingDraft({ user, draftId: currentDraftId });
+        setDraftId(null);
+        await clearDraftQueryParam();
+        return;
+      }
+
+      if (listingId && listingId.length > 0) {
+        await deleteListingDraftsForListingId({ user, listingId });
+        await clearDraftQueryParam();
+      }
     } catch (e) {
       console.warn("Could not delete draft after publish:", e);
     }
-  }, [clearDraftQueryParam, draftId, setDraftId, user]);
+  }, [clearDraftQueryParam, data.id, draftId, setDraftId, user]);
 
   const handlePaymentConfirmation = useCallback(async (paymentIntentClientSecret: string) => {
     const url = new URL(window.location.href);
