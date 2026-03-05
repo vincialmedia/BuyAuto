@@ -11,7 +11,7 @@ import { pricingPlans, PREMIUM_BOOST_PRICE } from "@/lib/buyauto/stripe_config";
 import type { Plan } from "@/lib/buyauto/stripe_config";
 import { cantons } from "@/lib/buyauto/data";
 import { useToast } from "@/hooks/use-toast";
-import { getListingByIdForOwner } from "@/services/createListingService";
+import { createOrUpdateListing, getListingByIdForOwner } from "@/services/createListingService";
 import type { PaymentIntent } from "@stripe/stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "next/router";
@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import type { Tables } from "@/integrations/supabase/types";
 import { deleteListingDraft, deleteListingDraftsForListingId } from "@/services/listingDraftService";
+import type { ListingUpdatePayload } from "@/services/createListingService";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -280,11 +281,16 @@ export default function Step5_PreviewAndPay() {
     await router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
   }, [router.isReady, router.pathname, router.query, router.replace]);
 
-  const cleanupDraftAfterPublish = useCallback(async () => {
+  const cleanupDraftAfterPublish = useCallback(async (listingIdOverride?: string) => {
     if (!user) return;
 
     const currentDraftId = typeof draftId === "string" ? draftId : null;
-    const listingId = typeof data.id === "string" ? data.id : null;
+    const listingId =
+      typeof listingIdOverride === "string" && listingIdOverride.length > 0
+        ? listingIdOverride
+        : typeof data.id === "string"
+          ? data.id
+          : null;
 
     try {
       if (currentDraftId && currentDraftId.length > 0) {
@@ -302,6 +308,72 @@ export default function Step5_PreviewAndPay() {
       console.warn("Could not delete draft after publish:", e);
     }
   }, [clearDraftQueryParam, data.id, draftId, setDraftId, user]);
+
+  const buildListingPayloadFromWizard = useCallback((): ListingUpdatePayload => {
+    const anyData = data as any;
+    const dealType = (anyData?.deal_type ?? "direct_purchase") as any;
+    const financingType = dealType === "direct_purchase" ? ((anyData?.financing_type ?? "cash") as any) : null;
+
+    const mileageKm =
+      typeof anyData?.km === "number"
+        ? anyData.km
+        : typeof anyData?.mileage === "number"
+          ? anyData.mileage
+          : typeof anyData?.mileage_km === "number"
+            ? anyData.mileage_km
+            : null;
+
+    const payload: ListingUpdatePayload = {
+      id: typeof anyData?.id === "string" ? anyData.id : undefined,
+      deal_type: dealType,
+      financing_type: financingType,
+      leasing_offer: dealType === "direct_purchase" ? (anyData?.leasing_offer ?? null) : null,
+
+      brand: anyData?.brand ?? "",
+      model: anyData?.model ?? "",
+      year: typeof anyData?.year === "number" ? anyData.year : undefined,
+      mileage_km: typeof mileageKm === "number" ? mileageKm : undefined,
+      remaining_km: typeof anyData?.remaining_km === "number" ? anyData.remaining_km : anyData?.remaining_km ?? null,
+      fuel: anyData?.fuel ?? "",
+      gearbox: anyData?.gearbox ?? "",
+      body: anyData?.body ?? "",
+      description: anyData?.description ?? "",
+      location: anyData?.location ?? "",
+      canton_code: anyData?.canton_code ?? undefined,
+      title: anyData?.title ?? undefined,
+
+      price_plan: anyData?.price_plan ?? undefined,
+      premium: Boolean(anyData?.premium),
+      images: Array.isArray(anyData?.images) ? anyData.images : [],
+      cover_image_index: typeof anyData?.cover_image_index === "number" ? anyData.cover_image_index : 0,
+
+      vin: typeof anyData?.vin === "string" ? anyData.vin : null,
+      make_id: typeof anyData?.make_id === "string" ? anyData.make_id : null,
+      model_id: typeof anyData?.model_id === "string" ? anyData.model_id : null,
+      variant_id: typeof anyData?.variant_id === "string" ? anyData.variant_id : null,
+      power_hp: typeof anyData?.power_hp === "number" ? anyData.power_hp : null,
+      drivetrain: typeof anyData?.drivetrain === "string" ? anyData.drivetrain : null,
+      first_registration: typeof anyData?.first_registration === "string" ? anyData.first_registration : null,
+    };
+
+    if (dealType === "lease_takeover") {
+      payload.price_per_month_chf = typeof anyData?.price_per_month_chf === "number" ? anyData.price_per_month_chf : undefined;
+      payload.remaining_months = typeof anyData?.remaining_months === "number" ? anyData.remaining_months : undefined;
+      payload.deposit_chf = typeof anyData?.deposit_chf === "number" ? anyData.deposit_chf : null;
+    } else {
+      payload.purchase_price_chf =
+        typeof anyData?.purchase_price_chf === "number"
+          ? anyData.purchase_price_chf
+          : typeof anyData?.price_per_month_chf === "number"
+            ? anyData.price_per_month_chf
+            : null;
+      payload.price_per_month_chf = null;
+      payload.remaining_months = typeof anyData?.remaining_months === "number" ? anyData.remaining_months : undefined;
+      payload.deposit_chf = typeof anyData?.deposit_chf === "number" ? anyData.deposit_chf : null;
+    }
+
+    return payload;
+  }, [data]);
 
   const handlePaymentConfirmation = useCallback(async (paymentIntentClientSecret: string) => {
     const url = new URL(window.location.href);
@@ -401,52 +473,41 @@ export default function Step5_PreviewAndPay() {
   const handlePreparePayment = async () => {
     if (!mounted || !user) {
       toast({
-        title: 'Fehler',
-        description: 'Sie müssen angemeldet sein.',
-        variant: 'destructive',
+        title: "Fehler",
+        description: "Sie müssen angemeldet sein.",
+        variant: "destructive",
       });
       return;
     }
-    
+
     if (!data.id) {
       toast({
-        title: 'Fehler',
-        description: 'Listing-ID nicht gefunden.',
-        variant: 'destructive',
+        title: "Fehler",
+        description: "Listing-ID nicht gefunden.",
+        variant: "destructive",
       });
       return;
     }
-    
+
+    if (!selectedPlanId) {
+      toast({
+        title: "Fehler",
+        description: "Bitte wählen Sie einen Plan aus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsPreparingPayment(true);
 
     try {
-      if (total === 0) {
-        // Free private listing
-        const { data: updatedListing, error } = await supabase
-          .from('listings')
-          .update({ payment_status: 'paid', status: 'pending' })
-          .eq('id', data.id)
-          .eq('user_id', user.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        updateData({ payment_status: 'paid' });
-        await cleanupDraftAfterPublish();
-        toast({ title: 'Erfolgreich', description: 'Ihr kostenloses Inserat ist bereit.' });
-        setIsComplete(true);
-        return;
-      }
-
-      // Paid private listing
-      const response = await fetch('/api/billing/prepare', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          listing_id: data.id, 
-          plan: selectedPlanId, 
-          premium: isPremium 
+      const response = await fetch("/api/billing/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listing_id: data.id,
+          plan: selectedPlanId,
+          premium: isPremium,
         }),
       });
 
@@ -466,6 +527,23 @@ export default function Step5_PreviewAndPay() {
         throw new Error(msg);
       }
 
+      if (result?.next === "continue") {
+        updateData({
+          payment_status: "paid",
+          status: "pending",
+          price_plan: selectedPlanId,
+          pricing_plan: selectedPlanId,
+          duration_days: planDetails?.duration_days ?? null,
+          premium: false,
+          premium_until: null,
+          price_paid_chf: 0,
+        } as any);
+        await cleanupDraftAfterPublish();
+        toast({ title: "Erfolgreich", description: "Ihr kostenloses Inserat wird geprüft." });
+        setIsComplete(true);
+        return;
+      }
+
       const nextClientSecret = result?.clientSecret;
       if (typeof nextClientSecret !== "string" || nextClientSecret.length === 0) {
         throw new Error("Keine Zahlungs-Session erhalten. Bitte Seite neu laden und erneut versuchen.");
@@ -473,12 +551,11 @@ export default function Step5_PreviewAndPay() {
 
       setClientSecret(nextClientSecret);
       setPaymentInitiated(true);
-
     } catch (error: any) {
       toast({
-        title: 'Fehler',
-        description: error.message || 'Ein unerwarteter Fehler ist aufgetreten.',
-        variant: 'destructive',
+        title: "Fehler",
+        description: error.message || "Ein unerwarteter Fehler ist aufgetreten.",
+        variant: "destructive",
       });
     } finally {
       setIsPreparingPayment(false);
@@ -487,11 +564,32 @@ export default function Step5_PreviewAndPay() {
 
   // GARAGE USERS: Publish directly (enforce limits)
   const handleGaragePublish = async () => {
-    if (!user || !data.id) return;
+    if (!user) return;
+
+    let listingIdToUse: string | null = typeof data.id === "string" ? data.id : null;
+
+    if (!listingIdToUse) {
+      try {
+        const created = await createOrUpdateListing(buildListingPayloadFromWizard(), user);
+        if (created?.id) {
+          listingIdToUse = created.id;
+          updateData({ id: created.id, status: created.status ?? "draft" } as any);
+        }
+      } catch (e: any) {
+        const message = typeof e?.message === "string" ? e.message : "Inserat konnte nicht gespeichert werden.";
+        toast({ title: "Fehler", description: message, variant: "destructive" });
+        return;
+      }
+    }
+
+    if (!listingIdToUse) {
+      toast({ title: "Fehler", description: "Keine Inserat-ID gefunden.", variant: "destructive" });
+      return;
+    }
 
     if (listingStatus === "published") {
       toast({ title: "Inserat ist bereits veröffentlicht", description: "Du findest es im Dashboard." });
-      await cleanupDraftAfterPublish();
+      await cleanupDraftAfterPublish(listingIdToUse);
       setIsComplete(true);
       return;
     }
@@ -499,6 +597,14 @@ export default function Step5_PreviewAndPay() {
     setGaragePublishError(null);
     setIsPublishingGarage(true);
     try {
+      try {
+        await createOrUpdateListing({ ...buildListingPayloadFromWizard(), id: listingIdToUse }, user);
+      } catch (e: any) {
+        const message = typeof e?.message === "string" ? e.message : "Inserat konnte nicht gespeichert werden.";
+        toast({ title: "Fehler", description: message, variant: "destructive" });
+        return;
+      }
+
       // Ensure garage_id is set correctly (RPC enforces listing.garage_id)
       const { data: garageRow, error: garageError } = await supabase
         .from("garages")
@@ -512,7 +618,7 @@ export default function Step5_PreviewAndPay() {
         const { data: updated, error: updateGarageIdError } = await supabase
           .from("listings")
           .update({ garage_id: garageRow.id, seller_type: "garage" })
-          .eq("id", data.id)
+          .eq("id", listingIdToUse)
           .select("id, garage_id, seller_type")
           .maybeSingle();
 
@@ -535,7 +641,7 @@ export default function Step5_PreviewAndPay() {
 
       // Call RPC to enforce limit / entitlements
       const { data: rpcResult, error } = await supabase
-        .rpc("publish_garage_listing", { listing_id: data.id });
+        .rpc("publish_garage_listing", { listing_id: listingIdToUse });
 
       if (error) {
         const msg = (error as unknown as { message?: string }).message ?? "Publizieren fehlgeschlagen.";
@@ -564,7 +670,7 @@ export default function Step5_PreviewAndPay() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(isLimit ? `/garage-plan?next=${encodeURIComponent(`/inserat-erstellen?edit=${data.id}`)}` : "/dashboard/garage")}
+              onClick={() => router.push(isLimit ? `/garage-plan?next=${encodeURIComponent(`/inserat-erstellen?edit=${listingIdToUse}`)}` : "/dashboard/garage")}
             >
               {isLimit ? "Paket upgraden" : "Verwalten"}
             </Button>
@@ -585,7 +691,7 @@ export default function Step5_PreviewAndPay() {
         title: "Inserat veröffentlicht!",
         description: "Ihr Inserat ist jetzt live.",
       });
-      await cleanupDraftAfterPublish();
+      await cleanupDraftAfterPublish(listingIdToUse);
       setIsComplete(true);
 
     } catch (error: any) {

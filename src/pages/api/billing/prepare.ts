@@ -107,6 +107,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           premium_until: null,
           price_paid_chf: 0,
           payment_status: "paid",
+          status: "pending",
+          stripe_payment_intent_id: null,
         })
         .eq("id", listingId);
 

@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
-import { updateListingDraft } from "@/services/listingDraftService";
+import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 
 const swissCantons = [
   { value: "AG", label: "Aargau (AG)" },
@@ -118,8 +118,10 @@ function calculateRemainingMonths(endDate: Date): number {
 export function LeaseTakeoverFinancingDetails() {
   const router = useRouter();
   const { data, updateData, nextStep, prevStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
+  const isGarage = profile?.role === "garage";
+  const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
   const [isUpdatingListing, setIsUpdatingListing] = useState(false);
   const [contractEndDate, setContractEndDate] = useState<Date | undefined>(undefined);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -194,6 +196,51 @@ export function LeaseTakeoverFinancingDetails() {
       const remainingKm =
         typeof formData.remaining_km === "number" && Number.isFinite(formData.remaining_km) ? Number(formData.remaining_km) : 0;
 
+      const financingPatch: Partial<typeof data> = {
+        deal_type: "lease_takeover",
+        financing_type: null,
+        leasing_offer: null,
+        price_per_month_chf: Number(formData.price_per_month_chf),
+        remaining_months: Number(formData.remaining_months),
+        deposit_chf: depositChf,
+        remaining_km: remainingKm,
+        location: formData.location,
+      };
+
+      if (isGarage && !isEditingExistingListing) {
+        updateData({ ...financingPatch, id: undefined } as any);
+
+        const nextDraftData = {
+          ...data,
+          ...financingPatch,
+        };
+        (nextDraftData as any).id = undefined;
+
+        let nextDraftId = draftId;
+        if (!nextDraftId) {
+          const created = await createListingDraft({ user, data: nextDraftData });
+          nextDraftId = created.id;
+          setDraftId(created.id);
+          if (router.isReady) {
+            await router.replace(
+              { pathname: router.pathname, query: { ...router.query, draft: created.id } },
+              undefined,
+              { shallow: true }
+            );
+          }
+        } else {
+          await updateListingDraft({ user, draftId: nextDraftId, data: nextDraftData });
+        }
+
+        toast({
+          title: "Gespeichert",
+          description: "Finanzierungsdetails wurden als Entwurf gespeichert.",
+        });
+
+        nextStep();
+        return;
+      }
+
       const payload: ListingUpdatePayload = {
         id: data.id,
         deal_type: "lease_takeover",
@@ -225,19 +272,12 @@ export function LeaseTakeoverFinancingDetails() {
 
       const nextListingId = saved?.id ?? data.id;
 
-      const financingPatch: Partial<typeof data> = {
+      const financingPatchWithId: Partial<typeof data> = {
+        ...financingPatch,
         id: nextListingId,
-        deal_type: "lease_takeover",
-        financing_type: null,
-        leasing_offer: null,
-        price_per_month_chf: Number(formData.price_per_month_chf),
-        remaining_months: Number(formData.remaining_months),
-        deposit_chf: depositChf,
-        remaining_km: remainingKm,
-        location: formData.location,
       };
 
-      updateData(financingPatch);
+      updateData(financingPatchWithId);
 
       if (draftId) {
         try {
@@ -246,7 +286,7 @@ export function LeaseTakeoverFinancingDetails() {
             draftId,
             data: {
               ...data,
-              ...financingPatch,
+              ...financingPatchWithId,
             },
           });
         } catch (e) {

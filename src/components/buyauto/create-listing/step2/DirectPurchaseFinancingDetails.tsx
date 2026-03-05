@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/router";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -12,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
-import { updateListingDraft } from "@/services/listingDraftService";
+import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 
 import { LeaseTakeoverOfferSection, type LeaseTakeoverOfferFormValues } from "./LeaseTakeoverOfferSection";
 import { GarageLeasingOfferSection, type GarageLeasingOfferFormValues } from "./GarageLeasingOfferSection";
@@ -226,11 +227,13 @@ const directPurchaseFinancingSchema = z
   });
 
 export function DirectPurchaseFinancingDetails() {
-  const { data, updateData, nextStep, prevStep, draftId, registerDraftSnapshotter } = useWizard();
+  const { data, updateData, nextStep, prevStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
   const { user, profile, profileLoading } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const isGarage = profile?.role === "garage";
+  const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
   const nextLabel = isGarage ? "Weiter zu Fotos" : "Weiter zu Plan-Auswahl";
 
   const existingOffer = useMemo(() => {
@@ -484,6 +487,48 @@ export function DirectPurchaseFinancingDetails() {
               }
             : null;
 
+      const financingPatch: Partial<typeof data> = {
+        deal_type: "direct_purchase",
+        financing_type: leasingEnabled ? "leasing" : "cash",
+        leasing_offer: leasingOffer,
+        purchase_price_chf: purchasePriceChfClean ?? undefined,
+        price_per_month_chf: undefined,
+      };
+
+      if (isGarage && !isEditingExistingListing) {
+        updateData({ ...financingPatch, id: undefined } as any);
+
+        const nextDraftData = {
+          ...data,
+          ...financingPatch,
+        };
+        (nextDraftData as any).id = undefined;
+
+        let nextDraftId = draftId;
+        if (!nextDraftId) {
+          const created = await createListingDraft({ user, data: nextDraftData });
+          nextDraftId = created.id;
+          setDraftId(created.id);
+          if (router.isReady) {
+            await router.replace(
+              { pathname: router.pathname, query: { ...router.query, draft: created.id } },
+              undefined,
+              { shallow: true }
+            );
+          }
+        } else {
+          await updateListingDraft({ user, draftId: nextDraftId, data: nextDraftData });
+        }
+
+        toast({
+          title: "Gespeichert",
+          description: "Finanzierungsdetails wurden als Entwurf gespeichert.",
+        });
+
+        nextStep();
+        return;
+      }
+
       const payload: ListingUpdatePayload = {
         id: data.id,
         deal_type: "direct_purchase",
@@ -514,16 +559,12 @@ export function DirectPurchaseFinancingDetails() {
       const saved = await createOrUpdateListing(payload, user);
       const nextListingId = saved?.id ?? data.id;
 
-      const financingPatch: Partial<typeof data> = {
+      const financingPatchWithId: Partial<typeof data> = {
+        ...financingPatch,
         id: nextListingId,
-        deal_type: "direct_purchase",
-        financing_type: leasingEnabled ? "leasing" : "cash",
-        leasing_offer: leasingOffer,
-        purchase_price_chf: purchasePriceChfClean ?? undefined,
-        price_per_month_chf: undefined,
       };
 
-      updateData(financingPatch);
+      updateData(financingPatchWithId);
 
       if (draftId) {
         try {
@@ -532,7 +573,7 @@ export function DirectPurchaseFinancingDetails() {
             draftId,
             data: {
               ...data,
-              ...financingPatch,
+              ...financingPatchWithId,
             },
           });
         } catch {

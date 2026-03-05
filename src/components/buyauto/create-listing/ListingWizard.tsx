@@ -213,6 +213,7 @@ export default function ListingWizard() {
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const isGarage = profile?.role === "garage";
+  const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
@@ -319,17 +320,23 @@ export default function ListingWizard() {
           const draft = await getListingDraftById({ user, draftId: draftQuery });
           if (draft) {
             setDraftId(draft.id);
-            setData((prev) => ({ ...prev, ...(draft.data as any) }));
+            const draftDataRaw = (draft.data as any) ?? {};
+            if (isGarage) {
+              const { id: _id, status: _status, ...rest } = draftDataRaw ?? {};
+              setData((prev) => ({ ...prev, ...(rest as any), id: undefined }));
+            } else {
+              setData((prev) => ({ ...prev, ...(draftDataRaw as any) }));
 
-            const draftListingId = (draft.data as any)?.id;
-            if (typeof draftListingId === "string" && draftListingId.length > 0) {
-              try {
-                const listing = await getListingByIdForOwner(draftListingId, user);
-                if (listing) {
-                  setData((prev) => ({ ...prev, ...toWizardPatchFromListing(listing, prev) }));
+              const draftListingId = draftDataRaw?.id;
+              if (typeof draftListingId === "string" && draftListingId.length > 0) {
+                try {
+                  const listing = await getListingByIdForOwner(draftListingId, user);
+                  if (listing) {
+                    setData((prev) => ({ ...prev, ...toWizardPatchFromListing(listing, prev) }));
+                  }
+                } catch (e) {
+                  console.warn("Could not refresh listing while loading draft:", e);
                 }
-              } catch (e) {
-                console.warn("Could not refresh listing while loading draft:", e);
               }
             }
           }
@@ -359,7 +366,7 @@ export default function ListingWizard() {
     };
 
     void run();
-  }, [router.isReady, router.query.draft, router.query.edit, toast, user]);
+  }, [isGarage, router.isReady, router.query.draft, router.query.edit, toast, user]);
 
   const onSaveDraft = useCallback(async () => {
     if (isSavingDraft) return;
@@ -383,8 +390,12 @@ export default function ListingWizard() {
       }
 
       let draftData: Partial<ListingData> = { ...data, ...livePatch };
-      if (typeof data.id === "string" && data.id.length > 0) {
-        (draftData as any).id = data.id;
+      if (!isGarage || isEditingExistingListing) {
+        if (typeof data.id === "string" && data.id.length > 0) {
+          (draftData as any).id = data.id;
+        }
+      } else {
+        delete (draftData as any).id;
       }
 
       if (draftId) {
@@ -429,7 +440,7 @@ export default function ListingWizard() {
     } finally {
       setIsSavingDraft(false);
     }
-  }, [data, draftId, isSavingDraft, router, toast, updateData, user]);
+  }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, router, toast, updateData, user]);
 
   if (isComplete) {
     return <SuccessScreen draft={data} />;

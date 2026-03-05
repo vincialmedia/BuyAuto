@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, X, GripVertical, Loader2, ChevronLeft } from "lucide-react";
@@ -14,6 +15,7 @@ import { Dashboard } from '@uppy/react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
 import { uploadOptimizedImage } from "@/services/storageService";
+import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 
 // CSS is now loaded via Head to avoid build errors with package exports
 // and to enable better caching/performance
@@ -24,11 +26,14 @@ interface ImageItem {
 }
 
 export function Step4_Images() {
-  const { data, updateData, nextStep, prevStep, getMaxPhotos } = useWizard();
+  const { data, updateData, nextStep, prevStep, getMaxPhotos, draftId, setDraftId } = useWizard();
   const images = data.images || [];
   const coverImageIndex = data.cover_image_index || 0;
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isGarage = profile?.role === "garage";
+  const router = useRouter();
+  const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
   const maxPhotos = getMaxPhotos();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -206,14 +211,6 @@ export function Step4_Images() {
       });
       return;
     }
-    if (!data.id) {
-      toast({ 
-        title: "Fehler", 
-        description: "Keine Inserat-ID gefunden.", 
-        variant: "destructive" 
-      });
-      return;
-    }
     if (!data.images || data.images.length === 0) {
       toast({ 
         title: "Keine Bilder", 
@@ -225,11 +222,37 @@ export function Step4_Images() {
 
     setIsUpdating(true);
     try {
-      await createOrUpdateListing({
-        id: data.id,
-        images: data.images,
-        cover_image_index: data.cover_image_index || 0,
-      }, user);
+      if (isGarage && !isEditingExistingListing) {
+        const nextDraftData = {
+          ...data,
+          images: data.images,
+          cover_image_index: data.cover_image_index || 0,
+        };
+        (nextDraftData as any).id = undefined;
+
+        if (!draftId) {
+          const created = await createListingDraft({ user, data: nextDraftData });
+          setDraftId(created.id);
+          if (router.isReady) {
+            await router.replace(
+              { pathname: router.pathname, query: { ...router.query, draft: created.id } },
+              undefined,
+              { shallow: true }
+            );
+          }
+        } else {
+          await updateListingDraft({ user, draftId, data: nextDraftData });
+        }
+      } else {
+        await createOrUpdateListing(
+          {
+            id: data.id,
+            images: data.images,
+            cover_image_index: data.cover_image_index || 0,
+          },
+          user
+        );
+      }
 
       toast({
         title: "Bilder gespeichert",

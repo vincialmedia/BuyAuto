@@ -97,7 +97,9 @@ function isEmptyValue(v: unknown): boolean {
 export function Step1Form() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, profileLoading } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
+  const isGarage = profile?.role === "garage";
+  const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
 
   const { data, updateData, nextStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
 
@@ -523,6 +525,7 @@ export function Step1Form() {
     }
 
     if (profileLoading) return;
+    const isGarageDraftFlow = Boolean(isGarage && !isEditingExistingListing);
 
     const normalizedVin = (values.vin ?? "").trim().toUpperCase();
     if (normalizedVin.length > 0 && !/^[A-Z0-9]{17}$/.test(normalizedVin)) {
@@ -556,6 +559,7 @@ export function Step1Form() {
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");
 
       updateData({
+        id: isGarageDraftFlow ? undefined : (data as any).id,
         ...values,
         vin: normalizedVin.length > 0 ? normalizedVin : null,
 
@@ -582,6 +586,60 @@ export function Step1Form() {
         first_registration: values.first_registration ?? null,
         description: values.description || "",
       } as any);
+
+      if (isGarageDraftFlow) {
+        const nextDraftData: Partial<ListingData> = {
+          ...(data as any),
+          vin: normalizedVin.length > 0 ? normalizedVin : null,
+
+          deal_type: nextDealType,
+          financing_type: nextFinancingType,
+          leasing_offer: nextDealType === "lease_takeover" ? null : (data as any).leasing_offer,
+
+          make_id: values.make_id as any,
+          model_id: values.model_id as any,
+          variant_id: values.variant_id ? (values.variant_id as any) : null,
+
+          brand: makeName as any,
+          model: modelName as any,
+
+          year: Number(values.year) as any,
+          km: Number(values.km) as any,
+          fuel: values.fuel as any,
+          gearbox: values.gearbox as any,
+          body: values.body as any,
+          location: values.location as any,
+          title: generatedTitle as any,
+
+          power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
+          drivetrain: values.drivetrain as any,
+          first_registration: values.first_registration ?? null,
+
+          description: values.description || "",
+        };
+
+        (nextDraftData as any).id = undefined;
+
+        try {
+          if (!draftId) {
+            const created = await createListingDraft({ user, data: nextDraftData });
+            setDraftId(created.id);
+            await router.replace({ pathname: router.pathname, query: { ...router.query, draft: created.id } }, undefined, { shallow: true });
+          } else {
+            await updateListingDraft({ user, draftId, data: nextDraftData });
+          }
+        } catch {
+          // Best-effort only
+        }
+
+        toast({
+          title: "Gespeichert",
+          description: "Fahrzeugdaten wurden gespeichert.",
+        });
+
+        nextStep();
+        return;
+      }
 
       if (isNewListing) {
         const nextDraftData: Partial<ListingData> = {
