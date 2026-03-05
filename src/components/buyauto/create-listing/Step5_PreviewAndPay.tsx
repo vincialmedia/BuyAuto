@@ -480,15 +480,6 @@ export default function Step5_PreviewAndPay() {
       return;
     }
 
-    if (!data.id) {
-      toast({
-        title: "Fehler",
-        description: "Listing-ID nicht gefunden.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!selectedPlanId) {
       toast({
         title: "Fehler",
@@ -501,11 +492,36 @@ export default function Step5_PreviewAndPay() {
     setIsPreparingPayment(true);
 
     try {
+      let listingIdToUse: string | null = typeof data.id === "string" && data.id.length > 0 ? data.id : null;
+
+      try {
+        const saved = await createOrUpdateListing(buildListingPayloadFromWizard(), user);
+        if (saved?.id) {
+          listingIdToUse = saved.id;
+          if (saved.id !== data.id) {
+            updateData({ id: saved.id } as any);
+          }
+        }
+      } catch (e: any) {
+        const message = typeof e?.message === "string" ? e.message : "Inserat konnte nicht gespeichert werden.";
+        toast({ title: "Fehler", description: message, variant: "destructive" });
+        return;
+      }
+
+      if (!listingIdToUse) {
+        toast({
+          title: "Fehler",
+          description: "Listing-ID nicht gefunden.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const response = await fetch("/api/billing/prepare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          listing_id: data.id,
+          listing_id: listingIdToUse,
           plan: selectedPlanId,
           premium: isPremium,
         }),
@@ -528,17 +544,38 @@ export default function Step5_PreviewAndPay() {
       }
 
       if (result?.next === "continue") {
-        updateData({
-          payment_status: "paid",
-          status: "pending",
-          price_plan: selectedPlanId,
-          pricing_plan: selectedPlanId,
-          duration_days: planDetails?.duration_days ?? null,
-          premium: false,
-          premium_until: null,
-          price_paid_chf: 0,
-        } as any);
-        await cleanupDraftAfterPublish();
+        try {
+          const fresh = await getListingByIdForOwner(listingIdToUse, user);
+          if (fresh) {
+            updateData(fresh);
+          } else {
+            updateData({
+              id: listingIdToUse,
+              payment_status: "paid",
+              status: "pending",
+              price_plan: selectedPlanId,
+              pricing_plan: selectedPlanId,
+              duration_days: planDetails?.duration_days ?? null,
+              premium: false,
+              premium_until: null,
+              price_paid_chf: 0,
+            } as any);
+          }
+        } catch {
+          updateData({
+            id: listingIdToUse,
+            payment_status: "paid",
+            status: "pending",
+            price_plan: selectedPlanId,
+            pricing_plan: selectedPlanId,
+            duration_days: planDetails?.duration_days ?? null,
+            premium: false,
+            premium_until: null,
+            price_paid_chf: 0,
+          } as any);
+        }
+
+        await cleanupDraftAfterPublish(listingIdToUse);
         toast({ title: "Erfolgreich", description: "Ihr kostenloses Inserat wird geprüft." });
         setIsComplete(true);
         return;
