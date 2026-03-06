@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import type { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
 import { StructuredData } from "@/components/buyauto/StructuredData";
-import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
@@ -19,11 +18,6 @@ const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryFor
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
   loading: () => <div className="h-96 bg-neutral-50 animate-pulse rounded-2xl mt-16" />,
 });
-
-const LeasingCalculator = dynamic<LeasingCalculatorProps>(
-  () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
-  { ssr: false, loading: () => <div className="h-80 bg-neutral-50 animate-pulse rounded-2xl" /> }
-);
 
 interface ListingDetailPageProps {
   listing: ListingDetail | null;
@@ -302,15 +296,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         onInquiry={() => setShowInquiryForm(true)}
         childrenBelowFold={
           <>
-            {((listing as unknown as { ui_version?: string | null }).ui_version === "v2") &&
-              dealType === "direct_purchase" &&
-              leasingOffer?.enabled === true &&
-              purchasePriceChf && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-                  <LeasingCalculator priceChf={purchasePriceChf} year={listing.year} mileageKm={listing.mileageKm} offer={leasingOffer} />
-                </div>
-              )}
-
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
               <SimilarListings listing={listing} />
             </div>

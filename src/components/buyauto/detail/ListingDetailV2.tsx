@@ -1,15 +1,31 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ListingDetail } from "@/lib/buyauto/types";
 import ImageGallery from "@/components/buyauto/detail/ImageGallery";
-import { FileText, Gauge, Info, MessageCircle, Settings2, Tag, Zap } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  Calendar,
+  Car,
+  FileText,
+  Fuel,
+  Gauge,
+  GitBranch,
+  Settings2,
+  Tag,
+  Zap,
+} from "lucide-react";
+import { useMemo } from "react";
+import type { ComponentType } from "react";
 import type { GaragePublicInfo } from "@/components/buyauto/detail/GarageMiniBanner";
 import { StickyListingCta } from "@/components/buyauto/detail/StickyListingCta";
 import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
 import { MessagingPanel } from "@/components/buyauto/detail/MessagingPanel";
 import Link from "next/link";
-import { LeasingCalculator } from "@/components/buyauto/detail/LeasingCalculator";
+import dynamic from "next/dynamic";
+import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
+
+const LeasingCalculator = dynamic<LeasingCalculatorProps>(
+  () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
+  { ssr: false, loading: () => <div className="h-80 bg-neutral-50 animate-pulse rounded-2xl" /> }
+);
 
 function formatChf(value: number): string {
   return new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(value);
@@ -23,6 +39,33 @@ function formatDateDeCh(input: string): string {
   const d = new Date(input);
   if (Number.isNaN(d.getTime())) return input;
   return new Intl.DateTimeFormat("de-CH", { year: "numeric", month: "2-digit", timeZone: "Europe/Zurich" }).format(d);
+}
+
+function FactGrid({
+  items,
+}: {
+  items: Array<{ key: string; label: string; value: string; Icon: ComponentType<{ className?: string }> }>;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {items.map((it) => (
+        <div
+          key={it.key}
+          className="flex items-center gap-3 rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3"
+        >
+          <div className="h-10 w-10 rounded-2xl bg-white border border-neutral-200/60 flex items-center justify-center">
+            <it.Icon className="h-5 w-5 text-neutral-700" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-neutral-900 truncate">{it.value}</div>
+            <div className="text-xs text-neutral-500">{it.label}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ListingDetailV2({
@@ -44,24 +87,12 @@ export function ListingDetailV2({
   onInquiry: () => void;
   childrenBelowFold?: React.ReactNode;
 }) {
-  const [showSpecs, setShowSpecs] = useState(true);
-
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+
   const hasLeasing =
     dealType === "direct_purchase" &&
     ((listing as unknown as { financing_type?: string | null }).financing_type === "leasing" ||
       Boolean((listing as unknown as { leasing_offer?: { enabled?: boolean } | null }).leasing_offer?.enabled));
-
-  const keyChips = useMemo(() => {
-    const chips: { label: string; value: string }[] = [];
-
-    if (listing.year) chips.push({ label: "Baujahr", value: String(listing.year) });
-    if (typeof listing.mileageKm === "number") chips.push({ label: "KM", value: `${formatNumber(listing.mileageKm)} km` });
-    if (listing.fuel) chips.push({ label: "Treibstoff", value: String(listing.fuel) });
-    if (listing.gearbox) chips.push({ label: "Getriebe", value: String(listing.gearbox) });
-
-    return chips.slice(0, 4);
-  }, [listing.year, listing.mileageKm, listing.fuel, listing.gearbox]);
 
   const primaryPriceLabel =
     dealType === "direct_purchase"
@@ -81,6 +112,49 @@ export function ListingDetailV2({
   const leasingOffer = (listing as unknown as { leasing_offer?: any | null }).leasing_offer ?? null;
   const canShowLeasingCalculator =
     hasLeasing && typeof purchasePriceChf === "number" && leasingOffer && typeof leasingOffer === "object" && leasingOffer.enabled;
+
+  const vehicleFacts = useMemo(() => {
+    const items: Array<{ key: string; label: string; value: string; Icon: ComponentType<{ className?: string }> }> = [];
+
+    if (listing.year) items.push({ key: "year", label: "Baujahr", value: String(listing.year), Icon: Calendar });
+
+    const firstRegistration = (listing as unknown as { firstRegistration?: string | null }).firstRegistration ?? null;
+    if (firstRegistration && firstRegistration.trim()) {
+      items.push({
+        key: "first-registration",
+        label: "Erstzulassung",
+        value: formatDateDeCh(firstRegistration),
+        Icon: Calendar,
+      });
+    }
+
+    if (typeof listing.mileageKm === "number") {
+      items.push({
+        key: "mileage",
+        label: "Kilometerstand",
+        value: `${formatNumber(listing.mileageKm)} km`,
+        Icon: Gauge,
+      });
+    }
+
+    if (listing.fuel) items.push({ key: "fuel", label: "Treibstoff", value: String(listing.fuel), Icon: Fuel });
+    if (listing.gearbox) items.push({ key: "gearbox", label: "Getriebe", value: String(listing.gearbox), Icon: Settings2 });
+
+    const body = (listing as unknown as { body?: string | null }).body ?? null;
+    if (body) items.push({ key: "body", label: "Karosserie", value: String(body), Icon: Car });
+
+    const drivetrain = (listing as unknown as { drivetrain?: string | null }).drivetrain ?? null;
+    if (drivetrain && drivetrain.trim()) {
+      items.push({ key: "drivetrain", label: "Antrieb", value: drivetrain, Icon: GitBranch });
+    }
+
+    const powerHp = (listing as unknown as { powerHp?: number | null }).powerHp ?? null;
+    if (typeof powerHp === "number" && powerHp > 0) {
+      items.push({ key: "power", label: "Leistung", value: `${formatNumber(powerHp)} PS`, Icon: Zap });
+    }
+
+    return items;
+  }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing]);
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-24">
@@ -103,72 +177,70 @@ export function ListingDetailV2({
 
             <div className="bg-white rounded-3xl border border-neutral-200/60 shadow-sm p-6 sm:p-8">
               <div className="flex items-start justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
                     {listing.brand} {listing.model}
                   </h1>
                   <p className="mt-1 text-sm text-neutral-600">{listing.location}</p>
                 </div>
+
                 {listing.premium && (
-                  <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-900">
+                  <div className="shrink-0 inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-900">
                     <Zap className="h-3.5 w-3.5" />
                     Premium
                   </div>
                 )}
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                {keyChips.map((c) => (
-                  <span
-                    key={c.label}
-                    className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700"
-                  >
-                    <span className="text-neutral-500 mr-2">{c.label}</span>
-                    <span className="text-neutral-900">{c.value}</span>
-                  </span>
-                ))}
+              <div className="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                <div className="order-2 lg:order-1 lg:col-span-7 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
+                      <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
+                      {dealType === "direct_purchase" ? "Direktkauf" : "Leasingübernahme"}
+                    </span>
 
-                <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
-                  <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
-                  {dealType === "direct_purchase" ? "Direktkauf" : "Leasingübernahme"}
-                </span>
+                    {dealType === "direct_purchase" && hasLeasing && (
+                      <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
+                        <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
+                        Leasing
+                      </span>
+                    )}
+                  </div>
 
-                {hasLeasing && (
-                  <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
-                    <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
-                    Leasing
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                  <div className="text-sm text-neutral-600">{primaryPriceSub}</div>
-                  <div className="mt-1 text-2xl font-bold text-neutral-900">{primaryPriceLabel}</div>
-                  {dealType !== "direct_purchase" && typeof listing.depositCHF === "number" && (
-                    <div className="mt-2 text-sm text-neutral-600">
-                      Kaution: <span className="font-semibold text-neutral-900">{listing.depositCHF > 0 ? formatChf(listing.depositCHF) : "Keine"}</span>
-                    </div>
-                  )}
-                  {dealType === "direct_purchase" && teaserMonthlyLabel && <div className="mt-2 text-sm text-neutral-600">{teaserMonthlyLabel}</div>}
+                  <FactGrid items={vehicleFacts} />
                 </div>
 
-                <div className="rounded-2xl border border-neutral-200/60 bg-white p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold text-neutral-900">Kontakt</div>
-                    <Button variant="outline" className="rounded-2xl border-neutral-200" onClick={chatScroll}>
-                      Chat öffnen
-                    </Button>
-                  </div>
-                  <div className="mt-4 flex items-center gap-3">
-                    <Button
-                      onClick={onInquiry}
-                      className="flex-1 rounded-2xl bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all"
-                      size="lg"
-                    >
-                      <MessageCircle className="h-5 w-5 mr-2" />
-                      Jetzt anfragen
-                    </Button>
+                <div className="order-1 lg:order-2 lg:col-span-5">
+                  <div className="rounded-3xl bg-neutral-900 text-white p-5 sm:p-6 shadow-sm border border-neutral-800/60">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-white/70">{primaryPriceSub}</div>
+                      {dealType !== "direct_purchase" && typeof listing.remainingMonths === "number" && listing.remainingMonths > 0 && (
+                        <div className="text-xs text-white/70">Restlaufzeit: {listing.remainingMonths}M</div>
+                      )}
+                    </div>
+
+                    <div className="mt-1 text-3xl font-bold tracking-tight">{primaryPriceLabel}</div>
+
+                    {dealType !== "direct_purchase" && typeof listing.depositCHF === "number" && (
+                      <div className="mt-2 text-sm text-white/75">
+                        Kaution:{" "}
+                        <span className="font-semibold text-white">{listing.depositCHF > 0 ? formatChf(listing.depositCHF) : "Keine"}</span>
+                      </div>
+                    )}
+
+                    {dealType === "direct_purchase" && teaserMonthlyLabel && (
+                      <div className="mt-3 rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/85">
+                        {teaserMonthlyLabel}
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex items-center gap-2 text-xs text-white/60">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/10">
+                        <FileText className="h-3.5 w-3.5" />
+                      </span>
+                      <span>Alle Angaben gemäss Inserat.</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -185,68 +257,6 @@ export function ListingDetailV2({
                 <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
               </section>
             )}
-
-            <section className="bg-white rounded-3xl border border-neutral-200/60 shadow-sm p-6 sm:p-8">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-neutral-100 rounded-2xl flex items-center justify-center">
-                    <Info className="w-5 h-5 text-neutral-700" />
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">Alle Angaben</h2>
-                </div>
-                <Button variant="outline" className="rounded-2xl border-neutral-200" onClick={() => setShowSpecs((v) => !v)}>
-                  {showSpecs ? "Ausblenden" : "Einblenden"}
-                </Button>
-              </div>
-
-              {showSpecs && (
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                    <div className="flex items-center gap-2 text-neutral-600">
-                      <Gauge className="h-4 w-4" />
-                      Kilometerstand
-                    </div>
-                    <div className="mt-1 font-semibold text-neutral-900">{formatNumber(listing.mileageKm)} km</div>
-                  </div>
-
-                  <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                    <div className="flex items-center gap-2 text-neutral-600">
-                      <Settings2 className="h-4 w-4" />
-                      Karosserie
-                    </div>
-                    <div className="mt-1 font-semibold text-neutral-900">{listing.body}</div>
-                  </div>
-
-                  {listing.vin && (
-                    <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                      <div className="text-neutral-600">VIN</div>
-                      <div className="mt-1 font-semibold text-neutral-900 break-all">{listing.vin}</div>
-                    </div>
-                  )}
-
-                  {typeof listing.powerHp === "number" && (
-                    <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                      <div className="text-neutral-600">Leistung</div>
-                      <div className="mt-1 font-semibold text-neutral-900">{formatNumber(listing.powerHp)} PS</div>
-                    </div>
-                  )}
-
-                  {listing.drivetrain && (
-                    <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                      <div className="text-neutral-600">Antrieb</div>
-                      <div className="mt-1 font-semibold text-neutral-900">{listing.drivetrain}</div>
-                    </div>
-                  )}
-
-                  {listing.firstRegistration && (
-                    <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                      <div className="text-neutral-600">Erstzulassung</div>
-                      <div className="mt-1 font-semibold text-neutral-900">{formatDateDeCh(listing.firstRegistration)}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </section>
 
             {childrenBelowFold}
           </div>
