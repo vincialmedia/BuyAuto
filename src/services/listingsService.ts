@@ -4,6 +4,7 @@ import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
 import type { Database } from "@/integrations/supabase/types";
 
 type PublicListingRow = Database["public"]["Views"]["listings_public"]["Row"];
+type ListingsTableRow = Database["public"]["Tables"]["listings"]["Row"];
 
 const PUBLIC_LISTINGS_VIEW = "listings_public";
 
@@ -110,29 +111,37 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
   const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
   return {
-    id: row.id,
+    id: String(row.id ?? ""),
     ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: row.deal_type ?? "lease_takeover",
     financing_type: row.financing_type ?? null,
     leasing_offer,
-    brand: row.brand,
-    model: row.model,
+    brand: row.brand ?? "",
+    model: row.model ?? "",
     title: row.title || undefined,
     description: row.description || undefined,
-    year: row.year,
+    year: row.year ?? 0,
     pricePerMonthCHF: row.price_per_month_chf ?? 0,
     remainingMonths: row.remaining_months ?? 0,
     remaining_km: row.remaining_km ?? null,
-    location: row.location,
-    mileageKm: row.mileage_km,
+    location: row.location ?? "",
+    mileageKm: row.mileage_km ?? 0,
     fuel: normalizeFuel(row.fuel),
     gearbox: normalizeGearbox(row.gearbox),
     body: normalizeBody(row.body),
-    premium: row.premium,
+    premium: row.premium ?? false,
     depositCHF: row.deposit_chf ?? null,
     images: imageUrls,
     imageUrl: imageUrls[0] || "",
     purchasePriceCHF,
+
+    vin: row.vin ?? null,
+    makeId: row.make_id ?? null,
+    modelId: row.model_id ?? null,
+    variantId: row.variant_id ?? null,
+    powerHp: row.power_hp ?? null,
+    drivetrain: row.drivetrain ?? null,
+    firstRegistration: row.first_registration ?? null,
 
     seller_type: row.seller_type ?? null,
     seller_name,
@@ -168,44 +177,110 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
   const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
   return {
-    id: row.id,
+    id: String(row.id ?? ""),
     ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: row.deal_type ?? "lease_takeover",
     financing_type: row.financing_type ?? null,
     leasing_offer,
-    brand: row.brand,
-    model: row.model,
+    brand: row.brand ?? "",
+    model: row.model ?? "",
     title: row.title || undefined,
     description: row.description || undefined,
-    year: row.year,
+    year: row.year ?? 0,
     pricePerMonthCHF: row.price_per_month_chf ?? 0,
     remainingMonths: row.remaining_months ?? 0,
     remaining_km: row.remaining_km ?? null,
-    location: row.location,
-    mileageKm: row.mileage_km,
+    location: row.location ?? "",
+    mileageKm: row.mileage_km ?? 0,
     fuel: normalizeFuel(row.fuel),
     gearbox: normalizeGearbox(row.gearbox),
     body: normalizeBody(row.body),
-    premium: row.premium,
+    premium: row.premium ?? false,
     depositCHF: row.deposit_chf ?? null,
     images: imageUrls,
     imageUrl: imageUrls[0] || "",
     purchasePriceCHF,
-    canton_code: row.canton_code,
+    canton_code: row.canton_code ?? "",
     cover_image_url: row.cover_image_url ?? null,
     image_urls: imageUrls,
     status: (row.status ?? "draft") as ListingDetail["status"],
-    created_at: row.created_at,
-    expires_at: null,
-    duration_days: null,
-    price_plan: null,
-    premium_until: null,
+    created_at: row.created_at ?? "",
+    expires_at: row.expires_at ?? null,
+    duration_days: row.duration_days ?? null,
+    price_plan: (row.price_plan ?? null) as ListingDetail["price_plan"],
+    premium_until: row.premium_until ?? null,
+
+    vin: row.vin ?? null,
+    makeId: row.make_id ?? null,
+    modelId: row.model_id ?? null,
+    variantId: row.variant_id ?? null,
+    powerHp: row.power_hp ?? null,
+    drivetrain: row.drivetrain ?? null,
+    firstRegistration: row.first_registration ?? null,
 
     seller_type: row.seller_type ?? null,
     seller_name,
     seller_avatar_url,
     garage_id: row.garage_id ?? null,
     garage_name,
+  };
+}
+
+function transformListingsTableRowToListingDetail(row: ListingsTableRow): ListingDetail {
+  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
+
+  const purchasePriceCHF = typeof row.purchase_price_chf === "number" ? row.purchase_price_chf : null;
+
+  const leasing_offer =
+    row.leasing_offer && typeof row.leasing_offer === "object" ? (row.leasing_offer as any) : null;
+
+  return {
+    id: row.id,
+    ui_version: row.ui_version === "v2" ? "v2" : "v1",
+    deal_type: (row.deal_type ?? "lease_takeover") as any,
+    financing_type: (row.financing_type ?? null) as any,
+    leasing_offer,
+    brand: row.brand ?? "",
+    model: row.model ?? "",
+    title: row.title ?? undefined,
+    description: row.description ?? undefined,
+    year: row.year ?? 0,
+    pricePerMonthCHF: row.price_per_month_chf ?? 0,
+    remainingMonths: row.remaining_months ?? 0,
+    remaining_km: row.remaining_km ?? null,
+    location: row.location ?? "",
+    mileageKm: row.mileage_km ?? 0,
+    fuel: normalizeFuel(row.fuel),
+    gearbox: normalizeGearbox(row.gearbox),
+    body: normalizeBody(row.body),
+    premium: row.premium ?? false,
+    depositCHF: row.deposit_chf ?? null,
+    images: imageUrls,
+    imageUrl: imageUrls[0] || "",
+    purchasePriceCHF,
+    canton_code: row.canton_code ?? "",
+    cover_image_url: row.cover_image_url ?? null,
+    image_urls: imageUrls,
+    status: (row.status ?? "draft") as ListingDetail["status"],
+    created_at: row.created_at ?? "",
+    expires_at: row.expires_at ?? null,
+    duration_days: row.duration_days ?? null,
+    price_plan: (row.price_plan ?? null) as ListingDetail["price_plan"],
+    premium_until: row.premium_until ?? null,
+
+    vin: row.vin ?? null,
+    makeId: row.make_id ?? null,
+    modelId: row.model_id ?? null,
+    variantId: row.variant_id ?? null,
+    powerHp: row.power_hp ?? null,
+    drivetrain: row.drivetrain ?? null,
+    firstRegistration: row.first_registration ?? null,
+
+    seller_type: row.seller_type ?? null,
+    seller_name: null,
+    seller_avatar_url: null,
+    garage_id: row.garage_id ?? null,
+    garage_name: null,
   };
 }
 
@@ -567,7 +642,7 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
       return null;
     }
 
-    return transformPublicRowToListingDetail(data as unknown as PublicListingRow);
+    return transformListingsTableRowToListingDetail(data as ListingsTableRow);
   } catch (error) {
     console.error("Get user listing by ID error:", error);
     return null;

@@ -49,6 +49,14 @@ export interface Listing {
   description?: string; // ✅ Added description field
   purchasePriceCHF?: number | null;
 
+  vin?: string | null;
+  makeId?: string | null;
+  modelId?: string | null;
+  variantId?: string | null;
+  powerHp?: number | null;
+  drivetrain?: string | null;
+  firstRegistration?: string | null;
+
   seller_type?: string | null;
   seller_name?: string | null;
   seller_avatar_url?: string | null;

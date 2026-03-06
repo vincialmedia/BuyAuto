@@ -19,6 +19,14 @@ export interface Garage {
   updated_at?: string | null;
 }
 
+export interface GaragePublicInfo {
+  id: string;
+  garage_name: string;
+  slug: string | null;
+  city: string | null;
+  description: string | null;
+}
+
 export type GarageUpdate = Partial<
   Pick<
     Garage,
@@ -105,6 +113,32 @@ export async function getGarageBySlug(slug: string): Promise<Garage | null> {
   if (!data) return null;
 
   return toGarage(data);
+}
+
+export async function getGaragePublicById(id: string): Promise<GaragePublicInfo | null> {
+  try {
+    const { data, error } = await supabase
+      .from("garages")
+      .select("id, garage_name, slug, city, description")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      return null;
+    }
+
+    if (!data) return null;
+
+    return {
+      id: String((data as any).id),
+      garage_name: String((data as any).garage_name ?? ""),
+      slug: typeof (data as any).slug === "string" ? (data as any).slug : null,
+      city: typeof (data as any).city === "string" ? (data as any).city : null,
+      description: typeof (data as any).description === "string" ? (data as any).description : null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function generateSlugFromName(name: string): string {

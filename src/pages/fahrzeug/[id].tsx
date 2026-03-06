@@ -1,25 +1,38 @@
 import { GetServerSideProps } from "next";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
-import { ArrowLeft, MapPin, Calendar, Settings, Fuel, Users, Award, MessageCircle, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ListingDetail } from "@/lib/buyauto/types";
+import type { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
-import ImageGallery from "@/components/buyauto/detail/ImageGallery";
 import { StructuredData } from "@/components/buyauto/StructuredData";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
-import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
+import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
+import { getGaragePublicById } from "@/services/garageService";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessagingPanel } from "@/components/buyauto/detail/MessagingPanel";
 
-// Helper function to ensure no undefined values (Next.js serialization fix)
-const serializeListing = (listing: ListingDetail | null): ListingDetail | null => {
+const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), { ssr: false });
+
+const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
+  loading: () => <div className="h-96 bg-neutral-50 animate-pulse rounded-2xl mt-16" />,
+});
+
+const LeasingCalculator = dynamic<LeasingCalculatorProps>(
+  () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
+  { ssr: false, loading: () => <div className="h-80 bg-neutral-50 animate-pulse rounded-2xl" /> }
+);
+
+interface ListingDetailPageProps {
+  listing: ListingDetail | null;
+  notFound?: boolean;
+}
+
+function serializeListing(listing: ListingDetail | null): ListingDetail | null {
   if (!listing) return null;
-  
+
   return {
     ...listing,
     ui_version: (listing as unknown as { ui_version?: string | null }).ui_version === "v2" ? "v2" : "v1",
@@ -28,38 +41,36 @@ const serializeListing = (listing: ListingDetail | null): ListingDetail | null =
     depositCHF: listing.depositCHF ?? null,
     cover_image_url: (listing as unknown as { cover_image_url?: string | null }).cover_image_url ?? null,
     remaining_km: (listing as unknown as { remaining_km?: number | null }).remaining_km ?? null,
+    vin: listing.vin ?? null,
+    makeId: listing.makeId ?? null,
+    modelId: listing.modelId ?? null,
+    variantId: listing.variantId ?? null,
+    powerHp: listing.powerHp ?? null,
+    drivetrain: listing.drivetrain ?? null,
+    firstRegistration: listing.firstRegistration ?? null,
   };
-};
-
-// Dynamically import InquiryForm (only loads when user clicks inquiry button)
-const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), {
-  ssr: false
-});
-
-// Dynamically import SimilarListings as it fetches data and is below the fold
-const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
-  loading: () => <div className="h-96 bg-neutral-50 animate-pulse rounded-xl mt-16" />
-});
-
-const LeasingCalculator = dynamic<LeasingCalculatorProps>(
-  () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
-  { ssr: false, loading: () => <div className="h-80 bg-neutral-50 animate-pulse rounded-xl" /> }
-);
-
-interface ListingDetailPageProps {
-  listing: ListingDetail | null;
-  notFound?: boolean;
 }
 
 export default function ListingDetailPage({ listing: initialListing, notFound }: ListingDetailPageProps) {
-  const [listing, setListing] = useState<ListingDetail | null>(initialListing);
-  const [isLoading, setIsLoading] = useState(!initialListing && !notFound);
-  const [showInquiryForm, setShowInquiryForm] = useState(false);
-  const [clientNotFound, setClientNotFound] = useState(false);
-  const [isOwnerPreview, setIsOwnerPreview] = useState(false);
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
+
+  const [listing, setListing] = useState<ListingDetail | null>(initialListing);
+  const [isLoading, setIsLoading] = useState(!initialListing && !notFound);
+  const [clientNotFound, setClientNotFound] = useState(false);
+  const [isOwnerPreview, setIsOwnerPreview] = useState(false);
+
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
+
+  const [garage, setGarage] = useState<{
+    id: string;
+    name: string;
+    city: string | null;
+    bio: string | null;
+    slug: string | null;
+    logoUrl: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!listing && !notFound && !clientNotFound && id && typeof id === "string") {
@@ -68,9 +79,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         try {
           const isPreview = router.query.preview === "true";
 
-          let fetchedListing = isPreview
-            ? await getUserListingById(id)
-            : await getPublishedListingById(id);
+          let fetchedListing = isPreview ? await getUserListingById(id) : await getPublishedListingById(id);
 
           if (!fetchedListing && isPreview && user) {
             const ownerListing = await getUserListingById(id);
@@ -98,15 +107,62 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     }
   }, [id, listing, notFound, clientNotFound, router.query.preview, user]);
 
+  useEffect(() => {
+    const garageId = (listing as unknown as { garage_id?: string | null }).garage_id ?? null;
+    const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
+
+    if (!listing || sellerType !== "garage" || !garageId) {
+      setGarage(null);
+      return;
+    }
+
+    const run = async () => {
+      const data = await getGaragePublicById(garageId);
+
+      const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+      const logoUrl =
+        base && garageId
+          ? `${base}/storage/v1/object/public/listing-images/${["garage-logos", garageId, "logo_medium.webp"]
+              .map((s) => encodeURIComponent(s))
+              .join("/")}`
+          : null;
+
+      if (!data) {
+        setGarage({
+          id: garageId,
+          name: (listing as unknown as { garage_name?: string | null }).garage_name ?? "Garage",
+          city: null,
+          bio: null,
+          slug: null,
+          logoUrl,
+        });
+        return;
+      }
+
+      setGarage({
+        id: data.id,
+        name: data.garage_name,
+        city: data.city,
+        bio: data.description,
+        slug: data.slug,
+        logoUrl,
+      });
+    };
+
+    run();
+  }, [listing]);
+
+  const images = useMemo(() => (Array.isArray(listing?.images) ? listing?.images : []) ?? [], [listing]);
+
   if (notFound || clientNotFound) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center px-6">
           <h1 className="text-2xl font-bold text-neutral-900 mb-4">Inserat nicht gefunden</h1>
           <p className="text-neutral-600 mb-6">
             Das gewünschte Inserat existiert nicht oder ist nicht mehr verfügbar.
           </p>
-          <Button onClick={() => router.push("/suche")} className="bg-red-500 hover:bg-red-600 text-white">
+          <Button onClick={() => router.push("/suche")} className="bg-red-500 hover:bg-red-600 text-white rounded-2xl">
             Zurück zur Suche
           </Button>
         </div>
@@ -117,15 +173,15 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   if (isLoading || !listing) {
     return (
       <div className="min-h-screen bg-neutral-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="animate-pulse space-y-6">
-            <div className="w-32 h-10 bg-neutral-200 rounded"></div>
+            <div className="w-32 h-10 bg-neutral-200 rounded-2xl" />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="aspect-[4/3] bg-neutral-200 rounded-lg"></div>
+              <div className="aspect-[4/3] bg-neutral-200 rounded-3xl" />
               <div className="space-y-4">
-                <div className="w-3/4 h-8 bg-neutral-200 rounded"></div>
-                <div className="w-1/2 h-6 bg-neutral-200 rounded"></div>
-                <div className="w-1/3 h-10 bg-neutral-200 rounded"></div>
+                <div className="w-3/4 h-8 bg-neutral-200 rounded-2xl" />
+                <div className="w-1/2 h-6 bg-neutral-200 rounded-2xl" />
+                <div className="w-1/3 h-10 bg-neutral-200 rounded-2xl" />
               </div>
             </div>
           </div>
@@ -134,38 +190,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     );
   }
 
-  const uiVersion = (listing as unknown as { ui_version?: string | null }).ui_version === "v2" ? "v2" : "v1";
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("de-CH", {
-      style: "currency",
-      currency: "CHF",
-      minimumFractionDigits: 0
-    }).format(price);
-  };
-
-  const formatMileage = (km: number) => {
-    return new Intl.NumberFormat("de-CH").format(km);
-  };
-
-  const getFuelIcon = (fuel: string) => {
-    return <Fuel className="w-4 h-4" />;
-  };
-
-  const getGearboxIcon = (gearbox: string) => {
-    return <Settings className="w-4 h-4" />;
-  };
-
-  const images = listing.images && listing.images.length > 0 ? listing.images : [];
-  const baseUrl = process.env.NODE_ENV === "production" 
-    ? "https://www.buyauto.ch" 
-    : "http://localhost:3000";
+  const baseUrl = process.env.NODE_ENV === "production" ? "https://www.buyauto.ch" : "http://localhost:3000";
   const listingUrl = `${baseUrl}/fahrzeug/${listing.id}`;
   const ogImage = listing.imageUrl || (images.length > 0 ? images[0] : `${baseUrl}/buyauto-logo.png`);
 
-  const dealType = (listing.deal_type ?? (listing as unknown as { deal_type?: string }).deal_type ?? "lease_takeover") as
-    | "lease_takeover"
-    | "direct_purchase";
+  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
 
   const leasingOffer = (listing as unknown as { leasing_offer?: any; leasingOffer?: any }).leasing_offer ??
     (listing as unknown as { leasing_offer?: any; leasingOffer?: any }).leasingOffer ??
@@ -179,14 +208,13 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     null;
 
   const purchasePriceChf = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
-  const effectivePurchasePriceChf = purchasePriceChf;
 
   const teaserMonthlyChf =
     dealType === "direct_purchase" &&
     leasingOffer?.enabled === true &&
-    effectivePurchasePriceChf
+    purchasePriceChf
       ? estimateTeaserMonthlyRateChf({
-          priceChf: effectivePurchasePriceChf,
+          priceChf: purchasePriceChf,
           year: listing.year,
           mileageKm: listing.mileageKm,
           interestRatePct: Number(leasingOffer.interest_rate_pct),
@@ -202,13 +230,14 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
       ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
       : null;
 
-  const structuredPrice = dealType === "direct_purchase" ? (effectivePurchasePriceChf ?? 0) : listing.pricePerMonthCHF;
+  const structuredPrice = dealType === "direct_purchase" ? (purchasePriceChf ?? 0) : listing.pricePerMonthCHF;
+
   const metaPriceText =
     dealType === "direct_purchase"
-      ? effectivePurchasePriceChf
-        ? `${formatPrice(effectivePurchasePriceChf)} Kaufpreis`
+      ? purchasePriceChf
+        ? `${new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(purchasePriceChf)} Kaufpreis`
         : "Kaufpreis"
-      : `${formatPrice(listing.pricePerMonthCHF)}/Monat`;
+      : `${new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(listing.pricePerMonthCHF)}/Monat`;
 
   return (
     <>
@@ -219,8 +248,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
           content={`${listing.brand} ${listing.model} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
         />
         <link rel="canonical" href={listingUrl} />
-        
-        {/* Open Graph Meta Tags */}
+
         <meta property="og:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
         <meta
           property="og:description"
@@ -233,300 +261,69 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content={`${listing.brand} ${listing.model} ${listing.year}`} />
         <meta property="og:site_name" content="BuyAuto" />
-        
-        {/* Twitter Card Meta Tags */}
+
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
         <meta name="twitter:description" content={`${listing.brand} ${listing.model} ${listing.year} - ${metaPriceText}`} />
         <meta name="twitter:image" content={ogImage} />
       </Head>
 
-      {/* Structured Data for Google */}
-      <StructuredData 
-        type="listing" 
+      <StructuredData
+        type="listing"
         listingData={{
           id: listing.id,
           brand: listing.brand,
           model: listing.model,
           year: listing.year,
           price: structuredPrice,
-          images: images
+          images: images,
         }}
       />
 
-      <div className="min-h-screen bg-neutral-50">
-        <div className="bg-white border-b border-neutral-200 sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <Button
-                variant="ghost"
-                onClick={() => router.back()}
-                className="flex items-center gap-2 hover:bg-neutral-100"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Zurück
-              </Button>
-              <div className="text-sm text-neutral-600">
-                ID: {listing.id.slice(0, 8)}...
-              </div>
-            </div>
+      <div className="bg-white border-b border-neutral-200 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2 hover:bg-neutral-100">
+              <ArrowLeft className="w-4 h-4" />
+              Zurück
+            </Button>
+            <div className="text-sm text-neutral-600">ID: {listing.id.slice(0, 8)}...</div>
           </div>
         </div>
-
-        {isOwnerPreview && (
-          <div className="bg-amber-50 border-b border-amber-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="text-sm text-amber-900">
-                Vorschau: Dieses Inserat ist noch nicht veröffentlicht und nur für dich sichtbar.
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="border-amber-300 text-amber-900 hover:bg-amber-100"
-                  onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}
-                >
-                  Vorschau-Link öffnen
-                </Button>
-                <Button
-                  className="bg-neutral-900 hover:bg-neutral-800 text-white"
-                  onClick={() => router.push("/dashboard")}
-                >
-                  Zum Dashboard
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden">
-                <ImageGallery 
-                  images={images}
-                  brand={listing.brand}
-                  model={listing.model}
-                  premium={listing.premium}
-                />
-              </div>
-
-              {/* Description Section */}
-              {listing.description && listing.description.trim() && (
-                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-neutral-600" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-neutral-900">Fahrzeugbeschreibung</h2>
-                  </div>
-                  <div className="prose prose-neutral max-w-none">
-                    <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">
-                      {listing.description}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-8">
-                <h2 className="text-2xl font-bold text-neutral-900 mb-6">Fahrzeugdetails</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-600">Baujahr</p>
-                      <p className="font-semibold text-neutral-900">{listing.year}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                      <Settings className="w-5 h-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-600">Kilometerstand</p>
-                      <p className="font-semibold text-neutral-900">{formatMileage(listing.mileageKm)} km</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                      {getFuelIcon(listing.fuel)}
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-600">Treibstoff</p>
-                      <p className="font-semibold text-neutral-900">{listing.fuel}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                      {getGearboxIcon(listing.gearbox)}
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-600">Getriebe</p>
-                      <p className="font-semibold text-neutral-900">{listing.gearbox}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                      <Users className="w-5 h-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-600">Karosserie</p>
-                      <p className="font-semibold text-neutral-900">{listing.body}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                      <MapPin className="w-5 h-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-600">Standort</p>
-                      <p className="font-semibold text-neutral-900">{listing.location}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <Card className="border-neutral-200/60 shadow-sm bg-white">
-                <CardContent className="p-8">
-                  <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold text-neutral-900 mb-2">
-                      {listing.brand} {listing.model}
-                    </h1>
-                    <p className="text-neutral-600">{listing.year}</p>
-                  </div>
-
-                  <div className="text-center mb-6">
-                    {dealType === "direct_purchase" ? (
-                      <>
-                        <div className="text-4xl font-bold text-red-500 mb-1">
-                          {effectivePurchasePriceChf ? formatPrice(effectivePurchasePriceChf) : "Preis auf Anfrage"}
-                        </div>
-                        <p className="text-neutral-600">Kaufpreis</p>
-                        {teaserMonthlyLabel && (
-                          <p className="text-sm text-neutral-600 mt-2">
-                            {teaserMonthlyLabel}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-4xl font-bold text-red-500 mb-1">
-                          {formatPrice(listing.pricePerMonthCHF)}
-                        </div>
-                        <p className="text-neutral-600">pro Monat</p>
-                        {effectivePurchasePriceChf && (
-                          <p className="text-sm text-neutral-600 mt-2">
-                            Direktkauf: {formatPrice(effectivePurchasePriceChf)}
-                          </p>
-                        )}
-                        <p className="text-sm text-neutral-600 mt-2">
-                          {(listing.depositCHF && listing.depositCHF > 0)
-                            ? `Einmalige Kaution: ${formatPrice(listing.depositCHF)}`
-                            : "Keine Kaution"}
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {dealType !== "direct_purchase" && (
-                    <div className="space-y-4 mb-6">
-                      <div className="flex justify-between items-center py-2 border-b border-neutral-100">
-                        <span className="text-neutral-600">Restlaufzeit</span>
-                        <span className="font-semibold">{listing.remainingMonths} Monate</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        {listing.remaining_km && (
-                          <div>
-                            <p className="text-sm text-neutral-500 mb-1">Verbleibende KM</p>
-                            <p className="text-base font-semibold">{listing.remaining_km.toLocaleString("de-CH")} km</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <Button
-                      onClick={() => setShowInquiryForm(true)}
-                      size="lg"
-                      className="w-full bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all"
-                    >
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      Jetzt anfragen
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <OwnerMiniProfile
-                sellerType={(listing as unknown as { seller_type?: string | null }).seller_type ?? null}
-                name={
-                  ((listing as unknown as { seller_name?: string | null }).seller_name ?? null) ||
-                  ((listing as unknown as { garage_name?: string | null }).garage_name ?? null)
-                }
-                location={(listing.location ?? null) as unknown as string | null}
-                avatarUrl={(() => {
-                  const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
-                  const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
-                  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-                  if (sellerType === "garage" && garageId && base) {
-                    const path = `garage-logos/${garageId}/logo_medium.webp`
-                      .split("/")
-                      .map((seg) => encodeURIComponent(seg))
-                      .join("/");
-                    return `${base}/storage/v1/object/public/listing-images/${path}`;
-                  }
-                  return (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
-                })()}
-              />
-
-              <div id="messages">
-                <MessagingPanel listingId={listing.id} listingTitle={`${listing.brand} ${listing.model} ${listing.year}`} />
-              </div>
-
-              {uiVersion === "v2" && dealType === "direct_purchase" && leasingOffer?.enabled === true && effectivePurchasePriceChf && (
-                <LeasingCalculator
-                  priceChf={effectivePurchasePriceChf}
-                  year={listing.year}
-                  mileageKm={listing.mileageKm}
-                  offer={leasingOffer}
-                />
-              )}
-
-              {listing.premium && (
-                <Card className="border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-white shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Award className="w-6 h-6 text-amber-500" />
-                      <h3 className="text-lg font-semibold text-amber-900">Premium Inserat</h3>
-                    </div>
-                    <ul className="text-sm text-amber-800 space-y-1">
-                      <li>• Geprüfte Qualität</li>
-                      <li>• Prioritäre Sichtbarkeit</li>
-                      <li>• Erweiterte Garantie</li>
-                      <li>• Schnelle Bearbeitung</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-16">
-            <SimilarListings listing={listing} />
-          </div>
-        </div>
-
-        <InquiryForm
-          listingId={listing.id}
-          listingTitle={`${listing.brand} ${listing.model} ${listing.year}`}
-          open={showInquiryForm}
-          onOpenChange={setShowInquiryForm}
-        />
       </div>
+
+      <ListingDetailV2
+        listing={listing}
+        images={images}
+        isOwnerPreview={isOwnerPreview}
+        garage={garage}
+        teaserMonthlyLabel={teaserMonthlyLabel}
+        purchasePriceChf={purchasePriceChf}
+        onInquiry={() => setShowInquiryForm(true)}
+        childrenBelowFold={
+          <>
+            {((listing as unknown as { ui_version?: string | null }).ui_version === "v2") &&
+              dealType === "direct_purchase" &&
+              leasingOffer?.enabled === true &&
+              purchasePriceChf && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+                  <LeasingCalculator priceChf={purchasePriceChf} year={listing.year} mileageKm={listing.mileageKm} offer={leasingOffer} />
+                </div>
+              )}
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+              <SimilarListings listing={listing} />
+            </div>
+          </>
+        }
+      />
+
+      <InquiryForm
+        listingId={listing.id}
+        listingTitle={`${listing.brand} ${listing.model} ${listing.year}`}
+        open={showInquiryForm}
+        onOpenChange={setShowInquiryForm}
+      />
     </>
   );
 }
@@ -550,7 +347,6 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       return { props: { listing: null } };
     }
 
-    // Serialize listing to convert undefined to null
     const serializedListing = serializeListing(listing);
 
     return { props: { listing: serializedListing } };
