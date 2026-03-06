@@ -117,24 +117,36 @@ export async function getGarageBySlug(slug: string): Promise<Garage | null> {
 
 export async function getGaragePublicById(id: string): Promise<GaragePublicInfo | null> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabase.rpc("get_garage_public", { p_garage_id: id });
+
+    if (!error) {
+      const row = Array.isArray(data) ? (data[0] as any) : null;
+
+      if (row) {
+        return {
+          id: String(row.id),
+          garage_name: String(row.garage_name ?? ""),
+          slug: typeof row.slug === "string" ? row.slug : null,
+          city: typeof row.city === "string" ? row.city : null,
+          description: typeof row.description === "string" ? row.description : null,
+        };
+      }
+    }
+
+    const { data: directData, error: directError } = await supabase
       .from("garages")
       .select("id, garage_name, slug, city, description")
       .eq("id", id)
       .maybeSingle();
 
-    if (error) {
-      return null;
-    }
-
-    if (!data) return null;
+    if (directError || !directData) return null;
 
     return {
-      id: String((data as any).id),
-      garage_name: String((data as any).garage_name ?? ""),
-      slug: typeof (data as any).slug === "string" ? (data as any).slug : null,
-      city: typeof (data as any).city === "string" ? (data as any).city : null,
-      description: typeof (data as any).description === "string" ? (data as any).description : null,
+      id: String((directData as any).id),
+      garage_name: String((directData as any).garage_name ?? ""),
+      slug: typeof (directData as any).slug === "string" ? (directData as any).slug : null,
+      city: typeof (directData as any).city === "string" ? (directData as any).city : null,
+      description: typeof (directData as any).description === "string" ? (directData as any).description : null,
     };
   } catch {
     return null;

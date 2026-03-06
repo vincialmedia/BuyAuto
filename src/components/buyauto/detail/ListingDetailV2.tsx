@@ -21,7 +21,7 @@ function formatNumber(value: number): string {
 function formatDateDeCh(input: string): string {
   const d = new Date(input);
   if (Number.isNaN(d.getTime())) return input;
-  return new Intl.DateTimeFormat("de-CH", { year: "numeric", month: "2-digit" }).format(d);
+  return new Intl.DateTimeFormat("de-CH", { year: "numeric", month: "2-digit", timeZone: "Europe/Zurich" }).format(d);
 }
 
 export function ListingDetailV2({

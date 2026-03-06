@@ -1553,6 +1553,16 @@ export type Database = {
         }[]
       }
       get_distinct_brands: { Args: never; Returns: string[] }
+      get_garage_public: {
+        Args: { p_garage_id: string }
+        Returns: {
+          city: string
+          description: string
+          garage_name: string
+          id: string
+          slug: string
+        }[]
+      }
       get_models_for_brand: {
         Args: { p_brand: string }
         Returns: {
