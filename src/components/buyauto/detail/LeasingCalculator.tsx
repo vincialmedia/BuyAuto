@@ -238,8 +238,20 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
         </div>
 
         <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-          <p className="text-sm text-neutral-600">Geschätzte Monatsrate</p>
-          <p className="text-3xl font-bold text-neutral-900 tracking-tight mt-1">CHF {formattedRate}.–</p>
+          <div className="text-sm font-medium text-neutral-600">Geschätzte Monatsrate</div>
+          <div className="mt-2 text-5xl font-bold tracking-tight text-neutral-900">
+            CHF {formattedRate}.–
+          </div>
+
+          {typeof Number(offer.interest_rate_pct) === "number" &&
+            Number.isFinite(Number(offer.interest_rate_pct)) ? (
+            <div className="mt-3 flex items-center gap-2">
+              <div className="rounded-full bg-primary/10 px-4 py-2 text-base font-semibold text-primary ring-1 ring-primary/25 shadow-[0_0_0_1px_rgba(0,0,0,0.02),0_10px_30px_rgba(0,0,0,0.08)] cursor-default select-none">
+                Garage-Zinssatz: {Number(offer.interest_rate_pct).toFixed(1)}%
+              </div>
+            </div>
+          ) : null}
+
           <p className="text-sm text-neutral-600 mt-2">
             {isProviderAdjusted ? "Restwert (vom Anbieter angepasst): " : "Geschätzter Restwert: "}
             <span className="font-medium text-neutral-900">CHF {formattedRestwert}.–</span>
