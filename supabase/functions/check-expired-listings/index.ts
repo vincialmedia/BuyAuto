@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
     const { data: legacyExpired, error: legacyExpiredError } = await supabaseAdmin
       .from("listings")
       .select("id")
-      .eq("status", "expired");
+      .eq("status", "expired")
+      .neq("seller_type", "garage");
 
     if (legacyExpiredError) {
       throw legacyExpiredError;
@@ -74,7 +75,8 @@ Deno.serve(async (req) => {
       .from("listings")
       .select("id, created_at, duration_days, expires_at")
       .in("status", ["published", "active"])
-      .not("duration_days", "is", null);
+      .not("duration_days", "is", null)
+      .neq("seller_type", "garage");
 
     if (candidatesError) {
       throw candidatesError;
