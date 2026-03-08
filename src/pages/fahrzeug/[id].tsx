@@ -102,10 +102,15 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   }, [id, listing, notFound, clientNotFound, router.query.preview, user]);
 
   useEffect(() => {
+    if (!listing) {
+      setGarage(null);
+      return;
+    }
+
     const garageId = (listing as unknown as { garage_id?: string | null }).garage_id ?? null;
     const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
 
-    if (!listing || sellerType !== "garage" || !garageId) {
+    if (sellerType !== "garage" || !garageId) {
       setGarage(null);
       return;
     }
