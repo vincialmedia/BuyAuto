@@ -390,6 +390,19 @@ export function ListingDetailV2({
               </CardContent>
             </Card>
 
+            <div id="messages" className="scroll-mt-24">
+              <MessagingPanel listingId={listing.id} listingTitle={`${listing.brand} ${listing.model} ${listing.year}`} />
+            </div>
+
+            {canShowLeasingCalculator && (
+              <LeasingCalculator
+                priceChf={purchasePriceChf as number}
+                year={listing.year}
+                mileageKm={typeof listing.mileageKm === "number" ? listing.mileageKm : 0}
+                offer={leasingOffer}
+              />
+            )}
+
             {(() => {
               const loc = (listing.location ?? "").trim();
               const embedUrl = getGoogleMapsEmbedUrl(loc);
@@ -448,19 +461,6 @@ export function ListingDetailV2({
                 </Card>
               );
             })()}
-
-            <div id="messages" className="scroll-mt-24">
-              <MessagingPanel listingId={listing.id} listingTitle={`${listing.brand} ${listing.model} ${listing.year}`} />
-            </div>
-
-            {canShowLeasingCalculator && (
-              <LeasingCalculator
-                priceChf={purchasePriceChf as number}
-                year={listing.year}
-                mileageKm={typeof listing.mileageKm === "number" ? listing.mileageKm : 0}
-                offer={leasingOffer}
-              />
-            )}
           </div>
         </div>
       </div>
