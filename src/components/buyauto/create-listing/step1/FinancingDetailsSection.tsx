@@ -7,7 +7,7 @@ import { CalendarIcon } from "lucide-react";
 import type { DealType } from "@/lib/buyauto/types";
 import type { ListingStep1Form } from "@/lib/buyauto/schemas";
 
-import { estimateRestwert } from "@/components/buyauto/detail/LeasingCalculator";
+import { estimateRestwert } from "@/lib/buyauto/leasingMath";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";

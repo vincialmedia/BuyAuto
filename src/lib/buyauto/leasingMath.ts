@@ -48,20 +48,24 @@ export function estimateRestwert(args: {
 }): RestwertEstimate {
   const { priceChf, year, mileageKm, termMonths, kmPerYear, currentYear } = args;
 
-  const ageYears = Math.max(0, currentYear - year);
+  const safePrice = Number.isFinite(priceChf) ? priceChf : 0;
+  const safeYear = Number.isFinite(year) ? year : currentYear;
+  const safeMileage = Number.isFinite(mileageKm) ? Math.max(0, mileageKm) : 0;
+  const safeTermMonths = Number.isFinite(termMonths) ? Math.max(1, Math.floor(termMonths)) : 60;
+  const safeKmPerYear = Number.isFinite(kmPerYear) ? Math.max(0, kmPerYear) : 15000;
 
-  const basePct = interpolateBaseResidualPct(termMonths);
+  const ageYears = Math.max(0, currentYear - safeYear);
+  const basePct = interpolateBaseResidualPct(safeTermMonths);
 
   const ageAdj = clamp(0.03 - 0.02 * ageYears, -0.15, 0.03);
 
-  const endKm = mileageKm + kmPerYear * (termMonths / 12);
-  const typicalEndKm = mileageKm + 15000 * (termMonths / 12);
+  const endKm = safeMileage + safeKmPerYear * (safeTermMonths / 12);
+  const typicalEndKm = safeMileage + 15000 * (safeTermMonths / 12);
   const deltaKm = endKm - typicalEndKm;
   const kmAdj = clamp(-deltaKm / 100000, -0.08, 0.04);
 
   const residualPct = clamp(basePct + ageAdj + kmAdj, 0.15, 0.7);
-
-  const restwertChf = Math.round(priceChf * residualPct);
+  const restwertChf = Math.round(safePrice * residualPct);
 
   return {
     restwertChf,
@@ -92,18 +96,30 @@ export function estimateMonthlyLeasingRate(args: {
 }): LeasingRateEstimate {
   const { priceChf, interestRatePct, downPaymentPct, termMonths, restwertChf } = args;
 
-  const downPaymentChf = priceChf * (downPaymentPct / 100);
+  const safePrice = Number.isFinite(priceChf) ? Math.max(0, priceChf) : 0;
+  const safeRestwert = Number.isFinite(restwertChf) ? Math.max(0, restwertChf) : 0;
 
-  const principal = priceChf - downPaymentChf - restwertChf;
-  const monthlyAmort = principal / termMonths;
+  const months = Number.isFinite(termMonths) ? Math.max(1, Math.floor(termMonths)) : 60;
 
-  const monthlyInterest = ((priceChf - downPaymentChf + restwertChf) / 2) * (interestRatePct / 100) / 12;
+  const safeInterestRatePct = Number.isFinite(interestRatePct) ? Math.max(0, interestRatePct) : 0;
+  const safeDownPaymentPct = Number.isFinite(downPaymentPct) ? downPaymentPct : 0;
 
-  const monthlyRateChf = monthlyAmort + monthlyInterest;
+  const downPaymentChf = safePrice * (safeDownPaymentPct / 100);
+
+  const principalRaw = safePrice - downPaymentChf - safeRestwert;
+  const principal = Number.isFinite(principalRaw) ? Math.max(0, principalRaw) : 0;
+  const monthlyAmort = principal / months;
+
+  const interestBase = (safePrice - downPaymentChf + safeRestwert) / 2;
+  const monthlyInterestRaw = interestBase * (safeInterestRatePct / 100) / 12;
+  const monthlyInterest = Number.isFinite(monthlyInterestRaw) ? Math.max(0, monthlyInterestRaw) : 0;
+
+  const monthlyRateRaw = monthlyAmort + monthlyInterest;
+  const monthlyRateChf = Number.isFinite(monthlyRateRaw) ? Math.max(0, monthlyRateRaw) : 0;
 
   return {
-    restwertChf,
-    residualPct: priceChf > 0 ? restwertChf / priceChf : 0,
+    restwertChf: safeRestwert,
+    residualPct: safePrice > 0 ? safeRestwert / safePrice : 0,
     downPaymentChf,
     monthlyAmort,
     monthlyInterest,

@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { estimateRestwert } from "@/components/buyauto/detail/LeasingCalculator";
+import { estimateRestwert } from "@/lib/buyauto/leasingMath";
 
 export interface GarageLeasingOfferFormValues {
   leasing_enabled: boolean;
