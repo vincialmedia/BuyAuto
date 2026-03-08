@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { uploadGarageLogo, uploadGarageHeaderImage } from "@/services/storageService";
 import { generateSlugFromName, type Garage } from "@/services/garageService";
+import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
 
 interface GarageProfileTabProps {
   garage: Garage | null;
@@ -147,6 +148,13 @@ export function GarageProfileTab({
   const dealerSlug = profileDraft.slug.trim();
   const publicProfileUrl = dealerSlug ? `${shareOrigin}/${dealerSlug}` : "";
   const embedUrl = dealerSlug ? `${shareOrigin}/embed/garage/${dealerSlug}` : "";
+
+  const mapsPreviewUrl = useMemo(() => {
+    const q = profileDraft.city?.trim();
+    if (!q) return "";
+    const query = encodeURIComponent(`${q}, Switzerland`);
+    return `https://www.google.com/maps?q=${query}&output=embed`;
+  }, [profileDraft.city]);
 
   const embedSnippet = useMemo(() => {
     if (!dealerSlug) return "";
@@ -529,15 +537,29 @@ export function GarageProfileTab({
             <p className="text-xs text-neutral-500">Nur Kleinbuchstaben, Zahlen und Bindestriche</p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="city">Stadt</Label>
-            <Input
-              id="city"
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="city">Standort</Label>
+            <LocationAutocomplete
               value={profileDraft.city}
-              onChange={(e) => setProfileDraft((p) => ({ ...p, city: e.target.value }))}
+              onValueChange={(next) => setProfileDraft((p) => ({ ...p, city: next }))}
               placeholder="z.B. Zürich"
-              className="rounded-2xl"
+              inputClassName="rounded-2xl"
             />
+            <p className="text-xs text-neutral-500">Dieser Standort wird als Standard für zukünftige Inserate verwendet.</p>
+
+            {mapsPreviewUrl ? (
+              <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
+                <div className="aspect-[16/10] w-full bg-neutral-100">
+                  <iframe
+                    title="Standort Vorschau"
+                    src={mapsPreviewUrl}
+                    className="h-full w-full"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
