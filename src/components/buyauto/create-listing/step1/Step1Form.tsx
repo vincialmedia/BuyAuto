@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
+import { getMyGarage } from "@/services/garageService";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,6 +105,7 @@ export function Step1Form() {
   const { data, updateData, nextStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const didPrefillLocationRef = useRef(false);
 
   const [vinInput, setVinInput] = useState<string>(typeof (data as any)?.vin === "string" ? (data as any).vin : "");
   const [vinLoading, setVinLoading] = useState(false);
@@ -513,6 +515,42 @@ export function Step1Form() {
     updateData(values as any);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!isGarage) return;
+    if (profileLoading) return;
+    if (isEditingExistingListing) return;
+    if (didPrefillLocationRef.current) return;
+
+    const currentFormLocation = String(getValues("location") ?? "").trim();
+    const wizardLocation = typeof (data as any)?.location === "string" ? String((data as any).location).trim() : "";
+
+    if (currentFormLocation.length > 0 || wizardLocation.length > 0) {
+      didPrefillLocationRef.current = true;
+      return;
+    }
+
+    const run = async () => {
+      try {
+        const garage = await getMyGarage();
+        const city = typeof garage?.city === "string" ? garage.city.trim() : "";
+
+        if (!city) {
+          didPrefillLocationRef.current = true;
+          return;
+        }
+
+        setValue("location", city, { shouldValidate: true, shouldDirty: false });
+        updateData({ location: city } as any);
+        didPrefillLocationRef.current = true;
+      } catch {
+        didPrefillLocationRef.current = true;
+      }
+    };
+
+    void run();
+  }, [data, getValues, isEditingExistingListing, isGarage, profileLoading, setValue, updateData, user]);
 
   const onSubmit = async (values: VehicleStepFormValues) => {
     if (!user) {

@@ -11,6 +11,7 @@ import {
   Settings2,
   Tag,
   Zap,
+  MapPin,
 } from "lucide-react";
 import { useMemo } from "react";
 import type { ComponentType } from "react";
@@ -39,6 +40,25 @@ function formatDateDeCh(input: string): string {
   const d = new Date(input);
   if (Number.isNaN(d.getTime())) return input;
   return new Intl.DateTimeFormat("de-CH", { year: "numeric", month: "2-digit", timeZone: "Europe/Zurich" }).format(d);
+}
+
+function getGoogleMapsQuery(locationText: string): string {
+  const base = locationText.trim();
+  if (!base) return "";
+  if (/\b(schweiz|switzerland)\b/i.test(base)) return base;
+  return `${base}, Schweiz`;
+}
+
+function getGoogleMapsEmbedUrl(locationText: string): string | null {
+  const q = getGoogleMapsQuery(locationText);
+  if (!q) return null;
+  return `https://www.google.com/maps?q=${encodeURIComponent(q)}&output=embed`;
+}
+
+function getGoogleMapsOpenUrl(locationText: string): string | null {
+  const q = getGoogleMapsQuery(locationText);
+  if (!q) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
 function FactGrid({
@@ -153,6 +173,16 @@ export function ListingDetailV2({
       items.push({ key: "power", label: "Leistung", value: `${formatNumber(powerHp)} PS`, Icon: Zap });
     }
 
+    const remainingKm = (listing as unknown as { remaining_km?: number | null }).remaining_km ?? null;
+    if (typeof remainingKm === "number" && remainingKm > 0) {
+      items.push({
+        key: "remaining-km",
+        label: "Restkilometer",
+        value: `${formatNumber(remainingKm)} km`,
+        Icon: Gauge,
+      });
+    }
+
     return items;
   }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing]);
 
@@ -192,57 +222,53 @@ export function ListingDetailV2({
                 )}
               </div>
 
-              <div className="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-                <div className="order-2 lg:order-1 lg:col-span-7 space-y-4">
-                  <div className="flex flex-wrap gap-2">
+              <div className="mt-5 space-y-5">
+                <div className="rounded-3xl bg-neutral-900 text-white p-5 sm:p-6 shadow-sm border border-neutral-800/60">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-white/70">{primaryPriceSub}</div>
+                    {dealType !== "direct_purchase" && typeof listing.remainingMonths === "number" && listing.remainingMonths > 0 && (
+                      <div className="text-xs text-white/70">Restlaufzeit: {listing.remainingMonths}M</div>
+                    )}
+                  </div>
+
+                  <div className="mt-1 text-3xl sm:text-4xl font-bold tracking-tight">{primaryPriceLabel}</div>
+
+                  {dealType !== "direct_purchase" && typeof listing.depositCHF === "number" && (
+                    <div className="mt-2 text-sm text-white/75">
+                      Kaution:{" "}
+                      <span className="font-semibold text-white">{listing.depositCHF > 0 ? formatChf(listing.depositCHF) : "Keine"}</span>
+                    </div>
+                  )}
+
+                  {dealType === "direct_purchase" && teaserMonthlyLabel && (
+                    <div className="mt-3 rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/85">
+                      {teaserMonthlyLabel}
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex items-center gap-2 text-xs text-white/60">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/10">
+                      <FileText className="h-3.5 w-3.5" />
+                    </span>
+                    <span>Alle Angaben gemäss Inserat.</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
+                    <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
+                    {dealType === "direct_purchase" ? "Direktkauf" : "Leasingübernahme"}
+                  </span>
+
+                  {dealType === "direct_purchase" && hasLeasing && (
                     <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
                       <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
-                      {dealType === "direct_purchase" ? "Direktkauf" : "Leasingübernahme"}
+                      Leasing
                     </span>
-
-                    {dealType === "direct_purchase" && hasLeasing && (
-                      <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
-                        <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
-                        Leasing
-                      </span>
-                    )}
-                  </div>
-
-                  <FactGrid items={vehicleFacts} />
+                  )}
                 </div>
 
-                <div className="order-1 lg:order-2 lg:col-span-5">
-                  <div className="rounded-3xl bg-neutral-900 text-white p-5 sm:p-6 shadow-sm border border-neutral-800/60">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-white/70">{primaryPriceSub}</div>
-                      {dealType !== "direct_purchase" && typeof listing.remainingMonths === "number" && listing.remainingMonths > 0 && (
-                        <div className="text-xs text-white/70">Restlaufzeit: {listing.remainingMonths}M</div>
-                      )}
-                    </div>
-
-                    <div className="mt-1 text-3xl font-bold tracking-tight">{primaryPriceLabel}</div>
-
-                    {dealType !== "direct_purchase" && typeof listing.depositCHF === "number" && (
-                      <div className="mt-2 text-sm text-white/75">
-                        Kaution:{" "}
-                        <span className="font-semibold text-white">{listing.depositCHF > 0 ? formatChf(listing.depositCHF) : "Keine"}</span>
-                      </div>
-                    )}
-
-                    {dealType === "direct_purchase" && teaserMonthlyLabel && (
-                      <div className="mt-3 rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/85">
-                        {teaserMonthlyLabel}
-                      </div>
-                    )}
-
-                    <div className="mt-4 flex items-center gap-2 text-xs text-white/60">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/10">
-                        <FileText className="h-3.5 w-3.5" />
-                      </span>
-                      <span>Alle Angaben gemäss Inserat.</span>
-                    </div>
-                  </div>
-                </div>
+                <FactGrid items={vehicleFacts} />
               </div>
             </div>
 
@@ -364,6 +390,69 @@ export function ListingDetailV2({
               </CardContent>
             </Card>
 
+            {(() => {
+              const loc = (listing.location ?? "").trim();
+              const embedUrl = getGoogleMapsEmbedUrl(loc);
+              const openUrl = getGoogleMapsOpenUrl(loc);
+
+              if (!loc || !embedUrl) {
+                return (
+                  <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl">
+                    <CardContent className="p-6 sm:p-8">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="text-sm font-semibold text-neutral-900">Standort</div>
+                      </div>
+                      <div className="mt-3 flex items-start gap-2 text-sm text-neutral-600">
+                        <MapPin className="h-4 w-4 mt-0.5 text-neutral-500" />
+                        <span>Standort nicht angegeben</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              }
+
+              return (
+                <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl">
+                  <CardContent className="p-6 sm:p-8">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="text-sm font-semibold text-neutral-900">Standort</div>
+                      {openUrl && (
+                        <a
+                          href={openUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-medium text-neutral-900 hover:text-neutral-700 underline underline-offset-4"
+                        >
+                          In Google Maps öffnen
+                        </a>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex items-start gap-2 text-sm text-neutral-600">
+                      <MapPin className="h-4 w-4 mt-0.5 text-neutral-500" />
+                      <span>{loc}</span>
+                    </div>
+
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50">
+                      <iframe
+                        title={`Karte Standort ${loc}`}
+                        src={embedUrl}
+                        className="h-64 w-full"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    </div>
+
+                    <div className="mt-3 text-xs text-neutral-500">Hinweis: Standort gemäss Inserat.</div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
+            <div id="messages" className="scroll-mt-24">
+              <MessagingPanel listingId={listing.id} listingTitle={`${listing.brand} ${listing.model} ${listing.year}`} />
+            </div>
+
             {canShowLeasingCalculator && (
               <LeasingCalculator
                 priceChf={purchasePriceChf as number}
@@ -372,10 +461,6 @@ export function ListingDetailV2({
                 offer={leasingOffer}
               />
             )}
-
-            <div id="messages" className="scroll-mt-24">
-              <MessagingPanel listingId={listing.id} listingTitle={`${listing.brand} ${listing.model} ${listing.year}`} />
-            </div>
           </div>
         </div>
       </div>

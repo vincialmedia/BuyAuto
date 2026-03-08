@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import type { LeasingOffer } from "@/lib/buyauto/types";
 import { cn } from "@/lib/utils";
 
@@ -147,7 +146,6 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
   const [termMonths, setTermMonths] = useState<number>(initialTerm);
   const [downPaymentPct, setDownPaymentPct] = useState<number>(initialDownPaymentPct);
   const [kmPerYear, setKmPerYear] = useState<number>(kmOptions.includes(15000) ? 15000 : kmOptions[0]);
-  const [restwertOverrideChf, setRestwertOverrideChf] = useState<number | null>(null);
 
   const estimate = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -161,41 +159,21 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
       currentYear,
     });
 
-    const exampleRestwert = estimateRestwert({
-      priceChf,
-      year,
-      mileageKm,
-      termMonths: 48,
-      kmPerYear: 10000,
-      currentYear,
-    });
-
     const adjustedResidualPct = clamp(restwert.residualPct + residualAdjPp / 100, 0.15, 0.7);
     const adjustedRestwertChf = Math.round(priceChf * adjustedResidualPct);
-
-    const adjustedExampleResidualPct = clamp(exampleRestwert.residualPct + residualAdjPp / 100, 0.15, 0.7);
-    const adjustedExampleRestwertChf = Math.round(priceChf * adjustedExampleResidualPct);
-
-    const effectiveRestwertChf =
-      restwertOverrideChf !== null ? clamp(restwertOverrideChf, 0, Math.round(priceChf)) : adjustedRestwertChf;
 
     const rate = estimateMonthlyLeasingRate({
       priceChf,
       interestRatePct: Number(offer.interest_rate_pct),
       downPaymentPct: offer.no_down_payment ? 0 : downPaymentPct,
       termMonths,
-      restwertChf: effectiveRestwertChf,
+      restwertChf: adjustedRestwertChf,
     });
 
     return {
-      restwert,
       adjustedResidualPct,
       adjustedRestwertChf,
-      exampleRestwert,
-      adjustedExampleResidualPct,
-      adjustedExampleRestwertChf,
       rate,
-      effectiveRestwertChf,
     };
   }, [
     downPaymentPct,
@@ -205,17 +183,15 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
     offer.no_down_payment,
     priceChf,
     residualAdjPp,
-    restwertOverrideChf,
     termMonths,
     year,
   ]);
 
   const formattedRate = Math.round(estimate.rate.monthlyRateChf);
-  const formattedRestwert = Math.round(estimate.effectiveRestwertChf);
-  const isRestwertOverridden = restwertOverrideChf !== null;
-  const isProviderAdjusted = !isRestwertOverridden && residualAdjPp !== 0;
+  const formattedRestwert = Math.round(estimate.adjustedRestwertChf);
 
-  const displayedResidualPct = priceChf > 0 ? estimate.effectiveRestwertChf / priceChf : 0;
+  const displayedResidualPct = priceChf > 0 ? estimate.adjustedRestwertChf / priceChf : 0;
+  const isProviderAdjusted = residualAdjPp !== 0;
 
   return (
     <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden">
@@ -231,18 +207,10 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
           <p className="text-sm text-neutral-600">Geschätzte Monatsrate</p>
           <p className="text-3xl font-bold text-neutral-900 tracking-tight mt-1">CHF {formattedRate}.–</p>
           <p className="text-sm text-neutral-600 mt-2">
-            {isRestwertOverridden ? "Restwert (manuell überschrieben): " : isProviderAdjusted ? "Restwert (vom Anbieter angepasst): " : "Geschätzter Restwert (automatisch): "}
+            {isProviderAdjusted ? "Restwert (vom Anbieter angepasst): " : "Geschätzter Restwert: "}
             <span className="font-medium text-neutral-900">CHF {formattedRestwert}.–</span>
             <span className="text-neutral-500"> (≈ {(displayedResidualPct * 100).toFixed(0)}%)</span>
-          </p>
-
-          <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
-            Beispiel (48 Monate, 10’000 km/Jahr): geschätzter Restwert{" "}
-            <span className="font-medium text-neutral-700">
-              {formatCurrency(Math.round(estimate.adjustedExampleRestwertChf))}.–
-            </span>{" "}
-            (ca. {Math.round(estimate.adjustedExampleResidualPct * 100)}% vom Kaufpreis)
-            {residualAdjPp !== 0 && <span> • Anbieter-Korrektur: {residualAdjPp > 0 ? "+" : ""}{residualAdjPp}pp</span>}
+            {isProviderAdjusted && <span className="text-neutral-500"> • Anbieter-Korrektur: {residualAdjPp > 0 ? "+" : ""}{residualAdjPp}pp</span>}
           </p>
         </div>
 
@@ -299,52 +267,9 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-neutral-900">Restwert (Schätzung)</p>
-            <Input
-              value={isRestwertOverridden ? String(formattedRestwert) : ""}
-              placeholder={`Schätzung: CHF ${estimate.restwert.restwertChf}.– (optional überschreiben)`}
-              inputMode="numeric"
-              className="bg-white border border-neutral-200/60"
-              onChange={(e) => {
-                const raw = e.target.value.replace(/[^0-9]/g, "");
-                if (!raw) {
-                  setRestwertOverrideChf(null);
-                  return;
-                }
-                setRestwertOverrideChf(parseInt(raw, 10));
-              }}
-            />
-            <p className="text-xs text-neutral-500">
-              {isRestwertOverridden
-                ? "Du hast den Restwert manuell angepasst."
-                : "Automatische Schätzung – kann bei Bedarf überschrieben werden."}
-            </p>
-          </div>
-
           <div className="pt-2 text-xs text-neutral-500 leading-relaxed">
             Fixe Inputs aus Inserat: Kaufpreis CHF {Math.round(priceChf).toLocaleString("de-CH")} • Erstzulassung {year} • Aktuell {Math.round(mileageKm).toLocaleString("de-CH")} km
           </div>
-        </div>
-
-        <div className="mt-4 space-y-2">
-          <div className="flex items-baseline justify-between gap-4">
-            <span className="text-sm text-neutral-600">Geschätzte Monatsrate</span>
-            <span className="text-lg font-semibold text-neutral-900">
-              {formatCurrency(formattedRate)}.–
-            </span>
-          </div>
-
-          <div className="flex items-baseline justify-between gap-4">
-            <span className="text-sm text-neutral-600">Geschätzter Restwert</span>
-            <span className="text-sm font-medium text-neutral-900">
-              {formatCurrency(formattedRestwert)}.– ({Math.round(displayedResidualPct * 100)}%)
-            </span>
-          </div>
-
-          <p className="text-xs text-neutral-500">
-            Unverbindliche Richtofferte. Finale Rate hängt von Bonität, Leasingpartner und Fahrzeugbewertung ab.
-          </p>
         </div>
       </CardContent>
     </Card>
