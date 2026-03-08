@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VehicleDescriptionField } from "@/components/buyauto/create-listing/step1/VehicleDescriptionField";
 import { VehicleFirstRegistrationField } from "@/components/buyauto/create-listing/step1/VehicleFirstRegistrationField";
+import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
 
 export interface CanonicalOption {
   id: string;
@@ -185,11 +186,17 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-neutral-700">Standort *</Label>
-              <Input
-                {...register("location")}
+              <LocationAutocomplete
+                name={register("location").name}
+                inputRef={register("location").ref}
+                value={String(watch("location") ?? "")}
                 placeholder="z.B. Schlieren, ZH"
                 disabled={disableAllFields}
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm placeholder:text-neutral-400"
+                inputClassName="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm placeholder:text-neutral-400"
+                onValueChange={(next) => setValue("location", next, { shouldValidate: true, shouldDirty: true })}
+                onBlur={() => {
+                  void trigger("location");
+                }}
               />
               {errors.location && <p className="text-sm text-red-500 font-light">{errors.location.message as string}</p>}
             </div>
