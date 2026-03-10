@@ -19,7 +19,10 @@ export const registerSchema = z
     // Garage-specific fields
     garageName: z.string().optional(),
     city: z.string().optional(),
-    contactEmail: z.string().email("Gültige E-Mail-Adresse eingeben").optional(),
+    contactEmail: z.preprocess(
+      (val) => (typeof val === "string" && val.trim() === "" ? undefined : val),
+      z.string().email("Gültige E-Mail-Adresse eingeben").optional()
+    ),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwörter stimmen nicht überein",

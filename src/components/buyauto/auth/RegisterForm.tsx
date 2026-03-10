@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, User, Building2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { registerSchema, type RegisterFormData } from "@/lib/buyauto/schemas";
 import { cn } from "@/lib/utils";
+import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
 
 interface RegisterFormProps {
   onRegister: (data: RegisterFormData) => void;
@@ -23,9 +25,11 @@ export default function RegisterForm({
   isLoading 
 }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    shouldUnregister: true,
     defaultValues: {
       accountType: "private",
       firstName: "",
@@ -33,18 +37,71 @@ export default function RegisterForm({
       email: "",
       password: "",
       confirmPassword: "",
+      garageName: "",
+      city: "",
+      contactEmail: "",
+      newsletterConsent: false,
     },
   });
 
   const selectedAccountType = form.watch("accountType");
 
+  const focusFirstError = (errors: FieldErrors<RegisterFormData>) => {
+    const orderedFields: Array<keyof RegisterFormData> = [
+      "accountType",
+      "firstName",
+      "lastName",
+      "email",
+      "garageName",
+      "city",
+      "contactEmail",
+      "password",
+      "confirmPassword",
+      "newsletterConsent",
+    ];
+
+    for (const field of orderedFields) {
+      if (errors[field]) {
+        try {
+          form.setFocus(field as never);
+        } catch {
+          // ignore focus errors (can happen for unmounted fields)
+        }
+        return;
+      }
+    }
+  };
+
   const onSubmit = (data: RegisterFormData) => {
+    setSubmitError(null);
     onRegister(data);
+  };
+
+  const onInvalid = (errors: FieldErrors<RegisterFormData>) => {
+    console.warn("Register form invalid:", errors);
+
+    const firstKey = Object.keys(errors)[0] as keyof RegisterFormData | undefined;
+    const firstMessage =
+      (firstKey && (errors[firstKey]?.message as string | undefined)) ||
+      "Bitte prüfe die markierten Felder.";
+
+    setSubmitError(firstMessage);
+    toast.error("Bitte prüfe die markierten Felder.");
+    focusFirstError(errors);
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-4">
+        {submitError && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {submitError}
+          </div>
+        )}
+
         {/* Account Type Selection */}
         <FormField
           control={form.control}
@@ -57,7 +114,10 @@ export default function RegisterForm({
                   {/* Private User Card */}
                   <button
                     type="button"
-                    onClick={() => field.onChange("private")}
+                    onClick={() => {
+                      setSubmitError(null);
+                      field.onChange("private");
+                    }}
                     disabled={isLoading}
                     className={cn(
                       "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
@@ -88,7 +148,10 @@ export default function RegisterForm({
                   {/* Garage Card */}
                   <button
                     type="button"
-                    onClick={() => field.onChange("garage")}
+                    onClick={() => {
+                      setSubmitError(null);
+                      field.onChange("garage");
+                    }}
                     disabled={isLoading}
                     className={cn(
                       "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
@@ -212,11 +275,15 @@ export default function RegisterForm({
                   <FormItem>
                     <FormLabel className="text-neutral-700 font-medium">Ort</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Zürich"
-                        className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+                      <LocationAutocomplete
+                        value={field.value ?? ""}
+                        onValueChange={(next) => field.onChange(next)}
                         disabled={isLoading}
+                        placeholder="Zürich"
+                        inputClassName="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+                        name={field.name}
+                        inputRef={field.ref}
+                        onBlur={field.onBlur}
                       />
                     </FormControl>
                     <FormMessage className="text-red-500 text-sm" />
