@@ -41,14 +41,16 @@ const PaymentWidget = dynamic(
   }
 );
 
-const formatPrice = (price: number | undefined) => {
-  if (!price) return 'CHF 0';
-  return `CHF ${price.toLocaleString('de-CH')}`;
+const formatPrice = (price: unknown) => {
+  const n = getNumber(price);
+  if (typeof n !== "number") return "CHF -";
+  return `CHF ${n.toLocaleString("de-CH")}`;
 };
 
-const formatMileage = (km: number | undefined) => {
-  if (!km) return '0 km';
-  return `${km.toLocaleString('de-CH')} km`;
+const formatMileage = (km: unknown) => {
+  const n = getNumber(km);
+  if (typeof n !== "number") return "- km";
+  return `${n.toLocaleString("de-CH")} km`;
 };
 
 const getCantonName = (cantonCode: string | undefined) => {
@@ -113,12 +115,34 @@ export default function Step5_PreviewAndPay() {
   const isGarage = profile?.role === 'garage';
   const listingStatus = (data as any)?.status as string | undefined;
 
+  const isPremium = Boolean((data as any)?.premium);
+
+  const selectedPlanId = useMemo<Plan | null>(() => {
+    const raw = (data as any)?.price_plan ?? (data as any)?.pricing_plan;
+    if (raw === "standard" || raw === "extended" || raw === "unlimited") return raw;
+    return null;
+  }, [(data as any)?.price_plan, (data as any)?.pricing_plan]);
+
+  const planDetails = useMemo(() => {
+    const key = selectedPlanId ?? "standard";
+    return pricingPlans[key] ?? null;
+  }, [selectedPlanId]);
+
+  const planPrice = useMemo(() => {
+    const p = planDetails?.price;
+    return typeof p === "number" && Number.isFinite(p) ? p : 0;
+  }, [planDetails]);
+
+  const total = useMemo(() => {
+    return planPrice + (isPremium ? PREMIUM_BOOST_PRICE : 0);
+  }, [isPremium, planPrice]);
+
   const inferredDealType: "lease_takeover" | "direct_purchase" = (() => {
     const rawDealType = (data as any)?.deal_type;
     const rawFinancingType = (data as any)?.financing_type;
 
-    const monthly = typeof (data as any)?.price_per_month_chf === "number" ? (data as any).price_per_month_chf : null;
-    const months = typeof (data as any)?.remaining_months === "number" ? (data as any).remaining_months : null;
+    const monthly = getNumber((data as any)?.price_per_month_chf);
+    const months = getNumber((data as any)?.remaining_months);
 
     const hasMonthlyAndMonths =
       typeof monthly === "number" &&
@@ -163,25 +187,17 @@ export default function Step5_PreviewAndPay() {
         ? (financingType === "leasing" ? "direct_purchase_leasing" : "direct_purchase_cash")
         : "unknown";
 
-  const takeoverMonthlyRateChf = takeoverOffer ? getNumber(takeoverOffer.price_per_month_chf) : null;
-  const takeoverSecondaryLine =
-    previewVariant !== "lease_takeover" && takeoverOfferEnabled && typeof takeoverMonthlyRateChf === "number"
-      ? `Leasingübernahme: CHF ${takeoverMonthlyRateChf.toLocaleString("de-CH")} / Monat`
-      : null;
+  const purchasePriceForDisplayChf = (() => {
+    const purchase = getNumber((data as any)?.purchase_price_chf);
+    if (typeof purchase === "number") return purchase;
 
-  const selectedPlanId = data.price_plan as Plan | undefined;
-  const isPremium = data.premium || false;
+    if (dealType === "direct_purchase") {
+      const fallback = getNumber((data as any)?.price_per_month_chf);
+      if (typeof fallback === "number") return fallback;
+    }
 
-  const planDetails = selectedPlanId ? pricingPlans[selectedPlanId] : null;
-  const planPrice = planDetails ? planDetails.price : 0;
-  const total = isGarage ? 0 : (planPrice + (isPremium ? PREMIUM_BOOST_PRICE : 0));
-
-  const purchasePriceForDisplayChf =
-    typeof (data as any)?.purchase_price_chf === "number"
-      ? (data as any).purchase_price_chf
-      : dealType === "direct_purchase" && typeof (data as any)?.price_per_month_chf === "number"
-        ? (data as any).price_per_month_chf
-        : undefined;
+    return undefined;
+  })();
 
   // Compute capability label
   let capabilityLabel = "";
@@ -212,11 +228,26 @@ export default function Step5_PreviewAndPay() {
   const offerDetails =
     previewVariant === "lease_takeover"
       ? [
-          { label: "Restlaufzeit", value: data.remaining_months ? `${data.remaining_months} Monate` : "-" },
-          { label: "Depot / Anzahlung", value: typeof data.deposit_chf === "number" ? `CHF ${data.deposit_chf.toLocaleString("de-CH")}` : "-" },
-          ...(typeof data.remaining_km === "number"
-            ? [{ label: "Verbleibende KM", value: `${data.remaining_km.toLocaleString("de-CH")} km` }]
-            : []),
+          {
+            label: "Restlaufzeit",
+            value: (() => {
+              const m = getNumber((data as any)?.remaining_months);
+              return typeof m === "number" ? `${Math.floor(m)} Monate` : "-";
+            })(),
+          },
+          {
+            label: "Depot / Anzahlung",
+            value: (() => {
+              const d = getNumber((data as any)?.deposit_chf);
+              return typeof d === "number" ? `CHF ${Math.round(d).toLocaleString("de-CH")}` : "-";
+            })(),
+          },
+          ...(() => {
+            const rk = getNumber((data as any)?.remaining_km);
+            return typeof rk === "number"
+              ? [{ label: "Verbleibende KM", value: `${Math.round(rk).toLocaleString("de-CH")} km` }]
+              : [];
+          })(),
         ]
       : [
           { label: "Finanzierung", value: financingType === "leasing" ? "Leasing" : "Cash" },
@@ -264,20 +295,17 @@ export default function Step5_PreviewAndPay() {
             : []),
         ];
 
-  const takeoverOfferDetails =
-    previewVariant !== "lease_takeover" && takeoverOfferEnabled
-      ? [
-          { label: "Monatliche Rate", value: typeof takeoverMonthlyRateChf === "number" ? `CHF ${takeoverMonthlyRateChf.toLocaleString("de-CH")} / Monat` : "-" },
-          { label: "Restlaufzeit", value: typeof takeoverOffer?.remaining_months === "number" ? `${takeoverOffer.remaining_months} Monate` : "-" },
-          { label: "Depot / Anzahlung", value: typeof takeoverOffer?.deposit_chf === "number" ? `CHF ${takeoverOffer.deposit_chf.toLocaleString("de-CH")}` : "-" },
-          ...(typeof takeoverOffer?.remaining_km === "number"
-            ? [{ label: "Verbleibende KM", value: `${takeoverOffer.remaining_km.toLocaleString("de-CH")} km` }]
-            : []),
-          ...(typeof takeoverOffer?.pickup_canton_code === "string" && takeoverOffer.pickup_canton_code.length > 0
-            ? [{ label: "Abholung", value: getCantonName(takeoverOffer.pickup_canton_code) }]
-            : []),
-        ]
-      : [];
+  const takeoverMonthlyRateChf = useMemo(() => {
+    const n = getNumber(takeoverOffer?.price_per_month_chf);
+    return typeof n === "number" ? Math.round(n) : null;
+  }, [takeoverOffer?.price_per_month_chf]);
+
+  const takeoverSecondaryLine = useMemo(() => {
+    if (dealType === "lease_takeover") return null;
+    if (!takeoverOfferEnabled) return null;
+    if (typeof takeoverMonthlyRateChf !== "number") return null;
+    return `Leasingübernahme: CHF ${takeoverMonthlyRateChf.toLocaleString("de-CH")} / Monat`;
+  }, [dealType, takeoverMonthlyRateChf, takeoverOfferEnabled]);
 
   const leasingTeaser = useMemo(() => {
     if (dealType === "direct_purchase" && financingType === "leasing" && purchasePriceForDisplayChf && data.year && data.km && leasingOffer) {
@@ -354,13 +382,9 @@ export default function Step5_PreviewAndPay() {
     const financingType = resolvedDealType === "direct_purchase" ? ((anyData?.financing_type ?? "cash") as any) : null;
 
     const mileageKm =
-      typeof anyData?.km === "number"
-        ? anyData.km
-        : typeof anyData?.mileage === "number"
-          ? anyData.mileage
-          : typeof anyData?.mileage_km === "number"
-            ? anyData.mileage_km
-            : null;
+      getNumber(anyData?.km) ?? getNumber(anyData?.mileage) ?? getNumber(anyData?.mileage_km);
+
+    const yearNum = getNumber(anyData?.year);
 
     const payload: ListingUpdatePayload = {
       id: typeof anyData?.id === "string" ? anyData.id : undefined,
@@ -370,9 +394,12 @@ export default function Step5_PreviewAndPay() {
 
       brand: anyData?.brand ?? "",
       model: anyData?.model ?? "",
-      year: typeof anyData?.year === "number" ? anyData.year : undefined,
-      mileage_km: typeof mileageKm === "number" ? mileageKm : undefined,
-      remaining_km: typeof anyData?.remaining_km === "number" ? anyData.remaining_km : anyData?.remaining_km ?? null,
+      year: typeof yearNum === "number" ? Math.floor(yearNum) : undefined,
+      mileage_km: typeof mileageKm === "number" ? Math.round(mileageKm) : undefined,
+      remaining_km: (() => {
+        const rk = getNumber(anyData?.remaining_km);
+        return typeof rk === "number" ? Math.round(rk) : null;
+      })(),
       fuel: anyData?.fuel ?? "",
       gearbox: anyData?.gearbox ?? "",
       body: anyData?.body ?? "",
@@ -390,25 +417,28 @@ export default function Step5_PreviewAndPay() {
       make_id: typeof anyData?.make_id === "string" ? anyData.make_id : null,
       model_id: typeof anyData?.model_id === "string" ? anyData.model_id : null,
       variant_id: typeof anyData?.variant_id === "string" ? anyData.variant_id : null,
-      power_hp: typeof anyData?.power_hp === "number" ? anyData.power_hp : null,
+      power_hp: (() => {
+        const hp = getNumber(anyData?.power_hp);
+        return typeof hp === "number" ? Math.round(hp) : null;
+      })(),
       drivetrain: typeof anyData?.drivetrain === "string" ? anyData.drivetrain : null,
       first_registration: typeof anyData?.first_registration === "string" ? anyData.first_registration : null,
     };
 
+    const remainingMonths = getNumber(anyData?.remaining_months);
+    const depositChf = getNumber(anyData?.deposit_chf);
+    const monthlyRateChf = getNumber(anyData?.price_per_month_chf);
+
     if (resolvedDealType === "lease_takeover") {
-      payload.price_per_month_chf = typeof anyData?.price_per_month_chf === "number" ? anyData.price_per_month_chf : undefined;
-      payload.remaining_months = typeof anyData?.remaining_months === "number" ? anyData.remaining_months : undefined;
-      payload.deposit_chf = typeof anyData?.deposit_chf === "number" ? anyData.deposit_chf : null;
+      payload.price_per_month_chf = typeof monthlyRateChf === "number" ? Math.round(monthlyRateChf) : undefined;
+      payload.remaining_months = typeof remainingMonths === "number" ? Math.max(1, Math.floor(remainingMonths)) : undefined;
+      payload.deposit_chf = typeof depositChf === "number" ? Math.round(depositChf) : null;
     } else {
-      payload.purchase_price_chf =
-        typeof anyData?.purchase_price_chf === "number"
-          ? anyData.purchase_price_chf
-          : typeof anyData?.price_per_month_chf === "number"
-            ? anyData.price_per_month_chf
-            : null;
+      const purchase = getNumber(anyData?.purchase_price_chf) ?? monthlyRateChf;
+      payload.purchase_price_chf = typeof purchase === "number" ? Math.round(purchase) : null;
       payload.price_per_month_chf = null;
-      payload.remaining_months = typeof anyData?.remaining_months === "number" ? anyData.remaining_months : undefined;
-      payload.deposit_chf = typeof anyData?.deposit_chf === "number" ? anyData.deposit_chf : null;
+      payload.remaining_months = typeof remainingMonths === "number" ? Math.max(0, Math.floor(remainingMonths)) : undefined;
+      payload.deposit_chf = typeof depositChf === "number" ? Math.round(depositChf) : null;
     }
 
     return payload;

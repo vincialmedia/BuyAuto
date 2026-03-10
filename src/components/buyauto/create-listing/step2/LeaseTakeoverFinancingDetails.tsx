@@ -84,6 +84,11 @@ function calculateRemainingMonths(endDate: Date): number {
   return months < 0 ? 0 : months;
 }
 
+function toFiniteNumber(value: unknown, fallback: number): number {
+  const n = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+}
+
 export function LeaseTakeoverFinancingDetails() {
   const router = useRouter();
   const { data, updateData, nextStep, prevStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
@@ -106,10 +111,10 @@ export function LeaseTakeoverFinancingDetails() {
   } = useForm<LeasingDetailsForm>({
     resolver: zodResolver(leasingDetailsSchema),
     defaultValues: {
-      price_per_month_chf: data.price_per_month_chf || 0,
-      remaining_months: data.remaining_months || 12,
-      deposit_chf: data.deposit_chf || 0,
-      remaining_km: data.remaining_km || 0,
+      price_per_month_chf: toFiniteNumber((data as any)?.price_per_month_chf, 0),
+      remaining_months: toFiniteNumber((data as any)?.remaining_months, 12),
+      deposit_chf: toFiniteNumber((data as any)?.deposit_chf, 0),
+      remaining_km: toFiniteNumber((data as any)?.remaining_km, 0),
     },
   });
 
@@ -140,6 +145,8 @@ export function LeaseTakeoverFinancingDetails() {
           ? watchedRemainingKm
           : undefined;
 
+      const contractEnd = contractEndDate ? format(contractEndDate, "yyyy-MM-dd") : (data as any)?.contract_end_date ?? null;
+
       updateData({
         deal_type: "lease_takeover",
         financing_type: null,
@@ -149,11 +156,12 @@ export function LeaseTakeoverFinancingDetails() {
         remaining_months: remainingMonths,
         deposit_chf: depositChf,
         remaining_km: remainingKm,
+        contract_end_date: contractEnd,
       } as any);
     }, 250);
 
     return () => clearTimeout(t);
-  }, [updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
+  }, [contractEndDate, data, updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
 
   useEffect(() => {
     const raw = (data as any)?.contract_end_date;
