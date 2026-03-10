@@ -141,10 +141,6 @@ const directPurchaseFinancingSchema = z
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lease_takeover_deposit_chf"], message: "Kaution ist erforderlich" });
       }
 
-      if (!values.lease_takeover_pickup_canton_code || values.lease_takeover_pickup_canton_code.trim().length === 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lease_takeover_pickup_canton_code"], message: "Standort ist erforderlich" });
-      }
-
       if (values.lease_takeover_remaining_km !== undefined) {
         const km = Number(values.lease_takeover_remaining_km);
         if (!Number.isFinite(km) || km < 0) {
