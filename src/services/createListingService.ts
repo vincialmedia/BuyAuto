@@ -55,6 +55,11 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
     const offer = payload.leasing_offer as LeasingOfferPayload | null | undefined;
     if (offer?.lease_takeover_offer?.enabled === true) {
       const takeover = offer.lease_takeover_offer;
+      const pickupCanton = String(takeover.pickup_canton_code ?? "").trim();
+      if (!pickupCanton) {
+        throw new Error("Bitte wähle in Schritt 1 einen Kanton/Standort, damit der Abhol-Kanton für die Leasingübernahme gesetzt werden kann.");
+      }
+
       return {
         ...payload,
         leasing_offer: {
@@ -73,7 +78,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
               typeof takeover.remaining_km === "number" && Number.isFinite(takeover.remaining_km)
                 ? Math.max(0, Math.round(Number(takeover.remaining_km)))
                 : undefined,
-            pickup_canton_code: String(takeover.pickup_canton_code ?? "").trim(),
+            pickup_canton_code: pickupCanton,
           },
         } as LeasingOfferPayload,
       };
@@ -99,6 +104,11 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
   const residual_pct_adjustment_pp = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -20, 20) : 0;
 
   const takeover = (offer as LeasingOfferPayload).lease_takeover_offer;
+  const pickupCanton = takeover?.enabled === true ? String(takeover.pickup_canton_code ?? "").trim() : "";
+
+  if (takeover?.enabled === true && !pickupCanton) {
+    throw new Error("Bitte wähle in Schritt 1 einen Kanton/Standort, damit der Abhol-Kanton für die Leasingübernahme gesetzt werden kann.");
+  }
 
   const normalizedOffer: LeasingOfferPayload = {
     enabled: true,
@@ -120,7 +130,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
               typeof takeover.remaining_km === "number" && Number.isFinite(takeover.remaining_km)
                 ? Math.max(0, Math.round(Number(takeover.remaining_km)))
                 : undefined,
-            pickup_canton_code: String(takeover.pickup_canton_code ?? "").trim(),
+            pickup_canton_code: pickupCanton,
           }
         : undefined,
   };
@@ -167,7 +177,7 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
   const hasPurchasePrice =
     typeof payload.purchase_price_chf === "number" && Number.isFinite(payload.purchase_price_chf) && payload.purchase_price_chf > 0;
 
-  return {
+  const base: ListingUpdatePayload = {
     ...payload,
     ui_version: uiVersion,
     deal_type,
@@ -175,6 +185,20 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
     purchase_price_chf: hasPurchasePrice ? payload.purchase_price_chf : hasLegacyPricePerMonth ? payload.price_per_month_chf : payload.purchase_price_chf,
     price_per_month_chf: null,
   };
+
+  const hasLeasingOfferField = Object.prototype.hasOwnProperty.call(payload, "leasing_offer");
+  const leasingOfferProvided = hasLeasingOfferField && (payload as any).leasing_offer !== undefined;
+
+  if (!leasingOfferProvided) {
+    return base;
+  }
+
+  return normalizeLeasingOfferForDirectPurchaseInsert({
+    ...(base as ListingUpdatePayload),
+    deal_type: "direct_purchase",
+    financing_type,
+    leasing_offer: (payload as any).leasing_offer as LeasingOfferPayload | null,
+  } as ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType });
 }
 
 function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpdatePayload {
@@ -215,7 +239,7 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
 
       if (nextFinancing === "cash") {
         if (!leasingOfferProvided) {
-          return { ...payload, financing_type: "cash" };
+          return { ...payload, financing_type: "cash", leasing_offer: null };
         }
 
         const offer = payload.leasing_offer as LeasingOfferPayload | null | undefined;
