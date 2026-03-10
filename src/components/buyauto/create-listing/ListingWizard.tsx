@@ -158,6 +158,11 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
 
   const leasingOffer = dealType === "direct_purchase" ? (listing?.leasing_offer ?? null) : null;
 
+  const toNumberOrNull = (value: unknown): number | null => {
+    const n = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+    return Number.isFinite(n) ? n : null;
+  };
+
   return {
     id: listing?.id ?? prev.id,
     deal_type: dealType,
@@ -166,26 +171,22 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
 
     brand: listing?.brand ?? prev.brand,
     model: listing?.model ?? prev.model,
-    year: typeof listing?.year === "number" ? listing.year : prev.year,
-    km: typeof listing?.mileage_km === "number" ? listing.mileage_km : prev.km,
+    year: toNumberOrNull(listing?.year) ?? prev.year,
+    km: toNumberOrNull(listing?.mileage_km) ?? prev.km,
     remaining_km: listing?.remaining_km ?? (prev as any)?.remaining_km,
 
     purchase_price_chf:
-      typeof listing?.purchase_price_chf === "number"
-        ? listing.purchase_price_chf
-        : typeof (prev as any)?.purchase_price_chf === "number"
-          ? (prev as any).purchase_price_chf
-          : null,
+      toNumberOrNull(listing?.purchase_price_chf) ??
+      (typeof (prev as any)?.purchase_price_chf === "number" ? (prev as any).purchase_price_chf : null),
 
     fuel: listing?.fuel ?? prev.fuel,
     gearbox: listing?.gearbox ?? prev.gearbox,
     body: listing?.body ?? prev.body,
     description: listing?.description ?? prev.description,
 
-    price_per_month_chf:
-      typeof listing?.price_per_month_chf === "number" ? listing.price_per_month_chf : prev.price_per_month_chf,
-    remaining_months: typeof listing?.remaining_months === "number" ? listing.remaining_months : prev.remaining_months,
-    deposit_chf: typeof listing?.deposit_chf === "number" ? listing.deposit_chf : prev.deposit_chf,
+    price_per_month_chf: toNumberOrNull(listing?.price_per_month_chf) ?? prev.price_per_month_chf,
+    remaining_months: toNumberOrNull(listing?.remaining_months) ?? prev.remaining_months,
+    deposit_chf: toNumberOrNull(listing?.deposit_chf) ?? prev.deposit_chf,
     contract_end_date:
       typeof listing?.contract_end_date === "string"
         ? listing.contract_end_date
@@ -201,7 +202,7 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     premium: typeof listing?.premium === "boolean" ? listing.premium : prev.premium,
 
     images: Array.isArray(listing?.images) ? (listing.images as string[]) : prev.images,
-    cover_image_index: typeof listing?.cover_image_index === "number" ? listing.cover_image_index : prev.cover_image_index,
+    cover_image_index: toNumberOrNull(listing?.cover_image_index) ?? prev.cover_image_index,
 
     status: listing?.status ?? (prev as any)?.status,
 
@@ -209,7 +210,7 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     make_id: listing?.make_id ?? (prev as any)?.make_id,
     model_id: listing?.model_id ?? (prev as any)?.model_id,
     variant_id: listing?.variant_id ?? (prev as any)?.variant_id,
-    power_hp: typeof listing?.power_hp === "number" ? listing.power_hp : (prev as any)?.power_hp,
+    power_hp: toNumberOrNull(listing?.power_hp) ?? (prev as any)?.power_hp,
     drivetrain: listing?.drivetrain ?? (prev as any)?.drivetrain,
     first_registration: listing?.first_registration ?? (prev as any)?.first_registration,
   };

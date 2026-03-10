@@ -95,7 +95,7 @@ function getNumber(value: unknown): number | null {
 const DUMMY_IMAGE_URL = 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&h=600&fit=crop';
 
 export default function Step5_PreviewAndPay() {
-  const { data, updateData, prevStep, setIsComplete, draftId, setDraftId } = useWizard();
+  const { data, updateData, nextStep, prevStep, setIsComplete, draftId, setDraftId } = useWizard();
   const { user, loading: userLoading, profile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -295,10 +295,13 @@ export default function Step5_PreviewAndPay() {
             : []),
         ];
 
-  const takeoverMonthlyRateChf = useMemo(() => {
-    const n = getNumber(takeoverOffer?.price_per_month_chf);
-    return typeof n === "number" ? Math.round(n) : null;
-  }, [takeoverOffer?.price_per_month_chf]);
+  const getNumberOrNull = (value: unknown): number | null => {
+    const n = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const directPurchaseTakeoverOffer = (data as any)?.leasing_offer?.lease_takeover_offer;
+  const takeoverMonthlyRateChf = directPurchaseTakeoverOffer?.enabled === true ? getNumberOrNull(directPurchaseTakeoverOffer?.price_per_month_chf) : null;
 
   const takeoverSecondaryLine = useMemo(() => {
     if (dealType === "lease_takeover") return null;
