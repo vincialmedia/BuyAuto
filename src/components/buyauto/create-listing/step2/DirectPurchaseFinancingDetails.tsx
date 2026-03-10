@@ -315,6 +315,75 @@ export function DirectPurchaseFinancingDetails() {
   const leaseTakeoverEnabled = Boolean(watch("lease_takeover_enabled"));
 
   useEffect(() => {
+    if (!hasMounted) return;
+
+    let t: ReturnType<typeof setTimeout> | null = null;
+
+    const subscription = watch((values) => {
+      if (t) clearTimeout(t);
+
+      t = setTimeout(() => {
+        const leasingEnabledNow = Boolean((values as any)?.leasing_enabled);
+        const leaseTakeoverEnabledNow = Boolean((values as any)?.lease_takeover_enabled);
+
+        const takeoverPickupCanton = step1CantonCode ?? "";
+
+        const purchasePriceChfRaw = toNumberOrUndefined((values as any)?.purchase_price_chf) ?? 0;
+        const purchasePriceChfClean = purchasePriceChfRaw > 0 ? Math.round(purchasePriceChfRaw) : undefined;
+
+        const leaseTakeoverOffer =
+          leaseTakeoverEnabledNow === true
+            ? {
+                enabled: true,
+                price_per_month_chf: Math.round(toNumberOrUndefined((values as any)?.lease_takeover_price_per_month_chf) ?? 0),
+                remaining_months: Math.floor(toNumberOrUndefined((values as any)?.lease_takeover_remaining_months) ?? 0),
+                deposit_chf: Math.round(toNumberOrUndefined((values as any)?.lease_takeover_deposit_chf) ?? 0),
+                remaining_km: toNumberOrUndefined((values as any)?.lease_takeover_remaining_km),
+                pickup_canton_code: takeoverPickupCanton,
+              }
+            : undefined;
+
+        const leasingOffer =
+          leasingEnabledNow
+            ? {
+                enabled: true,
+                interest_rate_pct: toNumberOrUndefined((values as any)?.interest_rate_pct) ?? 0,
+                down_payment_pct: Boolean((values as any)?.no_down_payment) ? 0 : toNumberOrUndefined((values as any)?.down_payment_pct) ?? 0,
+                no_down_payment: Boolean((values as any)?.no_down_payment),
+                min_term_months: toNumberOrUndefined((values as any)?.min_term_months) ?? 0,
+                max_term_months: toNumberOrUndefined((values as any)?.max_term_months) ?? 0,
+                km_options: DEFAULT_KM_OPTIONS,
+                residual_pct_adjustment_pp: clampPp(toNumberOrUndefined((values as any)?.residual_pct_adjustment_pp) ?? 0),
+                lease_takeover_offer: leaseTakeoverOffer,
+              }
+            : leaseTakeoverOffer
+              ? {
+                  enabled: false,
+                  interest_rate_pct: 0,
+                  down_payment_pct: 0,
+                  no_down_payment: false,
+                  min_term_months: 0,
+                  max_term_months: 0,
+                  lease_takeover_offer: leaseTakeoverOffer,
+                }
+              : null;
+
+        updateData({
+          deal_type: "direct_purchase",
+          financing_type: leasingEnabledNow ? "leasing" : "cash",
+          leasing_offer: leasingOffer as any,
+          purchase_price_chf: purchasePriceChfClean,
+        } as any);
+      }, 250);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (t) clearTimeout(t);
+    };
+  }, [hasMounted, step1CantonCode, updateData, watch]);
+
+  useEffect(() => {
     registerDraftSnapshotter(() => {
       const values = getValues();
 
@@ -326,10 +395,10 @@ export function DirectPurchaseFinancingDetails() {
           ? values.purchase_price_chf
           : undefined;
 
-      const takeoverPickupCanton = step1CantonCode;
+      const takeoverPickupCanton = step1CantonCode ?? "";
 
       const leaseTakeoverOffer =
-        leaseTakeoverEnabledNow === true && takeoverPickupCanton
+        leaseTakeoverEnabledNow === true
           ? {
               enabled: true,
               price_per_month_chf: Math.round(toNumberOrUndefined(values.lease_takeover_price_per_month_chf) ?? 0),
@@ -453,10 +522,10 @@ export function DirectPurchaseFinancingDetails() {
       const purchasePriceChfRaw = typeof formData.purchase_price_chf === "number" ? formData.purchase_price_chf : 0;
       const purchasePriceChfClean = purchasePriceChfRaw > 0 ? Math.round(purchasePriceChfRaw) : null;
 
-      const takeoverPickupCanton = step1CantonCode;
+      const takeoverPickupCanton = step1CantonCode ?? "";
 
       const leaseTakeoverOffer =
-        formData.lease_takeover_enabled === true && takeoverPickupCanton
+        formData.lease_takeover_enabled === true
           ? {
               enabled: true,
               price_per_month_chf: Math.round(Number(formData.lease_takeover_price_per_month_chf)),

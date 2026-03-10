@@ -180,6 +180,7 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
   const hasDealType = typeof payload.deal_type === "string";
   const hasFinancingField = Object.prototype.hasOwnProperty.call(payload, "financing_type");
   const hasLeasingOfferField = Object.prototype.hasOwnProperty.call(payload, "leasing_offer");
+  const leasingOfferProvided = hasLeasingOfferField && (payload as any).leasing_offer !== undefined;
 
   const hasLegacyPricePerMonth = typeof payload.price_per_month_chf === "number" && Number.isFinite(payload.price_per_month_chf);
   const hasPurchasePrice =
@@ -209,6 +210,10 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
       }
 
       if (nextFinancing === "cash") {
+        if (!leasingOfferProvided) {
+          return { ...payload, financing_type: "cash" };
+        }
+
         const offer = payload.leasing_offer as LeasingOfferPayload | null | undefined;
         if (offer?.lease_takeover_offer?.enabled === true) {
           return normalizeLeasingOfferForDirectPurchaseInsert({
