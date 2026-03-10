@@ -156,6 +156,7 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
       deal_type,
       financing_type: null,
       leasing_offer: null,
+      purchase_price_chf: null,
     };
   }
 
@@ -186,7 +187,10 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
   const hasPurchasePrice =
     typeof payload.purchase_price_chf === "number" && Number.isFinite(payload.purchase_price_chf) && payload.purchase_price_chf > 0;
 
-  if ((payload.deal_type ?? null) === "direct_purchase" && !hasPurchasePrice && hasLegacyPricePerMonth) {
+  const hasRemainingMonths =
+    typeof payload.remaining_months === "number" && Number.isFinite(payload.remaining_months) && payload.remaining_months > 0;
+
+  if ((payload.deal_type ?? null) === "direct_purchase" && !hasPurchasePrice && hasLegacyPricePerMonth && !hasRemainingMonths) {
     payload = { ...payload, purchase_price_chf: payload.price_per_month_chf, price_per_month_chf: null };
   }
 
@@ -199,7 +203,7 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
   const dealType = payload.deal_type as DealType;
 
   if (dealType === "lease_takeover") {
-    return { ...payload, financing_type: null, leasing_offer: null };
+    return { ...payload, financing_type: null, leasing_offer: null, purchase_price_chf: null };
   }
 
   if (dealType === "direct_purchase") {

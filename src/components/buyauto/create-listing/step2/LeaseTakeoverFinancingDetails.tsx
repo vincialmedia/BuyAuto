@@ -144,6 +144,7 @@ export function LeaseTakeoverFinancingDetails() {
         deal_type: "lease_takeover",
         financing_type: null,
         leasing_offer: null,
+        purchase_price_chf: null,
         price_per_month_chf: pricePerMonth,
         remaining_months: remainingMonths,
         deposit_chf: depositChf,
@@ -186,6 +187,7 @@ export function LeaseTakeoverFinancingDetails() {
         deal_type: "lease_takeover",
         financing_type: null,
         leasing_offer: null,
+        purchase_price_chf: null,
         price_per_month_chf:
           typeof values.price_per_month_chf === "number" && Number.isFinite(values.price_per_month_chf)
             ? values.price_per_month_chf
@@ -235,6 +237,7 @@ export function LeaseTakeoverFinancingDetails() {
         deal_type: "lease_takeover",
         financing_type: null,
         leasing_offer: null,
+        purchase_price_chf: null,
         price_per_month_chf: Number(formData.price_per_month_chf),
         remaining_months: Number(formData.remaining_months),
         deposit_chf: depositChf,
@@ -281,6 +284,7 @@ export function LeaseTakeoverFinancingDetails() {
         deal_type: "lease_takeover",
         financing_type: null,
         leasing_offer: null,
+        purchase_price_chf: null,
         brand: data.brand,
         model: data.model,
         year: data.year,
@@ -467,6 +471,28 @@ export function LeaseTakeoverFinancingDetails() {
               </PopoverContent>
             </Popover>
 
+            <div className="mt-3 space-y-2">
+              <Label htmlFor="remaining_months" className="text-sm font-medium text-neutral-700">
+                Restlaufzeit (Monate) *
+              </Label>
+              <div className="relative">
+                <Input
+                  id="remaining_months"
+                  type="number"
+                  min="1"
+                  {...register("remaining_months", { valueAsNumber: true })}
+                  className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-20"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">Monate</span>
+              </div>
+              <p className="text-xs text-neutral-500 font-light">
+                Falls du das Vertragsende nicht mehr genau weisst, kannst du die Restlaufzeit hier manuell eingeben.
+              </p>
+              {errors.remaining_months && (
+                <p className="text-sm text-red-500 font-light">{errors.remaining_months.message}</p>
+              )}
+            </div>
+
             {typeof watch("remaining_months") === "number" && Number.isFinite(watch("remaining_months")) && (
               <div className="flex items-center gap-2 text-sm">
                 <div className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-md border border-green-200/40">
@@ -480,10 +506,6 @@ export function LeaseTakeoverFinancingDetails() {
             <p className="text-xs text-neutral-500 font-light">
               Wählen Sie das Enddatum Ihres Leasingvertrags. Die Restlaufzeit wird automatisch berechnet.
             </p>
-
-            {errors.remaining_months && (
-              <p className="text-sm text-red-500 font-light">{errors.remaining_months.message}</p>
-            )}
           </div>
 
           <div className="space-y-2">

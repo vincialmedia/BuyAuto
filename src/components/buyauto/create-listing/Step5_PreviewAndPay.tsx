@@ -114,23 +114,38 @@ export default function Step5_PreviewAndPay() {
   const listingStatus = (data as any)?.status as string | undefined;
 
   const inferredDealType: "lease_takeover" | "direct_purchase" = (() => {
-    const raw = (data as any)?.deal_type;
-    if (raw === "lease_takeover" || raw === "direct_purchase") return raw;
+    const rawDealType = (data as any)?.deal_type;
+    const rawFinancingType = (data as any)?.financing_type;
 
     const monthly = typeof (data as any)?.price_per_month_chf === "number" ? (data as any).price_per_month_chf : null;
     const months = typeof (data as any)?.remaining_months === "number" ? (data as any).remaining_months : null;
-    const purchase = (data as any)?.purchase_price_chf;
 
-    const looksLikeLeaseTakeover =
+    const hasMonthlyAndMonths =
       typeof monthly === "number" &&
       Number.isFinite(monthly) &&
       monthly > 0 &&
       typeof months === "number" &&
       Number.isFinite(months) &&
-      months > 0 &&
-      (purchase === null || purchase === undefined);
+      months > 0;
 
-    return looksLikeLeaseTakeover ? "lease_takeover" : "direct_purchase";
+    const hasLeasingOffer =
+      (data as any)?.leasing_offer !== null && (data as any)?.leasing_offer !== undefined;
+
+    if (rawDealType === "lease_takeover") return "lease_takeover";
+
+    if (rawDealType === "direct_purchase") {
+      const financingMissing = rawFinancingType === null || rawFinancingType === undefined;
+
+      if (hasMonthlyAndMonths && !hasLeasingOffer && (financingMissing || rawFinancingType === "cash")) {
+        return "lease_takeover";
+      }
+
+      return "direct_purchase";
+    }
+
+    if (hasMonthlyAndMonths && !hasLeasingOffer) return "lease_takeover";
+
+    return "direct_purchase";
   })();
 
   const dealType = inferredDealType;
@@ -335,8 +350,8 @@ export default function Step5_PreviewAndPay() {
 
   const buildListingPayloadFromWizard = useCallback((): ListingUpdatePayload => {
     const anyData = data as any;
-    const dealType = (anyData?.deal_type ?? "direct_purchase") as any;
-    const financingType = dealType === "direct_purchase" ? ((anyData?.financing_type ?? "cash") as any) : null;
+    const resolvedDealType = inferredDealType as any;
+    const financingType = resolvedDealType === "direct_purchase" ? ((anyData?.financing_type ?? "cash") as any) : null;
 
     const mileageKm =
       typeof anyData?.km === "number"
@@ -349,9 +364,9 @@ export default function Step5_PreviewAndPay() {
 
     const payload: ListingUpdatePayload = {
       id: typeof anyData?.id === "string" ? anyData.id : undefined,
-      deal_type: dealType,
+      deal_type: resolvedDealType,
       financing_type: financingType,
-      leasing_offer: dealType === "direct_purchase" ? (anyData?.leasing_offer ?? null) : null,
+      leasing_offer: resolvedDealType === "direct_purchase" ? (anyData?.leasing_offer ?? null) : null,
 
       brand: anyData?.brand ?? "",
       model: anyData?.model ?? "",
@@ -380,7 +395,7 @@ export default function Step5_PreviewAndPay() {
       first_registration: typeof anyData?.first_registration === "string" ? anyData.first_registration : null,
     };
 
-    if (dealType === "lease_takeover") {
+    if (resolvedDealType === "lease_takeover") {
       payload.price_per_month_chf = typeof anyData?.price_per_month_chf === "number" ? anyData.price_per_month_chf : undefined;
       payload.remaining_months = typeof anyData?.remaining_months === "number" ? anyData.remaining_months : undefined;
       payload.deposit_chf = typeof anyData?.deposit_chf === "number" ? anyData.deposit_chf : null;
@@ -397,7 +412,7 @@ export default function Step5_PreviewAndPay() {
     }
 
     return payload;
-  }, [data]);
+  }, [data, inferredDealType]);
 
   const handlePaymentConfirmation = useCallback(async (paymentIntentClientSecret: string) => {
     const url = new URL(window.location.href);
