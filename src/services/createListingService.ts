@@ -55,7 +55,8 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
     const offer = payload.leasing_offer as LeasingOfferPayload | null | undefined;
     if (offer?.lease_takeover_offer?.enabled === true) {
       const takeover = offer.lease_takeover_offer;
-      const pickupCanton = String(takeover.pickup_canton_code ?? "").trim();
+      const pickupCanton =
+        String(takeover.pickup_canton_code ?? "").trim() || String(payload.canton_code ?? "").trim();
       if (!pickupCanton) {
         throw new Error("Bitte wähle in Schritt 1 einen Kanton/Standort, damit der Abhol-Kanton für die Leasingübernahme gesetzt werden kann.");
       }
@@ -104,7 +105,10 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
   const residual_pct_adjustment_pp = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -20, 20) : 0;
 
   const takeover = (offer as LeasingOfferPayload).lease_takeover_offer;
-  const pickupCanton = takeover?.enabled === true ? String(takeover.pickup_canton_code ?? "").trim() : "";
+  const pickupCanton =
+    takeover?.enabled === true
+      ? String(takeover.pickup_canton_code ?? "").trim() || String(payload.canton_code ?? "").trim()
+      : "";
 
   if (takeover?.enabled === true && !pickupCanton) {
     throw new Error("Bitte wähle in Schritt 1 einen Kanton/Standort, damit der Abhol-Kanton für die Leasingübernahme gesetzt werden kann.");
@@ -271,54 +275,14 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
       }
 
       const offerPayload = currentOffer as LeasingOfferPayload;
+      const inferredFinancing: FinancingType = offerPayload.enabled === true ? "leasing" : "cash";
 
-      const noDownPayment = offerPayload.no_down_payment === true;
-      const normalizedDownPayment = noDownPayment ? 0 : offerPayload.down_payment_pct;
-
-      const rawResidualAdj = Number(offerPayload.residual_pct_adjustment_pp ?? 0);
-      const normalizedResidualAdj = Number.isFinite(rawResidualAdj) ? clampNumber(rawResidualAdj, -20, 20) : 0;
-
-      const takeover = offerPayload.lease_takeover_offer;
-      const normalizedTakeover =
-        takeover?.enabled === true
-          ? {
-              enabled: true,
-              price_per_month_chf: Math.max(1, Math.round(Number(takeover.price_per_month_chf))),
-              remaining_months: Math.max(1, Math.floor(Number(takeover.remaining_months))),
-              deposit_chf: Math.max(0, Math.round(Number(takeover.deposit_chf))),
-              remaining_km:
-                typeof takeover.remaining_km === "number" && Number.isFinite(takeover.remaining_km)
-                  ? Math.max(0, Math.round(Number(takeover.remaining_km)))
-                  : undefined,
-              pickup_canton_code: String(takeover.pickup_canton_code ?? "").trim(),
-            }
-          : undefined;
-
-      if (noDownPayment && Number(offerPayload.down_payment_pct) !== 0) {
-        return {
-          ...payload,
-          leasing_offer: {
-            ...offerPayload,
-            down_payment_pct: 0,
-            residual_pct_adjustment_pp: normalizedResidualAdj,
-            lease_takeover_offer: normalizedTakeover,
-          },
-        };
-      }
-
-      if (offerPayload.residual_pct_adjustment_pp !== normalizedResidualAdj || normalizedTakeover !== takeover) {
-        return {
-          ...payload,
-          leasing_offer: {
-            ...offerPayload,
-            down_payment_pct: normalizedDownPayment,
-            residual_pct_adjustment_pp: normalizedResidualAdj,
-            lease_takeover_offer: normalizedTakeover,
-          },
-        };
-      }
-
-      return payload;
+      return normalizeLeasingOfferForDirectPurchaseInsert({
+        ...(payload as ListingUpdatePayload),
+        deal_type: "direct_purchase",
+        financing_type: inferredFinancing,
+        leasing_offer: offerPayload,
+      } as ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType });
     }
 
     return payload;
