@@ -22,6 +22,14 @@ function getErrorMessage(input: unknown): string {
   return "Unexpected error";
 }
 
+function isMonthlyRecurringStripePrice(price: Awaited<ReturnType<typeof stripe.prices.retrieve>>): boolean {
+  const recurring = (price as any)?.recurring;
+  if (!recurring) return false;
+  const interval = typeof recurring.interval === "string" ? recurring.interval : null;
+  const usageType = typeof recurring.usage_type === "string" ? recurring.usage_type : null;
+  return interval === "month" && usageType === "licensed";
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -67,6 +75,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!plan?.id) return res.status(400).json({ ok: false, error: "Plan not found" });
     if (!plan.stripe_price_id || typeof plan.stripe_price_id !== "string") {
       return res.status(400).json({ ok: false, error: "Plan is not configured for recurring billing (missing stripe_price_id)" });
+    }
+
+    const stripePrice = await stripe.prices.retrieve(plan.stripe_price_id);
+    if (!isMonthlyRecurringStripePrice(stripePrice)) {
+      return res.status(400).json({
+        ok: false,
+        error: "This plan is not configured as a monthly recurring Stripe price. Please verify the Stripe price is recurring monthly in CHF.",
+      });
     }
 
     const protocol = (req.headers["x-forwarded-proto"] as string) || "http";
