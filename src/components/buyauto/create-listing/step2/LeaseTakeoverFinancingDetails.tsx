@@ -13,7 +13,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,40 +21,10 @@ import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 
-const swissCantons = [
-  { value: "AG", label: "Aargau (AG)" },
-  { value: "AI", label: "Appenzell Innerrhoden (AI)" },
-  { value: "AR", label: "Appenzell Ausserrhoden (AR)" },
-  { value: "BS", label: "Basel-Stadt (BS)" },
-  { value: "BL", label: "Basel-Landschaft (BL)" },
-  { value: "BE", label: "Bern (BE)" },
-  { value: "FR", label: "Freiburg (FR)" },
-  { value: "GE", label: "Genf (GE)" },
-  { value: "GL", label: "Glarus (GL)" },
-  { value: "GR", label: "Graubünden (GR)" },
-  { value: "JU", label: "Jura (JU)" },
-  { value: "LU", label: "Luzern (LU)" },
-  { value: "NE", label: "Neuenburg (NE)" },
-  { value: "NW", label: "Nidwalden (NW)" },
-  { value: "OW", label: "Obwalden (OW)" },
-  { value: "SH", label: "Schaffhausen (SH)" },
-  { value: "SZ", label: "Schwyz (SZ)" },
-  { value: "SO", label: "Solothurn (SO)" },
-  { value: "SG", label: "St. Gallen (SG)" },
-  { value: "TI", label: "Tessin (TI)" },
-  { value: "TG", label: "Thurgau (TG)" },
-  { value: "UR", label: "Uri (UR)" },
-  { value: "VS", label: "Wallis (VS)" },
-  { value: "VD", label: "Waadt (VD)" },
-  { value: "ZG", label: "Zug (ZG)" },
-  { value: "ZH", label: "Zürich (ZH)" },
-];
-
 const leasingDetailsSchema = z.object({
   price_per_month_chf: z.number().min(1, "Monatliche Rate ist erforderlich"),
   remaining_months: z.number().min(1, "Restlaufzeit muss mindestens 1 Monat betragen"),
   deposit_chf: z.number().min(0, "Kaution kann nicht negativ sein"),
-  location: z.string().min(1, "Standort ist erforderlich"),
   remaining_km: z.number().min(0, "Verbleibende KM muss mindestens 0 sein").optional(),
 });
 
@@ -140,7 +109,6 @@ export function LeaseTakeoverFinancingDetails() {
       price_per_month_chf: data.price_per_month_chf || 0,
       remaining_months: data.remaining_months || 12,
       deposit_chf: data.deposit_chf || 0,
-      location: data.location || "",
       remaining_km: data.remaining_km || 0,
     },
   });
@@ -165,7 +133,6 @@ export function LeaseTakeoverFinancingDetails() {
           typeof values.deposit_chf === "number" && Number.isFinite(values.deposit_chf) ? values.deposit_chf : undefined,
         remaining_km:
           typeof values.remaining_km === "number" && Number.isFinite(values.remaining_km) ? values.remaining_km : undefined,
-        location: typeof values.location === "string" ? values.location : "",
       } as any;
     });
 
@@ -204,7 +171,6 @@ export function LeaseTakeoverFinancingDetails() {
         remaining_months: Number(formData.remaining_months),
         deposit_chf: depositChf,
         remaining_km: remainingKm,
-        location: formData.location,
       };
 
       if (isGarage && !isEditingExistingListing) {
@@ -254,7 +220,7 @@ export function LeaseTakeoverFinancingDetails() {
         gearbox: data.gearbox,
         body: data.body,
         description: data.description,
-        location: formData.location,
+        location: data.location,
         canton_code: data.canton_code,
         title: data.title,
         price_plan: data.price_plan,
@@ -329,10 +295,6 @@ export function LeaseTakeoverFinancingDetails() {
     return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
   };
 
-  const handleCantonSelect = (value: string) => {
-    setValue("location", value);
-  };
-
   const handleDateSelect = (date: Date | undefined) => {
     setContractEndDate(date);
     if (date) {
@@ -345,7 +307,7 @@ export function LeaseTakeoverFinancingDetails() {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Finanzierungsdetails</h2>
-        <p className="text-neutral-600 font-light leading-relaxed">Konditionen und Standort Ihres Fahrzeugs</p>
+        <p className="text-neutral-600 font-light leading-relaxed">Konditionen Ihres Leasingvertrags</p>
       </div>
 
       {submitError && (
@@ -489,29 +451,6 @@ export function LeaseTakeoverFinancingDetails() {
             <p className="text-xs text-neutral-500 font-light">Wie viele Kilometer sind im Leasingvertrag noch verfügbar?</p>
             {errors.remaining_km && <p className="text-sm text-red-500 font-light">{errors.remaining_km.message}</p>}
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="location" className="text-sm font-medium text-neutral-700">
-              Standort *
-            </Label>
-            <Select onValueChange={handleCantonSelect} value={watch("location")}>
-              <SelectTrigger
-                id="location"
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
-              >
-                <SelectValue placeholder="Kanton auswählen..." />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {swissCantons.map((canton) => (
-                  <SelectItem key={canton.value} value={canton.value}>
-                    {canton.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-neutral-500 font-light">Wählen Sie den Kanton, in dem das Fahrzeug abgeholt werden kann</p>
-            {errors.location && <p className="text-sm text-red-500 font-light">{errors.location.message}</p>}
-          </div>
         </div>
 
         <div className="bg-gradient-to-br from-neutral-50 to-red-50/30 rounded-lg p-6 border border-neutral-200/40">
@@ -530,9 +469,7 @@ export function LeaseTakeoverFinancingDetails() {
             <div className="text-center p-3 bg-white/60 rounded-lg border border-neutral-200/30">
               <p className="text-neutral-500 mb-1 font-light">Standort</p>
               <p className="text-lg font-semibold text-neutral-900">
-                {watch("location")
-                  ? swissCantons.find((c) => c.value === watch("location"))?.label.split(" (")[0] || watch("location")
-                  : "Nicht ausgewählt"}
+                {data?.canton_code ? data.canton_code : data?.location ? data.location : "Nicht ausgewählt"}
               </p>
             </div>
           </div>

@@ -202,14 +202,6 @@ export const listingStep1Schema = z
           message: "Restlaufzeit ist erforderlich",
         });
       }
-
-      if (!data.canton_code || data.canton_code.trim().length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["canton_code"],
-          message: "Standort (Kanton) ist erforderlich",
-        });
-      }
     }
 
     if (data.leasing_enabled) {
