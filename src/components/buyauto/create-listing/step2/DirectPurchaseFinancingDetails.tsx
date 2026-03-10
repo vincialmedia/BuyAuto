@@ -96,6 +96,13 @@ function focusFirstInvalidField<T extends Record<string, any>>(errors: FieldErro
   }
 }
 
+function normalizeCantonCode(value: unknown): string | null {
+  const v = String(value ?? "").trim().toUpperCase();
+  if (!v) return null;
+  if (v.length !== 2) return null;
+  return v;
+}
+
 const directPurchaseFinancingSchema = z
   .object({
     purchase_price_chf: z.number().optional(),
@@ -264,6 +271,8 @@ export function DirectPurchaseFinancingDetails() {
     };
   }, [data]);
 
+  const step1CantonCode = useMemo(() => normalizeCantonCode((data as any)?.canton_code), [data]);
+
   const {
     register,
     handleSubmit,
@@ -286,7 +295,8 @@ export function DirectPurchaseFinancingDetails() {
       lease_takeover_remaining_months: toNumberOrUndefined(existingTakeover?.remaining_months) ?? 0,
       lease_takeover_deposit_chf: toNumberOrUndefined(existingTakeover?.deposit_chf) ?? 0,
       lease_takeover_remaining_km: toNumberOrUndefined(existingTakeover?.remaining_km) ?? 0,
-      lease_takeover_pickup_canton_code: typeof existingTakeover?.pickup_canton_code === "string" ? existingTakeover.pickup_canton_code : "",
+      // UI field removed; keep empty for backward compatibility, but we don't rely on it.
+      lease_takeover_pickup_canton_code: "",
 
       leasing_enabled: leasingEnabledInitial,
       interest_rate_pct: toNumberOrUndefined(existingOffer?.interest_rate_pct) ?? 4.9,
@@ -316,15 +326,17 @@ export function DirectPurchaseFinancingDetails() {
           ? values.purchase_price_chf
           : undefined;
 
+      const takeoverPickupCanton = step1CantonCode;
+
       const leaseTakeoverOffer =
-        leaseTakeoverEnabledNow === true
+        leaseTakeoverEnabledNow === true && takeoverPickupCanton
           ? {
               enabled: true,
               price_per_month_chf: Math.round(toNumberOrUndefined(values.lease_takeover_price_per_month_chf) ?? 0),
               remaining_months: Math.floor(toNumberOrUndefined(values.lease_takeover_remaining_months) ?? 0),
               deposit_chf: Math.round(toNumberOrUndefined(values.lease_takeover_deposit_chf) ?? 0),
               remaining_km: toNumberOrUndefined(values.lease_takeover_remaining_km),
-              pickup_canton_code: String(values.lease_takeover_pickup_canton_code ?? "").trim(),
+              pickup_canton_code: takeoverPickupCanton,
             }
           : undefined;
 
@@ -364,7 +376,7 @@ export function DirectPurchaseFinancingDetails() {
     return () => {
       registerDraftSnapshotter(() => ({}));
     };
-  }, [getValues, registerDraftSnapshotter]);
+  }, [getValues, registerDraftSnapshotter, step1CantonCode]);
 
   useEffect(() => {
     if (!isGarage) {
@@ -441,8 +453,10 @@ export function DirectPurchaseFinancingDetails() {
       const purchasePriceChfRaw = typeof formData.purchase_price_chf === "number" ? formData.purchase_price_chf : 0;
       const purchasePriceChfClean = purchasePriceChfRaw > 0 ? Math.round(purchasePriceChfRaw) : null;
 
+      const takeoverPickupCanton = step1CantonCode;
+
       const leaseTakeoverOffer =
-        formData.lease_takeover_enabled === true
+        formData.lease_takeover_enabled === true && takeoverPickupCanton
           ? {
               enabled: true,
               price_per_month_chf: Math.round(Number(formData.lease_takeover_price_per_month_chf)),
@@ -452,7 +466,7 @@ export function DirectPurchaseFinancingDetails() {
                 typeof formData.lease_takeover_remaining_km === "number" && Number.isFinite(formData.lease_takeover_remaining_km)
                   ? Math.round(Number(formData.lease_takeover_remaining_km))
                   : undefined,
-              pickup_canton_code: String(formData.lease_takeover_pickup_canton_code ?? "").trim(),
+              pickup_canton_code: takeoverPickupCanton,
             }
           : undefined;
 

@@ -57,6 +57,7 @@ const createEmptyListingData = (): ListingData => ({
   price_per_month_chf: 0,
   remaining_months: 12,
   deposit_chf: 0,
+  contract_end_date: null,
   location: "",
   description: "",
   price_plan: "standard",
@@ -185,6 +186,12 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
       typeof listing?.price_per_month_chf === "number" ? listing.price_per_month_chf : prev.price_per_month_chf,
     remaining_months: typeof listing?.remaining_months === "number" ? listing.remaining_months : prev.remaining_months,
     deposit_chf: typeof listing?.deposit_chf === "number" ? listing.deposit_chf : prev.deposit_chf,
+    contract_end_date:
+      typeof listing?.contract_end_date === "string"
+        ? listing.contract_end_date
+        : typeof (prev as any)?.contract_end_date === "string"
+          ? (prev as any).contract_end_date
+          : null,
 
     location: listing?.location ?? prev.location,
     canton_code: listing?.canton_code ?? (prev as any)?.canton_code,

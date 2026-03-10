@@ -113,9 +113,74 @@ export function LeaseTakeoverFinancingDetails() {
     },
   });
 
+  const watchedPricePerMonth = watch("price_per_month_chf");
+  const watchedRemainingMonths = watch("remaining_months");
+  const watchedDeposit = watch("deposit_chf");
+  const watchedRemainingKm = watch("remaining_km");
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const pricePerMonth =
+        typeof watchedPricePerMonth === "number" && Number.isFinite(watchedPricePerMonth) && watchedPricePerMonth > 0
+          ? watchedPricePerMonth
+          : undefined;
+
+      const remainingMonths =
+        typeof watchedRemainingMonths === "number" && Number.isFinite(watchedRemainingMonths) && watchedRemainingMonths > 0
+          ? watchedRemainingMonths
+          : undefined;
+
+      const depositChf =
+        typeof watchedDeposit === "number" && Number.isFinite(watchedDeposit) && watchedDeposit >= 0
+          ? watchedDeposit
+          : undefined;
+
+      const remainingKm =
+        typeof watchedRemainingKm === "number" && Number.isFinite(watchedRemainingKm) && watchedRemainingKm >= 0
+          ? watchedRemainingKm
+          : undefined;
+
+      updateData({
+        deal_type: "lease_takeover",
+        financing_type: null,
+        leasing_offer: null,
+        price_per_month_chf: pricePerMonth,
+        remaining_months: remainingMonths,
+        deposit_chf: depositChf,
+        remaining_km: remainingKm,
+      } as any);
+    }, 250);
+
+    return () => clearTimeout(t);
+  }, [updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
+
+  useEffect(() => {
+    const raw = (data as any)?.contract_end_date;
+    if (contractEndDate) return;
+
+    if (typeof raw === "string" && raw.length >= 10) {
+      const parsed = new Date(`${raw.slice(0, 10)}T00:00:00`);
+      if (!Number.isNaN(parsed.getTime())) {
+        setContractEndDate(parsed);
+        const existingRemaining =
+          typeof (data as any)?.remaining_months === "number" && Number.isFinite((data as any).remaining_months)
+            ? Number((data as any).remaining_months)
+            : null;
+
+        if (existingRemaining !== null) {
+          setValue("remaining_months", existingRemaining, { shouldValidate: false, shouldDirty: false });
+        } else {
+          const months = calculateRemainingMonths(parsed);
+          setValue("remaining_months", months, { shouldValidate: false, shouldDirty: false });
+        }
+      }
+    }
+  }, [contractEndDate, data, setValue]);
+
   useEffect(() => {
     registerDraftSnapshotter(() => {
       const values = getValues();
+      const contractEnd = contractEndDate ? format(contractEndDate, "yyyy-MM-dd") : (data as any)?.contract_end_date ?? null;
 
       return {
         deal_type: "lease_takeover",
@@ -133,13 +198,14 @@ export function LeaseTakeoverFinancingDetails() {
           typeof values.deposit_chf === "number" && Number.isFinite(values.deposit_chf) ? values.deposit_chf : undefined,
         remaining_km:
           typeof values.remaining_km === "number" && Number.isFinite(values.remaining_km) ? values.remaining_km : undefined,
+        contract_end_date: contractEnd,
       } as any;
     });
 
     return () => {
       registerDraftSnapshotter(() => ({}));
     };
-  }, [getValues, registerDraftSnapshotter]);
+  }, [contractEndDate, data, getValues, registerDraftSnapshotter]);
 
   const onSubmit = async (formData: LeasingDetailsForm) => {
     if (!user) {
@@ -163,6 +229,8 @@ export function LeaseTakeoverFinancingDetails() {
       const remainingKm =
         typeof formData.remaining_km === "number" && Number.isFinite(formData.remaining_km) ? Number(formData.remaining_km) : 0;
 
+      const contractEnd = contractEndDate ? format(contractEndDate, "yyyy-MM-dd") : (data as any)?.contract_end_date ?? null;
+
       const financingPatch: Partial<typeof data> = {
         deal_type: "lease_takeover",
         financing_type: null,
@@ -171,6 +239,7 @@ export function LeaseTakeoverFinancingDetails() {
         remaining_months: Number(formData.remaining_months),
         deposit_chf: depositChf,
         remaining_km: remainingKm,
+        contract_end_date: contractEnd,
       };
 
       if (isGarage && !isEditingExistingListing) {
@@ -232,6 +301,7 @@ export function LeaseTakeoverFinancingDetails() {
         remaining_months: Number(formData.remaining_months),
         deposit_chf: depositChf,
         remaining_km: remainingKm,
+        contract_end_date: contractEnd,
       };
 
       const saved = await createOrUpdateListing(payload, user);
@@ -300,6 +370,7 @@ export function LeaseTakeoverFinancingDetails() {
     if (date) {
       const months = calculateRemainingMonths(date);
       setValue("remaining_months", months, { shouldValidate: true });
+      updateData({ contract_end_date: format(date, "yyyy-MM-dd") } as any);
     }
   };
 
@@ -396,7 +467,7 @@ export function LeaseTakeoverFinancingDetails() {
               </PopoverContent>
             </Popover>
 
-            {contractEndDate && (
+            {typeof watch("remaining_months") === "number" && Number.isFinite(watch("remaining_months")) && (
               <div className="flex items-center gap-2 text-sm">
                 <div className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-md border border-green-200/40">
                   <span className="font-medium">

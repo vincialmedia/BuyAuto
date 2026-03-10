@@ -113,7 +113,27 @@ export default function Step5_PreviewAndPay() {
   const isGarage = profile?.role === 'garage';
   const listingStatus = (data as any)?.status as string | undefined;
 
-  const dealType = data.deal_type ?? "direct_purchase";
+  const inferredDealType: "lease_takeover" | "direct_purchase" = (() => {
+    const raw = (data as any)?.deal_type;
+    if (raw === "lease_takeover" || raw === "direct_purchase") return raw;
+
+    const monthly = typeof (data as any)?.price_per_month_chf === "number" ? (data as any).price_per_month_chf : null;
+    const months = typeof (data as any)?.remaining_months === "number" ? (data as any).remaining_months : null;
+    const purchase = (data as any)?.purchase_price_chf;
+
+    const looksLikeLeaseTakeover =
+      typeof monthly === "number" &&
+      Number.isFinite(monthly) &&
+      monthly > 0 &&
+      typeof months === "number" &&
+      Number.isFinite(months) &&
+      months > 0 &&
+      (purchase === null || purchase === undefined);
+
+    return looksLikeLeaseTakeover ? "lease_takeover" : "direct_purchase";
+  })();
+
+  const dealType = inferredDealType;
   const financingType = dealType === "direct_purchase" ? (data.financing_type ?? "cash") : null;
 
   const leasingOffer = (data.leasing_offer ?? null) as unknown as LeasingOfferShape | null;
@@ -129,6 +149,10 @@ export default function Step5_PreviewAndPay() {
         : "unknown";
 
   const takeoverMonthlyRateChf = takeoverOffer ? getNumber(takeoverOffer.price_per_month_chf) : null;
+  const takeoverSecondaryLine =
+    previewVariant !== "lease_takeover" && takeoverOfferEnabled && typeof takeoverMonthlyRateChf === "number"
+      ? `Leasingübernahme: CHF ${takeoverMonthlyRateChf.toLocaleString("de-CH")} / Monat`
+      : null;
 
   const selectedPlanId = data.price_plan as Plan | undefined;
   const isPremium = data.premium || false;
@@ -848,12 +872,13 @@ export default function Step5_PreviewAndPay() {
                           <p className="text-sm text-neutral-500 mt-1">{capabilityLabel}</p>
                         </>
                       ) : (
-                        <>
+                        <div className="space-y-1">
                           <p className="text-2xl font-bold tracking-tight text-neutral-900">
                             {typeof purchasePriceForDisplayChf === "number" ? formatPrice(purchasePriceForDisplayChf) : "CHF -"}
                           </p>
-                          {capabilityLabel && <p className="text-sm text-neutral-500 mt-1">{capabilityLabel}</p>}
-                        </>
+                          {takeoverSecondaryLine && <p className="text-sm text-neutral-500">{takeoverSecondaryLine}</p>}
+                          {capabilityLabel && <p className="text-sm text-neutral-500">{capabilityLabel}</p>}
+                        </div>
                       )}
                     </div>
                   </div>

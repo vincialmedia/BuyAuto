@@ -32,6 +32,7 @@ export type ListingUpdatePayload = Partial<{
   purchase_price_chf?: number | null;
   remaining_months?: number;
   deposit_chf?: number | null;
+  contract_end_date?: string | null;
   location?: string;
   canton_code?: string;
   title?: string;

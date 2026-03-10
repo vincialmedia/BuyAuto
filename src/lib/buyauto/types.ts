@@ -111,6 +111,7 @@ export interface ListingData {
   remaining_months?: number;
   remaining_km?: number | null;
   deposit_chf?: number;
+  contract_end_date?: string | null;
   location?: string;
   canton_code?: string;
   title?: string;
