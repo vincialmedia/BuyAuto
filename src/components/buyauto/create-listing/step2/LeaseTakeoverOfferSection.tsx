@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export interface LeaseTakeoverOfferFormValues {
@@ -28,35 +27,6 @@ export interface LeaseTakeoverOfferSectionProps<T extends LeaseTakeoverOfferForm
   watch: UseFormWatch<T>;
   errors: FieldErrors<T>;
 }
-
-const swissCantons = [
-  { value: "AG", label: "Aargau (AG)" },
-  { value: "AI", label: "Appenzell Innerrhoden (AI)" },
-  { value: "AR", label: "Appenzell Ausserrhoden (AR)" },
-  { value: "BS", label: "Basel-Stadt (BS)" },
-  { value: "BL", label: "Basel-Landschaft (BL)" },
-  { value: "BE", label: "Bern (BE)" },
-  { value: "FR", label: "Freiburg (FR)" },
-  { value: "GE", label: "Genf (GE)" },
-  { value: "GL", label: "Glarus (GL)" },
-  { value: "GR", label: "Graubünden (GR)" },
-  { value: "JU", label: "Jura (JU)" },
-  { value: "LU", label: "Luzern (LU)" },
-  { value: "NE", label: "Neuenburg (NE)" },
-  { value: "NW", label: "Nidwalden (NW)" },
-  { value: "OW", label: "Obwalden (OW)" },
-  { value: "SH", label: "Schaffhausen (SH)" },
-  { value: "SZ", label: "Schwyz (SZ)" },
-  { value: "SO", label: "Solothurn (SO)" },
-  { value: "SG", label: "St. Gallen (SG)" },
-  { value: "TI", label: "Tessin (TI)" },
-  { value: "TG", label: "Thurgau (TG)" },
-  { value: "UR", label: "Uri (UR)" },
-  { value: "VS", label: "Wallis (VS)" },
-  { value: "VD", label: "Waadt (VD)" },
-  { value: "ZG", label: "Zug (ZG)" },
-  { value: "ZH", label: "Zürich (ZH)" },
-];
 
 function calculateRemainingMonths(endDate: Date): number {
   const now = new Date();
@@ -230,30 +200,6 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
               </div>
               {(errors as any)?.lease_takeover_remaining_km && (
                 <p className="text-sm text-red-500 font-light">{(errors as any).lease_takeover_remaining_km.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="lease_takeover_pickup_canton_code" className="text-sm font-medium text-neutral-700">
-                Standort (Kanton) *
-              </Label>
-              <Select
-                onValueChange={(value) => setValue("lease_takeover_pickup_canton_code" as any, value as any, { shouldValidate: true })}
-                value={String(watch("lease_takeover_pickup_canton_code" as any) ?? "")}
-              >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-                  <SelectValue placeholder="Kanton auswählen..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {swissCantons.map((canton) => (
-                    <SelectItem key={canton.value} value={canton.value}>
-                      {canton.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {(errors as any)?.lease_takeover_pickup_canton_code && (
-                <p className="text-sm text-red-500 font-light">{(errors as any).lease_takeover_pickup_canton_code.message}</p>
               )}
             </div>
           </div>
