@@ -522,10 +522,6 @@ export function DirectPurchaseFinancingDetails() {
       const purchasePriceChfRaw = typeof formData.purchase_price_chf === "number" ? formData.purchase_price_chf : 0;
       const purchasePriceChfClean = purchasePriceChfRaw > 0 ? Math.round(purchasePriceChfRaw) : null;
 
-      if (formData.lease_takeover_enabled === true && !step1CantonCode) {
-        throw new Error("Für die Leasingübernahme benötigen wir einen Abhol-Kanton. Bitte wähle in Schritt 1 einen Kanton/Standort und versuche es erneut.");
-      }
-
       const takeoverPickupCanton = step1CantonCode ?? "";
 
       const leaseTakeoverOffer =
