@@ -55,10 +55,9 @@ const formatMileage = (km: unknown) => {
 
 function getCantonName(code: string): string {
   const normalized = String(code ?? "").trim().toUpperCase();
-  if (!normalized) return "Unbekannt";
+  if (!normalized) return "";
   if (normalized === "XX") return "Unbekannt";
-  const canton = cantons.find(c => c.value === normalized);
-  return canton ? canton.label : normalized;
+  return cantons[normalized] ?? normalized;
 }
 
 type LeaseTakeoverOfferShape = Partial<{
@@ -217,7 +216,9 @@ export default function Step5_PreviewAndPay() {
     // cash only -> blank
   }
 
-  const mainImage = data.images?.[0] || DUMMY_IMAGE_URL;
+  const coverIndex = typeof (data as any)?.cover_image_index === "number" ? Number((data as any).cover_image_index) : 0;
+  const mainImage =
+    (Array.isArray(data.images) ? (data.images[coverIndex] ?? data.images[0]) : null) || DUMMY_IMAGE_URL;
 
   const vehicleDetails = [
     { label: "Baujahr", value: data.year },
@@ -911,7 +912,7 @@ export default function Step5_PreviewAndPay() {
                   <div className="flex justify-between items-start mb-8">
                     <div>
                       <h3 className="text-2xl font-bold tracking-tight text-neutral-900">{data.brand} {data.model}</h3>
-                      <p className="text-sm text-neutral-500 mt-1">{getCantonName(data.location) || "-"}</p>
+                      <p className="text-sm text-neutral-500 mt-1">{data.location || "-"}</p>
                     </div>
                     <div className="text-right">
                       {previewVariant === "lease_takeover" ? (
@@ -1011,9 +1012,9 @@ export default function Step5_PreviewAndPay() {
                             </div>
                           )}
                           {takeoverOffer.pickup_canton_code && (
-                            <div className="flex justify-between">
-                              <span className="text-neutral-500">Abholung</span>
-                              <span className="text-neutral-900">{getCantonName(takeoverOffer.pickup_canton_code)}</span>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-neutral-600">Abhol-Kanton</span>
+                              <span className="text-neutral-900">{data.location}</span>
                             </div>
                           )}
                         </div>

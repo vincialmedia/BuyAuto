@@ -124,6 +124,37 @@ export function LeaseTakeoverFinancingDetails() {
   const watchedRemainingKm = watch("remaining_km");
 
   useEffect(() => {
+    const listingIdKey = typeof (data as any)?.id === "string" ? String((data as any).id) : "";
+    const key = `${draftId ?? ""}|${listingIdKey}`;
+    (window as any).__buyautoLeaseTakeoverHydrated = (window as any).__buyautoLeaseTakeoverHydrated ?? {};
+
+    const hydratedMap = (window as any).__buyautoLeaseTakeoverHydrated as Record<string, boolean>;
+    if (hydratedMap[key]) return;
+
+    const nextPrice = toFiniteNumber((data as any)?.price_per_month_chf, 0);
+    const nextMonths = toFiniteNumber((data as any)?.remaining_months, 12);
+    const nextDeposit = toFiniteNumber((data as any)?.deposit_chf, 0);
+    const nextRemainingKm = toFiniteNumber((data as any)?.remaining_km, 0);
+
+    const current = getValues();
+
+    if ((!current.price_per_month_chf || current.price_per_month_chf <= 0) && nextPrice > 0) {
+      setValue("price_per_month_chf", nextPrice, { shouldValidate: false, shouldDirty: false });
+    }
+    if ((!current.remaining_months || current.remaining_months <= 0) && nextMonths > 0) {
+      setValue("remaining_months", nextMonths, { shouldValidate: false, shouldDirty: false });
+    }
+    if ((current.deposit_chf === undefined || current.deposit_chf === null) && nextDeposit >= 0) {
+      setValue("deposit_chf", nextDeposit, { shouldValidate: false, shouldDirty: false });
+    }
+    if ((current.remaining_km === undefined || current.remaining_km === null) && nextRemainingKm >= 0) {
+      setValue("remaining_km", nextRemainingKm, { shouldValidate: false, shouldDirty: false });
+    }
+
+    hydratedMap[key] = true;
+  }, [data, draftId, getValues, setValue]);
+
+  useEffect(() => {
     const t = setTimeout(() => {
       const pricePerMonth =
         typeof watchedPricePerMonth === "number" && Number.isFinite(watchedPricePerMonth) && watchedPricePerMonth > 0

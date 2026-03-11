@@ -136,10 +136,9 @@ function getDealLabel(variant: SummaryVariant): string {
 
 function getCantonName(code: string): string {
   const normalized = String(code ?? "").trim().toUpperCase();
-  if (!normalized) return "Unbekannt";
+  if (!normalized) return "";
   if (normalized === "XX") return "Unbekannt";
-  const canton = cantons.find((c) => c.value === normalized);
-  return canton ? canton.label : normalized;
+  return cantons[normalized] ?? normalized;
 }
 
 function getPrimaryPricing(args: {
@@ -475,8 +474,8 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
                       </div>
                     )}
                     {getString(leasingOffer.lease_takeover_offer.pickup_canton_code) && (
-                      <div className="flex justify-between">
-                        <span className="text-neutral-500">Abholung</span>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-neutral-600">Abhol-Kanton</span>
                         <span className="text-neutral-900">{getCantonName(getString(leasingOffer.lease_takeover_offer.pickup_canton_code))}</span>
                       </div>
                     )}
