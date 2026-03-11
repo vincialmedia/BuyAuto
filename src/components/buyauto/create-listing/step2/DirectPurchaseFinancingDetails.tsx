@@ -326,7 +326,7 @@ export function DirectPurchaseFinancingDetails() {
         const leasingEnabledNow = Boolean((values as any)?.leasing_enabled);
         const leaseTakeoverEnabledNow = Boolean((values as any)?.lease_takeover_enabled);
 
-        const takeoverPickupCanton = step1CantonCode ?? "";
+        const takeoverPickupCanton = step1CantonCode ?? "XX";
 
         const purchasePriceChfRaw = toNumberOrUndefined((values as any)?.purchase_price_chf) ?? 0;
         const purchasePriceChfClean = purchasePriceChfRaw > 0 ? Math.round(purchasePriceChfRaw) : undefined;
@@ -395,7 +395,7 @@ export function DirectPurchaseFinancingDetails() {
           ? values.purchase_price_chf
           : undefined;
 
-      const takeoverPickupCanton = step1CantonCode ?? "";
+      const takeoverPickupCanton = step1CantonCode ?? "XX";
 
       const leaseTakeoverOffer =
         leaseTakeoverEnabledNow === true
@@ -522,7 +522,7 @@ export function DirectPurchaseFinancingDetails() {
       const purchasePriceChfRaw = typeof formData.purchase_price_chf === "number" ? formData.purchase_price_chf : 0;
       const purchasePriceChfClean = purchasePriceChfRaw > 0 ? Math.round(purchasePriceChfRaw) : null;
 
-      const takeoverPickupCanton = step1CantonCode ?? "";
+      const takeoverPickupCanton = step1CantonCode ?? "XX";
 
       const leaseTakeoverOffer =
         formData.lease_takeover_enabled === true

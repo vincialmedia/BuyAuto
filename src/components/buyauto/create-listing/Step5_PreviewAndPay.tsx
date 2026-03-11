@@ -53,11 +53,13 @@ const formatMileage = (km: unknown) => {
   return `${n.toLocaleString("de-CH")} km`;
 };
 
-const getCantonName = (cantonCode: string | undefined) => {
-  if (!cantonCode) return '-';
-  const canton = cantons.find(c => c.value === cantonCode);
-  return canton ? canton.label : cantonCode;
-};
+function getCantonName(code: string): string {
+  const normalized = String(code ?? "").trim().toUpperCase();
+  if (!normalized) return "Unbekannt";
+  if (normalized === "XX") return "Unbekannt";
+  const canton = cantons.find(c => c.value === normalized);
+  return canton ? canton.label : normalized;
+}
 
 type LeaseTakeoverOfferShape = Partial<{
   enabled: boolean;

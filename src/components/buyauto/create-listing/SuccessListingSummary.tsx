@@ -134,10 +134,12 @@ function getDealLabel(variant: SummaryVariant): string {
   return "Inserat";
 }
 
-function getCantonName(cantonCode: string | null): string | null {
-  if (!cantonCode) return null;
-  const canton = cantons.find((c) => c.value === cantonCode);
-  return canton ? canton.label : cantonCode;
+function getCantonName(code: string): string {
+  const normalized = String(code ?? "").trim().toUpperCase();
+  if (!normalized) return "Unbekannt";
+  if (normalized === "XX") return "Unbekannt";
+  const canton = cantons.find((c) => c.value === normalized);
+  return canton ? canton.label : normalized;
 }
 
 function getPrimaryPricing(args: {
