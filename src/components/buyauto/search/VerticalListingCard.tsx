@@ -20,6 +20,18 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
 
   const leasingOffer = uiVersion === "v1" ? null : (listing.leasing_offer ?? null);
 
+  const leaseTakeoverOffer =
+    dealType === "direct_purchase" && leasingOffer && typeof leasingOffer === "object"
+      ? ((leasingOffer as unknown as { lease_takeover_offer?: any | null }).lease_takeover_offer ?? null)
+      : null;
+
+  const leaseTakeoverEnabled = Boolean(leaseTakeoverOffer && typeof leaseTakeoverOffer === "object" && leaseTakeoverOffer.enabled === true);
+
+  const leaseTakeoverMonthlyChf =
+    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.price_per_month_chf === "number"
+      ? (leaseTakeoverOffer.price_per_month_chf as number)
+      : null;
+
   const purchasePriceChf =
     uiVersion === "v1"
       ? null
@@ -63,9 +75,11 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
       ? purchasePriceChf
         ? `CHF ${chf.format(Math.round(purchasePriceChf))}`
         : null
-      : teaserMonthlyChf
-        ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
-        : null;
+      : leaseTakeoverMonthlyChf
+        ? `Leasingübernahme: CHF ${chf.format(Math.round(leaseTakeoverMonthlyChf))} / Monat`
+        : teaserMonthlyChf
+          ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
+          : null;
 
   const handleDetailsClick = () => {
     if (onDetailsClick) {
@@ -135,7 +149,7 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
                 ) : (
                   <div className="inline-flex items-center px-2 py-1 bg-neutral-100 text-neutral-700 rounded-full text-xs font-medium">
                     <Calendar className="h-3 w-3 mr-1" />
-                    {leasingOffer?.enabled ? "Direktkauf + Leasing" : "Direktkauf"}
+                    {leaseTakeoverEnabled ? "Direktkauf + Leasingübernahme" : leasingOffer?.enabled ? "Direktkauf + Leasing" : "Direktkauf"}
                   </div>
                 )}
 

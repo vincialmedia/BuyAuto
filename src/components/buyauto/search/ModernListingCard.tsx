@@ -36,6 +36,18 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
 
   const leasingOffer = uiVersion === "v1" ? null : (listing.leasing_offer ?? null);
 
+  const leaseTakeoverOffer =
+    dealType === "direct_purchase" && leasingOffer && typeof leasingOffer === "object"
+      ? ((leasingOffer as unknown as { lease_takeover_offer?: any | null }).lease_takeover_offer ?? null)
+      : null;
+
+  const leaseTakeoverEnabled = Boolean(leaseTakeoverOffer && typeof leaseTakeoverOffer === "object" && leaseTakeoverOffer.enabled === true);
+
+  const leaseTakeoverMonthlyChf =
+    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.price_per_month_chf === "number"
+      ? (leaseTakeoverOffer.price_per_month_chf as number)
+      : null;
+
   const teaserMonthlyChf =
     dealType === "direct_purchase" &&
     leasingOffer?.enabled === true &&
@@ -66,9 +78,11 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
       ? purchasePriceChf
         ? `CHF ${chf.format(Math.round(purchasePriceChf))}`
         : null
-      : teaserMonthlyChf
-        ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
-        : null;
+      : leaseTakeoverMonthlyChf
+        ? `Leasingübernahme: CHF ${chf.format(Math.round(leaseTakeoverMonthlyChf))} / Monat`
+        : teaserMonthlyChf
+          ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
+          : null;
 
   const handleDetailsClick = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -212,7 +226,9 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         {dealType === "direct_purchase" && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Deal</span>
-            <span className="font-medium">{leasingOffer?.enabled ? "Direktkauf + Leasing" : "Direktkauf"}</span>
+            <span className="font-medium">
+              {leaseTakeoverEnabled ? "Direktkauf + Leasingübernahme" : leasingOffer?.enabled ? "Direktkauf + Leasing" : "Direktkauf"}
+            </span>
           </div>
         )}
 

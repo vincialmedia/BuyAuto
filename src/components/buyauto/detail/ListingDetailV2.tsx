@@ -130,6 +130,20 @@ export function ListingDetailV2({
   };
 
   const leasingOffer = (listing as unknown as { leasing_offer?: any | null }).leasing_offer ?? null;
+  const leaseTakeoverOffer =
+    dealType === "direct_purchase" && leasingOffer && typeof leasingOffer === "object"
+      ? ((leasingOffer as unknown as { lease_takeover_offer?: any | null }).lease_takeover_offer ?? null)
+      : null;
+
+  const leaseTakeoverEnabled = Boolean(
+    leaseTakeoverOffer && typeof leaseTakeoverOffer === "object" && leaseTakeoverOffer.enabled === true
+  );
+
+  const leaseTakeoverMonthlyChf =
+    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.price_per_month_chf === "number"
+      ? (leaseTakeoverOffer.price_per_month_chf as number)
+      : null;
+
   const canShowLeasingCalculator =
     hasLeasing && typeof purchasePriceChf === "number" && leasingOffer && typeof leasingOffer === "object" && leasingOffer.enabled;
 
@@ -240,7 +254,16 @@ export function ListingDetailV2({
                     </div>
                   )}
 
-                  {dealType === "direct_purchase" && teaserMonthlyLabel && (
+                  {dealType === "direct_purchase" && leaseTakeoverMonthlyChf !== null && (
+                    <div className="mt-3 rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/85">
+                      Leasingübernahme:{" "}
+                      <span className="font-semibold text-white">
+                        {formatChf(Math.round(leaseTakeoverMonthlyChf))} / Monat
+                      </span>
+                    </div>
+                  )}
+
+                  {dealType === "direct_purchase" && teaserMonthlyLabel && leaseTakeoverMonthlyChf === null && (
                     <div className="mt-3 rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/85">
                       {teaserMonthlyLabel}
                     </div>
@@ -257,10 +280,14 @@ export function ListingDetailV2({
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
                     <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
-                    {dealType === "direct_purchase" ? "Direktkauf" : "Leasingübernahme"}
+                    {dealType === "direct_purchase"
+                      ? leaseTakeoverEnabled
+                        ? "Direktkauf + Leasingübernahme"
+                        : "Direktkauf"
+                      : "Leasingübernahme"}
                   </span>
 
-                  {dealType === "direct_purchase" && hasLeasing && (
+                  {dealType === "direct_purchase" && hasLeasing && !leaseTakeoverEnabled && (
                     <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
                       <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
                       Leasing
