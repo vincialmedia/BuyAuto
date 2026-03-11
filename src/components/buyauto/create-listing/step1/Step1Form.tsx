@@ -36,7 +36,7 @@ const vehicleStepSchema = z.object({
   gearbox: z.string().min(1, "Getriebe ist erforderlich"),
   body: z.string().min(1, "Karosserie ist erforderlich"),
 
-  location: z.string().min(1, "Standort ist erforderlich"),
+  location: z.string(),
 
   power_hp: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
@@ -95,6 +95,16 @@ function isEmptyValue(v: unknown): boolean {
   return false;
 }
 
+function normalizeDealTypeFromQuery(value: unknown): DealType | null {
+  if (typeof value !== "string") return null;
+  const v = value.trim().toLowerCase();
+
+  if (v === "lease_takeover") return "lease_takeover";
+  if (v === "direct_purchase") return "direct_purchase";
+
+  return null;
+}
+
 export function Step1Form() {
   const router = useRouter();
   const { toast } = useToast();
@@ -103,6 +113,21 @@ export function Step1Form() {
   const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
 
   const { data, updateData, nextStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
+
+  const dealTypeFromWizard: DealType | null =
+    (data as any)?.deal_type === "lease_takeover"
+      ? "lease_takeover"
+      : (data as any)?.deal_type === "direct_purchase"
+        ? "direct_purchase"
+        : null;
+
+  const dealTypeFromQuery =
+    normalizeDealTypeFromQuery(router.query.deal_type) ??
+    normalizeDealTypeFromQuery((router.query as any)?.dealType) ??
+    normalizeDealTypeFromQuery((router.query as any)?.deal) ??
+    normalizeDealTypeFromQuery((router.query as any)?.type);
+
+  const effectiveDealType: DealType = dealTypeFromWizard ?? dealTypeFromQuery ?? "direct_purchase";
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const didPrefillLocationRef = useRef(false);
@@ -171,6 +196,7 @@ export function Step1Form() {
     watch,
     trigger,
     getValues,
+    setError,
   } = form;
 
   const selectedMakeId = watch("make_id");
@@ -565,6 +591,18 @@ export function Step1Form() {
     if (profileLoading) return;
     const isGarageDraftFlow = Boolean(isGarage && !isEditingExistingListing);
 
+    const nextDealType: DealType = effectiveDealType;
+    const normalizedLocation = String(values.location ?? "").trim();
+    if (nextDealType !== "lease_takeover" && normalizedLocation.length === 0) {
+      setError("location", { type: "manual", message: "Standort ist erforderlich" });
+      toast({
+        title: "Standort fehlt",
+        description: "Bitte gib den Standort an, um fortzufahren.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const normalizedVin = (values.vin ?? "").trim().toUpperCase();
     if (normalizedVin.length > 0 && !/^[A-Z0-9]{17}$/.test(normalizedVin)) {
       toast({
@@ -593,7 +631,6 @@ export function Step1Form() {
       const generatedTitle = `${makeName} ${variantName || modelName}`.trim();
       const isNewListing = !(data as any).id;
 
-      const nextDealType: DealType = (data as any).deal_type === "lease_takeover" ? "lease_takeover" : "direct_purchase";
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");
 
       updateData({
@@ -802,6 +839,7 @@ export function Step1Form() {
 
   const vinOk = typeof vinInput === "string" ? vinInput.trim().length === 0 || /^[A-Z0-9]{17}$/.test(vinInput.trim().toUpperCase()) : true;
   const canProceed = Boolean(watch("make_id")) && Boolean(watch("model_id")) && vinOk;
+  const locationRequired = effectiveDealType !== "lease_takeover";
 
   return (
     <div className="space-y-8">
@@ -872,6 +910,7 @@ export function Step1Form() {
           loadingModels={loadingModels}
           loadingVariants={loadingVariants}
           disableAllFields={fieldsDisabled}
+          locationRequired={locationRequired}
         />
 
         <div className="flex items-center justify-between pt-2">

@@ -58,6 +58,7 @@ export interface VehicleBasicsSectionProps {
   loadingVariants: boolean;
 
   disableAllFields?: boolean;
+  locationRequired?: boolean;
 }
 
 export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
@@ -74,6 +75,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
     loadingModels,
     loadingVariants,
     disableAllFields = false,
+    locationRequired = true,
   } = props;
 
   const selectedMakeId = watch("make_id");
@@ -185,7 +187,9 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Standort *</Label>
+              <Label className="text-sm font-medium text-neutral-700">
+                Standort{locationRequired ? " *" : " (optional)"}
+              </Label>
               <LocationAutocomplete
                 name={register("location").name}
                 inputRef={register("location").ref}
