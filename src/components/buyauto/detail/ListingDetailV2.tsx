@@ -143,6 +143,18 @@ export function ListingDetailV2({
     leaseTakeoverEnabled && typeof leaseTakeoverOffer?.price_per_month_chf === "number"
       ? (leaseTakeoverOffer.price_per_month_chf as number)
       : null;
+  const leaseTakeoverRemainingMonths =
+    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.remaining_months === "number"
+      ? (leaseTakeoverOffer.remaining_months as number)
+      : null;
+  const leaseTakeoverDepositChf =
+    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.deposit_chf === "number"
+      ? (leaseTakeoverOffer.deposit_chf as number)
+      : null;
+  const leaseTakeoverRemainingKm =
+    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.remaining_km === "number"
+      ? (leaseTakeoverOffer.remaining_km as number)
+      : null;
 
   const canShowLeasingCalculator =
     hasLeasing && typeof purchasePriceChf === "number" && leasingOffer && typeof leasingOffer === "object" && leasingOffer.enabled;
@@ -260,6 +272,33 @@ export function ListingDetailV2({
                       <span className="font-semibold text-white">
                         {formatChf(Math.round(leaseTakeoverMonthlyChf))} / Monat
                       </span>
+                    </div>
+                  )}
+
+                  {dealType === "direct_purchase" && leaseTakeoverEnabled && (
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
+                        <div className="text-[11px] uppercase tracking-wide text-white/60">Restlaufzeit</div>
+                        <div className="mt-0.5 font-semibold text-white">
+                          {typeof leaseTakeoverRemainingMonths === "number" && leaseTakeoverRemainingMonths > 0
+                            ? `${leaseTakeoverRemainingMonths} Monate`
+                            : "—"}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
+                        <div className="text-[11px] uppercase tracking-wide text-white/60">Kaution</div>
+                        <div className="mt-0.5 font-semibold text-white">
+                          {typeof leaseTakeoverDepositChf === "number" ? (leaseTakeoverDepositChf > 0 ? formatChf(leaseTakeoverDepositChf) : "Keine") : "—"}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
+                        <div className="text-[11px] uppercase tracking-wide text-white/60">Restkilometer</div>
+                        <div className="mt-0.5 font-semibold text-white">
+                          {typeof leaseTakeoverRemainingKm === "number" && leaseTakeoverRemainingKm > 0
+                            ? `${formatNumber(leaseTakeoverRemainingKm)} km`
+                            : "—"}
+                        </div>
+                      </div>
                     </div>
                   )}
 
