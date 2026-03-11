@@ -7,13 +7,7 @@
 6 silly config load:file:/usr/local/etc/npmrc
 7 verbose title npm run dev
 8 verbose argv "run" "dev"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-03-11T09_16_00_097Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-03-11T09_16_00_097Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-03-11T09_51_44_408Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-03-11T09_51_44_408Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
-13 verbose cwd /app
-14 verbose os Linux 6.8.0-90-generic
-15 verbose node v22.21.1
-16 verbose npm  v10.9.4
-17 verbose exit 0
-18 info ok
