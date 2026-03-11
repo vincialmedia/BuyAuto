@@ -56,10 +56,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
     if (offer?.lease_takeover_offer?.enabled === true) {
       const takeover = offer.lease_takeover_offer;
       const pickupCanton =
-        String(takeover.pickup_canton_code ?? "").trim() ||
-        String(payload.canton_code ?? "").trim() ||
-        String(payload.location ?? "").trim() ||
-        "XX";
+        (String(takeover.pickup_canton_code ?? "").trim() || String(payload.canton_code ?? "").trim() || "XX").toUpperCase();
 
       return {
         ...payload,
@@ -108,10 +105,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
 
   const pickupCanton =
     takeover?.enabled === true
-      ? String(takeover.pickup_canton_code ?? "").trim() ||
-        String(payload.canton_code ?? "").trim() ||
-        String(payload.location ?? "").trim() ||
-        "unbekannt"
+      ? (String(takeover.pickup_canton_code ?? "").trim() || String(payload.canton_code ?? "").trim() || "XX").toUpperCase()
       : "";
 
   const normalizedOffer: LeasingOfferPayload = {
