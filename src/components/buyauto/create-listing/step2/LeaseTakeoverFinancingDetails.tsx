@@ -1,34 +1,19 @@
+import { useEffect, useMemo, useState } from "react";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
-import { CalendarIcon, ChevronLeft } from "lucide-react";
+import { useRouter } from "next/router";
 
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
-
-const leasingDetailsSchema = z.object({
-  price_per_month_chf: z.number().min(1, "Monatliche Rate ist erforderlich"),
-  remaining_months: z.number().min(1, "Restlaufzeit muss mindestens 1 Monat betragen"),
-  deposit_chf: z.number().min(0, "Kaution kann nicht negativ sein"),
-  remaining_km: z.number().min(0, "Verbleibende KM muss mindestens 0 sein").optional(),
-});
-
-type LeasingDetailsForm = z.infer<typeof leasingDetailsSchema>;
+import {
+  leaseTakeoverFinancingSchema,
+  type LeaseTakeoverFinancingForm,
+} from "./leaseTakeoverFinancingTypes";
+import { LeaseTakeoverFinancingDetailsForm } from "./LeaseTakeoverFinancingDetailsForm";
 
 function getErrorDetailsForToast(error: unknown): string | null {
   if (!error) return null;
@@ -89,6 +74,55 @@ function toFiniteNumber(value: unknown, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function normalizeWizardPatch(params: {
+  values: LeaseTakeoverFinancingForm;
+  contractEndDate: Date | undefined;
+  existing: any;
+}) {
+  const { values, contractEndDate, existing } = params;
+
+  const patch: Record<string, unknown> = {
+    deal_type: "lease_takeover",
+    financing_type: null,
+    leasing_offer: null,
+    purchase_price_chf: null,
+  };
+
+  const monthly =
+    typeof values.price_per_month_chf === "number" && Number.isFinite(values.price_per_month_chf) && values.price_per_month_chf > 0
+      ? values.price_per_month_chf
+      : undefined;
+
+  const months =
+    typeof values.remaining_months === "number" && Number.isFinite(values.remaining_months) && values.remaining_months >= 1
+      ? values.remaining_months
+      : undefined;
+
+  const deposit =
+    typeof values.deposit_chf === "number" && Number.isFinite(values.deposit_chf) && values.deposit_chf >= 0
+      ? values.deposit_chf
+      : undefined;
+
+  const remainingKm =
+    typeof values.remaining_km === "number" && Number.isFinite(values.remaining_km) && values.remaining_km >= 0
+      ? values.remaining_km
+      : undefined;
+
+  if (typeof monthly === "number") patch.price_per_month_chf = monthly;
+  if (typeof months === "number") patch.remaining_months = months;
+  if (typeof deposit === "number") patch.deposit_chf = deposit;
+  if (typeof remainingKm === "number") patch.remaining_km = remainingKm;
+
+  const contractEnd =
+    contractEndDate ? format(contractEndDate, "yyyy-MM-dd") : typeof existing?.contract_end_date === "string" ? existing.contract_end_date : null;
+
+  if (typeof contractEnd === "string" && contractEnd.length > 0) {
+    patch.contract_end_date = contractEnd;
+  }
+
+  return patch;
+}
+
 export function LeaseTakeoverFinancingDetails() {
   const router = useRouter();
   const { data, updateData, nextStep, prevStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
@@ -96,11 +130,11 @@ export function LeaseTakeoverFinancingDetails() {
   const { toast } = useToast();
   const isGarage = profile?.role === "garage";
   const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
+
   const [isUpdatingListing, setIsUpdatingListing] = useState(false);
   const [contractEndDate, setContractEndDate] = useState<Date | undefined>(undefined);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [didHydrateFromWizard, setDidHydrateFromWizard] = useState(false);
 
   const {
     register,
@@ -110,8 +144,8 @@ export function LeaseTakeoverFinancingDetails() {
     setValue,
     getValues,
     reset,
-  } = useForm<LeasingDetailsForm>({
-    resolver: zodResolver(leasingDetailsSchema),
+  } = useForm<LeaseTakeoverFinancingForm>({
+    resolver: zodResolver(leaseTakeoverFinancingSchema),
     defaultValues: {
       price_per_month_chf: toFiniteNumber((data as any)?.price_per_month_chf, 0),
       remaining_months: toFiniteNumber((data as any)?.remaining_months, 12),
@@ -126,10 +160,7 @@ export function LeaseTakeoverFinancingDetails() {
   const watchedRemainingKm = watch("remaining_km");
 
   useEffect(() => {
-    if (isDirty) {
-      setDidHydrateFromWizard(true);
-      return;
-    }
+    if (isDirty) return;
 
     reset(
       {
@@ -140,51 +171,7 @@ export function LeaseTakeoverFinancingDetails() {
       },
       { keepDirty: false, keepTouched: false }
     );
-
-    setDidHydrateFromWizard(true);
   }, [data, draftId, isDirty, reset]);
-
-  useEffect(() => {
-    if (!didHydrateFromWizard) return;
-    if (!isDirty) return;
-    const t = setTimeout(() => {
-      const pricePerMonth =
-        typeof watchedPricePerMonth === "number" && Number.isFinite(watchedPricePerMonth) && watchedPricePerMonth > 0
-          ? watchedPricePerMonth
-          : undefined;
-
-      const remainingMonths =
-        typeof watchedRemainingMonths === "number" && Number.isFinite(watchedRemainingMonths) && watchedRemainingMonths > 0
-          ? watchedRemainingMonths
-          : undefined;
-
-      const depositChf =
-        typeof watchedDeposit === "number" && Number.isFinite(watchedDeposit) && watchedDeposit >= 0
-          ? watchedDeposit
-          : undefined;
-
-      const remainingKm =
-        typeof watchedRemainingKm === "number" && Number.isFinite(watchedRemainingKm) && watchedRemainingKm >= 0
-          ? watchedRemainingKm
-          : undefined;
-
-      const contractEnd = contractEndDate ? format(contractEndDate, "yyyy-MM-dd") : (data as any)?.contract_end_date ?? null;
-
-      updateData({
-        deal_type: "lease_takeover",
-        financing_type: null,
-        leasing_offer: null,
-        purchase_price_chf: null,
-        price_per_month_chf: pricePerMonth,
-        remaining_months: remainingMonths,
-        deposit_chf: depositChf,
-        remaining_km: remainingKm,
-        contract_end_date: contractEnd,
-      } as any);
-    }, 250);
-
-    return () => clearTimeout(t);
-  }, [contractEndDate, data, didHydrateFromWizard, isDirty, updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
 
   useEffect(() => {
     const raw = (data as any)?.contract_end_date;
@@ -194,6 +181,7 @@ export function LeaseTakeoverFinancingDetails() {
       const parsed = new Date(`${raw.slice(0, 10)}T00:00:00`);
       if (!Number.isNaN(parsed.getTime())) {
         setContractEndDate(parsed);
+
         const existingRemaining =
           typeof (data as any)?.remaining_months === "number" && Number.isFinite((data as any).remaining_months)
             ? Number((data as any).remaining_months)
@@ -210,29 +198,29 @@ export function LeaseTakeoverFinancingDetails() {
   }, [contractEndDate, data, setValue]);
 
   useEffect(() => {
-    registerDraftSnapshotter(() => {
-      const values = getValues();
-      const contractEnd = contractEndDate ? format(contractEndDate, "yyyy-MM-dd") : (data as any)?.contract_end_date ?? null;
+    const t = setTimeout(() => {
+      if (!isDirty) return;
 
-      return {
-        deal_type: "lease_takeover",
-        financing_type: null,
-        leasing_offer: null,
-        purchase_price_chf: null,
-        price_per_month_chf:
-          typeof values.price_per_month_chf === "number" && Number.isFinite(values.price_per_month_chf)
-            ? values.price_per_month_chf
-            : undefined,
-        remaining_months:
-          typeof values.remaining_months === "number" && Number.isFinite(values.remaining_months)
-            ? values.remaining_months
-            : undefined,
-        deposit_chf:
-          typeof values.deposit_chf === "number" && Number.isFinite(values.deposit_chf) ? values.deposit_chf : undefined,
-        remaining_km:
-          typeof values.remaining_km === "number" && Number.isFinite(values.remaining_km) ? values.remaining_km : undefined,
-        contract_end_date: contractEnd,
-      } as any;
+      const patch = normalizeWizardPatch({
+        values: getValues(),
+        contractEndDate,
+        existing: data as any,
+      });
+
+      updateData(patch as any);
+    }, 250);
+
+    return () => clearTimeout(t);
+  }, [contractEndDate, data, getValues, isDirty, updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
+
+  useEffect(() => {
+    registerDraftSnapshotter(() => {
+      const patch = normalizeWizardPatch({
+        values: getValues(),
+        contractEndDate,
+        existing: data as any,
+      });
+      return patch as any;
     });
 
     return () => {
@@ -240,7 +228,19 @@ export function LeaseTakeoverFinancingDetails() {
     };
   }, [contractEndDate, data, getValues, registerDraftSnapshotter]);
 
-  const onSubmit = async (formData: LeasingDetailsForm) => {
+  useEffect(() => {
+    return () => {
+      if (!isDirty) return;
+      const patch = normalizeWizardPatch({
+        values: getValues(),
+        contractEndDate,
+        existing: data as any,
+      });
+      updateData(patch as any);
+    };
+  }, [contractEndDate, data, getValues, isDirty, updateData]);
+
+  const onSubmit = async (formData: LeaseTakeoverFinancingForm) => {
     if (!user) {
       toast({
         title: "Nicht eingeloggt",
@@ -395,237 +395,57 @@ export function LeaseTakeoverFinancingDetails() {
     }
   };
 
-  const formatCurrency = (value: string) => {
-    const numericValue = value.replace(/[^\d]/g, "");
-    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  const onInvalid = (formErrors: FieldErrors<LeaseTakeoverFinancingForm>) => {
+    setSubmitAttempted(true);
+    setSubmitError(null);
+
+    focusFirstInvalidField(formErrors);
+    toast({
+      title: "Bitte prüfe die Angaben",
+      description: "Einige Pflichtfelder sind noch nicht korrekt ausgefüllt.",
+      variant: "destructive",
+    });
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
+  const onDateSelect = (date: Date | undefined) => {
     setContractEndDate(date);
-    if (date) {
-      const months = calculateRemainingMonths(date);
-      setValue("remaining_months", months, { shouldValidate: true });
-      updateData({ contract_end_date: format(date, "yyyy-MM-dd") } as any);
-    }
+
+    if (!date) return;
+
+    const months = calculateRemainingMonths(date);
+    setValue("remaining_months", months, { shouldValidate: true });
+
+    const patch: Record<string, unknown> = {
+      deal_type: "lease_takeover",
+      financing_type: null,
+      leasing_offer: null,
+      purchase_price_chf: null,
+      contract_end_date: format(date, "yyyy-MM-dd"),
+    };
+
+    updateData(patch as any);
   };
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Finanzierungsdetails</h2>
-        <p className="text-neutral-600 font-light leading-relaxed">Konditionen Ihres Leasingvertrags</p>
-      </div>
-
-      {submitError && (
-        <Alert variant="destructive">
-          <AlertTitle>Fehler beim Speichern</AlertTitle>
-          <AlertDescription>{submitError}</AlertDescription>
-        </Alert>
-      )}
-
-      {submitAttempted && Object.keys(errors ?? {}).length > 0 && (
-        <Alert variant="destructive">
-          <AlertTitle>Bitte prüfe die Angaben</AlertTitle>
-          <AlertDescription>
-            <ul className="list-disc pl-5 space-y-1">
-              {Object.entries(errors ?? {}).map(([key, value]) => {
-                const msg = (value as any)?.message as string | undefined;
-                if (!msg) return null;
-                return <li key={key}>{msg}</li>;
-              })}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <form
-        onSubmit={handleSubmit(onSubmit, (formErrors) => {
-          setSubmitAttempted(true);
-          setSubmitError(null);
-
-          focusFirstInvalidField(formErrors);
-          toast({
-            title: "Bitte prüfe die Angaben",
-            description: "Einige Pflichtfelder sind noch nicht korrekt ausgefüllt.",
-            variant: "destructive",
-          });
-        })}
-        className="space-y-6"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="price_per_month_chf" className="text-sm font-medium text-neutral-700">
-              Monatliche Rate *
-            </Label>
-            <div className="relative">
-              <Input
-                id="price_per_month_chf"
-                type="number"
-                step="0.01"
-                {...register("price_per_month_chf", { valueAsNumber: true })}
-                placeholder="z.B. 599"
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pl-12"
-              />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-medium">CHF</span>
-            </div>
-            {errors.price_per_month_chf && (
-              <p className="text-sm text-red-500 font-light">{errors.price_per_month_chf.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contract_end_date" className="text-sm font-medium text-neutral-700">
-              Vertragsende *
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal bg-white border border-neutral-200/40 hover:border-neutral-300 hover:bg-white focus:border-red-500 transition-colors shadow-sm",
-                    !contractEndDate && "text-neutral-500"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {contractEndDate ? format(contractEndDate, "PPP", { locale: de }) : <span>Datum auswählen...</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={contractEndDate}
-                  onSelect={handleDateSelect}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                  locale={de}
-                />
-              </PopoverContent>
-            </Popover>
-
-            <div className="mt-3 space-y-2">
-              <Label htmlFor="remaining_months" className="text-sm font-medium text-neutral-700">
-                Restlaufzeit (Monate) *
-              </Label>
-              <div className="relative">
-                <Input
-                  id="remaining_months"
-                  type="number"
-                  min="1"
-                  {...register("remaining_months", { valueAsNumber: true })}
-                  className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-20"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">Monate</span>
-              </div>
-              <p className="text-xs text-neutral-500 font-light">
-                Falls du das Vertragsende nicht mehr genau weisst, kannst du die Restlaufzeit hier manuell eingeben.
-              </p>
-              {errors.remaining_months && (
-                <p className="text-sm text-red-500 font-light">{errors.remaining_months.message}</p>
-              )}
-            </div>
-
-            {typeof watch("remaining_months") === "number" && Number.isFinite(watch("remaining_months")) && (
-              <div className="flex items-center gap-2 text-sm">
-                <div className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-md border border-green-200/40">
-                  <span className="font-medium">
-                    {watch("remaining_months") || 0} {watch("remaining_months") === 1 ? "Monat" : "Monate"} Restlaufzeit
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <p className="text-xs text-neutral-500 font-light">
-              Wählen Sie das Enddatum Ihres Leasingvertrags. Die Restlaufzeit wird automatisch berechnet.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="deposit_chf" className="text-sm font-medium text-neutral-700">
-              Kaution
-            </Label>
-            <div className="relative">
-              <Input
-                id="deposit_chf"
-                type="number"
-                step="0.01"
-                {...register("deposit_chf", { valueAsNumber: true })}
-                placeholder="z.B. 2000 (optional)"
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pl-12"
-              />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-medium">CHF</span>
-            </div>
-            {errors.deposit_chf && <p className="text-sm text-red-500 font-light">{errors.deposit_chf.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="remaining_km" className="text-sm font-medium text-neutral-700">
-              Verbleibende KM
-            </Label>
-            <div className="relative">
-              <Input
-                id="remaining_km"
-                type="number"
-                min="0"
-                {...register("remaining_km", { valueAsNumber: true })}
-                placeholder="z.B. 15000 (optional)"
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">km</span>
-            </div>
-            <p className="text-xs text-neutral-500 font-light">Wie viele Kilometer sind im Leasingvertrag noch verfügbar?</p>
-            {errors.remaining_km && <p className="text-sm text-red-500 font-light">{errors.remaining_km.message}</p>}
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-neutral-50 to-red-50/30 rounded-lg p-6 border border-neutral-200/40">
-          <h3 className="text-lg font-medium text-neutral-900 mb-4 tracking-tight">Übersicht</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="text-center p-3 bg-white/60 rounded-lg border border-neutral-200/30">
-              <p className="text-neutral-500 mb-1 font-light">Monatlich</p>
-              <p className="text-xl font-semibold text-neutral-900">
-                CHF {watch("price_per_month_chf") ? formatCurrency(watch("price_per_month_chf").toString()) : "0"}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-white/60 rounded-lg border border-neutral-200/30">
-              <p className="text-neutral-500 mb-1 font-light">Restlaufzeit</p>
-              <p className="text-xl font-semibold text-neutral-900">{watch("remaining_months") || 0} Monate</p>
-            </div>
-            <div className="text-center p-3 bg-white/60 rounded-lg border border-neutral-200/30">
-              <p className="text-neutral-500 mb-1 font-light">Standort</p>
-              <p className="text-lg font-semibold text-neutral-900">
-                {data?.canton_code ? data.canton_code : data?.location ? data.location : "Nicht ausgewählt"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-6">
-          <Button
-            type="button"
-            onClick={prevStep}
-            variant="outline"
-            className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
-          >
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Zurück
-          </Button>
-
-          <Button
-            type="submit"
-            disabled={isUpdatingListing}
-            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isUpdatingListing ? (
-              <>
-                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Speichere Details...
-              </>
-            ) : (
-              "Weiter zu Plan-Auswahl"
-            )}
-          </Button>
-        </div>
-      </form>
-    </div>
+    <LeaseTakeoverFinancingDetailsForm
+      data={data as any}
+      contractEndDate={contractEndDate}
+      errors={errors}
+      handleSubmit={handleSubmit}
+      isUpdatingListing={isUpdatingListing}
+      onInvalid={onInvalid}
+      onSubmit={onSubmit}
+      prevStep={prevStep}
+      register={register}
+      setValue={setValue}
+      submitAttempted={submitAttempted}
+      submitError={submitError}
+      watchedDeposit={watchedDeposit}
+      watchedPricePerMonth={watchedPricePerMonth}
+      watchedRemainingKm={watchedRemainingKm}
+      watchedRemainingMonths={watchedRemainingMonths}
+      watch={watch}
+      onDateSelect={onDateSelect}
+    />
   );
 }
