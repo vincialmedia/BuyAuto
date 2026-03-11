@@ -473,12 +473,13 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
                         <span className="text-neutral-900">{getNumber(leasingOffer.lease_takeover_offer.remaining_km)?.toLocaleString('de-CH')} km</span>
                       </div>
                     )}
-                    {getString(leasingOffer.lease_takeover_offer.pickup_canton_code) && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-600">Abhol-Kanton</span>
-                        <span className="text-neutral-900">{getCantonName(getString(leasingOffer.lease_takeover_offer.pickup_canton_code))}</span>
-                      </div>
-                    )}
+                    {getString(leasingOffer.lease_takeover_offer.pickup_canton_code) &&
+                      getString(leasingOffer.lease_takeover_offer.pickup_canton_code).trim().toUpperCase() !== "XX" && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-neutral-600">Abhol-Kanton</span>
+                          <span className="text-neutral-900">{getCantonName(getString(leasingOffer.lease_takeover_offer.pickup_canton_code))}</span>
+                        </div>
+                      )}
                   </div>
                 </div>
              )}

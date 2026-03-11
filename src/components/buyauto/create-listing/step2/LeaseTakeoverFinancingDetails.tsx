@@ -100,6 +100,7 @@ export function LeaseTakeoverFinancingDetails() {
   const [contractEndDate, setContractEndDate] = useState<Date | undefined>(undefined);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [didHydrateFromWizard, setDidHydrateFromWizard] = useState(false);
 
   const {
     register,
@@ -129,7 +130,10 @@ export function LeaseTakeoverFinancingDetails() {
     (window as any).__buyautoLeaseTakeoverHydrated = (window as any).__buyautoLeaseTakeoverHydrated ?? {};
 
     const hydratedMap = (window as any).__buyautoLeaseTakeoverHydrated as Record<string, boolean>;
-    if (hydratedMap[key]) return;
+    if (hydratedMap[key]) {
+      setDidHydrateFromWizard(true);
+      return;
+    }
 
     const nextPrice = toFiniteNumber((data as any)?.price_per_month_chf, 0);
     const nextMonths = toFiniteNumber((data as any)?.remaining_months, 12);
@@ -144,17 +148,19 @@ export function LeaseTakeoverFinancingDetails() {
     if ((!current.remaining_months || current.remaining_months <= 0) && nextMonths > 0) {
       setValue("remaining_months", nextMonths, { shouldValidate: false, shouldDirty: false });
     }
-    if ((current.deposit_chf === undefined || current.deposit_chf === null) && nextDeposit >= 0) {
+    if ((current.deposit_chf === undefined || current.deposit_chf === null || current.deposit_chf === 0) && nextDeposit > 0) {
       setValue("deposit_chf", nextDeposit, { shouldValidate: false, shouldDirty: false });
     }
-    if ((current.remaining_km === undefined || current.remaining_km === null) && nextRemainingKm >= 0) {
+    if ((current.remaining_km === undefined || current.remaining_km === null || current.remaining_km === 0) && nextRemainingKm > 0) {
       setValue("remaining_km", nextRemainingKm, { shouldValidate: false, shouldDirty: false });
     }
 
     hydratedMap[key] = true;
+    setDidHydrateFromWizard(true);
   }, [data, draftId, getValues, setValue]);
 
   useEffect(() => {
+    if (!didHydrateFromWizard) return;
     const t = setTimeout(() => {
       const pricePerMonth =
         typeof watchedPricePerMonth === "number" && Number.isFinite(watchedPricePerMonth) && watchedPricePerMonth > 0
@@ -192,7 +198,7 @@ export function LeaseTakeoverFinancingDetails() {
     }, 250);
 
     return () => clearTimeout(t);
-  }, [contractEndDate, data, updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
+  }, [contractEndDate, data, didHydrateFromWizard, updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
 
   useEffect(() => {
     const raw = (data as any)?.contract_end_date;

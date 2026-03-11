@@ -249,6 +249,7 @@ export function Step4_Images() {
             id: data.id,
             images: data.images,
             cover_image_index: data.cover_image_index || 0,
+            ...(typeof data.deal_type === "string" ? { deal_type: data.deal_type } : {}),
           },
           user
         );

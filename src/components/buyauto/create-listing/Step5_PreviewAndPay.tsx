@@ -1011,10 +1011,11 @@ export default function Step5_PreviewAndPay() {
                               <span className="text-neutral-900">{takeoverOffer.remaining_km.toLocaleString('de-CH')} km</span>
                             </div>
                           )}
-                          {takeoverOffer.pickup_canton_code && (
+                          {typeof takeoverOffer.pickup_canton_code === "string" &&
+                            takeoverOffer.pickup_canton_code.trim().toUpperCase() !== "XX" && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-neutral-600">Abhol-Kanton</span>
-                              <span className="text-neutral-900">{data.location}</span>
+                              <span className="text-neutral-900">{getCantonName(takeoverOffer.pickup_canton_code)}</span>
                             </div>
                           )}
                         </div>
