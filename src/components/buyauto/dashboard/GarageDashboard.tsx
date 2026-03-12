@@ -17,6 +17,7 @@ import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageServi
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { formatDealerEntitlementLabel, formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
+import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -227,7 +228,14 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <div className="lg:hidden">
+                  <MessageCenterSheet
+                    count={0}
+                    triggerVariant="outline"
+                    triggerClassName="rounded-2xl bg-white/15 text-white hover:bg-white/20 border border-white/20"
+                  />
+                </div>
                 <Button
                   onClick={() => router.push("/inserat-erstellen")}
                   className="bg-white text-neutral-900 hover:bg-white/90 rounded-2xl"

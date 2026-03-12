@@ -50,6 +50,7 @@ export default function Header() {
 
   const firstName = user?.user_metadata?.first_name;
   const displayName = firstName || user?.email?.split('@')[0] || 'Benutzer';
+  const messageCount = 0;
 
   // Determine the create listing link based on auth state
   const createListingHref = user ? "/inserat-erstellen" : "/auth?redirect=/inserat-erstellen";
@@ -170,9 +171,14 @@ export default function Header() {
                       variant="ghost"
                       className="flex items-center space-x-2 hover:bg-neutral-100 transition-colors"
                     >
-                      <div className="w-8 h-8 bg-gradient-to-br from-neutral-500 to-neutral-600 rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" />
-                      </div>
+                      <span className="relative inline-flex items-center">
+                        <div className="w-8 h-8 bg-gradient-to-br from-neutral-500 to-neutral-600 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
+                          {messageCount >= 10 ? "9+" : String(Math.max(0, messageCount))}
+                        </span>
+                      </span>
                       <span className="hidden sm:block text-sm font-medium text-neutral-700">
                         {displayName}
                       </span>

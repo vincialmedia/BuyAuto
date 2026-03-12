@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import DashboardLayout from "@/components/buyauto/dashboard/DashboardLayout";
 import { GarageDashboard } from "@/components/buyauto/dashboard/GarageDashboard";
 import type { Garage } from "@/services/garageService";
+import { MessageCenterRail } from "@/components/buyauto/messages/MessageCenterRail";
 
 interface GarageDashboardPageProps {
   initialGarage: Garage | null;
@@ -25,7 +26,7 @@ export default function GarageDashboardPage({ initialGarage }: GarageDashboardPa
 
   if (authLoading || profileLoading || !user) {
     return (
-      <DashboardLayout>
+      <DashboardLayout hideSidebar leftRail={<MessageCenterRail />}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </div>
@@ -40,7 +41,7 @@ export default function GarageDashboardPage({ initialGarage }: GarageDashboardPa
         <meta name="robots" content="noindex,nofollow" />
       </Head>
 
-      <DashboardLayout>
+      <DashboardLayout hideSidebar leftRail={<MessageCenterRail />}>
         <GarageDashboard initialGarage={initialGarage} />
       </DashboardLayout>
     </>
