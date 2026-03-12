@@ -30,6 +30,7 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
     contact_email: ""
   });
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [inventoryTab, setInventoryTab] = useState<"listings" | "drafts">("listings");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -106,10 +107,31 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
             <a id="benutzerdaten" className="scroll-mt-20"></a>
             <UserDetailsSection />
 
-            <DraftsSection initialDrafts={initialDrafts} />
-            
             <a id="meine-inserate" className="scroll-mt-20"></a>
-            <ListingsSection />
+            <div className="flex flex-wrap gap-3">
+              <Button
+                type="button"
+                onClick={() => setInventoryTab("listings")}
+                variant={inventoryTab === "listings" ? "default" : "outline"}
+                className="rounded-2xl"
+              >
+                Inserate
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setInventoryTab("drafts")}
+                variant={inventoryTab === "drafts" ? "default" : "outline"}
+                className="rounded-2xl"
+              >
+                Entwürfe
+              </Button>
+            </div>
+
+            {inventoryTab === "drafts" ? (
+              <DraftsSection initialDrafts={initialDrafts} />
+            ) : (
+              <ListingsSection />
+            )}
         </div>
 
         {/* Upgrade Modal */}
