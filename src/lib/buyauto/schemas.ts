@@ -213,22 +213,18 @@ export const listingStep1Schema = z
         });
       }
 
-      if (data.no_down_payment) {
-        if ((data.down_payment_pct ?? 0) !== 0) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["down_payment_pct"],
-            message: "Bei 'Keine Anzahlung' muss die Anzahlung 0% sein",
-          });
-        }
-      } else {
-        if (data.down_payment_pct === undefined || !Number.isFinite(data.down_payment_pct)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["down_payment_pct"],
-            message: "Anzahlung ist erforderlich",
-          });
-        }
+      if (data.down_payment_pct === undefined || !Number.isFinite(data.down_payment_pct)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["down_payment_pct"],
+          message: "Mindestanzahlung ist erforderlich",
+        });
+      } else if (data.down_payment_pct < 0 || data.down_payment_pct > 40) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["down_payment_pct"],
+          message: "Bitte zwischen 0 und 40 eingeben",
+        });
       }
 
       if (data.min_term_months === undefined || !Number.isFinite(data.min_term_months)) {

@@ -169,20 +169,10 @@ const directPurchaseFinancingSchema = z
       }
     }
 
-    if (values.no_down_payment) {
-      if ((values.down_payment_pct ?? 0) !== 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["down_payment_pct"],
-          message: "Bei 'Keine Anzahlung' muss die Anzahlung 0% sein",
-        });
-      }
-    } else {
-      if (values.down_payment_pct === undefined || !Number.isFinite(values.down_payment_pct)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["down_payment_pct"], message: "Anzahlung ist erforderlich" });
-      } else if (values.down_payment_pct < 0 || values.down_payment_pct > 100) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["down_payment_pct"], message: "Bitte einen gültigen Wert eingeben" });
-      }
+    if (values.down_payment_pct === undefined || !Number.isFinite(values.down_payment_pct)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["down_payment_pct"], message: "Mindestanzahlung ist erforderlich" });
+    } else if (values.down_payment_pct < 0 || values.down_payment_pct > 40) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["down_payment_pct"], message: "Bitte zwischen 0 und 40 eingeben" });
     }
 
     if (values.min_term_months === undefined || !Number.isFinite(values.min_term_months)) {
@@ -300,8 +290,8 @@ export function DirectPurchaseFinancingDetails() {
 
       leasing_enabled: leasingEnabledInitial,
       interest_rate_pct: toNumberOrUndefined(existingOffer?.interest_rate_pct) ?? 4.9,
-      down_payment_pct: toNumberOrUndefined(existingOffer?.down_payment_pct) ?? 10,
-      no_down_payment: existingOffer?.no_down_payment ?? false,
+      down_payment_pct: toNumberOrUndefined(existingOffer?.down_payment_pct) ?? (existingOffer?.no_down_payment ? 0 : 0),
+      no_down_payment: false,
       min_term_months: toNumberOrUndefined(existingOffer?.min_term_months) ?? 24,
       max_term_months: toNumberOrUndefined(existingOffer?.max_term_months) ?? 60,
       residual_pct_adjustment_pp: clampPp(toNumberOrUndefined(existingOffer?.residual_pct_adjustment_pp) ?? 0),
@@ -310,7 +300,6 @@ export function DirectPurchaseFinancingDetails() {
   });
 
   const leasingEnabled = Boolean(watch("leasing_enabled"));
-  const noDownPayment = Boolean(watch("no_down_payment"));
   const residualAdjustmentPp = clampPp(toNumberOrUndefined(watch("residual_pct_adjustment_pp")) ?? 0);
   const leaseTakeoverEnabled = Boolean(watch("lease_takeover_enabled"));
 
@@ -348,8 +337,8 @@ export function DirectPurchaseFinancingDetails() {
             ? {
                 enabled: true,
                 interest_rate_pct: toNumberOrUndefined((values as any)?.interest_rate_pct) ?? 0,
-                down_payment_pct: Boolean((values as any)?.no_down_payment) ? 0 : toNumberOrUndefined((values as any)?.down_payment_pct) ?? 0,
-                no_down_payment: Boolean((values as any)?.no_down_payment),
+                down_payment_pct: toNumberOrUndefined((values as any)?.down_payment_pct) ?? 0,
+                no_down_payment: false,
                 min_term_months: toNumberOrUndefined((values as any)?.min_term_months) ?? 0,
                 max_term_months: toNumberOrUndefined((values as any)?.max_term_months) ?? 0,
                 km_options: DEFAULT_KM_OPTIONS,
@@ -414,8 +403,8 @@ export function DirectPurchaseFinancingDetails() {
           ? {
               enabled: true,
               interest_rate_pct: toNumberOrUndefined(values.interest_rate_pct) ?? 0,
-              down_payment_pct: Boolean(values.no_down_payment) ? 0 : toNumberOrUndefined(values.down_payment_pct) ?? 0,
-              no_down_payment: Boolean(values.no_down_payment),
+              down_payment_pct: toNumberOrUndefined(values.down_payment_pct) ?? 0,
+              no_down_payment: false,
               min_term_months: toNumberOrUndefined(values.min_term_months) ?? 0,
               max_term_months: toNumberOrUndefined(values.max_term_months) ?? 0,
               km_options: DEFAULT_KM_OPTIONS,
@@ -452,13 +441,6 @@ export function DirectPurchaseFinancingDetails() {
       setValue("leasing_enabled", false, { shouldValidate: false });
     }
   }, [isGarage, setValue]);
-
-  useEffect(() => {
-    if (!isGarage) return;
-    if (noDownPayment) {
-      setValue("down_payment_pct", 0, { shouldValidate: true });
-    }
-  }, [isGarage, noDownPayment, setValue]);
 
   useEffect(() => {
     if (leaseTakeoverEnabled) return;
@@ -544,8 +526,8 @@ export function DirectPurchaseFinancingDetails() {
           ? {
               enabled: true,
               interest_rate_pct: Number(formData.interest_rate_pct),
-              down_payment_pct: formData.no_down_payment ? 0 : Number(formData.down_payment_pct),
-              no_down_payment: Boolean(formData.no_down_payment),
+              down_payment_pct: Number(formData.down_payment_pct ?? 0),
+              no_down_payment: false,
               min_term_months: Number(formData.min_term_months),
               max_term_months: Number(formData.max_term_months),
               km_options: DEFAULT_KM_OPTIONS,
@@ -779,7 +761,7 @@ export function DirectPurchaseFinancingDetails() {
           isGarage={Boolean(isGarage)}
           hasMounted={hasMounted}
           leasingEnabled={leasingEnabled}
-          noDownPayment={noDownPayment}
+          noDownPayment={false}
           purchasePriceChf={purchasePriceChf}
           listingInputs={listingInputs}
           residualAdjustmentPp={residualAdjustmentPp}

@@ -148,8 +148,10 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
   const minTerm = Math.max(1, Math.floor(Number(offer.min_term_months)));
   const maxTerm = Math.max(minTerm, Math.floor(Number(offer.max_term_months)));
 
+  const minDownPaymentPctFromOffer = clamp(Number(offer.down_payment_pct ?? 0), 0, 40);
+
   const initialTerm = clamp(36, minTerm, maxTerm);
-  const initialDownPaymentPct = offer.no_down_payment ? 0 : clamp(Number(offer.down_payment_pct ?? 0), 0, 40);
+  const initialDownPaymentPct = minDownPaymentPctFromOffer;
 
   const rawResidualAdj = Number(offer.residual_pct_adjustment_pp ?? 0);
   const residualAdjPp = Number.isFinite(rawResidualAdj) ? clamp(rawResidualAdj, -50, 50) : 0;
@@ -176,8 +178,10 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
     const maxDownPaymentPctByResidual =
       priceChf > 0 ? ((priceChf - adjustedRestwertChf) / priceChf) * 100 : 0;
 
-    const maxDownPaymentPct = offer.no_down_payment ? 0 : Math.floor(clamp(maxDownPaymentPctByResidual, 0, 40));
-    const effectiveDownPaymentPct = offer.no_down_payment ? 0 : clamp(downPaymentPct, 0, maxDownPaymentPct);
+    const maxDownPaymentPct = Math.floor(clamp(maxDownPaymentPctByResidual, 0, 40));
+    const minDownPaymentPct = Math.min(minDownPaymentPctFromOffer, maxDownPaymentPct);
+
+    const effectiveDownPaymentPct = clamp(downPaymentPct, minDownPaymentPct, maxDownPaymentPct);
 
     const rate = estimateMonthlyLeasingRate({
       priceChf,
@@ -191,6 +195,7 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
       adjustedResidualPct,
       adjustedRestwertChf,
       rate,
+      minDownPaymentPct,
       maxDownPaymentPct,
       effectiveDownPaymentPct,
     };
@@ -199,24 +204,19 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
     kmPerYear,
     mileageKm,
     offer.interest_rate_pct,
-    offer.no_down_payment,
     priceChf,
     residualAdjPp,
     termMonths,
     year,
+    minDownPaymentPctFromOffer,
   ]);
 
   useEffect(() => {
-    if (offer.no_down_payment) {
-      if (downPaymentPct !== 0) setDownPaymentPct(0);
-      return;
-    }
-
+    const minPct = estimate.minDownPaymentPct;
     const maxPct = estimate.maxDownPaymentPct;
-    if (downPaymentPct > maxPct) {
-      setDownPaymentPct(maxPct);
-    }
-  }, [downPaymentPct, estimate.maxDownPaymentPct, offer.no_down_payment]);
+    const next = clamp(downPaymentPct, minPct, maxPct);
+    if (next !== downPaymentPct) setDownPaymentPct(next);
+  }, [downPaymentPct, estimate.maxDownPaymentPct, estimate.minDownPaymentPct]);
 
   const monthlyRateSafe = Number.isFinite(estimate.rate.monthlyRateChf) ? estimate.rate.monthlyRateChf : 0;
   const formattedRate = Math.max(0, Math.round(monthlyRateSafe));
@@ -284,28 +284,23 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
             </p>
           </div>
 
-          <div className={cn("space-y-2", offer.no_down_payment ? "opacity-60" : "")}>
+          <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-neutral-900">Anzahlung</p>
-              <p className="text-sm text-neutral-600">
-                {offer.no_down_payment ? "0%" : `${estimate.effectiveDownPaymentPct.toFixed(0)}%`}
-              </p>
+              <p className="text-sm text-neutral-600">{estimate.effectiveDownPaymentPct.toFixed(0)}%</p>
             </div>
 
-            {!offer.no_down_payment && (
-              <Slider
-                value={[estimate.effectiveDownPaymentPct]}
-                min={0}
-                max={Math.max(0, estimate.maxDownPaymentPct)}
-                step={1}
-                onValueChange={(v) => setDownPaymentPct(v[0] ?? downPaymentPct)}
-              />
-            )}
+            <Slider
+              value={[estimate.effectiveDownPaymentPct]}
+              min={estimate.minDownPaymentPct}
+              max={Math.max(estimate.minDownPaymentPct, estimate.maxDownPaymentPct)}
+              step={1}
+              onValueChange={(v) => setDownPaymentPct(v[0] ?? downPaymentPct)}
+            />
 
             <p className="text-xs text-neutral-500">
-              {offer.no_down_payment
-                ? "Keine Anzahlung benötigt (fix)."
-                : `Max. Anzahlung für diese Konfiguration: ${estimate.maxDownPaymentPct}%`}
+              Minimum: {estimate.minDownPaymentPct}%
+              {estimate.minDownPaymentPct === 0 ? " (optional)" : ""} • Maximum: {estimate.maxDownPaymentPct}%
             </p>
           </div>
 

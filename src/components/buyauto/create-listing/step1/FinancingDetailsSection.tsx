@@ -87,7 +87,6 @@ export function FinancingDetailsSection(props: FinancingDetailsSectionProps) {
   const { dealType, isGarage, register, setValue, trigger, watch, errors } = props;
 
   const leasingEnabled = watch("leasing_enabled");
-  const noDownPayment = watch("no_down_payment");
 
   const purchasePriceChf = watch("purchase_price_chf");
   const vehicleYear = watch("year");
@@ -212,23 +211,21 @@ export function FinancingDetailsSection(props: FinancingDetailsSectionProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-4">
-                      <Label htmlFor="down_payment_pct" className="text-sm font-medium text-neutral-700">
-                        Anzahlung (%) *
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-neutral-600">Keine Anzahlung benötigt</span>
-                        <Switch checked={noDownPayment} onCheckedChange={(checked) => setValue("no_down_payment", checked)} />
-                      </div>
-                    </div>
+                    <Label htmlFor="down_payment_pct" className="text-sm font-medium text-neutral-700">
+                      Mindestanzahlung (%) *
+                    </Label>
                     <Input
                       id="down_payment_pct"
                       type="number"
                       step="1"
-                      disabled={noDownPayment}
+                      min="0"
+                      max="40"
                       {...register("down_payment_pct", { valueAsNumber: true })}
-                      className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm disabled:opacity-60"
+                      className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
                     />
+                    <p className="text-xs text-neutral-500">
+                      Empfohlen: 0% (0% = keine Mindestanzahlung. Käufer können optional mehr anzahlen.)
+                    </p>
                     {errors.down_payment_pct && <p className="text-sm text-red-500 font-light">{errors.down_payment_pct.message as string}</p>}
                   </div>
 
