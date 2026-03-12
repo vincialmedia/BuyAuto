@@ -322,7 +322,7 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
                   Wie berechnet sich die Monatsrate?
                 </button>
               </DialogTrigger>
-              <DialogContent className="max-w-[720px]">
+              <DialogContent className="w-[calc(100vw-2rem)] max-w-[720px] max-h-[calc(100dvh-2rem)] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>So berechnen wir die Richtofferte</DialogTitle>
                   <DialogDescription>
