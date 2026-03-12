@@ -45,6 +45,19 @@ function getPreview(body: string): string {
   return `${trimmed.slice(0, 120)}…`;
 }
 
+function getEmailPrefix(email: string | null | undefined): string {
+  const safe = (email ?? "").trim();
+  if (!safe) return "";
+  return safe.split("@")[0] ?? "";
+}
+
+function getProfileDisplayName(profile: Pick<ProfileRow, "full_name" | "email"> | null): string {
+  if (!profile) return "";
+  const full = (profile.full_name ?? "").trim();
+  if (full) return full;
+  return getEmailPrefix(profile.email);
+}
+
 export async function getOrCreateConversationForListing(listingId: string): Promise<ConversationRow | null> {
   const sessionRes = await supabase.auth.getSession();
   const userId = sessionRes.data.session?.user?.id ?? null;
@@ -225,6 +238,73 @@ export async function getMyMessageThreads(limit = 25): Promise<MessageThreadItem
     listingById.set(l.id, l);
   }
 
+  const { data: allParticipants, error: participantsError } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id, user_id")
+    .in("conversation_id", rows.map((c) => c.id));
+
+  if (participantsError) {
+    console.error("getMyMessageThreads: participants batch error", participantsError);
+    return [];
+  }
+
+  const otherUserIds = Array.from(
+    new Set(
+      (allParticipants ?? [])
+        .filter((p) => p.user_id !== userId)
+        .map((p) => p.user_id)
+    )
+  );
+
+  const { data: otherProfiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, role, full_name, email")
+    .in("id", otherUserIds);
+
+  if (profilesError) {
+    console.error("getMyMessageThreads: profiles error", profilesError);
+    return [];
+  }
+
+  const garageOwnerIds = (otherProfiles ?? []).filter((p) => p.role === "garage").map((p) => p.id);
+  const { data: garageRows, error: garagesError } =
+    garageOwnerIds.length === 0
+      ? { data: [], error: null }
+      : await supabase.from("garages").select("owner_user_id, garage_name").in("owner_user_id", garageOwnerIds);
+
+  if (garagesError) {
+    console.error("getMyMessageThreads: garages error", garagesError);
+    return [];
+  }
+
+  const garageNameByOwnerId = new Map<string, string>();
+  for (const g of garageRows ?? []) {
+    garageNameByOwnerId.set(g.owner_user_id, g.garage_name);
+  }
+
+  const profileById = new Map<string, Pick<ProfileRow, "id" | "role" | "full_name" | "email">>();
+  for (const p of otherProfiles ?? []) {
+    profileById.set(p.id, p);
+  }
+
+  const otherDisplayNameByUserId = new Map<string, string>();
+  for (const p of otherProfiles ?? []) {
+    if (p.role === "garage") {
+      const garageName = garageNameByOwnerId.get(p.id) ?? "";
+      otherDisplayNameByUserId.set(p.id, garageName || getProfileDisplayName(p));
+    } else {
+      otherDisplayNameByUserId.set(p.id, getProfileDisplayName(p));
+    }
+  }
+
+  const otherUserIdByConversation = new Map<string, string>();
+  for (const p of allParticipants ?? []) {
+    if (p.user_id === userId) continue;
+    if (!otherUserIdByConversation.has(p.conversation_id)) {
+      otherUserIdByConversation.set(p.conversation_id, p.user_id);
+    }
+  }
+
   const lastMessageByConversation = new Map<string, Pick<MessageRow, "body" | "created_at">>();
   const messageCountByConversation = new Map<string, number>();
 
@@ -257,6 +337,9 @@ export async function getMyMessageThreads(limit = 25): Promise<MessageThreadItem
     const lastMsg = lastMessageByConversation.get(c.id);
     const lastMessagePreview = lastMsg ? getPreview(lastMsg.body) : "";
 
+    const otherId = otherUserIdByConversation.get(c.id) ?? "";
+    const buyerName = otherDisplayNameByUserId.get(otherId) ?? "—";
+
     return {
       conversationId: c.id,
       listingId: c.listing_id,
@@ -265,7 +348,7 @@ export async function getMyMessageThreads(limit = 25): Promise<MessageThreadItem
       coverImageUrl: listing?.cover_image_url ?? null,
       lastMessageAt: c.last_message_at ?? null,
       lastMessagePreview,
-      buyerName: "Buyer",
+      buyerName,
       messageCount: messageCountByConversation.get(c.id) ?? 0,
     };
   });
