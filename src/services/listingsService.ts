@@ -226,6 +226,8 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
   };
 }
 
+export { transformPublicRowToListingDetail };
+
 function transformListingsTableRowToListingDetail(row: ListingsTableRow): ListingDetail {
   const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
 
