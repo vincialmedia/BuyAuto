@@ -2,6 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import type { LeasingOffer } from "@/lib/buyauto/types";
 import { cn } from "@/lib/utils";
 
@@ -227,6 +235,45 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
   const displayedResidualPct = priceChf > 0 ? formattedRestwert / priceChf : 0;
   const isProviderAdjusted = residualAdjPp !== 0;
 
+  const calculationBreakdown = useMemo(() => {
+    const priceSafe = Number.isFinite(priceChf) ? Math.max(0, priceChf) : 0;
+    const downPaymentPctSafe = Number.isFinite(estimate.effectiveDownPaymentPct) ? estimate.effectiveDownPaymentPct : 0;
+    const downPaymentChf = priceSafe * (downPaymentPctSafe / 100);
+    const restwertChf = Number.isFinite(estimate.adjustedRestwertChf) ? Math.max(0, estimate.adjustedRestwertChf) : 0;
+    const months = Number.isFinite(termMonths) ? Math.max(1, Math.floor(termMonths)) : 1;
+    const interestRatePct = Number.isFinite(Number(offer.interest_rate_pct)) ? Math.max(0, Number(offer.interest_rate_pct)) : 0;
+
+    const principal = Math.max(0, priceSafe - downPaymentChf - restwertChf);
+    const monthlyAmort = Number.isFinite(estimate.rate.monthlyAmort) ? Math.max(0, estimate.rate.monthlyAmort) : 0;
+
+    const interestBase = (priceSafe - downPaymentChf + restwertChf) / 2;
+    const monthlyInterest = Number.isFinite(estimate.rate.monthlyInterest) ? Math.max(0, estimate.rate.monthlyInterest) : 0;
+
+    const monthlyRate = monthlyAmort + monthlyInterest;
+
+    return {
+      priceSafe,
+      downPaymentPctSafe,
+      downPaymentChf,
+      restwertChf,
+      principal,
+      months,
+      interestRatePct,
+      interestBase,
+      monthlyAmort,
+      monthlyInterest,
+      monthlyRate,
+    };
+  }, [
+    estimate.adjustedRestwertChf,
+    estimate.effectiveDownPaymentPct,
+    estimate.rate.monthlyAmort,
+    estimate.rate.monthlyInterest,
+    offer.interest_rate_pct,
+    priceChf,
+    termMonths,
+  ]);
+
   return (
     <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden">
       <CardContent className="p-6">
@@ -264,6 +311,154 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
               </span>
             )}
           </p>
+
+          <div className="mt-3">
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="text-xs font-medium text-primary underline underline-offset-4 hover:text-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-md"
+                >
+                  Wie berechnet sich die Monatsrate?
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[720px]">
+                <DialogHeader>
+                  <DialogTitle>So berechnen wir die Richtofferte</DialogTitle>
+                  <DialogDescription>
+                    Kurz erklärt: Die Monatsrate setzt sich aus <span className="font-medium">Abschreibung</span> (über die
+                    Laufzeit verteilt) und <span className="font-medium">Zins</span> (auf den durchschnittlich
+                    finanzierten Betrag) zusammen.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-5">
+                  <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
+                    <div className="text-sm font-semibold text-neutral-900">In einfachen Worten</div>
+                    <ul className="mt-2 space-y-2 text-sm text-neutral-700 leading-relaxed list-disc pl-5">
+                      <li>
+                        <span className="font-medium">Restwert</span> ist der geschätzte Wert des Autos am Ende der Laufzeit.
+                        Je länger die Laufzeit und je mehr KM/Jahr, desto tiefer ist der Restwert typischerweise.
+                      </li>
+                      <li>
+                        <span className="font-medium">Finanzierter Betrag (Abschreibung)</span> = Kaufpreis − Anzahlung − Restwert.
+                        Dieser Betrag wird gleichmässig auf die Monate verteilt.
+                      </li>
+                      <li>
+                        <span className="font-medium">Zins</span> fällt auf den durchschnittlich finanzierten Betrag an. Als
+                        einfache Näherung nutzen wir den Mittelwert aus Start- und Endsaldo.
+                      </li>
+                      <li>
+                        <span className="font-medium">Monatsrate</span> = Abschreibung/Monat + Zins/Monat.
+                      </li>
+                      {calculationBreakdown.principal <= 0 ? (
+                        <li>
+                          In diesem Beispiel ist Kaufpreis − Anzahlung − Restwert ≈ 0. Dadurch ist die Abschreibung praktisch
+                          null und die Rate besteht fast nur aus Zins.
+                        </li>
+                      ) : null}
+                    </ul>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-2xl border border-neutral-200/60 p-4">
+                      <div className="text-sm font-semibold text-neutral-900">Inputs (aus Inserat + Auswahl)</div>
+                      <dl className="mt-3 space-y-2 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-neutral-600">Kaufpreis</dt>
+                          <dd className="font-medium text-neutral-900">CHF {Math.round(calculationBreakdown.priceSafe).toLocaleString("de-CH")}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-neutral-600">Laufzeit</dt>
+                          <dd className="font-medium text-neutral-900">{calculationBreakdown.months} Monate</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-neutral-600">Anzahlung</dt>
+                          <dd className="font-medium text-neutral-900">
+                            {calculationBreakdown.downPaymentPctSafe.toFixed(0)}% (CHF {Math.round(calculationBreakdown.downPaymentChf).toLocaleString("de-CH")})
+                          </dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-neutral-600">Zinssatz</dt>
+                          <dd className="font-medium text-neutral-900">{calculationBreakdown.interestRatePct.toFixed(1)}%</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-neutral-600">KM/Jahr</dt>
+                          <dd className="font-medium text-neutral-900">{kmPerYear.toLocaleString("de-CH")} km</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-neutral-600">Restwert (Endwert)</dt>
+                          <dd className="font-medium text-neutral-900">CHF {Math.round(calculationBreakdown.restwertChf).toLocaleString("de-CH")}</dd>
+                        </div>
+                      </dl>
+                    </div>
+
+                    <div className="rounded-2xl border border-neutral-200/60 p-4">
+                      <div className="text-sm font-semibold text-neutral-900">Rechenweg (Näherung)</div>
+                      <dl className="mt-3 space-y-2 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-neutral-600">Finanzierter Betrag</dt>
+                          <dd className="font-medium text-neutral-900">
+                            CHF {Math.round(calculationBreakdown.principal).toLocaleString("de-CH")}
+                          </dd>
+                        </div>
+                        <div className="text-xs text-neutral-500 -mt-1">
+                          Kaufpreis − Anzahlung − Restwert
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                          <dt className="text-neutral-600">Abschreibung / Monat</dt>
+                          <dd className="font-medium text-neutral-900">
+                            CHF {Math.round(calculationBreakdown.monthlyAmort).toLocaleString("de-CH")}
+                          </dd>
+                        </div>
+                        <div className="text-xs text-neutral-500 -mt-1">
+                          Finanzierter Betrag ÷ Laufzeit
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                          <dt className="text-neutral-600">Zinsbasis (Ø Saldo)</dt>
+                          <dd className="font-medium text-neutral-900">
+                            CHF {Math.round(calculationBreakdown.interestBase).toLocaleString("de-CH")}
+                          </dd>
+                        </div>
+                        <div className="text-xs text-neutral-500 -mt-1">
+                          (Kaufpreis − Anzahlung + Restwert) ÷ 2
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                          <dt className="text-neutral-600">Zins / Monat</dt>
+                          <dd className="font-medium text-neutral-900">
+                            CHF {Math.round(calculationBreakdown.monthlyInterest).toLocaleString("de-CH")}
+                          </dd>
+                        </div>
+                        <div className="text-xs text-neutral-500 -mt-1">
+                          Zinsbasis × (Zinssatz ÷ 12)
+                        </div>
+
+                        <div className="mt-4 rounded-xl bg-neutral-50 border border-neutral-200/60 p-3">
+                          <div className="flex items-center justify-between gap-3 text-sm">
+                            <div className="font-semibold text-neutral-900">Monatsrate</div>
+                            <div className="font-bold text-neutral-900">
+                              CHF {Math.round(calculationBreakdown.monthlyRate).toLocaleString("de-CH")}
+                            </div>
+                          </div>
+                          <div className="mt-1 text-xs text-neutral-500">
+                            Abschreibung/Monat + Zins/Monat
+                          </div>
+                        </div>
+                      </dl>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-neutral-500 leading-relaxed">
+                    Hinweis: Diese Berechnung ist eine vereinfachte Richtofferte. In der Praxis können Leasingpartner (Restwert)
+                    und Bonität (Zinssatz) die finale Rate beeinflussen.
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="mt-6 space-y-5">
