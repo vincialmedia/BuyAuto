@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,7 +26,7 @@ import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, M
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
-import { dashboardService } from "@/services/dashboardService";
+import { dashboardService, type ListingTombstone } from "@/services/dashboardService";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 
@@ -58,10 +58,35 @@ function getDaysUntil(dateIso: string | null | undefined): number | null {
   return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
 }
 
+type TombstoneCard = {
+  kind: "tombstone";
+  id: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  location: string | null;
+  coverImageUrl: string | null;
+  soldAt: string | null;
+  deletedAt: string;
+  dealType: string | null;
+  financingType: string | null;
+  pricePerMonthChf: number | null;
+  purchasePriceChf: number | null;
+};
+
+function formatPriceCHF(price: number) {
+  return new Intl.NumberFormat("de-CH", {
+    style: "currency",
+    currency: "CHF",
+    minimumFractionDigits: 0
+  }).format(price);
+}
+
 export default function ListingsSection() {
   const router = useRouter();
   const { user } = useAuth();
   const [listings, setListings] = useState<ListingDetail[]>([]);
+  const [tombstones, setTombstones] = useState<ListingTombstone[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -89,6 +114,18 @@ export default function ListingsSection() {
       setListings([]);
     } finally {
       setLoading(false);
+    }
+  }, [user]);
+
+  const loadTombstones = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const rows = await dashboardService.getListingTombstones();
+      setTombstones(rows);
+    } catch (error) {
+      console.error("Error loading tombstones:", error);
+      setTombstones([]);
     }
   }, [user]);
 
@@ -125,8 +162,9 @@ export default function ListingsSection() {
     if (user) {
       loadUserListings();
       loadPremiumCredits();
+      loadTombstones();
     }
-  }, [user, loadUserListings, loadPremiumCredits]);
+  }, [user, loadUserListings, loadPremiumCredits, loadTombstones]);
 
   useEffect(() => {
     const status = typeof router.query.premium_upgrade === "string" ? router.query.premium_upgrade : null;
@@ -191,10 +229,6 @@ export default function ListingsSection() {
     }
   }, [premiumCredits?.remaining, loadPremiumCredits, loadUserListings]);
 
-  const handleExtend = async (listingId: string) => {
-    console.log(`Placeholder: Extending listing ${listingId}`);
-  };
-
   const handleArchive = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
     try {
@@ -243,35 +277,29 @@ export default function ListingsSection() {
     setActionLoading(listingId);
     try {
       await dashboardService.markListingSold(listingId);
-      await loadUserListings();
+      await Promise.all([loadUserListings(), loadTombstones()]);
     } catch (error) {
       console.error("Error marking listing sold:", error);
       alert("Fehler beim Markieren als verkauft.");
     } finally {
       setActionLoading(null);
     }
-  }, [loadUserListings]);
+  }, [loadUserListings, loadTombstones]);
 
   const handleMarkAvailable = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
     try {
       await dashboardService.markListingAvailable(listingId);
-      await loadUserListings();
+      await Promise.all([loadUserListings(), loadTombstones()]);
     } catch (error) {
       console.error("Error marking listing available:", error);
       alert("Fehler beim Reaktivieren des Inserats.");
     } finally {
       setActionLoading(null);
     }
-  }, [loadUserListings]);
+  }, [loadUserListings, loadTombstones]);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("de-CH", {
-      style: "currency",
-      currency: "CHF",
-      minimumFractionDigits: 0
-    }).format(price);
-  };
+  const formatPrice = (price: number) => formatPriceCHF(price);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Unlimitiert";
@@ -313,6 +341,28 @@ export default function ListingsSection() {
     return "N/A";
   };
 
+  const soldListings = useMemo(() => listings.filter((l) => (l.status as any) === "sold"), [listings]);
+
+  const tombstoneCards: TombstoneCard[] = useMemo(() => {
+    return tombstones.map((t) => ({
+      kind: "tombstone",
+      id: t.original_listing_id,
+      brand: t.brand,
+      model: t.model,
+      year: t.year,
+      location: t.location,
+      coverImageUrl: t.cover_image_url,
+      soldAt: t.sold_at,
+      deletedAt: t.deleted_at,
+      dealType: t.deal_type,
+      financingType: t.financing_type,
+      pricePerMonthChf: t.price_per_month_chf,
+      purchasePriceChf: t.purchase_price_chf,
+    }));
+  }, [tombstones]);
+
+  const visibleListings = soldOnly ? soldListings : listings;
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -340,7 +390,7 @@ export default function ListingsSection() {
     );
   }
 
-  const visibleListings = soldOnly ? listings.filter((l) => (l.status as any) === "sold") : listings;
+  const totalVisibleCards = soldOnly ? (visibleListings.length + tombstoneCards.length) : visibleListings.length;
 
   return (
     <div className="space-y-6">
@@ -349,7 +399,7 @@ export default function ListingsSection() {
           <h2 className="text-2xl font-bold text-neutral-900">Meine Inserate</h2>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
             <p>
-              {visibleListings.length} {visibleListings.length === 1 ? "Inserat" : "Inserate"}
+              {totalVisibleCards} {totalVisibleCards === 1 ? "Inserat" : "Inserate"}
             </p>
             <span className="text-neutral-300">•</span>
             <p>
@@ -373,7 +423,7 @@ export default function ListingsSection() {
             className="rounded-2xl"
             onClick={() => setSoldOnly((v) => !v)}
           >
-            {soldOnly ? "Nur verkauft" : "Alle Inserate"}
+            {soldOnly ? "Verkauft" : "Alle"}
           </Button>
           <Button
             onClick={() => router.push("/inserat-erstellen")}
@@ -385,7 +435,87 @@ export default function ListingsSection() {
         </div>
       </div>
 
-      {visibleListings.length === 0 ? (
+      {soldOnly && tombstoneCards.length > 0 && (
+        <div className="space-y-3">
+          <div className="text-sm font-semibold text-neutral-900">Gelöschte Inserate (Referenz)</div>
+          <div className="grid gap-4">
+            {tombstoneCards.map((t) => (
+              <Card key={`tombstone-${t.id}`} className="border-neutral-200/60 rounded-3xl opacity-70">
+                <CardContent className="p-6">
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    <div className="relative">
+                      {t.coverImageUrl ? (
+                        <div className="w-full lg:w-32 h-48 lg:h-24 relative rounded-lg overflow-hidden">
+                          <Image
+                            src={t.coverImageUrl}
+                            alt={`${t.brand} ${t.model}`}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full lg:w-32 h-48 lg:h-24 bg-neutral-200 rounded-lg flex items-center justify-center">
+                          <span className="text-neutral-400 text-sm">Kein Bild</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-lg font-semibold text-neutral-900 mb-2 truncate">
+                            {t.brand} {t.model}{t.year ? ` (${t.year})` : ""}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 mb-3">
+                            {typeof t.pricePerMonthChf === "number" && (
+                              <div className="flex items-center gap-1">
+                                <DollarSign className="w-4 h-4" />
+                                <span>{formatPriceCHF(t.pricePerMonthChf)}/Monat</span>
+                              </div>
+                            )}
+                            {t.location && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-4 h-4" />
+                                {t.location}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <StatusBadge status={"sold"} />
+                            <Badge variant="secondary" className="rounded-full">
+                              {getDealTypeLabel({ deal_type: t.dealType, financing_type: t.financingType })}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              Gelöscht
+                            </Badge>
+                            <span className="text-xs text-neutral-600">
+                              gelöscht am{" "}
+                              <span className="font-semibold text-neutral-900">
+                                {new Date(t.deletedAt).toLocaleDateString("de-CH")}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" className="rounded-2xl" disabled>
+                            <Eye className="w-4 h-4 mr-2" /> Nicht verfügbar
+                          </Button>
+                          <Button variant="ghost" size="icon" disabled>
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {visibleListings.length === 0 && (!soldOnly || tombstoneCards.length === 0) ? (
         <Card className="border-neutral-200/60 rounded-3xl">
           <CardContent className="p-12 text-center">
             <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -493,9 +623,15 @@ export default function ListingsSection() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" className="rounded-2xl" onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-2xl"
+                            onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}
+                          >
                             <Eye className="w-4 h-4 mr-2" /> Vorschau
                           </Button>
+
                           {!archived && (listing.status as any) !== "sold" && (
                             <Button
                               variant="outline"
@@ -544,15 +680,7 @@ export default function ListingsSection() {
                                   {((premiumCredits?.remaining ?? 0) > 0) ? "Upgrade auf Premium (inkl.)" : "Premium für CHF 30 kaufen"}
                                 </DropdownMenuItem>
                               )}
-                              {(expired || listing.duration_days !== null) && (
-                                <DropdownMenuItem
-                                  onClick={() => handleExtend(listing.id)}
-                                  disabled={actionLoading === listing.id}
-                                >
-                                  <Calendar className="w-4 h-4 mr-2 text-green-600" />
-                                  Um 90 Tage verlängern
-                                </DropdownMenuItem>
-                              )}
+
                               {!archived && !isPaused(listing) && (listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => {
@@ -566,6 +694,7 @@ export default function ListingsSection() {
                                   Inserat pausieren
                                 </DropdownMenuItem>
                               )}
+
                               {!archived && (listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => {
@@ -579,6 +708,7 @@ export default function ListingsSection() {
                                   Archivieren
                                 </DropdownMenuItem>
                               )}
+
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => {

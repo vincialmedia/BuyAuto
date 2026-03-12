@@ -52,6 +52,24 @@ export interface DashboardStats {
   totalViews: number;
 }
 
+export type ListingTombstone = {
+  id: string;
+  original_listing_id: string;
+  garage_id: string | null;
+  seller_user_id: string | null;
+  brand: string;
+  model: string;
+  year: number | null;
+  location: string | null;
+  deal_type: string | null;
+  financing_type: string | null;
+  price_per_month_chf: number | null;
+  purchase_price_chf: number | null;
+  cover_image_url: string | null;
+  sold_at: string | null;
+  deleted_at: string;
+};
+
 function normalizeDealFields<T extends { deal_type?: unknown; financing_type?: unknown }>(
   row: T
 ): { deal_type: "lease_takeover" | "direct_purchase"; financing_type: "cash" | "leasing" | null } {
@@ -132,8 +150,54 @@ async function getUserListings(): Promise<ListingDetail[]> {
   }
 }
 
+async function getListingTombstones(): Promise<ListingTombstone[]> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) throw userError;
+  if (!user) return [];
+
+  const { data: garage, error: garageError } = await supabase
+    .from("garages")
+    .select("id")
+    .eq("owner_user_id", user.id)
+    .maybeSingle();
+
+  if (garageError) throw garageError;
+  if (!garage?.id) return [];
+
+  const { data, error } = await supabase
+    .from("listing_tombstones")
+    .select("*")
+    .eq("garage_id", garage.id)
+    .order("deleted_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (Array.isArray(data) ? data : []).map((r: any) => ({
+    id: String(r.id),
+    original_listing_id: String(r.original_listing_id),
+    garage_id: r.garage_id ? String(r.garage_id) : null,
+    seller_user_id: r.seller_user_id ? String(r.seller_user_id) : null,
+    brand: String(r.brand ?? ""),
+    model: String(r.model ?? ""),
+    year: typeof r.year === "number" ? r.year : null,
+    location: typeof r.location === "string" ? r.location : null,
+    deal_type: typeof r.deal_type === "string" ? r.deal_type : null,
+    financing_type: typeof r.financing_type === "string" ? r.financing_type : null,
+    price_per_month_chf: typeof r.price_per_month_chf === "number" ? r.price_per_month_chf : null,
+    purchase_price_chf: typeof r.purchase_price_chf === "number" ? r.purchase_price_chf : null,
+    cover_image_url: typeof r.cover_image_url === "string" ? r.cover_image_url : null,
+    sold_at: typeof r.sold_at === "string" ? r.sold_at : null,
+    deleted_at: String(r.deleted_at),
+  }));
+}
+
 export const dashboardService = {
   getUserListings,
+  getListingTombstones,
   async markListingSold(listingId: string): Promise<void> {
     const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
     if (error) throw error;
@@ -142,93 +206,2173 @@ export const dashboardService = {
     const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
     if (error) throw error;
   },
-  async archiveListing(listingId: string): Promise<void> {
-    const { error } = await supabase.rpc("archive_listing", { p_listing_id: listingId });
+  async markListingSoldLegacy(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
     if (error) throw error;
   },
-  async pauseListing(listingId: string, pauseDays: number): Promise<void> {
-    const { error } = await supabase.rpc("pause_listing", { p_listing_id: listingId, p_pause_days: pauseDays });
+  async markListingAvailableLegacy(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
     if (error) throw error;
   },
-  async unpauseListing(listingId: string): Promise<void> {
-    const { error } = await supabase.rpc("unpause_listing", { p_listing_id: listingId });
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
     if (error) throw error;
   },
-  async getDashboardStats(): Promise<DashboardStats> {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated");
-
-    const { data, error } = await supabase
-      .from("listings")
-      .select("status, view_count")
-      .or(`created_by.eq.${user.id},user_id.eq.${user.id}`);
-
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
     if (error) throw error;
-
-    const stats = {
-      active: 0,
-      pending: 0,
-      sold: 0,
-      expired: 0,
-      totalViews: 0,
-    };
-
-    data?.forEach((listing) => {
-      if (listing.status === "active" || listing.status === "published") stats.active++;
-      else if (listing.status === "pending") stats.pending++;
-      else if (listing.status === "sold") stats.sold++;
-      else if (listing.status === "expired" || listing.status === "archived") stats.expired++;
-
-      stats.totalViews += listing.view_count || 0;
-    });
-
-    return stats;
   },
-  updateListing,
-  deleteListing,
-  upgradeToPremium,
-  extendListing,
-};
-
-async function updateListing(id: string, updates: any) {
-  const { data, error } = await supabase.from("listings").update(updates).eq("id", id).select().single();
-
-  if (error) throw error;
-  return data;
-}
-
-async function deleteListing(id: string) {
-  const { error } = await supabase.from("listings").delete().eq("id", id);
-
-  if (error) {
-    console.error("Error deleting listing:", error);
-    return { success: false, error };
-  }
-  return { success: true };
-}
-
-async function upgradeToPremium(id: string) {
-  console.log("Upgrade to premium requested for", id);
-  return { success: false, message: "Payment integration required" };
-}
-
-async function extendListing(id: string) {
-  const nextMonth = new Date();
-  nextMonth.setDate(nextMonth.getDate() + 30);
-
-  const { error } = await supabase
-    .from("listings")
-    .update({
-      expires_at: nextMonth.toISOString(),
-      status: "active",
-    })
-    .eq("id", id);
-
-  if (error) {
-    console.error("Error extending listing:", error);
-    return { success: false, error };
-  }
-  return { success: true };
-}
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingSold(listingId: string): Promise<void> {
+    const
