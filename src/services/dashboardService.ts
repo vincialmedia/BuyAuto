@@ -210,13 +210,11 @@ async function deleteListing(id: string) {
 }
 
 async function upgradeToPremium(id: string) {
-  // Placeholder implementation - in production this would trigger a payment flow
   console.log("Upgrade to premium requested for", id);
   return { success: false, message: "Payment integration required" };
 }
 
 async function extendListing(id: string) {
-  // Extend by 30 days
   const nextMonth = new Date();
   nextMonth.setDate(nextMonth.getDate() + 30);
 

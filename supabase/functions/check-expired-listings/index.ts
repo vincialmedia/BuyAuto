@@ -10,6 +10,8 @@ type CleanupResult = {
   archivedUpdatedIds: string[];
   legacyExpiredConvertedCount: number;
   legacyExpiredConvertedIds: string[];
+  soldDeletedCount: number;
+  soldDeletedIds: string[];
 };
 
 function computeEffectiveExpiresAtIso(input: {
@@ -46,6 +48,8 @@ Deno.serve(async (req) => {
       archivedUpdatedIds: [],
       legacyExpiredConvertedCount: 0,
       legacyExpiredConvertedIds: [],
+      soldDeletedCount: 0,
+      soldDeletedIds: [],
     };
 
     const { data: legacyExpired, error: legacyExpiredError } = await supabaseAdmin
@@ -108,6 +112,51 @@ Deno.serve(async (req) => {
 
       result.archivedUpdatedCount = expiredIds.length;
       result.archivedUpdatedIds = expiredIds;
+    }
+
+    const { data: soldCandidates, error: soldCandidatesError } = await supabaseAdmin
+      .from("listings")
+      .select("id, garage_id, created_by, brand, model, year, location, deal_type, financing_type, price_per_month_chf, purchase_price_chf, cover_image_url, sold_at, sold_delete_at")
+      .eq("status", "sold")
+      .not("sold_delete_at", "is", null)
+      .lte("sold_delete_at", nowIso);
+
+    if (soldCandidatesError) throw soldCandidatesError;
+
+    const soldIds = Array.isArray(soldCandidates) ? soldCandidates.map((r) => r.id) : [];
+    if (soldIds.length > 0) {
+      const tombstoneRows = (soldCandidates ?? []).map((r) => ({
+        original_listing_id: r.id,
+        garage_id: r.garage_id,
+        seller_user_id: r.created_by,
+        brand: r.brand,
+        model: r.model,
+        year: r.year,
+        location: r.location,
+        deal_type: r.deal_type,
+        financing_type: r.financing_type,
+        price_per_month_chf: r.price_per_month_chf,
+        purchase_price_chf: r.purchase_price_chf,
+        cover_image_url: r.cover_image_url,
+        sold_at: r.sold_at,
+        deleted_at: nowIso,
+      }));
+
+      const { error: tombstoneError } = await supabaseAdmin
+        .from("listing_tombstones")
+        .upsert(tombstoneRows, { onConflict: "original_listing_id" });
+
+      if (tombstoneError) throw tombstoneError;
+
+      const { error: deleteError } = await supabaseAdmin
+        .from("listings")
+        .delete()
+        .in("id", soldIds);
+
+      if (deleteError) throw deleteError;
+
+      result.soldDeletedCount = soldIds.length;
+      result.soldDeletedIds = soldIds;
     }
 
     return new Response(JSON.stringify({ ok: true, ...result }), {

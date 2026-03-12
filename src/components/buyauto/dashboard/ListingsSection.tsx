@@ -51,6 +51,13 @@ type PremiumCreditsState = {
   remaining: number;
 };
 
+function getDaysUntil(dateIso: string | null | undefined): number | null {
+  if (!dateIso) return null;
+  const ms = new Date(dateIso).getTime() - Date.now();
+  if (!Number.isFinite(ms)) return null;
+  return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+}
+
 export default function ListingsSection() {
   const router = useRouter();
   const { user } = useAuth();
@@ -98,15 +105,8 @@ export default function ListingsSection() {
       }
 
       const period = getPeriodYYYYMMUtc();
-      const ensured = await ensureDealerPremiumCredits(garage as Garage, period);
+      await ensureDealerPremiumCredits(garage as Garage, period);
       const row = await getMyDealerPremiumCredits(garage as Garage, period);
-
-      console.log("PremiumCredits:", {
-        garageId: garage.id,
-        period,
-        ensured,
-        row,
-      });
 
       const used = Math.max(0, Number(row?.credits_used ?? 0));
       const included = Math.max(0, Number(row?.credits_included ?? 0));
@@ -239,6 +239,32 @@ export default function ListingsSection() {
     }
   }, [loadUserListings]);
 
+  const handleMarkSold = useCallback(async (listingId: string) => {
+    setActionLoading(listingId);
+    try {
+      await dashboardService.markListingSold(listingId);
+      await loadUserListings();
+    } catch (error) {
+      console.error("Error marking listing sold:", error);
+      alert("Fehler beim Markieren als verkauft.");
+    } finally {
+      setActionLoading(null);
+    }
+  }, [loadUserListings]);
+
+  const handleMarkAvailable = useCallback(async (listingId: string) => {
+    setActionLoading(listingId);
+    try {
+      await dashboardService.markListingAvailable(listingId);
+      await loadUserListings();
+    } catch (error) {
+      console.error("Error marking listing available:", error);
+      alert("Fehler beim Reaktivieren des Inserats.");
+    } finally {
+      setActionLoading(null);
+    }
+  }, [loadUserListings]);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("de-CH", {
       style: "currency",
@@ -271,11 +297,8 @@ export default function ListingsSection() {
   const getSoldDaysRemaining = (listing: ListingDetail): number | null => {
     if ((listing.status as any) !== "sold") return null;
     const soldDeleteAt = (listing as any).sold_delete_at as string | null | undefined;
-    if (!soldDeleteAt) return null;
-    const ms = new Date(soldDeleteAt).getTime() - Date.now();
-    if (!Number.isFinite(ms)) return null;
-    const days = Math.ceil(ms / (24 * 60 * 60 * 1000));
-    return Math.max(0, days);
+    const days = getDaysUntil(soldDeleteAt);
+    return typeof days === "number" ? days : null;
   };
 
   const getPlanBadge = (listing: ListingDetail) => {
@@ -317,6 +340,8 @@ export default function ListingsSection() {
     );
   }
 
+  const visibleListings = soldOnly ? listings.filter((l) => (l.status as any) === "sold") : listings;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -324,7 +349,7 @@ export default function ListingsSection() {
           <h2 className="text-2xl font-bold text-neutral-900">Meine Inserate</h2>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
             <p>
-              {listings.length} {listings.length === 1 ? "Inserat" : "Inserate"} insgesamt
+              {visibleListings.length} {visibleListings.length === 1 ? "Inserat" : "Inserate"}
             </p>
             <span className="text-neutral-300">•</span>
             <p>
@@ -360,29 +385,31 @@ export default function ListingsSection() {
         </div>
       </div>
 
-      {listings.length === 0 ? (
+      {visibleListings.length === 0 ? (
         <Card className="border-neutral-200/60 rounded-3xl">
           <CardContent className="p-12 text-center">
             <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-              Noch keine Inserate
+              Keine Inserate gefunden
             </h3>
             <p className="text-neutral-600 mb-6">
-              Erstellen Sie Ihr erstes Inserat und beginnen Sie Ihr Auto zu vermieten.
+              {soldOnly ? "Du hast noch keine verkauften Inserate." : "Erstellen Sie Ihr erstes Inserat und beginnen Sie Ihr Auto zu vermieten."}
             </p>
-            <Button
-              onClick={() => router.push("/inserat-erstellen")}
-              className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
-            >
-              Erstes Inserat erstellen
-            </Button>
+            {!soldOnly && (
+              <Button
+                onClick={() => router.push("/inserat-erstellen")}
+                className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
+              >
+                Erstes Inserat erstellen
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-6">
-          {(soldOnly ? listings.filter((l) => (l.status as any) === "sold") : listings).map((listing) => {
+          {visibleListings.map((listing) => {
             const coverImage = listing.cover_image_url ||
               (listing.images && listing.images[listing.cover_image_index || 0]);
             const expired = isExpired(listing);
@@ -451,18 +478,9 @@ export default function ListingsSection() {
                             <Badge variant="outline" className="text-xs">
                               {getPlanBadge(listing)}
                             </Badge>
-                            {listing.expires_at && (
-                              <span className="text-xs text-neutral-500">
-                                {isPaused(listing) ? (
-                                  <>Pausiert</>
-                                ) : (
-                                  <>Läuft ab: {formatDate(listing.expires_at)}</>
-                                )}
-                              </span>
-                            )}
                             {typeof soldDaysRemaining === "number" && (
                               <span className="text-xs text-neutral-600">
-                                Inserat wird in <span className="font-semibold text-neutral-900">{soldDaysRemaining}</span>{" "}
+                                Wird in <span className="font-semibold text-neutral-900">{soldDaysRemaining}</span>{" "}
                                 {soldDaysRemaining === 1 ? "Tag" : "Tagen"} gelöscht
                               </span>
                             )}
@@ -478,7 +496,7 @@ export default function ListingsSection() {
                           <Button variant="ghost" size="sm" className="rounded-2xl" onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}>
                             <Eye className="w-4 h-4 mr-2" /> Vorschau
                           </Button>
-                          {!archived && (
+                          {!archived && (listing.status as any) !== "sold" && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -499,15 +517,7 @@ export default function ListingsSection() {
                             <DropdownMenuContent align="end" className="w-56">
                               {(listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
-                                  onClick={async () => {
-                                    setActionLoading(listing.id);
-                                    try {
-                                      await dashboardService.markListingSold(listing.id);
-                                      await loadUserListings();
-                                    } finally {
-                                      setActionLoading(null);
-                                    }
-                                  }}
+                                  onClick={() => handleMarkSold(listing.id)}
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Badge variant="secondary" className="mr-2">Verkauft</Badge>
@@ -517,23 +527,15 @@ export default function ListingsSection() {
 
                               {(listing.status as any) === "sold" && (
                                 <DropdownMenuItem
-                                  onClick={async () => {
-                                    setActionLoading(listing.id);
-                                    try {
-                                      await dashboardService.markListingAvailable(listing.id);
-                                      await loadUserListings();
-                                    } finally {
-                                      setActionLoading(null);
-                                    }
-                                  }}
+                                  onClick={() => handleMarkAvailable(listing.id)}
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Play className="w-4 h-4 mr-2 text-emerald-600" />
-                                  Als verfügbar markieren
+                                  Reaktivieren
                                 </DropdownMenuItem>
                               )}
 
-                              {!premium && !archived && (
+                              {!premium && !archived && (listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => handleUpgrade(listing.id)}
                                   disabled={actionLoading === listing.id}
@@ -551,7 +553,7 @@ export default function ListingsSection() {
                                   Um 90 Tage verlängern
                                 </DropdownMenuItem>
                               )}
-                              {!archived && !isPaused(listing) && (
+                              {!archived && !isPaused(listing) && (listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setListingToPause(listing.id);
@@ -564,16 +566,7 @@ export default function ListingsSection() {
                                   Inserat pausieren
                                 </DropdownMenuItem>
                               )}
-                              {isPaused(listing) && (
-                                <DropdownMenuItem
-                                  onClick={() => setListingToUnpause(listing.id)}
-                                  disabled={actionLoading === listing.id}
-                                >
-                                  <Play className="w-4 h-4 mr-2 text-emerald-600" />
-                                  Entpausieren
-                                </DropdownMenuItem>
-                              )}
-                              {!archived && (
+                              {!archived && (listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setListingToArchive(listing.id);

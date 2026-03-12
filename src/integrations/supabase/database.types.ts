@@ -664,6 +664,75 @@ export type Database = {
           },
         ]
       }
+      listing_tombstones: {
+        Row: {
+          brand: string | null
+          cover_image_url: string | null
+          deal_type: Database["public"]["Enums"]["deal_type"] | null
+          deleted_at: string
+          financing_type: Database["public"]["Enums"]["financing_type"] | null
+          garage_id: string | null
+          id: string
+          location: string | null
+          model: string | null
+          original_listing_id: string
+          price_per_month_chf: number | null
+          purchase_price_chf: number | null
+          seller_user_id: string | null
+          sold_at: string | null
+          year: number | null
+        }
+        Insert: {
+          brand?: string | null
+          cover_image_url?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
+          deleted_at?: string
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
+          garage_id?: string | null
+          id?: string
+          location?: string | null
+          model?: string | null
+          original_listing_id: string
+          price_per_month_chf?: number | null
+          purchase_price_chf?: number | null
+          seller_user_id?: string | null
+          sold_at?: string | null
+          year?: number | null
+        }
+        Update: {
+          brand?: string | null
+          cover_image_url?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
+          deleted_at?: string
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
+          garage_id?: string | null
+          id?: string
+          location?: string | null
+          model?: string | null
+          original_listing_id?: string
+          price_per_month_chf?: number | null
+          purchase_price_chf?: number | null
+          seller_user_id?: string | null
+          sold_at?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_tombstones_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_tombstones_seller_user_id_fkey"
+            columns: ["seller_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           archived_at: string | null
