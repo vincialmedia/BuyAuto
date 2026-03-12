@@ -22,6 +22,7 @@ import { MessagingPanel } from "@/components/buyauto/detail/MessagingPanel";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
+import { cn } from "@/lib/utils";
 
 const LeasingCalculator = dynamic<LeasingCalculatorProps>(
   () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
@@ -108,6 +109,7 @@ export function ListingDetailV2({
   childrenBelowFold?: React.ReactNode;
 }) {
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+  const isSold = (listing.status as any) === "sold";
 
   const hasLeasing =
     dealType === "direct_purchase" &&
@@ -213,13 +215,21 @@ export function ListingDetailV2({
   }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing]);
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-24">
+    <div className={cn("min-h-screen bg-neutral-50 pb-24", isSold ? "grayscale-[0.2]" : "")}>
       <div id="listing-hero-sentinel" className="h-px w-px" />
 
       {isOwnerPreview && (
         <div className="bg-amber-50 border-b border-amber-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="text-sm text-amber-900">Vorschau: Dieses Inserat ist noch nicht veröffentlicht und nur für dich sichtbar.</div>
+          </div>
+        </div>
+      )}
+
+      {isSold && (
+        <div className="bg-neutral-900/90 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-sm">
+            <span className="font-semibold">Verkauft.</span> Dieses Inserat ist nicht mehr verfügbar.
           </div>
         </div>
       )}
@@ -456,9 +466,11 @@ export function ListingDetailV2({
               </CardContent>
             </Card>
 
-            <div id="messages" className="scroll-mt-24">
-              <MessagingPanel listingId={listing.id} listingTitle={`${listing.brand} ${listing.model} ${listing.year}`} />
-            </div>
+            {!isSold && (
+              <div id="messages" className="scroll-mt-24">
+                <MessagingPanel listingId={listing.id} listingTitle={`${listing.brand} ${listing.model} ${listing.year}`} />
+              </div>
+            )}
 
             {canShowLeasingCalculator && (
               <LeasingCalculator

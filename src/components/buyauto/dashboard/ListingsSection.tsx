@@ -68,6 +68,7 @@ export default function ListingsSection() {
 
   const [premiumCredits, setPremiumCredits] = useState<PremiumCreditsState | null>(null);
   const [premiumCreditsLoading, setPremiumCreditsLoading] = useState(false);
+  const [soldOnly, setSoldOnly] = useState(false);
 
   const loadUserListings = useCallback(async () => {
     if (!user) return;
@@ -267,6 +268,16 @@ export default function ListingsSection() {
     return (listing.status as any) === "paused";
   };
 
+  const getSoldDaysRemaining = (listing: ListingDetail): number | null => {
+    if ((listing.status as any) !== "sold") return null;
+    const soldDeleteAt = (listing as any).sold_delete_at as string | null | undefined;
+    if (!soldDeleteAt) return null;
+    const ms = new Date(soldDeleteAt).getTime() - Date.now();
+    if (!Number.isFinite(ms)) return null;
+    const days = Math.ceil(ms / (24 * 60 * 60 * 1000));
+    return Math.max(0, days);
+  };
+
   const getPlanBadge = (listing: ListingDetail) => {
     if (listing.price_plan) {
       const planNames: { [key: string]: string } = {
@@ -330,13 +341,23 @@ export default function ListingsSection() {
             <p>Weitere Upgrades: CHF 30 / Inserat</p>
           </div>
         </div>
-        <Button
-          onClick={() => router.push("/inserat-erstellen")}
-          className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Neues Inserat erstellen
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant={soldOnly ? "secondary" : "outline"}
+            className="rounded-2xl"
+            onClick={() => setSoldOnly((v) => !v)}
+          >
+            {soldOnly ? "Nur verkauft" : "Alle Inserate"}
+          </Button>
+          <Button
+            onClick={() => router.push("/inserat-erstellen")}
+            className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Neues Inserat erstellen
+          </Button>
+        </div>
       </div>
 
       {listings.length === 0 ? (
@@ -361,19 +382,22 @@ export default function ListingsSection() {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {listings.map((listing) => {
+          {(soldOnly ? listings.filter((l) => (l.status as any) === "sold") : listings).map((listing) => {
             const coverImage = listing.cover_image_url ||
               (listing.images && listing.images[listing.cover_image_index || 0]);
             const expired = isExpired(listing);
             const premium = isPremium(listing);
             const archived = listing.status === "archived" || listing.status === "expired";
+            const soldDaysRemaining = getSoldDaysRemaining(listing);
 
             return (
               <Card
                 key={listing.id}
                 className={`border-neutral-200/60 rounded-3xl hover:shadow-md transition-all ${
                   expired ? "opacity-75" : ""
-                } ${premium ? "ring-2 ring-amber-200/50 bg-gradient-to-r from-amber-50/30 to-white" : ""}`}
+                } ${(listing.status as any) === "sold" ? "opacity-80" : ""} ${
+                  premium ? "ring-2 ring-amber-200/50 bg-gradient-to-r from-amber-50/30 to-white" : ""
+                }`}
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row gap-6">
@@ -436,6 +460,12 @@ export default function ListingsSection() {
                                 )}
                               </span>
                             )}
+                            {typeof soldDaysRemaining === "number" && (
+                              <span className="text-xs text-neutral-600">
+                                Inserat wird in <span className="font-semibold text-neutral-900">{soldDaysRemaining}</span>{" "}
+                                {soldDaysRemaining === 1 ? "Tag" : "Tagen"} gelöscht
+                              </span>
+                            )}
                             {premium && listing.premium_until && (
                               <span className="text-xs text-amber-700">
                                 Premium bis: {formatDate(listing.premium_until)}
@@ -467,6 +497,42 @@ export default function ListingsSection() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
+                              {(listing.status as any) !== "sold" && (
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    setActionLoading(listing.id);
+                                    try {
+                                      await dashboardService.markListingSold(listing.id);
+                                      await loadUserListings();
+                                    } finally {
+                                      setActionLoading(null);
+                                    }
+                                  }}
+                                  disabled={actionLoading === listing.id}
+                                >
+                                  <Badge variant="secondary" className="mr-2">Verkauft</Badge>
+                                  Als verkauft markieren
+                                </DropdownMenuItem>
+                              )}
+
+                              {(listing.status as any) === "sold" && (
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    setActionLoading(listing.id);
+                                    try {
+                                      await dashboardService.markListingAvailable(listing.id);
+                                      await loadUserListings();
+                                    } finally {
+                                      setActionLoading(null);
+                                    }
+                                  }}
+                                  disabled={actionLoading === listing.id}
+                                >
+                                  <Play className="w-4 h-4 mr-2 text-emerald-600" />
+                                  Als verfügbar markieren
+                                </DropdownMenuItem>
+                              )}
+
                               {!premium && !archived && (
                                 <DropdownMenuItem
                                   onClick={() => handleUpgrade(listing.id)}

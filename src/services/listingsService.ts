@@ -594,13 +594,7 @@ export async function getSimilarListings(listing: ListingDetail, limit: number =
       .neq("id", listing.id)
       .eq("deal_type", dealType);
 
-    if (typeof listing.brand === "string" && listing.brand.trim() !== "") {
-      query = query.eq("brand", listing.brand);
-    }
-
-    if (typeof listing.model === "string" && listing.model.trim() !== "") {
-      query = query.eq("model", listing.model);
-    }
+    query = query.eq("status", "published");
 
     const { data, error } = await query
       .order("premium", { ascending: false })

@@ -63,7 +63,7 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
     active: { container: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     inactive: { container: "bg-neutral-100 text-neutral-600 border-neutral-200" },
     paused: { container: "bg-amber-50 text-amber-700 border-amber-200" },
-    sold: { container: "bg-blue-50 text-blue-700 border-blue-200" },
+    sold: { container: "bg-neutral-100 text-neutral-700 border-neutral-200/70" },
     published: { container: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     rejected: { container: "bg-red-50 text-red-600 border-red-200" },
     expired: { container: "bg-neutral-100 text-neutral-800 border-neutral-200/60" },

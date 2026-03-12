@@ -566,6 +566,52 @@ export type Database = {
           },
         ]
       }
+      listing_media_backups: {
+        Row: {
+          cover_image_index: number | null
+          cover_image_url: string | null
+          created_at: string
+          images: Json
+          listing_id: string
+        }
+        Insert: {
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string
+          images?: Json
+          listing_id: string
+        }
+        Update: {
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string
+          images?: Json
+          listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_media_backups_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_media_backups_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_media_backups_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "public_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_premium_purchases: {
         Row: {
           amount_chf: number
@@ -664,7 +710,12 @@ export type Database = {
           remaining_km: number | null
           remaining_months: number | null
           seller_type: string | null
+          sold_at: string | null
+          sold_delete_at: string | null
           status: Database["public"]["Enums"]["listing_status"] | null
+          status_before_sold:
+            | Database["public"]["Enums"]["listing_status"]
+            | null
           stripe_payment_intent_id: string | null
           stripe_refund_id: string | null
           title: string | null
@@ -721,7 +772,12 @@ export type Database = {
           remaining_km?: number | null
           remaining_months?: number | null
           seller_type?: string | null
+          sold_at?: string | null
+          sold_delete_at?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
+          status_before_sold?:
+            | Database["public"]["Enums"]["listing_status"]
+            | null
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
           title?: string | null
@@ -778,7 +834,12 @@ export type Database = {
           remaining_km?: number | null
           remaining_months?: number | null
           seller_type?: string | null
+          sold_at?: string | null
+          sold_delete_at?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
+          status_before_sold?:
+            | Database["public"]["Enums"]["listing_status"]
+            | null
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
           title?: string | null
@@ -1572,6 +1633,10 @@ export type Database = {
           slug: string
         }[]
       }
+      get_listing_cover_image: {
+        Args: { p_cover_index: number; p_cover_url: string; p_images: Json }
+        Returns: string
+      }
       get_models_for_brand: {
         Args: { p_brand: string }
         Returns: {
@@ -1585,6 +1650,11 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: undefined
       }
+      mark_listing_available: {
+        Args: { p_listing_id: string }
+        Returns: undefined
+      }
+      mark_listing_sold: { Args: { p_listing_id: string }; Returns: undefined }
       normalize_vehicle_name: { Args: { input: string }; Returns: string }
       pause_listing: {
         Args: { p_listing_id: string; p_pause_days: number }

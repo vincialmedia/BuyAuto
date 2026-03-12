@@ -331,7 +331,23 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       return { props: { listing: null } };
     }
 
-    const listing = await getPublishedListingById(id);
+    const listing = await (async () => {
+      const { data, error } = await (await import("@/integrations/supabase/client")).supabase
+        .from("listings_public")
+        .select("*")
+        .eq("id", id)
+        .in("status", ["published", "sold"])
+        .single();
+
+      if (error) {
+        if ((error as any)?.code === "PGRST116") return null;
+        console.error("Error fetching listing by ID (published/sold):", error);
+        return null;
+      }
+
+      const { transformPublicRowToListingDetail } = await import("@/services/listingsService");
+      return transformPublicRowToListingDetail(data as any);
+    })();
 
     if (!listing) {
       return { props: { listing: null } };

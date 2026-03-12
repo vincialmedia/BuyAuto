@@ -39,6 +39,9 @@ export interface DashboardListing {
   user_id: string | null;
   deposit_chf: number | null;
   view_count: number;
+  sold_at?: string | null;
+  sold_delete_at?: string | null;
+  status_before_sold?: ListingStatus | null;
 }
 
 export interface DashboardStats {
@@ -131,6 +134,14 @@ async function getUserListings(): Promise<ListingDetail[]> {
 
 export const dashboardService = {
   getUserListings,
+  async markListingSold(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_sold", { p_listing_id: listingId });
+    if (error) throw error;
+  },
+  async markListingAvailable(listingId: string): Promise<void> {
+    const { error } = await supabase.rpc("mark_listing_available", { p_listing_id: listingId });
+    if (error) throw error;
+  },
   async archiveListing(listingId: string): Promise<void> {
     const { error } = await supabase.rpc("archive_listing", { p_listing_id: listingId });
     if (error) throw error;
