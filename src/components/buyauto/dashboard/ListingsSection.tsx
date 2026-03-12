@@ -22,11 +22,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Eye, Edit, Trash2, Calendar, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive } from "lucide-react";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
-import { dashboardService, type ListingTombstone } from "@/services/dashboardService";
+import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 
@@ -86,7 +86,7 @@ export default function ListingsSection() {
   const router = useRouter();
   const { user } = useAuth();
   const [listings, setListings] = useState<ListingDetail[]>([]);
-  const [tombstones, setTombstones] = useState<ListingTombstone[]>([]);
+  const [tombstones, setTombstones] = useState<DashboardListingTombstone[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

@@ -3,6 +3,24 @@ import type { ListingDetail, ListingStatus } from "@/lib/buyauto/types";
 
 export type DashboardListingStatus = ListingStatus;
 
+export interface DashboardListingTombstone {
+  id: string;
+  original_listing_id: string;
+  garage_id: string | null;
+  seller_user_id: string | null;
+  brand: string;
+  model: string;
+  year: number | null;
+  location: string | null;
+  deal_type: string | null;
+  financing_type: string | null;
+  price_per_month_chf: number | null;
+  purchase_price_chf: number | null;
+  cover_image_url: string | null;
+  sold_at: string | null;
+  deleted_at: string;
+}
+
 export interface DashboardListing {
   id: string;
   brand: string;
@@ -149,7 +167,7 @@ async function getUserListings(): Promise<ListingDetail[]> {
   }
 }
 
-async function getListingTombstones(): Promise<ListingTombstone[]> {
+async function getListingTombstones(): Promise<DashboardListingTombstone[]> {
   const userId = await getAuthedUserId();
   if (!userId) return [];
 
