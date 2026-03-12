@@ -3,10 +3,46 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row"];
 export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+export type ConversationParticipantRow =
+  Database["public"]["Tables"]["conversation_participants"]["Row"];
+export type ListingRow = Database["public"]["Tables"]["listings"]["Row"];
+export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export interface ConversationWithMessages {
   conversation: ConversationRow;
   messages: MessageRow[];
+}
+
+export interface MessageThreadItem {
+  conversationId: string;
+  listingId: string;
+  listingTitle: string;
+  listingMakeModel: string;
+  coverImageUrl: string | null;
+  lastMessageAt: string | null;
+  lastMessagePreview: string;
+  buyerName: string;
+  messageCount: number;
+}
+
+export interface MessageCounts {
+  total: number;
+}
+
+function getListingLabel(listing: Pick<ListingRow, "brand" | "model" | "title">): string {
+  const makeModel = `${listing.brand} ${listing.model}`.trim();
+  return listing.title?.trim() ? listing.title.trim() : makeModel;
+}
+
+function buildMakeModel(listing: Pick<ListingRow, "brand" | "model">): string {
+  return `${listing.brand} ${listing.model}`.trim();
+}
+
+function getPreview(body: string): string {
+  const trimmed = body.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= 120) return trimmed;
+  return `${trimmed.slice(0, 120)}…`;
 }
 
 export async function getOrCreateConversationForListing(listingId: string): Promise<ConversationRow | null> {
@@ -106,4 +142,133 @@ export async function sendMessage(conversationId: string, body: string): Promise
   }
 
   return true;
+}
+
+export async function getMyMessageCounts(): Promise<MessageCounts> {
+  const sessionRes = await supabase.auth.getSession();
+  const userId = sessionRes.data.session?.user?.id ?? null;
+  if (!userId) return { total: 0 };
+
+  const { data: participantRows, error: participantError } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id")
+    .eq("user_id", userId);
+
+  if (participantError) {
+    console.error("getMyMessageCounts: participants error", participantError);
+    return { total: 0 };
+  }
+
+  const conversationIds = (participantRows ?? []).map((r) => r.conversation_id);
+  if (conversationIds.length === 0) return { total: 0 };
+
+  const { count, error: countError } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .in("conversation_id", conversationIds);
+
+  if (countError) {
+    console.error("getMyMessageCounts: messages count error", countError);
+    return { total: 0 };
+  }
+
+  return { total: count ?? 0 };
+}
+
+export async function getMyMessageThreads(limit = 25): Promise<MessageThreadItem[]> {
+  const sessionRes = await supabase.auth.getSession();
+  const userId = sessionRes.data.session?.user?.id ?? null;
+  if (!userId) return [];
+
+  const { data: participantRows, error: participantError } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id")
+    .eq("user_id", userId);
+
+  if (participantError) {
+    console.error("getMyMessageThreads: participants error", participantError);
+    return [];
+  }
+
+  const conversationIds = (participantRows ?? []).map((r) => r.conversation_id);
+  if (conversationIds.length === 0) return [];
+
+  const { data: conversations, error: convError } = await supabase
+    .from("conversations")
+    .select("id, listing_id, created_at, last_message_at")
+    .in("id", conversationIds)
+    .order("last_message_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (convError) {
+    console.error("getMyMessageThreads: conversations error", convError);
+    return [];
+  }
+
+  const rows = conversations ?? [];
+  if (rows.length === 0) return [];
+
+  const listingIds = Array.from(new Set(rows.map((c) => c.listing_id)));
+  const { data: listings, error: listingsError } = await supabase
+    .from("listings")
+    .select("id, brand, model, title, cover_image_url")
+    .in("id", listingIds);
+
+  if (listingsError) {
+    console.error("getMyMessageThreads: listings error", listingsError);
+    return [];
+  }
+
+  const listingById = new Map<string, Pick<ListingRow, "id" | "brand" | "model" | "title" | "cover_image_url">>();
+  for (const l of listings ?? []) {
+    listingById.set(l.id, l);
+  }
+
+  const lastMessageByConversation = new Map<string, Pick<MessageRow, "body" | "created_at">>();
+  const messageCountByConversation = new Map<string, number>();
+
+  await Promise.all(
+    rows.map(async (c) => {
+      const { data: lastMsg } = await supabase
+        .from("messages")
+        .select("body, created_at")
+        .eq("conversation_id", c.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastMsg) lastMessageByConversation.set(c.id, lastMsg);
+
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", c.id);
+
+      messageCountByConversation.set(c.id, count ?? 0);
+    })
+  );
+
+  const threads: MessageThreadItem[] = rows.map((c) => {
+    const listing = listingById.get(c.listing_id);
+    const listingMakeModel = listing ? buildMakeModel(listing) : "Fahrzeug";
+    const listingTitle = listing ? getListingLabel(listing) : listingMakeModel;
+
+    const lastMsg = lastMessageByConversation.get(c.id);
+    const lastMessagePreview = lastMsg ? getPreview(lastMsg.body) : "";
+
+    return {
+      conversationId: c.id,
+      listingId: c.listing_id,
+      listingTitle,
+      listingMakeModel,
+      coverImageUrl: listing?.cover_image_url ?? null,
+      lastMessageAt: c.last_message_at ?? null,
+      lastMessagePreview,
+      buyerName: "Buyer",
+      messageCount: messageCountByConversation.get(c.id) ?? 0,
+    };
+  });
+
+  return threads;
 }

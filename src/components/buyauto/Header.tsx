@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 export default function Header() {
   const router = useRouter();
-  const { user, loading, profile, profileLoading } = useAuth();
+  const { user, loading, profile, profileLoading, messageCount } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNavigatingToCreate, setIsNavigatingToCreate] = useState(false);
 
@@ -50,7 +50,7 @@ export default function Header() {
 
   const firstName = user?.user_metadata?.first_name;
   const displayName = firstName || user?.email?.split('@')[0] || 'Benutzer';
-  const messageCount = 0;
+  const safeMessageCount = Math.max(0, messageCount);
 
   // Determine the create listing link based on auth state
   const createListingHref = user ? "/inserat-erstellen" : "/auth?redirect=/inserat-erstellen";
@@ -176,7 +176,7 @@ export default function Header() {
                           <User className="h-4 w-4 text-white" />
                         </div>
                         <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
-                          {messageCount >= 10 ? "9+" : String(Math.max(0, messageCount))}
+                          {safeMessageCount >= 10 ? "9+" : String(safeMessageCount)}
                         </span>
                       </span>
                       <span className="hidden sm:block text-sm font-medium text-neutral-700">

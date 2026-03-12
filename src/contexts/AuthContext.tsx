@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { getMyMessageCounts } from "@/services/messagingService";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -16,7 +17,10 @@ interface AuthContextType {
   profileLoading: boolean;
   isAdmin: boolean;
   adminLoading: boolean;
+  messageCount: number;
+  messageCountLoading: boolean;
   refreshProfile: () => Promise<void>;
+  refreshMessageCount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,7 +31,10 @@ const AuthContext = createContext<AuthContextType>({
   profileLoading: true,
   isAdmin: false,
   adminLoading: true,
+  messageCount: 0,
+  messageCountLoading: true,
   refreshProfile: async () => {},
+  refreshMessageCount: async () => {},
 });
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
@@ -40,6 +47,22 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
+
+  const [messageCount, setMessageCount] = useState(0);
+  const [messageCountLoading, setMessageCountLoading] = useState(true);
+
+  const refreshMessageCount = async () => {
+    try {
+      setMessageCountLoading(true);
+      const counts = await getMyMessageCounts();
+      setMessageCount(counts.total);
+    } catch (e) {
+      console.error("Error fetching message counts:", e);
+      setMessageCount(0);
+    } finally {
+      setMessageCountLoading(false);
+    }
+  };
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -88,18 +111,21 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
     if (nextSession?.user) {
       await fetchProfile(nextSession.user.id);
+      await refreshMessageCount();
     } else {
       setProfile(null);
       setIsAdmin(false);
       setProfileLoading(false);
       setAdminLoading(false);
+      setMessageCount(0);
+      setMessageCountLoading(false);
     }
   };
 
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data, error }) => {
+    supabase.auth.getSession().then(async ({ data, error }) => {
       if (error) {
         console.error("Error getting session:", error);
       }
@@ -113,18 +139,21 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
 
       if (nextSession?.user) {
-        fetchProfile(nextSession.user.id);
+        await fetchProfile(nextSession.user.id);
+        await refreshMessageCount();
       } else {
         setProfile(null);
         setIsAdmin(false);
         setProfileLoading(false);
         setAdminLoading(false);
+        setMessageCount(0);
+        setMessageCountLoading(false);
       }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       if (!mounted) return;
 
       setSession(nextSession);
@@ -132,12 +161,15 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
 
       if (nextSession?.user) {
-        fetchProfile(nextSession.user.id);
+        await fetchProfile(nextSession.user.id);
+        await refreshMessageCount();
       } else {
         setProfile(null);
         setIsAdmin(false);
         setProfileLoading(false);
         setAdminLoading(false);
+        setMessageCount(0);
+        setMessageCountLoading(false);
       }
     });
 
@@ -157,7 +189,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         profileLoading,
         isAdmin,
         adminLoading,
+        messageCount,
+        messageCountLoading,
         refreshProfile,
+        refreshMessageCount,
       }}
     >
       {children}

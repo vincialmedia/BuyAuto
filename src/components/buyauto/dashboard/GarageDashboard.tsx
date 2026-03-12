@@ -18,6 +18,7 @@ import { useHasMounted } from "@/hooks/use-has-mounted";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { formatDealerEntitlementLabel, formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
 import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -49,6 +50,7 @@ function getStableGarageLogoUrl(garageId: string, version?: number): string {
 export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const router = useRouter();
   const hasMounted = useHasMounted();
+  const { messageCount } = useAuth();
 
   const [garage, setGarage] = useState<Garage | null>(initialGarage);
   const [garageLoading, setGarageLoading] = useState(!initialGarage);
@@ -231,7 +233,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
               <div className="flex gap-2 items-center">
                 <div className="lg:hidden">
                   <MessageCenterSheet
-                    count={0}
+                    count={Math.max(0, messageCount)}
                     triggerVariant="outline"
                     triggerClassName="rounded-2xl bg-white/15 text-white hover:bg-white/20 border border-white/20"
                   />
