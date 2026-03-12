@@ -449,6 +449,8 @@ export type Database = {
       }
       listing_drafts: {
         Row: {
+          catalog_confidence: string | null
+          catalog_needs_review: boolean
           created_at: string
           data: Json
           id: string
@@ -457,8 +459,11 @@ export type Database = {
           updated_at: string
           user_id: string
           variant_id: string | null
+          variant_text: string | null
         }
         Insert: {
+          catalog_confidence?: string | null
+          catalog_needs_review?: boolean
           created_at?: string
           data?: Json
           id?: string
@@ -467,8 +472,11 @@ export type Database = {
           updated_at?: string
           user_id: string
           variant_id?: string | null
+          variant_text?: string | null
         }
         Update: {
+          catalog_confidence?: string | null
+          catalog_needs_review?: boolean
           created_at?: string
           data?: Json
           id?: string
@@ -477,6 +485,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           variant_id?: string | null
+          variant_text?: string | null
         }
         Relationships: [
           {

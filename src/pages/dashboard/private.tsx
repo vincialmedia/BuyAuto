@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { userManagementService } from "@/services/userManagementService";
 import { toast } from "sonner";
 import { Building2 } from "lucide-react";
+import DraftsSection from "@/components/buyauto/dashboard/DraftsSection";
 
 export default function PrivateDashboardPage() {
   const router = useRouter();
@@ -103,6 +104,8 @@ export default function PrivateDashboardPage() {
             
             <a id="benutzerdaten" className="scroll-mt-20"></a>
             <UserDetailsSection />
+
+            <DraftsSection />
             
             <a id="meine-inserate" className="scroll-mt-20"></a>
             <ListingsSection />
