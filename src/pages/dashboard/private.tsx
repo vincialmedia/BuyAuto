@@ -4,6 +4,7 @@ import Head from "next/head";
 import type { GetServerSideProps } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import UserDetailsSection from "@/components/buyauto/dashboard/UserDetailsSection";
 import ListingsSection from "@/components/buyauto/dashboard/ListingsSection";
@@ -232,7 +233,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     console.warn("Failed to fetch listing drafts (SSR):", draftsError);
   }
 
-  const initialDrafts: ListingDraft[] = (draftRows ?? []).map((row) => ({
+  type ListingDraftDbRow = Tables<"listing_drafts">;
+  const safeDraftRows = (draftRows ?? []) as unknown as ListingDraftDbRow[];
+  const initialDrafts: ListingDraft[] = safeDraftRows.map((row) => ({
     id: row.id,
     user_id: row.user_id,
     data: (row.data ?? {}) as any,
