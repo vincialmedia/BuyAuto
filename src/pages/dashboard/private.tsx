@@ -17,8 +17,9 @@ import { userManagementService } from "@/services/userManagementService";
 import { toast } from "sonner";
 import { Building2 } from "lucide-react";
 import DraftsSection from "@/components/buyauto/dashboard/DraftsSection";
+import type { ListingDraft } from "@/services/listingDraftService";
 
-export default function PrivateDashboardPage() {
+export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts: ListingDraft[] }) {
   const router = useRouter();
   const { user, loading: authLoading, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -105,7 +106,7 @@ export default function PrivateDashboardPage() {
             <a id="benutzerdaten" className="scroll-mt-20"></a>
             <UserDetailsSection />
 
-            <DraftsSection />
+            <DraftsSection initialDrafts={initialDrafts} />
             
             <a id="meine-inserate" className="scroll-mt-20"></a>
             <ListingsSection />
@@ -199,5 +200,23 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     };
   }
 
-  return { props: {} };
+  const { data: draftRows, error: draftsError } = await supabase
+    .from("listing_drafts")
+    .select("id,user_id,data,created_at,updated_at")
+    .eq("user_id", session.user.id)
+    .order("updated_at", { ascending: false });
+
+  if (draftsError) {
+    console.warn("Failed to fetch listing drafts (SSR):", draftsError);
+  }
+
+  const initialDrafts: ListingDraft[] = (draftRows ?? []).map((row) => ({
+    id: row.id,
+    user_id: row.user_id,
+    data: (row.data ?? {}) as any,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
+
+  return { props: { initialDrafts } };
 };

@@ -36,11 +36,11 @@ const buildDraftTitle = (draft: ListingDraft) => {
   return "Entwurf";
 };
 
-export default function DraftsSection() {
+export default function DraftsSection({ initialDrafts }: { initialDrafts?: ListingDraft[] }) {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [drafts, setDrafts] = useState<ListingDraft[]>([]);
+  const [drafts, setDrafts] = useState<ListingDraft[]>(() => initialDrafts ?? []);
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [draftToDelete, setDraftToDelete] = useState<string | null>(null);
@@ -51,6 +51,10 @@ export default function DraftsSection() {
     setLoading(true);
     try {
       const data = await getMyListingDrafts({ user });
+
+      if (initialDrafts && initialDrafts.length > 0 && data.length === 0) {
+        return;
+      }
 
       const listingIds = data
         .map((d) => (d?.data as any)?.id)
@@ -102,11 +106,13 @@ export default function DraftsSection() {
       setDrafts(data);
     } catch (e) {
       console.error("Failed to load listing drafts:", e);
-      setDrafts([]);
+      if (!initialDrafts || initialDrafts.length === 0) {
+        setDrafts([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, initialDrafts]);
 
   useEffect(() => {
     if (!user) return;
