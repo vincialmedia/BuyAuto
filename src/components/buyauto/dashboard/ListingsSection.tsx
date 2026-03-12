@@ -82,7 +82,11 @@ function formatPriceCHF(price: number) {
   }).format(price);
 }
 
-export default function ListingsSection() {
+export interface ListingsSectionProps {
+  view?: "all" | "active" | "sold";
+}
+
+export default function ListingsSection({ view }: ListingsSectionProps) {
   const router = useRouter();
   const { user } = useAuth();
   const [listings, setListings] = useState<ListingDetail[]>([]);
@@ -101,6 +105,9 @@ export default function ListingsSection() {
   const [premiumCredits, setPremiumCredits] = useState<PremiumCreditsState | null>(null);
   const [premiumCreditsLoading, setPremiumCreditsLoading] = useState(false);
   const [soldOnly, setSoldOnly] = useState(false);
+
+  const effectiveView: "all" | "active" | "sold" = view ?? (soldOnly ? "sold" : "all");
+  const isControlledView = typeof view !== "undefined";
 
   const loadUserListings = useCallback(async () => {
     if (!user) return;
@@ -159,12 +166,17 @@ export default function ListingsSection() {
   }, [user]);
 
   useEffect(() => {
-    if (user) {
-      loadUserListings();
-      loadPremiumCredits();
+    if (!user) return;
+
+    loadUserListings();
+    loadPremiumCredits();
+
+    if (effectiveView === "sold") {
       loadTombstones();
+    } else {
+      setTombstones([]);
     }
-  }, [user, loadUserListings, loadPremiumCredits, loadTombstones]);
+  }, [user, loadUserListings, loadPremiumCredits, loadTombstones, effectiveView]);
 
   useEffect(() => {
     const status = typeof router.query.premium_upgrade === "string" ? router.query.premium_upgrade : null;
@@ -342,6 +354,7 @@ export default function ListingsSection() {
   };
 
   const soldListings = useMemo(() => listings.filter((l) => (l.status as any) === "sold"), [listings]);
+  const activeListings = useMemo(() => listings.filter((l) => (l.status as any) !== "sold"), [listings]);
 
   const tombstoneCards: TombstoneCard[] = useMemo(() => {
     return tombstones.map((t) => ({
@@ -361,7 +374,8 @@ export default function ListingsSection() {
     }));
   }, [tombstones]);
 
-  const visibleListings = soldOnly ? soldListings : listings;
+  const visibleListings =
+    effectiveView === "sold" ? soldListings : effectiveView === "active" ? activeListings : listings;
 
   if (loading) {
     return (
@@ -390,7 +404,8 @@ export default function ListingsSection() {
     );
   }
 
-  const totalVisibleCards = soldOnly ? (visibleListings.length + tombstoneCards.length) : visibleListings.length;
+  const totalVisibleCards =
+    effectiveView === "sold" ? visibleListings.length + tombstoneCards.length : visibleListings.length;
 
   return (
     <div className="space-y-6">
@@ -417,14 +432,16 @@ export default function ListingsSection() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            variant={soldOnly ? "secondary" : "outline"}
-            className="rounded-2xl"
-            onClick={() => setSoldOnly((v) => !v)}
-          >
-            {soldOnly ? "Verkauft" : "Alle"}
-          </Button>
+          {!isControlledView && (
+            <Button
+              type="button"
+              variant={soldOnly ? "secondary" : "outline"}
+              className="rounded-2xl"
+              onClick={() => setSoldOnly((v) => !v)}
+            >
+              {soldOnly ? "Verkauft" : "Alle"}
+            </Button>
+          )}
           <Button
             onClick={() => router.push("/inserat-erstellen")}
             className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
@@ -435,7 +452,7 @@ export default function ListingsSection() {
         </div>
       </div>
 
-      {soldOnly && tombstoneCards.length > 0 && (
+      {effectiveView === "sold" && tombstoneCards.length > 0 && (
         <div className="space-y-3">
           <div className="text-sm font-semibold text-neutral-900">Gelöschte Inserate (Referenz)</div>
           <div className="grid gap-4">
@@ -515,7 +532,7 @@ export default function ListingsSection() {
         </div>
       )}
 
-      {visibleListings.length === 0 && (!soldOnly || tombstoneCards.length === 0) ? (
+      {visibleListings.length === 0 && (effectiveView !== "sold" || tombstoneCards.length === 0) ? (
         <Card className="border-neutral-200/60 rounded-3xl">
           <CardContent className="p-12 text-center">
             <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -525,9 +542,11 @@ export default function ListingsSection() {
               Keine Inserate gefunden
             </h3>
             <p className="text-neutral-600 mb-6">
-              {soldOnly ? "Du hast noch keine verkauften Inserate." : "Erstellen Sie Ihr erstes Inserat und beginnen Sie Ihr Auto zu vermieten."}
+              {effectiveView === "sold"
+                ? "Du hast noch keine verkauften Inserate."
+                : "Erstellen Sie Ihr erstes Inserat und beginnen Sie Ihr Auto zu vermieten."}
             </p>
-            {!soldOnly && (
+            {effectiveView !== "sold" && (
               <Button
                 onClick={() => router.push("/inserat-erstellen")}
                 className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"

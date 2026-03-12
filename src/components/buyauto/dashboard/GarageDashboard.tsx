@@ -75,7 +75,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const [logoVersion, setLogoVersion] = useState<number>(0);
 
   const [mainTab, setMainTab] = useState<"inventory" | "profile" | "subscription" | "stats">("inventory");
-  const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts">("active");
+  const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts" | "sold">("active");
 
   const planLabel = useMemo(() => {
     return formatDealerEntitlementLabel(entitlement);
@@ -325,12 +325,22 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                     >
                       Entwürfe
                     </Button>
+                    <Button
+                      onClick={() => setInventorySubTab("sold")}
+                      variant={inventorySubTab === "sold" ? "default" : "outline"}
+                      className="rounded-2xl px-8 py-6 text-base font-semibold"
+                      size="lg"
+                    >
+                      Verkauft
+                    </Button>
                   </div>
 
                   {inventorySubTab === "active" ? (
-                    <ListingsSection />
-                  ) : (
+                    <ListingsSection view="active" />
+                  ) : inventorySubTab === "drafts" ? (
                     <DraftsSection />
+                  ) : (
+                    <ListingsSection view="sold" />
                   )}
                 </div>
               </TabsContent>
