@@ -224,7 +224,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const { data: draftRows, error: draftsError } = await supabase
     .from("listing_drafts")
-    .select("id,user_id,data,created_at,updated_at")
+    .select("*")
     .eq("user_id", session.user.id)
     .order("updated_at", { ascending: false });
 
