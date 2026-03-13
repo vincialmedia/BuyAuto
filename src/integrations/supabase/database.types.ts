@@ -19,19 +19,25 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
+          last_read_at: string | null
           role: string
+          unread_count: number
           user_id: string
         }
         Insert: {
           conversation_id: string
           created_at?: string
+          last_read_at?: string | null
           role?: string
+          unread_count?: number
           user_id: string
         }
         Update: {
           conversation_id?: string
           created_at?: string
+          last_read_at?: string | null
           role?: string
+          unread_count?: number
           user_id?: string
         }
         Relationships: [
@@ -46,22 +52,31 @@ export type Database = {
       }
       conversations: {
         Row: {
+          archive_expires_at: string | null
+          archived_at: string | null
           created_at: string
           id: string
           last_message_at: string | null
           listing_id: string
+          status: string
         }
         Insert: {
+          archive_expires_at?: string | null
+          archived_at?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
           listing_id: string
+          status?: string
         }
         Update: {
+          archive_expires_at?: string | null
+          archived_at?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
           listing_id?: string
+          status?: string
         }
         Relationships: [
           {
@@ -1629,8 +1644,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      archive_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
       archive_expired_listings: { Args: never; Returns: Json }
       archive_listing: { Args: { p_listing_id: string }; Returns: undefined }
+      create_or_get_conversation_for_listing: {
+        Args: { p_listing_id: string }
+        Returns: string
+      }
       ensure_dealer_premium_credits:
         | {
             Args: { p_dealer_id: string }
@@ -1691,6 +1714,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_conversation_context: {
+        Args: { p_conversation_id: string }
+        Returns: Json
+      }
       get_distinct_brands: { Args: never; Returns: string[] }
       get_garage_public: {
         Args: { p_garage_id: string }
@@ -1713,10 +1740,15 @@ export type Database = {
         }[]
       }
       get_my_role: { Args: never; Returns: string }
+      get_my_unread_message_count: { Args: never; Returns: number }
       get_service_role_key: { Args: never; Returns: string }
       get_user_role: { Args: { user_id: string }; Returns: string }
       increment_listing_view: {
         Args: { p_listing_id: string }
+        Returns: undefined
+      }
+      mark_conversation_read: {
+        Args: { p_conversation_id: string }
         Returns: undefined
       }
       mark_listing_available: {
@@ -1781,6 +1813,10 @@ export type Database = {
           title: string
           year: number
         }[]
+      }
+      select_buyer_and_mark_listing_sold: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
       }
       supabase_url: { Args: never; Returns: string }
       sync_garage_plan_snapshot_from_subscription: {

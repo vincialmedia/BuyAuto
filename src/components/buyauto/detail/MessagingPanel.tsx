@@ -43,6 +43,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
   const [initialLoading, setInitialLoading] = useState(true);
   const [readOnly, setReadOnly] = useState(false);
   const [soldBlocked, setSoldBlocked] = useState(false);
+  const [messagingUnavailable, setMessagingUnavailable] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -62,10 +63,12 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
         setInitialLoading(false);
         setReadOnly(false);
         setSoldBlocked(false);
+        setMessagingUnavailable(false);
         return;
       }
 
       setInitialLoading(true);
+      setMessagingUnavailable(false);
       const convId = await createOrGetConversationForListing(listingId);
       if (cancelled) return;
 
@@ -75,14 +78,16 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
         setMessages([]);
         setInitialLoading(false);
         setReadOnly(true);
-        setSoldBlocked(true);
+        setSoldBlocked(false);
+        setMessagingUnavailable(true);
         return;
       }
 
       const ctx = await getConversationContext(convId);
       if (!cancelled) {
-        setReadOnly(!!ctx?.flags?.read_only);
-        setSoldBlocked(ctx?.listing?.status === "sold" && ctx?.conversation?.status !== "buyer_selected");
+        const ro = !!ctx?.flags?.read_only;
+        setReadOnly(ro);
+        setSoldBlocked(!messagingUnavailable && !!ctx?.listing?.status && ctx.listing.status === "sold" && ctx?.conversation?.status !== "buyer_selected");
       }
 
       const data = await getMessages(convId);
@@ -185,6 +190,12 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
           </div>
         </div>
 
+        {messagingUnavailable ? (
+          <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
+            Nachrichten sind momentan nicht verfügbar.
+          </div>
+        ) : null}
+
         {soldBlocked ? (
           <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
             Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich.
@@ -231,7 +242,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Nachricht schreiben…"
               className="min-h-[92px] rounded-2xl border-neutral-200 focus:border-neutral-400"
-              disabled={readOnly}
+              disabled={readOnly || messagingUnavailable}
             />
             <div className="mt-3 flex items-center justify-end">
               <Button
