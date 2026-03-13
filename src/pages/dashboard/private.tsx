@@ -19,10 +19,12 @@ import { toast } from "sonner";
 import { Building2 } from "lucide-react";
 import DraftsSection from "@/components/buyauto/dashboard/DraftsSection";
 import type { ListingDraft } from "@/services/listingDraftService";
+import { MessageCenterRail } from "@/components/buyauto/messages/MessageCenterRail";
+import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
 
 export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts: ListingDraft[] }) {
   const router = useRouter();
-  const { user, loading: authLoading, refreshProfile } = useAuth();
+  const { user, loading: authLoading, refreshProfile, messageCount } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeForm, setUpgradeForm] = useState({
@@ -40,9 +42,6 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
     }
 
     if (user) {
-      // Just simulate loading for smoothness since we don't fetch stats here anymore strictly
-      // or we can keep it if dashboardService relies on it.
-      // The original code fetched stats.
       setIsLoading(false);
     }
   }, [user, authLoading, router]);
@@ -53,8 +52,8 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
     try {
       await userManagementService.upgradeToGarage(upgradeForm);
       toast.success("Erfolgreich zum Garage-Konto gewechselt!");
-      await refreshProfile(); // Refresh auth context to get new role
-      router.push("/dashboard/garage"); // Redirect will be handled by router or explicit push
+      await refreshProfile();
+      router.push("/dashboard/garage");
     } catch (error: any) {
       toast.error("Fehler beim Upgrade: " + error.message);
     } finally {
@@ -65,7 +64,7 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
 
   if (authLoading || isLoading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout hideSidebar leftRail={<MessageCenterRail />}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
@@ -82,57 +81,68 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
     <>
       <Head>
         <title>Dashboard - Buy-Auto.ch</title>
+        <meta name="robots" content="noindex,nofollow" />
       </Head>
-      <DashboardLayout>
+
+      <DashboardLayout hideSidebar leftRail={<MessageCenterRail />}>
         <div className="space-y-8" id="dashboard-content">
-            
-            {/* Upgrade Banner */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center shadow-sm text-primary">
-                  <Building2 size={24} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg text-gray-900">Sind Sie ein Händler?</h3>
-                  <p className="text-gray-600 text-sm">Wechseln Sie zum Garage-Profil, um mehrere Fahrzeuge und Ihr Inventar zu verwalten.</p>
-                </div>
+          {/* Upgrade Banner */}
+          <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-neutral-50 flex items-center justify-center shadow-sm text-primary border border-neutral-200/60">
+                <Building2 size={24} />
               </div>
-              <Button onClick={() => setShowUpgradeModal(true)}>
+              <div>
+                <h3 className="font-semibold text-lg text-neutral-900">Sind Sie ein Händler?</h3>
+                <p className="text-neutral-600 text-sm">Wechseln Sie zum Garage-Profil, um mehrere Fahrzeuge und Ihr Inventar zu verwalten.</p>
+              </div>
+            </div>
+
+            <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-3">
+              <div className="sm:hidden">
+                <MessageCenterSheet
+                  count={Math.max(0, messageCount)}
+                  triggerVariant="outline"
+                  triggerClassName="rounded-2xl"
+                />
+              </div>
+              <Button onClick={() => setShowUpgradeModal(true)} className="rounded-2xl">
                 Zur Garage wechseln
               </Button>
             </div>
+          </div>
 
-            <a id="uebersicht" className="scroll-mt-20"></a>
-            <OverviewSection />
-            
-            <a id="benutzerdaten" className="scroll-mt-20"></a>
-            <UserDetailsSection />
+          <a id="uebersicht" className="scroll-mt-20"></a>
+          <OverviewSection />
 
-            <a id="meine-inserate" className="scroll-mt-20"></a>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                type="button"
-                onClick={() => setInventoryTab("listings")}
-                variant={inventoryTab === "listings" ? "default" : "outline"}
-                className="rounded-2xl"
-              >
-                Inserate
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setInventoryTab("drafts")}
-                variant={inventoryTab === "drafts" ? "default" : "outline"}
-                className="rounded-2xl"
-              >
-                Entwürfe
-              </Button>
-            </div>
+          <a id="benutzerdaten" className="scroll-mt-20"></a>
+          <UserDetailsSection />
 
-            {inventoryTab === "drafts" ? (
-              <DraftsSection initialDrafts={initialDrafts} />
-            ) : (
-              <ListingsSection />
-            )}
+          <a id="meine-inserate" className="scroll-mt-20"></a>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              onClick={() => setInventoryTab("listings")}
+              variant={inventoryTab === "listings" ? "default" : "outline"}
+              className="rounded-2xl"
+            >
+              Inserate
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setInventoryTab("drafts")}
+              variant={inventoryTab === "drafts" ? "default" : "outline"}
+              className="rounded-2xl"
+            >
+              Entwürfe
+            </Button>
+          </div>
+
+          {inventoryTab === "drafts" ? (
+            <DraftsSection initialDrafts={initialDrafts} />
+          ) : (
+            <ListingsSection />
+          )}
         </div>
 
         {/* Upgrade Modal */}
