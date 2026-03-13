@@ -29,7 +29,13 @@ type UiMessage = {
 function formatTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleString("de-CH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function MessagingPanel({ listingId, listingTitle, className }: MessagingPanelProps) {
@@ -69,6 +75,9 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
 
       setInitialLoading(true);
       setMessagingUnavailable(false);
+      setReadOnly(false);
+      setSoldBlocked(false);
+
       const convId = await createOrGetConversationForListing(listingId);
       if (cancelled) return;
 
@@ -84,11 +93,15 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
       }
 
       const ctx = await getConversationContext(convId);
-      if (!cancelled) {
-        const ro = !!ctx?.flags?.read_only;
-        setReadOnly(ro);
-        setSoldBlocked(!messagingUnavailable && !!ctx?.listing?.status && ctx.listing.status === "sold" && ctx?.conversation?.status !== "buyer_selected");
-      }
+      if (cancelled) return;
+
+      const isReadOnly = !!ctx?.flags?.read_only;
+      setReadOnly(isReadOnly);
+
+      const listingIsSold = ctx?.listing?.status === "sold";
+      const buyerSelected = ctx?.conversation?.status === "buyer_selected";
+
+      setSoldBlocked(listingIsSold && !buyerSelected);
 
       const data = await getMessages(convId);
       if (cancelled) return;
@@ -119,6 +132,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
   async function handleSend() {
     if (!conversationId) return;
     if (readOnly) return;
+
     const body = draft.trim();
     if (!body) return;
 
@@ -139,7 +153,10 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
 
       const ctx = await getConversationContext(conversationId);
       setReadOnly(!!ctx?.flags?.read_only);
-      setSoldBlocked(ctx?.listing?.status === "sold" && ctx?.conversation?.status !== "buyer_selected");
+
+      const listingIsSold = ctx?.listing?.status === "sold";
+      const buyerSelected = ctx?.conversation?.status === "buyer_selected";
+      setSoldBlocked(listingIsSold && !buyerSelected);
     }
 
     setBusy(false);
@@ -152,12 +169,8 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-neutral-900">Nachrichten</p>
-              <p className="text-sm text-neutral-600 mt-1">
-                Einloggen/Registrieren um Nachrichten zu schicken.
-              </p>
-              <p className="text-xs text-neutral-500 mt-2">
-                Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.
-              </p>
+              <p className="text-sm text-neutral-600 mt-1">Einloggen/Registrieren um Nachrichten zu schicken.</p>
+              <p className="text-xs text-neutral-500 mt-2">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
             </div>
 
             <Button
@@ -211,9 +224,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
                 <div className="h-10 bg-white rounded-xl border border-neutral-200 animate-pulse" />
               </div>
             ) : messages.length === 0 ? (
-              <div className="text-sm text-neutral-600">
-                Noch keine Nachrichten. Starte die Unterhaltung.
-              </div>
+              <div className="text-sm text-neutral-600">Noch keine Nachrichten. Starte die Unterhaltung.</div>
             ) : (
               messages.map((m) => {
                 const isMe = m.sender_user_id === user?.id;
@@ -245,11 +256,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
               disabled={readOnly || messagingUnavailable}
             />
             <div className="mt-3 flex items-center justify-end">
-              <Button
-                onClick={handleSend}
-                disabled={!canSend}
-                className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl"
-              >
+              <Button onClick={handleSend} disabled={!canSend} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl">
                 <SendHorizontal className="h-4 w-4 mr-2" />
                 Senden
               </Button>
