@@ -5,37 +5,64 @@ export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row
 export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 export type ConversationParticipantRow =
   Database["public"]["Tables"]["conversation_participants"]["Row"];
-export type ListingRow = Database["public"]["Tables"]["listings"]["Row"];
-export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
-export interface ConversationWithMessages {
-  conversation: ConversationRow;
-  messages: MessageRow[];
-}
+type ListingStatus = Database["public"]["Enums"]["listing_status"];
 
 export interface MessageThreadItem {
   conversationId: string;
   listingId: string;
-  listingTitle: string;
+  title: string;
   listingMakeModel: string;
   coverImageUrl: string | null;
   lastMessageAt: string | null;
   lastMessagePreview: string;
-  buyerName: string;
-  messageCount: number;
+  unreadCount: number;
+  listingStatus: ListingStatus | null;
+  conversationStatus: string;
 }
 
 export interface MessageCounts {
   total: number;
 }
 
-function getListingLabel(listing: Pick<ListingRow, "brand" | "model" | "title">): string {
-  const makeModel = `${listing.brand} ${listing.model}`.trim();
-  return listing.title?.trim() ? listing.title.trim() : makeModel;
-}
-
-function buildMakeModel(listing: Pick<ListingRow, "brand" | "model">): string {
-  return `${listing.brand} ${listing.model}`.trim();
+export interface ConversationContext {
+  title: string;
+  conversation: {
+    id: string;
+    status: string;
+    last_message_at: string | null;
+    archived_at: string | null;
+    archive_expires_at: string | null;
+    my_unread_count: number;
+  };
+  listing: {
+    id: string;
+    brand: string;
+    model: string;
+    make_model: string;
+    year: number | null;
+    price_per_month_chf: number | null;
+    purchase_price_chf: number | null;
+    mileage_km: number | null;
+    cover_image_url: string | null;
+    status: ListingStatus | null;
+    garage_id: string | null;
+  };
+  buyer: {
+    id: string | null;
+    full_name: string | null;
+    email: string | null;
+  };
+  seller: {
+    display_name: string | null;
+  };
+  permissions: {
+    can_select_buyer: boolean;
+    can_archive: boolean;
+  };
+  flags: {
+    read_only: boolean;
+  };
 }
 
 function getPreview(body: string): string {
@@ -45,79 +72,97 @@ function getPreview(body: string): string {
   return `${trimmed.slice(0, 120)}…`;
 }
 
-function getEmailPrefix(email: string | null | undefined): string {
-  const safe = (email ?? "").trim();
-  if (!safe) return "";
-  return safe.split("@")[0] ?? "";
+function safeString(value: unknown): string {
+  return typeof value === "string" ? value : "";
 }
 
-function getProfileDisplayName(profile: Pick<ProfileRow, "full_name" | "email"> | null): string {
-  if (!profile) return "";
-  const full = (profile.full_name ?? "").trim();
-  if (full) return full;
-  return getEmailPrefix(profile.email);
+function safeNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-export async function getOrCreateConversationForListing(listingId: string): Promise<ConversationRow | null> {
-  const sessionRes = await supabase.auth.getSession();
-  const userId = sessionRes.data.session?.user?.id ?? null;
-  if (!userId) return null;
+export async function createOrGetConversationForListing(listingId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc("create_or_get_conversation_for_listing", {
+    p_listing_id: listingId,
+  });
 
-  const existing = await supabase
-    .from("conversations")
-    .select("id, listing_id, created_at, last_message_at")
-    .eq("listing_id", listingId)
-    .order("last_message_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
-    .limit(25);
-
-  if (existing.error) {
-    console.error("getOrCreateConversationForListing: fetch conversations error", existing.error);
+  if (error) {
+    console.error("createOrGetConversationForListing error:", error);
     return null;
   }
 
-  const conversations = existing.data ?? [];
-  for (const c of conversations) {
-    const participantCheck = await supabase
-      .from("conversation_participants")
-      .select("conversation_id")
-      .eq("conversation_id", c.id)
-      .eq("user_id", userId)
-      .maybeSingle();
+  return typeof data === "string" ? data : null;
+}
 
-    if (participantCheck.error) {
-      console.error("getOrCreateConversationForListing: participant check error", participantCheck.error);
-      continue;
-    }
+export async function markConversationRead(conversationId: string): Promise<void> {
+  const { error } = await supabase.rpc("mark_conversation_read", { p_conversation_id: conversationId });
+  if (error) console.error("markConversationRead error:", error);
+}
 
-    if (participantCheck.data) {
-      return c as ConversationRow;
-    }
-  }
-
-  const created = await supabase
-    .from("conversations")
-    .insert({ listing_id: listingId })
-    .select("id, listing_id, created_at, last_message_at")
-    .single();
-
-  if (created.error) {
-    console.error("getOrCreateConversationForListing: create conversation error", created.error);
+export async function getConversationContext(conversationId: string): Promise<ConversationContext | null> {
+  const { data, error } = await supabase.rpc("get_conversation_context", { p_conversation_id: conversationId });
+  if (error) {
+    console.error("getConversationContext error:", error);
     return null;
   }
 
-  const addSelf = await supabase
-    .from("conversation_participants")
-    .insert({ conversation_id: created.data.id, user_id: userId, role: "buyer" })
-    .select("conversation_id")
-    .single();
+  if (!data || typeof data !== "object") return null;
+  return data as ConversationContext;
+}
 
-  if (addSelf.error) {
-    console.error("getOrCreateConversationForListing: add self participant error", addSelf.error);
-    return null;
+export async function archiveConversation(conversationId: string): Promise<boolean> {
+  const { error } = await supabase.rpc("archive_conversation", { p_conversation_id: conversationId });
+  if (error) {
+    console.error("archiveConversation error:", error);
+    return false;
+  }
+  return true;
+}
+
+export async function selectBuyerAndMarkListingSold(conversationId: string): Promise<boolean> {
+  const { error } = await supabase.rpc("select_buyer_and_mark_listing_sold", { p_conversation_id: conversationId });
+  if (error) {
+    console.error("selectBuyerAndMarkListingSold error:", error);
+    return false;
+  }
+  return true;
+}
+
+export async function getMyMessageCounts(): Promise<MessageCounts> {
+  const { data, error } = await supabase.rpc("get_my_unread_message_count");
+  if (error) {
+    console.error("getMyMessageCounts error:", error);
+    return { total: 0 };
+  }
+  return { total: typeof data === "number" ? data : 0 };
+}
+
+export async function getMyMessageThreads(limit = 25): Promise<MessageThreadItem[]> {
+  const { data, error } = await supabase.rpc("get_my_message_threads", { p_limit: limit });
+
+  if (error) {
+    console.error("getMyMessageThreads error:", error);
+    return [];
   }
 
-  return created.data as ConversationRow;
+  const rows = Array.isArray(data) ? (data as Array<Record<string, unknown>>) : [];
+  return rows.map((r) => {
+    const sellerDisplayName = safeString(r.seller_display_name) || "—";
+    const listingMakeModel = safeString(r.listing_make_model) || "Fahrzeug";
+    const title = `${sellerDisplayName} - ${listingMakeModel}`;
+
+    return {
+      conversationId: safeString(r.conversation_id),
+      listingId: safeString(r.listing_id),
+      title,
+      listingMakeModel,
+      coverImageUrl: safeString(r.listing_cover_image_url) || null,
+      lastMessageAt: safeString(r.last_message_at) || null,
+      lastMessagePreview: getPreview(safeString(r.last_message_body)),
+      unreadCount: safeNumber(r.unread_count),
+      listingStatus: (r.listing_status as ListingStatus) ?? null,
+      conversationStatus: safeString(r.conversation_status) || "active",
+    };
+  });
 }
 
 export async function getMessages(conversationId: string): Promise<MessageRow[]> {
@@ -155,203 +200,4 @@ export async function sendMessage(conversationId: string, body: string): Promise
   }
 
   return true;
-}
-
-export async function getMyMessageCounts(): Promise<MessageCounts> {
-  const sessionRes = await supabase.auth.getSession();
-  const userId = sessionRes.data.session?.user?.id ?? null;
-  if (!userId) return { total: 0 };
-
-  const { data: participantRows, error: participantError } = await supabase
-    .from("conversation_participants")
-    .select("conversation_id")
-    .eq("user_id", userId);
-
-  if (participantError) {
-    console.error("getMyMessageCounts: participants error", participantError);
-    return { total: 0 };
-  }
-
-  const conversationIds = (participantRows ?? []).map((r) => r.conversation_id);
-  if (conversationIds.length === 0) return { total: 0 };
-
-  const { count, error: countError } = await supabase
-    .from("messages")
-    .select("id", { count: "exact", head: true })
-    .in("conversation_id", conversationIds);
-
-  if (countError) {
-    console.error("getMyMessageCounts: messages count error", countError);
-    return { total: 0 };
-  }
-
-  return { total: count ?? 0 };
-}
-
-export async function getMyMessageThreads(limit = 25): Promise<MessageThreadItem[]> {
-  const sessionRes = await supabase.auth.getSession();
-  const userId = sessionRes.data.session?.user?.id ?? null;
-  if (!userId) return [];
-
-  const { data: participantRows, error: participantError } = await supabase
-    .from("conversation_participants")
-    .select("conversation_id")
-    .eq("user_id", userId);
-
-  if (participantError) {
-    console.error("getMyMessageThreads: participants error", participantError);
-    return [];
-  }
-
-  const conversationIds = (participantRows ?? []).map((r) => r.conversation_id);
-  if (conversationIds.length === 0) return [];
-
-  const { data: conversations, error: convError } = await supabase
-    .from("conversations")
-    .select("id, listing_id, created_at, last_message_at")
-    .in("id", conversationIds)
-    .order("last_message_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (convError) {
-    console.error("getMyMessageThreads: conversations error", convError);
-    return [];
-  }
-
-  const rows = conversations ?? [];
-  if (rows.length === 0) return [];
-
-  const listingIds = Array.from(new Set(rows.map((c) => c.listing_id)));
-  const { data: listings, error: listingsError } = await supabase
-    .from("listings")
-    .select("id, brand, model, title, cover_image_url")
-    .in("id", listingIds);
-
-  if (listingsError) {
-    console.error("getMyMessageThreads: listings error", listingsError);
-    return [];
-  }
-
-  const listingById = new Map<string, Pick<ListingRow, "id" | "brand" | "model" | "title" | "cover_image_url">>();
-  for (const l of listings ?? []) {
-    listingById.set(l.id, l);
-  }
-
-  const { data: allParticipants, error: participantsError } = await supabase
-    .from("conversation_participants")
-    .select("conversation_id, user_id")
-    .in("conversation_id", rows.map((c) => c.id));
-
-  if (participantsError) {
-    console.error("getMyMessageThreads: participants batch error", participantsError);
-    return [];
-  }
-
-  const otherUserIds = Array.from(
-    new Set(
-      (allParticipants ?? [])
-        .filter((p) => p.user_id !== userId)
-        .map((p) => p.user_id)
-    )
-  );
-
-  const { data: otherProfiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("id, role, full_name, email")
-    .in("id", otherUserIds);
-
-  if (profilesError) {
-    console.error("getMyMessageThreads: profiles error", profilesError);
-    return [];
-  }
-
-  const garageOwnerIds = (otherProfiles ?? []).filter((p) => p.role === "garage").map((p) => p.id);
-  const { data: garageRows, error: garagesError } =
-    garageOwnerIds.length === 0
-      ? { data: [], error: null }
-      : await supabase.from("garages").select("owner_user_id, garage_name").in("owner_user_id", garageOwnerIds);
-
-  if (garagesError) {
-    console.error("getMyMessageThreads: garages error", garagesError);
-    return [];
-  }
-
-  const garageNameByOwnerId = new Map<string, string>();
-  for (const g of garageRows ?? []) {
-    garageNameByOwnerId.set(g.owner_user_id, g.garage_name);
-  }
-
-  const profileById = new Map<string, Pick<ProfileRow, "id" | "role" | "full_name" | "email">>();
-  for (const p of otherProfiles ?? []) {
-    profileById.set(p.id, p);
-  }
-
-  const otherDisplayNameByUserId = new Map<string, string>();
-  for (const p of otherProfiles ?? []) {
-    if (p.role === "garage") {
-      const garageName = garageNameByOwnerId.get(p.id) ?? "";
-      otherDisplayNameByUserId.set(p.id, garageName || getProfileDisplayName(p));
-    } else {
-      otherDisplayNameByUserId.set(p.id, getProfileDisplayName(p));
-    }
-  }
-
-  const otherUserIdByConversation = new Map<string, string>();
-  for (const p of allParticipants ?? []) {
-    if (p.user_id === userId) continue;
-    if (!otherUserIdByConversation.has(p.conversation_id)) {
-      otherUserIdByConversation.set(p.conversation_id, p.user_id);
-    }
-  }
-
-  const lastMessageByConversation = new Map<string, Pick<MessageRow, "body" | "created_at">>();
-  const messageCountByConversation = new Map<string, number>();
-
-  await Promise.all(
-    rows.map(async (c) => {
-      const { data: lastMsg } = await supabase
-        .from("messages")
-        .select("body, created_at")
-        .eq("conversation_id", c.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (lastMsg) lastMessageByConversation.set(c.id, lastMsg);
-
-      const { count } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("conversation_id", c.id);
-
-      messageCountByConversation.set(c.id, count ?? 0);
-    })
-  );
-
-  const threads: MessageThreadItem[] = rows.map((c) => {
-    const listing = listingById.get(c.listing_id);
-    const listingMakeModel = listing ? buildMakeModel(listing) : "Fahrzeug";
-    const listingTitle = listing ? getListingLabel(listing) : listingMakeModel;
-
-    const lastMsg = lastMessageByConversation.get(c.id);
-    const lastMessagePreview = lastMsg ? getPreview(lastMsg.body) : "";
-
-    const otherId = otherUserIdByConversation.get(c.id) ?? "";
-    const buyerName = otherDisplayNameByUserId.get(otherId) ?? "—";
-
-    return {
-      conversationId: c.id,
-      listingId: c.listing_id,
-      listingTitle,
-      listingMakeModel,
-      coverImageUrl: listing?.cover_image_url ?? null,
-      lastMessageAt: c.last_message_at ?? null,
-      lastMessagePreview,
-      buyerName,
-      messageCount: messageCountByConversation.get(c.id) ?? 0,
-    };
-  });
-
-  return threads;
 }

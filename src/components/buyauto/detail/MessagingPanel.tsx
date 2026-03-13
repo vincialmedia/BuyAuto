@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { getMessages, getOrCreateConversationForListing, sendMessage } from "@/services/messagingService";
+import {
+  createOrGetConversationForListing,
+  getConversationContext,
+  getMessages,
+  sendMessage,
+} from "@/services/messagingService";
 import { LogIn, SendHorizontal } from "lucide-react";
 import { useRouter } from "next/router";
 
@@ -36,14 +41,16 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [readOnly, setReadOnly] = useState(false);
+  const [soldBlocked, setSoldBlocked] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const isAuthed = !!user && !loading;
 
   const canSend = useMemo(() => {
-    return isAuthed && !!conversationId && draft.trim().length > 0 && !busy;
-  }, [busy, conversationId, draft, isAuthed]);
+    return isAuthed && !!conversationId && draft.trim().length > 0 && !busy && !readOnly;
+  }, [busy, conversationId, draft, isAuthed, readOnly]);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,20 +60,29 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
         setConversationId(null);
         setMessages([]);
         setInitialLoading(false);
+        setReadOnly(false);
+        setSoldBlocked(false);
         return;
       }
 
       setInitialLoading(true);
-      const conv = await getOrCreateConversationForListing(listingId);
+      const convId = await createOrGetConversationForListing(listingId);
       if (cancelled) return;
 
-      const convId = conv?.id ?? null;
       setConversationId(convId);
 
       if (!convId) {
         setMessages([]);
         setInitialLoading(false);
+        setReadOnly(true);
+        setSoldBlocked(true);
         return;
+      }
+
+      const ctx = await getConversationContext(convId);
+      if (!cancelled) {
+        setReadOnly(!!ctx?.flags?.read_only);
+        setSoldBlocked(ctx?.listing?.status === "sold" && ctx?.conversation?.status !== "buyer_selected");
       }
 
       const data = await getMessages(convId);
@@ -97,6 +113,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
 
   async function handleSend() {
     if (!conversationId) return;
+    if (readOnly) return;
     const body = draft.trim();
     if (!body) return;
 
@@ -164,6 +181,12 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
           </div>
         </div>
 
+        {soldBlocked ? (
+          <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
+            Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich.
+          </div>
+        ) : null}
+
         <div className="mt-5 rounded-2xl border border-neutral-200/60 bg-neutral-50 overflow-hidden">
           <div ref={scrollRef} className="max-h-72 overflow-y-auto p-4 space-y-3">
             {initialLoading ? (
@@ -204,6 +227,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Nachricht schreiben…"
               className="min-h-[92px] rounded-2xl border-neutral-200 focus:border-neutral-400"
+              disabled={readOnly}
             />
             <div className="mt-3 flex items-center justify-end">
               <Button

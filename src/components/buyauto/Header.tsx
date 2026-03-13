@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
-import { User, LogOut, Settings, BarChart3, Plus, Loader2, ConciergeBell } from "lucide-react";
+import { User, LogOut, Settings, BarChart3, Plus, Loader2, ConciergeBell, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -175,9 +175,11 @@ export default function Header() {
                         <div className="w-8 h-8 bg-gradient-to-br from-neutral-500 to-neutral-600 rounded-full flex items-center justify-center">
                           <User className="h-4 w-4 text-white" />
                         </div>
-                        <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
-                          {safeMessageCount >= 10 ? "9+" : String(safeMessageCount)}
-                        </span>
+                        {safeMessageCount > 0 ? (
+                          <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
+                            {safeMessageCount >= 10 ? "9+" : String(safeMessageCount)}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="hidden sm:block text-sm font-medium text-neutral-700">
                         {displayName}
@@ -193,7 +195,7 @@ export default function Header() {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/messages" className="cursor-pointer">
-                        <BarChart3 className="mr-2 h-4 w-4" />
+                        <MessageSquare className="mr-2 h-4 w-4" />
                         Message Center
                       </Link>
                     </DropdownMenuItem>

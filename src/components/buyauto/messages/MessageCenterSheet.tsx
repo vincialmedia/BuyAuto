@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,19 @@ function formatCount(count: number): string {
   return String(count);
 }
 
+function formatUnread(count: number): string {
+  if (count <= 0) return "";
+  if (count >= 10) return "9+";
+  return String(count);
+}
+
 export function MessageCenterSheet({
   count,
   triggerVariant = "ghost",
   triggerClassName,
 }: MessageCenterSheetProps) {
   const router = useRouter();
-  const formatted = formatCount(count);
+  const formatted = useMemo(() => formatCount(count), [count]);
   const [threads, setThreads] = useState<MessageThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +50,7 @@ export function MessageCenterSheet({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router.asPath]);
 
   return (
     <Sheet>
@@ -52,9 +58,11 @@ export function MessageCenterSheet({
         <Button variant={triggerVariant} className={triggerClassName} aria-label="Message Center öffnen">
           <span className="relative inline-flex items-center">
             <MessageSquare className="h-4 w-4" />
-            <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
-              {formatted}
-            </span>
+            {count > 0 ? (
+              <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
+                {formatted}
+              </span>
+            ) : null}
           </span>
           <span className="ml-2 hidden sm:inline">Message Center</span>
         </Button>
@@ -77,35 +85,41 @@ export function MessageCenterSheet({
               <div className="mt-1 text-sm text-neutral-600">Keine Nachrichten im Message Center</div>
             </div>
           ) : (
-            threads.map((t) => (
-              <button
-                key={t.conversationId}
-                className="w-full text-left rounded-3xl border border-neutral-200/60 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
-                type="button"
-                onClick={() => router.push(`/dashboard/messages/${t.conversationId}`)}
-              >
-                <div className="flex gap-3">
-                  <div className="relative h-14 w-20 overflow-hidden rounded-2xl bg-neutral-100">
-                    {t.coverImageUrl ? (
-                      <Image src={t.coverImageUrl} alt={t.listingTitle} fill className="object-cover" sizes="80px" />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-bold tracking-tight text-neutral-900">
-                          {t.buyerName} - {t.listingMakeModel}
+            threads.map((t) => {
+              const unreadLabel = formatUnread(t.unreadCount);
+
+              return (
+                <button
+                  key={t.conversationId}
+                  className="w-full text-left rounded-3xl border border-neutral-200/60 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                  type="button"
+                  onClick={() => router.push(`/dashboard/messages/${t.conversationId}`)}
+                >
+                  <div className="flex gap-3">
+                    <div className="relative h-14 w-20 overflow-hidden rounded-2xl bg-neutral-100">
+                      {t.coverImageUrl ? (
+                        <Image src={t.coverImageUrl} alt={t.listingMakeModel} fill className="object-cover" sizes="80px" />
+                      ) : null}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-bold tracking-tight text-neutral-900">{t.title}</div>
+                          <div className="mt-1 line-clamp-1 text-xs text-neutral-600">{t.lastMessagePreview || " "}</div>
                         </div>
-                        <div className="mt-1 line-clamp-1 text-xs text-neutral-600">{t.lastMessagePreview || " "}</div>
-                      </div>
-                      <div className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-700">
-                        {t.messageCount >= 10 ? "9+" : String(t.messageCount)}
+
+                        {unreadLabel ? (
+                          <div className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                            {unreadLabel}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))
+                </button>
+              );
+            })
           )}
         </div>
       </SheetContent>
