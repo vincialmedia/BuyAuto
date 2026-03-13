@@ -48,7 +48,7 @@ export function MessageCenterRail() {
     return () => {
       cancelled = true;
     };
-  }, [router.asPath]);
+  }, [router.query.conversationId]);
 
   return (
     <div className="rounded-3xl border border-neutral-200/60 bg-white p-5 shadow-sm">

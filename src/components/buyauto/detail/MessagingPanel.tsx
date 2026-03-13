@@ -131,6 +131,10 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
           created_at: m.created_at,
         }))
       );
+
+      const ctx = await getConversationContext(conversationId);
+      setReadOnly(!!ctx?.flags?.read_only);
+      setSoldBlocked(ctx?.listing?.status === "sold" && ctx?.conversation?.status !== "buyer_selected");
     }
 
     setBusy(false);
