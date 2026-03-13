@@ -191,6 +191,12 @@ export default function Header() {
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/messages" className="cursor-pointer">
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        Message Center
+                      </Link>
+                    </DropdownMenuItem>
                     {/* Admin link - only show for admin users */}
                     {user?.user_metadata?.role === 'admin' && (
                       <DropdownMenuItem asChild>

@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMessages, getOrCreateConversationForListing, sendMessage } from "@/services/messagingService";
-import { LogIn, SendHorizonal } from "lucide-react";
+import { LogIn, SendHorizontal } from "lucide-react";
 import { useRouter } from "next/router";
 
 export interface MessagingPanelProps {
@@ -211,7 +211,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
                 disabled={!canSend}
                 className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl"
               >
-                <SendHorizonal className="h-4 w-4 mr-2" />
+                <SendHorizontal className="h-4 w-4 mr-2" />
                 Senden
               </Button>
             </div>

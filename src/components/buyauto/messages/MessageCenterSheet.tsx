@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -24,6 +25,7 @@ export function MessageCenterSheet({
   triggerVariant = "ghost",
   triggerClassName,
 }: MessageCenterSheetProps) {
+  const router = useRouter();
   const formatted = formatCount(count);
   const [threads, setThreads] = useState<MessageThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +82,7 @@ export function MessageCenterSheet({
                 key={t.conversationId}
                 className="w-full text-left rounded-3xl border border-neutral-200/60 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
                 type="button"
+                onClick={() => router.push(`/dashboard/messages/${t.conversationId}`)}
               >
                 <div className="flex gap-3">
                   <div className="relative h-14 w-20 overflow-hidden rounded-2xl bg-neutral-100">
