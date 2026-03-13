@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 export default function Header() {
   const router = useRouter();
-  const { user, loading, profile, profileLoading, messageCount } = useAuth();
+  const { user, loading, profile, profileLoading, messageCount, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNavigatingToCreate, setIsNavigatingToCreate] = useState(false);
 
@@ -200,7 +200,7 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem>
                     {/* Admin link - only show for admin users */}
-                    {user?.user_metadata?.role === 'admin' && (
+                    {isAdmin && (
                       <DropdownMenuItem asChild>
                         <Link href="/admin" className="cursor-pointer">
                           <Settings className="mr-2 h-4 w-4" />
@@ -271,8 +271,15 @@ export default function Header() {
                   >
                     Dashboard
                   </Link>
+                  <Link
+                    href="/dashboard/messages"
+                    className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Message Center
+                  </Link>
                   {/* Admin link in mobile menu - only show for admin users */}
-                  {user?.user_metadata?.role === 'admin' && (
+                  {isAdmin && (
                     <Link 
                       href="/admin" 
                       className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"

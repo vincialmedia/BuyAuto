@@ -1630,6 +1630,10 @@ export type Database = {
       }
     }
     Functions: {
+      _get_listing_seller_user_id: {
+        Args: { p_listing_id: string }
+        Returns: string
+      }
       admin_downgrade_garage_to_private: {
         Args: { p_target_user_id: string }
         Returns: Json
