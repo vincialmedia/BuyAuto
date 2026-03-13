@@ -33,7 +33,7 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
     contact_email: ""
   });
   const [isUpgrading, setIsUpgrading] = useState(false);
-  const [inventoryTab, setInventoryTab] = useState<"listings" | "drafts">("listings");
+  const [inventoryTab, setInventoryTab] = useState<"active" | "sold" | "drafts">("active");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -122,11 +122,19 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
           <div className="flex flex-wrap gap-3">
             <Button
               type="button"
-              onClick={() => setInventoryTab("listings")}
-              variant={inventoryTab === "listings" ? "default" : "outline"}
+              onClick={() => setInventoryTab("active")}
+              variant={inventoryTab === "active" ? "default" : "outline"}
               className="rounded-2xl"
             >
-              Inserate
+              Aktive Inserate
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setInventoryTab("sold")}
+              variant={inventoryTab === "sold" ? "default" : "outline"}
+              className="rounded-2xl"
+            >
+              Verkauft
             </Button>
             <Button
               type="button"
@@ -141,7 +149,7 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
           {inventoryTab === "drafts" ? (
             <DraftsSection initialDrafts={initialDrafts} />
           ) : (
-            <ListingsSection />
+            <ListingsSection view={inventoryTab === "sold" ? "sold" : "active"} />
           )}
         </div>
 
