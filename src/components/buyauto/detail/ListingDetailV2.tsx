@@ -438,27 +438,19 @@ export function ListingDetailV2({
                       );
                     }
 
+                    const privateName =
+                      ((listing as unknown as { seller_name?: string | null }).seller_name ?? null) ||
+                      ((listing as unknown as { private_owner_name?: string | null }).private_owner_name ?? null);
+
+                    const privateAvatar =
+                      (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+
                     return (
                       <OwnerMiniProfile
                         sellerType={sellerType}
-                        name={
-                          ((listing as unknown as { seller_name?: string | null }).seller_name ?? null) ||
-                          ((listing as unknown as { garage_name?: string | null }).garage_name ?? null)
-                        }
+                        name={privateName}
                         location={(listing.location ?? null) as unknown as string | null}
-                        avatarUrl={(() => {
-                          const sellerTypeInner = (listing as unknown as { seller_type?: string | null }).seller_type;
-                          const garageIdInner = (listing as unknown as { garage_id?: string | null }).garage_id;
-                          const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-                          if (sellerTypeInner === "garage" && garageIdInner && base) {
-                            const path = `garage-logos/${garageIdInner}/logo_medium.webp`
-                              .split("/")
-                              .map((seg) => encodeURIComponent(seg))
-                              .join("/");
-                            return `${base}/storage/v1/object/public/listing-images/${path}`;
-                          }
-                          return (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
-                        })()}
+                        avatarUrl={privateAvatar}
                       />
                     );
                   })()}
