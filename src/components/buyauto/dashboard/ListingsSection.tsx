@@ -690,6 +690,18 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 </DropdownMenuItem>
                               )}
 
+                              {!archived && isPaused(listing) && (listing.status as any) !== "sold" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setListingToUnpause(listing.id);
+                                  }}
+                                  disabled={actionLoading === listing.id}
+                                >
+                                  <Play className="w-4 h-4 mr-2 text-emerald-600" />
+                                  Reaktivieren
+                                </DropdownMenuItem>
+                              )}
+
                               {!premium && !archived && (listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => handleUpgrade(listing.id)}

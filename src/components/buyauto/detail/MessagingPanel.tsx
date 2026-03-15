@@ -26,6 +26,11 @@ type UiMessage = {
   created_at: string;
 };
 
+type Notice = {
+  kind: "info" | "warning";
+  text: string;
+};
+
 function formatTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
@@ -56,8 +61,24 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
   const isAuthed = !!user && !loading;
 
   const canSend = useMemo(() => {
-    return isAuthed && !!conversationId && draft.trim().length > 0 && !busy && !readOnly;
-  }, [busy, conversationId, draft, isAuthed, readOnly]);
+    return isAuthed && !!conversationId && draft.trim().length > 0 && !busy && !readOnly && !soldBlocked && !messagingUnavailable;
+  }, [busy, conversationId, draft, isAuthed, readOnly, soldBlocked, messagingUnavailable]);
+
+  const notice: Notice | null = useMemo(() => {
+    if (!isAuthed) {
+      return { kind: "info", text: "Bitte logge Dich ein oder registriere Dich, um Nachrichten zu schicken." };
+    }
+    if (soldBlocked) {
+      return { kind: "warning", text: "Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich." };
+    }
+    if (readOnly) {
+      return { kind: "info", text: "Dieser Chat ist archiviert. Weitere Nachrichten sind nicht möglich." };
+    }
+    if (messagingUnavailable) {
+      return { kind: "info", text: "Nachrichten sind momentan nicht verfügbar." };
+    }
+    return null;
+  }, [isAuthed, messagingUnavailable, readOnly, soldBlocked]);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,7 +152,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
 
   async function handleSend() {
     if (!conversationId) return;
-    if (readOnly) return;
+    if (readOnly || soldBlocked || messagingUnavailable) return;
 
     const body = draft.trim();
     if (!body) return;
@@ -162,17 +183,16 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
     setBusy(false);
   }
 
-  if (!isAuthed) {
-    return (
-      <Card className={cn("border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden", className)}>
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-neutral-900">Nachrichten</p>
-              <p className="text-sm text-neutral-600 mt-1">Einloggen/Registrieren um Nachrichten zu schicken.</p>
-              <p className="text-xs text-neutral-500 mt-2">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
-            </div>
+  return (
+    <Card className={cn("border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden", className)}>
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Nachricht Schreiben</h3>
+            <p className="text-sm text-neutral-600 mt-1">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
+          </div>
 
+          {!isAuthed ? (
             <Button
               className="bg-neutral-900 hover:bg-neutral-800 text-white"
               onClick={() => router.push("/auth?redirect=" + encodeURIComponent(router.asPath))}
@@ -180,38 +200,19 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
               <LogIn className="h-4 w-4 mr-2" />
               Einloggen
             </Button>
-          </div>
-
-          <div className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 opacity-60">
-            <div className="h-24 rounded-xl bg-white/70 border border-neutral-200" />
-            <div className="mt-3 h-10 rounded-xl bg-white/70 border border-neutral-200" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className={cn("border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden", className)}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-neutral-900">Nachrichten</p>
-            <p className="text-sm text-neutral-600 mt-1">
-              Schreibe direkt dem Anbieter. Verlauf bleibt bei diesem Inserat gespeichert.
-            </p>
-          </div>
+          ) : null}
         </div>
 
-        {messagingUnavailable ? (
-          <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
-            Nachrichten sind momentan nicht verfügbar.
-          </div>
-        ) : null}
-
-        {soldBlocked ? (
-          <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
-            Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich.
+        {notice ? (
+          <div
+            className={cn(
+              "mt-4 rounded-2xl border p-4 text-sm",
+              notice.kind === "warning"
+                ? "border-amber-200 bg-amber-50 text-amber-900"
+                : "border-neutral-200 bg-neutral-50 text-neutral-700"
+            )}
+          >
+            {notice.text}
           </div>
         ) : null}
 
@@ -253,10 +254,14 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Nachricht schreiben…"
               className="min-h-[92px] rounded-2xl border-neutral-200 focus:border-neutral-400"
-              disabled={readOnly || messagingUnavailable}
+              disabled={!isAuthed || readOnly || soldBlocked || messagingUnavailable}
             />
             <div className="mt-3 flex items-center justify-end">
-              <Button onClick={handleSend} disabled={!canSend} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl">
+              <Button
+                onClick={handleSend}
+                disabled={!canSend}
+                className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl"
+              >
                 <SendHorizontal className="h-4 w-4 mr-2" />
                 Senden
               </Button>

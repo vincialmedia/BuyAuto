@@ -193,12 +193,7 @@ export default function Header() {
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/messages" className="cursor-pointer">
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Message Center
-                      </Link>
-                    </DropdownMenuItem>
+                    {/* Remove Message Center from desktop dropdown; mobile keeps it */}
                     {/* Admin link - only show for admin users */}
                     {isAdmin && (
                       <DropdownMenuItem asChild>
