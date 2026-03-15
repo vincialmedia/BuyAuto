@@ -106,8 +106,15 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
   const leasing_offer =
     leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
 
-  const seller_name = (row as unknown as { seller_name?: string | null }).seller_name ?? null;
-  const seller_avatar_url = (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+  const joinedProfile = (row as unknown as { profiles?: { full_name?: string | null; avatar_url?: string | null } | null }).profiles ?? null;
+  const seller_name =
+    joinedProfile?.full_name ??
+    (row as unknown as { seller_name?: string | null }).seller_name ??
+    null;
+  const seller_avatar_url =
+    joinedProfile?.avatar_url ??
+    (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ??
+    null;
   const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
   return {
@@ -172,8 +179,15 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
   const leasing_offer =
     leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
 
-  const seller_name = (row as unknown as { seller_name?: string | null }).seller_name ?? null;
-  const seller_avatar_url = (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
+  const joinedProfile = (row as unknown as { profiles?: { full_name?: string | null; avatar_url?: string | null } | null }).profiles ?? null;
+  const seller_name =
+    joinedProfile?.full_name ??
+    (row as unknown as { seller_name?: string | null }).seller_name ??
+    null;
+  const seller_avatar_url =
+    joinedProfile?.avatar_url ??
+    (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ??
+    null;
   const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
   return {

@@ -334,7 +334,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     const listing = await (async () => {
       const { data, error } = await (await import("@/integrations/supabase/client")).supabase
         .from("listings_public")
-        .select("*")
+        .select("*, profiles(full_name, avatar_url)")
         .eq("id", id)
         .in("status", ["published", "sold"])
         .single();
