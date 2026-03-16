@@ -142,20 +142,41 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) console.error("Error getting session:", error);
+    const applyInitialSession = (nextSession: Session | null) => {
       if (!mounted) return;
-
+      if (didInitRef.current) return;
       didInitRef.current = true;
-      handleSessionChange(data.session ?? null, { force: true });
-    });
+      handleSessionChange(nextSession, { force: true });
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      if (!mounted) return;
+      if (didInitRef.current) return;
+
+      console.warn("Auth init timed out; continuing without session.");
+      didInitRef.current = true;
+      handleSessionChange(null, { force: true });
+    }, 6000);
+
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) console.error("Error getting session:", error);
+        applyInitialSession(data.session ?? null);
+      })
+      .finally(() => {
+        window.clearTimeout(timeoutId);
+      });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
 
-      if (event === "INITIAL_SESSION") return;
+      if (event === "INITIAL_SESSION") {
+        applyInitialSession(nextSession);
+        return;
+      }
 
       if (event === "SIGNED_OUT") {
         didInitRef.current = true;
@@ -164,8 +185,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!didInitRef.current) {
-        didInitRef.current = true;
-        handleSessionChange(nextSession, { force: true });
+        applyInitialSession(nextSession);
         return;
       }
 
@@ -174,6 +194,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      window.clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, [handleSessionChange]);
