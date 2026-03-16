@@ -637,6 +637,8 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
       return null;
     }
 
+    const viewerId = userData.user.id;
+
     const { data, error } = await supabase
       .from("listings")
       .select("*")
@@ -652,7 +654,46 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
       return null;
     }
 
-    return transformListingsTableRowToListingDetail(data as ListingsTableRow);
+    const createdBy = (data as unknown as { created_by?: string | null }).created_by ?? null;
+    const userId = (data as unknown as { user_id?: string | null }).user_id ?? null;
+    const isOwner = createdBy === viewerId || userId === viewerId;
+
+    // Prevent leaking preview-only data via the public_read_published policy.
+    if (!isOwner) {
+      return null;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("full_name, avatar_url")
+      .eq("id", viewerId)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("Error fetching profile for preview listing:", profileError);
+    }
+
+    const meta = (userData.user.user_metadata ?? {}) as Record<string, unknown>;
+    const metaFullName = typeof meta.full_name === "string" ? meta.full_name : null;
+    const metaAvatarUrl = typeof meta.avatar_url === "string" ? meta.avatar_url : null;
+
+    const seller_name =
+      (typeof profile?.full_name === "string" && profile.full_name.trim() ? profile.full_name : null) ??
+      (metaFullName && metaFullName.trim() ? metaFullName : null) ??
+      null;
+
+    const seller_avatar_url =
+      (typeof profile?.avatar_url === "string" && profile.avatar_url.trim() ? profile.avatar_url : null) ??
+      (metaAvatarUrl && metaAvatarUrl.trim() ? metaAvatarUrl : null) ??
+      null;
+
+    const listingDetail = transformListingsTableRowToListingDetail(data as ListingsTableRow);
+
+    return {
+      ...listingDetail,
+      seller_name,
+      seller_avatar_url,
+    };
   } catch (error) {
     console.error("Get user listing by ID error:", error);
     return null;

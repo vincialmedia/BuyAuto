@@ -144,6 +144,29 @@ export default function UserDetailsSection() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!user?.email) {
+      toast.error("Keine E-Mail-Adresse gefunden.");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) throw error;
+
+      toast.success("Passwort-Reset-Link wurde an Ihre E-Mail-Adresse gesendet.");
+    } catch (error) {
+      console.error("Error sending password reset:", error);
+      toast.error("Fehler beim Senden des Reset-Links.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const displayFirstName = safeString((user?.user_metadata as any)?.first_name);
   const displayLastName = safeString((user?.user_metadata as any)?.last_name);
   const displayName = `${displayFirstName} ${displayLastName}`.trim() || email;
@@ -192,6 +215,18 @@ export default function UserDetailsSection() {
                 <div className="flex items-center gap-2 text-neutral-600 mb-3">
                   <Mail className="w-4 h-4" />
                   <span className="text-sm truncate">{email}</span>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-2xl"
+                    onClick={handlePasswordReset}
+                    disabled={isUpdating || !email}
+                  >
+                    Passwort zurücksetzen
+                  </Button>
                 </div>
               </div>
 

@@ -19,6 +19,7 @@ import { ListingDetail } from "@/lib/buyauto/types";
 import { formatDealerEntitlementLabel, formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
 import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { GarageBasisTab } from "@/components/buyauto/dashboard/GarageBasisTab";
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -74,7 +75,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
   const [logoVersion, setLogoVersion] = useState<number>(0);
 
-  const [mainTab, setMainTab] = useState<"inventory" | "profile" | "subscription" | "stats">("inventory");
+  const [mainTab, setMainTab] = useState<"inventory" | "basis" | "profile" | "subscription" | "stats">("inventory");
   const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts" | "sold">("active");
 
   const planLabel = useMemo(() => {
@@ -282,13 +283,16 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
               </div>
             )}
 
-            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "inventory" | "profile" | "subscription" | "stats")} className="w-full">
+            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "inventory" | "basis" | "profile" | "subscription" | "stats")} className="w-full">
               <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-neutral-100 p-1.5 h-auto">
                 <TabsTrigger value="inventory" className="rounded-xl px-6 py-3 text-base font-semibold">
                   Inventar
                 </TabsTrigger>
+                <TabsTrigger value="basis" className="rounded-xl px-6 py-3 text-base font-semibold">
+                  Basis Daten
+                </TabsTrigger>
                 <TabsTrigger value="profile" className="rounded-xl px-6 py-3 text-base font-semibold">
-                  Profil Daten
+                  Profil Informationen
                 </TabsTrigger>
                 <TabsTrigger value="subscription" className="rounded-xl px-6 py-3 text-base font-semibold">
                   Abonnemente
@@ -343,6 +347,10 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                     <ListingsSection view="sold" />
                   )}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="basis" className="mt-5">
+                <GarageBasisTab garage={garage} onUpdate={handleUpdateGarage} />
               </TabsContent>
 
               <TabsContent value="profile" className="mt-5">

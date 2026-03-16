@@ -81,9 +81,6 @@ export function GarageProfileTab({
   onLogoVersionChange,
 }: GarageProfileTabProps) {
   const [profileDraft, setProfileDraft] = useState({
-    garage_name: garage?.garage_name ?? "",
-    slug: garage?.slug ?? "",
-    city: garage?.city ?? "",
     contact_email: garage?.contact_email ?? "",
     phone_number: garage?.phone_number ?? "",
     website_url: garage?.website_url ?? "",
@@ -92,7 +89,6 @@ export function GarageProfileTab({
     opening_hours: garage?.opening_hours ?? {},
   });
 
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
 
@@ -115,9 +111,6 @@ export function GarageProfileTab({
   useEffect(() => {
     if (!garage) return;
     setProfileDraft({
-      garage_name: garage.garage_name ?? "",
-      slug: garage.slug ?? "",
-      city: garage.city ?? "",
       contact_email: garage.contact_email ?? "",
       phone_number: garage.phone_number ?? "",
       website_url: garage.website_url ?? "",
@@ -132,29 +125,13 @@ export function GarageProfileTab({
     setShareOrigin(getSiteOrigin());
   }, []);
 
-  useEffect(() => {
-    if (!slugManuallyEdited && profileDraft.garage_name) {
-      const generated = generateSlugFromName(profileDraft.garage_name);
-      setProfileDraft((p) => ({ ...p, slug: generated }));
-    }
-  }, [profileDraft.garage_name, slugManuallyEdited]);
-
   const canSaveProfile =
-    profileDraft.garage_name.trim().length >= 2 &&
-    profileDraft.slug.trim().length >= 2 &&
     (profileDraft.contact_email.trim().length === 0 || profileDraft.contact_email.includes("@")) &&
     (profileDraft.website_url.trim().length === 0 || profileDraft.website_url.startsWith("http"));
 
-  const dealerSlug = profileDraft.slug.trim();
+  const dealerSlug = garage?.slug?.trim() ?? "";
   const publicProfileUrl = dealerSlug ? `${shareOrigin}/${dealerSlug}` : "";
   const embedUrl = dealerSlug ? `${shareOrigin}/embed/garage/${dealerSlug}` : "";
-
-  const mapsPreviewUrl = useMemo(() => {
-    const q = profileDraft.city?.trim();
-    if (!q) return "";
-    const query = encodeURIComponent(`${q}, Switzerland`);
-    return `https://www.google.com/maps?q=${query}&output=embed`;
-  }, [profileDraft.city]);
 
   const embedSnippet = useMemo(() => {
     if (!dealerSlug) return "";
@@ -199,9 +176,6 @@ export function GarageProfileTab({
 
     try {
       await onUpdate({
-        garage_name: profileDraft.garage_name.trim(),
-        slug: profileDraft.slug.trim(),
-        city: profileDraft.city.trim() || null,
         contact_email: profileDraft.contact_email.trim() || null,
         phone_number: profileDraft.phone_number.trim() || null,
         website_url: profileDraft.website_url.trim() || null,
@@ -497,71 +471,6 @@ export function GarageProfileTab({
             Speichern Sie zuerst Ihre <span className="font-semibold">Profil-URL</span> (Slug). Danach erscheint hier Ihr öffentlicher Profil-Link und der Embed-Code.
           </div>
         )}
-      </div>
-
-      {/* Basic Info Section */}
-      <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
-        <div className="flex items-start justify-between gap-3 mb-5">
-          <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Basis-Informationen</h3>
-            <p className="text-sm text-neutral-600 mt-1">Name, URL und Standort</p>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="garage_name">Garagenname *</Label>
-            <Input
-              id="garage_name"
-              value={profileDraft.garage_name}
-              onChange={(e) => setProfileDraft((p) => ({ ...p, garage_name: e.target.value }))}
-              placeholder="z.B. Garage Muster AG"
-              className="rounded-2xl"
-            />
-          </div>
-
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="slug">
-              Profil-URL * <span className="text-xs text-neutral-500">(buyauto.ch/{profileDraft.slug || "ihr-name"})</span>
-            </Label>
-            <Input
-              id="slug"
-              value={profileDraft.slug}
-              onChange={(e) => {
-                setSlugManuallyEdited(true);
-                setProfileDraft((p) => ({ ...p, slug: e.target.value }));
-              }}
-              placeholder="z.B. garage-muster"
-              className="rounded-2xl"
-            />
-            <p className="text-xs text-neutral-500">Nur Kleinbuchstaben, Zahlen und Bindestriche</p>
-          </div>
-
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="city">Standort</Label>
-            <LocationAutocomplete
-              value={profileDraft.city}
-              onValueChange={(next) => setProfileDraft((p) => ({ ...p, city: next }))}
-              placeholder="z.B. Zürich"
-              inputClassName="rounded-2xl"
-            />
-            <p className="text-xs text-neutral-500">Dieser Standort wird als Standard für zukünftige Inserate verwendet.</p>
-
-            {mapsPreviewUrl ? (
-              <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
-                <div className="aspect-[16/10] w-full bg-neutral-100">
-                  <iframe
-                    title="Standort Vorschau"
-                    src={mapsPreviewUrl}
-                    className="h-full w-full"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
       </div>
 
       {/* Contact & Bio Section */}
