@@ -52,6 +52,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [messageCountLoading, setMessageCountLoading] = useState(true);
 
   const didInitRef = useRef(false);
+  const lastFetchedUserIdRef = useRef<string | null>(null);
 
   const resetAuthedState = useCallback(() => {
     setProfile(null);
@@ -104,15 +105,23 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleSessionChange = useCallback(
-    (nextSession: Session | null) => {
+    (nextSession: Session | null, opts?: { force?: boolean }) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
 
       if (nextSession?.user) {
-        void fetchProfile(nextSession.user.id);
-        void refreshMessageCount();
+        const userId = nextSession.user.id;
+        const shouldFetch = !!opts?.force || lastFetchedUserIdRef.current !== userId;
+
+        lastFetchedUserIdRef.current = userId;
+
+        if (shouldFetch) {
+          void fetchProfile(userId);
+          void refreshMessageCount();
+        }
       } else {
+        lastFetchedUserIdRef.current = null;
         resetAuthedState();
       }
     },
@@ -127,7 +136,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    handleSessionChange(data.session ?? null);
+    handleSessionChange(data.session ?? null, { force: true });
   }, [handleSessionChange]);
 
   useEffect(() => {
@@ -138,7 +147,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
 
       didInitRef.current = true;
-      handleSessionChange(data.session ?? null);
+      handleSessionChange(data.session ?? null, { force: true });
     });
 
     const {
@@ -146,8 +155,19 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
 
-      if (event === "INITIAL_SESSION" && didInitRef.current) return;
-      didInitRef.current = true;
+      if (event === "INITIAL_SESSION") return;
+
+      if (event === "SIGNED_OUT") {
+        didInitRef.current = true;
+        handleSessionChange(null, { force: true });
+        return;
+      }
+
+      if (!didInitRef.current) {
+        didInitRef.current = true;
+        handleSessionChange(nextSession, { force: true });
+        return;
+      }
 
       handleSessionChange(nextSession);
     });
