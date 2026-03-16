@@ -775,6 +775,7 @@ export type Database = {
           leasing_offer: Json | null
           location: string | null
           make_id: string | null
+          make_model: string | null
           mileage_km: number
           model: string
           model_id: string | null
@@ -837,6 +838,7 @@ export type Database = {
           leasing_offer?: Json | null
           location?: string | null
           make_id?: string | null
+          make_model?: string | null
           mileage_km: number
           model: string
           model_id?: string | null
@@ -899,6 +901,7 @@ export type Database = {
           leasing_offer?: Json | null
           location?: string | null
           make_id?: string | null
+          make_model?: string | null
           mileage_km?: number
           model?: string
           model_id?: string | null
@@ -1744,6 +1747,21 @@ export type Database = {
         Args: { p_brand: string }
         Returns: {
           model: string
+        }[]
+      }
+      get_my_message_threads: {
+        Args: { p_limit?: number }
+        Returns: {
+          conversation_id: string
+          conversation_status: string
+          last_message_at: string
+          last_message_body: string
+          listing_cover_image_url: string
+          listing_id: string
+          listing_make_model: string
+          listing_status: Database["public"]["Enums"]["listing_status"]
+          seller_display_name: string
+          unread_count: number
         }[]
       }
       get_my_role: { Args: never; Returns: string }

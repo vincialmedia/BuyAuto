@@ -66,7 +66,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const refreshMessageCount = useCallback(async () => {
     try {
       setMessageCountLoading(true);
-      const counts = await getMyMessageCounts();
+      const counts = await getMyMessageCounts({ force: true });
       setMessageCount(counts.total);
     } catch (e) {
       console.error("Error fetching message counts:", e);

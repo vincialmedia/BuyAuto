@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { getMyMessageThreads, type MessageThreadItem } from "@/services/messagingService";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 function formatTimeCH(value: string): string {
   const date = new Date(value);
@@ -26,6 +27,7 @@ function formatUnread(count: number): string {
 
 export function MessageCenterRail() {
   const router = useRouter();
+  const { user, loading: authLoading, profileLoading } = useAuth();
   const [threads, setThreads] = useState<MessageThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,8 +40,14 @@ export function MessageCenterRail() {
     let cancelled = false;
 
     async function load() {
+      if (authLoading || profileLoading || !user) {
+        setThreads([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
-      const data = await getMyMessageThreads(50);
+      const data = await getMyMessageThreads(25);
       if (!cancelled) setThreads(data);
       if (!cancelled) setLoading(false);
     }
@@ -48,7 +56,7 @@ export function MessageCenterRail() {
     return () => {
       cancelled = true;
     };
-  }, [router.query.conversationId]);
+  }, [authLoading, profileLoading, user]);
 
   return (
     <div className="rounded-3xl border border-neutral-200/60 bg-white p-5 shadow-sm">
@@ -76,6 +84,7 @@ export function MessageCenterRail() {
           threads.map((t) => {
             const isActive = activeConversationId === t.conversationId;
             const unreadLabel = formatUnread(t.unreadCount);
+            const isUnread = t.unreadCount > 0;
 
             return (
               <button
@@ -84,7 +93,9 @@ export function MessageCenterRail() {
                   "w-full text-left rounded-3xl border p-4 shadow-sm transition-all",
                   isActive
                     ? "border-neutral-900 bg-neutral-900 text-white shadow-md"
-                    : "border-neutral-200/60 bg-white hover:shadow-md"
+                    : isUnread
+                      ? "border-red-100 bg-red-50/60 hover:shadow-md"
+                      : "border-neutral-200/60 bg-white hover:shadow-md"
                 )}
                 type="button"
                 onClick={() => router.push(`/dashboard/messages/${t.conversationId}`)}
@@ -93,7 +104,11 @@ export function MessageCenterRail() {
                   <div className="relative h-14 w-20 overflow-hidden rounded-2xl bg-neutral-100">
                     {t.coverImageUrl ? (
                       <Image src={t.coverImageUrl} alt={t.listingMakeModel} fill className="object-cover" sizes="80px" />
-                    ) : null}
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-neutral-400">
+                        Foto
+                      </div>
+                    )}
                   </div>
 
                   <div className="min-w-0 flex-1">

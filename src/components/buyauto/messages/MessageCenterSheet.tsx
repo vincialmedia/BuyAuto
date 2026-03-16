@@ -7,6 +7,8 @@ import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { getMyMessageThreads, type MessageThreadItem } from "@/services/messagingService";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 export interface MessageCenterSheetProps {
   count: number;
@@ -35,11 +37,18 @@ export function MessageCenterSheet({
   const formatted = useMemo(() => formatCount(count), [count]);
   const [threads, setThreads] = useState<MessageThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading, profileLoading } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      if (authLoading || profileLoading || !user) {
+        setThreads([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       const data = await getMyMessageThreads(25);
       if (!cancelled) setThreads(data);
@@ -50,7 +59,7 @@ export function MessageCenterSheet({
     return () => {
       cancelled = true;
     };
-  }, [router.asPath]);
+  }, [authLoading, profileLoading, user]);
 
   return (
     <Sheet>
@@ -87,11 +96,15 @@ export function MessageCenterSheet({
           ) : (
             threads.map((t) => {
               const unreadLabel = formatUnread(t.unreadCount);
+              const isUnread = t.unreadCount > 0;
 
               return (
                 <button
                   key={t.conversationId}
-                  className="w-full text-left rounded-3xl border border-neutral-200/60 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                  className={cn(
+                    "w-full text-left rounded-3xl border p-4 shadow-sm hover:shadow-md transition-shadow",
+                    isUnread ? "border-red-100 bg-red-50/60" : "border-neutral-200/60 bg-white"
+                  )}
                   type="button"
                   onClick={() => router.push(`/dashboard/messages/${t.conversationId}`)}
                 >
@@ -99,7 +112,11 @@ export function MessageCenterSheet({
                     <div className="relative h-14 w-20 overflow-hidden rounded-2xl bg-neutral-100">
                       {t.coverImageUrl ? (
                         <Image src={t.coverImageUrl} alt={t.listingMakeModel} fill className="object-cover" sizes="80px" />
-                      ) : null}
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-neutral-400">
+                          Foto
+                        </div>
+                      )}
                     </div>
 
                     <div className="min-w-0 flex-1">

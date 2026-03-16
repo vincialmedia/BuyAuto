@@ -158,7 +158,7 @@ export default function Header() {
 
             {/* Auth Section - Handle loading state properly */}
             <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
-              {loading || profileLoading ? (
+              {loading ? (
                 /* Show loading state instead of login buttons */
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-neutral-200 rounded-full animate-pulse"></div>
