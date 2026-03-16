@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -51,7 +51,18 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [messageCount, setMessageCount] = useState(0);
   const [messageCountLoading, setMessageCountLoading] = useState(true);
 
-  const refreshMessageCount = async () => {
+  const didInitRef = useRef(false);
+
+  const resetAuthedState = useCallback(() => {
+    setProfile(null);
+    setIsAdmin(false);
+    setProfileLoading(false);
+    setAdminLoading(false);
+    setMessageCount(0);
+    setMessageCountLoading(false);
+  }, []);
+
+  const refreshMessageCount = useCallback(async () => {
     try {
       setMessageCountLoading(true);
       const counts = await getMyMessageCounts();
@@ -62,18 +73,14 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setMessageCountLoading(false);
     }
-  };
+  }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       setProfileLoading(true);
       setAdminLoading(true);
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -94,9 +101,25 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setProfileLoading(false);
       setAdminLoading(false);
     }
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const handleSessionChange = useCallback(
+    (nextSession: Session | null) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+
+      if (nextSession?.user) {
+        void fetchProfile(nextSession.user.id);
+        void refreshMessageCount();
+      } else {
+        resetAuthedState();
+      }
+    },
+    [fetchProfile, refreshMessageCount, resetAuthedState]
+  );
+
+  const refreshProfile = useCallback(async () => {
     const { data, error } = await supabase.auth.getSession();
 
     if (error) {
@@ -104,100 +127,67 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const nextSession = data.session ?? null;
-
-    setSession(nextSession);
-    setUser(nextSession?.user ?? null);
-
-    if (nextSession?.user) {
-      await fetchProfile(nextSession.user.id);
-      await refreshMessageCount();
-    } else {
-      setProfile(null);
-      setIsAdmin(false);
-      setProfileLoading(false);
-      setAdminLoading(false);
-      setMessageCount(0);
-      setMessageCountLoading(false);
-    }
-  };
+    handleSessionChange(data.session ?? null);
+  }, [handleSessionChange]);
 
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data, error }) => {
-      if (error) {
-        console.error("Error getting session:", error);
-      }
-
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) console.error("Error getting session:", error);
       if (!mounted) return;
 
-      const nextSession = data.session ?? null;
-
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-      setLoading(false);
-
-      if (nextSession?.user) {
-        await fetchProfile(nextSession.user.id);
-        await refreshMessageCount();
-      } else {
-        setProfile(null);
-        setIsAdmin(false);
-        setProfileLoading(false);
-        setAdminLoading(false);
-        setMessageCount(0);
-        setMessageCountLoading(false);
-      }
+      didInitRef.current = true;
+      handleSessionChange(data.session ?? null);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
 
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-      setLoading(false);
+      if (event === "INITIAL_SESSION" && didInitRef.current) return;
+      didInitRef.current = true;
 
-      if (nextSession?.user) {
-        await fetchProfile(nextSession.user.id);
-        await refreshMessageCount();
-      } else {
-        setProfile(null);
-        setIsAdmin(false);
-        setProfileLoading(false);
-        setAdminLoading(false);
-        setMessageCount(0);
-        setMessageCountLoading(false);
-      }
+      handleSessionChange(nextSession);
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [handleSessionChange]);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        loading,
-        profileLoading,
-        isAdmin,
-        adminLoading,
-        messageCount,
-        messageCountLoading,
-        refreshProfile,
-        refreshMessageCount,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      session,
+      profile,
+      loading,
+      profileLoading,
+      isAdmin,
+      adminLoading,
+      messageCount,
+      messageCountLoading,
+      refreshProfile,
+      refreshMessageCount,
+    }),
+    [
+      adminLoading,
+      isAdmin,
+      loading,
+      messageCount,
+      messageCountLoading,
+      profile,
+      profileLoading,
+      refreshMessageCount,
+      refreshProfile,
+      session,
+      user,
+    ]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {
