@@ -6,11 +6,13 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   createOrGetConversationForListing,
+  createSignedAttachmentUrl,
   getConversationContext,
   getMessages,
   sendMessage,
+  sendMessageWithAttachments,
 } from "@/services/messagingService";
-import { LogIn, SendHorizontal } from "lucide-react";
+import { LogIn, SendHorizontal, Paperclip, X } from "lucide-react";
 import { useRouter } from "next/router";
 
 export interface MessagingPanelProps {
@@ -19,11 +21,21 @@ export interface MessagingPanelProps {
   className?: string;
 }
 
+type UiAttachment = {
+  id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+};
+
 type UiMessage = {
   id: string;
   sender_user_id: string;
   body: string;
   created_at: string;
+  attachments: UiAttachment[];
 };
 
 type Notice = {
@@ -43,6 +55,19 @@ function formatTime(value: string): string {
   });
 }
 
+function formatBytes(value: number | null | undefined): string {
+  if (!value || !Number.isFinite(value)) return "";
+  const units = ["B", "KB", "MB", "GB"];
+  let v = value;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i += 1;
+  }
+  const fixed = i === 0 ? String(Math.round(v)) : v.toFixed(1);
+  return `${fixed} ${units[i]}`;
+}
+
 export function MessagingPanel({ listingId, listingTitle, className }: MessagingPanelProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -51,18 +76,30 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputId = useMemo(() => `message-attachments-${listingId}`, [listingId]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [readOnly, setReadOnly] = useState(false);
   const [soldBlocked, setSoldBlocked] = useState(false);
   const [messagingUnavailable, setMessagingUnavailable] = useState(false);
+  const [counterpartyName, setCounterpartyName] = useState<string | null>(null);
+  const [counterpartyRole, setCounterpartyRole] = useState<"buyer" | "seller" | null>(null);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const isAuthed = !!user && !loading;
 
   const canSend = useMemo(() => {
-    return isAuthed && !!conversationId && draft.trim().length > 0 && !busy && !readOnly && !soldBlocked && !messagingUnavailable;
-  }, [busy, conversationId, draft, isAuthed, readOnly, soldBlocked, messagingUnavailable]);
+    const hasText = draft.trim().length > 0;
+    const hasFiles = selectedFiles.length > 0;
+    return isAuthed && !!conversationId && (hasText || hasFiles) && !busy && !readOnly && !soldBlocked && !messagingUnavailable;
+  }, [busy, conversationId, draft, isAuthed, readOnly, soldBlocked, messagingUnavailable, selectedFiles.length]);
+
+  const counterpartyLabel = useMemo(() => {
+    if (counterpartyRole === "seller") return "Anbieter";
+    if (counterpartyRole === "buyer") return "Interessent";
+    return "Kontakt";
+  }, [counterpartyRole]);
 
   const notice: Notice | null = useMemo(() => {
     if (!isAuthed) {
@@ -119,6 +156,15 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
       const isReadOnly = !!ctx?.flags?.read_only;
       setReadOnly(isReadOnly);
 
+      setCounterpartyName(
+        ctx?.counterparty?.display_name || ctx?.seller?.display_name || null
+      );
+      setCounterpartyRole(
+        ctx?.counterparty?.role === "buyer" || ctx?.counterparty?.role === "seller"
+          ? ctx.counterparty.role
+          : null
+      );
+
       const listingIsSold = ctx?.listing?.status === "sold";
       const buyerSelected = ctx?.conversation?.status === "buyer_selected";
 
@@ -133,6 +179,16 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
           sender_user_id: m.sender_user_id,
           body: m.body,
           created_at: m.created_at,
+          attachments: Array.isArray(m.message_attachments)
+            ? m.message_attachments.map((a) => ({
+                id: a.id,
+                storage_path: a.storage_path,
+                file_name: a.file_name,
+                mime_type: a.mime_type,
+                size_bytes: a.size_bytes,
+                created_at: a.created_at,
+              }))
+            : [],
         }))
       );
       setInitialLoading(false);
@@ -150,18 +206,44 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages.length]);
 
+  async function handleOpenAttachment(att: UiAttachment) {
+    const url = await createSignedAttachmentUrl(att.storage_path, { expiresInSeconds: 90 });
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function handleFilesPicked(files: FileList | null) {
+    if (!files) return;
+    const next = Array.from(files);
+    if (next.length === 0) return;
+
+    setSelectedFiles((prev) => {
+      const merged = [...prev, ...next].slice(0, 5);
+      return merged;
+    });
+  }
+
+  function removeSelectedFile(index: number) {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSend() {
     if (!conversationId) return;
     if (readOnly || soldBlocked || messagingUnavailable) return;
 
     const body = draft.trim();
-    if (!body) return;
+    const hasFiles = selectedFiles.length > 0;
 
     setBusy(true);
-    const ok = await sendMessage(conversationId, body);
+
+    const ok = hasFiles
+      ? await sendMessageWithAttachments({ conversationId, body, files: selectedFiles })
+      : await sendMessage(conversationId, body);
 
     if (ok) {
       setDraft("");
+      setSelectedFiles([]);
+
       const data = await getMessages(conversationId);
       setMessages(
         data.map((m) => ({
@@ -169,11 +251,30 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
           sender_user_id: m.sender_user_id,
           body: m.body,
           created_at: m.created_at,
+          attachments: Array.isArray(m.message_attachments)
+            ? m.message_attachments.map((a) => ({
+                id: a.id,
+                storage_path: a.storage_path,
+                file_name: a.file_name,
+                mime_type: a.mime_type,
+                size_bytes: a.size_bytes,
+                created_at: a.created_at,
+              }))
+            : [],
         }))
       );
 
       const ctx = await getConversationContext(conversationId);
       setReadOnly(!!ctx?.flags?.read_only);
+
+      setCounterpartyName(
+        ctx?.counterparty?.display_name || ctx?.seller?.display_name || counterpartyName
+      );
+      setCounterpartyRole(
+        ctx?.counterparty?.role === "buyer" || ctx?.counterparty?.role === "seller"
+          ? ctx.counterparty.role
+          : counterpartyRole
+      );
 
       const listingIsSold = ctx?.listing?.status === "sold";
       const buyerSelected = ctx?.conversation?.status === "buyer_selected";
@@ -190,6 +291,11 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
           <div className="min-w-0">
             <h3 className="text-lg font-bold tracking-tight text-neutral-900">Nachricht Schreiben</h3>
             <p className="text-sm text-neutral-600 mt-1">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
+            {counterpartyName ? (
+              <p className="text-sm text-neutral-600 mt-1">
+                <span className="font-semibold text-neutral-900">{counterpartyLabel}:</span> {counterpartyName}
+              </p>
+            ) : null}
           </div>
 
           {!isAuthed ? (
@@ -238,6 +344,39 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
                       )}
                     >
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{m.body}</p>
+
+                      {m.attachments.length > 0 ? (
+                        <div className="mt-3 space-y-2">
+                          {m.attachments.map((a) => (
+                            <button
+                              key={a.id}
+                              type="button"
+                              onClick={() => handleOpenAttachment(a)}
+                              className={cn(
+                                "w-full text-left rounded-xl border px-3 py-2 text-sm transition",
+                                isMe
+                                  ? "border-white/20 bg-white/10 hover:bg-white/15"
+                                  : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100"
+                              )}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className={cn("truncate font-semibold", isMe ? "text-white" : "text-neutral-900")}>
+                                    {a.file_name}
+                                  </div>
+                                  <div className={cn("text-[11px] mt-0.5", isMe ? "text-white/70" : "text-neutral-500")}>
+                                    {a.mime_type || "Datei"}{a.size_bytes ? ` · ${formatBytes(a.size_bytes)}` : ""}
+                                  </div>
+                                </div>
+                                <div className={cn("text-[11px] font-semibold", isMe ? "text-white/80" : "text-neutral-600")}>
+                                  Öffnen
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+
                       <p className={cn("text-[11px] mt-2", isMe ? "text-white/70" : "text-neutral-500")}>
                         {formatTime(m.created_at)}
                       </p>
@@ -249,6 +388,55 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
           </div>
 
           <div className="border-t border-neutral-200/60 bg-white p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <input
+                id={fileInputId}
+                type="file"
+                className="hidden"
+                multiple
+                onChange={(e) => handleFilesPicked(e.target.files)}
+                disabled={!isAuthed || readOnly || soldBlocked || messagingUnavailable}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-2xl"
+                disabled={!isAuthed || readOnly || soldBlocked || messagingUnavailable || busy}
+                onClick={() => document.getElementById(fileInputId)?.click()}
+              >
+                <Paperclip className="h-4 w-4 mr-2" />
+                Datei anhängen
+              </Button>
+
+              {selectedFiles.length > 0 ? (
+                <div className="text-xs text-neutral-600">
+                  {selectedFiles.length} Datei{selectedFiles.length === 1 ? "" : "en"}
+                </div>
+              ) : null}
+            </div>
+
+            {selectedFiles.length > 0 ? (
+              <div className="mb-3 space-y-2">
+                {selectedFiles.map((f, idx) => (
+                  <div key={`${f.name}-${idx}`} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-neutral-900">{f.name}</div>
+                      <div className="text-[11px] text-neutral-500">{formatBytes(f.size)}</div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="rounded-xl px-2 text-neutral-600 hover:bg-neutral-100"
+                      onClick={() => removeSelectedFile(idx)}
+                      disabled={busy}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
             <Textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}

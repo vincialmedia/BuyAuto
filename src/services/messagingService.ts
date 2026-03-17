@@ -4,6 +4,7 @@ import type { Database } from "@/integrations/supabase/types";
 export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row"];
 export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 export type ConversationParticipantRow = Database["public"]["Tables"]["conversation_participants"]["Row"];
+export type MessageAttachmentRow = Database["public"]["Tables"]["message_attachments"]["Row"];
 
 type ListingStatus = Database["public"]["Enums"]["listing_status"];
 
@@ -47,12 +48,22 @@ export interface ConversationContext {
     status: ListingStatus | null;
     garage_id: string | null;
   };
+  viewer: {
+    user_id: string | null;
+    role: "buyer" | "seller" | string | null;
+  };
+  counterparty: {
+    id: string | null;
+    role: "buyer" | "seller" | string | null;
+    display_name: string | null;
+  };
   buyer: {
     id: string | null;
     full_name: string | null;
     email: string | null;
   };
   seller: {
+    id: string | null;
     display_name: string | null;
   };
   permissions: {
@@ -63,6 +74,21 @@ export interface ConversationContext {
     read_only: boolean;
   };
 }
+
+export type MessageWithAttachments = MessageRow & {
+  message_attachments: MessageAttachmentRow[];
+};
+
+export interface UploadAttachmentResult {
+  storagePath: string;
+  fileName: string;
+  mimeType: string | null;
+  sizeBytes: number | null;
+}
+
+const MESSAGE_ATTACHMENTS_BUCKET = "message-attachments";
+const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS_PER_MESSAGE = 5;
 
 function getPreview(body: string): string {
   const trimmed = body.trim();
@@ -90,7 +116,6 @@ function normalizePublicStorageUrl(raw: string): string | null {
   const cleaned = value.replace(/^\//, "");
   const prefix = "storage/v1/object/public/";
 
-  // If it already contains the storage public URL path, only prefix the host.
   if (cleaned.startsWith(prefix)) {
     const rest = cleaned.slice(prefix.length);
     const parts = rest
@@ -100,12 +125,40 @@ function normalizePublicStorageUrl(raw: string): string | null {
     return `${base}/${prefix}${parts.join("/")}`;
   }
 
-  // Otherwise treat as "<bucket>/<path...>"
   const parts = cleaned
     .split("/")
     .filter(Boolean)
     .map((seg) => encodeURIComponent(seg));
   return `${base}/storage/v1/object/public/${parts.join("/")}`;
+}
+
+function sanitizeFileName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return "document";
+  return trimmed.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+function buildAttachmentStoragePath(conversationId: string, fileName: string): string {
+  const now = Date.now();
+  const rand = Math.random().toString(36).slice(2, 10);
+  const safe = sanitizeFileName(fileName);
+  return `${conversationId}/${now}_${rand}_${safe}`;
+}
+
+function validateFilesForUpload(files: File[]): { ok: true } | { ok: false; reason: string } {
+  if (files.length === 0) return { ok: false, reason: "Keine Datei ausgewählt." };
+  if (files.length > MAX_ATTACHMENTS_PER_MESSAGE) {
+    return { ok: false, reason: `Maximal ${MAX_ATTACHMENTS_PER_MESSAGE} Dateien pro Nachricht.` };
+  }
+
+  for (const file of files) {
+    if (!file || typeof file.name !== "string") return { ok: false, reason: "Ungültige Datei." };
+    if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+      return { ok: false, reason: `Datei ist zu gross (max. ${Math.round(MAX_ATTACHMENT_SIZE_BYTES / 1024 / 1024)} MB).` };
+    }
+  }
+
+  return { ok: true };
 }
 
 const COUNTS_TTL_MS = 5_000;
@@ -268,10 +321,12 @@ export async function getMyMessageThreads(limit = 25, opts?: { force?: boolean }
   }
 }
 
-export async function getMessages(conversationId: string): Promise<MessageRow[]> {
+export async function getMessages(conversationId: string): Promise<MessageWithAttachments[]> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_user_id, body, created_at")
+    .select(
+      "id, conversation_id, sender_user_id, body, created_at, message_attachments(id, message_id, storage_path, file_name, mime_type, size_bytes, created_at)"
+    )
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
@@ -280,7 +335,74 @@ export async function getMessages(conversationId: string): Promise<MessageRow[]>
     return [];
   }
 
-  return data ?? [];
+  const rows = Array.isArray(data) ? data : [];
+  return rows.map((row) => ({
+    ...(row as MessageRow),
+    message_attachments: Array.isArray((row as { message_attachments?: unknown }).message_attachments)
+      ? ((row as { message_attachments: MessageAttachmentRow[] }).message_attachments ?? [])
+      : [],
+  }));
+}
+
+async function uploadConversationAttachments(conversationId: string, files: File[]): Promise<UploadAttachmentResult[] | null> {
+  const validation = validateFilesForUpload(files);
+  if (!validation.ok) {
+    console.error("uploadConversationAttachments validation failed:", validation.reason);
+    return null;
+  }
+
+  const sessionRes = await supabase.auth.getSession();
+  const userId = sessionRes.data.session?.user?.id ?? null;
+  if (!userId) return null;
+
+  const results: UploadAttachmentResult[] = [];
+
+  for (const file of files) {
+    const storagePath = buildAttachmentStoragePath(conversationId, file.name);
+    const { error } = await supabase.storage.from(MESSAGE_ATTACHMENTS_BUCKET).upload(storagePath, file, {
+      contentType: file.type || "application/octet-stream",
+      cacheControl: "3600",
+      upsert: false,
+    });
+
+    if (error) {
+      console.error("uploadConversationAttachments upload error:", { error, storagePath });
+      return null;
+    }
+
+    results.push({
+      storagePath,
+      fileName: file.name,
+      mimeType: file.type || null,
+      sizeBytes: Number.isFinite(file.size) ? file.size : null,
+    });
+  }
+
+  return results;
+}
+
+async function bestEffortRemoveAttachments(storagePaths: string[]): Promise<void> {
+  if (storagePaths.length === 0) return;
+
+  const { error } = await supabase.storage.from(MESSAGE_ATTACHMENTS_BUCKET).remove(storagePaths);
+  if (error) {
+    console.warn("bestEffortRemoveAttachments failed:", error);
+  }
+}
+
+export async function createSignedAttachmentUrl(
+  storagePath: string,
+  opts?: { expiresInSeconds?: number }
+): Promise<string | null> {
+  const expiresIn = opts?.expiresInSeconds ?? 60;
+  const { data, error } = await supabase.storage.from(MESSAGE_ATTACHMENTS_BUCKET).createSignedUrl(storagePath, expiresIn);
+
+  if (error) {
+    console.error("createSignedAttachmentUrl error:", error);
+    return null;
+  }
+
+  return data?.signedUrl ?? null;
 }
 
 export async function sendMessage(conversationId: string, body: string): Promise<boolean> {
@@ -299,6 +421,65 @@ export async function sendMessage(conversationId: string, body: string): Promise
 
   if (error) {
     console.error("sendMessage error:", error);
+    return false;
+  }
+
+  invalidateMessagingCache();
+  return true;
+}
+
+export async function sendMessageWithAttachments(params: {
+  conversationId: string;
+  body: string;
+  files: File[];
+}): Promise<boolean> {
+  const { conversationId, body, files } = params;
+
+  const sessionRes = await supabase.auth.getSession();
+  const userId = sessionRes.data.session?.user?.id ?? null;
+  if (!userId) return false;
+
+  const trimmed = body.trim();
+  const hasText = trimmed.length > 0;
+
+  const uploaded = await uploadConversationAttachments(conversationId, files);
+  if (!uploaded) return false;
+
+  const storagePaths = uploaded.map((u) => u.storagePath);
+
+  const messageBody = hasText ? trimmed : "📎 Dokument gesendet";
+
+  const { data: insertedMessage, error: messageError } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_user_id: userId,
+      body: messageBody,
+    })
+    .select("id")
+    .single();
+
+  if (messageError || !insertedMessage?.id) {
+    console.error("sendMessageWithAttachments message insert error:", messageError);
+    await bestEffortRemoveAttachments(storagePaths);
+    return false;
+  }
+
+  const messageId = insertedMessage.id as string;
+
+  const { error: attachmentError } = await supabase.from("message_attachments").insert(
+    uploaded.map((u) => ({
+      message_id: messageId,
+      storage_path: u.storagePath,
+      file_name: u.fileName,
+      mime_type: u.mimeType,
+      size_bytes: u.sizeBytes,
+    }))
+  );
+
+  if (attachmentError) {
+    console.error("sendMessageWithAttachments attachments insert error:", attachmentError);
+    await bestEffortRemoveAttachments(storagePaths);
     return false;
   }
 

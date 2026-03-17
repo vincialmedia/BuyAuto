@@ -9,11 +9,13 @@ import { MessageCenterRail } from "@/components/buyauto/messages/MessageCenterRa
 import { useRouter } from "next/router";
 import {
   archiveConversation,
+  createSignedAttachmentUrl,
   getConversationContext,
   getMessages,
   markConversationRead,
   selectBuyerAndMarkListingSold,
   sendMessage,
+  sendMessageWithAttachments,
 } from "@/services/messagingService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,16 +23,26 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { SendHorizontal, CheckCircle2, Archive, ArrowLeft } from "lucide-react";
+import { SendHorizontal, CheckCircle2, Archive, ArrowLeft, Paperclip, X } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+
+type UiAttachment = {
+  id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+};
 
 type UiMessage = {
   id: string;
   sender_user_id: string;
   body: string;
   created_at: string;
+  attachments: UiAttachment[];
 };
 
 function formatTimeCH(value: string): string {
@@ -51,6 +63,19 @@ function formatChf(value: number | null | undefined): string {
   return new Intl.NumberFormat("de-CH").format(value);
 }
 
+function formatBytes(value: number | null | undefined): string {
+  if (!value || !Number.isFinite(value)) return "";
+  const units = ["B", "KB", "MB", "GB"];
+  let v = value;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i += 1;
+  }
+  const fixed = i === 0 ? String(Math.round(v)) : v.toFixed(1);
+  return `${fixed} ${units[i]}`;
+}
+
 export default function DashboardConversationPage() {
   const router = useRouter();
   const conversationIdRaw = router.query.conversationId;
@@ -67,14 +92,18 @@ export default function DashboardConversationPage() {
 
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputId = "message-attachments-input";
 
   const isAuthed = !!user && !authLoading && !profileLoading;
 
   const readOnly = !!context?.flags?.read_only;
 
   const canSend = useMemo(() => {
-    return isAuthed && !!conversationId && draft.trim().length > 0 && !busy && !readOnly;
-  }, [busy, conversationId, draft, isAuthed, readOnly]);
+    const hasText = draft.trim().length > 0;
+    const hasFiles = selectedFiles.length > 0;
+    return isAuthed && !!conversationId && (hasText || hasFiles) && !busy && !readOnly;
+  }, [busy, conversationId, draft, isAuthed, readOnly, selectedFiles.length]);
 
   useEffect(() => {
     if (!authLoading && !profileLoading && !user) {
@@ -129,6 +158,16 @@ export default function DashboardConversationPage() {
           sender_user_id: m.sender_user_id,
           body: m.body,
           created_at: m.created_at,
+          attachments: Array.isArray(m.message_attachments)
+            ? m.message_attachments.map((a) => ({
+                id: a.id,
+                storage_path: a.storage_path,
+                file_name: a.file_name,
+                mime_type: a.mime_type,
+                size_bytes: a.size_bytes,
+                created_at: a.created_at,
+              }))
+            : [],
         }))
       );
       setLoadingMessages(false);
@@ -141,15 +180,42 @@ export default function DashboardConversationPage() {
     };
   }, [conversationId]);
 
+  async function handleOpenAttachment(att: UiAttachment) {
+    const url = await createSignedAttachmentUrl(att.storage_path, { expiresInSeconds: 90 });
+    if (!url) {
+      toast.error("Download-Link konnte nicht erstellt werden.");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function handleFilesPicked(files: FileList | null) {
+    if (!files) return;
+    const next = Array.from(files);
+    if (next.length === 0) return;
+
+    setSelectedFiles((prev) => {
+      const merged = [...prev, ...next].slice(0, 5);
+      return merged;
+    });
+  }
+
+  function removeSelectedFile(index: number) {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSend() {
     if (!conversationId) return;
     if (readOnly) return;
 
     const body = draft.trim();
-    if (!body) return;
+    const hasFiles = selectedFiles.length > 0;
 
     setBusy(true);
-    const ok = await sendMessage(conversationId, body);
+
+    const ok = hasFiles
+      ? await sendMessageWithAttachments({ conversationId, body, files: selectedFiles })
+      : await sendMessage(conversationId, body);
 
     if (!ok) {
       toast.error(readOnly ? "Nachrichten sind in diesem Chat nicht möglich." : "Nachricht konnte nicht gesendet werden.");
@@ -158,6 +224,7 @@ export default function DashboardConversationPage() {
     }
 
     setDraft("");
+    setSelectedFiles([]);
 
     const data = await getMessages(conversationId);
     setMessages(
@@ -166,6 +233,16 @@ export default function DashboardConversationPage() {
         sender_user_id: m.sender_user_id,
         body: m.body,
         created_at: m.created_at,
+        attachments: Array.isArray(m.message_attachments)
+          ? m.message_attachments.map((a) => ({
+              id: a.id,
+              storage_path: a.storage_path,
+              file_name: a.file_name,
+              mime_type: a.mime_type,
+              size_bytes: a.size_bytes,
+              created_at: a.created_at,
+            }))
+          : [],
       }))
     );
 
@@ -183,6 +260,17 @@ export default function DashboardConversationPage() {
 
   const listing = context?.listing ?? null;
   const buyer = context?.buyer ?? null;
+
+  const counterpartyName =
+    context?.counterparty?.display_name ||
+    "—";
+
+  const counterpartyLabel =
+    context?.counterparty?.role === "seller"
+      ? "Anbieter"
+      : context?.counterparty?.role === "buyer"
+        ? "Interessent"
+        : "Kontakt";
 
   const showSoldNotice = listing?.status === "sold" && context?.conversation.status !== "buyer_selected";
 
@@ -343,10 +431,10 @@ export default function DashboardConversationPage() {
                         )}
                       </div>
 
-                      {buyer?.full_name ? (
+                      {counterpartyName && counterpartyName !== "—" ? (
                         <div className="mt-3 text-sm">
-                          <div className="text-neutral-900 font-semibold">Kontakt</div>
-                          <div className="text-neutral-600">{buyer.full_name || "—"}</div>
+                          <div className="text-neutral-900 font-semibold">{counterpartyLabel}</div>
+                          <div className="text-neutral-600">{counterpartyName}</div>
                         </div>
                       ) : null}
                     </div>
@@ -388,6 +476,39 @@ export default function DashboardConversationPage() {
                             )}
                           >
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{m.body}</p>
+
+                            {m.attachments.length > 0 ? (
+                              <div className="mt-3 space-y-2">
+                                {m.attachments.map((a) => (
+                                  <button
+                                    key={a.id}
+                                    type="button"
+                                    onClick={() => handleOpenAttachment(a)}
+                                    className={cn(
+                                      "w-full text-left rounded-xl border px-3 py-2 text-sm transition",
+                                      isMe
+                                        ? "border-white/20 bg-white/10 hover:bg-white/15"
+                                        : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100"
+                                    )}
+                                  >
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <div className={cn("truncate font-semibold", isMe ? "text-white" : "text-neutral-900")}>
+                                          {a.file_name}
+                                        </div>
+                                        <div className={cn("text-[11px] mt-0.5", isMe ? "text-white/70" : "text-neutral-500")}>
+                                          {a.mime_type || "Datei"}{a.size_bytes ? ` · ${formatBytes(a.size_bytes)}` : ""}
+                                        </div>
+                                      </div>
+                                      <div className={cn("text-[11px] font-semibold", isMe ? "text-white/80" : "text-neutral-600")}>
+                                        Öffnen
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            ) : null}
+
                             <p className={cn("text-[11px] mt-2", isMe ? "text-white/70" : "text-neutral-500")}>
                               {formatTimeCH(m.created_at)}
                             </p>
@@ -399,6 +520,55 @@ export default function DashboardConversationPage() {
                 </div>
 
                 <div className="border-t border-neutral-200/60 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <input
+                      id={fileInputId}
+                      type="file"
+                      className="hidden"
+                      multiple
+                      onChange={(e) => handleFilesPicked(e.target.files)}
+                      disabled={!isAuthed || readOnly}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-2xl"
+                      disabled={!isAuthed || readOnly || busy}
+                      onClick={() => document.getElementById(fileInputId)?.click()}
+                    >
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Datei anhängen
+                    </Button>
+
+                    {selectedFiles.length > 0 ? (
+                      <div className="text-xs text-neutral-600">
+                        {selectedFiles.length} Datei{selectedFiles.length === 1 ? "" : "en"}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {selectedFiles.length > 0 ? (
+                    <div className="mb-3 space-y-2">
+                      {selectedFiles.map((f, idx) => (
+                        <div key={`${f.name}-${idx}`} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-neutral-900">{f.name}</div>
+                            <div className="text-[11px] text-neutral-500">{formatBytes(f.size)}</div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="rounded-xl px-2 text-neutral-600 hover:bg-neutral-100"
+                            onClick={() => removeSelectedFile(idx)}
+                            disabled={busy}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
                   <Textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}

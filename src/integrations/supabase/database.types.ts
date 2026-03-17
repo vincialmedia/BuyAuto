@@ -1754,6 +1754,7 @@ export type Database = {
         Returns: {
           conversation_id: string
           conversation_status: string
+          counterparty_display_name: string
           last_message_at: string
           last_message_body: string
           listing_cover_image_url: string
