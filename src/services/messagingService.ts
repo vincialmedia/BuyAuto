@@ -88,7 +88,23 @@ function normalizePublicStorageUrl(raw: string): string | null {
   if (!base) return null;
 
   const cleaned = value.replace(/^\//, "");
-  const parts = cleaned.split("/").filter(Boolean).map((seg) => encodeURIComponent(seg));
+  const prefix = "storage/v1/object/public/";
+
+  // If it already contains the storage public URL path, only prefix the host.
+  if (cleaned.startsWith(prefix)) {
+    const rest = cleaned.slice(prefix.length);
+    const parts = rest
+      .split("/")
+      .filter(Boolean)
+      .map((seg) => encodeURIComponent(seg));
+    return `${base}/${prefix}${parts.join("/")}`;
+  }
+
+  // Otherwise treat as "<bucket>/<path...>"
+  const parts = cleaned
+    .split("/")
+    .filter(Boolean)
+    .map((seg) => encodeURIComponent(seg));
   return `${base}/storage/v1/object/public/${parts.join("/")}`;
 }
 
@@ -137,7 +153,17 @@ export async function getConversationContext(conversationId: string): Promise<Co
   }
 
   if (!data || typeof data !== "object") return null;
-  return data as ConversationContext;
+
+  const ctx = data as ConversationContext;
+  const rawCover = ctx?.listing?.cover_image_url;
+  const normalizedCover =
+    typeof rawCover === "string" ? normalizePublicStorageUrl(rawCover) ?? null : null;
+
+  if (ctx.listing) {
+    ctx.listing.cover_image_url = normalizedCover;
+  }
+
+  return ctx;
 }
 
 export async function archiveConversation(conversationId: string): Promise<boolean> {
@@ -210,9 +236,11 @@ export async function getMyMessageThreads(limit = 25, opts?: { force?: boolean }
 
     const rows = Array.isArray(data) ? (data as Array<Record<string, unknown>>) : [];
     return rows.map((r) => {
+      const counterpartyDisplayName = safeString(r.counterparty_display_name) || "";
       const sellerDisplayName = safeString(r.seller_display_name) || "—";
       const listingMakeModel = safeString(r.listing_make_model) || "Fahrzeug";
-      const title = `${sellerDisplayName} - ${listingMakeModel}`;
+      const nameForTitle = counterpartyDisplayName || sellerDisplayName;
+      const title = `${nameForTitle} - ${listingMakeModel}`;
 
       return {
         conversationId: safeString(r.conversation_id),

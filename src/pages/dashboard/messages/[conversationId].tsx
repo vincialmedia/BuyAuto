@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
+import Link from "next/link";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
 import DashboardLayout from "@/components/buyauto/dashboard/DashboardLayout";
@@ -20,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { SendHorizontal, CheckCircle2, Archive } from "lucide-react";
+import { SendHorizontal, CheckCircle2, Archive, ArrowLeft } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
@@ -174,6 +175,9 @@ export default function DashboardConversationPage() {
       setTitle(nextCtx.title || title);
     }
 
+    await markConversationRead(conversationId);
+    await refreshMessageCount();
+
     setBusy(false);
   }
 
@@ -230,6 +234,15 @@ export default function DashboardConversationPage() {
         <Card className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm">
           <CardContent className="p-6 sm:p-8">
             <div className="flex flex-col gap-5">
+              <div className="flex items-center">
+                <Button asChild variant="ghost" className="rounded-2xl px-2 -ml-2 text-neutral-700 hover:bg-neutral-100">
+                  <Link href="/dashboard">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Zurück zum Dashboard
+                  </Link>
+                </Button>
+              </div>
+
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 truncate">
@@ -305,7 +318,11 @@ export default function DashboardConversationPage() {
                           className="object-cover"
                           sizes="(max-width: 640px) 100vw, 176px"
                         />
-                      ) : null}
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-neutral-400">
+                          Foto
+                        </div>
+                      )}
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -326,13 +343,10 @@ export default function DashboardConversationPage() {
                         )}
                       </div>
 
-                      {buyer?.email || buyer?.full_name ? (
+                      {buyer?.full_name ? (
                         <div className="mt-3 text-sm">
-                          <div className="text-neutral-900 font-semibold">Interessent</div>
-                          <div className="text-neutral-600">
-                            {buyer.full_name || "—"}
-                            {buyer.email ? ` · ${buyer.email}` : null}
-                          </div>
+                          <div className="text-neutral-900 font-semibold">Kontakt</div>
+                          <div className="text-neutral-600">{buyer.full_name || "—"}</div>
                         </div>
                       ) : null}
                     </div>
