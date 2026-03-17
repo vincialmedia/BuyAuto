@@ -346,7 +346,7 @@ export async function getMessages(conversationId: string): Promise<MessageWithAt
 
 async function uploadConversationAttachments(conversationId: string, files: File[]): Promise<UploadAttachmentResult[] | null> {
   const validation = validateFilesForUpload(files);
-  if (!validation.ok) {
+  if (validation.ok === false) {
     console.error("uploadConversationAttachments validation failed:", validation.reason);
     return null;
   }
