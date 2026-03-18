@@ -312,7 +312,7 @@ function transformListingsTableRowToListingDetail(row: ListingsTableRow): Listin
 
   const purchasePriceCHF = typeof row.purchase_price_chf === "number" ? row.purchase_price_chf : null;
 
-  const leasing_offer =
+  const leasingOffer =
     row.leasing_offer && typeof row.leasing_offer === "object" ? (row.leasing_offer as any) : null;
 
   return {
@@ -320,7 +320,7 @@ function transformListingsTableRowToListingDetail(row: ListingsTableRow): Listin
     ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: (row.deal_type ?? "lease_takeover") as any,
     financing_type: (row.financing_type ?? null) as any,
-    leasing_offer,
+    leasing_offer: leasingOffer,
     brand: row.brand ?? "",
     model: row.model ?? "",
     title: row.title ?? undefined,
@@ -393,7 +393,7 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
         .from("listings")
         .select("id, user_id, created_by, seller_type, status")
         .eq("id", id)
-        .eq("status", "published")
+        .in("status", ["published", "sold"])
         .single();
 
       if (ownerError) {
@@ -542,7 +542,7 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
         .from("listings")
         .select("id, user_id, created_by, seller_type, status")
         .in("id", missingOwnerListingIds)
-        .eq("status", "published");
+        .in("status", ["published", "sold"]);
 
       if (ownerError) {
         console.error("Owner fallback query error (search):", { ownerError, count: missingOwnerListingIds.length });
@@ -706,6 +706,42 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
       const listingId = getListingIdFromRow(r);
       const ownerId = getOwnerUserIdFromPublicRow(r);
       if (listingId && ownerId) ownerIdByListingId[listingId] = ownerId;
+    }
+
+    const missingOwnerListingIds = privateRows
+      .map((r) => getListingIdFromRow(r))
+      .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+      .filter((listingId) => !ownerIdByListingId[listingId]);
+
+    if (missingOwnerListingIds.length > 0) {
+      const { data: ownerRows, error: ownerError } = await supabase
+        .from("listings")
+        .select("id, user_id, created_by, seller_type, status")
+        .in("id", missingOwnerListingIds)
+        .in("status", ["published", "sold"]);
+
+      if (ownerError) {
+        console.error("Owner fallback query error (dealer search):", { ownerError, count: missingOwnerListingIds.length });
+      } else {
+        const normalized = Array.isArray(ownerRows) ? ownerRows : [];
+        for (const row of normalized) {
+          const listingId = typeof (row as any)?.id === "string" ? (row as any).id : String((row as any)?.id ?? "");
+          if (!listingId || ownerIdByListingId[listingId]) continue;
+
+          const sellerType = (row as any)?.seller_type ?? null;
+          if (sellerType === "garage") continue;
+
+          const userId = (row as any)?.user_id ?? null;
+          const createdBy = (row as any)?.created_by ?? null;
+
+          const ownerId =
+            (typeof userId === "string" && userId.trim() ? userId : null) ??
+            (typeof createdBy === "string" && createdBy.trim() ? createdBy : null) ??
+            null;
+
+          if (ownerId) ownerIdByListingId[listingId] = ownerId;
+        }
+      }
     }
 
     const privateOwnerIds = Object.values(ownerIdByListingId).filter((v) => typeof v === "string" && v.trim() !== "");

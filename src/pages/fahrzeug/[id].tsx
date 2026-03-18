@@ -11,6 +11,7 @@ import { StructuredData } from "@/components/buyauto/StructuredData";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
+import type { GaragePublicInfo } from "@/services/garageService";
 import { useAuth } from "@/contexts/AuthContext";
 
 const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), { ssr: false });
@@ -57,15 +58,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
   const [showInquiryForm, setShowInquiryForm] = useState(false);
 
-  const [garage, setGarage] = useState<{
-    id: string;
-    name: string;
-    city: string | null;
-    bio: string | null;
-    slug: string | null;
-    logoUrl: string | null;
-    headerImageUrl: string | null;
-  } | null>(null);
+  const [garage, setGarage] = useState<GaragePublicInfo | null>(null);
 
   useEffect(() => {
     if (!listing && !notFound && !clientNotFound && id && typeof id === "string") {
@@ -142,12 +135,12 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
       setGarage({
         id: data.id,
-        name: data.garage_name,
+        name: data.name,
         city: data.city,
-        bio: data.description,
+        bio: data.bio,
         slug: data.slug,
-        logoUrl,
-        headerImageUrl: (data as unknown as { header_image_url?: string | null }).header_image_url ?? null,
+        logoUrl: logoUrl ?? data.logoUrl ?? null,
+        headerImageUrl: data.headerImageUrl ?? null,
       });
     };
 

@@ -21,11 +21,12 @@ export interface Garage {
 
 export interface GaragePublicInfo {
   id: string;
-  garage_name: string;
+  name: string;
   slug: string | null;
   city: string | null;
-  description: string | null;
-  header_image_url: string | null;
+  bio: string | null;
+  logoUrl: string | null;
+  headerImageUrl?: string | null;
 }
 
 export type GarageUpdate = Partial<
@@ -116,42 +117,43 @@ export async function getGarageBySlug(slug: string): Promise<Garage | null> {
   return toGarage(data);
 }
 
-export async function getGaragePublicById(id: string): Promise<GaragePublicInfo | null> {
+export async function getGaragePublicById(garageId: string): Promise<GaragePublicInfo | null> {
   try {
-    const { data, error } = await supabase.rpc("get_garage_public_v2", { p_garage_id: id });
+    const { data, error } = await supabase
+      .rpc("get_garage_public_v2", { p_garage_id: garageId });
 
-    if (!error) {
-      const row = Array.isArray(data) ? (data[0] as any) : null;
-
-      if (row) {
-        return {
-          id: String(row.id),
-          garage_name: String(row.garage_name ?? ""),
-          slug: typeof row.slug === "string" ? row.slug : null,
-          city: typeof row.city === "string" ? row.city : null,
-          description: typeof row.description === "string" ? row.description : null,
-          header_image_url: typeof row.header_image_url === "string" ? row.header_image_url : null,
-        };
-      }
+    if (!error && data) {
+      const d = data as any;
+      return {
+        id: String(d.id ?? garageId),
+        name: typeof d.garage_name === "string" ? d.garage_name : typeof d.name === "string" ? d.name : "Garage",
+        slug: typeof d.slug === "string" ? d.slug : null,
+        city: typeof d.city === "string" ? d.city : null,
+        bio: typeof d.bio === "string" ? d.bio : null,
+        logoUrl: typeof d.logo_url === "string" ? d.logo_url : null,
+        headerImageUrl: typeof d.header_image_url === "string" ? d.header_image_url : null,
+      };
     }
 
     const { data: directData, error: directError } = await supabase
       .from("garages")
-      .select("id, garage_name, slug, city, description, header_image_url")
-      .eq("id", id)
+      .select("id, garage_name, slug, city, bio, logo_url, header_image_url")
+      .eq("id", garageId)
       .maybeSingle();
 
     if (directError || !directData) return null;
 
     return {
-      id: String((directData as any).id),
-      garage_name: String((directData as any).garage_name ?? ""),
+      id: directData.id,
+      name: typeof (directData as any).garage_name === "string" ? (directData as any).garage_name : "Garage",
       slug: typeof (directData as any).slug === "string" ? (directData as any).slug : null,
       city: typeof (directData as any).city === "string" ? (directData as any).city : null,
-      description: typeof (directData as any).description === "string" ? (directData as any).description : null,
-      header_image_url: typeof (directData as any).header_image_url === "string" ? (directData as any).header_image_url : null,
+      bio: typeof (directData as any).bio === "string" ? (directData as any).bio : null,
+      logoUrl: typeof (directData as any).logo_url === "string" ? (directData as any).logo_url : null,
+      headerImageUrl: typeof (directData as any).header_image_url === "string" ? (directData as any).header_image_url : null,
     };
-  } catch {
+  } catch (e) {
+    console.error("getGaragePublicById error:", e);
     return null;
   }
 }
