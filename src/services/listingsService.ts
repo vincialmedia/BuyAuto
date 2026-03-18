@@ -25,6 +25,35 @@ type PublicListingOwnerProfileRow = {
   avatar_url: string | null;
 };
 
+async function getPublicProfilesByIds(
+  userIds: string[]
+): Promise<Record<string, { fullName: string | null; avatarUrl: string | null }>> {
+  const unique = Array.from(new Set(userIds.filter((v) => typeof v === "string" && v.trim() !== "")));
+  if (unique.length === 0) return {};
+
+  const { data, error } = await supabase.rpc("get_public_profiles", { p_user_ids: unique });
+
+  if (error) {
+    console.error("Error fetching public profiles:", { error, count: unique.length });
+    return {};
+  }
+
+  const rows = (Array.isArray(data) ? data : []) as unknown as PublicProfileRow[];
+  const map: Record<string, { fullName: string | null; avatarUrl: string | null }> = {};
+
+  for (const r of rows) {
+    const id = typeof (r as any)?.id === "string" ? (r as any).id : String((r as any)?.id ?? "");
+    if (!id) continue;
+
+    map[id] = {
+      fullName: typeof (r as any)?.full_name === "string" ? (r as any).full_name : null,
+      avatarUrl: typeof (r as any)?.avatar_url === "string" ? (r as any).avatar_url : null,
+    };
+  }
+
+  return map;
+}
+
 async function fetchPublicListingOwnerProfilesByListingIds(
   listingIds: string[]
 ): Promise<Record<string, { fullName: string | null; avatarUrl: string | null }>> {
@@ -830,6 +859,13 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
 
     const privateOwnerIds = Object.values(ownerIdByListingId).filter((v) => typeof v === "string" && v.trim() !== "");
     const profileMap = await getPublicProfilesByIds(privateOwnerIds);
+
+    const ownerProfilesByListingId: Record<string, { fullName: string | null; avatarUrl: string | null }> = {};
+    for (const [listingId, ownerId] of Object.entries(ownerIdByListingId)) {
+      const p = profileMap[ownerId];
+      if (!p) continue;
+      ownerProfilesByListingId[listingId] = p;
+    }
 
     const items = rows.map((r) => {
       const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
