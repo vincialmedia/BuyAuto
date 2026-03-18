@@ -387,53 +387,77 @@ export function ListingDetailV2({
                       const bio = garage?.bio ?? null;
                       const logoUrl = garage?.logoUrl ?? null;
                       const slug = garage?.slug ?? null;
+                      const headerImageUrl = (garage as unknown as { headerImageUrl?: string | null })?.headerImageUrl ?? null;
 
                       return (
-                        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                          <div className="flex items-start gap-4">
-                            <div className="shrink-0">
-                              {logoUrl ? (
-                                <img
-                                  src={logoUrl}
-                                  alt={`${name} Logo`}
-                                  className="h-14 w-14 rounded-2xl object-cover border border-neutral-200/60 bg-white"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div className="h-14 w-14 rounded-2xl border border-neutral-200/60 bg-white flex items-center justify-center text-sm font-bold text-neutral-700">
-                                  G
-                                </div>
-                              )}
-                            </div>
+                        <div className="rounded-3xl overflow-hidden border border-neutral-200/60 bg-white shadow-sm">
+                          <div className="relative h-28 sm:h-32">
+                            {headerImageUrl && headerImageUrl.trim() ? (
+                              <img
+                                src={headerImageUrl}
+                                alt={`${name} Header`}
+                                className="absolute inset-0 h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80" />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/85 via-neutral-900/45 to-transparent" />
 
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <div className="text-base font-bold tracking-tight text-neutral-900 truncate">{name}</div>
-                                <span className="inline-flex items-center rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700">
-                                  Garage
-                                </span>
+                            <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+                              <div className="flex items-end gap-3">
+                                <div className="shrink-0">
+                                  {logoUrl ? (
+                                    <img
+                                      src={logoUrl}
+                                      alt={`${name} Logo`}
+                                      className="h-14 w-14 rounded-2xl object-cover bg-white ring-2 ring-white shadow"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="h-14 w-14 rounded-2xl bg-white/15 backdrop-blur border border-white/20 ring-2 ring-white/40 flex items-center justify-center text-sm font-bold text-white">
+                                      G
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    <div className="text-base sm:text-lg font-bold tracking-tight text-white truncate">{name}</div>
+                                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 backdrop-blur px-2.5 py-1 text-xs font-semibold text-white">
+                                      Garage
+                                    </span>
+                                  </div>
+
+                                  {locationText && (
+                                    <div className="mt-1 flex items-center gap-2 text-sm text-white/85">
+                                      <MapPin className="h-4 w-4 text-white/75" />
+                                      <span className="truncate">{locationText}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {slug && (
+                                  <div className="shrink-0">
+                                    <Link
+                                      href={`/${slug}`}
+                                      className="inline-flex items-center rounded-2xl border border-white/25 bg-white/10 backdrop-blur px-3 py-2 text-sm font-semibold text-white hover:bg-white/15 hover:border-white/40 transition-colors"
+                                    >
+                                      Profil ansehen
+                                    </Link>
+                                  </div>
+                                )}
                               </div>
-
-                              {locationText && <div className="mt-1 text-sm text-neutral-600">{locationText}</div>}
-
-                              {bio && bio.trim() && (
-                                <p className="mt-3 text-sm text-neutral-600 leading-relaxed [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
-                                  {bio}
-                                </p>
-                              )}
-
-                              {slug && (
-                                <div className="mt-3">
-                                  <Link
-                                    href={`/${slug}`}
-                                    className="inline-flex items-center rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-100 transition-colors"
-                                  >
-                                    Profil ansehen
-                                  </Link>
-                                </div>
-                              )}
                             </div>
                           </div>
+
+                          {bio && bio.trim() && (
+                            <div className="p-4 sm:p-5">
+                              <p className="text-sm text-neutral-600 leading-relaxed [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+                                {bio}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       );
                     }

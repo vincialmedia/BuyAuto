@@ -1739,6 +1739,17 @@ export type Database = {
           slug: string
         }[]
       }
+      get_garage_public_v2: {
+        Args: { p_garage_id: string }
+        Returns: {
+          city: string
+          description: string
+          garage_name: string
+          header_image_url: string
+          id: string
+          slug: string
+        }[]
+      }
       get_listing_cover_image: {
         Args: { p_cover_index: number; p_cover_url: string; p_images: Json }
         Returns: string
@@ -1767,6 +1778,14 @@ export type Database = {
       }
       get_my_role: { Args: never; Returns: string }
       get_my_unread_message_count: { Args: never; Returns: number }
+      get_public_profiles: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+        }[]
+      }
       get_service_role_key: { Args: never; Returns: string }
       get_user_role: { Args: { user_id: string }; Returns: string }
       increment_listing_view: {

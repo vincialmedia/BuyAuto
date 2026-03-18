@@ -8,6 +8,7 @@ export interface GaragePublicInfo {
   bio: string | null;
   slug: string | null;
   logoUrl: string | null;
+  headerImageUrl?: string | null;
 }
 
 function initialsFromName(name: string): string {

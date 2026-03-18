@@ -8,6 +8,46 @@ type ListingsTableRow = Database["public"]["Tables"]["listings"]["Row"];
 
 const PUBLIC_LISTINGS_VIEW = "listings_public";
 
+type PublicProfileRow = { id: string; full_name: string | null; avatar_url: string | null };
+
+async function getPublicProfilesByIds(userIds: string[]): Promise<Record<string, { fullName: string | null; avatarUrl: string | null }>> {
+  const unique = Array.from(new Set(userIds.filter((v) => typeof v === "string" && v.trim() !== "")));
+  if (unique.length === 0) return {};
+
+  const { data, error } = await supabase.rpc("get_public_profiles", { p_user_ids: unique });
+
+  if (error) {
+    console.error("Error fetching public profiles:", { error, count: unique.length });
+    return {};
+  }
+
+  const rows = (Array.isArray(data) ? data : []) as unknown as PublicProfileRow[];
+  const map: Record<string, { fullName: string | null; avatarUrl: string | null }> = {};
+
+  for (const r of rows) {
+    const id = typeof (r as any)?.id === "string" ? (r as any).id : String((r as any)?.id ?? "");
+    if (!id) continue;
+
+    map[id] = {
+      fullName: typeof (r as any)?.full_name === "string" ? (r as any).full_name : null,
+      avatarUrl: typeof (r as any)?.avatar_url === "string" ? (r as any).avatar_url : null,
+    };
+  }
+
+  return map;
+}
+
+function getOwnerUserIdFromPublicRow(row: unknown): string | null {
+  const r = row as Record<string, unknown>;
+  const candidate = (r.user_id ?? r.created_by) as unknown;
+  return typeof candidate === "string" && candidate.trim() ? candidate : null;
+}
+
+function isGarageSellerFromRow(row: unknown): boolean {
+  const r = row as Record<string, unknown>;
+  return r.seller_type === "garage";
+}
+
 /**
  * Safely parse images from database JSON field
  * Handles multiple formats and provides proper fallbacks
@@ -308,7 +348,7 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
       .from(PUBLIC_LISTINGS_VIEW)
       .select("*")
       .eq("id", id)
-      .eq("status", "published")
+      .in("status", ["published", "sold"])
       .single();
 
     if (error) {
@@ -319,7 +359,20 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
       return null;
     }
 
-    return transformPublicRowToListingDetail(data as unknown as PublicListingRow);
+    const base = transformPublicRowToListingDetail(data as unknown as PublicListingRow);
+
+    const ownerId = getOwnerUserIdFromPublicRow(data);
+    if (!isGarageSellerFromRow(data) && ownerId) {
+      const profileMap = await getPublicProfilesByIds([ownerId]);
+      const p = profileMap[ownerId];
+      return {
+        ...base,
+        seller_name: p?.fullName ?? base.seller_name ?? null,
+        seller_avatar_url: p?.avatarUrl ?? base.seller_avatar_url ?? null,
+      };
+    }
+
+    return base;
   } catch (error) {
     console.error("Get published listing by ID error:", error);
     return null;
@@ -417,7 +470,30 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       throw error;
     }
 
-    const items = (data || []).map((r) => transformPublicRowToListing(r as unknown as PublicListingRow));
+    const rows = (data || []) as unknown as PublicListingRow[];
+
+    const privateOwnerIds = rows
+      .filter((r) => !isGarageSellerFromRow(r))
+      .map((r) => getOwnerUserIdFromPublicRow(r))
+      .filter((v): v is string => typeof v === "string" && v.trim() !== "");
+
+    const profileMap = await getPublicProfilesByIds(privateOwnerIds);
+
+    const items = rows.map((r) => {
+      const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
+      const ownerId = getOwnerUserIdFromPublicRow(r);
+
+      if (!isGarageSellerFromRow(r) && ownerId) {
+        const p = profileMap[ownerId];
+        return {
+          ...listing,
+          seller_name: p?.fullName ?? listing.seller_name ?? null,
+          seller_avatar_url: p?.avatarUrl ?? listing.seller_avatar_url ?? null,
+        };
+      }
+
+      return listing;
+    });
 
     return {
       items,
@@ -528,7 +604,30 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
       throw error;
     }
 
-    const items = (data || []).map((r) => transformPublicRowToListing(r as unknown as PublicListingRow));
+    const rows = (data || []) as unknown as PublicListingRow[];
+
+    const privateOwnerIds = rows
+      .filter((r) => !isGarageSellerFromRow(r))
+      .map((r) => getOwnerUserIdFromPublicRow(r))
+      .filter((v): v is string => typeof v === "string" && v.trim() !== "");
+
+    const profileMap = await getPublicProfilesByIds(privateOwnerIds);
+
+    const items = rows.map((r) => {
+      const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
+      const ownerId = getOwnerUserIdFromPublicRow(r);
+
+      if (!isGarageSellerFromRow(r) && ownerId) {
+        const p = profileMap[ownerId];
+        return {
+          ...listing,
+          seller_name: p?.fullName ?? listing.seller_name ?? null,
+          seller_avatar_url: p?.avatarUrl ?? listing.seller_avatar_url ?? null,
+        };
+      }
+
+      return listing;
+    });
 
     return {
       items,

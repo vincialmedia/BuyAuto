@@ -64,6 +64,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     bio: string | null;
     slug: string | null;
     logoUrl: string | null;
+    headerImageUrl: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -134,6 +135,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
           bio: null,
           slug: null,
           logoUrl,
+          headerImageUrl: null,
         });
         return;
       }
@@ -145,6 +147,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         bio: data.description,
         slug: data.slug,
         logoUrl,
+        headerImageUrl: (data as unknown as { header_image_url?: string | null }).header_image_url ?? null,
       });
     };
 
@@ -346,7 +349,32 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       }
 
       const { transformPublicRowToListingDetail } = await import("@/services/listingsService");
-      return transformPublicRowToListingDetail(data as any);
+      const baseListing = transformPublicRowToListingDetail(data as any);
+
+      const sellerType = (data as any)?.seller_type ?? null;
+      const ownerId = (data as any)?.user_id ?? (data as any)?.created_by ?? null;
+
+      if (sellerType !== "garage" && ownerId) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: profileRows, error: profError } = await supabase.rpc("get_public_profiles", { p_user_ids: [ownerId] });
+
+        if (profError) {
+          console.error("Error fetching public profile for listing owner:", profError);
+          return baseListing;
+        }
+
+        const row = Array.isArray(profileRows) ? (profileRows[0] as any) : null;
+        const fullName = typeof row?.full_name === "string" ? row.full_name : null;
+        const avatarUrl = typeof row?.avatar_url === "string" ? row.avatar_url : null;
+
+        return {
+          ...baseListing,
+          seller_name: fullName ?? baseListing.seller_name ?? null,
+          seller_avatar_url: avatarUrl ?? baseListing.seller_avatar_url ?? null,
+        };
+      }
+
+      return baseListing;
     })();
 
     if (!listing) {
