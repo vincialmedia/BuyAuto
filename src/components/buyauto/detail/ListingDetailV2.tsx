@@ -23,6 +23,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 import { cn } from "@/lib/utils";
+import { GarageMiniBanner } from "@/components/buyauto/detail/GarageMiniBanner";
 
 const LeasingCalculator = dynamic<LeasingCalculatorProps>(
   () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
@@ -578,6 +579,12 @@ export function ListingDetailV2({
           </div>
         </div>
       </div>
+
+      {garage ? (
+        <div className="mt-6">
+          <GarageMiniBanner garage={garage} />
+        </div>
+      ) : null}
 
       <StickyListingCta sentinelId="listing-hero-sentinel" onInquiry={onInquiry} onOpenChat={chatScroll} />
     </div>

@@ -1778,6 +1778,22 @@ export type Database = {
       }
       get_my_role: { Args: never; Returns: string }
       get_my_unread_message_count: { Args: never; Returns: number }
+      get_public_garage_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          city: string
+          contact_email: string
+          description: string
+          garage_name: string
+          header_image_url: string
+          id: string
+          opening_hours: Json
+          phone_number: string
+          services: Json
+          slug: string
+          website_url: string
+        }[]
+      }
       get_public_garages: {
         Args: { p_garage_ids: string[] }
         Returns: {

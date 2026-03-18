@@ -138,6 +138,17 @@ export async function getGarageBySlug(slug: string): Promise<Garage | null> {
   return toGarage(data);
 }
 
+export async function getPublicGarageBySlug(slug: string): Promise<Garage | null> {
+  const { data, error } = await supabase.rpc("get_public_garage_by_slug", { p_slug: slug });
+
+  if (error) throw error;
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+
+  return toGarage(row);
+}
+
 export async function getGaragePublicById(garageId: string): Promise<GaragePublicInfo | null> {
   try {
     const { data, error } = await supabase.rpc("get_public_garages", {

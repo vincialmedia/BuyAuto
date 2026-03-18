@@ -1,11 +1,11 @@
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
 import { SEO } from "@/components/SEO";
-import { getGarageBySlug } from "@/services/garageService";
+import { getPublicGarageBySlug } from "@/services/garageService";
 import { getGarageLogoPublicUrl } from "@/services/storageService";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
 
-type PublicGarage = NonNullable<Awaited<ReturnType<typeof getGarageBySlug>>>;
+type PublicGarage = NonNullable<Awaited<ReturnType<typeof getPublicGarageBySlug>>>;
 
 type PageProps =
   | {
@@ -35,7 +35,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
   if (!dealerSlug) return { props: { ok: false } };
 
   try {
-    const garage = await getGarageBySlug(dealerSlug);
+    const garage = await getPublicGarageBySlug(dealerSlug);
 
     if (!garage || !garage.slug) {
       return { notFound: true };

@@ -96,31 +96,31 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   }, [id, listing, notFound, clientNotFound, router.query.preview, user]);
 
   useEffect(() => {
-    if (!listing) {
-      setGarage(null);
-      return;
-    }
-
-    const garageId = (listing as unknown as { garage_id?: string | null }).garage_id ?? null;
-    if (!garageId) {
-      setGarage(null);
-      return;
-    }
-
     let cancelled = false;
 
     const run = async () => {
+      if (!listing) {
+        setGarage(null);
+        return;
+      }
+
+      const garageId = typeof listing.garage_id === "string" ? listing.garage_id : null;
+      if (!garageId) {
+        setGarage(null);
+        return;
+      }
+
       const data = await getGaragePublicById(garageId);
       if (cancelled) return;
       setGarage(data);
     };
 
-    run();
+    void run();
 
     return () => {
       cancelled = true;
     };
-  }, [listing]);
+  }, [listing?.id, listing?.garage_id]);
 
   const images = useMemo(() => (Array.isArray(listing?.images) ? listing?.images : []) ?? [], [listing]);
 
