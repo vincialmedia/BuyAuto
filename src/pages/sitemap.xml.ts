@@ -10,10 +10,11 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     .select("id")
     .in("status", ["published"]);
 
-  const { data: garages } = await supabase
-    .from("garages")
-    .select("slug")
-    .not("slug", "is", null);
+  const { data: garageRows } = await supabase.rpc("get_public_garage_slugs");
+
+  const garages = (garageRows || [])
+    .map((g) => (typeof g?.slug === "string" ? g.slug.trim() : ""))
+    .filter((slug) => slug.length > 0);
 
   const staticPages = [
     "",
@@ -61,9 +62,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     })
     .join("");
 
-  const garageUrls = (garages || [])
-    .map((g) => (typeof g.slug === "string" ? g.slug.trim() : ""))
-    .filter((slug) => slug.length > 0)
+  const garageUrls = garages
     .map((slug) => {
       return `
       <url>

@@ -1794,6 +1794,12 @@ export type Database = {
           website_url: string
         }[]
       }
+      get_public_garage_slugs: {
+        Args: never
+        Returns: {
+          slug: string
+        }[]
+      }
       get_public_garages: {
         Args: { p_garage_ids: string[] }
         Returns: {
