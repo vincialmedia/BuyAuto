@@ -45,6 +45,24 @@ function getSiteOrigin(): string {
   return window.location.origin || "https://buyauto.ch";
 }
 
+function normalizeWebsiteUrl(input: string): string {
+  const v = input.trim();
+  if (!v) return "";
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://${v}`;
+}
+
+function isValidWebsiteUrl(input: string): boolean {
+  const v = input.trim();
+  if (!v) return true;
+  try {
+    new URL(normalizeWebsiteUrl(v));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function createId(prefix = "id"): string {
   try {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -162,7 +180,7 @@ export function GarageProfileTab({
 
   const canSaveProfile =
     (profileDraft.contact_email.trim().length === 0 || profileDraft.contact_email.includes("@")) &&
-    (profileDraft.website_url.trim().length === 0 || profileDraft.website_url.startsWith("http"));
+    isValidWebsiteUrl(profileDraft.website_url);
 
   const dealerSlug = garage?.slug?.trim() ?? "";
   const publicProfileUrl = dealerSlug ? `${shareOrigin}/${dealerSlug}` : "";
@@ -254,10 +272,14 @@ export function GarageProfileTab({
     setBanner({ kind: "idle" });
     setProfileSaving(true);
 
+    const normalizedWebsite = profileDraft.website_url.trim()
+      ? normalizeWebsiteUrl(profileDraft.website_url)
+      : "";
+
     const baseUpdates: Partial<Garage> = {
       contact_email: profileDraft.contact_email.trim() || null,
       phone_number: profileDraft.phone_number.trim() || null,
-      website_url: profileDraft.website_url.trim() || null,
+      website_url: normalizedWebsite || null,
       description: profileDraft.description.trim() || null,
       services: profileDraft.services.length > 0 ? profileDraft.services : null,
       opening_hours: Object.keys(profileDraft.opening_hours).length > 0 ? profileDraft.opening_hours : null,

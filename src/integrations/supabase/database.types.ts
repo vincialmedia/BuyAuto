@@ -1786,14 +1786,20 @@ export type Database = {
         Returns: {
           city: string
           contact_email: string
+          created_at: string
           description: string
           garage_name: string
           header_image_url: string
           id: string
+          listing_limit: number
           opening_hours: Json
+          owner_user_id: string
           phone_number: string
+          plan: string
           services: Json
           slug: string
+          team_members: Json
+          updated_at: string
           website_url: string
         }[]
       }
