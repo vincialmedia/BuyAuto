@@ -19,27 +19,33 @@ type PublicGarageRow = {
   header_image_url: string | null;
 };
 
-async function getPublicProfilesByIds(
-  userIds: string[]
+type PublicListingOwnerProfileRow = {
+  listing_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
+async function fetchPublicListingOwnerProfilesByListingIds(
+  listingIds: string[]
 ): Promise<Record<string, { fullName: string | null; avatarUrl: string | null }>> {
-  const unique = Array.from(new Set(userIds.filter((v) => typeof v === "string" && v.trim() !== "")));
+  const unique = Array.from(new Set(listingIds.filter((v) => typeof v === "string" && v.trim() !== "")));
   if (unique.length === 0) return {};
 
-  const { data, error } = await supabase.rpc("get_public_profiles", { p_user_ids: unique });
+  const { data, error } = await supabase.rpc("get_public_listing_owner_profiles", { p_listing_ids: unique });
 
   if (error) {
-    console.error("Error fetching public profiles:", { error, count: unique.length });
+    console.error("Error fetching public owner profiles by listing IDs:", { error, count: unique.length });
     return {};
   }
 
-  const rows = (Array.isArray(data) ? data : []) as unknown as PublicProfileRow[];
+  const rows = (Array.isArray(data) ? data : []) as unknown as PublicListingOwnerProfileRow[];
   const map: Record<string, { fullName: string | null; avatarUrl: string | null }> = {};
 
   for (const r of rows) {
-    const id = typeof (r as any)?.id === "string" ? (r as any).id : String((r as any)?.id ?? "");
-    if (!id) continue;
+    const listingId = typeof (r as any)?.listing_id === "string" ? (r as any).listing_id : String((r as any)?.listing_id ?? "");
+    if (!listingId) continue;
 
-    map[id] = {
+    map[listingId] = {
       fullName: typeof (r as any)?.full_name === "string" ? (r as any).full_name : null,
       avatarUrl: typeof (r as any)?.avatar_url === "string" ? (r as any).avatar_url : null,
     };
@@ -501,41 +507,21 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
 
     const base = transformPublicRowToListingDetail(data as unknown as PublicListingRow);
 
-    let ownerId = getOwnerUserIdFromPublicRow(data);
+    if (!isGarageSellerFromRow(data)) {
+      const missingName = !(typeof (base as any)?.seller_name === "string" && (base as any).seller_name.trim());
+      const missingAvatar = !(typeof (base as any)?.seller_avatar_url === "string" && (base as any).seller_avatar_url.trim());
 
-    if (!isGarageSellerFromRow(data) && !ownerId) {
-      const { data: ownerRows, error: ownerError } = await supabase
-        .from("listings")
-        .select("id, user_id, created_by, seller_type, status")
-        .eq("id", id)
-        .in("status", ["published", "sold"])
-        .single();
-
-      if (ownerError) {
-        console.error("Error fetching listing owner fallback:", { id, ownerError });
-      } else {
-        const row = ownerRows as any;
-        const sellerType = row.seller_type ?? null;
-        if (sellerType === "garage") return base;
-
-        const userId = row.user_id ?? null;
-        const createdBy = row.created_by ?? null;
-
-        ownerId =
-          (typeof userId === "string" && userId.trim() ? userId : null) ??
-          (typeof createdBy === "string" && createdBy.trim() ? createdBy : null) ??
-          null;
+      if (missingName || missingAvatar) {
+        const byListingId = await fetchPublicListingOwnerProfilesByListingIds([id]);
+        const p = byListingId[id];
+        if (p) {
+          return {
+            ...base,
+            seller_name: p.fullName ?? (base as any).seller_name ?? null,
+            seller_avatar_url: p.avatarUrl ?? (base as any).seller_avatar_url ?? null,
+          };
+        }
       }
-    }
-
-    if (!isGarageSellerFromRow(data) && ownerId) {
-      const profileMap = await getPublicProfilesByIds([ownerId]);
-      const p = profileMap[ownerId];
-      return {
-        ...base,
-        seller_name: p?.fullName ?? base.seller_name ?? null,
-        seller_avatar_url: p?.avatarUrl ?? base.seller_avatar_url ?? null,
-      };
     }
 
     return base;
@@ -646,51 +632,11 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
 
     const privateRows = rows.filter((r) => !isGarageSellerFromRow(r));
 
-    const ownerIdByListingId: Record<string, string> = {};
-    for (const r of privateRows) {
-      const listingId = getListingIdFromRow(r);
-      const ownerId = getOwnerUserIdFromPublicRow(r);
-      if (listingId && ownerId) ownerIdByListingId[listingId] = ownerId;
-    }
-
-    const missingOwnerListingIds = privateRows
+    const privateListingIds = privateRows
       .map((r) => getListingIdFromRow(r))
-      .filter((v): v is string => typeof v === "string" && v.trim() !== "")
-      .filter((listingId) => !ownerIdByListingId[listingId]);
+      .filter((v): v is string => typeof v === "string" && v.trim() !== "");
 
-    if (missingOwnerListingIds.length > 0) {
-      const { data: ownerRows, error: ownerError } = await supabase
-        .from("listings")
-        .select("id, user_id, created_by, seller_type, status")
-        .in("id", missingOwnerListingIds)
-        .in("status", ["published", "sold"]);
-
-      if (ownerError) {
-        console.error("Owner fallback query error (search):", { ownerError, count: missingOwnerListingIds.length });
-      } else {
-        const normalized = Array.isArray(ownerRows) ? ownerRows : [];
-        for (const row of normalized) {
-          const listingId = typeof (row as any)?.id === "string" ? (row as any).id : String((row as any)?.id ?? "");
-          if (!listingId || ownerIdByListingId[listingId]) continue;
-
-          const sellerType = (row as any)?.seller_type ?? null;
-          if (sellerType === "garage") continue;
-
-          const userId = (row as any)?.user_id ?? null;
-          const createdBy = (row as any)?.created_by ?? null;
-
-          const ownerId =
-            (typeof userId === "string" && userId.trim() ? userId : null) ??
-            (typeof createdBy === "string" && createdBy.trim() ? createdBy : null) ??
-            null;
-
-          if (ownerId) ownerIdByListingId[listingId] = ownerId;
-        }
-      }
-    }
-
-    const privateOwnerIds = Object.values(ownerIdByListingId).filter((v) => typeof v === "string" && v.trim() !== "");
-    const profileMap = await getPublicProfilesByIds(privateOwnerIds);
+    const ownerProfilesByListingId = await fetchPublicListingOwnerProfilesByListingIds(privateListingIds);
 
     const items = rows.map((r) => {
       const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
@@ -706,16 +652,15 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
         };
       }
 
-      const listingId = listing.id;
-      const ownerId = ownerIdByListingId[listingId] ?? getOwnerUserIdFromPublicRow(r);
-
-      if (!isGarageSellerFromRow(r) && ownerId) {
-        const p = profileMap[ownerId];
-        return {
-          ...listing,
-          seller_name: p?.fullName ?? listing.seller_name ?? null,
-          seller_avatar_url: p?.avatarUrl ?? listing.seller_avatar_url ?? null,
-        };
+      if (!isGarageSellerFromRow(r)) {
+        const p = ownerProfilesByListingId[listing.id];
+        if (p) {
+          return {
+            ...listing,
+            seller_name: p.fullName ?? listing.seller_name ?? null,
+            seller_avatar_url: p.avatarUrl ?? listing.seller_avatar_url ?? null,
+          };
+        }
       }
 
       return listing;
@@ -888,16 +833,27 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
 
     const items = rows.map((r) => {
       const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
-      const listingId = listing.id;
-      const ownerId = ownerIdByListingId[listingId] ?? getOwnerUserIdFromPublicRow(r);
 
-      if (!isGarageSellerFromRow(r) && ownerId) {
-        const p = profileMap[ownerId];
+      const gId = getGarageIdFromRow(r);
+      if (gId && publicGaragesById[gId]) {
+        const g = publicGaragesById[gId];
         return {
           ...listing,
-          seller_name: p?.fullName ?? listing.seller_name ?? null,
-          seller_avatar_url: p?.avatarUrl ?? listing.seller_avatar_url ?? null,
+          seller_name: g.garage_name ?? listing.seller_name ?? null,
+          garage_name: g.garage_name ?? listing.garage_name ?? null,
+          garage_id: gId,
         };
+      }
+
+      if (!isGarageSellerFromRow(r)) {
+        const p = ownerProfilesByListingId[listing.id];
+        if (p) {
+          return {
+            ...listing,
+            seller_name: p.fullName ?? listing.seller_name ?? null,
+            seller_avatar_url: p.avatarUrl ?? listing.seller_avatar_url ?? null,
+          };
+        }
       }
 
       return listing;

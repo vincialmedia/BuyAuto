@@ -99,6 +99,8 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
   };
 
   const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
+  const garageId = (listing as unknown as { garage_id?: string | null }).garage_id ?? null;
+  const isGarage = sellerType === "garage" || (typeof garageId === "string" && garageId.trim() !== "");
 
   const rawSellerName =
     (listing as unknown as { seller_name?: string | null }).seller_name ??
@@ -107,7 +109,7 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
 
   const sellerName =
     (typeof rawSellerName === "string" ? rawSellerName.trim() : "") ||
-    (sellerType === "garage" ? "Garage" : "Privatanbieter");
+    (isGarage ? "Garage" : "Privatanbieter");
 
   return (
     <div className="group bg-white border border-neutral-200/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-neutral-900/10 transition-all duration-300 hover:-translate-y-1 hover:bg-neutral-50/30">

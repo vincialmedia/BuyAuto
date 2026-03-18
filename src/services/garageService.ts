@@ -76,6 +76,24 @@ function toGarage(row: unknown): Garage {
   };
 }
 
+function resolveListingImagesPublicUrl(pathOrUrl: string | null): string | null {
+  if (typeof pathOrUrl !== "string") return null;
+  const v = pathOrUrl.trim();
+  if (!v) return null;
+
+  if (/^https?:\/\//i.test(v)) return v;
+
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  if (!base) return null;
+
+  const encoded = v
+    .split("/")
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+
+  return `${base}/storage/v1/object/public/listing-images/${encoded}`;
+}
+
 export async function getMyGarage(): Promise<Garage | null> {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
@@ -138,7 +156,9 @@ export async function getGaragePublicById(garageId: string): Promise<GaragePubli
     const city = (row as any)?.city ?? null;
     const bio = (row as any)?.description ?? null;
     const slug = (row as any)?.slug ?? null;
-    const headerImageUrl = (row as any)?.header_image_url ?? null;
+
+    const headerRaw = (row as any)?.header_image_url ?? null;
+    const headerImageUrl = resolveListingImagesPublicUrl(typeof headerRaw === "string" ? headerRaw : null) ?? (typeof headerRaw === "string" ? headerRaw : null);
 
     return {
       id: (row as any)?.id,

@@ -91,6 +91,8 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
       : null;
 
   const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
+  const garageId = (listing as unknown as { garage_id?: string | null }).garage_id ?? null;
+  const isGarage = sellerType === "garage" || (typeof garageId === "string" && garageId.trim() !== "");
 
   const rawSellerName =
     (listing as unknown as { seller_name?: string | null }).seller_name ??
@@ -99,7 +101,7 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
 
   const sellerName =
     (typeof rawSellerName === "string" ? rawSellerName.trim() : "") ||
-    (sellerType === "garage" ? "Garage" : "Privatanbieter");
+    (isGarage ? "Garage" : "Privatanbieter");
 
   return (
     <Card 

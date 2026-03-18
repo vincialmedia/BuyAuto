@@ -1789,6 +1789,14 @@ export type Database = {
           slug: string
         }[]
       }
+      get_public_listing_owner_profiles: {
+        Args: { p_listing_ids: string[] }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          listing_id: string
+        }[]
+      }
       get_public_profiles: {
         Args: { p_user_ids: string[] }
         Returns: {

@@ -391,9 +391,23 @@ export function ListingDetailV2({
 
                       const locationText = garage?.city ?? listing.location ?? null;
                       const bio = garage?.bio ?? null;
-                      const logoUrl = garage?.logoUrl ?? null;
                       const slug = garage?.slug ?? null;
+
                       const headerImageUrl = garage?.headerImageUrl ?? null;
+
+                      const garageIdForLogo =
+                        (listing as unknown as { garage_id?: string | null }).garage_id ??
+                        (listing as unknown as { garageId?: string | null }).garageId ??
+                        null;
+
+                      const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+                      const logoUrl =
+                        supabaseBase && garageIdForLogo
+                          ? `${supabaseBase}/storage/v1/object/public/listing-images/${`garage-logos/${garageIdForLogo}/logo_medium.webp`
+                              .split("/")
+                              .map((seg) => encodeURIComponent(seg))
+                              .join("/")}`
+                          : null;
 
                       return (
                         <div className="rounded-3xl overflow-hidden border border-neutral-200/60 bg-white shadow-sm">
