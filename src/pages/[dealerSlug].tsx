@@ -78,8 +78,8 @@ export default function DealerMicrositePage(props: PageProps) {
   const description = getSafeDescription(garage.description);
   const image = garage.header_image_url || logoUrl || "/buyauto-logo.png";
 
-  const openingHours = (garage as unknown as { opening_hours?: unknown }).opening_hours;
-  const teamMembers = (garage as unknown as { team_members?: unknown }).team_members;
+  const openingHours = garage.opening_hours;
+  const teamMembers = garage.team_members;
 
   return (
     <>
@@ -103,6 +103,7 @@ export default function DealerMicrositePage(props: PageProps) {
       <main className="min-h-screen bg-white">
         <DealerHeroHeader
           garageName={garage.garage_name}
+          slug={garage.slug}
           city={garage.city}
           description={garage.description}
           headerImageUrl={garage.header_image_url}

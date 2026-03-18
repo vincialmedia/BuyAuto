@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface DealerHeroHeaderProps {
   garageName: string;
+  slug?: string | null;
   city?: string | null;
   description?: string | null;
   headerImageUrl?: string | null;
@@ -26,6 +27,7 @@ function getSafeDescription(description: string | null | undefined): string {
 
 export function DealerHeroHeader({
   garageName,
+  slug,
   city,
   description,
   headerImageUrl,
@@ -40,6 +42,7 @@ export function DealerHeroHeader({
   const hasContact = Boolean(websiteUrl?.trim()) || Boolean(phoneNumber?.trim()) || Boolean(contactEmail?.trim());
   const safeServices = Array.isArray(services) ? services.filter((s) => typeof s === "string" && s.trim().length > 0) : [];
   const shortDescription = getSafeDescription(description);
+  const publicPath = slug?.trim() ? slug.trim() : "";
 
   return (
     <header className={cn("relative overflow-hidden", className)}>
@@ -152,8 +155,8 @@ export function DealerHeroHeader({
           </div>
 
           <div className="mt-3 flex items-center justify-between text-xs text-white/70">
-            <div>buyauto.ch/{garageName}</div>
-            <div>© {new Date(2026, 0, 1).getFullYear()} BuyAuto</div>
+            <div>{publicPath ? `buyauto.ch/${publicPath}` : "buyauto.ch"}</div>
+            <div>© {new Date().getFullYear()} BuyAuto</div>
           </div>
         </div>
       </div>
