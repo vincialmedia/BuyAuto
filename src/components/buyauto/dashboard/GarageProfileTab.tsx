@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { uploadGarageLogo, uploadGarageHeaderImage } from "@/services/storageService";
-import { generateSlugFromName, type Garage } from "@/services/garageService";
+import { generateSlugFromName, type Garage, type TeamMember } from "@/services/garageService";
 import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
 
 interface GarageProfileTabProps {
@@ -43,6 +43,35 @@ function getErrorMessage(error: unknown): string {
 function getSiteOrigin(): string {
   if (typeof window === "undefined") return "https://buyauto.ch";
   return window.location.origin || "https://buyauto.ch";
+}
+
+function createId(prefix = "id"): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return `${prefix}_${crypto.randomUUID()}`;
+    }
+  } catch {
+    // ignore
+  }
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+function normalizeTeamMembers(value: unknown): TeamMember[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((m) => m && typeof m === "object")
+    .map((m) => m as TeamMember)
+    .filter((m) => typeof m.id === "string" && typeof m.name === "string")
+    .map((m) => ({
+      id: m.id,
+      name: m.name,
+      role: m.role ?? null,
+      bio: m.bio ?? null,
+      image_url: m.image_url ?? null,
+      order: typeof m.order === "number" ? m.order : null,
+    }))
+    .filter((m) => m.id.trim().length > 0 && m.name.trim().length > 0)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -89,6 +118,8 @@ export function GarageProfileTab({
     opening_hours: garage?.opening_hours ?? {},
   });
 
+  const [teamDraft, setTeamDraft] = useState<TeamMember[]>(() => normalizeTeamMembers(garage?.team_members));
+
   const [profileSaving, setProfileSaving] = useState(false);
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
 
@@ -119,6 +150,7 @@ export function GarageProfileTab({
       opening_hours: garage.opening_hours ?? {},
     });
     setHeaderImageUrl(garage.header_image_url ?? "");
+    setTeamDraft(normalizeTeamMembers(garage.team_members));
   }, [garage?.id]);
 
   useEffect(() => {
@@ -185,24 +217,87 @@ export function GarageProfileTab({
     setBanner(ok ? { kind: "success", message: "Embed-Code kopiert." } : { kind: "error", message: "Kopieren fehlgeschlagen." });
   }
 
+  function addTeamMember() {
+    setTeamDraft((prev) => {
+      const nextOrder = prev.length > 0 ? Math.max(...prev.map((m) => m.order ?? 0)) + 1 : 1;
+      return [
+        ...prev,
+        {
+          id: createId("team"),
+          name: "",
+          role: null,
+          bio: null,
+          image_url: null,
+          order: nextOrder,
+        },
+      ];
+    });
+  }
+
+  function updateTeamMember(id: string, patch: Partial<TeamMember>) {
+    setTeamDraft((prev) =>
+      prev.map((m) => {
+        if (m.id !== id) return m;
+        return { ...m, ...patch };
+      })
+    );
+  }
+
+  function removeTeamMember(id: string) {
+    setTeamDraft((prev) => prev.filter((m) => m.id !== id));
+  }
+
   async function handleSaveProfile() {
     setBanner({ kind: "idle" });
     setProfileSaving(true);
 
+    const baseUpdates: Partial<Garage> = {
+      contact_email: profileDraft.contact_email.trim() || null,
+      phone_number: profileDraft.phone_number.trim() || null,
+      website_url: profileDraft.website_url.trim() || null,
+      description: profileDraft.description.trim() || null,
+      services: profileDraft.services.length > 0 ? profileDraft.services : null,
+      opening_hours: Object.keys(profileDraft.opening_hours).length > 0 ? profileDraft.opening_hours : null,
+      header_image_url: headerImageUrl || null,
+    };
+
+    const sanitizedTeam = teamDraft
+      .map((m, idx) => ({
+        id: m.id,
+        name: (m.name ?? "").toString().trim(),
+        role: (m.role ?? "").toString().trim() || null,
+        bio: (m.bio ?? "").toString().trim() || null,
+        image_url: (m.image_url ?? "").toString().trim() || null,
+        order: typeof m.order === "number" ? m.order : idx + 1,
+      }))
+      .filter((m) => m.id.trim().length > 0 && m.name.trim().length > 0);
+
     try {
       await onUpdate({
-        contact_email: profileDraft.contact_email.trim() || null,
-        phone_number: profileDraft.phone_number.trim() || null,
-        website_url: profileDraft.website_url.trim() || null,
-        description: profileDraft.description.trim() || null,
-        services: profileDraft.services.length > 0 ? profileDraft.services : null,
-        opening_hours: Object.keys(profileDraft.opening_hours).length > 0 ? profileDraft.opening_hours : null,
-        header_image_url: headerImageUrl || null,
+        ...baseUpdates,
+        team_members: sanitizedTeam.length > 0 ? sanitizedTeam : [],
       });
 
       setBanner({ kind: "success", message: "Profil-Daten gespeichert." });
     } catch (e) {
-      setBanner({ kind: "error", message: `Speichern fehlgeschlagen: ${getErrorMessage(e)}` });
+      const msg = getErrorMessage(e);
+      const looksLikeMissingTeamColumn =
+        msg.toLowerCase().includes("team_members") &&
+        (msg.toLowerCase().includes("column") || msg.toLowerCase().includes("schema") || msg.toLowerCase().includes("not found"));
+
+      if (looksLikeMissingTeamColumn) {
+        try {
+          await onUpdate(baseUpdates);
+          setBanner({
+            kind: "success",
+            message: "Profil-Daten gespeichert. Team wird aktiv, sobald das Update im Backend ausgerollt ist.",
+          });
+        } catch (e2) {
+          setBanner({ kind: "error", message: `Speichern fehlgeschlagen: ${getErrorMessage(e2)}` });
+        }
+      } else {
+        setBanner({ kind: "error", message: `Speichern fehlgeschlagen: ${msg}` });
+      }
     } finally {
       setProfileSaving(false);
     }
@@ -632,6 +727,85 @@ export function GarageProfileTab({
             );
           })}
         </div>
+      </div>
+
+      {/* Team Section */}
+      <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Team</h3>
+            <p className="text-sm text-neutral-600 mt-1">Zeigen Sie Ihr Team auf der öffentlichen Profil-Seite.</p>
+          </div>
+          <Button onClick={addTeamMember} className="rounded-2xl">
+            Teammitglied hinzufügen
+          </Button>
+        </div>
+
+        {teamDraft.length === 0 ? (
+          <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 text-sm text-neutral-700">
+            Noch keine Teammitglieder hinterlegt.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {teamDraft.map((m, idx) => (
+              <div key={m.id} className="rounded-3xl border border-neutral-200/60 bg-white p-4 shadow-sm">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="grid flex-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor={`team_${m.id}_name`}>Name</Label>
+                      <Input
+                        id={`team_${m.id}_name`}
+                        value={m.name ?? ""}
+                        onChange={(e) => updateTeamMember(m.id, { name: e.target.value })}
+                        placeholder="z.B. Max Muster"
+                        className="rounded-2xl"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`team_${m.id}_role`}>Rolle</Label>
+                      <Input
+                        id={`team_${m.id}_role`}
+                        value={m.role ?? ""}
+                        onChange={(e) => updateTeamMember(m.id, { role: e.target.value })}
+                        placeholder="z.B. Verkauf / Werkstatt"
+                        className="rounded-2xl"
+                      />
+                    </div>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor={`team_${m.id}_bio`}>Kurzbeschreibung</Label>
+                      <Textarea
+                        id={`team_${m.id}_bio`}
+                        value={m.bio ?? ""}
+                        onChange={(e) => updateTeamMember(m.id, { bio: e.target.value })}
+                        placeholder="Optional – 1–2 Sätze"
+                        className="rounded-2xl min-h-[90px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                    <Button
+                      variant="outline"
+                      className="rounded-2xl"
+                      onClick={() => removeTeamMember(m.id)}
+                    >
+                      Entfernen
+                    </Button>
+                    <div className="text-xs text-neutral-500 sm:text-right">
+                      Position: {typeof m.order === "number" ? m.order : idx + 1}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="mt-3 text-xs text-neutral-500">
+          Tipp: Teammitglieder erscheinen öffentlich erst, nachdem Sie “Profil-Daten speichern” gedrückt haben.
+        </p>
       </div>
 
       {/* Save Button */}

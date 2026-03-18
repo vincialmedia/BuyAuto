@@ -1,5 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export interface TeamMember {
+  id: string;
+  name: string;
+  role: string | null;
+  bio: string | null;
+  image_url: string | null;
+  order: number | null;
+}
+
 export interface Garage {
   id: string;
   owner_user_id: string;
@@ -13,6 +22,7 @@ export interface Garage {
   header_image_url: string | null;
   opening_hours: Record<string, { from: string; to: string; closed: boolean }> | null;
   services: string[] | null;
+  team_members: TeamMember[] | null;
   listing_limit: number | null;
   plan: string | null;
   created_at?: string | null;
@@ -45,10 +55,31 @@ export type GarageUpdate = Partial<
     | "header_image_url"
     | "opening_hours"
     | "services"
+    | "team_members"
     | "plan"
     | "listing_limit"
   >
 >;
+
+function toTeamMembers(value: unknown): TeamMember[] | null {
+  if (!Array.isArray(value)) return null;
+
+  const mapped: TeamMember[] = value
+    .filter((m) => m && typeof m === "object")
+    .map((m) => m as Record<string, unknown>)
+    .map((m) => ({
+      id: typeof m.id === "string" ? m.id : "",
+      name: typeof m.name === "string" ? m.name : "",
+      role: typeof m.role === "string" ? m.role : null,
+      bio: typeof m.bio === "string" ? m.bio : null,
+      image_url: typeof m.image_url === "string" ? m.image_url : null,
+      order: typeof m.order === "number" ? m.order : null,
+    }))
+    .filter((m) => m.id.trim().length > 0 && m.name.trim().length > 0);
+
+  if (mapped.length === 0) return [];
+  return mapped.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
 
 function toGarage(row: unknown): Garage {
   const r = row as Record<string, unknown>;
@@ -69,6 +100,7 @@ function toGarage(row: unknown): Garage {
         ? (r.opening_hours as Record<string, { from: string; to: string; closed: boolean }>)
         : null,
     services: Array.isArray(r.services) ? r.services : null,
+    team_members: toTeamMembers(r.team_members) ?? null,
     listing_limit: typeof r.listing_limit === "number" ? r.listing_limit : null,
     plan: typeof r.plan === "string" ? r.plan : null,
     created_at: typeof r.created_at === "string" ? r.created_at : null,
