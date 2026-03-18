@@ -43,10 +43,10 @@ function getOwnerUserIdFromPublicRow(row: unknown): string | null {
   const candidates: unknown[] = [
     r.user_id,
     r.created_by,
-    (r as Record<string, unknown>).seller_user_id,
-    (r as Record<string, unknown>).sellerUserId,
-    (r as Record<string, unknown>).owner_user_id,
-    (r as Record<string, unknown>).ownerUserId,
+    (r as any)?.seller_user_id,
+    (r as any)?.sellerUserId,
+    (r as any)?.owner_user_id,
+    (r as any)?.ownerUserId,
     (r as any)?.seller_user?.id,
     (r as any)?.sellerUser?.id,
   ];
@@ -67,10 +67,63 @@ function getListingIdFromRow(row: unknown): string | null {
   return s.trim() ? s : null;
 }
 
+function getNonEmptyString(input: unknown): string | null {
+  if (typeof input === "string") return input.trim() ? input : null;
+  if (input === null || input === undefined) return null;
+  const s = String(input);
+  return s.trim() ? s : null;
+}
+
+function getGarageIdFromRow(row: unknown): string | null {
+  const r = row as any;
+
+  const candidates: unknown[] = [
+    r.garage_id,
+    r.garageId,
+    r.garage?.id,
+    r.garage?.garage_id,
+    r.garages?.id,
+  ];
+
+  for (const c of candidates) {
+    const v = getNonEmptyString(c);
+    if (v) return v;
+  }
+
+  return null;
+}
+
+function getGarageNameFromRow(row: unknown): string | null {
+  const r = row as any;
+
+  const candidates: unknown[] = [
+    r.garage_name,
+    r.garageName,
+    r.garage?.garage_name,
+    r.garage?.name,
+    r.garages?.garage_name,
+    r.garages?.name,
+  ];
+
+  for (const c of candidates) {
+    const v = getNonEmptyString(c);
+    if (v) return v;
+  }
+
+  return null;
+}
+
+function getSellerTypeFromRow(row: unknown): "private" | "garage" | null {
+  const r = row as any;
+
+  const t = r.seller_type ?? r.sellerType ?? null;
+  if (t === "garage" || t === "private") return t;
+
+  return getGarageIdFromRow(row) ? "garage" : null;
+}
+
 function isGarageSellerFromRow(row: unknown): boolean {
-  const r = row as Record<string, unknown>;
-  const t = (r.seller_type ?? (r as any)?.sellerType) as unknown;
-  return t === "garage";
+  return getSellerTypeFromRow(row) === "garage";
 }
 
 /**
@@ -172,18 +225,25 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
 
   const joinedProfile = (row as unknown as { profiles?: { full_name?: string | null; avatar_url?: string | null } | null }).profiles ?? null;
-  const seller_name =
+
+  const sellerNameCandidate =
     joinedProfile?.full_name ??
     (row as unknown as { seller_name?: string | null }).seller_name ??
     null;
-  const seller_avatar_url =
+
+  const sellerAvatarCandidate =
     joinedProfile?.avatar_url ??
     (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ??
     null;
-  const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
-  const sellerType = (row as unknown as { seller_type?: string | null }).seller_type ?? null;
-  const effectiveSellerName = seller_name ?? (sellerType === "garage" ? garage_name : null);
+  const seller_name = getNonEmptyString(sellerNameCandidate);
+  const seller_avatar_url = getNonEmptyString(sellerAvatarCandidate);
+
+  const seller_type = getSellerTypeFromRow(row);
+  const garage_id = getGarageIdFromRow(row);
+  const garage_name = getGarageNameFromRow(row);
+
+  const effectiveSellerName = seller_name ?? (seller_type === "garage" ? garage_name : null);
 
   return {
     id: String(row.id ?? ""),
@@ -218,10 +278,10 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     drivetrain: row.drivetrain ?? null,
     firstRegistration: row.first_registration ?? null,
 
-    seller_type: row.seller_type ?? null,
+    seller_type,
     seller_name: effectiveSellerName,
     seller_avatar_url,
-    garage_id: row.garage_id ?? null,
+    garage_id,
     garage_name,
   };
 }
@@ -248,18 +308,25 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
 
   const joinedProfile = (row as unknown as { profiles?: { full_name?: string | null; avatar_url?: string | null } | null }).profiles ?? null;
-  const seller_name =
+
+  const sellerNameCandidate =
     joinedProfile?.full_name ??
     (row as unknown as { seller_name?: string | null }).seller_name ??
     null;
-  const seller_avatar_url =
+
+  const sellerAvatarCandidate =
     joinedProfile?.avatar_url ??
     (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ??
     null;
-  const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
-  const sellerType = (row as unknown as { seller_type?: string | null }).seller_type ?? null;
-  const effectiveSellerName = seller_name ?? (sellerType === "garage" ? garage_name : null);
+  const seller_name = getNonEmptyString(sellerNameCandidate);
+  const seller_avatar_url = getNonEmptyString(sellerAvatarCandidate);
+
+  const seller_type = getSellerTypeFromRow(row);
+  const garage_id = getGarageIdFromRow(row);
+  const garage_name = getGarageNameFromRow(row);
+
+  const effectiveSellerName = seller_name ?? (seller_type === "garage" ? garage_name : null);
 
   return {
     id: String(row.id ?? ""),
@@ -303,10 +370,10 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     drivetrain: row.drivetrain ?? null,
     firstRegistration: row.first_registration ?? null,
 
-    seller_type: row.seller_type ?? null,
+    seller_type,
     seller_name: effectiveSellerName,
     seller_avatar_url,
-    garage_id: row.garage_id ?? null,
+    garage_id,
     garage_name,
   };
 }

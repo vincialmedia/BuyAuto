@@ -98,6 +98,17 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
     return location;
   };
 
+  const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
+  const sellerNameRaw =
+    (listing as unknown as { seller_name?: string | null }).seller_name ??
+    (listing as unknown as { garage_name?: string | null }).garage_name ??
+    null;
+
+  const sellerName =
+    typeof sellerNameRaw === "string" && sellerNameRaw.trim()
+      ? sellerNameRaw
+      : (sellerType === "garage" ? "Garage" : "Privatanbieter");
+
   return (
     <div className="group bg-white border border-neutral-200/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-neutral-900/10 transition-all duration-300 hover:-translate-y-1 hover:bg-neutral-50/30">
       <div className="flex">
@@ -254,9 +265,7 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
 
         <div className="min-w-0">
           <p className="text-xs font-semibold text-neutral-900 truncate">
-            {(listing as unknown as { seller_name?: string | null }).seller_name ??
-              (listing as unknown as { garage_name?: string | null }).garage_name ??
-              ((listing as unknown as { seller_type?: string | null }).seller_type === "garage" ? "Garage" : "Privatanbieter")}
+            {sellerName}
           </p>
           <p className="text-xs text-neutral-500 truncate">{listing.location}</p>
         </div>

@@ -101,10 +101,19 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
       return;
     }
 
-    const garageId = (listing as unknown as { garage_id?: string | null }).garage_id ?? null;
+    const garageId =
+      (listing as unknown as { garage_id?: string | null }).garage_id ??
+      (listing as unknown as { garageId?: string | null }).garageId ??
+      null;
+
     const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
 
-    if (sellerType !== "garage" || !garageId) {
+    if (!garageId) {
+      setGarage(null);
+      return;
+    }
+
+    if (sellerType && sellerType !== "garage") {
       setGarage(null);
       return;
     }

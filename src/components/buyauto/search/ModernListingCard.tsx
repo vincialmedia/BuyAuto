@@ -101,10 +101,15 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
   };
 
   const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
-  const sellerName =
+  const sellerNameRaw =
     (listing as unknown as { seller_name?: string | null }).seller_name ??
     (listing as unknown as { garage_name?: string | null }).garage_name ??
-    (sellerType === "garage" ? "Garage" : "Privatanbieter");
+    null;
+
+  const sellerNameNormalized =
+    typeof sellerNameRaw === "string" && sellerNameRaw.trim() ? sellerNameRaw : null;
+
+  const sellerName = sellerNameNormalized ?? (sellerType === "garage" ? "Garage" : "Privatanbieter");
 
   const sellerAvatarUrl = (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
 

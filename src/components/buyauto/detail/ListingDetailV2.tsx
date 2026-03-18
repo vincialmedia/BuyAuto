@@ -374,7 +374,13 @@ export function ListingDetailV2({
 
                 <div className="mt-5">
                   {(() => {
-                    const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
+                    const sellerTypeRaw = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
+                    const garageId =
+                      (listing as unknown as { garage_id?: string | null }).garage_id ??
+                      (listing as unknown as { garageId?: string | null }).garageId ??
+                      null;
+
+                    const sellerType = sellerTypeRaw ?? (garageId ? "garage" : null);
 
                     if (sellerType === "garage") {
                       const name =
