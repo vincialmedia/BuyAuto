@@ -155,12 +155,6 @@ export function GaragePricingSection() {
               </div>
             </TooltipProvider>
           </div>
-
-          <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-3 text-center text-xs text-blue-800">
-            <span className="font-semibold">Hinweis:</span> Leads können nicht
-            garantiert werden – aber du bekommst eine saubere Präsenz + direkten
-            Kanal für Anfragen.
-          </div>
         </div>
       </section>
 
@@ -183,7 +177,7 @@ export function GaragePricingSection() {
               variant="secondary"
               className="h-12 px-6 rounded-full"
             >
-              <a href="mailto:kontakt@buyauto.ch">
+              <a href="mailto:hello@buyauto.ch">
                 <Mail className="h-4 w-4 mr-2" />
                 Kontakt aufnehmen
               </a>

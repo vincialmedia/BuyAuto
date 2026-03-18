@@ -67,7 +67,7 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               {
-                title: "Pro Fahrzeug gedacht",
+                title: "Garage-Profilseite + Inventar Seite + SEO",
                 body: "Anfragen & Deal-Chat sind immer ans Inserat gekoppelt.",
               },
               {

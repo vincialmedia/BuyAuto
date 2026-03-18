@@ -74,7 +74,7 @@ export const garagePackages: Array<{
     period: "/ Monat",
     limit: "bis 100 Inserate",
     premiumIncluded: "10 Premium / Monat",
-    features: ["Für grosse Bestände", "Priorisierter Support"],
+    features: ["Für grosse Bestände", "Kompletter Bestand hochladen", "Priorisierter Support"],
     cta: "Pro wählen",
   },
 ];
