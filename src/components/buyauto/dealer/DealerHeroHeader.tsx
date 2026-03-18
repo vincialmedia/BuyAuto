@@ -58,15 +58,7 @@ export function DealerHeroHeader({
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/80 to-transparent" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-6 pt-16 md:pt-24">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/85 backdrop-blur-md">
-            Händlerprofil auf BuyAuto
-          </div>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">{garageName}</h1>
-          <p className="mt-3 text-sm leading-relaxed text-white/85 md:text-base">{shortDescription}</p>
-        </div>
-      </div>
+      <div className="relative mx-auto max-w-6xl px-6 pt-16 md:pt-24" />
 
       <div className="relative mx-auto max-w-6xl px-6 pb-10 pt-10 md:pb-12">
         <div className="rounded-3xl bg-white/25 p-6 shadow-2xl backdrop-blur-xl ring-1 ring-white/30 md:p-8">
@@ -116,15 +108,6 @@ export function DealerHeroHeader({
                   className="rounded-2xl border border-white/30 bg-white/20 px-4 py-2 text-sm font-medium text-white hover:border-white/50 hover:bg-white/30"
                 >
                   Anrufen
-                </a>
-              ) : null}
-
-              {contactEmail?.trim() ? (
-                <a
-                  href={`mailto:${contactEmail.trim()}`}
-                  className="rounded-2xl border border-white/30 bg-white/20 px-4 py-2 text-sm font-medium text-white hover:border-white/50 hover:bg-white/30"
-                >
-                  E-Mail
                 </a>
               ) : null}
 

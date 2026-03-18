@@ -127,6 +127,8 @@ export default function DealerMicrositePage(props: PageProps) {
           className="pb-16 md:pb-20"
         />
 
+        <DealerTeamAndHours teamMembers={teamMembers} openingHours={openingHours} className="pb-20 md:pb-24" />
+
         <section id="inventory" className="mx-auto max-w-6xl px-6 pb-16 md:pb-24">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
@@ -137,8 +139,6 @@ export default function DealerMicrositePage(props: PageProps) {
 
           <PublicDealerInventory garageId={garage.id} />
         </section>
-
-        <DealerTeamAndHours teamMembers={teamMembers} openingHours={openingHours} className="pb-20 md:pb-24" />
       </main>
     </>
   );
