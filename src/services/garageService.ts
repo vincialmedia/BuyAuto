@@ -119,8 +119,7 @@ export async function getGarageBySlug(slug: string): Promise<Garage | null> {
 
 export async function getGaragePublicById(garageId: string): Promise<GaragePublicInfo | null> {
   try {
-    const { data, error } = await supabase
-      .rpc("get_garage_public_v2", { p_garage_id: garageId });
+    const { data, error } = await supabase.rpc("get_garage_public_v2", { p_garage_id: garageId });
 
     if (!error && data) {
       const d = data as any;
