@@ -156,7 +156,7 @@ export function DealerHeroHeader({
 
           <div className="mt-3 flex items-center justify-between text-xs text-white/70">
             <div>{publicPath ? `buyauto.ch/${publicPath}` : "buyauto.ch"}</div>
-            <div>© {new Date().getFullYear()} BuyAuto</div>
+            <div>© 2026 BuyAuto</div>
           </div>
         </div>
       </div>
