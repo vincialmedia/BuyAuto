@@ -6,6 +6,7 @@ import AuthProvider from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import "@/styles/globals.css";
+import { useRouter } from "next/navigation";
 
 // Configure Manrope font from Google Fonts for automatic optimization
 const manrope = Manrope({
