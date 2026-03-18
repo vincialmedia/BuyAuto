@@ -39,13 +39,38 @@ async function getPublicProfilesByIds(userIds: string[]): Promise<Record<string,
 
 function getOwnerUserIdFromPublicRow(row: unknown): string | null {
   const r = row as Record<string, unknown>;
-  const candidate = (r.user_id ?? r.created_by) as unknown;
-  return typeof candidate === "string" && candidate.trim() ? candidate : null;
+
+  const candidates: unknown[] = [
+    r.user_id,
+    r.created_by,
+    (r as Record<string, unknown>).seller_user_id,
+    (r as Record<string, unknown>).sellerUserId,
+    (r as Record<string, unknown>).owner_user_id,
+    (r as Record<string, unknown>).ownerUserId,
+    (r as any)?.seller_user?.id,
+    (r as any)?.sellerUser?.id,
+  ];
+
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c;
+  }
+
+  return null;
+}
+
+function getListingIdFromRow(row: unknown): string | null {
+  const r = row as Record<string, unknown>;
+  const id = r.id;
+  if (typeof id === "string" && id.trim()) return id;
+  if (id === null || id === undefined) return null;
+  const s = String(id);
+  return s.trim() ? s : null;
 }
 
 function isGarageSellerFromRow(row: unknown): boolean {
   const r = row as Record<string, unknown>;
-  return r.seller_type === "garage";
+  const t = (r.seller_type ?? (r as any)?.sellerType) as unknown;
+  return t === "garage";
 }
 
 /**
@@ -361,7 +386,33 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
 
     const base = transformPublicRowToListingDetail(data as unknown as PublicListingRow);
 
-    const ownerId = getOwnerUserIdFromPublicRow(data);
+    let ownerId = getOwnerUserIdFromPublicRow(data);
+
+    if (!isGarageSellerFromRow(data) && !ownerId) {
+      const { data: ownerRows, error: ownerError } = await supabase
+        .from("listings")
+        .select("id, user_id, created_by, seller_type, status")
+        .eq("id", id)
+        .eq("status", "published")
+        .single();
+
+      if (ownerError) {
+        console.error("Error fetching listing owner fallback:", { id, ownerError });
+      } else {
+        const row = ownerRows as any;
+        const sellerType = row.seller_type ?? null;
+        if (sellerType === "garage") return base;
+
+        const userId = row.user_id ?? null;
+        const createdBy = row.created_by ?? null;
+
+        ownerId =
+          (typeof userId === "string" && userId.trim() ? userId : null) ??
+          (typeof createdBy === "string" && createdBy.trim() ? createdBy : null) ??
+          null;
+      }
+    }
+
     if (!isGarageSellerFromRow(data) && ownerId) {
       const profileMap = await getPublicProfilesByIds([ownerId]);
       const p = profileMap[ownerId];
@@ -472,16 +523,58 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
 
     const rows = (data || []) as unknown as PublicListingRow[];
 
-    const privateOwnerIds = rows
-      .filter((r) => !isGarageSellerFromRow(r))
-      .map((r) => getOwnerUserIdFromPublicRow(r))
-      .filter((v): v is string => typeof v === "string" && v.trim() !== "");
+    const privateRows = rows.filter((r) => !isGarageSellerFromRow(r));
 
+    const ownerIdByListingId: Record<string, string> = {};
+    for (const r of privateRows) {
+      const listingId = getListingIdFromRow(r);
+      const ownerId = getOwnerUserIdFromPublicRow(r);
+      if (listingId && ownerId) ownerIdByListingId[listingId] = ownerId;
+    }
+
+    const missingOwnerListingIds = privateRows
+      .map((r) => getListingIdFromRow(r))
+      .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+      .filter((listingId) => !ownerIdByListingId[listingId]);
+
+    if (missingOwnerListingIds.length > 0) {
+      const { data: ownerRows, error: ownerError } = await supabase
+        .from("listings")
+        .select("id, user_id, created_by, seller_type, status")
+        .in("id", missingOwnerListingIds)
+        .eq("status", "published");
+
+      if (ownerError) {
+        console.error("Owner fallback query error (search):", { ownerError, count: missingOwnerListingIds.length });
+      } else {
+        const normalized = Array.isArray(ownerRows) ? ownerRows : [];
+        for (const row of normalized) {
+          const listingId = typeof (row as any)?.id === "string" ? (row as any).id : String((row as any)?.id ?? "");
+          if (!listingId || ownerIdByListingId[listingId]) continue;
+
+          const sellerType = (row as any)?.seller_type ?? null;
+          if (sellerType === "garage") continue;
+
+          const userId = (row as any)?.user_id ?? null;
+          const createdBy = (row as any)?.created_by ?? null;
+
+          const ownerId =
+            (typeof userId === "string" && userId.trim() ? userId : null) ??
+            (typeof createdBy === "string" && createdBy.trim() ? createdBy : null) ??
+            null;
+
+          if (ownerId) ownerIdByListingId[listingId] = ownerId;
+        }
+      }
+    }
+
+    const privateOwnerIds = Object.values(ownerIdByListingId).filter((v) => typeof v === "string" && v.trim() !== "");
     const profileMap = await getPublicProfilesByIds(privateOwnerIds);
 
     const items = rows.map((r) => {
       const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
-      const ownerId = getOwnerUserIdFromPublicRow(r);
+      const listingId = listing.id;
+      const ownerId = ownerIdByListingId[listingId] ?? getOwnerUserIdFromPublicRow(r);
 
       if (!isGarageSellerFromRow(r) && ownerId) {
         const p = profileMap[ownerId];
@@ -606,16 +699,22 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
 
     const rows = (data || []) as unknown as PublicListingRow[];
 
-    const privateOwnerIds = rows
-      .filter((r) => !isGarageSellerFromRow(r))
-      .map((r) => getOwnerUserIdFromPublicRow(r))
-      .filter((v): v is string => typeof v === "string" && v.trim() !== "");
+    const privateRows = rows.filter((r) => !isGarageSellerFromRow(r));
+    const ownerIdByListingId: Record<string, string> = {};
 
+    for (const r of privateRows) {
+      const listingId = getListingIdFromRow(r);
+      const ownerId = getOwnerUserIdFromPublicRow(r);
+      if (listingId && ownerId) ownerIdByListingId[listingId] = ownerId;
+    }
+
+    const privateOwnerIds = Object.values(ownerIdByListingId).filter((v) => typeof v === "string" && v.trim() !== "");
     const profileMap = await getPublicProfilesByIds(privateOwnerIds);
 
     const items = rows.map((r) => {
       const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
-      const ownerId = getOwnerUserIdFromPublicRow(r);
+      const listingId = listing.id;
+      const ownerId = ownerIdByListingId[listingId] ?? getOwnerUserIdFromPublicRow(r);
 
       if (!isGarageSellerFromRow(r) && ownerId) {
         const p = profileMap[ownerId];
