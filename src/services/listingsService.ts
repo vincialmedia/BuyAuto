@@ -182,6 +182,9 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     null;
   const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
 
+  const sellerType = (row as unknown as { seller_type?: string | null }).seller_type ?? null;
+  const effectiveSellerName = seller_name ?? (sellerType === "garage" ? garage_name : null);
+
   return {
     id: String(row.id ?? ""),
     ui_version: row.ui_version === "v2" ? "v2" : "v1",
@@ -216,7 +219,7 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     firstRegistration: row.first_registration ?? null,
 
     seller_type: row.seller_type ?? null,
-    seller_name,
+    seller_name: effectiveSellerName,
     seller_avatar_url,
     garage_id: row.garage_id ?? null,
     garage_name,
@@ -254,6 +257,9 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ??
     null;
   const garage_name = (row as unknown as { garage_name?: string | null }).garage_name ?? null;
+
+  const sellerType = (row as unknown as { seller_type?: string | null }).seller_type ?? null;
+  const effectiveSellerName = seller_name ?? (sellerType === "garage" ? garage_name : null);
 
   return {
     id: String(row.id ?? ""),
@@ -298,7 +304,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     firstRegistration: row.first_registration ?? null,
 
     seller_type: row.seller_type ?? null,
-    seller_name,
+    seller_name: effectiveSellerName,
     seller_avatar_url,
     garage_id: row.garage_id ?? null,
     garage_name,
