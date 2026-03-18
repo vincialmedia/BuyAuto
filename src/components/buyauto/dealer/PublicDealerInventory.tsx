@@ -15,6 +15,7 @@ interface PublicDealerInventoryProps {
   garageId: string;
   className?: string;
   initialQuery?: Partial<SearchQuery> & { saleType?: string };
+  embedId?: string;
 }
 
 function deriveSaleType(query: SearchQuery): SaleTypeOption {
@@ -48,7 +49,7 @@ function parseInitialSaleType(value: string | undefined): Partial<SearchQuery> {
   return {};
 }
 
-function postHeightToParent() {
+function postHeightToParent(embedId?: string) {
   if (typeof window === "undefined") return;
   if (window.top === window.self) return;
 
@@ -56,9 +57,13 @@ function postHeightToParent() {
   if (typeof height !== "number" || !Number.isFinite(height)) return;
 
   window.parent.postMessage({ type: "BUY_AUTO_IFRAME_HEIGHT", height }, "*");
+
+  if (embedId?.trim()) {
+    window.parent.postMessage({ type: "buyauto:resize", id: embedId.trim(), height }, "*");
+  }
 }
 
-export function PublicDealerInventory({ garageId, className, initialQuery }: PublicDealerInventoryProps) {
+export function PublicDealerInventory({ garageId, className, initialQuery, embedId }: PublicDealerInventoryProps) {
   const [query, setQuery] = useState<SearchQuery>(() => {
     const base: SearchQuery = {
       page: 1,
@@ -99,7 +104,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
       setLoading(false);
 
       requestAnimationFrame(() => {
-        postHeightToParent();
+        postHeightToParent(embedId);
       });
     }
 
@@ -108,14 +113,14 @@ export function PublicDealerInventory({ garageId, className, initialQuery }: Pub
     return () => {
       cancelled = true;
     };
-  }, [garageId, query]);
+  }, [garageId, query, embedId]);
 
   useEffect(() => {
-    postHeightToParent();
-    const onResize = () => postHeightToParent();
+    postHeightToParent(embedId);
+    const onResize = () => postHeightToParent(embedId);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [embedId]);
 
   const total = results?.total ?? 0;
   const page = results?.page ?? query.page ?? 1;

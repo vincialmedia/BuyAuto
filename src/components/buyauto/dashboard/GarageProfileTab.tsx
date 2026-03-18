@@ -137,18 +137,33 @@ export function GarageProfileTab({
     if (!dealerSlug) return "";
     const iframeId = `buyauto-dealer-${dealerSlug.replace(/[^a-z0-9_-]/gi, "") || "widget"}`;
 
-    return `<iframe id="${iframeId}" src="${embedUrl}" style="width:100%;border:0;display:block;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    const src = `${embedUrl}?embedId=${encodeURIComponent(iframeId)}`;
+
+    return `<iframe id="${iframeId}" src="${src}" style="width:100%;border:0;display:block;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
 <script>
 (function(){
   var iframe=document.getElementById("${iframeId}");
   if(!iframe) return;
+
+  function setHeight(h){
+    if(typeof h!=="number") return;
+    iframe.style.height = Math.max(480, Math.ceil(h)) + "px";
+  }
+
   function onMessage(e){
     if(!e || !e.data) return;
-    if(e.data.type!=="buyauto:resize") return;
-    if(e.data.id!=="${iframeId}") return;
-    if(typeof e.data.height!=="number") return;
-    iframe.style.height = Math.max(480, Math.ceil(e.data.height)) + "px";
+    if(e.source !== iframe.contentWindow) return;
+
+    if(e.data.type==="buyauto:resize"){
+      if(e.data.id!=="${iframeId}") return;
+      return setHeight(e.data.height);
+    }
+
+    if(e.data.type==="BUY_AUTO_IFRAME_HEIGHT"){
+      return setHeight(e.data.height);
+    }
   }
+
   window.addEventListener("message", onMessage, false);
 })();
 </script>`;

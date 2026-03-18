@@ -1,4 +1,5 @@
 import type { GetServerSideProps } from "next";
+import Head from "next/head";
 import { SEO } from "@/components/SEO";
 import { getPublicGarageBySlug } from "@/services/garageService";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
@@ -11,6 +12,7 @@ type PageProps =
       garage: PublicGarage;
       absoluteUrl: string;
       initialQuery: Record<string, string | number | boolean>;
+      embedId: string;
     }
   | {
       ok: false;
@@ -42,7 +44,9 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       (process.env.NEXT_PUBLIC_SITE_URL || "").trim() ||
       (process.env.NODE_ENV === "production" ? "https://www.buyauto.ch" : "http://localhost:3000");
 
-    const absoluteUrl = `${base.replace(/\/$/, "")}/embed/garage/${garage.slug}`;
+    const cleanedBase = base.replace(/\/$/, "");
+    const embedId = parseString(ctx.query.embedId) ?? "buyauto-dealer-inventory";
+    const absoluteUrl = `${cleanedBase}/embed/garage/${garage.slug}?embedId=${encodeURIComponent(embedId)}`;
 
     const initialQuery: Record<string, string | number | boolean> = {};
     const saleType = parseString(ctx.query.saleType);
@@ -65,6 +69,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
         garage,
         absoluteUrl,
         initialQuery,
+        embedId,
       },
     };
   } catch {
@@ -85,29 +90,33 @@ export default function DealerInventoryEmbedPage(props: PageProps) {
 
   return (
     <>
-      <SEO
-        title={`${props.garage.garage_name} – Fahrzeuge | BuyAuto`}
-        description="Fahrzeuge auf BuyAuto"
-        url={props.absoluteUrl}
-      />
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
+
+      <SEO title={`${props.garage.garage_name} – Fahrzeuge | BuyAuto`} description="Fahrzeuge auf BuyAuto" url={props.absoluteUrl} />
+
       <main className="min-h-screen bg-white">
         <div className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
-          <PublicDealerInventory garageId={props.garage.id} initialQuery={props.initialQuery} className="shadow-none" />
+          <PublicDealerInventory
+            garageId={props.garage.id}
+            initialQuery={props.initialQuery}
+            embedId={props.embedId}
+            className="shadow-none"
+          />
         </div>
 
         <div className="px-3 pb-6">
           <div className="mx-auto max-w-6xl">
             <details className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
-              <summary className="cursor-pointer select-none font-medium text-neutral-900">
-                Embed-Code (Auto-Höhe)
-              </summary>
+              <summary className="cursor-pointer select-none font-medium text-neutral-900">Embed-Code (Auto-Höhe)</summary>
               <div className="mt-3 space-y-3">
                 <p className="text-neutral-600">
                   Füge diesen Code auf deiner Website ein. Er passt die Höhe automatisch an (mobilfreundlich).
                 </p>
                 <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-xs text-white">
 {`<iframe
-  id="buyauto-dealer-inventory"
+  id="${props.embedId}"
   src="${props.absoluteUrl}"
   style="width:100%;border:0;display:block;"
   loading="lazy"
@@ -115,14 +124,28 @@ export default function DealerInventoryEmbedPage(props: PageProps) {
 ></iframe>
 <script>
   (function () {
-    var iframe = document.getElementById("buyauto-dealer-inventory");
+    var iframe = document.getElementById("${props.embedId}");
     if (!iframe) return;
+
+    function setHeight(h) {
+      if (typeof h !== "number") return;
+      iframe.style.height = Math.max(480, Math.ceil(h)) + "px";
+    }
+
     function onMessage(event) {
       if (!event || !event.data) return;
-      if (event.data.type !== "BUY_AUTO_IFRAME_HEIGHT") return;
-      if (typeof event.data.height !== "number") return;
-      iframe.style.height = event.data.height + "px";
+      if (event.source !== iframe.contentWindow) return;
+
+      if (event.data.type === "buyauto:resize") {
+        if (event.data.id !== "${props.embedId}") return;
+        return setHeight(event.data.height);
+      }
+
+      if (event.data.type === "BUY_AUTO_IFRAME_HEIGHT") {
+        return setHeight(event.data.height);
+      }
     }
+
     window.addEventListener("message", onMessage, false);
   })();
 </script>`}
