@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateImageVariants, shouldOptimizeImage, formatFileSize } from "@/lib/buyauto/imageOptimization";
 
 const LISTING_IMAGES_BUCKET = "listing-images";
+const GARAGE_TEAM_BUCKET = "garage-team";
 
 /**
  * Upload a file with automatic optimization
@@ -354,6 +355,74 @@ export function getGarageLogoPublicUrl(garageId: string): string {
   const { data } = supabase.storage
     .from(LISTING_IMAGES_BUCKET)
     .getPublicUrl(`garage-logos/${garageId}/logo_medium.webp`);
+
+  return data.publicUrl;
+}
+
+export async function uploadGarageTeamMemberPhoto(
+  file: File,
+  garageId: string,
+  memberId: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  if (onProgress) onProgress(5);
+
+  const safeFile =
+    file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp" ? file : null;
+
+  if (!safeFile) {
+    throw new Error("Bitte PNG, JPG oder WEBP hochladen.");
+  }
+
+  const basePath = `${garageId}/${memberId}/photo`;
+
+  const needsOptimization = shouldOptimizeImage(safeFile);
+
+  if (needsOptimization) {
+    const variants = await generateImageVariants(safeFile);
+    if (onProgress) onProgress(45);
+
+    const uploads = await Promise.all([
+      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(`${basePath}_thumbnail.webp`, variants.thumbnail, {
+        contentType: "image/webp",
+        cacheControl: "3600",
+        upsert: true,
+      }),
+      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(`${basePath}_medium.webp`, variants.medium, {
+        contentType: "image/webp",
+        cacheControl: "3600",
+        upsert: true,
+      }),
+      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(`${basePath}_large.webp`, variants.large, {
+        contentType: "image/webp",
+        cacheControl: "3600",
+        upsert: true,
+      }),
+    ]);
+
+    const errors = uploads.find((r) => r.error);
+    if (errors?.error) throw errors.error;
+
+    if (onProgress) onProgress(90);
+
+    const { data } = supabase.storage.from(GARAGE_TEAM_BUCKET).getPublicUrl(`${basePath}_medium.webp`);
+
+    if (onProgress) onProgress(100);
+
+    return data.publicUrl;
+  }
+
+  const { error } = await supabase.storage.from(GARAGE_TEAM_BUCKET).upload(`${basePath}_medium.webp`, safeFile, {
+    contentType: safeFile.type,
+    cacheControl: "3600",
+    upsert: true,
+  });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(GARAGE_TEAM_BUCKET).getPublicUrl(`${basePath}_medium.webp`);
+
+  if (onProgress) onProgress(100);
 
   return data.publicUrl;
 }

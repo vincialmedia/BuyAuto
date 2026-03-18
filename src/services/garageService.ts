@@ -84,6 +84,9 @@ function toTeamMembers(value: unknown): TeamMember[] | null {
 function toGarage(row: unknown): Garage {
   const r = row as Record<string, unknown>;
 
+  const headerRaw = typeof r.header_image_url === "string" ? r.header_image_url : null;
+  const resolvedHeader = resolveListingImagesPublicUrl(headerRaw) ?? headerRaw;
+
   return {
     id: String(r.id ?? ""),
     owner_user_id: String(r.owner_user_id ?? ""),
@@ -94,7 +97,7 @@ function toGarage(row: unknown): Garage {
     phone_number: typeof r.phone_number === "string" ? r.phone_number : null,
     website_url: typeof r.website_url === "string" ? r.website_url : null,
     description: typeof r.description === "string" ? r.description : null,
-    header_image_url: typeof r.header_image_url === "string" ? r.header_image_url : null,
+    header_image_url: resolvedHeader,
     opening_hours:
       r.opening_hours && typeof r.opening_hours === "object"
         ? (r.opening_hours as Record<string, { from: string; to: string; closed: boolean }>)
@@ -114,6 +117,7 @@ function resolveListingImagesPublicUrl(pathOrUrl: string | null): string | null 
   if (!v) return null;
 
   if (/^https?:\/\//i.test(v)) return v;
+  if (v.startsWith("/")) return v;
 
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
   if (!base) return null;

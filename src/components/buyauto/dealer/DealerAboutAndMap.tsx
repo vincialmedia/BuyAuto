@@ -29,7 +29,7 @@ export function DealerAboutAndMap({
 }: DealerAboutAndMapProps) {
   const safeServices = Array.isArray(services) ? services.filter((s) => typeof s === "string" && s.trim().length > 0) : [];
   const mapQuery = buildGoogleMapsQuery(garageName, city);
-  const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
+  const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed&z=14&hl=de&gl=CH`;
   const openInMapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
 
   return (
@@ -111,14 +111,6 @@ export function DealerAboutAndMap({
               <Link href="/suche" className="inline-flex text-sm font-semibold text-primary underline underline-offset-4">
                 Fahrzeuge auf BuyAuto suchen
               </Link>
-              <a
-                href={openInMapsHref}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex text-sm font-semibold text-neutral-900 underline underline-offset-4"
-              >
-                In Google Maps öffnen
-              </a>
             </div>
           </div>
         </div>

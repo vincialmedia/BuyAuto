@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { uploadGarageLogo, uploadGarageHeaderImage } from "@/services/storageService";
+import { uploadGarageLogo, uploadGarageHeaderImage, uploadGarageTeamMemberPhoto } from "@/services/storageService";
 import { generateSlugFromName, type Garage, type TeamMember } from "@/services/garageService";
 import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
 
@@ -138,6 +138,9 @@ export function GarageProfileTab({
   const [shareOrigin, setShareOrigin] = useState("https://buyauto.ch");
   const [copyingPublicUrl, setCopyingPublicUrl] = useState(false);
   const [copyingEmbed, setCopyingEmbed] = useState(false);
+
+  const [teamUploadingId, setTeamUploadingId] = useState<string | null>(null);
+  const [teamUploadProgress, setTeamUploadProgress] = useState<number>(0);
 
   useEffect(() => {
     if (!garage) return;
@@ -344,6 +347,25 @@ export function GarageProfileTab({
     } finally {
       setHeaderUploading(false);
       setHeaderProgress(0);
+    }
+  }
+
+  async function handleTeamPhotoPick(memberId: string, file: File) {
+    if (!garage?.id) return;
+
+    setBanner({ kind: "idle" });
+    setTeamUploadingId(memberId);
+    setTeamUploadProgress(0);
+
+    try {
+      const url = await uploadGarageTeamMemberPhoto(file, garage.id, memberId, setTeamUploadProgress);
+      updateTeamMember(memberId, { image_url: url });
+      setBanner({ kind: "success", message: "Teamfoto hochgeladen (nicht vergessen: Profil speichern)." });
+    } catch (e) {
+      setBanner({ kind: "error", message: `Teamfoto-Upload fehlgeschlagen: ${getErrorMessage(e)}` });
+    } finally {
+      setTeamUploadingId(null);
+      setTeamUploadProgress(0);
     }
   }
 
@@ -786,11 +808,40 @@ export function GarageProfileTab({
                   </div>
 
                   <div className="flex items-center gap-2 sm:flex-col sm:items-end">
-                    <Button
-                      variant="outline"
-                      className="rounded-2xl"
-                      onClick={() => removeTeamMember(m.id)}
-                    >
+                    <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+                      <div className="h-12 w-12 overflow-hidden rounded-2xl bg-neutral-100 border border-neutral-200/60">
+                        {m.image_url ? (
+                          <img src={m.image_url} alt={m.name ?? "Team"} className="h-full w-full object-cover" />
+                        ) : null}
+                      </div>
+
+                      <label className="inline-flex cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) void handleTeamPhotoPick(m.id, file);
+                            e.currentTarget.value = "";
+                          }}
+                        />
+                        <span className="inline-flex items-center rounded-2xl border border-neutral-200/60 bg-white px-3 py-2 text-xs font-semibold text-neutral-900 hover:bg-neutral-50">
+                          Foto wählen
+                        </span>
+                      </label>
+
+                      {teamUploadingId === m.id ? (
+                        <div className="w-full sm:w-[140px]">
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
+                            <div className="h-full bg-primary transition-[width]" style={{ width: `${Math.max(5, Math.min(100, teamUploadProgress))}%` }} />
+                          </div>
+                          <div className="mt-1 text-[11px] text-neutral-500">{teamUploadProgress}%</div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <Button variant="outline" className="rounded-2xl" onClick={() => removeTeamMember(m.id)}>
                       Entfernen
                     </Button>
                     <div className="text-xs text-neutral-500 sm:text-right">
