@@ -10,7 +10,18 @@ const PUBLIC_LISTINGS_VIEW = "listings_public";
 
 type PublicProfileRow = { id: string; full_name: string | null; avatar_url: string | null };
 
-async function getPublicProfilesByIds(userIds: string[]): Promise<Record<string, { fullName: string | null; avatarUrl: string | null }>> {
+type PublicGarageRow = {
+  id: string;
+  garage_name: string | null;
+  city: string | null;
+  slug: string | null;
+  description: string | null;
+  header_image_url: string | null;
+};
+
+async function getPublicProfilesByIds(
+  userIds: string[]
+): Promise<Record<string, { fullName: string | null; avatarUrl: string | null }>> {
   const unique = Array.from(new Set(userIds.filter((v) => typeof v === "string" && v.trim() !== "")));
   if (unique.length === 0) return {};
 
@@ -31,6 +42,37 @@ async function getPublicProfilesByIds(userIds: string[]): Promise<Record<string,
     map[id] = {
       fullName: typeof (r as any)?.full_name === "string" ? (r as any).full_name : null,
       avatarUrl: typeof (r as any)?.avatar_url === "string" ? (r as any).avatar_url : null,
+    };
+  }
+
+  return map;
+}
+
+async function fetchPublicGaragesByIds(garageIds: string[]): Promise<Record<string, PublicGarageRow>> {
+  const unique = Array.from(new Set(garageIds.filter((v) => typeof v === "string" && v.trim() !== "")));
+  if (unique.length === 0) return {};
+
+  const { data, error } = await supabase.rpc("get_public_garages", { p_garage_ids: unique });
+
+  if (error) {
+    console.error("Error fetching public garages:", { error, count: unique.length });
+    return {};
+  }
+
+  const rows = (Array.isArray(data) ? data : []) as unknown as PublicGarageRow[];
+  const map: Record<string, PublicGarageRow> = {};
+
+  for (const r of rows) {
+    const id = typeof (r as any)?.id === "string" ? (r as any).id : String((r as any)?.id ?? "");
+    if (!id) continue;
+
+    map[id] = {
+      id,
+      garage_name: typeof (r as any)?.garage_name === "string" ? (r as any).garage_name : null,
+      city: typeof (r as any)?.city === "string" ? (r as any).city : null,
+      slug: typeof (r as any)?.slug === "string" ? (r as any).slug : null,
+      description: typeof (r as any)?.description === "string" ? (r as any).description : null,
+      header_image_url: typeof (r as any)?.header_image_url === "string" ? (r as any).header_image_url : null,
     };
   }
 
@@ -594,7 +636,13 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       throw error;
     }
 
-    const rows = (data || []) as unknown as PublicListingRow[];
+    const rows = (Array.isArray(data) ? data : []) as unknown as PublicListingRow[];
+
+    const garageIds = rows
+      .map((r) => (r as unknown as { garage_id?: string | null }).garage_id ?? null)
+      .filter((v): v is string => typeof v === "string" && v.length > 0);
+
+    const publicGaragesById = await fetchPublicGaragesByIds(garageIds);
 
     const privateRows = rows.filter((r) => !isGarageSellerFromRow(r));
 
@@ -646,6 +694,18 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
 
     const items = rows.map((r) => {
       const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
+
+      const gId = getGarageIdFromRow(r);
+      if (gId && publicGaragesById[gId]) {
+        const g = publicGaragesById[gId];
+        return {
+          ...listing,
+          seller_name: g.garage_name ?? listing.seller_name ?? null,
+          garage_name: g.garage_name ?? listing.garage_name ?? null,
+          garage_id: gId,
+        };
+      }
+
       const listingId = listing.id;
       const ownerId = ownerIdByListingId[listingId] ?? getOwnerUserIdFromPublicRow(r);
 
@@ -770,7 +830,13 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
       throw error;
     }
 
-    const rows = (data || []) as unknown as PublicListingRow[];
+    const rows = (Array.isArray(data) ? data : []) as unknown as PublicListingRow[];
+
+    const garageIds = rows
+      .map((r) => (r as unknown as { garage_id?: string | null }).garage_id ?? null)
+      .filter((v): v is string => typeof v === "string" && v.length > 0);
+
+    const publicGaragesById = await fetchPublicGaragesByIds(garageIds);
 
     const privateRows = rows.filter((r) => !isGarageSellerFromRow(r));
     const ownerIdByListingId: Record<string, string> = {};

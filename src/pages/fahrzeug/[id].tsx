@@ -101,59 +101,25 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
       return;
     }
 
-    const garageId =
-      (listing as unknown as { garage_id?: string | null }).garage_id ??
-      (listing as unknown as { garageId?: string | null }).garageId ??
-      null;
-
-    const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
-
+    const garageId = (listing as unknown as { garage_id?: string | null }).garage_id ?? null;
     if (!garageId) {
       setGarage(null);
       return;
     }
 
-    if (sellerType && sellerType !== "garage") {
-      setGarage(null);
-      return;
-    }
+    let cancelled = false;
 
     const run = async () => {
       const data = await getGaragePublicById(garageId);
-
-      const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-      const logoUrl =
-        base && garageId
-          ? `${base}/storage/v1/object/public/listing-images/${["garage-logos", garageId, "logo_medium.webp"]
-              .map((s) => encodeURIComponent(s))
-              .join("/")}`
-          : null;
-
-      if (!data) {
-        setGarage({
-          id: garageId,
-          name: (listing as unknown as { garage_name?: string | null }).garage_name ?? "Garage",
-          city: null,
-          bio: null,
-          slug: null,
-          logoUrl,
-          headerImageUrl: null,
-        });
-        return;
-      }
-
-      setGarage({
-        id: data.id,
-        name: data.name,
-        city: data.city,
-        bio: data.bio,
-        slug: data.slug,
-        logoUrl: logoUrl ?? data.logoUrl ?? null,
-        headerImageUrl: data.headerImageUrl ?? null,
-      });
+      if (cancelled) return;
+      setGarage(data);
     };
 
     run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [listing]);
 
   const images = useMemo(() => (Array.isArray(listing?.images) ? listing?.images : []) ?? [], [listing]);

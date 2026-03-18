@@ -1,15 +1,6 @@
-import { MapPin, Store } from "lucide-react";
+import { MapPin } from "lucide-react";
 import Link from "next/link";
-
-export interface GaragePublicInfo {
-  id: string;
-  name: string;
-  city: string | null;
-  bio: string | null;
-  slug: string | null;
-  logoUrl: string | null;
-  headerImageUrl?: string | null;
-}
+import type { GaragePublicInfo } from "@/services/garageService";
 
 function initialsFromName(name: string): string {
   const parts = name
@@ -23,81 +14,56 @@ function initialsFromName(name: string): string {
   return `${first}${last}`.toUpperCase();
 }
 
-export function GarageMiniBanner({
-  garage,
-  fallbackLocation,
-}: {
-  garage: GaragePublicInfo;
-  fallbackLocation?: string | null;
-}) {
-  const locationText = garage.city || fallbackLocation || null;
-  const Wrapper = garage.slug ? Link : "div";
-  const wrapperProps = garage.slug ? { href: `/${garage.slug}` } : {};
+export function GarageMiniBanner({ garage }: { garage: GaragePublicInfo }) {
+  const headerImageUrl =
+    typeof garage.headerImageUrl === "string" && garage.headerImageUrl.trim() ? garage.headerImageUrl : null;
 
   return (
-    <Wrapper
-      {...(wrapperProps as any)}
-      className={[
-        "group block",
-        "bg-white rounded-3xl border border-neutral-200/60 shadow-sm",
-        "p-5 sm:p-6",
-        garage.slug ? "hover:shadow-md hover:-translate-y-[1px] transition-all" : "",
-      ].join(" ")}
-    >
-      <div className="flex items-start gap-4">
-        <div className="relative shrink-0">
-          {garage.logoUrl ? (
-            <img
-              src={garage.logoUrl}
-              alt={`${garage.name} Logo`}
-              className="h-14 w-14 rounded-2xl object-cover border border-neutral-200/60 bg-white"
-              loading="lazy"
-            />
-          ) : (
-            <div className="h-14 w-14 rounded-2xl border border-neutral-200/60 bg-gradient-to-br from-neutral-50 to-neutral-100 flex items-center justify-center text-sm font-bold text-neutral-700">
-              {initialsFromName(garage.name)}
+    <div className="relative overflow-hidden rounded-3xl border border-neutral-200 shadow-lg">
+      <div
+        className={headerImageUrl ? "h-40 sm:h-44 bg-cover bg-center" : "h-40 sm:h-44 bg-gradient-to-r from-primary to-primary/80"}
+        style={headerImageUrl ? { backgroundImage: `url(${headerImageUrl})` } : undefined}
+      />
+      <div className="absolute inset-x-0 top-0 h-40 sm:h-44 bg-gradient-to-t from-neutral-900/85 via-neutral-900/45 to-transparent" />
+
+      <div className="relative -mt-10 px-5 pb-5">
+        <div className="flex items-end gap-4">
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/40 bg-white shadow-lg">
+            {garage.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={garage.logoUrl} alt={garage.name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-white text-sm font-semibold text-neutral-700">
+                {initialsFromName(garage.name || "Garage")}
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-neutral-900">{garage.name || "Garage"}</p>
+                {garage.city ? (
+                  <p className="truncate text-sm text-neutral-600">{garage.city}</p>
+                ) : null}
+              </div>
+
+              {garage.slug ? (
+                <Link href={`/${garage.slug}`} className="text-sm font-semibold text-primary hover:underline">
+                  Profil ansehen
+                </Link>
+              ) : null}
             </div>
-          )}
-          <div className="absolute -bottom-2 -right-2 h-7 w-7 rounded-xl bg-neutral-900 text-white flex items-center justify-center shadow">
-            <Store className="h-4 w-4" />
           </div>
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <div className="text-lg font-bold tracking-tight text-neutral-900">
-              {garage.name}
-            </div>
-            <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700">
-              Garage
-            </span>
+        {garage.bio ? (
+          <div className="mt-3 flex items-start gap-2 text-sm text-neutral-600">
+            <MapPin className="h-4 w-4 mt-0.5 text-neutral-500" />
+            <span className="line-clamp-2">{garage.bio}</span>
           </div>
-
-          {locationText && (
-            <div className="mt-1 flex items-center gap-2 text-sm text-neutral-600">
-              <MapPin className="h-4 w-4 text-neutral-500" />
-              <span className="truncate">{locationText}</span>
-            </div>
-          )}
-
-          {garage.bio && garage.bio.trim() && (
-            <p
-              className={[
-                "mt-3 text-sm text-neutral-600 leading-relaxed",
-                "[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden",
-              ].join(" ")}
-            >
-              {garage.bio}
-            </p>
-          )}
-
-          {garage.slug && (
-            <div className="mt-3 text-sm font-medium text-neutral-900/80 group-hover:text-neutral-900 transition-colors">
-              Profil ansehen
-            </div>
-          )}
-        </div>
+        ) : null}
       </div>
-    </Wrapper>
+    </div>
   );
 }

@@ -90,6 +90,17 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
       ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
       : null;
 
+  const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
+
+  const rawSellerName =
+    (listing as unknown as { seller_name?: string | null }).seller_name ??
+    (listing as unknown as { garage_name?: string | null }).garage_name ??
+    null;
+
+  const sellerName =
+    (typeof rawSellerName === "string" ? rawSellerName.trim() : "") ||
+    (sellerType === "garage" ? "Garage" : "Privatanbieter");
+
   return (
     <Card 
       className={cn(

@@ -27,6 +27,9 @@ export interface GaragePublicInfo {
   bio: string | null;
   logoUrl: string | null;
   headerImageUrl?: string | null;
+
+  location?: string | null;
+  description?: string | null;
 }
 
 export type GarageUpdate = Partial<
@@ -119,37 +122,35 @@ export async function getGarageBySlug(slug: string): Promise<Garage | null> {
 
 export async function getGaragePublicById(garageId: string): Promise<GaragePublicInfo | null> {
   try {
-    const { data, error } = await supabase.rpc("get_garage_public_v2", { p_garage_id: garageId });
+    const { data, error } = await supabase.rpc("get_public_garages", {
+      p_garage_ids: [garageId],
+    });
 
-    if (!error && data) {
-      const d = data as any;
-      return {
-        id: String(d.id ?? garageId),
-        name: typeof d.garage_name === "string" ? d.garage_name : typeof d.name === "string" ? d.name : "Garage",
-        slug: typeof d.slug === "string" ? d.slug : null,
-        city: typeof d.city === "string" ? d.city : null,
-        bio: typeof d.bio === "string" ? d.bio : null,
-        logoUrl: typeof d.logo_url === "string" ? d.logo_url : null,
-        headerImageUrl: typeof d.header_image_url === "string" ? d.header_image_url : null,
-      };
+    if (error) {
+      console.error("getGaragePublicById rpc error:", error);
+      return null;
     }
 
-    const { data: directData, error: directError } = await supabase
-      .from("garages")
-      .select("id, garage_name, slug, city, bio, logo_url, header_image_url")
-      .eq("id", garageId)
-      .maybeSingle();
+    const row = Array.isArray(data) ? data[0] : null;
+    if (!row) return null;
 
-    if (directError || !directData) return null;
+    const name = (row as any)?.garage_name ?? "Garage";
+    const city = (row as any)?.city ?? null;
+    const bio = (row as any)?.description ?? null;
+    const slug = (row as any)?.slug ?? null;
+    const headerImageUrl = (row as any)?.header_image_url ?? null;
 
     return {
-      id: directData.id,
-      name: typeof (directData as any).garage_name === "string" ? (directData as any).garage_name : "Garage",
-      slug: typeof (directData as any).slug === "string" ? (directData as any).slug : null,
-      city: typeof (directData as any).city === "string" ? (directData as any).city : null,
-      bio: typeof (directData as any).bio === "string" ? (directData as any).bio : null,
-      logoUrl: typeof (directData as any).logo_url === "string" ? (directData as any).logo_url : null,
-      headerImageUrl: typeof (directData as any).header_image_url === "string" ? (directData as any).header_image_url : null,
+      id: (row as any)?.id,
+      name,
+      slug,
+      city,
+      bio,
+      logoUrl: null,
+      headerImageUrl,
+
+      location: city,
+      description: bio,
     };
   } catch (e) {
     console.error("getGaragePublicById error:", e);

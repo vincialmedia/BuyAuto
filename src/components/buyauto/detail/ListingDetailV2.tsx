@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import type { ComponentType } from "react";
-import type { GaragePublicInfo } from "@/components/buyauto/detail/GarageMiniBanner";
+import type { GaragePublicInfo } from "@/services/garageService";
 import { StickyListingCta } from "@/components/buyauto/detail/StickyListingCta";
 import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
 import { MessagingPanel } from "@/components/buyauto/detail/MessagingPanel";
@@ -393,7 +393,7 @@ export function ListingDetailV2({
                       const bio = garage?.bio ?? null;
                       const logoUrl = garage?.logoUrl ?? null;
                       const slug = garage?.slug ?? null;
-                      const headerImageUrl = (garage as unknown as { headerImageUrl?: string | null })?.headerImageUrl ?? null;
+                      const headerImageUrl = garage?.headerImageUrl ?? null;
 
                       return (
                         <div className="rounded-3xl overflow-hidden border border-neutral-200/60 bg-white shadow-sm">

@@ -99,15 +99,15 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
   };
 
   const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type ?? null;
-  const sellerNameRaw =
+
+  const rawSellerName =
     (listing as unknown as { seller_name?: string | null }).seller_name ??
     (listing as unknown as { garage_name?: string | null }).garage_name ??
     null;
 
   const sellerName =
-    typeof sellerNameRaw === "string" && sellerNameRaw.trim()
-      ? sellerNameRaw
-      : (sellerType === "garage" ? "Garage" : "Privatanbieter");
+    (typeof rawSellerName === "string" ? rawSellerName.trim() : "") ||
+    (sellerType === "garage" ? "Garage" : "Privatanbieter");
 
   return (
     <div className="group bg-white border border-neutral-200/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-neutral-900/10 transition-all duration-300 hover:-translate-y-1 hover:bg-neutral-50/30">
