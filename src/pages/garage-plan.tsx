@@ -52,7 +52,7 @@ const packages = [
     period: "/ Monat",
     limit: "bis 100 Inserate",
     premiumIncluded: "10 Premium / Monat",
-    features: ["Für grosse Bestände", "Priorisierter Support"],
+    features: ["Für grosse Bestände", "Kompletter Bestand hochladen", "Priorisierter Support"],
     cta: "Wählen",
     popular: false,
   },
@@ -173,6 +173,9 @@ export default function GaragePlanPage() {
                   </div>
                   <div className="text-sm font-medium text-neutral-700 mt-2 bg-neutral-100 py-1 px-2 rounded-lg inline-block">
                     {pkg.limit}
+                  </div>
+                  <div className="mt-2 text-xs text-neutral-500">
+                    Jederzeit kündbar
                   </div>
                 </div>
 
