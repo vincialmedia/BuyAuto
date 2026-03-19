@@ -567,66 +567,6 @@ export function GarageProfileTab({
         </div>
       </div>
 
-      {/* Share Panel */}
-      <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
-        <div className="flex items-start justify-between gap-3 mb-5">
-          <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Öffentliches Profil & Embed</h3>
-            <p className="text-sm text-neutral-600 mt-1">Teilen Sie Ihren Profil-Link oder binden Sie Ihr Inserate-Widget ein</p>
-          </div>
-        </div>
-
-        {dealerSlug ? (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-neutral-900">Profil-Link</div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="rounded-2xl"
-                    onClick={() => void handleCopyPublicUrl()}
-                    disabled={copyingPublicUrl}
-                  >
-                    {copyingPublicUrl ? "Kopiere…" : "Kopieren"}
-                  </Button>
-                  <Button asChild className="rounded-2xl">
-                    <a href={publicProfileUrl} target="_blank" rel="noreferrer">
-                      Öffnen <ExternalLink className="h-4 w-4 ml-2" />
-                    </a>
-                  </Button>
-                </div>
-              </div>
-              <div className="text-sm text-neutral-700 break-all">{publicProfileUrl}</div>
-            </div>
-
-            <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-neutral-900">White-Label Embed (auto Höhe)</div>
-                <Button
-                  variant="outline"
-                  className="rounded-2xl"
-                  onClick={() => void handleCopyEmbed()}
-                  disabled={copyingEmbed}
-                >
-                  {copyingEmbed ? "Kopiere…" : "Code kopieren"}
-                </Button>
-              </div>
-              <div className="text-xs text-neutral-600">
-                Tipp: Sie können Standard-Filter via URL setzen, z.B. <span className="font-mono">{embedUrl}?saleType=leasing</span>
-              </div>
-              <pre className="max-h-[260px] overflow-auto rounded-2xl border border-neutral-200/60 bg-white p-3 text-xs text-neutral-800 whitespace-pre-wrap break-words">
-                {embedSnippet}
-              </pre>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 text-sm text-neutral-700">
-            Speichern Sie zuerst Ihre <span className="font-semibold">Profil-URL</span> (Slug). Danach erscheint hier Ihr öffentlicher Profil-Link und der Embed-Code.
-          </div>
-        )}
-      </div>
-
       {/* Contact & Bio Section */}
       <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
         <div className="flex items-start justify-between gap-3 mb-5">
@@ -879,6 +819,66 @@ export function GarageProfileTab({
         <p className="mt-3 text-xs text-neutral-500">
           Tipp: Teammitglieder erscheinen öffentlich erst, nachdem Sie “Profil-Daten speichern” gedrückt haben.
         </p>
+      </div>
+
+      {/* Share Panel */}
+      <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Öffentliches Profil & Embed</h3>
+            <p className="text-sm text-neutral-600 mt-1">Teilen Sie Ihren Profil-Link oder binden Sie Ihr Inserate-Widget ein</p>
+          </div>
+        </div>
+
+        {dealerSlug ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-neutral-900">Profil-Link</div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-2xl"
+                    onClick={() => void handleCopyPublicUrl()}
+                    disabled={copyingPublicUrl}
+                  >
+                    {copyingPublicUrl ? "Kopiere…" : "Kopieren"}
+                  </Button>
+                  <Button asChild className="rounded-2xl">
+                    <a href={publicProfileUrl} target="_blank" rel="noreferrer">
+                      Öffnen <ExternalLink className="h-4 w-4 ml-2" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+              <div className="text-sm text-neutral-700 break-all">{publicProfileUrl}</div>
+            </div>
+
+            <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-neutral-900">White-Label Embed (auto Höhe)</div>
+                <Button
+                  variant="outline"
+                  className="rounded-2xl"
+                  onClick={() => void handleCopyEmbed()}
+                  disabled={copyingEmbed}
+                >
+                  {copyingEmbed ? "Kopiere…" : "Code kopieren"}
+                </Button>
+              </div>
+              <div className="text-xs text-neutral-600">
+                Tipp: Sie können Standard-Filter via URL setzen, z.B. <span className="font-mono">{embedUrl}?saleType=leasing</span>
+              </div>
+              <pre className="max-h-[260px] overflow-auto rounded-2xl border border-neutral-200/60 bg-white p-3 text-xs text-neutral-800 whitespace-pre-wrap break-words">
+                {embedSnippet}
+              </pre>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 text-sm text-neutral-700">
+            Speichern Sie zuerst Ihre <span className="font-semibold">Profil-URL</span> (Slug). Danach erscheint hier Ihr öffentlicher Profil-Link und der Embed-Code.
+          </div>
+        )}
       </div>
 
       {/* Save Button */}
