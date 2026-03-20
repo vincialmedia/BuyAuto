@@ -122,28 +122,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     };
   }, [listing?.id, listing?.garage_id]);
 
-  useEffect(() => {
-    if (!listing?.id) return;
-    if (router.query.preview === "true") return;
-
-    let cancelled = false;
-
-    const run = async () => {
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { error } = await supabase.rpc("increment_listing_view", { p_listing_id: listing.id });
-        if (error) console.error("Error incrementing listing view_count (client):", error);
-      } catch (e) {
-        console.error("Unexpected error incrementing listing view_count (client):", e);
-      }
-    };
-
-    if (!cancelled) void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [listing?.id, router.query.preview]);
-
   const images = useMemo(() => (Array.isArray(listing?.images) ? listing?.images : []) ?? [], [listing]);
 
   if (notFound || clientNotFound) {
@@ -373,9 +351,13 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
 
     const serializedListing = serializeListing(listing);
 
-    const isNextDataRequest = String(context.req.headers["x-nextjs-data"] ?? "") === "1";
+    const headers = context.req.headers;
+    const isPrefetch =
+      String(headers["purpose"] ?? "") === "prefetch" ||
+      String(headers["sec-purpose"] ?? "") === "prefetch" ||
+      String(headers["x-middleware-prefetch"] ?? "") === "1";
 
-    if (!isNextDataRequest) {
+    if (!isPrefetch) {
       const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.rpc("increment_listing_view", { p_listing_id: id });
       if (error) console.error("Error incrementing listing view_count:", error);

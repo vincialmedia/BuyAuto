@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Eye, Edit, Trash2, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive, ExternalLink } from "lucide-react";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
@@ -452,86 +452,6 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
         </div>
       </div>
 
-      {effectiveView === "sold" && tombstoneCards.length > 0 && (
-        <div className="space-y-3">
-          <div className="text-sm font-semibold text-neutral-900">Gelöschte Inserate (Referenz)</div>
-          <div className="grid gap-4">
-            {tombstoneCards.map((t) => (
-              <Card key={`tombstone-${t.id}`} className="border-neutral-200/60 rounded-3xl opacity-70">
-                <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row gap-6">
-                    <div className="relative">
-                      {t.coverImageUrl ? (
-                        <div className="w-full lg:w-32 h-48 lg:h-24 relative rounded-lg overflow-hidden">
-                          <Image
-                            src={t.coverImageUrl}
-                            alt={`${t.brand} ${t.model}`}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full lg:w-32 h-48 lg:h-24 bg-neutral-200 rounded-lg flex items-center justify-center">
-                          <span className="text-neutral-400 text-sm">Kein Bild</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-lg font-semibold text-neutral-900 mb-2 truncate">
-                            {t.brand} {t.model}{t.year ? ` (${t.year})` : ""}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 mb-3">
-                            {typeof t.pricePerMonthChf === "number" && (
-                              <div className="flex items-center gap-1">
-                                <DollarSign className="w-4 h-4" />
-                                <span>{formatPriceCHF(t.pricePerMonthChf)}/Monat</span>
-                              </div>
-                            )}
-                            {t.location && (
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-4 h-4" />
-                                {t.location}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3">
-                            <StatusBadge status={"sold"} />
-                            <Badge variant="secondary" className="rounded-full">
-                              {getDealTypeLabel({ deal_type: t.dealType, financing_type: t.financingType })}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              Gelöscht
-                            </Badge>
-                            <span className="text-xs text-neutral-600">
-                              gelöscht am{" "}
-                              <span className="font-semibold text-neutral-900">
-                                {new Date(t.deletedAt).toLocaleDateString("de-CH")}
-                              </span>
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" className="rounded-2xl" disabled>
-                            <Eye className="w-4 h-4 mr-2" /> Nicht verfügbar
-                          </Button>
-                          <Button variant="ghost" size="icon" disabled>
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
       {visibleListings.length === 0 && (effectiveView !== "sold" || tombstoneCards.length === 0) ? (
         <Card className="border-neutral-200/60 rounded-3xl">
           <CardContent className="p-12 text-center">
@@ -565,6 +485,8 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             const premium = isPremium(listing);
             const archived = listing.status === "archived" || listing.status === "expired";
             const soldDaysRemaining = getSoldDaysRemaining(listing);
+            const views = Number(listing.view_count ?? 0);
+            const isPublicListing = ["published", "active", "sold"].includes(String(listing.status));
 
             return (
               <Card
@@ -616,7 +538,12 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                             </div>
                             <div className="flex items-center gap-1">
                               <Eye className="w-4 h-4" />
-                              <span>{listing.view_count || 0} Aufrufe</span>
+                              <span>{views} Aufrufe</span>
+                              {views > 0 ? (
+                                <Badge variant="secondary" className="ml-2 rounded-full">
+                                  Viewed
+                                </Badge>
+                              ) : null}
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-3">
@@ -670,6 +597,19 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
+                              {isPublicListing && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (typeof window !== "undefined") {
+                                      window.open(`/fahrzeug/${listing.id}`, "_blank", "noopener,noreferrer");
+                                    }
+                                  }}
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-2 text-neutral-700" />
+                                  Öffentlich öffnen
+                                </DropdownMenuItem>
+                              )}
+
                               {(listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => handleMarkSold(listing.id)}
