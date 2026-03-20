@@ -109,6 +109,10 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
     return max > 0 ? max : 1;
   }, [topPerformance]);
 
+  const leadRateLabel = useMemo(() => {
+    return "Anfragen (Form + Chat) ÷ Aufrufe (aktiv)";
+  }, []);
+
   if (listings.length === 0) {
     return (
       <div className="text-center py-12 bg-neutral-50 rounded-3xl border border-neutral-200">

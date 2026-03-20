@@ -366,6 +366,42 @@ async function getListingInquiryCounts(listingIds: string[]): Promise<ListingInq
     counts[listingId].last7d += ageMs <= ms7d ? 1 : 0;
   });
 
+  try {
+    const { data: convRows, error: convError } = await supabase
+      .from("conversations")
+      .select("id, listing_id, last_message_at")
+      .in("listing_id", listingIds)
+      .not("last_message_at", "is", null)
+      .gte("last_message_at", since30.toISOString());
+
+    if (convError) {
+      console.error("getListingInquiryCounts conversations error:", convError);
+      return counts;
+    }
+
+    const seenConversationIds = new Set<string>();
+
+    (Array.isArray(convRows) ? convRows : []).forEach((row: any) => {
+      const convId = typeof row?.id === "string" ? row.id : null;
+      if (!convId || seenConversationIds.has(convId)) return;
+      seenConversationIds.add(convId);
+
+      const listingId = typeof row?.listing_id === "string" ? row.listing_id : null;
+      if (!listingId) return;
+
+      const lastMessageAtMs = row?.last_message_at ? new Date(row.last_message_at).getTime() : NaN;
+      const ageMs = Number.isFinite(lastMessageAtMs) ? now - lastMessageAtMs : ms30d + 1;
+
+      if (!counts[listingId]) counts[listingId] = { total: 0, last7d: 0, last30d: 0 };
+
+      counts[listingId].total += 1;
+      counts[listingId].last30d += 1;
+      counts[listingId].last7d += ageMs <= ms7d ? 1 : 0;
+    });
+  } catch (err) {
+    console.error("getListingInquiryCounts chat aggregation unexpected error:", err);
+  }
+
   return counts;
 }
 

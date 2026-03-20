@@ -102,7 +102,8 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     if (isOwnerPreview) return;
     if (typeof window === "undefined") return;
 
-    const storageKey = `buyauto:viewed:${listing.id}`;
+    const viewerKey = user?.id ?? "anon";
+    const storageKey = `buyauto:viewed:${listing.id}:${viewerKey}`;
 
     let shouldCount = true;
 
@@ -122,7 +123,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     }).catch((error) => {
       console.warn("View tracking failed:", error);
     });
-  }, [listing?.id, router.query.preview, isOwnerPreview]);
+  }, [listing?.id, router.query.preview, isOwnerPreview, user?.id]);
 
   useEffect(() => {
     let cancelled = false;
