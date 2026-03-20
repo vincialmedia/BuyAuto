@@ -16,14 +16,42 @@ type ListingStatusLabel = {
   tone: "neutral" | "positive" | "warning";
 };
 
-function getStatusLabel(status: ListingDetail["status"]): ListingStatusLabel {
+function isListingPaused(listing: ListingDetail): boolean {
+  const pausedAt =
+    (listing as unknown as { paused_at?: unknown; pausedAt?: unknown }).paused_at ??
+    (listing as unknown as { pausedAt?: unknown }).pausedAt ??
+    null;
+
+  const pauseUntil =
+    (listing as unknown as { pause_until?: unknown; pauseUntil?: unknown }).pause_until ??
+    (listing as unknown as { pauseUntil?: unknown }).pauseUntil ??
+    null;
+
+  const pausedAtStr = typeof pausedAt === "string" ? pausedAt : null;
+  const pauseUntilStr = typeof pauseUntil === "string" ? pauseUntil : null;
+
+  if (pauseUntilStr) {
+    const ms = new Date(pauseUntilStr).getTime();
+    if (Number.isFinite(ms)) return ms > Date.now();
+    return true;
+  }
+
+  return Boolean(pausedAtStr);
+}
+
+function getStatusLabel(listing: ListingDetail): ListingStatusLabel {
+  if (isListingPaused(listing)) return { label: "Pausiert", tone: "neutral" };
+
+  const status = listing.status;
+
   if (status === "active" || status === "published") return { label: "Aktiv", tone: "positive" };
   if (status === "pending") return { label: "Prüfung", tone: "warning" };
   if (status === "sold") return { label: "Verkauft", tone: "neutral" };
   if (status === "draft") return { label: "Entwurf", tone: "neutral" };
   if (status === "expired") return { label: "Abgelaufen", tone: "neutral" };
   if (status === "rejected") return { label: "Abgelehnt", tone: "neutral" };
-  if (status === "paused") return { label: "Pausiert", tone: "neutral" };
+  if (status === "archived") return { label: "Archiviert", tone: "neutral" };
+
   return { label: "Inaktiv", tone: "neutral" };
 }
 
@@ -72,7 +100,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
   const counts = inquiryCounts ?? {};
 
   const activeListings = useMemo(
-    () => listings.filter((l) => l.status === "active" || l.status === "published"),
+    () => listings.filter((l) => (l.status === "active" || l.status === "published") && !isListingPaused(l)),
     [listings]
   );
 
@@ -278,7 +306,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
               </TableHeader>
               <TableBody>
                 {listingsSortedByViews.map((listing) => {
-                  const status = getStatusLabel(listing.status);
+                  const status = getStatusLabel(listing);
                   const views = safeViews(listing);
                   const vpd = viewsPerDay(listing);
                   const inquiries = counts[listing.id]?.last30d ?? 0;
