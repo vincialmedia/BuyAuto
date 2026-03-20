@@ -122,6 +122,28 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     };
   }, [listing?.id, listing?.garage_id]);
 
+  useEffect(() => {
+    if (!listing?.id) return;
+    if (router.query.preview === "true") return;
+
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { error } = await supabase.rpc("increment_listing_view", { p_listing_id: listing.id });
+        if (error) console.error("Error incrementing listing view_count (client):", error);
+      } catch (e) {
+        console.error("Unexpected error incrementing listing view_count (client):", e);
+      }
+    };
+
+    if (!cancelled) void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [listing?.id, router.query.preview]);
+
   const images = useMemo(() => (Array.isArray(listing?.images) ? listing?.images : []) ?? [], [listing]);
 
   if (notFound || clientNotFound) {
@@ -349,18 +371,15 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       return { props: { listing: null } };
     }
 
-    const purpose = String(context.req.headers["purpose"] ?? "").toLowerCase();
-    const secPurpose = String(context.req.headers["sec-purpose"] ?? "").toLowerCase();
-    const middlewarePrefetch = String(context.req.headers["x-middleware-prefetch"] ?? "").toLowerCase();
-    const isPrefetch = purpose === "prefetch" || secPurpose === "prefetch" || middlewarePrefetch === "1";
+    const serializedListing = serializeListing(listing);
 
-    if (!isPrefetch) {
+    const isNextDataRequest = String(context.req.headers["x-nextjs-data"] ?? "") === "1";
+
+    if (!isNextDataRequest) {
       const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.rpc("increment_listing_view", { p_listing_id: id });
       if (error) console.error("Error incrementing listing view_count:", error);
     }
-
-    const serializedListing = serializeListing(listing);
 
     return { props: { listing: serializedListing } };
   } catch (error) {

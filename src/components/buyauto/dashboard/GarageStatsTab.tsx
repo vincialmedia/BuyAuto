@@ -389,6 +389,11 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="truncate text-neutral-900">{formatVehicleName(listing)}</span>
+                            {safeViews(listing) > 0 ? (
+                              <Badge variant="outline" className="rounded-full border-neutral-300 bg-neutral-50 text-neutral-700">
+                                Viewed
+                              </Badge>
+                            ) : null}
                             {isPremiumListing(listing) ? (
                               <Badge className="rounded-full bg-amber-50 text-amber-900 border border-amber-200">Premium</Badge>
                             ) : null}
