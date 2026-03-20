@@ -176,6 +176,28 @@ async function getUserListings(): Promise<ListingDetail[]> {
   }
 }
 
+async function getListingsByGarageId(garageId: string): Promise<ListingDetail[]> {
+  if (!garageId) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("garage_id", garageId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching listings by garage_id for dashboard stats:", error);
+      return [];
+    }
+
+    return (Array.isArray(data) ? data : []).map(mapDbListingToListingDetail);
+  } catch (error) {
+    console.error("Dashboard getListingsByGarageId unexpected error:", error);
+    return [];
+  }
+}
+
 async function getListingTombstones(): Promise<DashboardListingTombstone[]> {
   const userId = await getAuthedUserId();
   if (!userId) return [];
@@ -349,6 +371,7 @@ async function getListingInquiryCounts(listingIds: string[]): Promise<ListingInq
 
 export const dashboardService = {
   getUserListings,
+  getListingsByGarageId,
   getListingTombstones,
   markListingSold,
   markListingAvailable,

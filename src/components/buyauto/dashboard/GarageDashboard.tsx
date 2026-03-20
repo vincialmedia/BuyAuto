@@ -12,7 +12,7 @@ import { GarageBillingTab } from "@/components/buyauto/dashboard/GarageBillingTa
 import { GarageProfileTab } from "@/components/buyauto/dashboard/GarageProfileTab";
 import { GarageStatsTab } from "@/components/buyauto/dashboard/GarageStatsTab";
 import { cn } from "@/lib/utils";
-import { dashboardService, type DashboardStats } from "@/services/dashboardService";
+import { dashboardService, type DashboardStats, type ListingInquiryCounts } from "@/services/dashboardService";
 import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageService";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { ListingDetail } from "@/lib/buyauto/types";
@@ -34,6 +34,48 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   return "Unbekannter Fehler";
+}
+
+function isListingPausedForStats(listing: ListingDetail): boolean {
+  const pausedAt =
+    (listing as unknown as { paused_at?: unknown; pausedAt?: unknown }).paused_at ??
+    (listing as unknown as { pausedAt?: unknown }).pausedAt ??
+    null;
+
+  const pauseUntil =
+    (listing as unknown as { pause_until?: unknown; pauseUntil?: unknown }).pause_until ??
+    (listing as unknown as { pauseUntil?: unknown }).pauseUntil ??
+    null;
+
+  const pausedAtStr = typeof pausedAt === "string" ? pausedAt : null;
+  const pauseUntilStr = typeof pauseUntil === "string" ? pauseUntil : null;
+
+  if (pauseUntilStr) {
+    const ms = new Date(pauseUntilStr).getTime();
+    if (Number.isFinite(ms)) return ms > Date.now();
+    return true;
+  }
+
+  return Boolean(pausedAtStr);
+}
+
+function computeDashboardStatsFromListings(listings: ListingDetail[]): DashboardStats {
+  const stats: DashboardStats = { active: 0, pending: 0, sold: 0, expired: 0, totalViews: 0 };
+
+  (Array.isArray(listings) ? listings : []).forEach((l) => {
+    const status = l.status;
+
+    const isActive = (status === "active" || status === "published") && !isListingPausedForStats(l);
+    if (isActive) stats.active += 1;
+    else if (status === "pending") stats.pending += 1;
+    else if (status === "sold") stats.sold += 1;
+    else if (status === "expired" || status === "archived") stats.expired += 1;
+
+    const v = (l as any)?.view_count;
+    stats.totalViews += typeof v === "number" && Number.isFinite(v) ? v : 0;
+  });
+
+  return stats;
 }
 
 function getStableGarageLogoUrl(garageId: string, version?: number): string {
@@ -71,7 +113,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   // BETTER APPROACH: Let GarageStatsTab fetch its data or pass it if available.
   // To follow the user request "view counter per Listing", we'll fetch all listings here for the stats tab.
   const [allListingsForStats, setAllListingsForStats] = useState<ListingDetail[]>([]);
-  const [inquiryCounts, setInquiryCounts] = useState<ReturnType<typeof dashboardService.getListingInquiryCounts> extends Promise<infer T> ? T : never>({} as any);
+  const [inquiryCounts, setInquiryCounts] = useState<ListingInquiryCounts>({});
 
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
   const [logoVersion, setLogoVersion] = useState<number>(0);
@@ -154,21 +196,23 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   }, [garage]);
 
   async function reloadStatsAndListings() {
+    if (!garage?.id) return;
+
     setStatsLoading(true);
     try {
-      const s = await dashboardService.getDashboardStats();
-      const l = await dashboardService.getUserListings();
-      const listingIds = (Array.isArray(l) ? l : []).map((x) => x.id).filter((x): x is string => typeof x === "string");
+      const l = await dashboardService.getListingsByGarageId(garage.id);
+      const computed = computeDashboardStatsFromListings(l);
 
+      const listingIds = (Array.isArray(l) ? l : []).map((x) => x.id).filter((x): x is string => typeof x === "string");
       const inquiries = await dashboardService.getListingInquiryCounts(listingIds);
 
-      setStats(s);
+      setStats(computed);
       setAllListingsForStats(l);
       setInquiryCounts(inquiries);
     } catch {
       setStats(null);
       setAllListingsForStats([]);
-      setInquiryCounts({} as any);
+      setInquiryCounts({});
     } finally {
       setStatsLoading(false);
     }
@@ -179,24 +223,27 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     let cancelled = false;
 
     async function run() {
+      if (!garage?.id) return;
+
       if (mainTab !== "stats") return;
 
       setStatsLoading(true);
       try {
-        const s = await dashboardService.getDashboardStats();
-        const l = await dashboardService.getUserListings();
+        const l = await dashboardService.getListingsByGarageId(garage.id);
+        const computed = computeDashboardStatsFromListings(l);
+
         const listingIds = (Array.isArray(l) ? l : []).map((x) => x.id).filter((x): x is string => typeof x === "string");
         const inquiries = await dashboardService.getListingInquiryCounts(listingIds);
 
         if (cancelled) return;
-        setStats(s);
+        setStats(computed);
         setAllListingsForStats(l);
         setInquiryCounts(inquiries);
       } catch {
         if (cancelled) return;
         setStats(null);
         setAllListingsForStats([]);
-        setInquiryCounts({} as any);
+        setInquiryCounts({});
       } finally {
         if (!cancelled) setStatsLoading(false);
       }
@@ -206,7 +253,34 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     return () => {
       cancelled = true;
     };
-  }, [mainTab]);
+  }, [mainTab, garage?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function runHeaderStats() {
+      if (!garage?.id) return;
+
+      setStatsLoading(true);
+      try {
+        const l = await dashboardService.getListingsByGarageId(garage.id);
+        const computed = computeDashboardStatsFromListings(l);
+
+        if (cancelled) return;
+        setStats(computed);
+      } catch {
+        if (cancelled) return;
+        setStats(null);
+      } finally {
+        if (!cancelled) setStatsLoading(false);
+      }
+    }
+
+    void runHeaderStats();
+    return () => {
+      cancelled = true;
+    };
+  }, [garage?.id]);
 
   async function handleUpdateGarage(updates: Partial<Garage>) {
     setBanner({ kind: "idle" });

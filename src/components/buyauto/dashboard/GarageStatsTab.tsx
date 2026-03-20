@@ -135,6 +135,11 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
     return Object.values(counts).reduce((sum, c) => sum + (typeof c?.last7d === "number" ? c.last7d : 0), 0);
   }, [counts]);
 
+  const avgInquiries30dPerActive = useMemo(() => {
+    if (activeListings.length === 0) return 0;
+    return inquiriesTotal30d / activeListings.length;
+  }, [activeListings.length, inquiriesTotal30d]);
+
   const listingsSortedByViews = useMemo(() => {
     return [...listings].sort((a, b) => safeViews(b) - safeViews(a));
   }, [listings]);
@@ -145,6 +150,21 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
     const max = topListings.reduce((m, l) => Math.max(m, safeViews(l)), 0);
     return max > 0 ? max : 1;
   }, [topListings]);
+
+  const listingsSortedByLeads30d = useMemo(() => {
+    return [...listings].sort((a, b) => {
+      const aLeads = counts[a.id]?.last30d ?? 0;
+      const bLeads = counts[b.id]?.last30d ?? 0;
+      return bLeads - aLeads;
+    });
+  }, [listings, counts]);
+
+  const topLeadListings = useMemo(() => listingsSortedByLeads30d.slice(0, 5), [listingsSortedByLeads30d]);
+
+  const maxTopLeads = useMemo(() => {
+    const max = topLeadListings.reduce((m, l) => Math.max(m, counts[l.id]?.last30d ?? 0), 0);
+    return max > 0 ? max : 1;
+  }, [topLeadListings, counts]);
 
   if (listings.length === 0) {
     return (
@@ -204,12 +224,15 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
           <CardContent>
             <div className="text-2xl font-bold text-neutral-900">{formatNumber(inquiriesTotal30d)}</div>
             <p className="text-xs text-neutral-500 mt-1">{formatNumber(inquiriesTotal7d)} in den letzten 7 Tagen</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Ø {formatNumber1(avgInquiries30dPerActive)} pro aktivem Inserat (30 Tage)
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="rounded-3xl border-neutral-200 shadow-sm col-span-2 lg:col-span-1">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="rounded-3xl border-neutral-200 shadow-sm">
           <CardHeader>
             <CardTitle>Top Performance</CardTitle>
             <CardDescription>Die 5 meistgesehenen Fahrzeuge (Aufrufe)</CardDescription>
@@ -256,7 +279,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-neutral-200 shadow-sm col-span-2 lg:col-span-1">
+        <Card className="rounded-3xl border-neutral-200 shadow-sm">
           <CardHeader>
             <CardTitle>Premium vs Standard</CardTitle>
             <CardDescription>Durchschnittliche Performance</CardDescription>
@@ -283,6 +306,55 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
               <div className="mt-2 text-2xl font-bold text-neutral-900">{formatNumber(standardAvgViews)}</div>
               <div className="text-xs text-neutral-500">Ø Aufrufe pro Standard-Inserat</div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-3xl border-neutral-200 shadow-sm">
+          <CardHeader>
+            <CardTitle>Top Leads</CardTitle>
+            <CardDescription>Die 5 Inserate mit den meisten Anfragen (30 Tage)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topLeadListings.map((listing) => {
+              const leads = counts[listing.id]?.last30d ?? 0;
+              const pct = Math.round((leads / maxTopLeads) * 100);
+              const vehicleName = formatVehicleName(listing);
+              const premium = isPremiumListing(listing);
+
+              return (
+                <div key={listing.id} className="rounded-2xl border border-neutral-200/70 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="truncate text-sm font-semibold text-neutral-900">{vehicleName}</div>
+                        {premium ? (
+                          <Badge className="rounded-full bg-amber-50 text-amber-900 border border-amber-200">Premium</Badge>
+                        ) : null}
+                      </div>
+                      <div className="mt-0.5 text-xs text-neutral-500">
+                        Letzte 30 Tage <span className="mx-2 text-neutral-300">•</span>{" "}
+                        <span className="tabular-nums">{formatNumber(leads)} Anfragen</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-sm font-bold text-neutral-900 tabular-nums">{formatNumber(leads)}</div>
+                  </div>
+
+                  <div className="mt-3 h-2 w-full rounded-full bg-neutral-100">
+                    <div
+                      className="h-2 rounded-full bg-primary transition-[width]"
+                      style={{ width: `${pct}%` }}
+                      aria-hidden
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            {topLeadListings.length === 0 ? (
+              <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50 p-4 text-sm text-neutral-600">
+                Noch keine Anfragen im ausgewählten Zeitraum.
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>

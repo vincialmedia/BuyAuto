@@ -307,7 +307,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
         .from("listings_public")
         .select("*, profiles(full_name, avatar_url)")
         .eq("id", id)
-        .in("status", ["published", "sold"])
+        .in("status", ["published", "active", "sold"])
         .single();
 
       if (error) {
