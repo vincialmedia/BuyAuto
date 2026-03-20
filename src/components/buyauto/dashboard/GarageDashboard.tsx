@@ -71,6 +71,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   // BETTER APPROACH: Let GarageStatsTab fetch its data or pass it if available.
   // To follow the user request "view counter per Listing", we'll fetch all listings here for the stats tab.
   const [allListingsForStats, setAllListingsForStats] = useState<ListingDetail[]>([]);
+  const [inquiryCounts, setInquiryCounts] = useState<ReturnType<typeof dashboardService.getListingInquiryCounts> extends Promise<infer T> ? T : never>({} as any);
 
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
   const [logoVersion, setLogoVersion] = useState<number>(0);
@@ -152,34 +153,60 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     };
   }, [garage]);
 
-  // Load stats and listings for the stats tab
+  async function reloadStatsAndListings() {
+    setStatsLoading(true);
+    try {
+      const s = await dashboardService.getDashboardStats();
+      const l = await dashboardService.getUserListings();
+      const listingIds = (Array.isArray(l) ? l : []).map((x) => x.id).filter((x): x is string => typeof x === "string");
+
+      const inquiries = await dashboardService.getListingInquiryCounts(listingIds);
+
+      setStats(s);
+      setAllListingsForStats(l);
+      setInquiryCounts(inquiries);
+    } catch {
+      setStats(null);
+      setAllListingsForStats([]);
+      setInquiryCounts({} as any);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
+  // Load stats and listings for the stats tab (initial + when opening the tab)
   useEffect(() => {
     let cancelled = false;
 
-    async function loadData() {
+    async function run() {
+      if (mainTab !== "stats") return;
+
       setStatsLoading(true);
       try {
-        const [s, l] = await Promise.all([
-          dashboardService.getDashboardStats(),
-          dashboardService.getUserListings()
-        ]);
-        
+        const s = await dashboardService.getDashboardStats();
+        const l = await dashboardService.getUserListings();
+        const listingIds = (Array.isArray(l) ? l : []).map((x) => x.id).filter((x): x is string => typeof x === "string");
+        const inquiries = await dashboardService.getListingInquiryCounts(listingIds);
+
         if (cancelled) return;
         setStats(s);
         setAllListingsForStats(l);
+        setInquiryCounts(inquiries);
       } catch {
         if (cancelled) return;
         setStats(null);
+        setAllListingsForStats([]);
+        setInquiryCounts({} as any);
       } finally {
         if (!cancelled) setStatsLoading(false);
       }
     }
 
-    loadData();
+    void run();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [mainTab]);
 
   async function handleUpdateGarage(updates: Partial<Garage>) {
     setBanner({ kind: "idle" });
@@ -369,11 +396,21 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
 
               <TabsContent value="stats" className="mt-5">
                 <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-4 sm:p-6">
-                  <div className="mb-6">
-                    <h2 className="text-lg font-bold tracking-tight text-neutral-900">Statistiken</h2>
-                    <p className="text-sm text-neutral-600 mt-1">Detaillierte Einblicke in Ihre Inserate.</p>
+                  <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">Statistiken</h2>
+                      <p className="text-sm text-neutral-600 mt-1">Detaillierte Einblicke in Ihre Inserate.</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => void reloadStatsAndListings()}
+                      className="rounded-2xl"
+                      disabled={statsLoading}
+                    >
+                      {statsLoading ? "Aktualisieren…" : "Aktualisieren"}
+                    </Button>
                   </div>
-                  <GarageStatsTab listings={allListingsForStats} />
+                  <GarageStatsTab listings={allListingsForStats} inquiryCounts={inquiryCounts} />
                 </div>
               </TabsContent>
             </Tabs>

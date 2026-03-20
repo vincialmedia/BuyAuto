@@ -88,6 +88,15 @@ export type ListingTombstone = {
   deleted_at: string;
 };
 
+export type ListingInquiryCounts = Record<
+  string,
+  {
+    total: number;
+    last7d: number;
+    last30d: number;
+  }
+>;
+
 function mapDbListingToListingDetail(dbListing: any): ListingDetail {
   return {
     ...dbListing,
@@ -302,6 +311,42 @@ async function extendListing(id: string) {
   return { success: true };
 }
 
+async function getListingInquiryCounts(listingIds: string[]): Promise<ListingInquiryCounts> {
+  if (!Array.isArray(listingIds) || listingIds.length === 0) return {};
+
+  const since30 = new Date();
+  since30.setDate(since30.getDate() - 30);
+
+  const { data, error } = await supabase
+    .from("listing_inquiries")
+    .select("listing_id, created_at")
+    .in("listing_id", listingIds)
+    .gte("created_at", since30.toISOString());
+
+  if (error) throw error;
+
+  const counts: ListingInquiryCounts = {};
+  const now = Date.now();
+  const ms7d = 7 * 24 * 60 * 60 * 1000;
+  const ms30d = 30 * 24 * 60 * 60 * 1000;
+
+  (Array.isArray(data) ? data : []).forEach((row: any) => {
+    const listingId = typeof row?.listing_id === "string" ? row.listing_id : null;
+    if (!listingId) return;
+
+    const createdAtMs = row?.created_at ? new Date(row.created_at).getTime() : NaN;
+    const ageMs = Number.isFinite(createdAtMs) ? now - createdAtMs : ms30d + 1;
+
+    if (!counts[listingId]) counts[listingId] = { total: 0, last7d: 0, last30d: 0 };
+
+    counts[listingId].total += 1;
+    counts[listingId].last30d += ageMs <= ms30d ? 1 : 0;
+    counts[listingId].last7d += ageMs <= ms7d ? 1 : 0;
+  });
+
+  return counts;
+}
+
 export const dashboardService = {
   getUserListings,
   getListingTombstones,
@@ -311,6 +356,7 @@ export const dashboardService = {
   pauseListing,
   unpauseListing,
   getDashboardStats,
+  getListingInquiryCounts,
   updateListing,
   deleteListing,
   upgradeToPremium,

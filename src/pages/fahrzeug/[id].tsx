@@ -349,6 +349,17 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       return { props: { listing: null } };
     }
 
+    const purpose = String(context.req.headers["purpose"] ?? "").toLowerCase();
+    const secPurpose = String(context.req.headers["sec-purpose"] ?? "").toLowerCase();
+    const middlewarePrefetch = String(context.req.headers["x-middleware-prefetch"] ?? "").toLowerCase();
+    const isPrefetch = purpose === "prefetch" || secPurpose === "prefetch" || middlewarePrefetch === "1";
+
+    if (!isPrefetch) {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.rpc("increment_listing_view", { p_listing_id: id });
+      if (error) console.error("Error incrementing listing view_count:", error);
+    }
+
     const serializedListing = serializeListing(listing);
 
     return { props: { listing: serializedListing } };
