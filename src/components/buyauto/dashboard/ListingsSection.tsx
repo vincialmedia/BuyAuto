@@ -443,6 +443,18 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             </Button>
           )}
           <Button
+            type="button"
+            variant="outline"
+            className="rounded-2xl"
+            onClick={() => {
+              void loadUserListings();
+              void loadPremiumCredits();
+              if (effectiveView === "sold") void loadTombstones();
+            }}
+          >
+            Aktualisieren
+          </Button>
+          <Button
             onClick={() => router.push("/inserat-erstellen")}
             className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
           >
@@ -485,7 +497,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             const premium = isPremium(listing);
             const archived = listing.status === "archived" || listing.status === "expired";
             const soldDaysRemaining = getSoldDaysRemaining(listing);
-            const views = Number(listing.view_count ?? 0);
+            const views = Number.isFinite(Number(listing.view_count)) ? Number(listing.view_count) : 0;
             const isPublicListing = ["published", "active", "sold"].includes(String(listing.status));
 
             return (

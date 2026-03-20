@@ -110,7 +110,7 @@ function mapDbListingToListingDetail(dbListing: any): ListingDetail {
       (Array.isArray(dbListing.images) && dbListing.images.length > 0
         ? dbListing.images[dbListing.cover_image_index || 0]
         : ""),
-    view_count: dbListing.view_count || 0,
+    view_count: Number(dbListing.view_count || 0),
   } as ListingDetail;
 }
 
@@ -288,7 +288,7 @@ async function getDashboardStats(): Promise<DashboardStats> {
     else if (listing.status === "sold") stats.sold++;
     else if (listing.status === "expired" || listing.status === "archived") stats.expired++;
 
-    stats.totalViews += listing.view_count || 0;
+    stats.totalViews += Number(listing.view_count || 0);
   });
 
   return stats;

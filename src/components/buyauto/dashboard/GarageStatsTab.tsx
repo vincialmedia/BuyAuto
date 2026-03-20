@@ -63,7 +63,9 @@ function formatVehicleName(listing: ListingDetail): string {
 }
 
 function safeViews(listing: ListingDetail): number {
-  return typeof listing.view_count === "number" && Number.isFinite(listing.view_count) ? listing.view_count : 0;
+  const raw = (listing as any)?.view_count;
+  const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : 0;
+  return Number.isFinite(n) ? n : 0;
 }
 
 function isPremiumListing(listing: ListingDetail): boolean {

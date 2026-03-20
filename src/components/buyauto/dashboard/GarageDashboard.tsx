@@ -71,8 +71,9 @@ function computeDashboardStatsFromListings(listings: ListingDetail[]): Dashboard
     else if (status === "sold") stats.sold += 1;
     else if (status === "expired" || status === "archived") stats.expired += 1;
 
-    const v = (l as any)?.view_count;
-    stats.totalViews += typeof v === "number" && Number.isFinite(v) ? v : 0;
+    const raw = (l as any)?.view_count;
+    const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : 0;
+    stats.totalViews += Number.isFinite(n) ? n : 0;
   });
 
   return stats;
