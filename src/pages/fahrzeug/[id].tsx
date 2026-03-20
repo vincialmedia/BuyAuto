@@ -13,6 +13,7 @@ import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
 import type { GaragePublicInfo } from "@/services/garageService";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), { ssr: false });
 
@@ -102,27 +103,42 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     if (isOwnerPreview) return;
     if (typeof window === "undefined") return;
 
-    const viewerKey = user?.id ?? "anon";
-    const storageKey = `buyauto:viewed:${listing.id}:${viewerKey}`;
+    const run = async () => {
+      let viewerId: string | null = user?.id ?? null;
 
-    let shouldCount = true;
+      if (!viewerId) {
+        try {
+          const res = await supabase.auth.getUser();
+          viewerId = res.data.user?.id ?? null;
+        } catch {
+          viewerId = null;
+        }
+      }
 
-    try {
-      if (window.sessionStorage.getItem(storageKey) === "1") shouldCount = false;
-      else window.sessionStorage.setItem(storageKey, "1");
-    } catch {
-      shouldCount = true;
-    }
+      const viewerKey = viewerId ?? "anon";
+      const storageKey = `buyauto:viewed:${listing.id}:${viewerKey}`;
 
-    if (!shouldCount) return;
+      let shouldCount = true;
 
-    void fetch("/api/listings/view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ listing_id: listing.id }),
-    }).catch((error) => {
-      console.warn("View tracking failed:", error);
-    });
+      try {
+        if (window.sessionStorage.getItem(storageKey) === "1") shouldCount = false;
+        else window.sessionStorage.setItem(storageKey, "1");
+      } catch {
+        shouldCount = true;
+      }
+
+      if (!shouldCount) return;
+
+      void fetch("/api/listings/view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listing_id: listing.id }),
+      }).catch((error) => {
+        console.warn("View tracking failed:", error);
+      });
+    };
+
+    void run();
   }, [listing?.id, router.query.preview, isOwnerPreview, user?.id]);
 
   useEffect(() => {

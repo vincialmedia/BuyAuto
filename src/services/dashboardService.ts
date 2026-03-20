@@ -369,28 +369,56 @@ async function getListingInquiryCounts(listingIds: string[]): Promise<ListingInq
   try {
     const { data: convRows, error: convError } = await supabase
       .from("conversations")
-      .select("id, listing_id, last_message_at")
-      .in("listing_id", listingIds)
-      .not("last_message_at", "is", null)
-      .gte("last_message_at", since30.toISOString());
+      .select("id, listing_id")
+      .in("listing_id", listingIds);
 
     if (convError) {
       console.error("getListingInquiryCounts conversations error:", convError);
       return counts;
     }
 
-    const seenConversationIds = new Set<string>();
+    const convMap = new Map<string, string>();
+    const convIds: string[] = [];
 
     (Array.isArray(convRows) ? convRows : []).forEach((row: any) => {
       const convId = typeof row?.id === "string" ? row.id : null;
-      if (!convId || seenConversationIds.has(convId)) return;
-      seenConversationIds.add(convId);
-
       const listingId = typeof row?.listing_id === "string" ? row.listing_id : null;
+      if (!convId || !listingId) return;
+      convMap.set(convId, listingId);
+      convIds.push(convId);
+    });
+
+    if (convIds.length === 0) return counts;
+
+    const { data: msgRows, error: msgError } = await supabase
+      .from("messages")
+      .select("conversation_id, created_at")
+      .in("conversation_id", convIds)
+      .gte("created_at", since30.toISOString());
+
+    if (msgError) {
+      console.error("getListingInquiryCounts messages error:", msgError);
+      return counts;
+    }
+
+    const perConversationLastMs = new Map<string, number>();
+
+    (Array.isArray(msgRows) ? msgRows : []).forEach((row: any) => {
+      const convId = typeof row?.conversation_id === "string" ? row.conversation_id : null;
+      if (!convId) return;
+
+      const createdAtMs = row?.created_at ? new Date(row.created_at).getTime() : NaN;
+      if (!Number.isFinite(createdAtMs)) return;
+
+      const prev = perConversationLastMs.get(convId) ?? -1;
+      if (createdAtMs > prev) perConversationLastMs.set(convId, createdAtMs);
+    });
+
+    perConversationLastMs.forEach((lastMs, convId) => {
+      const listingId = convMap.get(convId);
       if (!listingId) return;
 
-      const lastMessageAtMs = row?.last_message_at ? new Date(row.last_message_at).getTime() : NaN;
-      const ageMs = Number.isFinite(lastMessageAtMs) ? now - lastMessageAtMs : ms30d + 1;
+      const ageMs = now - lastMs;
 
       if (!counts[listingId]) counts[listingId] = { total: 0, last7d: 0, last30d: 0 };
 
