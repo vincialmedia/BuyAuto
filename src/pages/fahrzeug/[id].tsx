@@ -104,12 +104,16 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
     const storageKey = `buyauto:viewed:${listing.id}`;
 
+    let shouldCount = true;
+
     try {
-      if (window.sessionStorage.getItem(storageKey) === "1") return;
-      window.sessionStorage.setItem(storageKey, "1");
+      if (window.sessionStorage.getItem(storageKey) === "1") shouldCount = false;
+      else window.sessionStorage.setItem(storageKey, "1");
     } catch {
-      return;
+      shouldCount = true;
     }
+
+    if (!shouldCount) return;
 
     void fetch("/api/listings/view", {
       method: "POST",

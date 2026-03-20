@@ -553,7 +553,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               <span>{views} Aufrufe</span>
                               {views > 0 ? (
                                 <Badge variant="secondary" className="ml-2 rounded-full">
-                                  Viewed
+                                  Angesehen
                                 </Badge>
                               ) : null}
                             </div>

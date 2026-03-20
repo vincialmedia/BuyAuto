@@ -1,65 +1,13 @@
 import { useMemo } from "react";
-import { Eye, TrendingUp, Calendar, MessageSquareText, Sparkles, Target } from "lucide-react";
+import { Eye, Sparkles, Target, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ListingDetail } from "@/lib/buyauto/types";
 import type { ListingInquiryCounts } from "@/services/dashboardService";
 
 interface GarageStatsTabProps {
   listings: ListingDetail[];
   inquiryCounts?: ListingInquiryCounts;
-}
-
-type ListingStatusLabel = {
-  label: string;
-  tone: "neutral" | "positive" | "warning";
-};
-
-function isListingPaused(listing: ListingDetail): boolean {
-  const pausedAt =
-    (listing as unknown as { paused_at?: unknown; pausedAt?: unknown }).paused_at ??
-    (listing as unknown as { pausedAt?: unknown }).pausedAt ??
-    null;
-
-  const pauseUntil =
-    (listing as unknown as { pause_until?: unknown; pauseUntil?: unknown }).pause_until ??
-    (listing as unknown as { pauseUntil?: unknown }).pauseUntil ??
-    null;
-
-  const pausedAtStr = typeof pausedAt === "string" ? pausedAt : null;
-  const pauseUntilStr = typeof pauseUntil === "string" ? pauseUntil : null;
-
-  if (pauseUntilStr) {
-    const ms = new Date(pauseUntilStr).getTime();
-    if (Number.isFinite(ms)) return ms > Date.now();
-    return true;
-  }
-
-  return Boolean(pausedAtStr);
-}
-
-function getStatusLabel(listing: ListingDetail): ListingStatusLabel {
-  if (isListingPaused(listing)) return { label: "Pausiert", tone: "neutral" };
-
-  const status = listing.status;
-
-  if (status === "active" || status === "published") return { label: "Aktiv", tone: "positive" };
-  if (status === "pending") return { label: "Prüfung", tone: "warning" };
-  if (status === "sold") return { label: "Verkauft", tone: "neutral" };
-  if (status === "draft") return { label: "Entwurf", tone: "neutral" };
-  if (status === "expired") return { label: "Abgelaufen", tone: "neutral" };
-  if (status === "rejected") return { label: "Abgelehnt", tone: "neutral" };
-  if (status === "archived") return { label: "Archiviert", tone: "neutral" };
-
-  return { label: "Inaktiv", tone: "neutral" };
-}
-
-function formatVehicleName(listing: ListingDetail): string {
-  const brand = (listing.brand ?? "").trim();
-  const model = (listing.model ?? "").trim();
-  const combined = `${brand} ${model}`.trim();
-  return combined || "Fahrzeug";
 }
 
 function safeViews(listing: ListingDetail): number {
@@ -74,20 +22,11 @@ function isPremiumListing(listing: ListingDetail): boolean {
   return premiumA === true || premiumB === true;
 }
 
-function safeCreatedAtMs(listing: ListingDetail): number | null {
-  const raw = (listing as unknown as { created_at?: unknown }).created_at;
-  if (typeof raw !== "string") return null;
-  const ms = new Date(raw).getTime();
-  return Number.isFinite(ms) ? ms : null;
-}
-
-function viewsPerDay(listing: ListingDetail): number {
-  const views = safeViews(listing);
-  const createdAtMs = safeCreatedAtMs(listing);
-  if (!createdAtMs) return 0;
-
-  const days = Math.max(1, Math.ceil((Date.now() - createdAtMs) / (1000 * 60 * 60 * 24)));
-  return views / days;
+function formatVehicleName(listing: ListingDetail): string {
+  const brand = String(listing.brand ?? "").trim();
+  const model = String(listing.model ?? "").trim();
+  const combined = `${brand} ${model}`.trim();
+  return combined || "Fahrzeug";
 }
 
 function formatNumber(n: number): string {
@@ -107,24 +46,34 @@ function formatPct1(n: number): string {
   return `${formatNumber1(n)}%`;
 }
 
+type TopRow = {
+  id: string;
+  name: string;
+  year: number | null;
+  views: number;
+  inquiries30d: number;
+  premium: boolean;
+};
+
 export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps) {
   const counts = inquiryCounts ?? {};
 
-  const activeListings = useMemo(
-    () => listings.filter((l) => (l.status === "active" || l.status === "published") && !isListingPaused(l)),
-    [listings]
-  );
+  const activeListings = useMemo(() => {
+    return listings.filter((l) => l.status === "active" || l.status === "published");
+  }, [listings]);
 
-  const totalViewsAll = useMemo(() => listings.reduce((sum, l) => sum + safeViews(l), 0), [listings]);
   const totalViewsActive = useMemo(() => activeListings.reduce((sum, l) => sum + safeViews(l), 0), [activeListings]);
 
-  const avgViewsActive = useMemo(() => {
-    if (activeListings.length === 0) return 0;
-    return Math.round(totalViewsActive / activeListings.length);
-  }, [activeListings.length, totalViewsActive]);
+  const inquiriesTotal30dActive = useMemo(() => {
+    return activeListings.reduce((sum, l) => sum + (counts[l.id]?.last30d ?? 0), 0);
+  }, [activeListings, counts]);
 
-  const premiumListings = useMemo(() => listings.filter(isPremiumListing), [listings]);
-  const standardListings = useMemo(() => listings.filter((l) => !isPremiumListing(l)), [listings]);
+  const leadRate30dPctApprox = useMemo(() => {
+    return leadRatePctApprox(totalViewsActive, inquiriesTotal30dActive);
+  }, [inquiriesTotal30dActive, totalViewsActive]);
+
+  const premiumListings = useMemo(() => activeListings.filter(isPremiumListing), [activeListings]);
+  const standardListings = useMemo(() => activeListings.filter((l) => !isPremiumListing(l)), [activeListings]);
 
   const premiumAvgViews = useMemo(() => {
     if (premiumListings.length === 0) return 0;
@@ -138,73 +87,27 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
     return Math.round(v / standardListings.length);
   }, [standardListings]);
 
-  const inquiriesTotal30d = useMemo(() => {
-    return Object.values(counts).reduce((sum, c) => sum + (typeof c?.last30d === "number" ? c.last30d : 0), 0);
-  }, [counts]);
+  const topPerformance = useMemo((): TopRow[] => {
+    const rows = activeListings.map((l) => {
+      const views = safeViews(l);
+      return {
+        id: l.id,
+        name: formatVehicleName(l),
+        year: typeof l.year === "number" ? l.year : null,
+        views,
+        inquiries30d: counts[l.id]?.last30d ?? 0,
+        premium: isPremiumListing(l),
+      };
+    });
 
-  const inquiriesTotal7d = useMemo(() => {
-    return Object.values(counts).reduce((sum, c) => sum + (typeof c?.last7d === "number" ? c.last7d : 0), 0);
-  }, [counts]);
-
-  const avgInquiries30dPerActive = useMemo(() => {
-    if (activeListings.length === 0) return 0;
-    return inquiriesTotal30d / activeListings.length;
-  }, [activeListings.length, inquiriesTotal30d]);
-
-  const leadRate30dPctApprox = useMemo(() => {
-    return leadRatePctApprox(totalViewsActive, inquiriesTotal30d);
-  }, [inquiriesTotal30d, totalViewsActive]);
-
-  const listingsSortedByViews = useMemo(() => {
-    return [...listings].sort((a, b) => safeViews(b) - safeViews(a));
-  }, [listings]);
-
-  const topListings = useMemo(() => listingsSortedByViews.slice(0, 5), [listingsSortedByViews]);
+    rows.sort((a, b) => b.views - a.views);
+    return rows.slice(0, 5);
+  }, [activeListings, counts]);
 
   const maxTopViews = useMemo(() => {
-    const max = topListings.reduce((m, l) => Math.max(m, safeViews(l)), 0);
+    const max = topPerformance.reduce((m, r) => Math.max(m, r.views), 0);
     return max > 0 ? max : 1;
-  }, [topListings]);
-
-  const listingsSortedByLeads30d = useMemo(() => {
-    return [...listings].sort((a, b) => {
-      const aLeads = counts[a.id]?.last30d ?? 0;
-      const bLeads = counts[b.id]?.last30d ?? 0;
-      return bLeads - aLeads;
-    });
-  }, [listings, counts]);
-
-  const topLeadListings = useMemo(() => listingsSortedByLeads30d.slice(0, 5), [listingsSortedByLeads30d]);
-
-  const maxTopLeads = useMemo(() => {
-    const max = topLeadListings.reduce((m, l) => Math.max(m, counts[l.id]?.last30d ?? 0), 0);
-    return max > 0 ? max : 1;
-  }, [topLeadListings, counts]);
-
-  const underperformers = useMemo(() => {
-    const candidates = activeListings
-      .map((l) => ({
-        listing: l,
-        views: safeViews(l),
-        inquiries30d: counts[l.id]?.last30d ?? 0,
-      }))
-      .filter((x) => x.views >= 30 && x.inquiries30d === 0)
-      .sort((a, b) => b.views - a.views);
-
-    return candidates.slice(0, 5);
-  }, [activeListings, counts]);
-
-  const listingsSortedByLeadRate = useMemo(() => {
-    return [...activeListings].sort((a, b) => {
-      const aViews = safeViews(a);
-      const bViews = safeViews(b);
-      const aLeads = counts[a.id]?.last30d ?? 0;
-      const bLeads = counts[b.id]?.last30d ?? 0;
-      return leadRatePctApprox(bViews, bLeads) - leadRatePctApprox(aViews, aLeads);
-    });
-  }, [activeListings, counts]);
-
-  const topLeadRateListings = useMemo(() => listingsSortedByLeadRate.slice(0, 5), [listingsSortedByLeadRate]);
+  }, [topPerformance]);
 
   if (listings.length === 0) {
     return (
@@ -214,7 +117,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
         </div>
         <h3 className="text-lg font-medium text-neutral-900">Keine Statistiken verfügbar</h3>
         <p className="text-neutral-500 mt-1 max-w-sm mx-auto">
-          Sobald Sie Inserate erstellen und diese aufgerufen werden, erscheinen hier detaillierte Statistiken.
+          Sobald Ihre Inserate online sind und aufgerufen werden, sehen Sie hier eine Performance-Übersicht.
         </p>
       </div>
     );
@@ -222,99 +125,49 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="rounded-2xl border-neutral-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Aufrufe (aktiv)</CardTitle>
-            <Eye className="h-4 w-4 text-neutral-400" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="rounded-3xl border-neutral-200 shadow-sm overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-base sm:text-lg">Top Performance</CardTitle>
+                <CardDescription>Meistgesehene Fahrzeuge (aktiv)</CardDescription>
+              </div>
+              <div className="shrink-0 rounded-2xl border border-neutral-200 bg-white p-2">
+                <Eye className="h-5 w-5 text-neutral-700" />
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-neutral-900">{formatNumber(totalViewsActive)}</div>
-            <p className="text-xs text-neutral-500 mt-1">Summe über aktive Inserate</p>
-          </CardContent>
-        </Card>
 
-        <Card className="rounded-2xl border-neutral-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Ø Aufrufe / aktiv</CardTitle>
-            <TrendingUp className="h-4 w-4 text-neutral-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-neutral-900">{formatNumber(avgViewsActive)}</div>
-            <p className="text-xs text-neutral-500 mt-1">Durchschnitt pro aktivem Inserat</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-neutral-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Aktive Inserate</CardTitle>
-            <Calendar className="h-4 w-4 text-neutral-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-neutral-900">{formatNumber(activeListings.length)}</div>
-            <p className="text-xs text-neutral-500 mt-1">Derzeit online</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-neutral-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Anfragen (30 Tage)</CardTitle>
-            <MessageSquareText className="h-4 w-4 text-neutral-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-neutral-900">{formatNumber(inquiriesTotal30d)}</div>
-            <p className="text-xs text-neutral-500 mt-1">{formatNumber(inquiriesTotal7d)} in den letzten 7 Tagen</p>
-            <p className="text-xs text-neutral-500 mt-1">
-              Ø {formatNumber1(avgInquiries30dPerActive)} pro aktivem Inserat (30 Tage)
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border-neutral-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Lead-Rate (30 Tage)</CardTitle>
-            <Target className="h-4 w-4 text-neutral-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-neutral-900 tabular-nums">{formatPct1(leadRate30dPctApprox)}</div>
-            <p className="text-xs text-neutral-500 mt-1">Annäherung: Anfragen 30d ÷ Gesamtaufrufe (aktiv)</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="rounded-3xl border-neutral-200 shadow-sm">
-          <CardHeader>
-            <CardTitle>Top Performance</CardTitle>
-            <CardDescription>Die 5 meistgesehenen Fahrzeuge (Aufrufe)</CardDescription>
-          </CardHeader>
           <CardContent className="space-y-3">
-            {topListings.map((listing) => {
-              const views = safeViews(listing);
-              const pct = Math.round((views / maxTopViews) * 100);
-              const vehicleName = formatVehicleName(listing);
-              const premium = isPremiumListing(listing);
+            {topPerformance.map((row) => {
+              const pct = Math.round((row.views / maxTopViews) * 100);
 
               return (
-                <div key={listing.id} className="rounded-2xl border border-neutral-200/70 bg-white p-3">
+                <div key={row.id} className="rounded-2xl border border-neutral-200/70 bg-white p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="truncate text-sm font-semibold text-neutral-900">{vehicleName}</div>
-                        {premium ? (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="truncate text-sm font-semibold text-neutral-900">{row.name}</div>
+                        {row.premium ? (
                           <Badge className="rounded-full bg-amber-50 text-amber-900 border border-amber-200">
                             <Sparkles className="h-3.5 w-3.5 mr-1" />
                             Premium
                           </Badge>
                         ) : null}
                       </div>
+
                       <div className="mt-0.5 text-xs text-neutral-500">
-                        {listing.year ? `${listing.year}` : null}
+                        {row.year ? `${row.year}` : "—"}
                         <span className="mx-2 text-neutral-300">•</span>
-                        <span className="tabular-nums">{formatNumber1(viewsPerDay(listing))} / Tag</span>
+                        <span className="tabular-nums">{formatNumber(row.inquiries30d)} Anfragen (30d)</span>
                       </div>
                     </div>
-                    <div className="shrink-0 text-sm font-bold text-neutral-900 tabular-nums">{formatNumber(views)}</div>
+
+                    <div className="shrink-0 text-right">
+                      <div className="text-sm font-bold text-neutral-900 tabular-nums">{formatNumber(row.views)}</div>
+                      <div className="text-[11px] text-neutral-500">Aufrufe</div>
+                    </div>
                   </div>
 
                   <div className="mt-3 h-2 w-full rounded-full bg-neutral-100">
@@ -330,228 +183,116 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-neutral-200 shadow-sm">
-          <CardHeader>
-            <CardTitle>Premium vs Standard</CardTitle>
-            <CardDescription>Durchschnittliche Performance</CardDescription>
+        <Card className="rounded-3xl border-neutral-200 shadow-sm overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-base sm:text-lg">Premium vs Standard</CardTitle>
+                <CardDescription>Ø Aufrufe pro aktivem Inserat</CardDescription>
+              </div>
+              <div className="shrink-0 rounded-2xl border border-neutral-200 bg-white p-2">
+                <Sparkles className="h-5 w-5 text-amber-700" />
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-2xl border border-neutral-200/70 p-4">
+
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-neutral-200/70 bg-white p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-neutral-900">Premium</div>
                 <Badge className="rounded-full bg-amber-50 text-amber-900 border border-amber-200">
                   {formatNumber(premiumListings.length)}
                 </Badge>
               </div>
-              <div className="mt-2 text-2xl font-bold text-neutral-900">{formatNumber(premiumAvgViews)}</div>
-              <div className="text-xs text-neutral-500">Ø Aufrufe pro Premium-Inserat</div>
+              <div className="mt-2 text-3xl font-bold text-neutral-900 tabular-nums">{formatNumber(premiumAvgViews)}</div>
+              <div className="text-xs text-neutral-500 mt-1">Ø Aufrufe</div>
             </div>
 
-            <div className="rounded-2xl border border-neutral-200/70 p-4">
+            <div className="rounded-2xl border border-neutral-200/70 bg-white p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-neutral-900">Standard</div>
-                <Badge variant="outline" className="rounded-full">
+                <Badge variant="outline" className="rounded-full border-neutral-300 bg-neutral-50 text-neutral-700">
                   {formatNumber(standardListings.length)}
                 </Badge>
               </div>
-              <div className="mt-2 text-2xl font-bold text-neutral-900">{formatNumber(standardAvgViews)}</div>
-              <div className="text-xs text-neutral-500">Ø Aufrufe pro Standard-Inserat</div>
+              <div className="mt-2 text-3xl font-bold text-neutral-900 tabular-nums">{formatNumber(standardAvgViews)}</div>
+              <div className="text-xs text-neutral-500 mt-1">Ø Aufrufe</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-neutral-200 shadow-sm">
-          <CardHeader>
-            <CardTitle>Top Leads</CardTitle>
-            <CardDescription>Die 5 Inserate mit den meisten Anfragen (30 Tage)</CardDescription>
+        <Card className="rounded-3xl border-neutral-200 shadow-sm overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-base sm:text-lg">Lead Rate</CardTitle>
+                <CardDescription>Anfragen (30d) ÷ Aufrufe (aktiv)</CardDescription>
+              </div>
+              <div className="shrink-0 rounded-2xl border border-neutral-200 bg-white p-2">
+                <Target className="h-5 w-5 text-neutral-700" />
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {topLeadListings.map((listing) => {
-              const leads = counts[listing.id]?.last30d ?? 0;
-              const pct = Math.round((leads / maxTopLeads) * 100);
-              const vehicleName = formatVehicleName(listing);
-              const premium = isPremiumListing(listing);
 
-              return (
-                <div key={listing.id} className="rounded-2xl border border-neutral-200/70 bg-white p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="truncate text-sm font-semibold text-neutral-900">{vehicleName}</div>
-                        {premium ? (
-                          <Badge className="rounded-full bg-amber-50 text-amber-900 border border-amber-200">Premium</Badge>
-                        ) : null}
-                      </div>
-                      <div className="mt-0.5 text-xs text-neutral-500">
-                        Letzte 30 Tage <span className="mx-2 text-neutral-300">•</span>{" "}
-                        <span className="tabular-nums">{formatNumber(leads)} Anfragen</span>
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-sm font-bold text-neutral-900 tabular-nums">{formatNumber(leads)}</div>
-                  </div>
-
-                  <div className="mt-3 h-2 w-full rounded-full bg-neutral-100">
-                    <div
-                      className="h-2 rounded-full bg-primary transition-[width]"
-                      style={{ width: `${pct}%` }}
-                      aria-hidden
-                    />
+          <CardContent className="space-y-4">
+            <div className="rounded-2xl border border-neutral-200/70 bg-white p-4">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <div className="text-xs text-neutral-500">Lead Rate (30 Tage)</div>
+                  <div className="mt-1 text-4xl font-bold tracking-tight text-neutral-900 tabular-nums">
+                    {formatPct1(leadRate30dPctApprox)}
                   </div>
                 </div>
-              );
-            })}
-
-            {topLeadListings.length === 0 ? (
-              <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50 p-4 text-sm text-neutral-600">
-                Noch keine Anfragen im ausgewählten Zeitraum.
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-neutral-200 shadow-sm md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Optimierungspotenzial</CardTitle>
-            <CardDescription>Viele Aufrufe, aber keine Anfragen (30 Tage)</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {underperformers.length === 0 ? (
-              <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50 p-4 text-sm text-neutral-600">
-                Kein auffälliges Inserat gefunden. Gute Arbeit.
-              </div>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {underperformers.map(({ listing, views }) => (
-                  <div key={listing.id} className="rounded-2xl border border-neutral-200/70 bg-white p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-neutral-900">{formatVehicleName(listing)}</div>
-                        <div className="mt-1 text-xs text-neutral-500">
-                          {formatNumber(views)} Aufrufe (gesamt) <span className="mx-2 text-neutral-300">•</span> 0 Anfragen (30 Tage)
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="rounded-full">
-                        Check
-                      </Badge>
-                    </div>
-                    <div className="mt-2 text-xs text-neutral-500">
-                      Tipp: Titel/Preis prüfen, bessere Fotos, oder Premium testen.
-                    </div>
+                <div className="text-right text-xs text-neutral-500">
+                  <div>
+                    <span className="font-semibold text-neutral-700 tabular-nums">
+                      {formatNumber(inquiriesTotal30dActive)}
+                    </span>{" "}
+                    Anfragen
                   </div>
-                ))}
+                  <div>
+                    <span className="font-semibold text-neutral-700 tabular-nums">{formatNumber(totalViewsActive)}</span>{" "}
+                    Aufrufe
+                  </div>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Card className="rounded-3xl border-neutral-200 shadow-sm md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Beste Lead-Rate</CardTitle>
-            <CardDescription>Annäherung: Anfragen (30d) ÷ Gesamtaufrufe</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {topLeadRateListings.length === 0 ? (
-              <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50 p-4 text-sm text-neutral-600">
-                Noch keine Daten vorhanden.
+              <div className="mt-4 h-3 w-full rounded-full bg-neutral-100 overflow-hidden">
+                <div
+                  className="h-3 rounded-full bg-gradient-to-r from-primary to-primary/80 transition-[width]"
+                  style={{ width: `${Math.min(100, Math.max(0, leadRate30dPctApprox))}%` }}
+                  aria-hidden
+                />
               </div>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {topLeadRateListings.map((listing) => {
-                  const views = safeViews(listing);
-                  const leads30d = counts[listing.id]?.last30d ?? 0;
-                  const rate = leadRatePctApprox(views, leads30d);
 
-                  return (
-                    <div key={listing.id} className="rounded-2xl border border-neutral-200/70 bg-white p-4">
-                      <div className="truncate text-sm font-semibold text-neutral-900">{formatVehicleName(listing)}</div>
-                      <div className="mt-1 text-xs text-neutral-500">
-                        {formatNumber(leads30d)} Anfragen (30d) <span className="mx-2 text-neutral-300">•</span>{" "}
-                        {formatNumber(views)} Aufrufe (gesamt)
-                      </div>
-                      <div className="mt-2 text-lg font-bold text-neutral-900 tabular-nums">{formatPct1(rate)}</div>
-                    </div>
-                  );
-                })}
+              <div className="mt-2 text-xs text-neutral-500">
+                Hinweis: Aufrufe sind lifetime; Anfragen sind 30 Tage. Für Trends können wir View-Events als Phase 2
+                erfassen.
               </div>
-            )}
+            </div>
+
+            <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-xl border border-neutral-200 bg-white p-2">
+                  <TrendingUp className="h-4 w-4 text-neutral-700" />
+                </div>
+                <div className="text-sm text-neutral-700">
+                  <div className="font-semibold text-neutral-900">Schneller Hebel</div>
+                  <div className="mt-1 text-neutral-600">
+                    Steigt die Lead Rate nicht, lohnt sich oft: bessere Titel + Fotos, klarere Konditionen und ggf.
+                    Premium für mehr Reichweite.
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="rounded-3xl border-neutral-200 shadow-sm">
-        <CardHeader>
-          <CardTitle>Details pro Inserat</CardTitle>
-          <CardDescription>Aufrufe & Anfragen in einer Tabelle</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="max-h-[420px] overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fahrzeug</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aufrufe</TableHead>
-                  <TableHead className="text-right">Ø / Tag</TableHead>
-                  <TableHead className="text-right">Anfragen (30d)</TableHead>
-                  <TableHead className="text-right">Lead-Rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {listingsSortedByViews.map((listing) => {
-                  const status = getStatusLabel(listing);
-                  const views = safeViews(listing);
-                  const vpd = viewsPerDay(listing);
-                  const inquiries = counts[listing.id]?.last30d ?? 0;
-                  const lr = leadRatePctApprox(views, inquiries);
-
-                  return (
-                    <TableRow key={listing.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="truncate text-neutral-900">{formatVehicleName(listing)}</span>
-                            {safeViews(listing) > 0 ? (
-                              <Badge variant="outline" className="rounded-full border-neutral-300 bg-neutral-50 text-neutral-700">
-                                Viewed
-                              </Badge>
-                            ) : null}
-                            {isPremiumListing(listing) ? (
-                              <Badge className="rounded-full bg-amber-50 text-amber-900 border border-amber-200">Premium</Badge>
-                            ) : null}
-                          </div>
-                          <span className="text-xs text-neutral-500">{listing.year}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            status.tone === "positive"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                              : status.tone === "warning"
-                                ? "border-amber-200 bg-amber-50 text-amber-900"
-                                : "border-neutral-200 bg-white text-neutral-700"
-                          }
-                        >
-                          {status.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-bold text-neutral-900 tabular-nums">{formatNumber(views)}</TableCell>
-                      <TableCell className="text-right text-neutral-900 tabular-nums">{formatNumber1(vpd)}</TableCell>
-                      <TableCell className="text-right text-neutral-900 tabular-nums">{formatNumber(inquiries)}</TableCell>
-                      <TableCell className="text-right text-neutral-900 tabular-nums">{formatPct1(lr)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="border-t border-neutral-200 px-4 py-3 text-xs text-neutral-500">
-            Gesamt-Aufrufe (alle Inserate): <span className="font-semibold text-neutral-700 tabular-nums">{formatNumber(totalViewsAll)}</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="text-xs text-neutral-500">
+        <span className="font-semibold text-neutral-700">{formatNumber(activeListings.length)}</span> aktive Inserate in
+        dieser Übersicht.
+      </div>
     </div>
   );
 }
