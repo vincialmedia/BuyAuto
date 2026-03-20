@@ -96,6 +96,31 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   }, [id, listing, notFound, clientNotFound, router.query.preview, user]);
 
   useEffect(() => {
+    const preview = router.query.preview === "true";
+    if (!listing?.id) return;
+    if (preview) return;
+    if (isOwnerPreview) return;
+    if (typeof window === "undefined") return;
+
+    const storageKey = `buyauto:viewed:${listing.id}`;
+
+    try {
+      if (window.sessionStorage.getItem(storageKey) === "1") return;
+      window.sessionStorage.setItem(storageKey, "1");
+    } catch {
+      return;
+    }
+
+    void fetch("/api/listings/view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ listing_id: listing.id }),
+    }).catch((error) => {
+      console.warn("View tracking failed:", error);
+    });
+  }, [listing?.id, router.query.preview, isOwnerPreview]);
+
+  useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
@@ -350,18 +375,6 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     }
 
     const serializedListing = serializeListing(listing);
-
-    const headers = context.req.headers;
-    const isPrefetch =
-      String(headers["purpose"] ?? "") === "prefetch" ||
-      String(headers["sec-purpose"] ?? "") === "prefetch" ||
-      String(headers["x-middleware-prefetch"] ?? "") === "1";
-
-    if (!isPrefetch) {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { error } = await supabase.rpc("increment_listing_view", { p_listing_id: id });
-      if (error) console.error("Error incrementing listing view_count:", error);
-    }
 
     return { props: { listing: serializedListing } };
   } catch (error) {

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Eye, TrendingUp, Calendar, MessageSquareText, Sparkles } from "lucide-react";
+import { Eye, TrendingUp, Calendar, MessageSquareText, Sparkles, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -96,6 +96,15 @@ function formatNumber1(n: number): string {
   return new Intl.NumberFormat("de-CH", { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(n);
 }
 
+function leadRatePctApprox(viewsTotal: number, inquiries30d: number): number {
+  const denom = Math.max(1, viewsTotal);
+  return (inquiries30d / denom) * 100;
+}
+
+function formatPct1(n: number): string {
+  return `${formatNumber1(n)}%`;
+}
+
 export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps) {
   const counts = inquiryCounts ?? {};
 
@@ -140,6 +149,10 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
     return inquiriesTotal30d / activeListings.length;
   }, [activeListings.length, inquiriesTotal30d]);
 
+  const leadRate30dPctApprox = useMemo(() => {
+    return leadRatePctApprox(totalViewsActive, inquiriesTotal30d);
+  }, [inquiriesTotal30d, totalViewsActive]);
+
   const listingsSortedByViews = useMemo(() => {
     return [...listings].sort((a, b) => safeViews(b) - safeViews(a));
   }, [listings]);
@@ -166,6 +179,31 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
     return max > 0 ? max : 1;
   }, [topLeadListings, counts]);
 
+  const underperformers = useMemo(() => {
+    const candidates = activeListings
+      .map((l) => ({
+        listing: l,
+        views: safeViews(l),
+        inquiries30d: counts[l.id]?.last30d ?? 0,
+      }))
+      .filter((x) => x.views >= 30 && x.inquiries30d === 0)
+      .sort((a, b) => b.views - a.views);
+
+    return candidates.slice(0, 5);
+  }, [activeListings, counts]);
+
+  const listingsSortedByLeadRate = useMemo(() => {
+    return [...activeListings].sort((a, b) => {
+      const aViews = safeViews(a);
+      const bViews = safeViews(b);
+      const aLeads = counts[a.id]?.last30d ?? 0;
+      const bLeads = counts[b.id]?.last30d ?? 0;
+      return leadRatePctApprox(bViews, bLeads) - leadRatePctApprox(aViews, aLeads);
+    });
+  }, [activeListings, counts]);
+
+  const topLeadRateListings = useMemo(() => listingsSortedByLeadRate.slice(0, 5), [listingsSortedByLeadRate]);
+
   if (listings.length === 0) {
     return (
       <div className="text-center py-12 bg-neutral-50 rounded-3xl border border-neutral-200">
@@ -182,7 +220,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="rounded-2xl border-neutral-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-neutral-600">Aufrufe (aktiv)</CardTitle>
@@ -227,6 +265,17 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
             <p className="text-xs text-neutral-500 mt-1">
               Ø {formatNumber1(avgInquiries30dPerActive)} pro aktivem Inserat (30 Tage)
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-neutral-200 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-neutral-600">Lead-Rate (30 Tage)</CardTitle>
+            <Target className="h-4 w-4 text-neutral-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-neutral-900 tabular-nums">{formatPct1(leadRate30dPctApprox)}</div>
+            <p className="text-xs text-neutral-500 mt-1">Annäherung: Anfragen 30d ÷ Gesamtaufrufe (aktiv)</p>
           </CardContent>
         </Card>
       </div>
@@ -357,6 +406,74 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
             ) : null}
           </CardContent>
         </Card>
+
+        <Card className="rounded-3xl border-neutral-200 shadow-sm md:col-span-2 lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Optimierungspotenzial</CardTitle>
+            <CardDescription>Viele Aufrufe, aber keine Anfragen (30 Tage)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {underperformers.length === 0 ? (
+              <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50 p-4 text-sm text-neutral-600">
+                Kein auffälliges Inserat gefunden. Gute Arbeit.
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {underperformers.map(({ listing, views }) => (
+                  <div key={listing.id} className="rounded-2xl border border-neutral-200/70 bg-white p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-neutral-900">{formatVehicleName(listing)}</div>
+                        <div className="mt-1 text-xs text-neutral-500">
+                          {formatNumber(views)} Aufrufe (gesamt) <span className="mx-2 text-neutral-300">•</span> 0 Anfragen (30 Tage)
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="rounded-full">
+                        Check
+                      </Badge>
+                    </div>
+                    <div className="mt-2 text-xs text-neutral-500">
+                      Tipp: Titel/Preis prüfen, bessere Fotos, oder Premium testen.
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-3xl border-neutral-200 shadow-sm md:col-span-2 lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Beste Lead-Rate</CardTitle>
+            <CardDescription>Annäherung: Anfragen (30d) ÷ Gesamtaufrufe</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topLeadRateListings.length === 0 ? (
+              <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50 p-4 text-sm text-neutral-600">
+                Noch keine Daten vorhanden.
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {topLeadRateListings.map((listing) => {
+                  const views = safeViews(listing);
+                  const leads30d = counts[listing.id]?.last30d ?? 0;
+                  const rate = leadRatePctApprox(views, leads30d);
+
+                  return (
+                    <div key={listing.id} className="rounded-2xl border border-neutral-200/70 bg-white p-4">
+                      <div className="truncate text-sm font-semibold text-neutral-900">{formatVehicleName(listing)}</div>
+                      <div className="mt-1 text-xs text-neutral-500">
+                        {formatNumber(leads30d)} Anfragen (30d) <span className="mx-2 text-neutral-300">•</span>{" "}
+                        {formatNumber(views)} Aufrufe (gesamt)
+                      </div>
+                      <div className="mt-2 text-lg font-bold text-neutral-900 tabular-nums">{formatPct1(rate)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="rounded-3xl border-neutral-200 shadow-sm">
@@ -374,6 +491,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
                   <TableHead className="text-right">Aufrufe</TableHead>
                   <TableHead className="text-right">Ø / Tag</TableHead>
                   <TableHead className="text-right">Anfragen (30d)</TableHead>
+                  <TableHead className="text-right">Lead-Rate</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -382,6 +500,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
                   const views = safeViews(listing);
                   const vpd = viewsPerDay(listing);
                   const inquiries = counts[listing.id]?.last30d ?? 0;
+                  const lr = leadRatePctApprox(views, inquiries);
 
                   return (
                     <TableRow key={listing.id}>
@@ -418,6 +537,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
                       <TableCell className="text-right font-bold text-neutral-900 tabular-nums">{formatNumber(views)}</TableCell>
                       <TableCell className="text-right text-neutral-900 tabular-nums">{formatNumber1(vpd)}</TableCell>
                       <TableCell className="text-right text-neutral-900 tabular-nums">{formatNumber(inquiries)}</TableCell>
+                      <TableCell className="text-right text-neutral-900 tabular-nums">{formatPct1(lr)}</TableCell>
                     </TableRow>
                   );
                 })}
