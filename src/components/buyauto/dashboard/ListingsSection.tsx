@@ -29,6 +29,7 @@ import StatusBadge from "./StatusBadge";
 import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: string | null }): string {
   const dealType = input.deal_type ?? "lease_takeover";
@@ -499,6 +500,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             const soldDaysRemaining = getSoldDaysRemaining(listing);
             const views = Number.isFinite(Number(listing.view_count)) ? Number(listing.view_count) : 0;
             const isPublicListing = ["published", "active", "sold"].includes(String(listing.status));
+            const listingHref = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
 
             return (
               <Card
@@ -585,7 +587,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                             variant="ghost"
                             size="sm"
                             className="rounded-2xl"
-                            onClick={() => router.push(`/fahrzeug/${listing.id}?preview=true`)}
+                            onClick={() => router.push(`${listingHref}?preview=true`)}
                           >
                             <Eye className="w-4 h-4 mr-2" /> Vorschau
                           </Button>
@@ -613,7 +615,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 <DropdownMenuItem
                                   onClick={() => {
                                     if (typeof window !== "undefined") {
-                                      window.open(`/fahrzeug/${listing.id}`, "_blank", "noopener,noreferrer");
+                                      window.open(listingHref, "_blank", "noopener,noreferrer");
                                     }
                                   }}
                                 >

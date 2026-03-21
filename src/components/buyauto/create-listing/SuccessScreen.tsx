@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getListingByIdForOwner } from "@/services/createListingService";
 import type { ListingData } from "@/lib/buyauto/types";
 import { SuccessListingSummary, type SuccessListingSummaryInput } from "@/components/buyauto/create-listing/SuccessListingSummary";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 const useConfetti = () => {
   const hasMounted = useHasMounted();
@@ -249,7 +250,7 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
                     onClick={() => {
                       if (typeof window !== "undefined") {
                         sessionStorage.removeItem("completedListingData");
-                        window.location.href = `/fahrzeug/${listingId}?preview=true`;
+                        window.location.href = `${buildListingHref({ id: listingId })}?preview=true`;
                       }
                     }}
                     className="w-full bg-neutral-900 hover:bg-neutral-800"
@@ -267,7 +268,7 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
               <Button
                 onClick={() => {
                   if (typeof window !== "undefined") {
-                    window.location.href = `/fahrzeug/${listingId}?preview=true`;
+                    window.location.href = `${buildListingHref({ id: listingId })}?preview=true`;
                   }
                 }}
                 className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800"

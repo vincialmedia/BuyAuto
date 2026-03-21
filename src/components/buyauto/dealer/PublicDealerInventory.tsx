@@ -8,6 +8,7 @@ import type { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { searchDealerListings } from "@/services/listingsService";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
 
@@ -352,7 +353,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {results.items.map((listing) => {
-                const href = `/fahrzeug/${listing.id}`;
+                const href = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
                 const priceLine =
                   listing.deal_type === "direct_purchase"
                     ? typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0

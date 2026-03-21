@@ -1,5 +1,6 @@
 import { GetServerSideProps } from "next";
 import { supabase } from "@/integrations/supabase/client";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const baseUrl = "https://www.buyauto.ch";

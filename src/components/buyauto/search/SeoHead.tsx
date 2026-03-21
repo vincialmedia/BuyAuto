@@ -1,5 +1,6 @@
 import Head from "next/head";
 import { SearchQuery, SearchResult, formatPrice } from "@/lib/buyauto/search";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 interface SeoHeadProps {
   searchResults: SearchResult | null;
@@ -14,7 +15,7 @@ export default function SeoHead({ searchResults, searchQuery }: SeoHeadProps) {
     const itemListElement = searchResults.items.map((listing, index) => ({
       "@type": "ListItem",
       "position": (searchResults.page - 1) * searchResults.pageSize + index + 1,
-      "url": `${process.env.NODE_ENV === 'production' ? 'https://buyauto.ch' : 'http://localhost:3000'}/fahrzeug/${listing.id}`,
+      "url": buildListingHref(listing),
       "name": `${listing.brand} ${listing.model}${listing.title ? ` ${listing.title}` : ''} (${listing.year})`,
       "item": {
         "@type": "Car",

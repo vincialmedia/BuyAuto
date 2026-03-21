@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 // Utility functions
 const formatPrice = (price: number): string => {
@@ -42,7 +43,7 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
   };
 
   const handleDetailsClick = () => {
-    router.push(`/fahrzeug/${listing.id}`);
+    router.push(buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model }));
   };
 
   const handleSaveClick = (e: React.MouseEvent) => {

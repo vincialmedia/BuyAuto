@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 interface ModernListingCardProps {
   listing: Listing;
@@ -86,10 +87,12 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
 
   const handleDetailsClick = (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    const href = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
+
     if (onDetailsClick) {
       onDetailsClick(listing.id);
     } else {
-      router.push(`/fahrzeug/${listing.id}`);
+      router.push(href);
     }
   };
 

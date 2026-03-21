@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme";
 
@@ -230,7 +231,10 @@ export default function PremiumListings() {
               const dealTypeLabel = getDealTypeLabel(listing);
 
               return (
-                <Link key={listing.id} href={`/fahrzeug/${listing.id}`}>
+                <Link
+                  key={listing.id}
+                  href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}
+                >
                   <Card className="group cursor-pointer border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-500 hover:-translate-y-2 ring-2 ring-amber-200/20">
                     <CardContent className="p-0 relative overflow-hidden">
                       <div className="absolute top-3 left-3 z-10">

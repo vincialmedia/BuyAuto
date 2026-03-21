@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Listing, ListingDetail } from "@/lib/buyauto/types";
 import { getSimilarListings } from "@/services/listingsService";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 interface SimilarListingsProps {
   listing: ListingDetail;
@@ -103,7 +104,7 @@ function SimilarListingCard({ listing }: { listing: Listing }) {
 
   return (
     <Card className="group border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-      <Link href={`/fahrzeug/${listing.id}`}>
+      <Link href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}>
         <div className="relative aspect-video bg-gradient-to-br from-neutral-100 to-neutral-200">
           {listing.imageUrl && (
             <Image
@@ -167,7 +168,7 @@ function SimilarListingCardMobile({ listing }: { listing: Listing }) {
 
   return (
     <Card className="group flex-shrink-0 w-72 border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden snap-start">
-      <Link href={`/fahrzeug/${listing.id}`}>
+      <Link href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}>
         <div className="relative aspect-video bg-gradient-to-br from-neutral-100 to-neutral-200">
           {listing.imageUrl && (
             <Image

@@ -5,6 +5,7 @@ import { Star, MapPin, Gauge, Fuel, Settings, Calendar } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 interface VerticalListingCardProps {
   listing: Listing;
@@ -85,8 +86,7 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
     if (onDetailsClick) {
       onDetailsClick(listing.id);
     } else {
-      // Navigate to detail page
-      router.push(`/fahrzeug/${listing.id}`);
+      router.push(buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model }));
     }
   };
 

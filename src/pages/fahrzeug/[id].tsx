@@ -14,6 +14,7 @@ import { getGaragePublicById } from "@/services/garageService";
 import type { GaragePublicInfo } from "@/services/garageService";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { buildListingHref, buildListingSlugSegment, extractListingIdFromParam } from "@/lib/buyauto/listingUrl";
 
 const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), { ssr: false });
 
@@ -52,6 +53,12 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   const { id } = router.query;
   const { user } = useAuth();
 
+  const listingId = useMemo(() => {
+    if (typeof id !== "string") return null;
+    const extracted = extractListingIdFromParam(id);
+    return extracted || null;
+  }, [id]);
+
   const [listing, setListing] = useState<ListingDetail | null>(initialListing);
   const [isLoading, setIsLoading] = useState(!initialListing && !notFound);
   const [clientNotFound, setClientNotFound] = useState(false);
@@ -62,16 +69,16 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   const [garage, setGarage] = useState<GaragePublicInfo | null>(null);
 
   useEffect(() => {
-    if (!listing && !notFound && !clientNotFound && id && typeof id === "string") {
+    if (!listing && !notFound && !clientNotFound && listingId) {
       const fetchListing = async () => {
         setIsLoading(true);
         try {
           const isPreview = router.query.preview === "true";
 
-          let fetchedListing = isPreview ? await getUserListingById(id) : await getPublishedListingById(id);
+          let fetchedListing = isPreview ? await getUserListingById(listingId) : await getPublishedListingById(listingId);
 
           if (!fetchedListing && isPreview && user) {
-            const ownerListing = await getUserListingById(id);
+            const ownerListing = await getUserListingById(listingId);
             if (ownerListing) {
               fetchedListing = ownerListing;
               setIsOwnerPreview(true);
@@ -94,7 +101,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
       fetchListing();
     }
-  }, [id, listing, notFound, clientNotFound, router.query.preview, user]);
+  }, [listingId, listing, notFound, clientNotFound, router.query.preview, user]);
 
   useEffect(() => {
     const preview = router.query.preview === "true";
@@ -223,7 +230,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
   }
 
   const baseUrl = process.env.NODE_ENV === "production" ? "https://www.buyauto.ch" : "http://localhost:3000";
-  const listingUrl = `${baseUrl}/fahrzeug/${listing.id}`;
+  const listingUrl = `${baseUrl}${buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}`;
   const ogImage = listing.imageUrl || (images.length > 0 ? images[0] : `${baseUrl}/buyauto-logo.png`);
 
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
@@ -359,6 +366,11 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     return { notFound: true };
   }
 
+  const listingId = extractListingIdFromParam(id);
+  if (!listingId) {
+    return { notFound: true };
+  }
+
   try {
     if (preview === "true") {
       return { props: { listing: null } };
@@ -368,7 +380,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       const { data, error } = await (await import("@/integrations/supabase/client")).supabase
         .from("listings_public")
         .select("*, profiles(full_name, avatar_url)")
-        .eq("id", id)
+        .eq("id", listingId)
         .in("status", ["published", "active", "sold"])
         .single();
 
@@ -412,6 +424,17 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     }
 
     const serializedListing = serializeListing(listing);
+
+    const canonicalSegment = buildListingSlugSegment({ id: listing.id, brand: listing.brand, model: listing.model });
+
+    if (id !== canonicalSegment) {
+      return {
+        redirect: {
+          destination: `/fahrzeug/${canonicalSegment}`,
+          permanent: true,
+        },
+      };
+    }
 
     return { props: { listing: serializedListing } };
   } catch (error) {
