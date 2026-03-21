@@ -1757,6 +1757,15 @@ export type Database = {
         Args: { p_cover_index: number; p_cover_url: string; p_images: Json }
         Returns: string
       }
+      get_listing_inquiry_counts: {
+        Args: { p_listing_ids: string[] }
+        Returns: {
+          last30d: number
+          last7d: number
+          listing_id: string
+          total: number
+        }[]
+      }
       get_models_for_brand: {
         Args: { p_brand: string }
         Returns: {

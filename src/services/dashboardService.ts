@@ -336,6 +336,34 @@ async function extendListing(id: string) {
 async function getListingInquiryCounts(listingIds: string[]): Promise<ListingInquiryCounts> {
   if (!Array.isArray(listingIds) || listingIds.length === 0) return {};
 
+  try {
+    const { data, error } = await supabase.rpc("get_listing_inquiry_counts", {
+      p_listing_ids: listingIds,
+    });
+
+    if (!error && Array.isArray(data)) {
+      const counts: ListingInquiryCounts = {};
+      data.forEach((row: any) => {
+        const listingId = typeof row?.listing_id === "string" ? row.listing_id : null;
+        if (!listingId) return;
+
+        const total = typeof row?.total === "number" ? row.total : Number(row?.total ?? 0);
+        const last7d = typeof row?.last7d === "number" ? row.last7d : Number(row?.last7d ?? 0);
+        const last30d = typeof row?.last30d === "number" ? row.last30d : Number(row?.last30d ?? 0);
+
+        counts[listingId] = {
+          total: Number.isFinite(total) ? total : 0,
+          last7d: Number.isFinite(last7d) ? last7d : 0,
+          last30d: Number.isFinite(last30d) ? last30d : 0,
+        };
+      });
+
+      return counts;
+    }
+  } catch (err) {
+    console.error("getListingInquiryCounts rpc unexpected error:", err);
+  }
+
   const since30 = new Date();
   since30.setDate(since30.getDate() - 30);
 

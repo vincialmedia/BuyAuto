@@ -77,6 +77,9 @@ export function Footer() {
             
             {/* Swiss contact info */}
             <div className="space-y-4">
+              <div className="text-neutral-200 font-semibold tracking-tight">
+                Funktionsanfragen oder Feedback, schreib uns:
+              </div>
               <div className="flex items-center space-x-4 group">
                 <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
                   <Mail className="h-5 w-5 text-red-400" />

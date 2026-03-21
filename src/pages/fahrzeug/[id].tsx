@@ -104,25 +104,41 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     if (typeof window === "undefined") return;
 
     const run = async () => {
-      let viewerId: string | null = user?.id ?? null;
+      let viewerId: string | null = null;
 
-      if (!viewerId) {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) viewerId = null;
+        else viewerId = data.user?.id ?? null;
+      } catch {
+        viewerId = null;
+      }
+
+      let viewerKey = viewerId;
+
+      if (!viewerKey) {
         try {
-          const res = await supabase.auth.getUser();
-          viewerId = res.data.user?.id ?? null;
+          const existing = window.sessionStorage.getItem("buyauto:anon-viewer");
+          if (existing) viewerKey = existing;
+          else {
+            const created = `anon_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+            window.sessionStorage.setItem("buyauto:anon-viewer", created);
+            viewerKey = created;
+          }
         } catch {
-          viewerId = null;
+          viewerKey = null;
         }
       }
 
-      const viewerKey = viewerId ?? "anon";
-      const storageKey = `buyauto:viewed:${listing.id}:${viewerKey}`;
+      const storageKey = viewerKey ? `buyauto:viewed:${listing.id}:${viewerKey}` : null;
 
       let shouldCount = true;
 
       try {
-        if (window.sessionStorage.getItem(storageKey) === "1") shouldCount = false;
-        else window.sessionStorage.setItem(storageKey, "1");
+        if (storageKey) {
+          if (window.sessionStorage.getItem(storageKey) === "1") shouldCount = false;
+          else window.sessionStorage.setItem(storageKey, "1");
+        }
       } catch {
         shouldCount = true;
       }
@@ -139,7 +155,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
     };
 
     void run();
-  }, [listing?.id, router.query.preview, isOwnerPreview, user?.id]);
+  }, [listing?.id, router.query.preview, isOwnerPreview]);
 
   useEffect(() => {
     let cancelled = false;

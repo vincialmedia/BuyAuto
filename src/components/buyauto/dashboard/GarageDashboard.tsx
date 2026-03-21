@@ -114,7 +114,9 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   // BETTER APPROACH: Let GarageStatsTab fetch its data or pass it if available.
   // To follow the user request "view counter per Listing", we'll fetch all listings here for the stats tab.
   const [allListingsForStats, setAllListingsForStats] = useState<ListingDetail[]>([]);
-  const [inquiryCounts, setInquiryCounts] = useState<ListingInquiryCounts>({});
+  const [inquiryCounts, setInquiryCounts] = useState<Record<string, { total: number; last7d: number; last30d: number }>>(
+    {}
+  );
 
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
   const [logoVersion, setLogoVersion] = useState<number>(0);
