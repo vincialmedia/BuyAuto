@@ -7,6 +7,7 @@ type Body = {
   listing_id?: string;
   status?: "pending" | "published" | "rejected" | "archived";
   moderation_note?: string | null;
+  notification_status?: "published" | "rejected" | "archived" | null;
 };
 
 type ProfileRoleRow = { role: string | null };
@@ -45,6 +46,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const moderationNote =
     typeof body.moderation_note === "string" ? body.moderation_note.trim() : body.moderation_note ?? null;
 
+  const notificationStatus =
+    body.notification_status === "published" || body.notification_status === "rejected" || body.notification_status === "archived"
+      ? body.notification_status
+      : body.notification_status ?? null;
+
   if (!listingId) return res.status(400).json({ ok: false, error: "Missing listing_id" });
   if (status !== "pending" && status !== "published" && status !== "rejected" && status !== "archived") {
     return res.status(400).json({ ok: false, error: "Invalid status" });
@@ -52,6 +58,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const supabaseAdmin = adminService.getSupabaseAdminClient();
 
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from("listings")
+    .select("status")
+    .eq("id", listingId)
+    .maybeSingle<{ status: string | null }>();
+
+  if (existingError) {
+    console.warn("update-status: could not load existing status", existingError);
+  }
+
+  const oldStatus = existing?.status ?? null;
   const archivedAt = status === "archived" ? new Date().toISOString() : null;
 
   const { data, error } = await supabaseAdmin
@@ -69,9 +86,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     await supabaseAdmin.functions.invoke("listing-status-notification", {
-      body: { record: data, old_record: null },
+      body: {
+        record: data,
+        old_record: { status: oldStatus },
+        ...(notificationStatus ? { notification_status: notificationStatus } : {}),
+      },
     });
-  } catch {}
+  } catch (e) {
+    console.warn("update-status: listing-status-notification invoke failed", e);
+  }
 
-  return res.status(200).json({ ok: true });
+  return res.status(200).json({ ok: true, listing: data });
 }

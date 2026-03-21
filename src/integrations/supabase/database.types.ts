@@ -394,6 +394,39 @@ export type Database = {
         }
         Relationships: []
       }
+      email_notification_log: {
+        Row: {
+          created_at: string
+          days_before: number | null
+          entity_id: string | null
+          id: string
+          kind: string
+          message_id: string | null
+          recipient_email: string | null
+          recipient_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          days_before?: number | null
+          entity_id?: string | null
+          id?: string
+          kind: string
+          message_id?: string | null
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          days_before?: number | null
+          entity_id?: string | null
+          id?: string
+          kind?: string
+          message_id?: string | null
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+        }
+        Relationships: []
+      }
       garages: {
         Row: {
           city: string | null

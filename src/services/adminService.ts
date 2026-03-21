@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/integrations/supabase/types';
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export interface AdminListingFilters {
   status?: 'pending' | 'published' | 'rejected' | 'expired' | 'archived' | 'all';
@@ -400,7 +400,10 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  async adminUpdateListingStatus(listingId: string, input: { status: "pending" | "published" | "rejected" | "archived"; moderationNote?: string | null }): Promise<void> {
+  async adminUpdateListingStatus(
+    listingId: string,
+    input: { status: "pending" | "published" | "rejected" | "archived"; moderationNote?: string | null; notificationStatus?: "published" | "rejected" | "archived" | null }
+  ): Promise<AdminListing | null> {
     const response = await fetch("/api/admin/listings/update-status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -408,13 +411,17 @@ export const adminService = {
         listing_id: listingId,
         status: input.status,
         moderation_note: input.moderationNote ?? null,
+        notification_status: input.notificationStatus ?? null,
       }),
     });
 
+    const payload = (await response.json().catch(() => null)) as { ok?: boolean; error?: string; listing?: AdminListing } | null;
+
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
       throw new Error(payload?.error || `Failed to update listing status (HTTP ${response.status})`);
     }
+
+    return payload?.listing ?? null;
   },
 
   async updateListingBusinessEditableFields(id: string, updates: AdminBusinessEditableListingUpdate): Promise<AdminListing> {
@@ -676,40 +683,16 @@ export const adminService = {
       throw new Error("Decline reason is required");
     }
 
-    const { data: existing, error: existingError } = await supabase
-      .from("listings")
-      .select("status")
-      .eq("id", id)
-      .single();
-    if (existingError) throw existingError;
+    const listing = await this.adminUpdateListingStatus(id, {
+      status: "archived",
+      moderationNote: trimmed,
+      notificationStatus: "rejected",
+    });
 
-    const oldStatus = (existing as any)?.status ?? null;
+    if (listing) return listing;
 
-    const { data, error } = await supabase
-      .from("listings")
-      .update({
-        status: "archived",
-        archived_at: new Date().toISOString(),
-        moderation_note: trimmed,
-      })
-      .eq("id", id)
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from("listings").select("*").eq("id", id).single();
     if (error) throw error;
-
-    try {
-      await supabase.functions.invoke("listing-status-notification", {
-        body: {
-          record: data,
-          old_record: { status: oldStatus },
-          notification_status: "rejected",
-        },
-      });
-    } catch (e) {
-      console.warn("listing-status-notification invoke failed", e);
-    }
-
     return data as AdminListing;
   }
 };
