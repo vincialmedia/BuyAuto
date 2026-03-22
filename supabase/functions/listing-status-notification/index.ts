@@ -326,6 +326,26 @@ serve(async (req) => {
       financingLabel,
     });
 
+    const kind = `listing_status_${emailStatus}`;
+
+    const { error: logError } = await supabase.from("email_notification_log").insert({
+      kind,
+      entity_id: record.id,
+      recipient_user_id: ownerId,
+      recipient_email: profile.email,
+    });
+
+    if (logError) {
+      const code = (logError as unknown as { code?: string }).code;
+      if (code === "23505") {
+        return new Response(JSON.stringify({ success: true, skipped: "duplicate" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      console.error("listing-status-notification log insert error:", logError);
+    }
+
     const sendRes = await resend.emails.send({
       from: "BuyAuto <noreply@email.buyauto.ch>",
       to: profile.email,

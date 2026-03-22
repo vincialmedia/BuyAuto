@@ -42,23 +42,6 @@ export async function submitServiceInquiry(data: ServiceInquiryFormData) {
     throw new Error("Fehler beim Speichern der Anfrage.");
   }
 
-  // 2. Trigger Email Notification Directly
-  // We send the 'savedRecord' so the email function has all the final IDs and timestamps
-  try {
-    const { error: emailError } = await supabase.functions.invoke('service-inquiry-email', {
-      body: savedRecord // Send the exact data we just saved
-    });
-    
-    if (emailError) {
-      console.error("Warning: Email notification failed to send:", emailError);
-      // We do NOT throw here because the inquiry IS saved in the database.
-      // We might want to show a specific warning, but for the user "Success" is better 
-      // since we will see it in the dashboard.
-    }
-  } catch (err) {
-    console.error("Exception sending email notification:", err);
-  }
-
   return savedRecord;
 }
 

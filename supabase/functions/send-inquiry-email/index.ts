@@ -8,15 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function escapeHtml(input: string): string {
-  return input
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function json(status: number, payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -30,10 +21,25 @@ function requireServiceAuthorization(req: Request): boolean {
   return Boolean(serviceKey) && auth === `Bearer ${serviceKey}`;
 }
 
+function escapeHtml(input: string): string {
+  return input
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function safeString(v: unknown): string | null {
   if (typeof v !== "string") return null;
   const t = v.trim();
   return t.length > 0 ? t : null;
+}
+
+function isValidEmail(email: string): boolean {
+  const e = email.trim();
+  if (e.length < 5 || e.length > 254) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 }
 
 type InquiryPayload = {
@@ -160,6 +166,7 @@ serve(async (req) => {
 
   if (!listingId) return json(400, { error: "listing_id is required" });
   if (!inquiryEmail) return json(400, { error: "email is required" });
+  if (!isValidEmail(inquiryEmail)) return json(400, { error: "email is invalid" });
   if (inquiryMessage.length < 2) return json(400, { error: "message is required" });
   if (inquiryMessage.length > 5000) return json(400, { error: "message too long" });
 
@@ -207,8 +214,7 @@ serve(async (req) => {
   const sendRes = await resend.emails.send({
     from: "BuyAuto <noreply@email.buyauto.ch>",
     to: [ownerEmail],
-    bcc: [inquiryEmail],
-    reply_to: [inquiryEmail],
+    reply_to: inquiryEmail,
     subject: emailPayload.subject,
     html: emailPayload.html,
   });

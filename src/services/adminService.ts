@@ -365,26 +365,16 @@ export const adminService = {
   },
 
   async rejectListing(id: string, reason: string): Promise<AdminListing> {
-    const { data, error } = await supabase
-      .from('listings')
-      .update({
-        status: 'rejected',
-        moderation_note: reason
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    const listing = await this.adminUpdateListingStatus(id, {
+      status: "rejected",
+      moderationNote: reason,
+      notificationStatus: "rejected",
+    });
 
+    if (listing) return listing;
+
+    const { data, error } = await supabase.from("listings").select("*").eq("id", id).single();
     if (error) throw error;
-
-    try {
-      await supabase.functions.invoke("listing-status-notification", {
-        body: { record: data, old_record: { status: "pending" } },
-      });
-    } catch (e) {
-      console.warn("listing-status-notification invoke failed", e);
-    }
-
     return data as AdminListing;
   },
 
@@ -583,24 +573,7 @@ export const adminService = {
   },
 
   async declineListing(id: string, reason: string): Promise<AdminListing> {
-    const { data, error } = await supabase
-      .from("listings")
-      .update({ status: "rejected", moderation_note: reason })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    try {
-      await supabase.functions.invoke("listing-status-notification", {
-        body: { record: data, old_record: { status: "pending" } },
-      });
-    } catch (e) {
-      console.warn("listing-status-notification invoke failed", e);
-    }
-
-    return data as AdminListing;
+    return await this.rejectListing(id, reason);
   },
 
   async getListingOwnerProfile(userId: string): Promise<{ id: string; email: string | null; full_name: string | null; role?: string | null } | null> {
@@ -615,65 +588,35 @@ export const adminService = {
   },
 
   async rejectListingAndNotify(id: string, reason: string): Promise<AdminListing> {
-    const { data: existing, error: existingError } = await supabase
-      .from("listings")
-      .select("status")
-      .eq("id", id)
-      .single();
-    if (existingError) throw existingError;
+    const listing = await this.adminUpdateListingStatus(id, {
+      status: "rejected",
+      moderationNote: reason,
+      notificationStatus: "rejected",
+    });
 
-    const oldStatus = (existing as any)?.status ?? null;
+    if (listing) return listing;
 
-    const { data, error } = await supabase
-      .from("listings")
-      .update({ status: "rejected", moderation_note: reason })
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("listings").select("*").eq("id", id).single();
     if (error) throw error;
-
-    try {
-      await supabase.functions.invoke("listing-status-notification", {
-        body: { record: data, old_record: { status: oldStatus } },
-      });
-    } catch (e) {
-      console.warn("listing-status-notification invoke failed", e);
-    }
-
     return data as AdminListing;
   },
 
   async archiveListingAndNotify(id: string, moderationNote?: string): Promise<AdminListing> {
-    const { data: existing, error: existingError } = await supabase
-      .from("listings")
-      .select("status")
-      .eq("id", id)
-      .single();
-    if (existingError) throw existingError;
-
-    const oldStatus = (existing as any)?.status ?? null;
-
     const note =
       typeof moderationNote === "string" && moderationNote.trim().length > 0
         ? moderationNote.trim()
         : null;
 
-    const { data, error } = await supabase
-      .from("listings")
-      .update({ status: "archived", moderation_note: note })
-      .eq("id", id)
-      .select()
-      .single();
+    const listing = await this.adminUpdateListingStatus(id, {
+      status: "archived",
+      moderationNote: note,
+      notificationStatus: "archived",
+    });
+
+    if (listing) return listing;
+
+    const { data, error } = await supabase.from("listings").select("*").eq("id", id).single();
     if (error) throw error;
-
-    try {
-      await supabase.functions.invoke("listing-status-notification", {
-        body: { record: data, old_record: { status: oldStatus } },
-      });
-    } catch (e) {
-      console.warn("listing-status-notification invoke failed", e);
-    }
-
     return data as AdminListing;
   },
 

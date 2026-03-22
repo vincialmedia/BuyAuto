@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { Resend } from "npm:resend@3.2.0";
 
 const corsHeaders = {
@@ -6,6 +7,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+function json(status: number, payload: unknown): Response {
+  return new Response(JSON.stringify(payload), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+}
+
+function requireServiceAuthorization(req: Request): boolean {
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "").trim();
+  const auth = (req.headers.get("Authorization") || "").trim();
+  return Boolean(serviceKey) && auth === `Bearer ${serviceKey}`;
+}
 
 function escapeHtml(input: string): string {
   return input
@@ -22,30 +36,22 @@ function safeString(v: unknown): string | null {
   return t.length > 0 ? t : null;
 }
 
-function json(status: number, payload: unknown): Response {
-  return new Response(JSON.stringify(payload), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-    status,
-  });
+function isValidEmail(email: string): boolean {
+  const e = email.trim();
+  if (e.length < 5 || e.length > 254) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 }
 
-function isAllowedOrigin(origin: string): boolean {
-  const o = origin.toLowerCase();
-  if (o === "https://buyauto.ch" || o === "https://www.buyauto.ch") return true;
-  if (o.endsWith(".vercel.app")) return true;
-  if (o.startsWith("http://localhost") || o.startsWith("http://127.0.0.1")) return true;
-  return false;
-}
-
-type ServiceInquiryPayload = {
+type ServiceInquiryRecord = {
+  id?: string;
   inquiry_type?: string;
+  vorname?: string;
   name?: string;
   email?: string;
-  phone?: string;
-  leasinggesellschaft?: string;
-  leasing_company?: string;
+  phone?: string | null;
+  leasinggesellschaft?: string | null;
   nachricht?: string;
-  message?: string;
+  created_at?: string;
 };
 
 function labelForInquiryType(v: string): string {
@@ -65,7 +71,13 @@ function buildEmail(params: {
   inquiryPhone: string;
   inquiryLeasingCompany: string;
   inquiryMessage: string;
+  createdAt: string | null;
+  id: string | null;
 }): { subject: string; html: string } {
+  const metaLine = [params.createdAt ? `Zeit: ${params.createdAt}` : null, params.id ? `ID: ${params.id}` : null]
+    .filter(Boolean)
+    .join(" · ");
+
   return {
     subject: `Concierge Anfrage: ${params.inquiryTypeLabel}`,
     html: `<!DOCTYPE html>
@@ -91,6 +103,7 @@ function buildEmail(params: {
 
     <div class="content">
       <p class="h1">Neue Leasing Concierge Anfrage</p>
+      ${metaLine ? `<p class="muted" style="margin: 0 0 14px 0;">${escapeHtml(metaLine)}</p>` : ""}
 
       <div class="card">
         <p style="margin: 0; font-weight: 800;">Service</p>
@@ -124,35 +137,54 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method Not Allowed" });
 
-  const origin = req.headers.get("Origin");
-  if (origin && !isAllowedOrigin(origin)) {
-    return json(403, { error: "Forbidden origin" });
-  }
+  if (!requireServiceAuthorization(req)) return json(401, { error: "Unauthorized" });
 
+  const supabaseUrl = (Deno.env.get("SUPABASE_URL") || "").trim();
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "").trim();
   const resendKey = (Deno.env.get("RESEND_API_KEY") || "").trim();
+  const adminEmail = (Deno.env.get("ADMIN_EMAIL_ADDRESS") || "").trim();
+
+  if (!supabaseUrl || !serviceKey) return json(500, { error: "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing" });
   if (!resendKey) return json(500, { error: "RESEND_API_KEY missing" });
 
-  const adminEmail = (Deno.env.get("ADMIN_EMAIL_ADDRESS") || "").trim();
   const toEmail = adminEmail || "hello@buyauto.ch";
 
   const resend = new Resend(resendKey);
+  const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
-  const inquiry = ((body as any)?.record ?? body) as ServiceInquiryPayload;
+  const record = ((body as any)?.record ?? body) as ServiceInquiryRecord;
 
-  const inquiryEmail = safeString(inquiry.email);
+  const inquiryEmail = safeString(record.email);
   if (!inquiryEmail) return json(400, { error: "Email is required" });
+  if (!isValidEmail(inquiryEmail)) return json(400, { error: "Email is invalid" });
 
-  const inquiryType = safeString(inquiry.inquiry_type) ?? "other";
+  const inquiryType = safeString(record.inquiry_type) ?? "other";
   const inquiryTypeLabel = labelForInquiryType(inquiryType);
 
-  const inquiryName = safeString(inquiry.name) ?? "Unbekannt";
-  const inquiryPhone = safeString(inquiry.phone) ?? "Nicht angegeben";
-  const inquiryLeasingCompany =
-    safeString(inquiry.leasinggesellschaft) ?? safeString(inquiry.leasing_company) ?? "Nicht angegeben";
-  const inquiryMessage = safeString(inquiry.nachricht) ?? safeString(inquiry.message) ?? "Keine Nachricht";
+  const inquiryName =
+    [safeString(record.vorname), safeString(record.name)].filter(Boolean).join(" ").trim() || "Unbekannt";
+  const inquiryPhone = safeString(record.phone) ?? "Nicht angegeben";
+  const inquiryLeasingCompany = safeString(record.leasinggesellschaft) ?? "Nicht angegeben";
+  const inquiryMessage = safeString(record.nachricht) ?? "Keine Nachricht";
 
   if (inquiryMessage.length > 8000) return json(400, { error: "message too long" });
+
+  const { error: logError } = await supabaseAdmin.from("email_notification_log").insert({
+    kind: "service_inquiry",
+    entity_id: record.id ?? null,
+    recipient_email: inquiryEmail,
+  });
+
+  if (logError) {
+    const code = (logError as unknown as { code?: string }).code;
+    if (code === "23505") {
+      return json(200, { ok: true, skipped: "duplicate" });
+    }
+    console.error("service-inquiry-email log insert error:", logError);
+  }
 
   const emailPayload = buildEmail({
     inquiryTypeLabel,
@@ -161,12 +193,14 @@ serve(async (req) => {
     inquiryPhone,
     inquiryLeasingCompany,
     inquiryMessage,
+    createdAt: typeof record.created_at === "string" ? record.created_at : null,
+    id: typeof record.id === "string" ? record.id : null,
   });
 
   const { data, error } = await resend.emails.send({
     from: "BuyAuto <noreply@email.buyauto.ch>",
     to: [toEmail],
-    reply_to: [inquiryEmail],
+    reply_to: inquiryEmail,
     subject: emailPayload.subject,
     html: emailPayload.html,
   });
