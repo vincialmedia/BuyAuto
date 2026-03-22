@@ -24,7 +24,12 @@ function preview(body: string): string {
   return `${t.slice(0, 180)}…`;
 }
 
-function formatListingTitle(record: { brand?: string | null; model?: string | null; title?: string | null; make_model?: string | null }): string {
+function formatListingTitle(record: {
+  brand?: string | null;
+  model?: string | null;
+  title?: string | null;
+  make_model?: string | null;
+}): string {
   const makeModel = record.make_model?.trim() || "";
   const brand = record.brand?.trim() || "";
   const model = record.model?.trim() || "";
@@ -39,6 +44,16 @@ function requireServiceAuthorization(req: Request): boolean {
   return Boolean(serviceKey) && auth === `Bearer ${serviceKey}`;
 }
 
+function isConversationNotifiable(status: string | null): { ok: true } | { ok: false; reason: string } {
+  const s = (status || "").trim().toLowerCase();
+  if (!s) return { ok: true };
+
+  const blocked = new Set(["archived", "closed", "blocked", "inactive", "resolved"]);
+  if (blocked.has(s)) return { ok: false, reason: `conversation status=${s}` };
+
+  return { ok: true };
+}
+
 function buildEmail(params: {
   recipientName: string;
   senderName: string;
@@ -47,7 +62,7 @@ function buildEmail(params: {
   dashboardUrl: string;
 }): { subject: string; html: string } {
   return {
-    subject: `💬 Neue Nachricht zu ${params.listingTitle}`,
+    subject: `Neue Nachricht zu ${params.listingTitle}`,
     html: `<!DOCTYPE html>
 <html>
 <head>
@@ -97,10 +112,17 @@ function buildEmail(params: {
   };
 }
 
-type MessageRow = { id: string; conversation_id: string; sender_user_id: string; body: string; created_at: string };
+type MessageRow = {
+  id: string;
+  conversation_id: string;
+  sender_user_id: string;
+  body: string;
+  created_at: string;
+};
+
 type ConversationRow = { id: string; listing_id: string; status: string | null };
 type ListingRow = { id: string; brand: string | null; model: string | null; make_model: string | null; title: string | null };
-type ProfileRow = { id: string; email: string | null; full_name: string | null };
+type ProfileRow = { id: string; full_name: string | null };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -134,6 +156,8 @@ serve(async (req) => {
   const recipientUserId =
     typeof (body as any)?.recipient_user_id === "string" ? ((body as any).recipient_user_id as string) : null;
 
+  console.log("new-message-notification invoked", { messageId, recipientUserId });
+
   if (!messageId || !recipientUserId) {
     return new Response(JSON.stringify({ error: "message_id and recipient_user_id required" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -143,27 +167,6 @@ serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceKey);
   const resend = new Resend(resendKey);
-
-  const { error: logError } = await supabase.from("email_notification_log").insert({
-    kind: "new_message",
-    message_id: messageId,
-    recipient_user_id: recipientUserId,
-  });
-
-  if (logError) {
-    const code = (logError as unknown as { code?: string }).code;
-    if (code === "23505") {
-      return new Response(JSON.stringify({ success: true, skipped: "duplicate" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-    console.error("new-message-notification log insert error:", logError);
-    return new Response(JSON.stringify({ error: "Could not log notification" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
-  }
 
   const { data: msg, error: msgError } = await supabase
     .from("messages")
@@ -193,11 +196,22 @@ serve(async (req) => {
     });
   }
 
-  if (convo.status && convo.status !== "active") {
-    return new Response(JSON.stringify({ success: true, skipped: "conversation not active" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+  const notifiable = isConversationNotifiable(convo.status);
+  if (!notifiable.ok) {
+    console.log("new-message-notification skipped:", {
+      conversationId: convo.id,
+      status: convo.status,
+      reason: notifiable.reason,
     });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        skipped: "conversation not notifiable",
+        status: convo.status,
+        reason: notifiable.reason,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+    );
   }
 
   const { data: listing, error: listingError } = await supabase
@@ -214,19 +228,17 @@ serve(async (req) => {
     });
   }
 
-  const { data: recipientProfile, error: recipientError } = await supabase
+  const { data: recipientProfile } = await supabase
     .from("profiles")
-    .select("id,email,full_name")
+    .select("id,full_name")
     .eq("id", recipientUserId)
-    .single<ProfileRow>();
+    .maybeSingle<ProfileRow>();
 
-  if (recipientError) {
-    console.error("new-message-notification recipientError:", recipientError);
-    return new Response(JSON.stringify({ error: "Recipient profile not found" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 404,
-    });
-  }
+  const { data: senderProfile } = await supabase
+    .from("profiles")
+    .select("id,full_name")
+    .eq("id", msg.sender_user_id)
+    .maybeSingle<ProfileRow>();
 
   const { data: recipientAuth, error: recipientAuthError } = await supabase.auth.admin.getUserById(recipientUserId);
 
@@ -248,11 +260,28 @@ serve(async (req) => {
     });
   }
 
-  const { data: senderProfile } = await supabase
-    .from("profiles")
-    .select("id,full_name")
-    .eq("id", msg.sender_user_id)
-    .maybeSingle<Pick<ProfileRow, "id" | "full_name">>();
+  const { error: logError } = await supabase.from("email_notification_log").insert({
+    kind: "new_message",
+    entity_id: convo.id,
+    message_id: messageId,
+    recipient_user_id: recipientUserId,
+    recipient_email: recipientEmail,
+  });
+
+  if (logError) {
+    const code = (logError as unknown as { code?: string }).code;
+    if (code === "23505") {
+      return new Response(JSON.stringify({ success: true, skipped: "duplicate" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    console.error("new-message-notification log insert error:", logError);
+    return new Response(JSON.stringify({ error: "Could not log notification" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
+  }
 
   const recipientName = recipientProfile?.full_name?.trim() || "Guten Tag";
   const senderName = senderProfile?.full_name?.trim() || "Ein Nutzer";
@@ -270,13 +299,21 @@ serve(async (req) => {
 
   const sendRes = await resend.emails.send({
     from: "BuyAuto <noreply@email.buyauto.ch>",
-    to: recipientProfile.email,
+    to: recipientEmail,
     subject: email.subject,
     html: email.html,
   });
 
   if (sendRes.error) {
     console.error("new-message-notification resend error:", sendRes.error);
+
+    const { error: cleanupError } = await supabase
+      .from("email_notification_log")
+      .delete()
+      .match({ kind: "new_message", message_id: messageId, recipient_user_id: recipientUserId });
+
+    if (cleanupError) console.error("new-message-notification cleanupError:", cleanupError);
+
     return new Response(JSON.stringify({ error: "Failed to send email" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
