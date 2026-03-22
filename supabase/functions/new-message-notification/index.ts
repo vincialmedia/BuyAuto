@@ -220,8 +220,28 @@ serve(async (req) => {
     .eq("id", recipientUserId)
     .single<ProfileRow>();
 
-  if (recipientError || !recipientProfile?.email) {
+  if (recipientError) {
     console.error("new-message-notification recipientError:", recipientError);
+    return new Response(JSON.stringify({ error: "Recipient profile not found" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 404,
+    });
+  }
+
+  const { data: recipientAuth, error: recipientAuthError } = await supabase.auth.admin.getUserById(recipientUserId);
+
+  if (recipientAuthError) {
+    console.error("new-message-notification recipientAuthError:", recipientAuthError);
+    return new Response(JSON.stringify({ error: "Recipient auth user not found" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 404,
+    });
+  }
+
+  const recipientEmail = recipientAuth?.user?.email ?? null;
+
+  if (!recipientEmail) {
+    console.error("new-message-notification recipientEmail missing for user:", recipientUserId);
     return new Response(JSON.stringify({ error: "Recipient email not found" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 404,
@@ -234,7 +254,7 @@ serve(async (req) => {
     .eq("id", msg.sender_user_id)
     .maybeSingle<Pick<ProfileRow, "id" | "full_name">>();
 
-  const recipientName = recipientProfile.full_name?.trim() || "Guten Tag";
+  const recipientName = recipientProfile?.full_name?.trim() || "Guten Tag";
   const senderName = senderProfile?.full_name?.trim() || "Ein Nutzer";
   const listingTitle = formatListingTitle(listing);
   const messagePreview = preview(msg.body || "Neue Nachricht");
