@@ -16,7 +16,6 @@ import {
 import { useMemo } from "react";
 import type { ComponentType } from "react";
 import type { GaragePublicInfo } from "@/services/garageService";
-import { StickyListingCta } from "@/components/buyauto/detail/StickyListingCta";
 import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
 import { MessagingPanel } from "@/components/buyauto/detail/MessagingPanel";
 import Link from "next/link";
@@ -585,8 +584,6 @@ export function ListingDetailV2({
           <GarageMiniBanner garage={garage} />
         </div>
       ) : null}
-
-      <StickyListingCta sentinelId="listing-hero-sentinel" onInquiry={onInquiry} onOpenChat={chatScroll} />
     </div>
   );
 }
