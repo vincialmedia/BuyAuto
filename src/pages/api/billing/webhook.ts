@@ -326,10 +326,29 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const listingId = paymentIntent.metadata?.listing_id;
       if (listingId) {
-        const { error } = await supabaseAdmin.from("listings").update({ payment_status: "paid" }).eq("id", listingId);
+        // Fetch current listing to check its status
+        const { data: listing } = await supabaseAdmin
+          .from("listings")
+          .select("status")
+          .eq("id", listingId)
+          .single();
+
+        const updateData: { payment_status: string; status?: string } = { 
+          payment_status: "paid" 
+        };
+
+        // If the listing is currently a draft (waiting for payment), move it to pending for review
+        if (listing && listing.status === "draft") {
+          updateData.status = "pending";
+        }
+
+        const { error } = await supabaseAdmin
+          .from("listings")
+          .update(updateData)
+          .eq("id", listingId);
 
         if (error) {
-          console.error(`Webhook: Failed to update listing ${listingId} to paid`, error);
+          console.error(`Webhook: Failed to update listing ${listingId} to paid/pending`, error);
         }
       }
       break;
