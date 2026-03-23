@@ -36,10 +36,6 @@ export default function OverviewSection() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold tracking-tight text-neutral-900">Übersicht</h2>
-        <Button onClick={() => router.push("/inserat-erstellen")} className="rounded-2xl">
-          <Plus className="mr-2 h-4 w-4" />
-          Neues Inserat erstellen
-        </Button>
       </div>
 
       <StatsCards stats={stats} isLoading={loading} />

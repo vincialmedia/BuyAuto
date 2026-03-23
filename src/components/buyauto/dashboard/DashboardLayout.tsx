@@ -86,16 +86,6 @@ export default function DashboardLayout({ children, currentSection = "overview",
                       );
                     })}
                   </nav>
-
-                  <div className="mt-8">
-                    <Button
-                      onClick={() => router.push("/inserat-erstellen")}
-                      className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-sm hover:shadow-md transition-all"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Neues Inserat
-                    </Button>
-                  </div>
                 </>
               )}
             </div>
@@ -142,16 +132,6 @@ export default function DashboardLayout({ children, currentSection = "overview",
                     </Button>
                   );
                 })}
-                <Button
-                  onClick={() => {
-                    router.push("/inserat-erstellen");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full bg-red-500 hover:bg-red-600 text-white mt-4"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Neues Inserat
-                </Button>
               </div>
             )}
           </div>

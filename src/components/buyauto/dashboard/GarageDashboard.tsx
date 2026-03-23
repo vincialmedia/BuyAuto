@@ -344,12 +344,6 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                   />
                 </div>
                 <Button
-                  onClick={() => router.push("/inserat-erstellen")}
-                  className="bg-white text-neutral-900 hover:bg-white/90 rounded-2xl"
-                >
-                  Neues Inserat
-                </Button>
-                <Button
                   variant="secondary"
                   onClick={() => router.push("/dashboard")}
                   className="bg-white/15 text-white hover:bg-white/20 border border-white/20 rounded-2xl"
