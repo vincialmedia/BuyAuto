@@ -578,12 +578,6 @@ export function ListingDetailV2({
           </div>
         </div>
       </div>
-
-      {garage ? (
-        <div className="mt-6">
-          <GarageMiniBanner garage={garage} />
-        </div>
-      ) : null}
     </div>
   );
 }
