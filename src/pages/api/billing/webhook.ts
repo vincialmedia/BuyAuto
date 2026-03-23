@@ -333,7 +333,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           .eq("id", listingId)
           .single();
 
-        const updateData: { payment_status: string; status?: string } = { 
+        const updateData: { payment_status: "paid"; status?: "pending" } = { 
           payment_status: "paid" 
         };
 
