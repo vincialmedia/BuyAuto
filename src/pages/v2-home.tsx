@@ -26,7 +26,7 @@ export default function V2Home() {
       <section className="relative w-full h-[95vh] min-h-[700px] max-h-[1100px] flex flex-col items-center justify-start pt-32 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/Untitled_design_1_.png"
+            src="/hero-porsche.png"
             alt="Porsche driving on a mountain road"
             fill
             className="object-cover object-center scale-105"
@@ -58,13 +58,13 @@ export default function V2Home() {
             Ob Kauf, Leasing, Auto-Abo oder Leasingübernahme – entdecke Fahrzeuge und Garagen aus der ganzen Schweiz.
           </p>
 
-          {/* OVERLAPPING SEARCH CONTAINER (High Contrast Dark Glass) */}
+          {/* OVERLAPPING SEARCH CONTAINER (Bright Light Glass to pop against white background) */}
           <div className="w-full max-w-5xl translate-y-12 sm:translate-y-24 z-30">
-            <div className="bg-neutral-900/95 backdrop-blur-2xl border border-neutral-700/50 rounded-[2.5rem] p-3 sm:p-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 pointer-events-none" />
+            <div className="bg-white/90 backdrop-blur-2xl border border-neutral-200/50 rounded-[2.5rem] p-4 sm:p-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] relative overflow-hidden transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-transparent opacity-80 pointer-events-none" />
               <div className="relative z-10">
-                {/* We rely on SearchForm's hero variant which already handles transparent/dark inner styling */}
-                <SearchForm variant="hero" />
+                {/* Switch to default variant since the container is now white */}
+                <SearchForm variant="default" />
               </div>
             </div>
           </div>
