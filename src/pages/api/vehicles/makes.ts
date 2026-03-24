@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/integrations/supabase/types";
 
 interface MakeOption {
   id: string;
@@ -32,19 +33,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     auth: { persistSession: false },
   });
 
-  const { data, error } = await supabase
-    .from("makes")
-    .select("id,name")
-    .order("name", { ascending: true });
+  try {
+    // Use !inner on the models relationship to ONLY return makes that have at least one model.
+    // This ensures we don't show empty makes in the UI dropdowns.
+    const { data, error } = await supabase
+      .from("makes")
+      .select("id, name, normalized_name, models!inner(id)")
+      .order("name");
 
-  if (error) {
+    if (error) {
+      console.error("Error fetching makes:", error);
+      return res.status(500).json({ error: "Failed to fetch makes" });
+    }
+
+    // Map out the models array from the response so we just return the clean make objects
+    const makes = data?.map((make) => ({
+      id: make.id,
+      name: make.name,
+      normalized_name: make.normalized_name,
+    })) || [];
+
+    return res.status(200).json(makes);
+  } catch (err) {
     return res.status(500).json({ error: "Failed to load makes" });
   }
-
-  const options: MakeOption[] = (data ?? []).map((row) => ({
-    id: row.id,
-    name: row.name,
-  }));
-
-  return res.status(200).json({ makes: options });
 }
