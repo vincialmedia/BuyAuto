@@ -21,12 +21,12 @@ export default function Header() {
   const router = useRouter();
   const { user, loading, profile, profileLoading, messageCount, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isNavigatingToCreate, setIsNavigatingToCreate] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Clear loading state when navigation completes or errors
   useEffect(() => {
     const handleStopNavigation = () => {
-      setIsNavigatingToCreate(false);
+      setIsNavigating(false);
     };
 
     router.events.on('routeChangeComplete', handleStopNavigation);
@@ -60,16 +60,35 @@ export default function Header() {
     if (e.metaKey || e.ctrlKey) return;
 
     e.preventDefault();
-    if (isNavigatingToCreate) return;
+    if (isNavigating) return;
     
     // Only start loading if we are actually navigating to a new page
     if (router.asPath !== createListingHref) {
-      setIsNavigatingToCreate(true);
+      setIsNavigating(true);
       try {
         await router.push(createListingHref);
       } catch (error) {
         console.error("Navigation error:", error);
-        setIsNavigatingToCreate(false);
+        setIsNavigating(false);
+      }
+    }
+  };
+
+  const handleDashboardClick = async (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey) return;
+    
+    e.preventDefault();
+    if (isNavigating) return;
+
+    setIsMenuOpen(false); // Close mobile menu if open
+    
+    if (router.asPath !== "/dashboard") {
+      setIsNavigating(true);
+      try {
+        await router.push("/dashboard");
+      } catch (error) {
+        console.error("Navigation error:", error);
+        setIsNavigating(false);
       }
     }
   };
@@ -77,7 +96,7 @@ export default function Header() {
   return (
     <>
       {/* Full Screen Loading Overlay */}
-      {isNavigatingToCreate && (
+      {isNavigating && (
         <div className="fixed inset-0 z-[100] bg-white/60 backdrop-blur-sm flex items-center justify-center">
           <Loader2 className="w-12 h-12 text-red-500 animate-spin" />
         </div>
@@ -188,7 +207,7 @@ export default function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="cursor-pointer">
+                      <Link href="/dashboard" className="cursor-pointer" onClick={handleDashboardClick}>
                         <BarChart3 className="mr-2 h-4 w-4" />
                         Dashboard
                       </Link>
@@ -262,7 +281,7 @@ export default function Header() {
                   <Link 
                     href="/dashboard" 
                     className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={handleDashboardClick}
                   >
                     Dashboard
                   </Link>
