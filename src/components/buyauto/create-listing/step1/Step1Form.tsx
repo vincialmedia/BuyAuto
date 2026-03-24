@@ -213,8 +213,8 @@ export function Step1Form() {
     const loadMakes = async () => {
       try {
         setLoadingMakes(true);
-        const res = await fetchJson<{ makes: CanonicalOption[] }>("/api/vehicles/makes");
-        setMakes(res.makes ?? []);
+        const res = await fetchJson<any>("/api/vehicles/makes");
+        setMakes(Array.isArray(res) ? res : (res?.makes ?? []));
       } catch {
         toast({
           title: "Fehler",
@@ -238,8 +238,8 @@ export function Step1Form() {
 
       try {
         setLoadingModels(true);
-        const res = await fetchJson<{ models: CanonicalOption[] }>(`/api/vehicles/models?make_id=${encodeURIComponent(selectedMakeId)}`);
-        setModels(res.models ?? []);
+        const res = await fetchJson<any>(`/api/vehicles/models?make_id=${encodeURIComponent(selectedMakeId)}`);
+        setModels(Array.isArray(res) ? res : (res?.models ?? []));
       } catch {
         toast({
           title: "Fehler",
@@ -263,10 +263,10 @@ export function Step1Form() {
 
       try {
         setLoadingVariants(true);
-        const res = await fetchJson<{ variants: CanonicalOption[] }>(
+        const res = await fetchJson<any>(
           `/api/vehicles/variants?model_id=${encodeURIComponent(selectedModelId)}`
         );
-        setVariants(res.variants ?? []);
+        setVariants(Array.isArray(res) ? res : (res?.variants ?? []));
       } catch {
         toast({
           title: "Fehler",

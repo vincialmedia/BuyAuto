@@ -13,17 +13,17 @@ export interface VehicleModel {
  */
 export async function fetchMakes(): Promise<string[]> {
   const { data, error } = await supabase
-    .from("vehicle_catalog")
-    .select("make")
-    .order("make", { ascending: true });
+    .from("makes")
+    .select("name, models!inner(id)")
+    .order("name", { ascending: true });
 
   if (error) {
     console.error("Error fetching makes:", error);
     throw error;
   }
 
-  // Extract unique makes (database already ensures uniqueness via DISTINCT on query)
-  const uniqueMakes = Array.from(new Set(data?.map(item => item.make) || []));
+  // Extract unique makes (the inner join ensures they have at least one model)
+  const uniqueMakes = Array.from(new Set(data?.map(item => item.name) || []));
   return uniqueMakes.sort();
 }
 
@@ -35,18 +35,31 @@ export async function fetchModelsForMake(make: string): Promise<string[]> {
     return [];
   }
 
+  // First find the make_id
+  const { data: makeData, error: makeError } = await supabase
+    .from("makes")
+    .select("id")
+    .ilike("name", make)
+    .maybeSingle();
+
+  if (makeError || !makeData) {
+    console.error(`Error finding make ID for ${make}:`, makeError);
+    return [];
+  }
+
   const { data, error } = await supabase
-    .from("vehicle_catalog")
-    .select("model")
-    .eq("make", make)
-    .order("model", { ascending: true });
+    .from("models")
+    .select("name")
+    .eq("make_id", makeData.id)
+    .order("name", { ascending: true });
 
   if (error) {
     console.error(`Error fetching models for ${make}:`, error);
     throw error;
   }
 
-  return data?.map(item => item.model) || [];
+  const uniqueModels = Array.from(new Set(data?.map(item => item.name) || []));
+  return uniqueModels.sort();
 }
 
 /**
@@ -58,17 +71,17 @@ export async function searchMakes(query: string): Promise<string[]> {
   }
 
   const { data, error } = await supabase
-    .from("vehicle_catalog")
-    .select("make")
-    .ilike("make", `%${query}%`)
-    .order("make", { ascending: true });
+    .from("makes")
+    .select("name, models!inner(id)")
+    .ilike("name", `%${query}%`)
+    .order("name", { ascending: true });
 
   if (error) {
     console.error("Error searching makes:", error);
     throw error;
   }
 
-  const uniqueMakes = Array.from(new Set(data?.map(item => item.make) || []));
+  const uniqueMakes = Array.from(new Set(data?.map(item => item.name) || []));
   return uniqueMakes.sort();
 }
 
@@ -80,17 +93,29 @@ export async function searchModelsForMake(make: string, query: string): Promise<
     return [];
   }
 
+  // First find the make_id
+  const { data: makeData, error: makeError } = await supabase
+    .from("makes")
+    .select("id")
+    .ilike("name", make)
+    .maybeSingle();
+
+  if (makeError || !makeData) {
+    return [];
+  }
+
   const { data, error } = await supabase
-    .from("vehicle_catalog")
-    .select("model")
-    .eq("make", make)
-    .ilike("model", `%${query}%`)
-    .order("model", { ascending: true });
+    .from("models")
+    .select("name")
+    .eq("make_id", makeData.id)
+    .ilike("name", `%${query}%`)
+    .order("name", { ascending: true });
 
   if (error) {
     console.error(`Error searching models for ${make}:`, error);
     throw error;
   }
 
-  return data?.map(item => item.model) || [];
+  const uniqueModels = Array.from(new Set(data?.map(item => item.name) || []));
+  return uniqueModels.sort();
 }
