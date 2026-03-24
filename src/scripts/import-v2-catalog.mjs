@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Parse .env.local manually to reliably get the Service Role Key
-const envPath = path.join(__dirname, '../../.env.local');
+const envPath = path.resolve(process.cwd(), '.env.local');
 const envContent = fs.readFileSync(envPath, 'utf-8');
 const envObj = {};
 envContent.split('\n').forEach(line => {
