@@ -53,29 +53,48 @@ async function run() {
     normalized_name: normalizeVehicleKey(m)
   }));
 
-  console.log('Upserting Makes (ignoring duplicates)...');
-  const { error: makeErr } = await supabase.from('makes').upsert(makeUpserts, {
+  console.log(`Upserting ${makeUpserts.length} Makes (ignoring duplicates)...`);
+  const { data: makeData, error: makeErr } = await supabase.from('makes').upsert(makeUpserts, {
     onConflict: 'normalized_name',
     ignoreDuplicates: true
-  });
-  if (makeErr) throw makeErr;
+  }).select();
+  
+  if (makeErr) {
+    console.error("Make Upsert Error:", makeErr);
+    throw makeErr;
+  }
+  console.log(`Upsert successful. Returned ${makeData?.length || 0} rows from upsert.`);
 
   console.log('Fetching all makes to map their IDs...');
-  const { data: allMakes, error: fetchErr } = await supabase.from('makes').select('id, normalized_name');
+  const { data: allMakes, error: fetchErr } = await supabase.from('makes').select('id, normalized_name, name');
   if (fetchErr) throw fetchErr;
+
+  console.log(`Fetched ${allMakes?.length || 0} makes from the database.`);
 
   const makeMap = new Map(allMakes.map(m => [m.normalized_name, m.id]));
 
-  const modelUpserts = rows.map(r => {
-    const makeId = makeMap.get(normalizeVehicleKey(r.make));
-    if (!makeId) throw new Error(`Make ID not found for ${r.make}`);
-    return {
+  const modelUpserts = [];
+  const missingMakes = new Set();
+  
+  for (const r of rows) {
+    const normMake = normalizeVehicleKey(r.make);
+    const makeId = makeMap.get(normMake);
+    if (!makeId) {
+      missingMakes.add(r.make);
+      continue;
+    }
+    modelUpserts.push({
       make_id: makeId,
       name: r.model,
       normalized_name: normalizeVehicleKey(r.model),
       is_active: true
-    };
-  });
+    });
+  }
+
+  if (missingMakes.size > 0) {
+    console.error(`ERROR: Missing Make IDs for ${missingMakes.size} makes:`, Array.from(missingMakes).join(', '));
+    process.exit(1);
+  }
 
   // Deduplicate in memory in case the CSV itself contains duplicate model rows
   const uniqueModels = new Map();
