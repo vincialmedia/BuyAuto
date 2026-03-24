@@ -189,6 +189,23 @@ export async function createOrGetConversationForListing(listingId: string): Prom
   return typeof data === "string" ? data : null;
 }
 
+export async function getExistingConversationForListing(listingId: string): Promise<string | null> {
+  const sessionRes = await supabase.auth.getSession();
+  const userId = sessionRes.data.session?.user?.id ?? null;
+  if (!userId) return null;
+
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("listing_id", listingId)
+    .eq("buyer_user_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data.id;
+}
+
 export async function markConversationRead(conversationId: string): Promise<void> {
   const { error } = await supabase.rpc("mark_conversation_read", { p_conversation_id: conversationId });
   if (error) {

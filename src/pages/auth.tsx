@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import AuthLayout from "@/components/buyauto/auth/AuthLayout";
 import AuthForm from "@/components/buyauto/auth/AuthForm";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 function safeInternalPath(raw?: string | string[] | null): string | null {
   if (!raw || Array.isArray(raw)) return null;
@@ -23,16 +24,43 @@ export default function AuthPage() {
   const [isRecovery, setIsRecovery] = useState(false);
   const [hashChecked, setHashChecked] = useState(false);
 
-  // Check the URL hash immediately to see if this is a password recovery redirect from Supabase
+  // Listen directly to Supabase for the recovery event (most reliable for PKCE)
   useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      console.log("Auth event:", event);
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecovery(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Check the URL hash and path immediately to see if this is a password recovery redirect from Supabase
+  useEffect(() => {
+    if (!router.isReady) return;
+    
     if (typeof window !== "undefined") {
       const hash = window.location.hash;
-      if (hash.includes("type=recovery") || hash.includes("recovery")) {
+      const search = window.location.search;
+      const asPath = router.asPath; // Next.js original path before any history.replaceState
+      
+      if (
+        hash.includes("type=recovery") || 
+        hash.includes("recovery") ||
+        search.includes("type=recovery") ||
+        search.includes("reset=true") ||
+        search.includes("code=") ||
+        asPath.includes("type=recovery") ||
+        asPath.includes("reset=true") ||
+        asPath.includes("code=") ||
+        router.query.type === "recovery" ||
+        router.query.reset === "true"
+      ) {
         setIsRecovery(true);
       }
       setHashChecked(true);
     }
-  }, []);
+  }, [router.isReady, router.asPath, router.query]);
 
   useEffect(() => {
     if (!router.isReady || !hashChecked) return;

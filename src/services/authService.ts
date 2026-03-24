@@ -140,7 +140,7 @@ const authService = {
     console.log("Starting password reset for:", email);
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/auth?type=recovery`,
     });
 
     if (error) {

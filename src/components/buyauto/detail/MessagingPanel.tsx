@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   createOrGetConversationForListing,
+  getExistingConversationForListing,
   createSignedAttachmentUrl,
   getConversationContext,
   getMessages,
@@ -18,6 +19,8 @@ import { useRouter } from "next/router";
 export interface MessagingPanelProps {
   listingId: string;
   listingTitle: string;
+  ownerId?: string | null;
+  isSold?: boolean;
   className?: string;
 }
 
@@ -68,9 +71,11 @@ function formatBytes(value: number | null | undefined): string {
   return `${fixed} ${units[i]}`;
 }
 
-export function MessagingPanel({ listingId, listingTitle, className }: MessagingPanelProps) {
+export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, className }: MessagingPanelProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+
+  const isSeller = Boolean(user?.id && ownerId && user.id === ownerId);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UiMessage[]>([]);
@@ -92,8 +97,8 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
   const canSend = useMemo(() => {
     const hasText = draft.trim().length > 0;
     const hasFiles = selectedFiles.length > 0;
-    return isAuthed && !!conversationId && (hasText || hasFiles) && !busy && !readOnly && !soldBlocked && !messagingUnavailable;
-  }, [busy, conversationId, draft, isAuthed, readOnly, soldBlocked, messagingUnavailable, selectedFiles.length]);
+    return isAuthed && !isSeller && (hasText || hasFiles) && !busy && !readOnly && !soldBlocked && !messagingUnavailable;
+  }, [busy, draft, isAuthed, isSeller, readOnly, soldBlocked, messagingUnavailable, selectedFiles.length]);
 
   const counterpartyLabel = useMemo(() => {
     if (counterpartyRole === "seller") return "Anbieter";
@@ -102,6 +107,9 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
   }, [counterpartyRole]);
 
   const notice: Notice | null = useMemo(() => {
+    if (isSeller) {
+      return { kind: "info", text: "Dies ist dein eigenes Inserat. Du kannst dir selbst keine Nachrichten senden." };
+    }
     if (!isAuthed) {
       return { kind: "info", text: "Bitte logge Dich ein oder registriere Dich, um Nachrichten zu schicken." };
     }
@@ -115,7 +123,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
       return { kind: "info", text: "Nachrichten sind momentan nicht verfügbar." };
     }
     return null;
-  }, [isAuthed, messagingUnavailable, readOnly, soldBlocked]);
+  }, [isAuthed, isSeller, messagingUnavailable, readOnly, soldBlocked]);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,12 +139,22 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
         return;
       }
 
+      if (isSeller) {
+        setConversationId(null);
+        setMessages([]);
+        setInitialLoading(false);
+        setReadOnly(true);
+        setSoldBlocked(false);
+        setMessagingUnavailable(true);
+        return;
+      }
+
       setInitialLoading(true);
       setMessagingUnavailable(false);
       setReadOnly(false);
-      setSoldBlocked(false);
+      setSoldBlocked(isSold ?? false);
 
-      const convId = await createOrGetConversationForListing(listingId);
+      const convId = await getExistingConversationForListing(listingId);
       if (cancelled) return;
 
       setConversationId(convId);
@@ -144,9 +162,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
       if (!convId) {
         setMessages([]);
         setInitialLoading(false);
-        setReadOnly(true);
-        setSoldBlocked(false);
-        setMessagingUnavailable(true);
+        // Don't block UI here - let them type and send to trigger creation
         return;
       }
 
@@ -199,7 +215,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
     return () => {
       cancelled = true;
     };
-  }, [isAuthed, listingId]);
+  }, [isAuthed, listingId, isSeller, isSold]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -228,23 +244,34 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
   }
 
   async function handleSend() {
-    if (!conversationId) return;
-    if (readOnly || soldBlocked || messagingUnavailable) return;
+    if (readOnly || soldBlocked || messagingUnavailable || isSeller) return;
 
     const body = draft.trim();
     const hasFiles = selectedFiles.length > 0;
+    if (!body && !hasFiles) return;
 
     setBusy(true);
 
+    let targetConvId = conversationId;
+
+    if (!targetConvId) {
+      targetConvId = await createOrGetConversationForListing(listingId);
+      if (!targetConvId) {
+        setBusy(false);
+        return;
+      }
+      setConversationId(targetConvId);
+    }
+
     const ok = hasFiles
-      ? await sendMessageWithAttachments({ conversationId, body, files: selectedFiles })
-      : await sendMessage(conversationId, body);
+      ? await sendMessageWithAttachments({ conversationId: targetConvId, body, files: selectedFiles })
+      : await sendMessage(targetConvId, body);
 
     if (ok) {
       setDraft("");
       setSelectedFiles([]);
 
-      const data = await getMessages(conversationId);
+      const data = await getMessages(targetConvId);
       setMessages(
         data.map((m) => ({
           id: m.id,
@@ -264,7 +291,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
         }))
       );
 
-      const ctx = await getConversationContext(conversationId);
+      const ctx = await getConversationContext(targetConvId);
       setReadOnly(!!ctx?.flags?.read_only);
 
       setCounterpartyName(
@@ -395,13 +422,13 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
                 className="hidden"
                 multiple
                 onChange={(e) => handleFilesPicked(e.target.files)}
-                disabled={!isAuthed || readOnly || soldBlocked || messagingUnavailable}
+                disabled={!isAuthed || isSeller || readOnly || soldBlocked || messagingUnavailable}
               />
               <Button
                 type="button"
                 variant="outline"
                 className="rounded-2xl"
-                disabled={!isAuthed || readOnly || soldBlocked || messagingUnavailable || busy}
+                disabled={!isAuthed || isSeller || readOnly || soldBlocked || messagingUnavailable || busy}
                 onClick={() => document.getElementById(fileInputId)?.click()}
               >
                 <Paperclip className="h-4 w-4 mr-2" />
@@ -442,7 +469,7 @@ export function MessagingPanel({ listingId, listingTitle, className }: Messaging
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Nachricht schreiben…"
               className="min-h-[92px] rounded-2xl border-neutral-200 focus:border-neutral-400"
-              disabled={!isAuthed || readOnly || soldBlocked || messagingUnavailable}
+              disabled={!isAuthed || isSeller || readOnly || soldBlocked || messagingUnavailable}
             />
             <div className="mt-3 flex items-center justify-end">
               <Button
