@@ -489,6 +489,17 @@ export default function Step5_PreviewAndPay() {
       
       switch (paymentIntent?.status) {
         case 'succeeded':
+          // Force backend sync to update DB status and trigger email instantly
+          try {
+            await fetch('/api/billing/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ payment_intent_client_secret: paymentIntentClientSecret })
+            });
+          } catch (e) {
+            console.error('Payment verification API failed:', e);
+          }
+
           toast({ title: "Zahlung erfolgreich!", description: "Ihr Inserat wird bearbeitet." });
           
           const listingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
@@ -841,6 +852,19 @@ export default function Step5_PreviewAndPay() {
   };
 
   const handlePaymentSuccess = async () => {
+    // Verify payment synchronously to ensure status is updated before redirect
+    if (clientSecret) {
+      try {
+        await fetch('/api/billing/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_intent_client_secret: clientSecret })
+        });
+      } catch (e) {
+        console.error('Payment verification API failed:', e);
+      }
+    }
+
     toast({ 
       title: "Zahlung erfolgreich!", 
       description: "Ihr Inserat wird bearbeitet." 

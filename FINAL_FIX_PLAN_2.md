@@ -1,35 +1,20 @@
-# Final Fix Plan - Stripe Initialization and Hydration Errors
+# Final Fix Plan 2
 
-## 1. Problem Diagnosis
+## 1. Step 1 Form Data Loss Fix
+**File:** `src/components/buyauto/create-listing/step1/Step1Form.tsx`
+- **Issue:** When drafts are saved and reloaded, numeric fields like `power_hp` (PS), `km`, and `year` may be parsed as strings. The strict type check in `defaultValues` discards them.
+- **Fix:** Update `defaultValues` to securely parse numbers even if they arrive as strings (e.g., using `parseInt` or `Number()`). 
 
-Despite previous fixes, two critical errors persist on the `/inserat-erstellen` page:
-1.  **Stripe Error**: `Error: Neither apiKey nor config.authenticator provided`. This confirms `loadStripe()` is being called with a missing API key.
-2.  **React Hydration Errors**: `Minified React error #418` and `#423`. This indicates a mismatch between the server-rendered and client-rendered HTML, almost certainly caused by a Stripe component rendering differently in each environment.
+## 2. Robust Payment Verification & Status Update
+**File:** `src/pages/api/billing/verify-payment.ts` (New File)
+- **Issue:** The webhook `payment_intent.succeeded` might not be enabled in the Stripe Dashboard, causing paid listings to remain in `draft` status, which blocks the admin email.
+- **Fix:** Create a direct verification API endpoint. It will accept the `payment_intent_id`, securely fetch the status from Stripe Server, and if successful, update the database listing to:
+  - `status = 'pending'`
+  - `payment_status = 'paid'`
+  - `price_paid_chf = [actual amount]`
+This guarantees the DB trigger for the email will fire.
 
-## 2. Root Cause
-
-The core issue is that a Stripe-related module is being initialized **at module load time (during SSR)** instead of being deferred to **client-side only**. The existence of two separate Stripe loaders (`stripe.ts` and `stripe-client.ts`) created confusion, and the old, unsafe loader is likely still being imported somewhere in the component tree.
-
-## 3. The Definitive Fix Strategy
-
-### Step 1: Unify to a Single, Safe Stripe Loader
-- The contents of the safe `src/lib/stripe-client.ts` will be moved into `src/lib/stripe.ts`.
-- This makes the primary Stripe utility file (`stripe.ts`) safe by default, preventing any part of the app from accidentally loading Stripe on the server.
-- The `stripe.ts` file will check for the browser environment (`typeof window !== 'undefined'`) before attempting to load Stripe.
-
-### Step 2: Eliminate Redundancy
-- The now-duplicate file `src/lib/stripe-client.ts` will be deleted to avoid future confusion.
-
-### Step 3: Update and Verify Component Imports
-- I will find any file that was importing `getStripe` from `stripe-client.ts` (e.g., `Step3_PlanSelection.tsx`) and update the import path to point to the unified, safe `src/lib/stripe.ts`.
-- **Critically**, I will ensure the `PaymentWidget` is imported dynamically with SSR turned off in `Step3_PlanSelection.tsx`. The correct pattern is:
-  ```javascript
-  import dynamic from 'next/dynamic';
-  const PaymentWidget = dynamic(() => import('@/components/buyauto/create-listing/PaymentWidget'), { ssr: false });
-  ```
-
-### Step 4: Strengthen the Payment Widget
-- The `PaymentWidget.tsx` component will be re-verified to ensure it has `'use client'` at the top.
-- It will also contain guards to return `null` immediately if either the `clientSecret` is missing or if the `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is not present, making it completely inert when it can't function.
-
-This four-step plan addresses the root cause by enforcing a single, safe pattern for loading Stripe across the entire application, which will resolve both the API key error and the resulting React hydration mismatches.
+## 3. Frontend Integration
+**File:** `src/components/buyauto/create-listing/Step5_PreviewAndPay.tsx`
+- **Issue:** The frontend updates local state but doesn't forcefully sync the payment success back to the database.
+- **Fix:** Update `handlePaymentConfirmation` to call the new `/api/billing/verify-payment` endpoint as soon as Stripe returns a `succeeded` status. Wait for this API to confirm before showing the success screen.

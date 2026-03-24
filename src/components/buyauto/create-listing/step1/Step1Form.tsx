@@ -165,8 +165,8 @@ export function Step1Form() {
       model_id: (data as any).model_id || "",
       variant_id: (data as any).variant_id || "",
 
-      year: typeof data.year === "number" ? data.year : defaultYear,
-      km: typeof data.km === "number" ? data.km : typeof (data as any).mileage === "number" ? (data as any).mileage : 0,
+      year: Number.isFinite(Number(data.year)) && Number(data.year) > 0 ? Number(data.year) : defaultYear,
+      km: Number.isFinite(Number(data.km)) ? Number(data.km) : (Number.isFinite(Number((data as any).mileage)) ? Number((data as any).mileage) : 0),
 
       fuel: (data as any).fuel || "",
       gearbox: (data as any).gearbox || "",
@@ -174,7 +174,7 @@ export function Step1Form() {
 
       location: (data as any).location || "",
 
-      power_hp: typeof (data as any).power_hp === "number" ? (data as any).power_hp : undefined,
+      power_hp: Number.isFinite(Number((data as any).power_hp)) && Number((data as any).power_hp) > 0 ? Number((data as any).power_hp) : undefined,
       drivetrain: typeof (data as any).drivetrain === "string" ? (data as any).drivetrain : "",
       first_registration: typeof (data as any).first_registration === "string" ? (data as any).first_registration : null,
 
