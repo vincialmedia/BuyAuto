@@ -34,53 +34,56 @@ export default function V2Home() {
       </Head>
 
       {/* ════════════════════════════════════════════════════════════
-          HERO SECTION - Compact with search immediately visible
+          HERO SECTION
       ════════════════════════════════════════════════════════════ */}
-      <section className="relative w-full min-h-[70vh] sm:min-h-[75vh] flex flex-col">
-        {/* Background Image - G-Class */}
+      <section className="relative w-full min-h-[75vh] sm:min-h-[80vh] flex flex-col">
+        {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
             src="/hero-g-class.png"
-            alt="Mercedes G-Class auf Schweizer Strasse"
+            alt="Mercedes G-Class"
             fill
-            className="object-cover object-top"
+            className="object-cover object-center"
             priority
             quality={90}
           />
-          {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60" />
+          {/* Lighter gradient overlay - lets image show through */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50" />
           {/* Bottom fade to page background */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#fafafa] to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#fafafa] to-transparent" />
         </div>
 
-        {/* Hero Content - Positioned higher */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 text-center">
+        {/* Hero Content */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-16 pb-32 text-center">
           {/* Pill Badge */}
-          <div className="animate-fade-up-1 inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium mb-5 border border-white/20">
+          <div className="animate-fade-up-1 inline-flex items-center gap-2 bg-white/15 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium mb-6 border border-white/20">
             <Sparkles className="w-4 h-4 text-red-400" />
             Schweizer Auto Plattform
           </div>
 
           {/* Main Heading */}
-          <h1 className="animate-fade-up-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] mb-4 max-w-3xl">
+          <h1 className="animate-fade-up-2 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-5 max-w-4xl drop-shadow-lg">
             Der einfachere Weg
-            <br className="hidden sm:block" />
+            <br />
             zum nächsten <span className="text-red-500">Auto.</span>
           </h1>
 
           {/* Subheading */}
-          <p className="animate-fade-up-3 text-base sm:text-lg text-white/80 font-medium mb-8 max-w-xl leading-relaxed">
+          <p className="animate-fade-up-3 text-lg sm:text-xl text-white/90 font-medium mb-10 max-w-xl leading-relaxed drop-shadow-md">
             Kauf, Leasing oder Leasingübernahme – alles auf einer Plattform.
           </p>
+        </div>
 
-          {/* Search Card - Positioned within hero, not overlapping */}
-          <div className="animate-fade-up-4 w-full max-w-3xl px-2">
-            <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 sm:p-5 shadow-2xl shadow-black/20 border border-white/50">
-              <SearchBarV2 />
-            </div>
+        {/* SEARCH CARD - Overlapping */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-full max-w-4xl px-4 z-30">
+          <div className="group bg-white rounded-2xl p-5 sm:p-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-neutral-200/50 transition-all duration-300 hover:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.35)] hover:-translate-y-1">
+            <SearchBarV2 />
           </div>
         </div>
       </section>
+
+      {/* Spacing for search card overlap */}
+      <div className="h-28 sm:h-24" />
 
       {/* ════════════════════════════════════════════════════════════
           USP STRIP - BuyAuto branded colors
