@@ -9,6 +9,7 @@ import {
 import SearchForm from '@/components/buyauto/SearchForm';
 import PremiumListings from '@/components/buyauto/PremiumListings';
 import { FounderStory } from '@/components/buyauto/FounderStory';
+import { Button } from '@/components/ui/button';
 import dynamic from 'next/dynamic';
 
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"));
