@@ -10,13 +10,18 @@ import { Terminal } from "lucide-react";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import ResetPasswordForm from "./ResetPasswordForm";
+import UpdatePasswordForm from "./UpdatePasswordForm";
 import authService from "@/services/authService";
 import type { LoginFormData, RegisterFormData } from "@/lib/buyauto/schemas";
 
-type AuthView = "login" | "register" | "reset-password";
+type AuthView = "login" | "register" | "reset-password" | "update-password";
 
-export default function AuthForm() {
-  const [currentView, setCurrentView] = useState<AuthView>("login");
+interface AuthFormProps {
+  initialView?: AuthView;
+}
+
+export default function AuthForm({ initialView = "login" }: AuthFormProps = {}) {
+  const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,6 +127,38 @@ export default function AuthForm() {
     }
   };
 
+  const handleUpdatePassword = async (password: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      console.log("AuthForm: Starting password update");
+      
+      await authService.updatePassword(password);
+      console.log("AuthForm: Password updated successfully");
+      
+      toast.success("Passwort erfolgreich aktualisiert!");
+      
+      // Clean up the URL hash so we don't stay in recovery mode
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      
+      // Redirect to dashboard
+      window.location.href = "/dashboard";
+      
+    } catch (error: any) {
+      console.error("Update password error:", error);
+      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (currentView === "reset-password") {
     return (
       <Card className="w-full max-w-md mx-auto shadow-xl shadow-neutral-900/5 border-neutral-200/60">
@@ -135,6 +172,32 @@ export default function AuthForm() {
           <ResetPasswordForm
             onResetPassword={handleResetPassword}
             onShowLogin={() => setCurrentView("login")}
+            isLoading={isLoading}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (currentView === "update-password") {
+    return (
+      <Card className="w-full max-w-md mx-auto shadow-xl shadow-neutral-900/5 border-neutral-200/60">
+        <CardHeader className="space-y-1 text-center pb-4">
+          <h1 className="text-2xl font-semibold text-neutral-900">Neues Passwort</h1>
+          <p className="text-sm text-neutral-600">
+            Bitte vergeben Sie ein neues, sicheres Passwort für Ihr Konto.
+          </p>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Fehler</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <UpdatePasswordForm
+            onUpdatePassword={handleUpdatePassword}
             isLoading={isLoading}
           />
         </CardContent>

@@ -151,6 +151,22 @@ const authService = {
     console.log("Password reset email sent");
   },
 
+  async updatePassword(password: string) {
+    console.log("Starting password update process");
+    
+    const { data, error } = await supabase.auth.updateUser({
+      password: password
+    });
+
+    if (error) {
+      console.error("Auth service update password error:", error);
+      throw error;
+    }
+
+    console.log("Password successfully updated");
+    return data;
+  },
+
   async getCurrentSession() {
     const { data: { session }, error } = await supabase.auth.getSession();
     
