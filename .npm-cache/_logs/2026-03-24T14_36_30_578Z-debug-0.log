@@ -7,8 +7,8 @@
 6 silly config load:file:/usr/local/etc/npmrc
 7 verbose title npm exec supabase gen types typescript --project-id fgalkhfopecwsryracre --schema public
 8 verbose argv "exec" "--" "supabase" "gen" "types" "typescript" "--project-id" "fgalkhfopecwsryracre" "--schema" "public"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-03-24T13_48_05_832Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-03-24T13_48_05_832Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-03-24T14_36_30_578Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-03-24T14_36_30_578Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368

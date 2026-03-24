@@ -613,18 +613,5 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     };
   }
 
-  const conversationId = String(ctx.params?.conversationId ?? "");
-
-  const { data: participant } = await supabase
-    .from("conversation_participants")
-    .select("conversation_id")
-    .eq("conversation_id", conversationId)
-    .eq("user_id", session.user.id)
-    .maybeSingle();
-
-  if (!participant) {
-    return { notFound: true };
-  }
-
   return { props: {} };
 };
