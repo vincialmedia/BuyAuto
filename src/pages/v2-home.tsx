@@ -26,7 +26,7 @@ export default function V2Home() {
       <section className="relative w-full h-[95vh] min-h-[700px] max-h-[1100px] flex flex-col items-center justify-start pt-32 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/ChatGPT_Image_Oct_18_2025_05_36_15_PM.png"
+            src="/Untitled_design_1_.png"
             alt="Porsche driving on a mountain road"
             fill
             className="object-cover object-center scale-105"
@@ -35,7 +35,7 @@ export default function V2Home() {
           />
           {/* Advanced Gradients for Text Legibility & Mood */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#fcfcfc] via-[#fcfcfc]/10 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#fcfcfc] via-[#fcfcfc]/5 to-transparent" />
           
           {/* Subtle colored glow */}
           <div className="absolute top-0 right-0 w-[60vw] h-[60vw] bg-primary/20 rounded-full blur-[120px] translate-x-1/3 -translate-y-1/3 mix-blend-screen pointer-events-none" />
@@ -58,12 +58,12 @@ export default function V2Home() {
             Ob Kauf, Leasing, Auto-Abo oder Leasingübernahme – entdecke Fahrzeuge und Garagen aus der ganzen Schweiz.
           </p>
 
-          {/* OVERLAPPING SEARCH CONTAINER (Icy Glassmorph) */}
-          <div className="w-full max-w-5xl translate-y-4 sm:translate-y-8">
-            <div className="bg-white/25 backdrop-blur-xl border border-white/30 rounded-[2.5rem] p-3 sm:p-6 shadow-2xl relative overflow-hidden group hover:bg-white/30 hover:border-white/50 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none" />
+          {/* OVERLAPPING SEARCH CONTAINER (High Contrast Dark Glass) */}
+          <div className="w-full max-w-5xl translate-y-12 sm:translate-y-24 z-30">
+            <div className="bg-neutral-900/95 backdrop-blur-2xl border border-neutral-700/50 rounded-[2.5rem] p-3 sm:p-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 pointer-events-none" />
               <div className="relative z-10">
-                {/* We rely on SearchForm's hero variant which already handles transparent inner styling */}
+                {/* We rely on SearchForm's hero variant which already handles transparent/dark inner styling */}
                 <SearchForm variant="hero" />
               </div>
             </div>
@@ -72,7 +72,7 @@ export default function V2Home() {
       </section>
 
       {/* SPACING FOR OVERLAP */}
-      <div className="h-16 sm:h-24" />
+      <div className="h-24 sm:h-40" />
 
       {/* FLOATING USP BENTO ROW */}
       <section className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24 sm:mb-32">
