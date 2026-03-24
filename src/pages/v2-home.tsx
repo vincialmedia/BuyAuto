@@ -6,7 +6,7 @@ import {
   Sparkles, Database, Shield, Zap, CheckCircle,
   CreditCard, Clock, FileText, Search, FileCheck, Car, ArrowRight, ChevronDown
 } from "lucide-react";
-import SearchForm from "@/components/buyauto/SearchForm";
+import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { FounderStory } from "@/components/buyauto/FounderStory";
 import { Button } from "@/components/ui/button";
@@ -89,16 +89,16 @@ export default function V2Home() {
           </div>
         </div>
 
-        {/* Overlapping Search Card */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-full max-w-5xl px-4 sm:px-6 z-20">
-          <div className="animate-float bg-white rounded-3xl p-5 sm:p-8 shadow-[0_25px_80px_-12px_rgba(0,0,0,0.25)] border border-neutral-100">
-            <SearchForm variant="default" />
+        {/* OVERLAPPING SEARCH CARD */}
+        <div className="absolute -bottom-20 sm:-bottom-16 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-30">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] border border-neutral-100">
+            <SearchBarV2 />
           </div>
         </div>
       </section>
 
-      {/* Spacer for overlapping search card */}
-      <div className="h-28 sm:h-36 md:h-44" />
+      {/* SPACING FOR SEARCH CARD OVERLAP */}
+      <div className="h-28 sm:h-24" />
 
       {/* ════════════════════════════════════════════════════════════
           USP STRIP
