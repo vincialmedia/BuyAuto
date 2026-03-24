@@ -99,8 +99,7 @@ async function run() {
     modelUpserts.push({
       make_id: makeId,
       name: r.model,
-      normalized_name: normalizeVehicleKey(r.model),
-      is_active: true
+      normalized_name: normalizeVehicleKey(r.model)
     });
   }
 
