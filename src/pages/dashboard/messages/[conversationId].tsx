@@ -605,9 +605,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   } = await supabase.auth.getSession();
 
   if (!session) {
+    const redirectUrl = encodeURIComponent(ctx.resolvedUrl);
     return {
       redirect: {
-        destination: "/auth",
+        destination: `/auth?redirect=${redirectUrl}`,
         permanent: false,
       },
     };
