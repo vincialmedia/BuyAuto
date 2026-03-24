@@ -40,8 +40,8 @@ export default function V2Home() {
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/hero-g-class.png"
-            alt="Mercedes G-Class"
+            src="/hero-porsche.png"
+            alt="Porsche 911"
             fill
             className="object-cover object-bottom"
             priority
