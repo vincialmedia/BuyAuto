@@ -17,313 +17,248 @@ const SeoCopyBlock = dynamic(() => import("@/components/buyauto/SeoCopyBlock").t
 
 export default function V2Home() {
   return (
-    <div className="bg-[#f8f8f6] min-h-screen font-sans overflow-x-hidden">
+    <div className="bg-[#fafafa] min-h-screen font-sans overflow-x-hidden">
       <Head>
         <title>BuyAuto – Der einfachere Weg zum nächsten Auto</title>
         <style>{`
           @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(32px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
           }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-          }
-          @keyframes floatCard {
-            0%, 100% { transform: translateY(-50%) translateY(0px); }
-            50%       { transform: translateY(-50%) translateY(-6px); }
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
           }
           @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
-            to   { transform: translateY(0);    opacity: 1; }
+            to { transform: translateY(0); opacity: 1; }
           }
-          @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.96); }
-            to   { opacity: 1; transform: scale(1); }
-          }
-          .anim-fade-up-1 { animation: fadeUp 0.8s cubic-bezier(.22,1,.36,1) 0.1s both; }
-          .anim-fade-up-2 { animation: fadeUp 0.8s cubic-bezier(.22,1,.36,1) 0.25s both; }
-          .anim-fade-up-3 { animation: fadeUp 0.8s cubic-bezier(.22,1,.36,1) 0.4s both; }
-          .anim-fade-in   { animation: fadeIn 1.2s ease 0.6s both; }
-          .anim-scale-in  { animation: scaleIn 0.7s cubic-bezier(.22,1,.36,1) 0.5s both; }
-          .anim-sticky-cta { animation: slideUp 0.6s cubic-bezier(.22,1,.36,1) 2.5s both; }
+          .animate-fade-up-1 { animation: fadeUp 0.7s ease-out 0.1s both; }
+          .animate-fade-up-2 { animation: fadeUp 0.7s ease-out 0.2s both; }
+          .animate-fade-up-3 { animation: fadeUp 0.7s ease-out 0.35s both; }
+          .animate-fade-up-4 { animation: fadeUp 0.7s ease-out 0.5s both; }
+          .animate-float { animation: float 6s ease-in-out infinite; }
+          .animate-slide-up { animation: slideUp 0.5s ease-out 2s both; }
         `}</style>
       </Head>
 
-      {/* ─── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative w-full" style={{ height: "100svh", minHeight: 640, maxHeight: 1000 }}>
-
-        {/* Background image */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
+      {/* ════════════════════════════════════════════════════════════
+          HERO SECTION
+      ════════════════════════════════════════════════════════════ */}
+      <section className="relative w-full min-h-[90vh] flex flex-col">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
           <Image
-            src="/Untitled_design_1_.png"
-            alt="Porsche Macan auf einer Schweizer Bergstrasse"
+            src="/hero-porsche.png"
+            alt="Roter Porsche auf Schweizer Bergstrasse"
             fill
             className="object-cover object-center"
             priority
-            quality={95}
+            quality={90}
           />
-          {/* top-down dark fade for text legibility */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/30 to-black/10" />
-          {/* bottom fade into page background */}
-          <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#f8f8f6] to-transparent" />
-          {/* Warm glow accent */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-red-900/20 via-transparent to-transparent" />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/20" />
+          {/* Bottom fade to page background */}
+          <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#fafafa] to-transparent" />
         </div>
 
-        {/* Hero content — sits in the upper ~70% of the hero */}
-        <div className="relative z-10 flex flex-col items-center justify-start pt-28 sm:pt-32 px-4 sm:px-6 lg:px-8 text-center w-full h-full">
-
-          {/* Pill badge */}
-          <div className="anim-fade-up-1 inline-flex items-center gap-2 bg-black/50 backdrop-blur-md text-white px-5 py-2 rounded-full text-sm font-semibold mb-5 border border-white/15 shadow-lg">
-            <Sparkles className="w-3.5 h-3.5 text-red-400" />
+        {/* Hero Content */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-40 text-center">
+          {/* Pill Badge */}
+          <div className="animate-fade-up-1 inline-flex items-center gap-2 bg-neutral-800/70 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium mb-6 border border-white/10">
+            <Sparkles className="w-4 h-4 text-red-400" />
             Schweizer Auto Plattform
           </div>
 
-          {/* Main heading */}
-          <h1 className="anim-fade-up-2 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tighter leading-[1.05] mb-5 drop-shadow-2xl max-w-4xl">
-            Der einfachere Weg<br className="hidden sm:block" /> zum nächsten{" "}
-            <span className="text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]">Auto.</span>
+          {/* Main Heading */}
+          <h1 className="animate-fade-up-2 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-6 max-w-4xl">
+            Der einfachere Weg
+            <br className="hidden sm:block" />
+            zum nächsten <span className="text-red-500">Auto.</span>
           </h1>
 
           {/* Subheading */}
-          <p className="anim-fade-up-3 text-base sm:text-lg md:text-xl text-white/75 font-medium mb-0 max-w-2xl mx-auto leading-relaxed">
+          <p className="animate-fade-up-3 text-lg sm:text-xl text-white/80 font-medium mb-8 max-w-2xl leading-relaxed">
             Ob Kauf, Leasing, Auto-Abo oder Leasingübernahme – entdecke Fahrzeuge und Garagen aus der ganzen Schweiz.
           </p>
 
-          {/* Scroll hint */}
-          <div className="anim-fade-in absolute bottom-[42%] sm:bottom-[38%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/40">
+          {/* Scroll indicator */}
+          <div className="animate-fade-up-4 flex flex-col items-center gap-2 text-white/50 mt-4">
+            <span className="text-xs font-medium uppercase tracking-wider">Entdecken</span>
             <ChevronDown className="w-5 h-5 animate-bounce" />
           </div>
         </div>
 
-        {/* ── FLOATING SEARCH CARD — overlaps hero bottom ── */}
-        <div className="anim-scale-in absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-full max-w-5xl px-4 sm:px-6 z-30">
-          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-7
-                          shadow-[0_32px_80px_-12px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.04)]
-                          hover:shadow-[0_40px_100px_-12px_rgba(0,0,0,0.28),0_0_0_1px_rgba(0,0,0,0.06)]
-                          transition-shadow duration-500">
+        {/* Overlapping Search Card */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-full max-w-5xl px-4 sm:px-6 z-20">
+          <div className="animate-float bg-white rounded-3xl p-5 sm:p-8 shadow-[0_25px_80px_-12px_rgba(0,0,0,0.25)] border border-neutral-100">
             <SearchForm variant="default" />
           </div>
         </div>
       </section>
 
-      {/* Spacer for the overlapping search card */}
-      <div className="h-32 sm:h-48 md:h-52" />
+      {/* Spacer for overlapping search card */}
+      <div className="h-28 sm:h-36 md:h-44" />
 
-      {/* ─── USP STRIP ────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 sm:mb-28">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+      {/* ════════════════════════════════════════════════════════════
+          USP STRIP
+      ════════════════════════════════════════════════════════════ */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[
-            { icon: Database, label: "Swiss Data",        sub: "Daten in der Schweiz",   color: "bg-blue-50",    iconColor: "text-blue-600"    },
-            { icon: Shield,   label: "Sichere Bezahlung", sub: "Powered by Stripe",       color: "bg-emerald-50", iconColor: "text-emerald-600" },
-            { icon: Zap,      label: "Schneller Prozess", sub: "In wenigen Minuten",      color: "bg-amber-50",   iconColor: "text-amber-600"   },
-            { icon: CheckCircle, label: "Geprüfte Inserate", sub: "Qualität garantiert", color: "bg-red-50",     iconColor: "text-red-500"     },
+            { icon: Database, label: "Swiss Data", sub: "Daten in der Schweiz", color: "bg-blue-50 text-blue-600" },
+            { icon: Shield, label: "Sichere Bezahlung", sub: "Powered by Stripe", color: "bg-emerald-50 text-emerald-600" },
+            { icon: Zap, label: "Schneller Prozess", sub: "In wenigen Minuten", color: "bg-amber-50 text-amber-600" },
+            { icon: CheckCircle, label: "Geprüfte Inserate", sub: "Qualität garantiert", color: "bg-red-50 text-red-500" },
           ].map((usp, i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7
-                         border border-neutral-100
-                         shadow-[0_2px_12px_rgba(0,0,0,0.04)]
-                         hover:shadow-[0_12px_36px_rgba(0,0,0,0.08)]
-                         hover:-translate-y-1.5
-                         transition-all duration-300 group"
+              className="group bg-white rounded-2xl p-5 sm:p-6 border border-neutral-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
-              <div className={`w-11 h-11 rounded-xl ${usp.color} flex items-center justify-center mb-4`}>
-                <usp.icon className={`w-5 h-5 ${usp.iconColor}`} />
+              <div className={`w-12 h-12 rounded-xl ${usp.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                <usp.icon className="w-6 h-6" />
               </div>
-              <p className="font-bold text-neutral-900 text-base mb-0.5">{usp.label}</p>
-              <p className="text-xs sm:text-sm text-neutral-500 font-medium">{usp.sub}</p>
+              <p className="font-bold text-neutral-900 text-base mb-1">{usp.label}</p>
+              <p className="text-sm text-neutral-500">{usp.sub}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ─── PREMIUM LISTINGS ─────────────────────────────────────── */}
-      <div className="bg-white border-y border-neutral-100 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">
+      {/* ════════════════════════════════════════════════════════════
+          PREMIUM LISTINGS
+      ════════════════════════════════════════════════════════════ */}
+      <div className="bg-white border-y border-neutral-100">
         <PremiumListings />
       </div>
 
-      {/* ─── WHY BUYAUTO — BENTO GRID ─────────────────────────────── */}
-      <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
+      {/* ════════════════════════════════════════════════════════════
+          WHY BUYAUTO - BENTO GRID
+      ════════════════════════════════════════════════════════════ */}
+      <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-
-          {/* Section header */}
-          <div className="mb-12 sm:mb-16">
+          {/* Section Header */}
+          <div className="mb-12 sm:mb-16 text-center sm:text-left">
             <p className="text-sm font-bold tracking-widest uppercase text-red-500 mb-3">Warum BuyAuto</p>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-neutral-900 tracking-tighter leading-tight max-w-2xl">
-              Alles unter<br />einem Dach.
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
+              Alles unter einem Dach.
             </h2>
           </div>
 
-          {/* Bento grid — asymmetric */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-
-            {/* Hero card — dark */}
-            <div className="lg:col-span-2 lg:row-span-2 relative bg-neutral-950 rounded-[2rem] sm:rounded-[2.5rem] p-8 sm:p-12
-                            overflow-hidden group min-h-[320px] flex flex-col justify-end
-                            hover:scale-[1.01] transition-transform duration-500">
-              {/* glow orb */}
-              <div className="absolute -top-20 -right-20 w-72 h-72 bg-red-500/20 rounded-full blur-[80px] group-hover:bg-red-500/30 transition-colors duration-700" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(239,68,68,0.08),transparent_60%)]" />
-
-              <CreditCard className="w-16 h-16 text-white/8 absolute top-10 right-10 group-hover:scale-110 group-hover:text-white/15 transition-all duration-700" />
-
+          {/* Bento Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* Large Feature Card */}
+            <div className="md:col-span-2 lg:col-span-2 bg-neutral-900 rounded-3xl p-8 sm:p-10 relative overflow-hidden group min-h-[280px] flex flex-col justify-end">
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-red-500/20 rounded-full blur-[80px] group-hover:bg-red-500/30 transition-colors duration-500" />
+              <CreditCard className="absolute top-8 right-8 w-12 h-12 text-white/10 group-hover:text-white/20 transition-colors duration-500" />
               <div className="relative z-10">
-                <span className="inline-block bg-white/10 backdrop-blur-sm text-white/80 text-xs font-semibold tracking-wide uppercase px-3 py-1 rounded-full mb-5">
+                <span className="inline-block bg-white/10 text-white/80 text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full mb-4">
                   Kostentransparenz
                 </span>
-                <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight mb-4">
-                  Übersichtliche<br />Kosten
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                  Übersichtliche Kosten
                 </h3>
-                <p className="text-white/60 text-base sm:text-lg font-medium leading-relaxed max-w-sm">
+                <p className="text-white/60 text-base max-w-md">
                   Monatsrate, Restlaufzeit, Kilometer – alles transparent auf einen Blick.
                 </p>
               </div>
             </div>
 
-            {/* Card: Laufzeiten */}
-            <div className="bg-white rounded-[2rem] p-7 sm:p-8 border border-neutral-100
-                            shadow-[0_2px_12px_rgba(0,0,0,0.04)]
-                            hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]
-                            hover:-translate-y-1.5 transition-all duration-300 group flex flex-col justify-between min-h-[220px]">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-5
-                              group-hover:bg-blue-500 transition-colors duration-300">
-                <Clock className="w-6 h-6 text-blue-500 group-hover:text-white transition-colors duration-300" />
+            {/* Flexible Laufzeiten */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[200px]">
+              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
+                <Clock className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2">Flexible Laufzeiten</h3>
-                <p className="text-neutral-500 text-sm sm:text-base font-medium">Von wenigen Monaten bis mehrere Jahre – passend für dich.</p>
+                <h3 className="text-xl font-bold text-neutral-900 mb-2">Flexible Laufzeiten</h3>
+                <p className="text-neutral-500 text-sm">Von wenigen Monaten bis mehrere Jahre – passend für dich.</p>
               </div>
             </div>
 
-            {/* Card: Günstiger */}
-            <div className="bg-white rounded-[2rem] p-7 sm:p-8 border border-neutral-100
-                            shadow-[0_2px_12px_rgba(0,0,0,0.04)]
-                            hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]
-                            hover:-translate-y-1.5 transition-all duration-300 group flex flex-col justify-between min-h-[220px]">
-              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-5
-                              group-hover:bg-emerald-500 transition-colors duration-300">
-                <CheckCircle className="w-6 h-6 text-emerald-500 group-hover:text-white transition-colors duration-300" />
+            {/* Günstiger als Neu */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[200px]">
+              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-4">
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2">Günstiger als Neu</h3>
-                <p className="text-neutral-500 text-sm sm:text-base font-medium">Oft mehrere Hundert Franken pro Monat günstiger als Leasing-Neuverträge.</p>
+                <h3 className="text-xl font-bold text-neutral-900 mb-2">Günstiger als Neu</h3>
+                <p className="text-neutral-500 text-sm">Oft mehrere Hundert Franken pro Monat günstiger.</p>
               </div>
             </div>
 
-            {/* Wide CTA card */}
-            <div className="lg:col-span-3 relative bg-gradient-to-r from-red-600 to-red-500
-                            rounded-[2rem] sm:rounded-[2.5rem] p-8 sm:p-12 overflow-hidden
-                            hover:scale-[1.005] transition-transform duration-500">
-              <div className="absolute right-0 top-0 w-96 h-96 bg-white/10 rounded-full blur-[80px] pointer-events-none" />
-              <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-black/10 rounded-full blur-[60px] pointer-events-none" />
-
-              <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
+            {/* CTA Card */}
+            <div className="md:col-span-2 bg-gradient-to-br from-red-500 to-red-600 rounded-3xl p-8 sm:p-10 relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full blur-[60px]" />
+              <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                 <div>
-                  <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-5 backdrop-blur-sm">
-                    <FileText className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight mb-3">
+                  <FileText className="w-10 h-10 text-white/80 mb-4" />
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                     Direkter Kontakt zum Anbieter
                   </h3>
-                  <p className="text-white/80 text-base sm:text-lg font-medium max-w-lg">
+                  <p className="text-white/80 text-base max-w-md">
                     Ohne Zwischenhändler. Kommuniziere direkt mit der Person, die den Vertrag abgeben möchte.
                   </p>
                 </div>
-                <div className="shrink-0 w-full sm:w-auto">
-                  <Link href="/suche"
-                    className="inline-flex items-center justify-center gap-2
-                               bg-white text-red-600 font-bold text-base sm:text-lg
-                               px-7 py-4 rounded-2xl w-full sm:w-auto
-                               hover:bg-neutral-50 hover:scale-105
-                               transition-all duration-300 shadow-xl shadow-red-900/20">
-                    Fahrzeuge entdecken <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
+                <Link href="/suche" className="shrink-0">
+                  <Button size="lg" className="bg-white text-red-600 hover:bg-neutral-100 font-bold rounded-xl px-6 shadow-lg">
+                    Fahrzeuge entdecken <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* ─── HOW IT WORKS — DARK FLOWING SECTION ─────────────────── */}
-      <section className="relative mx-4 sm:mx-6 lg:mx-8 mb-24 sm:mb-32 overflow-hidden rounded-[2.5rem] sm:rounded-[3rem]">
-        {/* Background */}
+      {/* ════════════════════════════════════════════════════════════
+          HOW IT WORKS - DARK SECTION
+      ════════════════════════════════════════════════════════════ */}
+      <section className="relative mx-4 sm:mx-6 lg:mx-8 mb-20 sm:mb-28 rounded-[2rem] sm:rounded-[3rem] overflow-hidden">
         <div className="absolute inset-0 bg-neutral-950" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-500/15 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4" />
 
-        <div className="relative z-10 px-6 sm:px-10 lg:px-16 py-20 sm:py-28">
+        <div className="relative z-10 px-6 sm:px-10 lg:px-16 py-16 sm:py-24">
           <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col lg:flex-row gap-16 lg:gap-24">
-
-              {/* Sticky left column */}
-              <div className="lg:w-5/12 lg:sticky lg:top-28 h-fit">
+            <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
+              {/* Left Column */}
+              <div className="lg:w-5/12">
                 <p className="text-xs font-bold tracking-widest uppercase text-red-400 mb-4">Einfacher Prozess</p>
-                <h2 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white tracking-tighter leading-[1.05] mb-6">
-                  So<br /><span className="text-red-500">funktioniert&apos;s</span>
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] mb-6">
+                  So funktioniert&apos;s
                 </h2>
-                <p className="text-neutral-400 text-lg font-medium leading-relaxed mb-10 max-w-sm">
-                  In nur 3 einfachen Schritten zu deinem neuen Leasingfahrzeug.
+                <p className="text-neutral-400 text-lg mb-8 max-w-sm">
+                  In nur 3 einfachen Schritten zu deinem neuen Fahrzeug.
                 </p>
                 <Link href="/inserat-erstellen">
-                  <button className="inline-flex items-center gap-3 bg-white text-neutral-900 font-bold px-7 py-4 rounded-2xl
-                                     hover:bg-neutral-100 hover:-translate-y-0.5
-                                     transition-all duration-300
-                                     shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_20px_40px_rgba(0,0,0,0.4)]
-                                     group">
-                    Inserat erstellen
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  <Button size="lg" className="bg-white text-neutral-900 hover:bg-neutral-100 font-bold rounded-xl shadow-xl">
+                    Inserat erstellen <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </Link>
               </div>
 
-              {/* Scrolling steps */}
-              <div className="lg:w-7/12 flex flex-col gap-4 sm:gap-5">
+              {/* Right Column - Steps */}
+              <div className="lg:w-7/12 flex flex-col gap-4">
                 {[
-                  {
-                    icon: Search,
-                    step: "01",
-                    title: "Suche & wähle",
-                    desc: "Durchsuche unsere Fahrzeugdatenbank und finde das perfekte Auto für deine Bedürfnisse.",
-                    color: "bg-blue-500/20 text-blue-400",
-                  },
-                  {
-                    icon: FileCheck,
-                    step: "02",
-                    title: "Anfrage & Inspektion",
-                    desc: "Stelle eine unverbindliche Anfrage und besichtige das Fahrzeug vor Ort.",
-                    color: "bg-amber-500/20 text-amber-400",
-                  },
-                  {
-                    icon: Car,
-                    step: "03",
-                    title: "Übernahme & Übergabe",
-                    desc: "Nach erfolgreicher Prüfung übernimmst du den Leasingvertrag und erhältst dein Fahrzeug.",
-                    color: "bg-emerald-500/20 text-emerald-400",
-                  },
+                  { icon: Search, step: "01", title: "Suche & wähle", desc: "Durchsuche unsere Fahrzeugdatenbank und finde das perfekte Auto.", color: "bg-blue-500/20 text-blue-400" },
+                  { icon: FileCheck, step: "02", title: "Anfrage & Inspektion", desc: "Stelle eine unverbindliche Anfrage und besichtige das Fahrzeug.", color: "bg-amber-500/20 text-amber-400" },
+                  { icon: Car, step: "03", title: "Übernahme & Übergabe", desc: "Nach erfolgreicher Prüfung übernimmst du den Leasingvertrag.", color: "bg-emerald-500/20 text-emerald-400" },
                 ].map((s, i) => (
                   <div
                     key={i}
-                    className="relative bg-white/5 border border-white/8 rounded-[1.75rem] p-7 sm:p-10
-                               hover:bg-white/8 hover:border-white/15
-                               transition-all duration-400 group overflow-hidden"
+                    className="relative bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8 hover:bg-white/10 transition-colors duration-300 group"
                   >
-                    {/* Step number watermark */}
-                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[7rem] font-black text-white/[0.03] leading-none select-none pointer-events-none group-hover:text-white/[0.05] transition-colors duration-500">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-6xl sm:text-7xl font-black text-white/5 select-none">
                       {s.step}
                     </span>
-
-                    <div className="flex items-start gap-5 relative z-10">
-                      <div className={`w-12 h-12 rounded-2xl ${s.color} flex items-center justify-center shrink-0 mt-0.5`}>
+                    <div className="flex items-start gap-4 relative z-10">
+                      <div className={`w-12 h-12 rounded-xl ${s.color} flex items-center justify-center shrink-0`}>
                         <s.icon className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-white/40 text-xs font-bold tracking-widest uppercase mb-1">Schritt {s.step}</p>
-                        <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">{s.title}</h3>
-                        <p className="text-neutral-400 text-base leading-relaxed font-medium">{s.desc}</p>
+                        <p className="text-white/40 text-xs font-bold uppercase tracking-wider mb-1">Schritt {s.step}</p>
+                        <h3 className="text-xl font-bold text-white mb-1">{s.title}</h3>
+                        <p className="text-neutral-400 text-sm">{s.desc}</p>
                       </div>
                     </div>
                   </div>
@@ -334,36 +269,32 @@ export default function V2Home() {
         </div>
       </section>
 
-      {/* ─── FOUNDER + FAQ + SEO ──────────────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════════
+          FOUNDER + FAQ + SEO
+      ════════════════════════════════════════════════════════════ */}
       <FounderStory />
       <FAQSection />
       <SeoCopyBlock />
 
-      {/* ─── STICKY BOTTOM CTA ────────────────────────────────────── */}
-      <div className="anim-sticky-cta fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4 pointer-events-none">
-        <div className="pointer-events-auto max-w-3xl mx-auto
-                        bg-neutral-950/90 backdrop-blur-xl
-                        border border-white/10
-                        shadow-[0_-8px_40px_rgba(0,0,0,0.3)]
-                        rounded-2xl px-5 py-4
-                        flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6">
+      {/* ════════════════════════════════════════════════════════════
+          STICKY BOTTOM CTA
+      ════════════════════════════════════════════════════════════ */}
+      <div className="animate-slide-up fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4 pointer-events-none">
+        <div className="pointer-events-auto max-w-2xl mx-auto bg-neutral-900/95 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-center sm:text-left">
-            <p className="font-bold text-white text-sm sm:text-base">Bereit für dein nächstes Auto?</p>
-            <p className="text-xs sm:text-sm text-white/50 font-medium">Entdecke Top-Deals oder erstelle ein Inserat.</p>
+            <p className="font-bold text-white text-sm">Bereit für dein nächstes Auto?</p>
+            <p className="text-xs text-white/50">Entdecke Top-Deals oder erstelle ein Inserat.</p>
           </div>
-          <div className="flex gap-2.5 w-full sm:w-auto">
-            <Button asChild variant="outline"
-              className="w-full sm:w-auto rounded-xl border-white/15 text-white bg-white/10 hover:bg-white/20 text-sm font-semibold">
-              <Link href="/suche">Fahrzeuge finden</Link>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none rounded-xl border-white/20 text-white bg-white/10 hover:bg-white/20">
+              <Link href="/suche">Suchen</Link>
             </Button>
-            <Button asChild
-              className="w-full sm:w-auto rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 text-sm font-semibold">
-              <Link href="/inserat-erstellen">Inserat erstellen</Link>
+            <Button asChild size="sm" className="flex-1 sm:flex-none rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg">
+              <Link href="/inserat-erstellen">Inserieren</Link>
             </Button>
           </div>
         </div>
       </div>
-
     </div>
   );
 }
