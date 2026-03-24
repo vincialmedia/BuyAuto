@@ -43,7 +43,7 @@ export default function V2Home() {
             src="/hero-g-class.png"
             alt="Mercedes G-Class"
             fill
-            className="object-cover object-center"
+            className="object-cover object-bottom"
             priority
             quality={90}
           />
