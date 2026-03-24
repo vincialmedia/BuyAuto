@@ -42,24 +42,24 @@ export default function V2Home() {
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-xl text-white px-5 py-2.5 rounded-full text-sm font-semibold mb-8 border border-white/20 shadow-2xl">
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-xl text-white px-5 py-2.5 rounded-full text-sm font-semibold mb-6 border border-white/20 shadow-2xl">
             <Sparkles className="w-4 h-4 text-primary" />
-            Die Schweizer Plattform
+            Schweizer Auto Plattform
           </div>
           
-          <h1 className="text-[12vw] sm:text-6xl md:text-8xl lg:text-[7rem] font-black text-white tracking-tighter leading-[0.9] mb-6 drop-shadow-2xl">
-            Leasingübernahme<br />
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[5.5rem] font-black text-white tracking-tighter leading-tight mb-6 drop-shadow-2xl max-w-5xl">
+            Der einfachere Weg zum <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-200 to-neutral-400">
-              Einfach & Schnell
+              nächsten Auto.
             </span>
           </h1>
           
-          <p className="text-lg sm:text-xl md:text-2xl text-white/80 font-medium mb-12 max-w-2xl mx-auto leading-relaxed text-balance">
-            Finde und übernimm deinen nächsten Auto-Leasingvertrag – schweizweit.
+          <p className="text-base sm:text-lg md:text-xl text-white/80 font-medium mb-10 max-w-3xl mx-auto leading-relaxed text-balance">
+            Ob Kauf, Leasing, Auto-Abo oder Leasingübernahme – entdecke Fahrzeuge und Garagen aus der ganzen Schweiz.
           </p>
 
           {/* OVERLAPPING SEARCH CONTAINER (Icy Glassmorph) */}
-          <div className="w-full max-w-5xl translate-y-16 sm:translate-y-24">
+          <div className="w-full max-w-5xl translate-y-8 sm:translate-y-12">
             <div className="bg-white/25 backdrop-blur-xl border border-white/30 rounded-[2.5rem] p-3 sm:p-6 shadow-2xl relative overflow-hidden group hover:bg-white/30 hover:border-white/50 transition-all duration-500">
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none" />
               <div className="relative z-10">
@@ -72,7 +72,7 @@ export default function V2Home() {
       </section>
 
       {/* SPACING FOR OVERLAP */}
-      <div className="h-24 sm:h-32 md:h-40" />
+      <div className="h-16 sm:h-24" />
 
       {/* FLOATING USP BENTO ROW */}
       <section className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24 sm:mb-32">
