@@ -28,7 +28,11 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 function normalizeVehicleKey(str) {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  return str.normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
 }
 
 async function run() {
@@ -71,14 +75,23 @@ async function run() {
 
   console.log(`Fetched ${allMakes?.length || 0} makes from the database.`);
 
-  const makeMap = new Map(allMakes.map(m => [m.normalized_name, m.id]));
+  // Map by both normalized name AND exact name (lowercased) for maximum resilience
+  const makeMap = new Map();
+  for (const m of allMakes) {
+    makeMap.set(m.normalized_name, m.id);
+    makeMap.set(m.name.toLowerCase(), m.id);
+  }
 
   const modelUpserts = [];
   const missingMakes = new Set();
   
   for (const r of rows) {
     const normMake = normalizeVehicleKey(r.make);
-    const makeId = makeMap.get(normMake);
+    const lowerMake = r.make.toLowerCase();
+    
+    // Try matching by exact lowercase name first, fallback to normalized
+    const makeId = makeMap.get(lowerMake) || makeMap.get(normMake);
+    
     if (!makeId) {
       missingMakes.add(r.make);
       continue;
