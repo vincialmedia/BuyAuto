@@ -84,17 +84,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (error) return res.status(500).json({ ok: false, error: "Failed to update listing status" });
 
-  try {
-    await supabaseAdmin.functions.invoke("listing-status-notification", {
-      body: {
-        record: data,
-        old_record: { status: oldStatus },
-        ...(notificationStatus ? { notification_status: notificationStatus } : {}),
-      },
-    });
-  } catch (e) {
-    console.warn("update-status: listing-status-notification invoke failed", e);
-  }
-
   return res.status(200).json({ ok: true, listing: data });
 }
