@@ -50,7 +50,10 @@ export default function V2Home() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight mb-6 drop-shadow-2xl max-w-4xl">
             Der einfachere Weg zum <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-300 to-neutral-500">
-              nächsten Auto.
+              nächsten{' '}
+            </span>
+            <span className="text-red-500">
+              Auto.
             </span>
           </h1>
           
