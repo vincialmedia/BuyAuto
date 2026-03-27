@@ -121,7 +121,7 @@ export default function Header() {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-6">
+            <nav className="hidden md:flex items-center space-x-8">
               {/* Inserat erstellen - with CHF0 badge */}
               <div className="relative">
                 <Link 
@@ -197,7 +197,7 @@ export default function Header() {
             </div>
 
             {/* Auth Section - Handle loading state properly */}
-            <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
+            <div className="hidden md:flex items-center space-x-4 ml-8 flex-shrink-0">
               {loading ? (
                 /* Show loading state instead of login buttons */
                 <div className="flex items-center space-x-2">
