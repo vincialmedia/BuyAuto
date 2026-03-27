@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
-import { User, LogOut, Settings, BarChart3, Plus, Loader2, ChevronDown, Car } from "lucide-react";
+import { User, LogOut, Settings, BarChart3, Plus, Loader2, ChevronDown, Car, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -174,8 +174,9 @@ export default function Header() {
               {/* Preise */}
               <Link 
                 href="/preise" 
-                className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
+                className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1.5"
               >
+                <Coins className="w-4 h-4" />
                 Preise
               </Link>
             </nav>
