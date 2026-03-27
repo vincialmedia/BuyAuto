@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
-import { User, LogOut, Settings, BarChart3, Plus, Loader2 } from "lucide-react";
+import { User, LogOut, Settings, BarChart3, Plus, Loader2, ChevronDown, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -122,7 +122,7 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
-              {/* Inserat erstellen - FIRST with CHF0 badge */}
+              {/* Inserat erstellen - with CHF0 badge */}
               <div className="relative">
                 <Link 
                   href={createListingHref}
@@ -137,28 +137,46 @@ export default function Header() {
                 </span>
               </div>
               
-              {/* Leasingübernahmen */}
-              <Link 
-                href="/suche?deal_type=lease_takeover" 
-                className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
-              >
-                Leasingübernahmen
-              </Link>
+              {/* Fahrzeuge Suchen - Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1">
+                    <Car className="w-4 h-4" />
+                    Fahrzeuge Suchen
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link href="/suche?deal_type=lease_takeover" className="cursor-pointer">
+                      Leasingübernahmen
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/suche?deal_type=direct_purchase" className="cursor-pointer">
+                      Occasion & Neuwagen
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/suche?deal_type=garage_leasing" className="cursor-pointer">
+                      Leasing Suchen
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/suche" className="cursor-pointer font-medium">
+                      Alle Fahrzeuge
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               
-              {/* Occasion & Neuwagen */}
+              {/* Preise */}
               <Link 
-                href="/suche?deal_type=direct_purchase" 
+                href="/preise" 
                 className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
               >
-                Occasion & Neuwagen
-              </Link>
-              
-              {/* Leasing Suchen */}
-              <Link 
-                href="/suche?deal_type=garage_leasing" 
-                className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
-              >
-                Leasing Suchen
+                Preise
               </Link>
             </nav>
 
@@ -264,7 +282,10 @@ export default function Header() {
           {/* Mobile Navigation Menu */}
           <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
             <nav className="pb-4 pt-2 space-y-2 border-t border-neutral-200">
-              {/* Search Links */}
+              {/* Fahrzeuge Suchen Section */}
+              <div className="px-4 py-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                Fahrzeuge Suchen
+              </div>
               <Link 
                 href="/suche?deal_type=lease_takeover" 
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
@@ -286,7 +307,25 @@ export default function Header() {
               >
                 Leasing Suchen
               </Link>
+              <Link 
+                href="/suche" 
+                className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Alle Fahrzeuge
+              </Link>
               
+              <div className="border-t border-neutral-100 my-2"></div>
+              
+              {/* Preise */}
+              <Link 
+                href="/preise" 
+                className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Preise
+              </Link>
+
               <div className="border-t border-neutral-100 my-2"></div>
 
               {loading ? (
