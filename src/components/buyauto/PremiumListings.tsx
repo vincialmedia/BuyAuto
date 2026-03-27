@@ -28,11 +28,27 @@ function getDealTypeLabel(listing: Listing): DealTypeLabel {
   return "Direktkauf";
 }
 
-export default function PremiumListings() {
+interface PremiumListingsProps {
+  externalFilter?: FilterCategory;
+  onFilterChange?: (filter: FilterCategory) => void;
+}
+
+export default function PremiumListings({ externalFilter, onFilterChange }: PremiumListingsProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<FilterCategory>("all");
+  const [internalFilter, setInternalFilter] = useState<FilterCategory>("all");
+
+  // Use external filter if provided, otherwise use internal
+  const activeFilter = externalFilter ?? internalFilter;
+
+  const handleFilterChange = (filter: FilterCategory) => {
+    if (onFilterChange) {
+      onFilterChange(filter);
+    } else {
+      setInternalFilter(filter);
+    }
+  };
 
   const pageSize = 3;
 
@@ -241,7 +257,7 @@ export default function PremiumListings() {
                 {FILTER_OPTIONS.map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => setActiveFilter(option.value)}
+                    onClick={() => handleFilterChange(option.value)}
                     className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
                       activeFilter === option.value
                         ? "bg-red-500 text-white shadow-md"
