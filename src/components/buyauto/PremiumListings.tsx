@@ -11,7 +11,16 @@ import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
-type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme";
+type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme" | "Auto Abo";
+type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover" | "auto_abo";
+
+const FILTER_OPTIONS: { label: DealTypeLabel | "Alle"; value: FilterCategory }[] = [
+  { label: "Alle", value: "all" },
+  { label: "Direktkauf", value: "direct_purchase" },
+  { label: "Leasing", value: "leasing" },
+  { label: "Leasingübernahme", value: "lease_takeover" },
+  { label: "Auto Abo", value: "auto_abo" },
+];
 
 function getDealTypeLabel(listing: Listing): DealTypeLabel {
   if (listing.deal_type === "lease_takeover") return "Leasingübernahme";
@@ -23,6 +32,7 @@ export default function PremiumListings() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterCategory>("all");
 
   const pageSize = 3;
 
@@ -60,10 +70,34 @@ export default function PremiumListings() {
     };
   }, []);
 
-  const pageCount = useMemo(() => Math.max(1, Math.ceil(listings.length / pageSize)), [listings.length]);
+  const filteredListings = useMemo(() => {
+    if (activeFilter === "all") return listings;
+    return listings.filter((listing) => {
+      if (activeFilter === "direct_purchase") {
+        return listing.deal_type === "direct_purchase" && listing.financing_type !== "leasing";
+      }
+      if (activeFilter === "leasing") {
+        return listing.financing_type === "leasing" && listing.deal_type !== "lease_takeover";
+      }
+      if (activeFilter === "lease_takeover") {
+        return listing.deal_type === "lease_takeover";
+      }
+      if (activeFilter === "auto_abo") {
+        return listing.financing_type === "subscription" || listing.deal_type === "auto_abo";
+      }
+      return true;
+    });
+  }, [listings, activeFilter]);
+
+  const pageCount = useMemo(() => Math.max(1, Math.ceil(filteredListings.length / pageSize)), [filteredListings.length]);
   const maxIndex = useMemo(() => Math.max(0, (pageCount - 1) * pageSize), [pageCount]);
 
-  const visibleListings = useMemo(() => listings.slice(currentIndex, currentIndex + pageSize), [listings, currentIndex]);
+  const visibleListings = useMemo(() => filteredListings.slice(currentIndex, currentIndex + pageSize), [filteredListings, currentIndex]);
+
+  // Reset index when filter changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [activeFilter]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("de-CH", {
@@ -188,17 +222,34 @@ export default function PremiumListings() {
           
           <div className="relative z-10">
             {/* Section Header */}
-            <div className="text-center mb-10 sm:mb-12">
+            <div className="text-center mb-8 sm:mb-10">
               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200/60 rounded-full px-5 py-2.5 mb-5 shadow-sm">
                 <Crown className="w-4 h-4 text-amber-600" />
                 <span className="text-amber-700 font-semibold text-sm">Premium Inserate</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 mb-3">
-                Exklusive Premium-Fahrzeuge
+                Premium Fahrzeuge aus allen Kategorien
               </h2>
-              <p className="text-neutral-500 text-base max-w-xl mx-auto">
+              <p className="text-neutral-500 text-base max-w-xl mx-auto mb-6">
                 Handverlesene Top-Angebote mit erhöhter Sichtbarkeit.
               </p>
+              
+              {/* Category Filter Tabs */}
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                {FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setActiveFilter(option.value)}
+                    className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
+                      activeFilter === option.value
+                        ? "bg-red-500 text-white shadow-md"
+                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-800"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Carousel */}
