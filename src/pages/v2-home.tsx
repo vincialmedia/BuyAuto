@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,7 +15,20 @@ import dynamic from "next/dynamic";
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"));
 const SeoCopyBlock = dynamic(() => import("@/components/buyauto/SeoCopyBlock").then(m => ({ default: m.SeoCopyBlock })));
 
+type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover" | "auto_abo";
+
 export default function V2Home() {
+  const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");
+  const premiumSectionRef = useRef<HTMLDivElement>(null);
+
+  const handleKeywordClick = (filter: FilterCategory) => {
+    setPremiumFilter(filter);
+    // Scroll to premium listings with a small delay for the filter to apply
+    setTimeout(() => {
+      premiumSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+
   return (
     <div className="bg-[#fafafa] min-h-screen font-sans overflow-x-hidden">
       <Head>
@@ -66,9 +79,36 @@ export default function V2Home() {
               <br />
               zum nächsten <span className="text-red-500">Auto.</span>
             </h1>
-            {/* Subtext */}
+            {/* Subtext with clickable filter keywords */}
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/80 font-medium max-w-2xl mx-auto drop-shadow-md">
-              Kauf, Leasing, Leasingübernahmen und Abos – finde das passende Auto in der Schweiz.
+              <button
+                onClick={() => handleKeywordClick("direct_purchase")}
+                className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
+              >
+                Kauf
+              </button>
+              {", "}
+              <button
+                onClick={() => handleKeywordClick("leasing")}
+                className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
+              >
+                Leasing
+              </button>
+              {", "}
+              <button
+                onClick={() => handleKeywordClick("lease_takeover")}
+                className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
+              >
+                Leasingübernahmen
+              </button>
+              {" und "}
+              <button
+                onClick={() => handleKeywordClick("auto_abo")}
+                className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
+              >
+                Abos
+              </button>
+              {" – finde das passende Auto in der Schweiz."}
             </p>
           </div>
         </div>
@@ -86,10 +126,13 @@ export default function V2Home() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════
-          PREMIUM LISTINGS - Right under search bar with lift effect
+          PREMIUM LISTINGS
       ════════════════════════════════════════════════════════════ */}
-      <div className="mt-14 md:mt-16">
-        <PremiumListings />
+      <div ref={premiumSectionRef} className="scroll-mt-4">
+        <PremiumListings 
+          externalFilter={premiumFilter} 
+          onFilterChange={setPremiumFilter} 
+        />
       </div>
 
       {/* ════════════════════════════════════════════════════════════
