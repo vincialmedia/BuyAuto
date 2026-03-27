@@ -43,7 +43,7 @@ export default function V2Home() {
       {/* ════════════════════════════════════════════════════════════
           HERO SECTION
       ════════════════════════════════════════════════════════════ */}
-      <section className="relative min-h-[60vh] md:min-h-[70vh] flex flex-col overflow-hidden">
+      <section className="relative min-h-[50vh] md:min-h-[55vh] flex flex-col overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
@@ -59,7 +59,7 @@ export default function V2Home() {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <div className="text-center">
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
               Der einfachere Weg
@@ -77,12 +77,19 @@ export default function V2Home() {
       {/* ════════════════════════════════════════════════════════════
           SEARCH BAR - Floating
       ════════════════════════════════════════════════════════════ */}
-      <div className="relative z-20 w-full px-4 sm:px-6 lg:px-8 -mt-10 md:-mt-14">
+      <div className="relative z-20 w-full px-4 sm:px-6 lg:px-8 -mt-8 md:-mt-10">
         <div className="animate-fade-up-3 max-w-5xl mx-auto">
           <div className="bg-white rounded-2xl shadow-2xl shadow-black/15 p-3 md:p-4">
             <SearchBarV2 />
           </div>
         </div>
+      </div>
+
+      {/* ════════════════════════════════════════════════════════════
+          PREMIUM LISTINGS - Right under search bar
+      ════════════════════════════════════════════════════════════ */}
+      <div className="mt-8 md:mt-12">
+        <PremiumListings />
       </div>
 
       {/* ════════════════════════════════════════════════════════════
@@ -184,11 +191,6 @@ export default function V2Home() {
           </div>
         </div>
       </section>
-
-      {/* ════════════════════════════════════════════════════════════
-          PREMIUM LISTINGS
-      ════════════════════════════════════════════════════════════ */}
-      <PremiumListings />
 
       {/* ════════════════════════════════════════════════════════════
           WHY BUYAUTO - Bold 3-card layout
