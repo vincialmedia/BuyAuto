@@ -83,7 +83,9 @@ export default function PremiumListings() {
         return listing.deal_type === "lease_takeover";
       }
       if (activeFilter === "auto_abo") {
-        return listing.financing_type === "subscription" || listing.deal_type === "auto_abo";
+        // Auto Abo not yet implemented - return empty for now
+        // Will match when subscription/auto_abo types are added to schema
+        return false;
       }
       return true;
     });
