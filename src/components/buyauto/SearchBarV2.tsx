@@ -210,7 +210,7 @@ function PriceFilter({
             className="fixed inset-0 z-40" 
             onClick={() => setIsOpen(false)} 
           />
-          <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-neutral-200 p-5 z-50 w-72 sm:w-80">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-neutral-200 p-5 z-50 w-[calc(100vw-2rem)] sm:w-80 max-w-sm">
             {/* Mode Toggle */}
             <div className="flex items-center justify-between mb-5 pb-4 border-b border-neutral-100">
               <div className="flex-1">

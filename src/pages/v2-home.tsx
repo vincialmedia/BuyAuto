@@ -86,9 +86,9 @@ export default function V2Home() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════
-          PREMIUM LISTINGS - Right under search bar
+          PREMIUM LISTINGS - Right under search bar with lift effect
       ════════════════════════════════════════════════════════════ */}
-      <div className="mt-8 md:mt-12">
+      <div className="mt-6 md:mt-8">
         <PremiumListings />
       </div>
 
