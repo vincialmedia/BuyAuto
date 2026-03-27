@@ -89,14 +89,22 @@ export default function PremiumListings({ externalFilter, onFilterChange }: Prem
   const filteredListings = useMemo(() => {
     if (activeFilter === "all") return listings;
     return listings.filter((listing) => {
+      // Check if this listing has lease takeover offer enabled
+      const hasLeaseTakeoverOffer = listing.leasing_offer?.lease_takeover_offer?.enabled === true;
+      // Check if this listing has leasing offer enabled
+      const hasLeasingOffer = listing.leasing_offer?.enabled === true || listing.financing_type === "leasing";
+
       if (activeFilter === "direct_purchase") {
-        return listing.deal_type === "direct_purchase" && listing.financing_type !== "leasing";
+        // Show if it's a direct purchase deal type (regardless of other offers it may have)
+        return listing.deal_type === "direct_purchase";
       }
       if (activeFilter === "leasing") {
-        return listing.financing_type === "leasing" && listing.deal_type !== "lease_takeover";
+        // Show if it has leasing financing available (but not pure lease takeovers)
+        return hasLeasingOffer && listing.deal_type !== "lease_takeover";
       }
       if (activeFilter === "lease_takeover") {
-        return listing.deal_type === "lease_takeover";
+        // Show if deal_type is lease_takeover OR if it has a lease takeover offer enabled
+        return listing.deal_type === "lease_takeover" || hasLeaseTakeoverOffer;
       }
       if (activeFilter === "auto_abo") {
         // Auto Abo not yet implemented - return empty for now

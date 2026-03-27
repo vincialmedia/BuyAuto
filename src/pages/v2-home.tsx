@@ -9,6 +9,7 @@ import {
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { FounderStory } from "@/components/buyauto/FounderStory";
+import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 
@@ -134,6 +135,11 @@ export default function V2Home() {
           onFilterChange={setPremiumFilter} 
         />
       </div>
+
+      {/* ════════════════════════════════════════════════════════════
+          WHY BUYAUTO - 6-Card Value Proposition Grid
+      ════════════════════════════════════════════════════════════ */}
+      <WhyBuyAutoSection />
 
       {/* ════════════════════════════════════════════════════════════
           STATS BAR - Sleek horizontal trust indicators
