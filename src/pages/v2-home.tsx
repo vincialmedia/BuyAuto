@@ -43,7 +43,7 @@ export default function V2Home() {
       {/* ════════════════════════════════════════════════════════════
           HERO SECTION
       ════════════════════════════════════════════════════════════ */}
-      <section className="relative min-h-[50vh] md:min-h-[55vh] flex flex-col overflow-hidden">
+      <section className="relative min-h-[60vh] md:min-h-[70vh] flex flex-col overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
@@ -59,7 +59,7 @@ export default function V2Home() {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-8">
+        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center">
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
               Der einfachere Weg
