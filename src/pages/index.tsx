@@ -69,8 +69,8 @@ export default function HomePage() {
 
       <main className="bg-white min-h-screen">
         <HeroSection />
-        <UspBar />
         <PremiumListings />
+        <UspBar />
         <FounderStory />
         <BenefitsSection />
         <HowItWorksSection />
