@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Shield, Zap, CheckCircle, TrendingUp,
-  CreditCard, Clock, Search, FileCheck, Car, ArrowRight, Users, MessageCircle, ChevronRight
+  CreditCard, Clock, Search, FileCheck, Car, ArrowRight, Users, MessageCircle, ChevronRight, Sparkles
 } from "lucide-react";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import PremiumListings from "@/components/buyauto/PremiumListings";
@@ -24,7 +24,6 @@ export default function V2Home() {
 
   const handleKeywordClick = (filter: FilterCategory) => {
     setPremiumFilter(filter);
-    // Scroll to premium listings with a small delay for the filter to apply
     setTimeout(() => {
       premiumSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
@@ -40,9 +39,35 @@ export default function V2Home() {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
           }
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+          }
+          @keyframes pulse-glow {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+          }
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+          @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+          @keyframes count-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
           .animate-fade-up-1 { animation: fadeUp 0.6s ease-out 0.1s both; }
           .animate-fade-up-2 { animation: fadeUp 0.6s ease-out 0.2s both; }
           .animate-fade-up-3 { animation: fadeUp 0.6s ease-out 0.3s both; }
+          .animate-float { animation: float 6s ease-in-out infinite; }
+          .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+          .animate-gradient { 
+            background-size: 200% 200%;
+            animation: gradient-shift 3s ease infinite;
+          }
           
           .scrollbar-hide {
             -ms-overflow-style: none;
@@ -50,6 +75,14 @@ export default function V2Home() {
           }
           .scrollbar-hide::-webkit-scrollbar {
             display: none;
+          }
+          
+          .search-bar-hover {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          .search-bar-hover:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 40px rgba(239, 68, 68, 0.1);
           }
         `}</style>
       </Head>
@@ -80,7 +113,6 @@ export default function V2Home() {
               <br />
               zum nächsten <span className="text-red-500">Auto.</span>
             </h1>
-            {/* Subtext with clickable filter keywords */}
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/80 font-medium max-w-2xl mx-auto drop-shadow-md">
               <button
                 onClick={() => handleKeywordClick("direct_purchase")}
@@ -116,12 +148,18 @@ export default function V2Home() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════
-          SEARCH BAR - Floating
+          SEARCH BAR - Floating with hover animation
       ════════════════════════════════════════════════════════════ */}
       <div className="relative z-20 w-full px-4 sm:px-6 lg:px-8 -mt-8 md:-mt-10">
         <div className="animate-fade-up-3 max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-2xl shadow-black/15 p-3 md:p-4">
-            <SearchBarV2 />
+          <div className="search-bar-hover bg-white rounded-2xl shadow-2xl shadow-black/15 p-3 md:p-4 relative overflow-hidden group">
+            {/* Subtle shimmer effect on hover */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_ease-in-out]" />
+            </div>
+            <div className="relative z-10">
+              <SearchBarV2 />
+            </div>
           </div>
         </div>
       </div>
@@ -142,24 +180,39 @@ export default function V2Home() {
       <WhyBuyAutoSection />
 
       {/* ════════════════════════════════════════════════════════════
-          STATS BAR - Sleek horizontal trust indicators
+          STATS BAR - Animated counters with hover effects
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-8 md:py-12">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-12 md:py-16 relative overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-100 via-white to-neutral-100" />
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/4 w-64 h-64 bg-red-500/5 rounded-full blur-3xl animate-pulse-glow" />
+          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
+        </div>
+        
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex items-center justify-between md:justify-center md:gap-16 text-center">
             {[
-              { value: "500+", label: "Fahrzeuge" },
-              { value: "50+", label: "Garagen" },
-              { value: "100%", label: "Schweiz" },
-              { value: "24/7", label: "Online" },
+              { value: "500+", label: "Fahrzeuge", color: "from-red-500 to-orange-500" },
+              { value: "50+", label: "Garagen", color: "from-blue-500 to-cyan-500" },
+              { value: "100%", label: "Schweiz", color: "from-emerald-500 to-teal-500" },
+              { value: "24/7", label: "Online", color: "from-violet-500 to-purple-500" },
             ].map((stat, i) => (
-              <div key={i} className="group">
-                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-neutral-900 group-hover:text-red-500 transition-colors">
-                  {stat.value}
-                </p>
-                <p className="text-xs sm:text-sm text-neutral-500 font-medium mt-1">
-                  {stat.label}
-                </p>
+              <div 
+                key={i} 
+                className="group cursor-default relative"
+              >
+                {/* Hover glow effect */}
+                <div className={`absolute -inset-4 bg-gradient-to-r ${stat.color} rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500`} />
+                
+                <div className="relative">
+                  <p className={`text-3xl sm:text-4xl md:text-5xl font-black bg-gradient-to-r ${stat.color} bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300`}>
+                    {stat.value}
+                  </p>
+                  <p className="text-xs sm:text-sm text-neutral-500 font-semibold mt-1 group-hover:text-neutral-700 transition-colors">
+                    {stat.label}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -167,74 +220,92 @@ export default function V2Home() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════
-          VALUE PROPS - Horizontal scroll on mobile, grid on desktop
+          VALUE PROPS - Interactive cards with colorful gradients
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-6 md:py-12">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-10 md:py-16 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white via-neutral-50 to-white" />
+        
+        <div className="max-w-6xl mx-auto relative z-10">
           {/* Mobile: Horizontal scroll */}
           <div className="md:hidden">
-            <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-4" style={{ scrollSnapType: "x mandatory" }}>
+            <div className="flex gap-4 px-4 overflow-x-auto scrollbar-hide pb-4" style={{ scrollSnapType: "x mandatory" }}>
               {[
                 { 
                   icon: Shield, 
                   title: "Geprüfte Angebote", 
                   desc: "Jedes Inserat wird von uns überprüft",
-                  gradient: "from-red-500 to-rose-600"
+                  gradient: "from-red-500 to-rose-600",
+                  shadow: "shadow-red-500/25"
                 },
                 { 
                   icon: MessageCircle, 
                   title: "Direkter Kontakt", 
                   desc: "Kommuniziere direkt mit Anbietern",
-                  gradient: "from-neutral-800 to-neutral-900"
+                  gradient: "from-blue-500 to-cyan-600",
+                  shadow: "shadow-blue-500/25"
                 },
                 { 
                   icon: Zap, 
                   title: "Schnell & Einfach", 
                   desc: "In wenigen Minuten zum Traumauto",
-                  gradient: "from-red-500 to-rose-600"
+                  gradient: "from-amber-500 to-orange-600",
+                  shadow: "shadow-amber-500/25"
                 },
                 { 
                   icon: CheckCircle, 
                   title: "Swiss Made", 
                   desc: "Deine Daten bleiben in der Schweiz",
-                  gradient: "from-neutral-800 to-neutral-900"
+                  gradient: "from-emerald-500 to-teal-600",
+                  shadow: "shadow-emerald-500/25"
                 },
               ].map((item, i) => (
                 <div 
                   key={i} 
-                  className={`flex-shrink-0 w-[280px] bg-gradient-to-br ${item.gradient} rounded-2xl p-5 text-white`}
+                  className={`flex-shrink-0 w-[280px] bg-gradient-to-br ${item.gradient} rounded-3xl p-6 text-white shadow-xl ${item.shadow} transform transition-all duration-300 hover:scale-105 hover:-rotate-1`}
                   style={{ scrollSnapAlign: "start" }}
                 >
-                  <item.icon className="w-8 h-8 mb-3 opacity-90" />
-                  <h3 className="font-bold text-lg mb-1">{item.title}</h3>
-                  <p className="text-white/80 text-sm">{item.desc}</p>
+                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4">
+                    <item.icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-xl mb-2">{item.title}</h3>
+                  <p className="text-white/80 text-sm leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
-            <div className="flex justify-center gap-1.5 mt-2">
+            <div className="flex justify-center gap-2 mt-4">
               {[0,1,2,3].map(i => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
+                <div key={i} className="w-2 h-2 rounded-full bg-neutral-300 hover:bg-red-500 transition-colors cursor-pointer" />
               ))}
             </div>
           </div>
 
-          {/* Desktop: Grid */}
-          <div className="hidden md:grid md:grid-cols-4 gap-4 px-4 sm:px-6 lg:px-8">
+          {/* Desktop: Grid with hover effects */}
+          <div className="hidden md:grid md:grid-cols-4 gap-5 px-4 sm:px-6 lg:px-8">
             {[
-              { icon: Shield, title: "Geprüfte Angebote", desc: "Qualitätskontrolle" },
-              { icon: MessageCircle, title: "Direkter Kontakt", desc: "Ohne Zwischenhändler" },
-              { icon: Zap, title: "Schnell & Einfach", desc: "In Minuten online" },
-              { icon: CheckCircle, title: "Swiss Made", desc: "Daten in der Schweiz" },
+              { icon: Shield, title: "Geprüfte Angebote", desc: "Qualitätskontrolle", gradient: "from-red-500 to-rose-600", lightGradient: "from-red-50 to-rose-100" },
+              { icon: MessageCircle, title: "Direkter Kontakt", desc: "Ohne Zwischenhändler", gradient: "from-blue-500 to-cyan-600", lightGradient: "from-blue-50 to-cyan-100" },
+              { icon: Zap, title: "Schnell & Einfach", desc: "In Minuten online", gradient: "from-amber-500 to-orange-600", lightGradient: "from-amber-50 to-orange-100" },
+              { icon: CheckCircle, title: "Swiss Made", desc: "Daten in der Schweiz", gradient: "from-emerald-500 to-teal-600", lightGradient: "from-emerald-50 to-teal-100" },
             ].map((item, i) => (
               <div 
                 key={i} 
-                className="group bg-white rounded-2xl p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                className="group relative bg-white rounded-3xl p-6 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-50 to-rose-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <item.icon className="w-6 h-6 text-red-500" />
+                {/* Gradient overlay on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.lightGradient} group-hover:bg-white/20 flex items-center justify-center mb-5 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                    <item.icon className={`w-7 h-7 bg-gradient-to-r ${item.gradient} bg-clip-text text-transparent group-hover:text-white transition-colors duration-300`} style={{ color: `var(--${item.gradient.split('-')[1]}-500)` }} />
+                  </div>
+                  <h3 className="font-bold text-lg text-neutral-900 group-hover:text-white mb-1 transition-colors duration-300">{item.title}</h3>
+                  <p className="text-sm text-neutral-500 group-hover:text-white/80 transition-colors duration-300">{item.desc}</p>
                 </div>
-                <h3 className="font-bold text-neutral-900 mb-1">{item.title}</h3>
-                <p className="text-sm text-neutral-500">{item.desc}</p>
+                
+                {/* Corner decoration */}
+                <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-gradient-to-br from-neutral-100 to-neutral-200 group-hover:from-white/10 group-hover:to-white/5 rounded-full transition-all duration-500" />
               </div>
             ))}
           </div>
@@ -242,130 +313,154 @@ export default function V2Home() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════
-          WHY BUYAUTO - Bold 3-card layout
+          WHY BUYAUTO - Bold 3-card layout with animations
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Animated background blobs */}
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-50 to-white" />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-red-500/5 rounded-full blur-3xl animate-pulse-glow" />
+        <div className="absolute bottom-20 right-10 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1s" }} />
+        
+        <div className="max-w-6xl mx-auto relative z-10">
           {/* Section Header */}
-          <div className="text-center mb-10 md:mb-14">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-red-100 text-red-600 text-xs font-bold uppercase tracking-wider mb-4">
+          <div className="text-center mb-12 md:mb-16">
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-red-500/10 to-orange-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5 hover:scale-105 transition-transform cursor-default">
+              <Sparkles className="w-4 h-4 animate-pulse" />
               Deine Vorteile
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-neutral-900 tracking-tight">
-              Alles unter einem Dach
+              Alles unter <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">einem Dach</span>
             </h2>
           </div>
 
           {/* 3 Bold Feature Cards */}
-          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid md:grid-cols-3 gap-5 md:gap-6">
             {/* Card 1 - Cost Transparency */}
-            <div className="group relative bg-neutral-900 rounded-3xl p-6 md:p-8 overflow-hidden min-h-[280px] flex flex-col justify-end">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/20 rounded-full blur-[60px] group-hover:bg-red-500/30 transition-all duration-500" />
-              <div className="absolute top-6 right-6">
-                <CreditCard className="w-10 h-10 text-white/10 group-hover:text-white/20 transition-colors" />
+            <div className="group relative bg-neutral-900 rounded-[2rem] p-7 md:p-9 overflow-hidden min-h-[300px] flex flex-col justify-end cursor-default hover:-translate-y-2 hover:rotate-1 transition-all duration-500">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-red-500/20 rounded-full blur-[80px] group-hover:bg-red-500/40 group-hover:scale-150 transition-all duration-700" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-orange-500/10 rounded-full blur-[60px] group-hover:bg-orange-500/30 transition-all duration-700" />
+              <div className="absolute top-6 right-6 transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
+                <CreditCard className="w-12 h-12 text-white/10 group-hover:text-white/30" />
               </div>
               <div className="relative z-10">
-                <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center mb-4">
-                  <TrendingUp className="w-6 h-6 text-red-400" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/30 to-orange-500/30 backdrop-blur-sm flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="w-7 h-7 text-red-400" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Transparente Kosten</h3>
-                <p className="text-white/60 text-sm md:text-base">
+                <h3 className="text-2xl md:text-2xl font-bold text-white mb-3">Transparente Kosten</h3>
+                <p className="text-white/60 group-hover:text-white/80 text-base leading-relaxed transition-colors duration-300">
                   Monatsrate, Restlaufzeit, Kilometer – alles auf einen Blick.
                 </p>
               </div>
+              {/* Animated border */}
+              <div className="absolute inset-0 rounded-[2rem] border-2 border-white/0 group-hover:border-white/10 transition-colors duration-500" />
             </div>
 
             {/* Card 2 - Flexibility */}
-            <div className="group relative bg-gradient-to-br from-red-500 to-rose-600 rounded-3xl p-6 md:p-8 overflow-hidden min-h-[280px] flex flex-col justify-end">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[50px]" />
-              <div className="absolute top-6 right-6">
-                <Clock className="w-10 h-10 text-white/20" />
+            <div className="group relative bg-gradient-to-br from-red-500 via-red-500 to-rose-600 rounded-[2rem] p-7 md:p-9 overflow-hidden min-h-[300px] flex flex-col justify-end cursor-default hover:-translate-y-2 hover:-rotate-1 transition-all duration-500 shadow-xl shadow-red-500/20 hover:shadow-2xl hover:shadow-red-500/30">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-[60px] group-hover:scale-150 transition-all duration-700" />
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-black/10 rounded-full blur-[40px]" />
+              <div className="absolute top-6 right-6 transform group-hover:-rotate-12 group-hover:scale-110 transition-all duration-500">
+                <Clock className="w-12 h-12 text-white/20 group-hover:text-white/40" />
               </div>
               <div className="relative z-10">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mb-4">
-                  <Clock className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-white/30 transition-all duration-300">
+                  <Clock className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Flexible Laufzeiten</h3>
-                <p className="text-white/80 text-sm md:text-base">
+                <h3 className="text-2xl md:text-2xl font-bold text-white mb-3">Flexible Laufzeiten</h3>
+                <p className="text-white/80 group-hover:text-white text-base leading-relaxed transition-colors duration-300">
                   Von wenigen Monaten bis mehrere Jahre – du entscheidest.
                 </p>
+              </div>
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_ease-in-out_infinite]" />
               </div>
             </div>
 
             {/* Card 3 - Direct Contact */}
-            <div className="group relative bg-white rounded-3xl p-6 md:p-8 overflow-hidden min-h-[280px] flex flex-col justify-end shadow-xl shadow-neutral-200/50">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-neutral-100 rounded-full blur-[40px]" />
-              <div className="absolute top-6 right-6">
-                <MessageCircle className="w-10 h-10 text-neutral-100 group-hover:text-neutral-200 transition-colors" />
+            <div className="group relative bg-white rounded-[2rem] p-7 md:p-9 overflow-hidden min-h-[300px] flex flex-col justify-end shadow-xl shadow-neutral-200/60 hover:shadow-2xl hover:shadow-neutral-300/60 cursor-default hover:-translate-y-2 hover:rotate-1 transition-all duration-500">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-500/5 to-cyan-500/10 rounded-full blur-[50px] group-hover:scale-150 group-hover:from-blue-500/10 group-hover:to-cyan-500/20 transition-all duration-700" />
+              <div className="absolute top-6 right-6 transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
+                <MessageCircle className="w-12 h-12 text-neutral-100 group-hover:text-blue-100" />
               </div>
               <div className="relative z-10">
-                <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center mb-4 group-hover:bg-neutral-200 transition-colors">
-                  <Users className="w-6 h-6 text-neutral-700" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                  <Users className="w-7 h-7 text-blue-600" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-neutral-900 mb-2">Direkter Kontakt</h3>
-                <p className="text-neutral-500 text-sm md:text-base">
+                <h3 className="text-2xl md:text-2xl font-bold text-neutral-900 mb-3">Direkter Kontakt</h3>
+                <p className="text-neutral-500 group-hover:text-neutral-700 text-base leading-relaxed transition-colors duration-300">
                   Kommuniziere direkt mit Anbietern – ohne Umwege.
                 </p>
               </div>
+              {/* Decorative corner */}
+              <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-full group-hover:scale-150 transition-transform duration-700" />
             </div>
           </div>
         </div>
       </section>
 
       {/* ════════════════════════════════════════════════════════════
-          HOW IT WORKS - Connected Timeline
+          HOW IT WORKS - Connected Timeline with animations
       ════════════════════════════════════════════════════════════ */}
-      <section className="relative mx-4 sm:mx-6 lg:mx-8 rounded-[2rem] overflow-hidden">
+      <section className="relative mx-4 sm:mx-6 lg:mx-8 rounded-[2.5rem] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-red-500/10 rounded-full blur-[100px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-red-500/10 rounded-full blur-[120px] animate-pulse-glow" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] animate-pulse-glow" style={{ animationDelay: "2s" }} />
 
-        <div className="relative z-10 px-6 sm:px-10 lg:px-16 py-16 md:py-24">
+        <div className="relative z-10 px-6 sm:px-10 lg:px-16 py-20 md:py-28">
           <div className="max-w-5xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-12 md:mb-16">
-              <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-white/80 text-xs font-bold uppercase tracking-wider mb-4">
+            <div className="text-center mb-14 md:mb-20">
+              <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 text-white/90 text-sm font-bold uppercase tracking-wider mb-5 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-colors cursor-default">
+                <Zap className="w-4 h-4" />
                 So einfach geht&apos;s
               </span>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-                In 3 Schritten zum Auto
+                In <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">3 Schritten</span> zum Auto
               </h2>
             </div>
 
             {/* Timeline Steps */}
             <div className="relative">
-              <div className="hidden md:block absolute top-16 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              {/* Animated connecting line */}
+              <div className="hidden md:block absolute top-16 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 w-1/3 animate-[shimmer_3s_ease-in-out_infinite]" />
+              </div>
 
-              <div className="grid md:grid-cols-3 gap-8 md:gap-6">
+              <div className="grid md:grid-cols-3 gap-10 md:gap-8">
                 {[
-                  { icon: Search, step: "01", title: "Durchsuchen", desc: "Finde dein Traumauto mit unseren intelligenten Filtern." },
-                  { icon: FileCheck, step: "02", title: "Anfragen", desc: "Sende eine unverbindliche Anfrage an den Anbieter." },
-                  { icon: Car, step: "03", title: "Losfahren", desc: "Nach erfolgreicher Prüfung übernimmst du das Auto." },
+                  { icon: Search, step: "01", title: "Durchsuchen", desc: "Finde dein Traumauto mit unseren intelligenten Filtern.", color: "from-red-500 to-orange-500" },
+                  { icon: FileCheck, step: "02", title: "Anfragen", desc: "Sende eine unverbindliche Anfrage an den Anbieter.", color: "from-blue-500 to-cyan-500" },
+                  { icon: Car, step: "03", title: "Losfahren", desc: "Nach erfolgreicher Prüfung übernimmst du das Auto.", color: "from-emerald-500 to-teal-500" },
                 ].map((item, i) => (
                   <div key={i} className="relative group">
-                    <div className="flex justify-center mb-6">
+                    <div className="flex justify-center mb-8">
                       <div className="relative">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-white/20 group-hover:scale-110 transition-all duration-300">
-                          <item.icon className="w-6 h-6 text-white" />
+                        {/* Glow effect */}
+                        <div className={`absolute -inset-4 bg-gradient-to-r ${item.color} rounded-3xl opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500`} />
+                        
+                        <div className="relative w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-white/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                          <item.icon className="w-7 h-7 text-white" />
                         </div>
-                        <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                        <span className={`absolute -top-2 -right-2 w-7 h-7 rounded-full bg-gradient-to-r ${item.color} text-white text-xs font-bold flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                           {item.step}
                         </span>
                       </div>
                     </div>
                     <div className="text-center">
-                      <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
-                      <p className="text-white/60 text-sm max-w-[250px] mx-auto">{item.desc}</p>
+                      <h3 className="text-xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/80 group-hover:bg-clip-text transition-all duration-300">{item.title}</h3>
+                      <p className="text-white/50 group-hover:text-white/70 text-sm max-w-[260px] mx-auto leading-relaxed transition-colors duration-300">{item.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="mt-12 md:mt-16 text-center">
+            <div className="mt-14 md:mt-20 text-center">
               <Link href="/suche">
-                <Button size="lg" className="bg-white text-neutral-900 hover:bg-neutral-100 font-bold rounded-xl px-8 shadow-2xl shadow-white/10 h-12">
+                <Button size="lg" className="bg-white text-neutral-900 hover:bg-neutral-100 font-bold rounded-2xl px-10 shadow-2xl shadow-white/20 h-14 text-base group hover:scale-105 transition-all duration-300">
                   Fahrzeuge entdecken
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
             </div>
@@ -374,33 +469,41 @@ export default function V2Home() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════
-          CTA BANNER - Full width gradient
+          CTA BANNER - Full width gradient with animations
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
-          <div className="relative bg-gradient-to-r from-red-500 via-red-500 to-rose-600 rounded-3xl p-8 md:p-12 overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-[60px]" />
+          <div className="relative bg-gradient-to-r from-red-500 via-red-500 to-rose-600 rounded-[2rem] p-10 md:p-14 overflow-hidden group hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-500">
+            {/* Animated background elements */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-[100px] group-hover:scale-150 transition-transform duration-700" />
+            <div className="absolute bottom-0 left-0 w-60 h-60 bg-black/10 rounded-full blur-[80px] group-hover:scale-125 transition-transform duration-700" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-orange-500/20 rounded-full blur-[100px] animate-pulse-glow" />
             
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 opacity-30">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_4s_ease-in-out_infinite]" />
+            </div>
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3">
                   Bereit loszufahren?
                 </h2>
-                <p className="text-white/80 text-base md:text-lg max-w-md">
+                <p className="text-white/80 text-lg md:text-xl max-w-lg">
                   Erstelle jetzt dein Inserat oder finde dein nächstes Traumauto.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/inserat-erstellen">
-                  <Button size="lg" className="bg-white text-red-600 hover:bg-neutral-100 font-bold rounded-xl px-6 shadow-xl h-12 w-full sm:w-auto">
+                  <Button size="lg" className="bg-white text-red-600 hover:bg-neutral-100 font-bold rounded-2xl px-8 shadow-2xl shadow-black/20 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 group/btn">
                     Inserat erstellen
+                    <Sparkles className="w-4 h-4 ml-2 group-hover/btn:rotate-12 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/suche">
-                  <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 font-bold rounded-xl px-6 h-12 w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/20 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm">
                     Alle Fahrzeuge
-                    <ChevronRight className="w-4 h-4 ml-1" />
+                    <ChevronRight className="w-5 h-5 ml-1" />
                   </Button>
                 </Link>
               </div>
