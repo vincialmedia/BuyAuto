@@ -31,13 +31,13 @@ export default function DashboardHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/buyauto-logo.png"
+              src="/buyauto-logo-full.png"
               alt="BuyAuto Logo"
-              width={140}
-              height={36}
-              className="h-8 w-auto"
+              width={160}
+              height={44}
+              className="h-10 w-auto"
               priority
-              sizes="140px"
+              sizes="160px"
             />
           </Link>
 

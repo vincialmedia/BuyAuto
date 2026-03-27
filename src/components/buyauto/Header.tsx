@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
-import { User, LogOut, Settings, BarChart3, Plus, Loader2, ConciergeBell, MessageSquare } from "lucide-react";
+import { User, LogOut, Settings, BarChart3, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -105,62 +105,65 @@ export default function Header() {
       <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 md:h-20 gap-2">
-            {/* Logo */}
-            <div className="flex-shrink-0 flex items-center relative z-50">
+            {/* Logo - Large and prominent, allowed to overflow */}
+            <div className="flex-shrink-0 flex items-center relative z-50 -my-6">
               <Link href="/" className="relative block">
                 <Image
-                  src="/buyauto-logo.png"
+                  src="/buyauto-logo-full.png"
                   alt="BuyAuto"
-                  width={220}
-                  height={60}
+                  width={420}
+                  height={120}
                   priority
-                  className="h-8 md:h-10 w-auto bg-transparent"
-                  sizes="(max-width: 768px) 120px, 160px"
+                  className="h-[120px] md:h-[144px] w-auto bg-transparent"
+                  sizes="(max-width: 768px) 330px, 420px"
                 />
               </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <Link 
-                href="/leasing-concierge" 
-                className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-2"
-              >
-                <ConciergeBell className="w-4 h-4" />
-                Leasing Concierge
-              </Link>
-              <Link 
-                href="/suche" 
-                className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
-              >
-                Fahrzeuge suchen
-              </Link>
+            <nav className="hidden md:flex items-center space-x-6">
+              {/* Inserat erstellen - FIRST with CHF0 badge */}
               <div className="relative">
                 <Link 
                   href={createListingHref}
                   onClick={handleCreateListingClick}
-                  className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-2"
+                  className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1.5"
                 >
+                  <Plus className="w-4 h-4" />
                   Inserat erstellen
                 </Link>
-                <span className="absolute -top-2 left-full ml-2 text-red-500 font-scribble text-lg font-bold rotate-[-8deg] whitespace-nowrap pointer-events-none">
-                  Ab CHF0.-
+                <span className="absolute -top-2 left-full ml-1 text-red-500 font-scribble text-sm font-bold rotate-[-8deg] whitespace-nowrap pointer-events-none">
+                  CHF0
                 </span>
               </div>
+              
+              {/* Leasingübernahmen */}
+              <Link 
+                href="/suche?deal_type=lease_takeover" 
+                className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
+              >
+                Leasingübernahmen
+              </Link>
+              
+              {/* Occasion & Neuwagen */}
+              <Link 
+                href="/suche?deal_type=direct_purchase" 
+                className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
+              >
+                Occasion & Neuwagen
+              </Link>
+              
+              {/* Leasing Suchen */}
+              <Link 
+                href="/suche?deal_type=garage_leasing" 
+                className="text-neutral-600 hover:text-red-500 font-medium transition-colors"
+              >
+                Leasing Suchen
+              </Link>
             </nav>
 
             {/* Mobile Action CTA - visible only on mobile */}
             <div className="flex md:hidden items-center flex-shrink-0 gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-10 w-10 border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 shadow-sm rounded-full"
-                asChild
-              >
-                <Link href="/leasing-concierge" aria-label="Leasing Concierge Service">
-                  <ConciergeBell className="h-5 w-5" />
-                </Link>
-              </Button>
               <Button
                 size="sm"
                 className="bg-red-500 hover:bg-red-600 text-white shadow-sm relative px-2 xs:px-3 py-2 text-xs font-medium"
@@ -212,7 +215,6 @@ export default function Header() {
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
-                    {/* Remove Message Center from desktop dropdown; mobile keeps it */}
                     {/* Admin link - only show for admin users */}
                     {isAdmin && (
                       <DropdownMenuItem asChild>
@@ -233,21 +235,12 @@ export default function Header() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <div className="flex items-center space-x-3">
-                  <Button
-                    variant="ghost"
-                    asChild
-                    className="text-neutral-600 hover:text-red-500 hover:bg-transparent transition-colors"
-                  >
-                    <Link href="/auth">Anmelden</Link>
-                  </Button>
-                  <Button
-                    asChild
-                    className="bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
-                  >
-                    <Link href="/auth">Registrieren</Link>
-                  </Button>
-                </div>
+                <Button
+                  asChild
+                  className="bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
+                >
+                  <Link href="/auth">Anmelden</Link>
+                </Button>
               )}
             </div>
 
@@ -269,8 +262,33 @@ export default function Header() {
           </div>
 
           {/* Mobile Navigation Menu */}
-          <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+          <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
             <nav className="pb-4 pt-2 space-y-2 border-t border-neutral-200">
+              {/* Search Links */}
+              <Link 
+                href="/suche?deal_type=lease_takeover" 
+                className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Leasingübernahmen
+              </Link>
+              <Link 
+                href="/suche?deal_type=direct_purchase" 
+                className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Occasion & Neuwagen
+              </Link>
+              <Link 
+                href="/suche?deal_type=garage_leasing" 
+                className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Leasing Suchen
+              </Link>
+              
+              <div className="border-t border-neutral-100 my-2"></div>
+
               {loading ? (
                 /* Mobile loading state */
                 <div className="px-4 py-2">
@@ -290,7 +308,7 @@ export default function Header() {
                     className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Message Center
+                    Nachrichten
                   </Link>
                   {/* Admin link in mobile menu - only show for admin users */}
                   {isAdmin && (
@@ -313,22 +331,13 @@ export default function Header() {
                   </button>
                 </>
               ) : (
-                <>
-                  <Link 
-                    href="/auth" 
-                    className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Anmelden
-                  </Link>
-                  <Link 
-                    href="/auth" 
-                    className="block px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors text-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Registrieren
-                  </Link>
-                </>
+                <Link 
+                  href="/auth" 
+                  className="block px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors text-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Anmelden
+                </Link>
               )}
             </nav>
           </div>
