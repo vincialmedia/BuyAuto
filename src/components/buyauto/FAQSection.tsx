@@ -115,21 +115,20 @@ export default function FAQSection() {
       </Head>
       
       <section className="py-24 md:py-32 px-4 bg-gradient-to-b from-white via-neutral-50 to-white relative overflow-hidden">
-        {/* Background decorations */}
+        {/* Subtle background decorations - Red/Neutral only */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-red-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s", animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-orange-500/3 to-red-500/3 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-neutral-200/50 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s", animationDelay: "1s" }} />
         
         <div className="max-w-4xl mx-auto relative z-10">
           {/* Section header */}
           <div className="text-center mb-16">
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-red-500/10 to-orange-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5 hover:scale-105 transition-transform cursor-default">
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5 hover:scale-105 transition-transform cursor-default">
               <HelpCircle className="w-4 h-4" />
               FAQ
             </span>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-neutral-900 mb-5 tracking-tight">
               Häufig gestellte{" "}
-              <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">Fragen</span>
+              <span className="text-red-500">Fragen</span>
             </h2>
             <p className="text-lg md:text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed">
               Alles was du über Leasingübernahmen in der Schweiz wissen musst
@@ -153,7 +152,7 @@ export default function FAQSection() {
               >
                 <AccordionTrigger className="text-left font-bold text-neutral-900 hover:no-underline py-6 md:py-7 hover:text-red-600 transition-colors duration-200 text-base md:text-lg leading-relaxed gap-4 [&[data-state=open]>svg]:text-red-500">
                   <span className="flex items-start gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-200 group-data-[state=open]:from-red-500 group-data-[state=open]:to-orange-500 flex items-center justify-center transition-all duration-300">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-xl bg-neutral-100 group-data-[state=open]:bg-red-500 flex items-center justify-center transition-all duration-300">
                       <span className="text-sm font-black text-neutral-400 group-data-[state=open]:text-white transition-colors">
                         {index + 1}
                       </span>
@@ -175,7 +174,7 @@ export default function FAQSection() {
             <p className="text-neutral-500 mb-4">Hast du weitere Fragen?</p>
             <Link 
               href="/leasinguebernahme"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold hover:shadow-lg hover:shadow-red-500/25 hover:scale-105 transition-all duration-300"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/25 hover:scale-105 transition-all duration-300"
             >
               <Sparkles className="w-4 h-4" />
               Zum vollständigen Ratgeber

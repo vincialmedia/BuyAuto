@@ -3,18 +3,18 @@ import Image from "next/image";
 export function FounderStory() {
   return (
     <section className="py-20 sm:py-28 bg-white relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-red-500/5 to-orange-500/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 rounded-full blur-3xl" />
+      {/* Subtle background decorations - Neutral/Red only */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-72 h-72 bg-neutral-200/50 rounded-full blur-3xl" />
       
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid lg:grid-cols-[1fr,300px] gap-12 lg:gap-16 items-center">
           
-          {/* Founder Image - Mobile: Top, centered, round / Desktop: Right, rectangular */}
+          {/* Founder Image */}
           <div className="flex justify-center lg:block lg:order-last">
             <div className="relative group">
               {/* Glow effect on hover */}
-              <div className="absolute -inset-4 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-full lg:rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute -inset-4 bg-red-500/10 rounded-full lg:rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
               <div className="relative w-48 h-48 lg:w-full lg:h-auto lg:aspect-[4/5] rounded-full lg:rounded-3xl overflow-hidden border-4 border-neutral-100 lg:border-0 shadow-2xl group-hover:shadow-3xl transition-all duration-500 group-hover:scale-[1.02]">
                 <Image
@@ -39,12 +39,12 @@ export function FounderStory() {
           {/* Text Content */}
           <div className="space-y-6 text-center lg:text-left">
             <div>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-red-500/10 to-orange-500/10 text-red-600 text-xs font-bold uppercase tracking-wider mb-4 hover:scale-105 transition-transform cursor-default">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-600 text-xs font-bold uppercase tracking-wider mb-4 hover:scale-105 transition-transform cursor-default">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                 Die Geschichte
               </span>
               <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-neutral-900">
-                Über <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">BuyAuto</span>
+                Über <span className="text-red-500">BuyAuto</span>
               </h2>
             </div>
             
@@ -59,9 +59,9 @@ export function FounderStory() {
                 BuyAuto ist eine Plattform, die ausschliesslich für Leasingübernahmen entwickelt wurde – klar strukturiert, benutzerfreundlich und auf maximale Sichtbarkeit ausgelegt.
               </p>
               
-              <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-2xl p-5 border border-neutral-200 hover:border-red-200 hover:shadow-lg hover:shadow-red-500/5 transition-all duration-300 group">
+              <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-200 hover:border-red-200 hover:shadow-lg hover:shadow-red-500/5 transition-all duration-300 group">
                 <p className="font-bold text-neutral-900 text-base mb-2 flex items-center gap-2">
-                  <span className="w-1.5 h-6 bg-gradient-to-b from-red-500 to-orange-500 rounded-full" />
+                  <span className="w-1.5 h-6 bg-red-500 rounded-full" />
                   Kurz gesagt:
                 </p>
                 <p className="text-neutral-600 group-hover:text-neutral-700 transition-colors">
@@ -72,7 +72,7 @@ export function FounderStory() {
             </div>
             
             <div className="pt-4 flex items-center gap-4 justify-center lg:justify-start">
-              <div className="w-12 h-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded-full" />
+              <div className="w-12 h-0.5 bg-red-500 rounded-full" />
               <div>
                 <p className="text-neutral-900 font-black text-lg">
                   Vincent Hänggi
