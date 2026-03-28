@@ -73,7 +73,7 @@ export function WhyBuyAutoSection() {
   return (
     <section 
       ref={sectionRef}
-      className="relative py-24 sm:py-32 overflow-hidden"
+      className="relative py-16 sm:py-20 overflow-hidden"
     >
       {/* Subtle Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-white via-neutral-50 to-white" />
@@ -165,7 +165,7 @@ export function WhyBuyAutoSection() {
 
         {/* Bottom Decorative Element */}
         <div 
-          className={`flex justify-center mt-16 transition-all duration-1000 delay-700 ${
+          className={`flex justify-center mt-12 transition-all duration-1000 delay-700 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >

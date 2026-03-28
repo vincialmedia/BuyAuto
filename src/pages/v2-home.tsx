@@ -188,7 +188,7 @@ export default function V2Home() {
       {/* ════════════════════════════════════════════════════════════
           HOW IT WORKS - 3 Steps
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-neutral-50 to-white" />
         <div className="absolute top-20 left-10 w-72 h-72 bg-red-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
@@ -267,7 +267,7 @@ export default function V2Home() {
           </div>
 
           {/* CTA */}
-          <div className="mt-14 md:mt-16 text-center">
+          <div className="mt-12 text-center">
             <Link href="/suche">
               <Button size="lg" className="bg-neutral-900 text-white hover:bg-neutral-800 font-bold rounded-2xl px-10 shadow-xl hover:shadow-2xl h-14 text-base group hover:scale-105 transition-all duration-300">
                 Jetzt Fahrzeuge entdecken
@@ -281,7 +281,7 @@ export default function V2Home() {
       {/* ════════════════════════════════════════════════════════════
           CTA BANNER - Red with clean design
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8">
+      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="relative bg-red-500 rounded-[2rem] p-10 md:p-14 overflow-hidden group hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-500">
             {/* Background elements */}
