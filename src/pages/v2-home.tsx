@@ -299,7 +299,7 @@ export default function V2Home() {
                   Bereit loszufahren?
                 </h2>
                 <p className="text-white/80 text-lg md:text-xl max-w-lg">
-                  Erstelle jetzt dein Inserat oder finde dein nächstes Traumauto.
+                  Erstelle jetzt dein Inserat oder finde dein nächstes passendes Auto.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -310,7 +310,7 @@ export default function V2Home() {
                   </Button>
                 </Link>
                 <Link href="/suche">
-                  <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/20 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm">
+                  <Button size="lg" className="bg-white/20 border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm">
                     Alle Fahrzeuge
                     <ChevronRight className="w-5 h-5 ml-1" />
                   </Button>
