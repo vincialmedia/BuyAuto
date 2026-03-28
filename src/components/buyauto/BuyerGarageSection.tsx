@@ -4,9 +4,16 @@ import {
   Check,
   ArrowRight,
   Car,
-  Users
+  PenLine,
+  Info
 } from "lucide-react";
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function BuyerGarageSection() {
   return (
@@ -79,7 +86,7 @@ export function BuyerGarageSection() {
             </div>
           </div>
 
-          {/* Right Card - Für Garagen */}
+          {/* Right Card - Für Verkäufer */}
           <div className="group relative bg-neutral-900 rounded-3xl p-8 lg:p-10 border border-neutral-800 hover:border-neutral-700 transition-all duration-500 hover:shadow-2xl hover:shadow-red-500/10 hover:-translate-y-1">
             {/* Animated background glow */}
             <div className="absolute inset-0 rounded-3xl overflow-hidden">
@@ -95,7 +102,7 @@ export function BuyerGarageSection() {
 
               {/* Title */}
               <h3 className="text-2xl font-bold text-white mb-4">
-                Für Garagen
+                Für Verkäufer
               </h3>
 
               {/* Description */}
@@ -104,24 +111,53 @@ export function BuyerGarageSection() {
               </p>
 
               {/* Bullet Points */}
-              <ul className="space-y-3 mb-8">
-                {["Mehr Sichtbarkeit", "Strukturierte Inserate", "Deal Chat mit dem Interessenten"].map((item, index) => (
-                  <li key={index} className="flex items-center gap-3 group/item">
+              <TooltipProvider delayDuration={200}>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center gap-3 group/item">
                     <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
                       <Check className="w-3.5 h-3.5 text-red-400" />
                     </span>
-                    <span className="text-neutral-300 font-medium">{item}</span>
+                    <span className="text-neutral-300 font-medium">Qualifizierte Anfragen</span>
                   </li>
-                ))}
-              </ul>
+                  
+                  <li className="flex items-center gap-3 group/item">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
+                      <Check className="w-3.5 h-3.5 text-red-400" />
+                    </span>
+                    <span className="text-neutral-300 font-medium flex items-center gap-1.5">
+                      Eingebauter Chat
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-help">
+                            <span className="text-[10px] text-neutral-400">*</span>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent 
+                          side="top" 
+                          className="bg-neutral-900 border-neutral-700 text-white text-sm px-3 py-2 rounded-lg shadow-xl"
+                        >
+                          <p>Chat Daten in CH gespeichert</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
+                  </li>
+                  
+                  <li className="flex items-center gap-3 group/item">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
+                      <Check className="w-3.5 h-3.5 text-red-400" />
+                    </span>
+                    <span className="text-neutral-300 font-medium">Mehr Sichtbarkeit</span>
+                  </li>
+                </ul>
+              </TooltipProvider>
 
               {/* CTA Button */}
               <Link 
-                href="/garage-plan"
+                href="/inserat-erstellen"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-all duration-300 group/btn hover:shadow-lg hover:shadow-red-500/30"
               >
-                <Users className="w-5 h-5" />
-                Als Garage inserieren
+                <PenLine className="w-5 h-5" />
+                Jetzt Inserieren
                 <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
               </Link>
             </div>
