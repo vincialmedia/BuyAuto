@@ -186,155 +186,94 @@ export default function V2Home() {
       <BuyerGarageSection />
 
       {/* ════════════════════════════════════════════════════════════
-          WHY BUYAUTO - Bold 3-card layout
+          HOW IT WORKS - 3 Steps
       ════════════════════════════════════════════════════════════ */}
       <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        {/* Subtle background blobs */}
+        {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-neutral-50 to-white" />
-        <div className="absolute top-20 left-10 w-72 h-72 bg-red-500/5 rounded-full blur-3xl animate-pulse-glow" />
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-neutral-200/50 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-red-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
+        <div className="absolute bottom-20 right-10 w-72 h-72 bg-neutral-200/50 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s", animationDelay: "1s" }} />
         
-        <div className="max-w-6xl mx-auto relative z-10">
+        <div className="max-w-5xl mx-auto relative z-10">
           {/* Section Header */}
-          <div className="text-center mb-12 md:mb-16">
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5 hover:scale-105 transition-transform cursor-default">
-              <Sparkles className="w-4 h-4 animate-pulse" />
-              Deine Vorteile
+          <div className="text-center mb-14 md:mb-20">
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5 hover:bg-red-500/20 transition-colors cursor-default">
+              <Zap className="w-4 h-4" />
+              So einfach geht&apos;s
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-neutral-900 tracking-tight">
-              Alles unter <span className="text-red-500">einem Dach</span>
+              So funktioniert <span className="text-red-500">BuyAuto</span>
             </h2>
           </div>
 
-          {/* 3 Bold Feature Cards */}
-          <div className="grid md:grid-cols-3 gap-5 md:gap-6">
-            {/* Card 1 - Dark */}
-            <div className="group relative bg-neutral-900 rounded-[2rem] p-7 md:p-9 overflow-hidden min-h-[300px] flex flex-col justify-end cursor-default hover:-translate-y-2 hover:rotate-1 transition-all duration-500">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-red-500/20 rounded-full blur-[80px] group-hover:bg-red-500/40 group-hover:scale-150 transition-all duration-700" />
-              <div className="absolute top-6 right-6 transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
-                <CreditCard className="w-12 h-12 text-white/10 group-hover:text-white/30" />
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-red-500/20 backdrop-blur-sm flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-red-500/30 transition-all duration-300">
-                  <TrendingUp className="w-7 h-7 text-red-400" />
-                </div>
-                <h3 className="text-2xl md:text-2xl font-bold text-white mb-3">Transparente Kosten</h3>
-                <p className="text-white/60 group-hover:text-white/80 text-base leading-relaxed transition-colors duration-300">
-                  Monatsrate, Restlaufzeit, Kilometer – alles auf einen Blick.
-                </p>
-              </div>
-              {/* Bottom accent line */}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+          {/* 3 Steps */}
+          <div className="relative">
+            {/* Connecting line - desktop */}
+            <div className="hidden md:block absolute top-16 left-[16.67%] right-[16.67%] h-0.5 bg-neutral-200">
+              <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-red-500 to-transparent w-0 group-hover:w-full transition-all duration-1000" />
             </div>
 
-            {/* Card 2 - Red */}
-            <div className="group relative bg-red-500 rounded-[2rem] p-7 md:p-9 overflow-hidden min-h-[300px] flex flex-col justify-end cursor-default hover:-translate-y-2 hover:-rotate-1 transition-all duration-500 shadow-xl shadow-red-500/20 hover:shadow-2xl hover:shadow-red-500/30">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-[60px] group-hover:scale-150 transition-all duration-700" />
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-black/10 rounded-full blur-[40px]" />
-              <div className="absolute top-6 right-6 transform group-hover:-rotate-12 group-hover:scale-110 transition-all duration-500">
-                <Clock className="w-12 h-12 text-white/20 group-hover:text-white/40" />
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-white/30 transition-all duration-300">
-                  <Clock className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-2xl md:text-2xl font-bold text-white mb-3">Flexible Laufzeiten</h3>
-                <p className="text-white/80 group-hover:text-white text-base leading-relaxed transition-colors duration-300">
-                  Von wenigen Monaten bis mehrere Jahre – du entscheidest.
-                </p>
-              </div>
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_ease-in-out_infinite]" />
-              </div>
-            </div>
-
-            {/* Card 3 - White */}
-            <div className="group relative bg-white rounded-[2rem] p-7 md:p-9 overflow-hidden min-h-[300px] flex flex-col justify-end shadow-xl shadow-neutral-200/60 hover:shadow-2xl hover:shadow-neutral-300/60 cursor-default hover:-translate-y-2 hover:rotate-1 transition-all duration-500 border border-neutral-200 hover:border-red-200">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-red-500/5 rounded-full blur-[50px] group-hover:scale-150 group-hover:bg-red-500/10 transition-all duration-700" />
-              <div className="absolute top-6 right-6 transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
-                <MessageCircle className="w-12 h-12 text-neutral-100 group-hover:text-red-100" />
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-neutral-100 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-red-500 transition-all duration-300">
-                  <Users className="w-7 h-7 text-neutral-700 group-hover:text-white transition-colors duration-300" />
-                </div>
-                <h3 className="text-2xl md:text-2xl font-bold text-neutral-900 mb-3">Direkter Kontakt</h3>
-                <p className="text-neutral-500 group-hover:text-neutral-700 text-base leading-relaxed transition-colors duration-300">
-                  Kommuniziere direkt mit Anbietern – ohne Umwege.
-                </p>
-              </div>
-              {/* Bottom accent line */}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════════════════════════════
-          HOW IT WORKS - Dark section with red accents
-      ════════════════════════════════════════════════════════════ */}
-      <section className="relative mx-4 sm:mx-6 lg:mx-8 rounded-[2.5rem] overflow-hidden">
-        <div className="absolute inset-0 bg-neutral-900" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-red-500/10 rounded-full blur-[120px] animate-pulse-glow" />
-
-        <div className="relative z-10 px-6 sm:px-10 lg:px-16 py-20 md:py-28">
-          <div className="max-w-5xl mx-auto">
-            {/* Header */}
-            <div className="text-center mb-14 md:mb-20">
-              <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 text-white/90 text-sm font-bold uppercase tracking-wider mb-5 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-colors cursor-default">
-                <Zap className="w-4 h-4" />
-                So einfach geht&apos;s
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-                In <span className="text-red-500">3 Schritten</span> zum Auto
-              </h2>
-            </div>
-
-            {/* Timeline Steps */}
-            <div className="relative">
-              {/* Connecting line */}
-              <div className="hidden md:block absolute top-16 left-0 right-0 h-0.5 bg-white/10 overflow-hidden">
-                <div className="absolute inset-0 bg-red-500 w-1/3 animate-[shimmer_3s_ease-in-out_infinite]" />
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-10 md:gap-8">
-                {[
-                  { icon: Search, step: "01", title: "Durchsuchen", desc: "Finde dein Traumauto mit unseren intelligenten Filtern." },
-                  { icon: FileCheck, step: "02", title: "Anfragen", desc: "Sende eine unverbindliche Anfrage an den Anbieter." },
-                  { icon: Car, step: "03", title: "Losfahren", desc: "Nach erfolgreicher Prüfung übernimmst du das Auto." },
-                ].map((item, i) => (
-                  <div key={i} className="relative group">
-                    <div className="flex justify-center mb-8">
+            <div className="grid md:grid-cols-3 gap-8 md:gap-6">
+              {[
+                { 
+                  step: "01", 
+                  title: "Weg wählen", 
+                  desc: "Entscheide, ob du kaufen, leasen, im Auto-Abo fahren oder eine Leasingübernahme suchst.",
+                  icon: Car
+                },
+                { 
+                  step: "02", 
+                  title: "Angebote vergleichen", 
+                  desc: "Filtere nach Marke, Modell, Preis, Laufzeit und Anbieter.",
+                  icon: Search
+                },
+                { 
+                  step: "03", 
+                  title: "Kontakt aufnehmen", 
+                  desc: "Tritt direkt mit dem Anbieter oder der Garage in Kontakt und bring den Deal ins Rollen.",
+                  icon: MessageCircle
+                },
+              ].map((item, i) => (
+                <div key={i} className="group relative">
+                  {/* Card */}
+                  <div className="relative bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl border border-neutral-200 hover:border-red-200 transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+                    {/* Hover glow */}
+                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-red-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    
+                    {/* Step number badge */}
+                    <div className="flex justify-center mb-6">
                       <div className="relative">
-                        {/* Glow effect */}
-                        <div className="absolute -inset-4 bg-red-500 rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-500" />
-                        
-                        <div className="relative w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-white/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                          <item.icon className="w-7 h-7 text-white" />
+                        <div className="w-16 h-16 rounded-2xl bg-neutral-100 group-hover:bg-red-500 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                          <item.icon className="w-7 h-7 text-neutral-600 group-hover:text-white transition-colors duration-300" />
                         </div>
                         <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                           {item.step}
                         </span>
                       </div>
                     </div>
-                    <div className="text-center">
-                      <h3 className="text-xl font-bold text-white mb-3 group-hover:text-red-400 transition-colors duration-300">{item.title}</h3>
-                      <p className="text-white/50 group-hover:text-white/70 text-sm max-w-[260px] mx-auto leading-relaxed transition-colors duration-300">{item.desc}</p>
+                    
+                    {/* Content */}
+                    <div className="text-center relative z-10">
+                      <h3 className="text-xl font-bold text-neutral-900 mb-3 group-hover:text-red-600 transition-colors duration-300">{item.title}</h3>
+                      <p className="text-neutral-500 text-sm leading-relaxed max-w-[280px] mx-auto">{item.desc}</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            <div className="mt-14 md:mt-20 text-center">
-              <Link href="/suche">
-                <Button size="lg" className="bg-white text-neutral-900 hover:bg-neutral-100 font-bold rounded-2xl px-10 shadow-2xl shadow-white/20 h-14 text-base group hover:scale-105 transition-all duration-300">
-                  Fahrzeuge entdecken
-                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+                    {/* Bottom accent line */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-14 md:mt-16 text-center">
+            <Link href="/suche">
+              <Button size="lg" className="bg-neutral-900 text-white hover:bg-neutral-800 font-bold rounded-2xl px-10 shadow-xl hover:shadow-2xl h-14 text-base group hover:scale-105 transition-all duration-300">
+                Jetzt Fahrzeuge entdecken
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
