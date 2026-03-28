@@ -1,10 +1,11 @@
 import { 
   Car, 
-  BarChart3, 
+  Calculator, 
   MessageSquare, 
   MapPin, 
-  Eye, 
+  Coins, 
   Sparkles,
+  Wrench,
   LucideIcon
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -22,9 +23,9 @@ const valueCards: ValueCard[] = [
     description: "Kauf, Leasing, Auto-Abo und Leasingübernahme – alles auf einer Plattform."
   },
   {
-    icon: BarChart3,
-    title: "Einfach vergleichen",
-    description: "Vergleiche Preise, Laufzeiten und Angebote schneller und übersichtlicher."
+    icon: Calculator,
+    title: "Leasing Direkt Berechnen",
+    description: "Berechne Leasingkosten direkt im Inserat und frage gleich nach dem berechneten Angebot."
   },
   {
     icon: MessageSquare,
@@ -37,14 +38,14 @@ const valueCards: ValueCard[] = [
     description: "Relevante Angebote aus der ganzen Schweiz, passend für den Schweizer Markt."
   },
   {
-    icon: Eye,
-    title: "Mehr Transparenz",
-    description: "Klare Angaben statt komplizierter Prozesse und unübersichtlicher Plattformen."
+    icon: Coins,
+    title: "Attraktive Konditionen",
+    description: "Faire Preise, transparente Gebühren und ein Marktplatz, der auf Mehrwert für dich ausgelegt ist."
   },
   {
-    icon: Sparkles,
+    icon: Wrench,
     title: "Moderne Tools",
-    description: "Strukturierte Inserate, bessere Übersicht und ein einfacher Deal-Prozess."
+    description: "Analyse Tools, Finanzierung Tools, Eingebauter Chat, Deal Tools und Website Tools."
   }
 ];
 
