@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Shield, Zap, CheckCircle, TrendingUp,
-  CreditCard, Clock, Search, FileCheck, Car, ArrowRight, Users, MessageCircle, ChevronRight, Sparkles
+  CreditCard, Clock, Search, FileCheck, Car, ArrowRight, Users, MessageCircle, ChevronRight, Sparkles, MapPin, Calculator
 } from "lucide-react";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import PremiumListings from "@/components/buyauto/PremiumListings";
@@ -196,10 +196,10 @@ export default function V2Home() {
           <div className="md:hidden">
             <div className="flex gap-4 px-4 overflow-x-auto scrollbar-hide pb-4" style={{ scrollSnapType: "x mandatory" }}>
               {[
-                { icon: Shield, title: "Geprüfte Angebote", desc: "Jedes Inserat wird von uns überprüft" },
-                { icon: MessageCircle, title: "Direkter Kontakt", desc: "Kommuniziere direkt mit Anbietern" },
-                { icon: Zap, title: "Schnell & Einfach", desc: "In wenigen Minuten zum Traumauto" },
-                { icon: CheckCircle, title: "Swiss Made", desc: "Deine Daten bleiben in der Schweiz" },
+                { icon: MapPin, title: "Für den Schweizer Markt entwickelt", desc: "Relevante Angebote aus der ganzen Schweiz" },
+                { icon: Car, title: "Alle Kaufarten an einem Ort", desc: "Kauf, Leasing, Übernahme und Abo" },
+                { icon: MessageCircle, title: "Kommunikation direkt auf BuyAuto", desc: "Chat mit Anbietern ohne Umwege" },
+                { icon: Calculator, title: "Finanzierung direkt berechnen", desc: "Leasingraten und Kosten transparent" },
               ].map((item, i) => (
                 <div 
                   key={i} 
@@ -224,10 +224,10 @@ export default function V2Home() {
           {/* Desktop: Grid */}
           <div className="hidden md:grid md:grid-cols-4 gap-5 px-4 sm:px-6 lg:px-8">
             {[
-              { icon: Shield, title: "Geprüfte Angebote", desc: "Qualitätskontrolle" },
-              { icon: MessageCircle, title: "Direkter Kontakt", desc: "Ohne Zwischenhändler" },
-              { icon: Zap, title: "Schnell & Einfach", desc: "In Minuten online" },
-              { icon: CheckCircle, title: "Swiss Made", desc: "Daten in der Schweiz" },
+              { icon: MapPin, title: "Für den Schweizer Markt entwickelt", desc: "Relevante Angebote aus der ganzen Schweiz" },
+              { icon: Car, title: "Alle Kaufarten an einem Ort", desc: "Kauf, Leasing, Übernahme und Abo" },
+              { icon: MessageCircle, title: "Kommunikation direkt auf BuyAuto", desc: "Chat mit Anbietern ohne Umwege" },
+              { icon: Calculator, title: "Finanzierung direkt berechnen", desc: "Leasingraten und Kosten transparent" },
             ].map((item, i) => (
               <div 
                 key={i} 
