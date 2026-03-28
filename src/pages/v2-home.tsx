@@ -186,46 +186,6 @@ export default function V2Home() {
       <BuyerGarageSection />
 
       {/* ════════════════════════════════════════════════════════════
-          STATS BAR - Clean with subtle hover effects
-      ════════════════════════════════════════════════════════════ */}
-      <section className="py-12 md:py-16 relative overflow-hidden">
-        {/* Subtle background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-neutral-100 via-white to-neutral-100" />
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-64 h-64 bg-red-500/5 rounded-full blur-3xl animate-pulse-glow" />
-          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-neutral-300/30 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
-        </div>
-        
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center justify-between md:justify-center md:gap-16 text-center">
-            {[
-              { value: "500+", label: "Fahrzeuge" },
-              { value: "50+", label: "Garagen" },
-              { value: "100%", label: "Schweiz" },
-              { value: "24/7", label: "Online" },
-            ].map((stat, i) => (
-              <div 
-                key={i} 
-                className="group cursor-default relative"
-              >
-                {/* Hover glow effect */}
-                <div className="absolute -inset-4 bg-red-500 rounded-2xl opacity-0 group-hover:opacity-5 blur-xl transition-all duration-500" />
-                
-                <div className="relative">
-                  <p className="text-3xl sm:text-4xl md:text-5xl font-black text-neutral-900 group-hover:text-red-500 group-hover:scale-110 transition-all duration-300">
-                    {stat.value}
-                  </p>
-                  <p className="text-xs sm:text-sm text-neutral-500 font-semibold mt-1 group-hover:text-neutral-700 transition-colors">
-                    {stat.label}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════════════════════════════
           VALUE PROPS - Clean cards with red accents
       ════════════════════════════════════════════════════════════ */}
       <section className="py-10 md:py-16 relative overflow-hidden">
