@@ -10,6 +10,7 @@ import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { FounderStory } from "@/components/buyauto/FounderStory";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
+import { BuyerGarageSection } from "@/components/buyauto/BuyerGarageSection";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 
@@ -178,6 +179,11 @@ export default function V2Home() {
           WHY BUYAUTO - 6-Card Value Proposition Grid
       ════════════════════════════════════════════════════════════ */}
       <WhyBuyAutoSection />
+
+      {/* ════════════════════════════════════════════════════════════
+          BUYER & GARAGE SECTION - Two Column Value Props
+      ════════════════════════════════════════════════════════════ */}
+      <BuyerGarageSection />
 
       {/* ════════════════════════════════════════════════════════════
           STATS BAR - Clean with subtle hover effects
