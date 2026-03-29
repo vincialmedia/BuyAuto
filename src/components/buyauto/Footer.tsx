@@ -68,9 +68,9 @@ export function Footer() {
               <Image
                 src="/buyauto-logo-full.png"
                 alt="BuyAuto"
-                width={160}
-                height={44}
-                className="h-9 w-auto bg-transparent"
+                width={320}
+                height={88}
+                className="h-14 sm:h-16 w-auto bg-transparent"
                 priority={false}
               />
             </Link>
