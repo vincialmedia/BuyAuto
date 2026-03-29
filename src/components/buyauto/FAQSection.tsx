@@ -4,88 +4,44 @@ import { useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Head from "next/head";
 import Link from "next/link";
-import { HelpCircle, Sparkles, ChevronRight } from "lucide-react";
+import { HelpCircle, ArrowRight, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const faqs = [
   {
     id: "faq-1",
-    question: "Was ist eine Leasingübernahme?",
-    answer: "Eine Leasingübernahme in der Schweiz bedeutet, dass du einen bestehenden Auto-Leasingvertrag von einer anderen Person übernimmst, statt ein neues Leasing abzuschliessen. Du wirst dabei als neue:r Leasingnehmer:in in den Vertrag eingetragen und übernimmst die noch verbleibende Laufzeit, die vereinbarten Kilometer und den Restwert. Der grosse Vorteil: Die teure Anfangsphase des Leasings ist bereits bezahlt, sodass du oft von tieferen Raten und einer kürzeren Restlaufzeit profitierst. Für viele ist die Leasingübernahme die flexibelste Lösung zwischen Kauf, Neu-Leasing und Auto-Abo – besonders, wenn du ein gut ausgestattetes Fahrzeug suchst und nicht jahrelang gebunden sein willst.\n\nEine ausführliche Erklärung findest du in unserem Ratgeber zur Leasingübernahme.",
-    answerJSX: (
-      <>
-        Eine Leasingübernahme in der Schweiz bedeutet, dass du einen bestehenden Auto-Leasingvertrag von einer anderen Person übernimmst, statt ein neues Leasing abzuschliessen. Du wirst dabei als neue:r Leasingnehmer:in in den Vertrag eingetragen und übernimmst die noch verbleibende Laufzeit, die vereinbarten Kilometer und den Restwert. Der grosse Vorteil: Die teure Anfangsphase des Leasings ist bereits bezahlt, sodass du oft von tieferen Raten und einer kürzeren Restlaufzeit profitierst.
-        <br /><br />
-        Eine ausführliche Erklärung findest du in unserem{" "}
-        <Link href="/leasinguebernahme" className="text-red-500 hover:text-red-600 underline underline-offset-2 font-semibold transition-colors">
-          Ratgeber zur Leasingübernahme
-        </Link>
-        .
-      </>
-    )
+    question: "Was ist BuyAuto?",
+    answer: "BuyAuto ist eine Schweizer Plattform, auf der du Occasionen, Neuwagen, Leasingangebote, Auto-Abos und Leasingübernahmen finden kannst – alles an einem Ort."
   },
   {
     id: "faq-2",
-    question: "Wie funktioniert eine Leasingübernahme mit BuyAuto?",
-    answer: "Die Leasingübernahme über BuyAuto.ch funktioniert in wenigen einfachen Schritten. Zuerst suchst du auf unserer Plattform nach einem passenden Leasingauto in der Schweiz, das zur Übernahme angeboten wird. Sobald du ein interessantes Fahrzeug gefunden hast, kontaktierst du die aktuelle Leasingnehmerin oder den Leasingnehmer direkt über BuyAuto. Danach prüft die Leasinggesellschaft deine Bonität und entscheidet, ob du den bestehenden Leasingvertrag übernehmen darfst. Wenn alles passt, wird der Vertrag offiziell auf dich übertragen – inklusive Restlaufzeit, Kilometerlimit und vereinbartem Restwert. Anschliessend erfolgt die Fahrzeugübergabe und du kannst sofort losfahren.\n\nEine ausführliche Schritt-für-Schritt-Anleitung findest du auf unserer Seite zur Leasingübernahme.",
-    answerJSX: (
-      <>
-        Die Leasingübernahme über BuyAuto.ch funktioniert in wenigen einfachen Schritten. Zuerst suchst du auf unserer Plattform nach einem passenden Leasingauto in der Schweiz. Sobald du ein interessantes Fahrzeug gefunden hast, kontaktierst du die aktuelle Leasingnehmerin oder den Leasingnehmer direkt über BuyAuto. Danach prüft die Leasinggesellschaft deine Bonität und entscheidet, ob du den bestehenden Leasingvertrag übernehmen darfst.
-        <br /><br />
-        Eine ausführliche Schritt-für-Schritt-Anleitung findest du auf unserer{" "}
-        <Link href="/leasinguebernahme" className="text-red-500 hover:text-red-600 underline underline-offset-2 font-semibold transition-colors">
-          Seite zur Leasingübernahme
-        </Link>
-        .
-      </>
-    )
+    question: "Welche Fahrzeuge finde ich auf BuyAuto?",
+    answer: "Auf BuyAuto findest du Fahrzeuge von Privatpersonen und Garagen aus der ganzen Schweiz – je nach Inserat zum Kauf, Leasing, Auto-Abo oder zur Leasingübernahme."
   },
   {
     id: "faq-3",
-    question: "Welche Voraussetzungen muss ich für eine Leasingübernahme erfüllen?",
-    answer: "Um eine Leasingübernahme in der Schweiz machen zu können, brauchst du vor allem eine stabile finanzielle Situation und eine positive Bonitätsprüfung. Die Leasinggesellschaft prüft dabei dein Einkommen, deine laufenden Verpflichtungen und mögliche Einträge im Betreibungsregister. Wichtig ist ausserdem, dass du volljährig bist und einen festen Wohnsitz in der Schweiz hast, da der bestehende Auto-Leasingvertrag vollständig auf dich übertragen wird. Je besser deine finanzielle Ausgangslage, desto höher die Chance, dass die Bank deine Anfrage akzeptiert. Falls du dir unsicher bist, ob du alle Anforderungen erfüllst, lohnt sich ein Blick in unseren ausführlichen Leitfaden zur Leasingübernahme.\n\nMehr Details findest du in unserem Ratgeber zu den Voraussetzungen der Leasingübernahme.",
-    answerJSX: (
-      <>
-        Um eine Leasingübernahme in der Schweiz machen zu können, brauchst du vor allem eine stabile finanzielle Situation und eine positive Bonitätsprüfung. Die Leasinggesellschaft prüft dabei dein Einkommen, deine laufenden Verpflichtungen und mögliche Einträge im Betreibungsregister. Wichtig ist ausserdem, dass du volljährig bist und einen festen Wohnsitz in der Schweiz hast.
-        <br /><br />
-        Mehr Details findest du in unserem{" "}
-        <Link href="/leasinguebernahme" className="text-red-500 hover:text-red-600 underline underline-offset-2 font-semibold transition-colors">
-          Ratgeber zu den Voraussetzungen
-        </Link>
-        .
-      </>
-    )
+    question: "Kann ich auf BuyAuto Occasionen und Neuwagen vergleichen?",
+    answer: "Ja. BuyAuto bringt verschiedene Wege zum nächsten Auto auf einer Plattform zusammen, damit du Angebote einfacher vergleichen kannst."
   },
   {
     id: "faq-4",
-    question: "Was kostet eine Leasingübernahme?",
-    answer: "Die Kosten einer Leasingübernahme in der Schweiz setzen sich aus drei Bestandteilen zusammen: Erstens zahlst du die monatliche Leasingrate, die bereits im bestehenden Vertrag festgelegt ist. Zweitens kann eine Ablösesumme an die bisherige Leasingnehmerin oder den bisherigen Leasingnehmer anfallen – zum Beispiel, wenn bereits eine hohe Anzahlung geleistet wurde. Drittens verlangen viele Leasinggesellschaften eine kleine Vertrags- oder Dossiergebühr für die Übertragung des Auto-Leasings. Zusätzlich kommen wie immer die laufenden Kosten wie Versicherung, Service und Motorfahrzeugsteuer dazu. Oft ist eine Leasingübernahme trotzdem günstiger als ein neues Leasing, weil die teure Anfangsphase schon abgeschlossen ist.\n\nEine komplette Übersicht findest du in unserem Leitfaden zu den Kosten der Leasingübernahme.",
-    answerJSX: (
-      <>
-        Die Kosten einer Leasingübernahme in der Schweiz setzen sich aus drei Bestandteilen zusammen: die monatliche Leasingrate, eine mögliche Ablösesumme an die bisherige Person, und eine kleine Dossiergebühr der Leasinggesellschaft. Oft ist eine Leasingübernahme trotzdem günstiger als ein neues Leasing, weil die teure Anfangsphase schon abgeschlossen ist.
-        <br /><br />
-        Eine komplette Übersicht findest du in unserem{" "}
-        <Link href="/leasinguebernahme-kosten" className="text-red-500 hover:text-red-600 underline underline-offset-2 font-semibold transition-colors">
-          Leitfaden zu den Kosten
-        </Link>
-        .
-      </>
-    )
+    question: "Gibt es auch Leasing und Auto-Abo?",
+    answer: "Ja. Neben Kaufangeboten findest du auf BuyAuto auch Leasingangebote, Auto-Abos und Leasingübernahmen."
   },
   {
     id: "faq-5",
-    question: "Welche Risiken oder Nachteile hat eine Leasingübernahme?",
-    answer: "Bei einer Leasingübernahme in der Schweiz übernimmst du einen bestehenden Auto-Leasingvertrag – und damit auch dessen Bedingungen. Das bedeutet: Die Laufzeit, das Kilometerlimit und der vereinbarte Restwert sind bereits fix und können oft nicht mehr angepasst werden. Überschreitest du die Kilometer oder wurden frühere Schäden nicht sauber dokumentiert, kann es bei der Rückgabe zu zusätzlichen Kosten kommen. Auch die Leasingbank kann die Übernahme ablehnen, wenn deine Bonitätsprüfung nicht ausreicht. Deshalb ist es wichtig, das Fahrzeug genau anzuschauen, ein Übergabeprotokoll zu machen und den Vertrag vorab gründlich zu prüfen.\n\nMehr Infos findest du in unserem Leitfaden zu den Risiken einer Leasingübernahme.",
-    answerJSX: (
-      <>
-        Bei einer Leasingübernahme übernimmst du einen bestehenden Vertrag – und damit auch dessen Bedingungen. Die Laufzeit, das Kilometerlimit und der Restwert sind fix. Deshalb ist es wichtig, das Fahrzeug genau anzuschauen, ein Übergabeprotokoll zu machen und den Vertrag vorab gründlich zu prüfen.
-        <br /><br />
-        Mehr Infos findest du in unserem{" "}
-        <Link href="/leasinguebernahme" className="text-red-500 hover:text-red-600 underline underline-offset-2 font-semibold transition-colors">
-          Leitfaden zu den Risiken
-        </Link>
-        .
-      </>
-    )
+    question: "Kann ich Fahrzeuge von Garagen und Privatpersonen finden?",
+    answer: "Ja. BuyAuto zeigt Angebote von beiden Seiten, damit du mehr Auswahl und mehr Möglichkeiten hast."
+  },
+  {
+    id: "faq-6",
+    question: "Wie funktioniert die Kontaktaufnahme?",
+    answer: "Du kannst direkt mit dem Anbieter oder der Garage in Kontakt treten, Fragen klären und den nächsten Schritt einfach anstossen."
+  },
+  {
+    id: "faq-7",
+    question: "Was kostet ein Inserat?",
+    answer: "Die Kosten hängen von der gewählten Inserat-Art und möglichen Zusatzoptionen ab. Die aktuellen Preise siehst du direkt beim Inserieren."
   }
 ];
 
@@ -114,24 +70,24 @@ export default function FAQSection() {
         />
       </Head>
       
-      <section className="py-24 md:py-32 px-4 bg-gradient-to-b from-white via-neutral-50 to-white relative overflow-hidden">
-        {/* Subtle background decorations - Red/Neutral only */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-red-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-neutral-200/50 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s", animationDelay: "1s" }} />
+      <section className="py-16 sm:py-20 px-4 bg-gradient-to-b from-white via-neutral-50 to-white relative overflow-hidden">
+        {/* Subtle background decorations */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-red-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-neutral-200/30 rounded-full blur-3xl" />
         
-        <div className="max-w-4xl mx-auto relative z-10">
+        <div className="max-w-3xl mx-auto relative z-10">
           {/* Section header */}
-          <div className="text-center mb-16">
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5 hover:scale-105 transition-transform cursor-default">
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-4">
               <HelpCircle className="w-4 h-4" />
               FAQ
             </span>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-neutral-900 mb-5 tracking-tight">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-neutral-900 mb-4 tracking-tight">
               Häufig gestellte{" "}
               <span className="text-red-500">Fragen</span>
             </h2>
-            <p className="text-lg md:text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed">
-              Alles was du über Leasingübernahmen in der Schweiz wissen musst
+            <p className="text-lg text-neutral-500 max-w-xl mx-auto">
+              Alles, was du über BuyAuto wissen musst
             </p>
           </div>
 
@@ -139,7 +95,7 @@ export default function FAQSection() {
           <Accordion 
             type="single" 
             collapsible 
-            className="w-full space-y-4"
+            className="w-full space-y-3"
             value={openItem}
             onValueChange={setOpenItem}
           >
@@ -147,39 +103,39 @@ export default function FAQSection() {
               <AccordionItem 
                 key={faq.id} 
                 value={faq.id}
-                className="group bg-white rounded-2xl border-2 border-neutral-200 hover:border-red-200 px-6 md:px-8 transition-all duration-300 data-[state=open]:border-red-300 data-[state=open]:shadow-xl data-[state=open]:shadow-red-500/5 overflow-hidden"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="group bg-white rounded-2xl border border-neutral-200 hover:border-neutral-300 px-6 transition-all duration-300 data-[state=open]:border-red-200 data-[state=open]:shadow-lg data-[state=open]:shadow-red-500/5 overflow-hidden"
               >
-                <AccordionTrigger className="text-left font-bold text-neutral-900 hover:no-underline py-6 md:py-7 hover:text-red-600 transition-colors duration-200 text-base md:text-lg leading-relaxed gap-4 [&[data-state=open]>svg]:text-red-500">
-                  <span className="flex items-start gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-xl bg-neutral-100 group-data-[state=open]:bg-red-500 flex items-center justify-center transition-all duration-300">
-                      <span className="text-sm font-black text-neutral-400 group-data-[state=open]:text-white transition-colors">
-                        {index + 1}
-                      </span>
-                    </span>
-                    <span className="pt-0.5">{faq.question}</span>
-                  </span>
+                <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-5 hover:text-red-600 transition-colors duration-200 text-base md:text-lg gap-4 [&[data-state=open]>svg]:text-red-500 [&[data-state=open]>svg]:rotate-45">
+                  <span className="flex-1">{faq.question}</span>
+                  <Plus className="w-5 h-5 text-neutral-400 shrink-0 transition-transform duration-300" />
                 </AccordionTrigger>
-                <AccordionContent className="text-neutral-600 leading-relaxed pb-7 text-base md:text-lg pl-12">
-                  <div className="border-l-2 border-red-200 pl-5 py-1">
-                    {faq.answerJSX || faq.answer}
-                  </div>
+                <AccordionContent className="text-neutral-600 leading-relaxed pb-5 text-base">
+                  {faq.answer}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
           
-          {/* Bottom CTA */}
+          {/* Bottom helper text and CTAs */}
           <div className="mt-12 text-center">
-            <p className="text-neutral-500 mb-4">Hast du weitere Fragen?</p>
-            <Link 
-              href="/leasinguebernahme"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/25 hover:scale-105 transition-all duration-300"
-            >
-              <Sparkles className="w-4 h-4" />
-              Zum vollständigen Ratgeber
-              <ChevronRight className="w-4 h-4" />
-            </Link>
+            <p className="text-neutral-500 mb-6">
+              <span className="font-semibold text-neutral-700">Noch Fragen?</span>
+              <br />
+              Dann entdecke alle Fahrzeuge oder erstelle dein eigenes Inserat auf BuyAuto.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/suche">
+                <Button size="lg" className="bg-neutral-900 text-white hover:bg-neutral-800 font-bold rounded-xl px-8 h-12 w-full sm:w-auto hover:scale-105 transition-all duration-300">
+                  Alle Fahrzeuge ansehen
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+              <Link href="/inserat-erstellen">
+                <Button size="lg" variant="outline" className="border-2 border-neutral-300 text-neutral-700 hover:border-red-500 hover:text-red-600 font-bold rounded-xl px-8 h-12 w-full sm:w-auto hover:scale-105 transition-all duration-300">
+                  Inserat erstellen
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>

@@ -327,6 +327,33 @@ export default function V2Home() {
       <FounderStory />
       <FAQSection />
       <SeoCopyBlock />
+
+      {/* ════════════════════════════════════════════════════════════
+          FINAL CTA SECTION - Before Footer
+      ════════════════════════════════════════════════════════════ */}
+      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-neutral-900">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
+            Bereit für dein nächstes Auto?
+          </h2>
+          <p className="text-lg md:text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
+            Finde passende Fahrzeuge aus der ganzen Schweiz oder erstelle dein Inserat in wenigen Schritten.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/suche">
+              <Button size="lg" className="bg-red-500 text-white hover:bg-red-600 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 shadow-lg shadow-red-500/25">
+                Fahrzeuge suchen
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
+            <Link href="/inserat-erstellen">
+              <Button size="lg" variant="outline" className="border-2 border-neutral-600 text-white hover:border-white hover:bg-white/10 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300">
+                Inserat erstellen
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
