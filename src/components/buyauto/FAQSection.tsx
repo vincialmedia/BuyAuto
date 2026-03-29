@@ -10,38 +10,53 @@ import { Button } from "@/components/ui/button";
 const faqs = [
   {
     id: "faq-1",
-    question: "Was ist BuyAuto?",
-    answer: "BuyAuto ist eine Schweizer Plattform, auf der du Occasionen, Neuwagen, Leasingangebote, Auto-Abos und Leasingübernahmen finden kannst – alles an einem Ort."
+    question: "Wo kann ich in der Schweiz Occasionen, Neuwagen, Leasingangebote und Auto-Abos vergleichen?",
+    answer: "Mit BuyAuto kannst du in der Schweiz Occasionen, Neuwagen, Leasingangebote, Auto-Abos und Leasingübernahmen auf einer Plattform entdecken und vergleichen. So musst du nicht mehrere verschiedene Auto-Plattformen durchsuchen, um das passende Angebot zu finden."
   },
   {
     id: "faq-2",
-    question: "Welche Fahrzeuge finde ich auf BuyAuto?",
-    answer: "Auf BuyAuto findest du Fahrzeuge von Privatpersonen und Garagen aus der ganzen Schweiz – je nach Inserat zum Kauf, Leasing, Auto-Abo oder zur Leasingübernahme."
+    question: "Soll ich ein Auto kaufen, leasen, im Auto-Abo fahren oder eine Leasingübernahme suchen?",
+    answer: "Das hängt von deinem Budget, deiner gewünschten Flexibilität und deinem Zeithorizont ab. Auf BuyAuto kannst du verschiedene Wege zum nächsten Auto vergleichen – vom Kauf über Leasing bis zum Auto-Abo oder zur Leasingübernahme."
   },
   {
     id: "faq-3",
-    question: "Kann ich auf BuyAuto Occasionen und Neuwagen vergleichen?",
-    answer: "Ja. BuyAuto bringt verschiedene Wege zum nächsten Auto auf einer Plattform zusammen, damit du Angebote einfacher vergleichen kannst."
+    question: "Was ist der Unterschied zwischen Kauf, Leasing, Auto-Abo und Leasingübernahme?",
+    answer: "Beim Kauf gehört dir das Fahrzeug direkt oder nach Finanzierung. Beim Leasing zahlst du eine monatliche Rate für eine feste Laufzeit. Ein Auto-Abo ist meist flexibler und bündelt mehrere Kosten in einer monatlichen Zahlung. Bei einer Leasingübernahme übernimmst du einen bestehenden Leasingvertrag von einer anderen Person."
   },
   {
     id: "faq-4",
-    question: "Gibt es auch Leasing und Auto-Abo?",
-    answer: "Ja. Neben Kaufangeboten findest du auf BuyAuto auch Leasingangebote, Auto-Abos und Leasingübernahmen."
+    question: "Sind Occasionen oder Neuwagen die bessere Wahl in der Schweiz?",
+    answer: "Das kommt darauf an, was dir wichtiger ist: Preis, Verfügbarkeit, Ausstattung oder Neuwertigkeit. Occasionen sind oft günstiger und schneller verfügbar, während Neuwagen mit aktueller Technik und individueller Konfiguration punkten können. Auf BuyAuto kannst du beide Varianten vergleichen."
   },
   {
     id: "faq-5",
-    question: "Kann ich Fahrzeuge von Garagen und Privatpersonen finden?",
-    answer: "Ja. BuyAuto zeigt Angebote von beiden Seiten, damit du mehr Auswahl und mehr Möglichkeiten hast."
+    question: "Wie finde ich das passende Auto in der Schweiz nach Budget oder Monatsrate?",
+    answer: "Auf BuyAuto kannst du Fahrzeuge nach verschiedenen Kriterien filtern – zum Beispiel nach Marke, Modell, Preis, Kaufart oder Monatsbudget. So findest du schneller heraus, ob eher ein Kauf, ein Leasing, ein Auto-Abo oder eine Leasingübernahme zu dir passt."
   },
   {
     id: "faq-6",
-    question: "Wie funktioniert die Kontaktaufnahme?",
-    answer: "Du kannst direkt mit dem Anbieter oder der Garage in Kontakt treten, Fragen klären und den nächsten Schritt einfach anstossen."
+    question: "Kann ich auf BuyAuto Fahrzeuge von Garagen und Privatpersonen finden?",
+    answer: "Ja. Auf BuyAuto findest du Fahrzeuge von Garagen und Privatpersonen aus der ganzen Schweiz. Das gibt dir mehr Auswahl und mehr Möglichkeiten, passende Angebote zu vergleichen."
   },
   {
     id: "faq-7",
-    question: "Was kostet ein Inserat?",
-    answer: "Die Kosten hängen von der gewählten Inserat-Art und möglichen Zusatzoptionen ab. Die aktuellen Preise siehst du direkt beim Inserieren."
+    question: "Gibt es auf BuyAuto auch Leasingangebote und Auto-Abos in der Schweiz?",
+    answer: "Ja. Neben Occasionen und Neuwagen zum Kauf findest du auf BuyAuto auch Leasingangebote, Auto-Abos und Leasingübernahmen in der Schweiz – alles an einem Ort."
+  },
+  {
+    id: "faq-8",
+    question: "Wie funktioniert die Kontaktaufnahme mit Anbietern und Garagen?",
+    answer: "Wenn dich ein Fahrzeug interessiert, kannst du direkt mit dem Anbieter oder der Garage Kontakt aufnehmen. So kannst du offene Fragen klären, Details besprechen und den nächsten Schritt ohne unnötige Umwege anstossen."
+  },
+  {
+    id: "faq-9",
+    question: "Kann ich auf BuyAuto Fahrzeuge nach Kaufart filtern?",
+    answer: "Ja. Du kannst gezielt nach Kauf, Leasing, Auto-Abo oder Leasingübernahme filtern und so schneller die Angebote sehen, die zu deinem Bedarf passen."
+  },
+  {
+    id: "faq-10",
+    question: "Was kostet ein Inserat auf BuyAuto?",
+    answer: "Die Kosten für ein Inserat hängen von der gewählten Inserat-Art und möglichen Zusatzoptionen ab. Die aktuellen Preise und Möglichkeiten siehst du direkt beim Erstellen deines Inserats auf BuyAuto."
   }
 ];
 
@@ -86,8 +101,8 @@ export default function FAQSection() {
               Häufig gestellte{" "}
               <span className="text-red-500">Fragen</span>
             </h2>
-            <p className="text-lg text-neutral-500 max-w-xl mx-auto">
-              Alles, was du über BuyAuto wissen musst
+            <p className="text-lg text-neutral-500 max-w-2xl mx-auto">
+              Antworten auf wichtige Fragen rund um Auto kaufen, Leasing, Auto-Abo und Leasingübernahme in der Schweiz
             </p>
           </div>
 
@@ -99,7 +114,7 @@ export default function FAQSection() {
             value={openItem}
             onValueChange={setOpenItem}
           >
-            {faqs.map((faq, index) => (
+            {faqs.map((faq) => (
               <AccordionItem 
                 key={faq.id} 
                 value={faq.id}

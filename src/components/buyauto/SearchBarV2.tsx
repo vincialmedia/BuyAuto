@@ -438,7 +438,7 @@ export function SearchBarV2() {
   const modelOptions = [{ value: "", label: "Modell" }, ...models.map(m => ({ value: m, label: m }))];
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
+    <form onSubmit={handleSubmit} className="w-full relative" style={{ overflow: "visible" }}>
       {/* Mobile Layout - Compact single row */}
       <div className="flex lg:hidden items-center gap-1">
         <div className="flex-1 flex items-center divide-x divide-neutral-200 min-w-0">

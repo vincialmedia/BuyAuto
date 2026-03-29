@@ -103,7 +103,8 @@ export default function V2Home() {
             sizes="100vw"
             quality={90}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/50 to-transparent" />
+          {/* Darker overlay for better text contrast */}
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/70 to-neutral-900/40" />
         </div>
 
         {/* Hero Content */}
