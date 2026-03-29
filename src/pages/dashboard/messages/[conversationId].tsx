@@ -27,6 +27,7 @@ import { SendHorizontal, CheckCircle2, Archive, ArrowLeft, Paperclip, X } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 type UiAttachment = {
   id: string;
@@ -395,7 +396,11 @@ export default function DashboardConversationPage() {
               </div>
 
               {listing ? (
-                <div className="rounded-3xl border border-neutral-200/60 bg-neutral-50 p-4 sm:p-5">
+                <Link
+                  href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}
+                  className="block rounded-3xl border border-neutral-200/60 bg-neutral-50 p-4 sm:p-5 transition hover:bg-neutral-100/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/20"
+                  aria-label="Zum Inserat"
+                >
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative h-28 w-full sm:w-44 overflow-hidden rounded-2xl bg-white border border-neutral-200/60">
                       {listing.cover_image_url ? (
@@ -451,7 +456,7 @@ export default function DashboardConversationPage() {
                       Dieser Chat ist archiviert und nur noch lesbar.
                     </div>
                   ) : null}
-                </div>
+                </Link>
               ) : null}
 
               <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 overflow-hidden">
