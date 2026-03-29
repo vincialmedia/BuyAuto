@@ -36,18 +36,18 @@ export default function HomePage() {
   return (
     <>
       <Head>
-        <title>BuyAuto – Die Schweizer Plattform für Leasingübernahmen</title>
-        <meta 
-          name="description" 
-          content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." 
+        <title>Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto</title>
+        <meta
+          name="description"
+          content="Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto."
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
         
         {/* Open Graph Meta Tags */}
-        <meta property="og:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
+        <meta property="og:title" content="Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto" />
         <meta 
           property="og:description" 
-          content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." 
+          content="Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto." 
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
@@ -60,8 +60,8 @@ export default function HomePage() {
         
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="BuyAuto – Die Schweizer Plattform für Leasingübernahmen" />
-        <meta name="twitter:description" content="Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto." />
+        <meta name="twitter:title" content="Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto" />
+        <meta name="twitter:description" content="Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto." />
         <meta name="twitter:image" content={`${baseUrl}/buyauto-logo.png`} />
       </Head>
 

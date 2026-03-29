@@ -23,8 +23,9 @@ function getAbsoluteUrl(pathOrUrl: string | undefined): string | undefined {
 function buildMeta({ title, description, image, url }: SEOProps): Required<
   Pick<SEOProps, "title" | "description" | "image" | "url">
 > {
-  const fallbackTitle = "BuyAuto";
-  const fallbackDescription = "BuyAuto.ch – Schweizer Fahrzeug-Marktplatz für Direktkauf & Leasing.";
+  const fallbackTitle = "Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto";
+  const fallbackDescription =
+    "Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto.";
   const fallbackUrl = getAbsoluteUrl("/") ?? "/";
   const fallbackImage = getAbsoluteUrl("/buyauto-logo.png") ?? "/buyauto-logo.png";
 
