@@ -336,7 +336,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-2 border-neutral-600 text-white hover:border-white hover:bg-white/10 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300"
+                className="border-2 border-neutral-600 bg-white text-neutral-900 hover:bg-neutral-100 hover:text-neutral-900 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300"
               >
                 Inserat erstellen
               </Button>
