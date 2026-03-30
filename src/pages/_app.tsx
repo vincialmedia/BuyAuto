@@ -38,16 +38,20 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <div className={`${manrope.variable} ${caveat.variable} font-sans overflow-x-hidden min-h-screen`}>
-      <>
-        <Component {...pageProps} />
+      <AuthProvider>
+        <MainLayout>
+          <Component {...pageProps} />
 
-        {!isListingDetailPage ? (
-          <Head>
-            <meta key="og:image" property="og:image" content={absoluteOgImage} />
-            <meta key="tw:image" name="twitter:image" content={absoluteOgImage} />
-          </Head>
-        ) : null}
-      </>
+          {!isListingDetailPage ? (
+            <Head>
+              <meta key="og:image" property="og:image" content={absoluteOgImage} />
+              <meta key="tw:image" name="twitter:image" content={absoluteOgImage} />
+            </Head>
+          ) : null}
+        </MainLayout>
+        <Toaster />
+        <Analytics />
+      </AuthProvider>
     </div>
   );
 }
