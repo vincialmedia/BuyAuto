@@ -5,11 +5,11 @@
 4 silly config load:file:/app/.npmrc
 5 silly config load:file:/home/softgen/.npmrc
 6 silly config load:file:/usr/local/etc/npmrc
-7 verbose title npm exec tsc --noEmit
-8 verbose argv "exec" "--" "tsc" "--noEmit"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-03-30T05_49_13_496Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-03-30T05_49_13_496Z-debug-0.log
-11 silly logfile start cleaning logs, removing 2 files
+7 verbose title npm exec vercel --prod --token XcmGGsG8OuDfV6BmUBaFpAaQ --confirm
+8 verbose argv "exec" "--" "vercel" "--prod" "--token" "XcmGGsG8OuDfV6BmUBaFpAaQ" "--confirm"
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-03-30T09_06_25_401Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-03-30T09_06_25_401Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 verbose cwd /app
 14 verbose os Linux 6.8.0-90-generic
