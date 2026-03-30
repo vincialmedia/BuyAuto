@@ -34,7 +34,7 @@ export default function App({ Component, pageProps }: AppProps) {
     (process.env.NEXT_PUBLIC_SITE_URL || "").trim() ||
     (process.env.NODE_ENV === "production" ? "https://www.buyauto.ch" : "http://localhost:3000");
 
-  const absoluteOgImage = `${base.replace(/\/$/, "")}/og-image.jpg`;
+  const absoluteOgImage = `${base.replace(/\/$/, "")}/share-logo.jpg`;
 
   return (
     <div className={`${manrope.variable} ${caveat.variable} font-sans overflow-x-hidden min-h-screen`}>

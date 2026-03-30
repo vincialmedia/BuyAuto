@@ -27,7 +27,7 @@ function buildMeta({ title, description, image, url }: SEOProps): Required<
   const fallbackDescription =
     "Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto.";
   const fallbackUrl = getAbsoluteUrl("/") ?? "/";
-  const fallbackImage = getAbsoluteUrl("/og-image.jpg") ?? "/og-image.jpg";
+  const fallbackImage = getAbsoluteUrl("/share-logo.jpg") ?? "/share-logo.jpg";
 
   const resolvedTitle = (title ?? "").trim() || fallbackTitle;
   const resolvedDescription = (description ?? "").trim() || fallbackDescription;

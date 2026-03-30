@@ -48,7 +48,7 @@ export default function HomePage() {
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
-        <meta property="og:image" content="https://www.buyauto.ch/og-image.jpg" />
+        <meta property="og:image" content="https://www.buyauto.ch/share-logo.jpg" />
         <meta property="og:image:width" content="512" />
         <meta property="og:image:height" content="512" />
         <meta property="og:image:alt" content="BuyAuto Logo" />
@@ -61,7 +61,7 @@ export default function HomePage() {
           name="twitter:description"
           content="Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto."
         />
-        <meta name="twitter:image" content="https://www.buyauto.ch/og-image.jpg" />
+        <meta name="twitter:image" content="https://www.buyauto.ch/share-logo.jpg" />
 
         <style>{`
           @keyframes fadeUp {
