@@ -207,13 +207,7 @@ export default function AuthForm({ initialView = "login" }: AuthFormProps = {}) 
 
   return (
     <Card className="w-full max-w-md mx-auto shadow-xl shadow-neutral-900/5 border-neutral-200/60">
-      <CardHeader className="space-y-1 text-center pb-4">
-        <h1 className="text-2xl font-semibold text-neutral-900">BuyAuto</h1>
-        <p className="text-sm text-neutral-600">
-          Verwalten Sie Ihre Auto-Leasing-Inserate
-        </p>
-      </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="p-6 sm:p-8">
         {error && (
           <Alert variant="destructive" className="mb-4">
             <Terminal className="h-4 w-4" />
