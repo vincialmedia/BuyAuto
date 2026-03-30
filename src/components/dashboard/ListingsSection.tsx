@@ -337,12 +337,17 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
                     <h3 className="font-semibold text-lg text-neutral-900 line-clamp-1">
                       {listing.brand} {listing.model}
                     </h3>
-                    <div className="text-sm text-neutral-500 flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                    <div className="text-sm text-neutral-500 flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
                       <span>CHF {listing.pricePerMonthCHF}/Monat</span>
                       <span>•</span>
                       <span>{listing.year}</span>
                       <span>•</span>
                       <span>{listing.mileageKm.toLocaleString()} km</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1 text-neutral-600 font-medium">
+                        <Eye className="w-3.5 h-3.5" />
+                        {typeof (listing as any).view_count === 'number' ? (listing as any).view_count : 0} Aufrufe
+                      </span>
                     </div>
                   </div>
                   
