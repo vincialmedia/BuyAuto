@@ -339,12 +339,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         teaserMonthlyLabel={teaserMonthlyLabel}
         purchasePriceChf={purchasePriceChf}
         onInquiry={() => setShowInquiryForm(true)}
-        childrenBelowFold={
-          <>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-              <SimilarListings listing={listing} />
-            </div>
-          </>
+        childrenBelowFold={undefined}
+        bottomContent={
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+            <SimilarListings listing={listing} />
+          </div>
         }
       />
 

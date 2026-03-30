@@ -98,6 +98,7 @@ export function ListingDetailV2({
   purchasePriceChf,
   onInquiry,
   childrenBelowFold,
+  bottomContent,
 }: {
   listing: ListingDetail;
   images: string[];
@@ -107,6 +108,7 @@ export function ListingDetailV2({
   purchasePriceChf: number | null;
   onInquiry: () => void;
   childrenBelowFold?: React.ReactNode;
+  bottomContent?: React.ReactNode;
 }) {
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
   const isSold = (listing.status as any) === "sold";
@@ -582,6 +584,14 @@ export function ListingDetailV2({
             })()}
           </div>
         </div>
+
+        <div className="mt-10 lg:hidden">
+          {bottomContent}
+        </div>
+      </div>
+
+      <div className="hidden lg:block">
+        {bottomContent}
       </div>
     </div>
   );
