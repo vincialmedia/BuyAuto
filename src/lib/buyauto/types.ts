@@ -118,6 +118,9 @@ export interface ListingData {
 
   seller_type?: "private" | "garage" | null;
   garage_id?: string | null;
+
+  donation_enabled?: boolean;
+  donation_amount_chf?: number;
   
   price_plan?: PricePlanId;
   pricing_plan?: string;
