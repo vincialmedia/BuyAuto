@@ -118,6 +118,15 @@ export default function Step5_PreviewAndPay() {
 
   const isPremium = Boolean((data as any)?.premium);
 
+  const donationEnabled = Boolean((data as any)?.donation_enabled);
+  const donationAmountChf = useMemo(() => {
+    const raw = (data as any)?.donation_amount_chf;
+    const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+    if (!donationEnabled) return 0;
+    const normalized = Number.isFinite(n) ? Math.round(n) : 5;
+    return Math.min(200, Math.max(1, normalized));
+  }, [donationEnabled, (data as any)?.donation_amount_chf]);
+
   const selectedPlanId = useMemo<Plan | null>(() => {
     const raw = (data as any)?.price_plan ?? (data as any)?.pricing_plan;
     if (raw === "standard" || raw === "extended" || raw === "unlimited") return raw;
@@ -135,8 +144,8 @@ export default function Step5_PreviewAndPay() {
   }, [planDetails]);
 
   const total = useMemo(() => {
-    return planPrice + (isPremium ? PREMIUM_BOOST_PRICE : 0);
-  }, [isPremium, planPrice]);
+    return planPrice + (isPremium ? PREMIUM_BOOST_PRICE : 0) + (donationEnabled ? donationAmountChf : 0);
+  }, [donationAmountChf, donationEnabled, isPremium, planPrice]);
 
   const inferredDealType: "lease_takeover" | "direct_purchase" = (() => {
     const rawDealType = (data as any)?.deal_type;
@@ -610,6 +619,8 @@ export default function Step5_PreviewAndPay() {
           listing_id: listingIdToUse,
           plan: selectedPlanId,
           premium: isPremium,
+          donation_enabled: donationEnabled,
+          donation_amount_chf: donationEnabled ? donationAmountChf : 0,
         }),
       });
 
@@ -1094,6 +1105,15 @@ export default function Step5_PreviewAndPay() {
                               <span>Premium Boost</span>
                             </div>
                             <span className="font-semibold">+ CHF {PREMIUM_BOOST_PRICE.toFixed(2)}</span>
+                          </div>
+                        )}
+
+                        {donationEnabled && donationAmountChf > 0 && (
+                          <div className="flex justify-between items-center text-sm pt-2">
+                            <div className="flex items-center text-neutral-700 font-semibold">
+                              <span>Unterstützung</span>
+                            </div>
+                            <span className="font-semibold">+ CHF {donationAmountChf.toFixed(2)}</span>
                           </div>
                         )}
 

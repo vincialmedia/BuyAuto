@@ -77,6 +77,9 @@ const createEmptyListingData = (): ListingData => ({
   make_id: null,
   model_id: null,
   variant_id: null,
+
+  donation_enabled: false as any,
+  donation_amount_chf: 5 as any,
 });
 
 const hasAnyUserInput = (data: ListingData) => {
@@ -96,6 +99,8 @@ const hasAnyUserInput = (data: ListingData) => {
       (typeof anyData?.purchase_price_chf === "number" && anyData.purchase_price_chf > 0) ||
       (data.price_plan && data.price_plan !== "standard") ||
       data.premium === true ||
+      (anyData?.donation_enabled === true) ||
+      (typeof anyData?.donation_amount_chf === "number" && anyData.donation_amount_chf > 0) ||
       (Array.isArray(data.images) && data.images.length > 0) ||
       (anyData?.leasing_offer?.enabled === true) ||
       (anyData?.leasing_offer?.lease_takeover_offer?.enabled === true)

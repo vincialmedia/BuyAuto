@@ -11,6 +11,8 @@ type PrepareBody = {
   listing_id?: string;
   plan?: Plan;
   premium?: boolean;
+  donation_enabled?: boolean;
+  donation_amount_chf?: number;
 };
 
 function getExpiresAt(durationDays: number | null): string | null {
@@ -78,6 +80,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const plan = body.plan;
     const premium = body.premium;
 
+    const donationEnabled = body.donation_enabled ?? false;
+    const rawDonationAmount = body.donation_amount_chf;
+
+    const normalizeDonation = (): { enabled: boolean; amount: number } => {
+      if (donationEnabled !== true) return { enabled: false, amount: 0 };
+      const n =
+        typeof rawDonationAmount === "number"
+          ? rawDonationAmount
+          : typeof rawDonationAmount === "string"
+            ? Number(rawDonationAmount)
+            : NaN;
+      const normalized = Number.isFinite(n) ? Math.round(n) : 5;
+      const clamped = Math.min(200, Math.max(1, normalized));
+      return { enabled: true, amount: clamped };
+    };
+
+    const donation = normalizeDonation();
+
     if (!listingId || !plan || typeof premium !== "boolean") {
       return res.status(400).json({ error: "Missing required fields: listing_id, plan, premium" });
     }
@@ -92,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: "Listing not found or you do not have permission to access it." });
     }
 
-    const totalCHF = calculateTotal(plan, premium);
+    const totalCHF = calculateTotal(plan, premium) + donation.amount;
     const planDetails = getPlanDetails(plan);
 
     if (totalCHF === 0) {
@@ -124,7 +144,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const idempotencyKey = crypto
       .createHash("sha256")
-      .update(`${listingId}-${plan}-${premium}-${session.user.id}`)
+      .update(`${listingId}-${plan}-${premium}-${donation.amount}-${session.user.id}`)
       .digest("hex");
 
     const paymentIntentParams = {
@@ -136,6 +156,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         user_id: session.user.id,
         plan: plan,
         premium: String(premium),
+        donation_enabled: String(donation.enabled),
+        donation_amount_chf: String(donation.amount),
       },
       statement_descriptor: "BUYAUTO",
     } as const;
