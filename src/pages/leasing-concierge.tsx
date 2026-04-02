@@ -421,10 +421,11 @@ export default function LeasingConcierge() {
           <Card className="shadow-xl border border-neutral-200 rounded-3xl overflow-hidden">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900">
-                Leasing Exit Concierge anfragen
+                Leasing Exit Concierge per E-Mail anfragen
               </CardTitle>
               <CardDescription className="text-base md:text-lg text-neutral-600 mt-2">
-                Schreib uns eine E-Mail mit deinen Eckdaten – wir melden uns in der Regel innerhalb von 24 Stunden.
+                Für den Leasing Exit Concierge läuft alles per E-Mail: <span className="font-semibold">hello@buyauto.ch</span>.
+                Wir melden uns in der Regel innerhalb von 24 Stunden.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-10">
