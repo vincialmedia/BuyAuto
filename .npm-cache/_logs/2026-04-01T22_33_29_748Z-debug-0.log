@@ -5,14 +5,14 @@
 4 silly config load:file:/app/.npmrc
 5 silly config load:file:/home/softgen/.npmrc
 6 silly config load:file:/usr/local/etc/npmrc
-7 verbose title npm exec supabase login --token sbp_oauth_233e64b5edffed1bb6eb4c3527ca42b49316b9ea
-8 verbose argv "exec" "--" "supabase" "login" "--token" "sbp_oauth_233e64b5edffed1bb6eb4c3527ca42b49316b9ea"
-9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-04-01T17_38_35_358Z-
-10 verbose logfile /app/.npm-cache/_logs/2026-04-01T17_38_35_358Z-debug-0.log
+7 verbose title npm exec fix-react2shell-next --fix
+8 verbose argv "exec" "--yes" "--" "fix-react2shell-next" "--fix"
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-04-01T22_33_29_748Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-04-01T22_33_29_748Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
-14 http fetch GET 200 https://registry.npmjs.org/supabase 74ms (cache revalidated)
+14 http fetch GET 200 https://registry.npmjs.org/fix-react2shell-next 142ms (cache revalidated)
 15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 16 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 17 verbose cwd /app
