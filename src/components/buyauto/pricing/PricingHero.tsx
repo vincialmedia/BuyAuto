@@ -72,7 +72,7 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
               },
               {
                 title: "Voll Viele Funktionen",
-                body: "ALLES um den Kauf und Verkauf so schnell wie möglich zu machen.",
+                body: "ALLES um den Kauf und Verkauf so schnell wie möglich zu machen",
               },
               {
                 title: "Transparente Preise",
