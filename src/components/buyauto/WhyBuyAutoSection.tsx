@@ -44,8 +44,9 @@ const valueCards: ValueCard[] = [
   },
   {
     icon: Wrench,
-    title: "Moderne Tools",
-    description: "Analyse Tools, Finanzierung Tools, Eingebauter Chat, Deal Tools und Website Tools."
+    title: "Alles unter einem Dach",
+    description:
+      "Analyse Tools, Finanzierung Tools, Eingebauter Chat, Deal Tools und Website Tools.",
   }
 ];
 
