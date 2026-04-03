@@ -5,4 +5,4 @@ Disallow: /dashboard
 Disallow: /api/
 Disallow: /inserat-erstellen
 
-Sitemap: https://buyauto.ch/sitemap.xml
+Sitemap: https://www.buyauto.ch/sitemap.xml

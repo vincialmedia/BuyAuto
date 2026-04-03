@@ -1,17 +1,39 @@
-import { GetServerSideProps } from "next";
+import type { GetServerSideProps } from "next";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
+type ListingSitemapRow = {
+  id: string;
+  brand: string;
+  model: string;
+  updated_at: string | null;
+  created_at: string | null;
+};
+
+function toSitemapLastmod(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const baseUrl = "https://www.buyauto.ch";
-  const lastmod = new Date().toISOString();
 
-  const { data: listings } = await supabase
+  const { data: listings, error: listingsError } = await supabase
     .from("listings")
-    .select("id")
-    .in("status", ["published"]);
+    .select("id, brand, model, updated_at, created_at")
+    .eq("status", "published");
 
-  const { data: garageRows } = await supabase.rpc("get_public_garage_slugs");
+  if (listingsError) {
+    console.error("Sitemap: failed to load listings", listingsError);
+  }
+
+  const { data: garageRows, error: garageError } = await supabase.rpc("get_public_garage_slugs");
+
+  if (garageError) {
+    console.error("Sitemap: failed to load garage slugs", garageError);
+  }
 
   const garages = (garageRows || [])
     .map((g) => (typeof g?.slug === "string" ? g.slug.trim() : ""))
@@ -20,7 +42,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const staticPages = [
     "",
     "/suche",
-    "/inserat-erstellen",
     "/leasing-concierge",
     "/leasinguebernahme",
     "/leasinguebernahme-kosten",
@@ -42,7 +63,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
       return `
       <url>
         <loc>${baseUrl}${page}</loc>
-        <lastmod>${lastmod}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>${page === "" ? "1.0" : "0.8"}</priority>
       </url>
@@ -50,12 +70,16 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     })
     .join("");
 
-  const listingUrls = (listings || [])
+  const listingUrls = ((listings as ListingSitemapRow[] | null) || [])
     .map((listing) => {
+      const href = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
+      const lastmod = toSitemapLastmod(listing.updated_at ?? listing.created_at);
+      const lastmodTag = lastmod ? `<lastmod>${lastmod}</lastmod>` : "";
+
       return `
       <url>
-        <loc>${baseUrl}/fahrzeug/${listing.id}</loc>
-        <lastmod>${lastmod}</lastmod>
+        <loc>${baseUrl}${href}</loc>
+        ${lastmodTag}
         <changefreq>daily</changefreq>
         <priority>0.9</priority>
       </url>
@@ -68,7 +92,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
       return `
       <url>
         <loc>${baseUrl}/${slug}</loc>
-        <lastmod>${lastmod}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
       </url>
@@ -88,9 +111,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   res.write(sitemap);
   res.end();
 
-  return {
-    props: {},
-  };
+  return { props: {} };
 };
 
 export default function Sitemap() {
