@@ -125,7 +125,7 @@ export function BuyerGarageSection() {
                       <Check className="w-3.5 h-3.5 text-red-400" />
                     </span>
                     <span className="text-neutral-300 font-medium flex items-center gap-1.5">
-                      Eingebauter Chat
+                      eingebauter Chat
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-help">
