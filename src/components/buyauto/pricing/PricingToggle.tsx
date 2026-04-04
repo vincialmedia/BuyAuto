@@ -15,11 +15,11 @@ export function PricingToggle({ value, onChange }: PricingToggleProps) {
       <div
         role="radiogroup"
         aria-label="Kundentyp auswählen"
-        className="relative flex w-full max-w-[340px] rounded-full border border-white/30 bg-white/20 p-1 backdrop-blur-xl shadow-2xl"
+        className="relative flex w-full max-w-[340px] overflow-hidden rounded-full border border-white/30 bg-white/20 p-1 backdrop-blur-xl shadow-2xl"
       >
         <div
           className={cn(
-            "absolute inset-y-1 w-1/2 rounded-full bg-white/30 transition-transform duration-300 ease-out",
+            "absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white/70 shadow-sm transition-transform duration-300 ease-out",
             value === "private" ? "translate-x-0" : "translate-x-full"
           )}
           aria-hidden="true"
@@ -33,8 +33,8 @@ export function PricingToggle({ value, onChange }: PricingToggleProps) {
           className={cn(
             "relative z-10 flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
             value === "private"
-              ? "text-white"
-              : "text-white/70 hover:text-white"
+              ? "text-neutral-900"
+              : "text-white/80 hover:text-white"
           )}
         >
           Privatkunde
@@ -47,7 +47,9 @@ export function PricingToggle({ value, onChange }: PricingToggleProps) {
           onClick={() => onChange("garage")}
           className={cn(
             "relative z-10 flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-            value === "garage" ? "text-white" : "text-white/70 hover:text-white"
+            value === "garage"
+              ? "text-neutral-900"
+              : "text-white/80 hover:text-white"
           )}
         >
           Garage

@@ -4,16 +4,10 @@ import {
   Check,
   ArrowRight,
   Car,
-  PenLine,
-  Info
+  PenLine
 } from "lucide-react";
 import Link from "next/link";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { HoverTooltip } from "@/components/ui/hover-tooltip";
 
 export function BuyerGarageSection() {
   return (
@@ -111,45 +105,43 @@ export function BuyerGarageSection() {
               </p>
 
               {/* Bullet Points */}
-              <TooltipProvider delayDuration={200}>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-3 group/item">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
-                      <Check className="w-3.5 h-3.5 text-red-400" />
-                    </span>
-                    <span className="text-neutral-300 font-medium">Qualifizierte Anfragen</span>
-                  </li>
-                  
-                  <li className="flex items-center gap-3 group/item">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
-                      <Check className="w-3.5 h-3.5 text-red-400" />
-                    </span>
-                    <span className="text-neutral-300 font-medium flex items-center gap-1.5">
-                      eingebauter Chat
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-help">
-                            <span className="text-[10px] text-neutral-400">*</span>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent 
-                          side="top" 
-                          className="bg-neutral-900 border-neutral-700 text-white text-sm px-3 py-2 rounded-lg shadow-xl"
-                        >
-                          <p>Chat Daten in CH gespeichert</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </span>
-                  </li>
-                  
-                  <li className="flex items-center gap-3 group/item">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
-                      <Check className="w-3.5 h-3.5 text-red-400" />
-                    </span>
-                    <span className="text-neutral-300 font-medium">Mehr Sichtbarkeit</span>
-                  </li>
-                </ul>
-              </TooltipProvider>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3 group/item">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
+                    <Check className="w-3.5 h-3.5 text-red-400" />
+                  </span>
+                  <span className="text-neutral-300 font-medium">Qualifizierte Anfragen</span>
+                </li>
+                
+                <li className="flex items-center gap-3 group/item">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
+                    <Check className="w-3.5 h-3.5 text-red-400" />
+                  </span>
+                  <span className="text-neutral-300 font-medium flex items-center gap-1.5">
+                    eingebauter chat
+                    <HoverTooltip
+                      side="top"
+                      content={<p>Chat Daten in CH gespeichert</p>}
+                      contentClassName="text-sm"
+                    >
+                      <button
+                        type="button"
+                        aria-label="Info: eingebauter chat"
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-help"
+                      >
+                        <span className="text-[10px] text-neutral-400">*</span>
+                      </button>
+                    </HoverTooltip>
+                  </span>
+                </li>
+                
+                <li className="flex items-center gap-3 group/item">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
+                    <Check className="w-3.5 h-3.5 text-red-400" />
+                  </span>
+                  <span className="text-neutral-300 font-medium">Mehr Sichtbarkeit</span>
+                </li>
+              </ul>
 
               {/* CTA Button */}
               <Link 

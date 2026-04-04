@@ -3,12 +3,7 @@ import { motion } from "framer-motion";
 import { Check, Info, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import { cn } from "@/lib/utils";
 import {
   garageIncludedFeatures,
@@ -120,40 +115,35 @@ export function GaragePricingSection() {
           </p>
 
           <div className="mt-6">
-            <TooltipProvider>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {garageIncludedFeatures.map((item) => (
-                  <div key={item.key} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium text-neutral-800">
-                        {item.label}
-                      </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {garageIncludedFeatures.map((item) => (
+                <div key={item.key} className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium text-neutral-800">
+                      {item.label}
+                    </span>
 
-                      {item.tooltip && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              aria-label={`Info: ${item.label}`}
-                              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-neutral-500 hover:text-primary hover:bg-primary/5 transition-colors"
-                            >
-                              <Info className="h-4 w-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="top"
-                            className="max-w-xs text-xs"
-                          >
-                            {item.tooltip}
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
+                    {item.tooltip && (
+                      <HoverTooltip
+                        side="top"
+                        sideOffset={6}
+                        content={item.tooltip}
+                        contentClassName="max-w-xs border-primary/30 bg-primary py-1.5 text-primary-foreground"
+                      >
+                        <button
+                          type="button"
+                          aria-label={`Info: ${item.label}`}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-neutral-500 hover:text-primary hover:bg-primary/5 transition-colors"
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </HoverTooltip>
+                    )}
                   </div>
-                ))}
-              </div>
-            </TooltipProvider>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
