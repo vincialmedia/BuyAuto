@@ -15,6 +15,15 @@ function safeString(input: unknown): string | null {
   return null;
 }
 
+async function dealerGarageExists(
+  supabaseAdmin: ReturnType<typeof adminService.getSupabaseAdminClient>,
+  dealerId: string
+): Promise<boolean> {
+  const { data, error } = await supabaseAdmin.from("garages").select("id").eq("id", dealerId).maybeSingle();
+  if (error) return false;
+  return !!data?.id;
+}
+
 function addDaysIso(baseIso: string, days: number): string | null {
   const ms = Date.parse(baseIso);
   if (!Number.isFinite(ms)) return null;
@@ -134,6 +143,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           break;
         }
 
+        if (!(await dealerGarageExists(supabaseAdmin, dealerId))) {
+          console.warn("Webhook: dealer not found (likely deleted), skipping", { dealerId, sessionId: session.id });
+          break;
+        }
+
         const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
 
         const currentPeriodStartIso = new Date(subscription.current_period_start * 1000).toISOString();
@@ -213,6 +227,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       if (!dealerId || !planCode) break;
 
+      if (!(await dealerGarageExists(supabaseAdmin, dealerId))) {
+        console.warn("Webhook: dealer not found (likely deleted), skipping invoice.paid", { dealerId, subscriptionId });
+        break;
+      }
+
       const currentPeriodStartIso = new Date(subscription.current_period_start * 1000).toISOString();
       const currentPeriodEndIso = new Date(subscription.current_period_end * 1000).toISOString();
 
@@ -256,6 +275,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const dealerId = safeString(subMeta.dealer_id);
       if (!dealerId) break;
 
+      if (!(await dealerGarageExists(supabaseAdmin, dealerId))) {
+        console.warn("Webhook: dealer not found (likely deleted), skipping invoice.payment_failed", { dealerId, subscriptionId });
+        break;
+      }
+
       const { error } = await supabaseAdmin
         .from("dealer_subscriptions")
         .update({ status: "past_due" })
@@ -278,6 +302,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const planCode = safeString(subMeta.plan_code);
 
       if (!dealerId) break;
+
+      if (!(await dealerGarageExists(supabaseAdmin, dealerId))) {
+        console.warn("Webhook: dealer not found (likely deleted), skipping subscription event", { dealerId, subscriptionId: subscription.id });
+        break;
+      }
 
       const currentPeriodStartIso = new Date(subscription.current_period_start * 1000).toISOString();
       const currentPeriodEndIso = new Date(subscription.current_period_end * 1000).toISOString();

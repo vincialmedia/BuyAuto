@@ -352,6 +352,32 @@ export const userManagementService = {
     }
   },
 
+  async deleteDealer(userId: string): Promise<void> {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) throw sessionError;
+
+    const token = session?.access_token;
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch("/api/admin/delete-dealer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error || "Failed to delete dealer");
+    }
+  },
+
   async updateUser(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
     const { data, error } = await supabase
       .from("profiles")

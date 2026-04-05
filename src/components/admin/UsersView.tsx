@@ -135,8 +135,13 @@ export function UsersView() {
     if (!userToDelete) return;
 
     try {
-      await userManagementService.deleteUser(userToDelete.id);
-      toast.success(`Benutzer ${userToDelete.email} wurde gelöscht`);
+      if (userToDelete.role === "garage") {
+        await userManagementService.deleteDealer(userToDelete.id);
+        toast.success(`Dealer ${userToDelete.email} wurde gelöscht (Abo gekündigt)`);
+      } else {
+        await userManagementService.deleteUser(userToDelete.id);
+        toast.success(`Benutzer ${userToDelete.email} wurde gelöscht`);
+      }
       setDeleteDialogOpen(false);
       setUserToDelete(null);
       setUserDetailsOpen(false);
@@ -365,7 +370,7 @@ export function UsersView() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => handleDelete(user)} className="text-red-600 focus:text-red-600">
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Konto löschen
+                        {user.role === "garage" ? "Dealer löschen" : "Konto löschen"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -438,12 +443,25 @@ export function UsersView() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Benutzer löschen?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {userToDelete?.role === "garage" ? "Dealer löschen?" : "Benutzer löschen?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Möchten Sie den Benutzer <strong>{userToDelete?.email}</strong> wirklich löschen?
+              Möchten Sie den {userToDelete?.role === "garage" ? "Dealer" : "Benutzer"}{" "}
+              <strong>{userToDelete?.email}</strong> wirklich löschen?
               <br />
               <br />
-              <strong className="text-red-600">Diese Aktion kann nicht rückgängig gemacht werden.</strong>
+              {userToDelete?.role === "garage" ? (
+                <>
+                  <strong className="text-red-600">Diese Aktion kann nicht rückgängig gemacht werden.</strong>
+                  <br />
+                  <span className="text-neutral-700">
+                    Das aktive Abo wird (falls vorhanden) automatisch in Stripe gekündigt. Inserate, Nachrichten, Anfragen und Medien werden entfernt.
+                  </span>
+                </>
+              ) : (
+                <strong className="text-red-600">Diese Aktion kann nicht rückgängig gemacht werden.</strong>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
