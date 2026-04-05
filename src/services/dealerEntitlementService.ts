@@ -56,22 +56,43 @@ export async function getDealerEntitlement(garage: Garage | null): Promise<Deale
     };
   }
 
-  const { data: sub, error: subError } = await supabase
+  const { data: activeSub, error: activeSubError } = await supabase
     .from("dealer_subscriptions")
-    .select("id,dealer_id,plan_id,status,current_period_end,dealer_plans(code,name)")
+    .select("id,dealer_id,plan_id,status,current_period_end,grace_ends_at,dealer_plans(code,name)")
     .eq("dealer_id", garage.id)
     .eq("status", "active")
+    .gt("current_period_end", nowIso)
+    .order("current_period_end", { ascending: false })
+    .limit(1)
     .maybeSingle<DealerSubscriptionWithPlan>();
 
-  if (subError) throw subError;
+  if (activeSubError) throw activeSubError;
+
+  const { data: graceSub, error: graceSubError } = activeSub
+    ? { data: null as DealerSubscriptionWithPlan | null, error: null as unknown }
+    : await supabase
+        .from("dealer_subscriptions")
+        .select("id,dealer_id,plan_id,status,current_period_end,grace_ends_at,dealer_plans(code,name)")
+        .eq("dealer_id", garage.id)
+        .not("grace_ends_at", "is", null)
+        .gt("grace_ends_at", nowIso)
+        .order("grace_ends_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<DealerSubscriptionWithPlan>();
+
+  if (graceSubError) throw graceSubError;
+
+  const sub = activeSub ?? graceSub;
 
   if (sub?.dealer_plans?.code) {
     const planCode = safeLower(sub.dealer_plans.code);
+    const endsAt = (sub as any)?.grace_ends_at ?? sub.current_period_end ?? null;
+
     return {
       kind: "subscription",
       planCode,
       planName: sub.dealer_plans.name ?? safeNameFromCode(planCode),
-      endsAt: sub.current_period_end ?? null,
+      endsAt: typeof endsAt === "string" ? endsAt : null,
     };
   }
 

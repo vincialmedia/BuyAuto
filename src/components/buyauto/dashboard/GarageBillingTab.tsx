@@ -68,55 +68,91 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
   const [entitlementLabel, setEntitlementLabel] = useState<string | null>(null);
   const [entitlementKind, setEntitlementKind] = useState<"trial" | "subscription" | "none">("none");
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
+  const [entitlementPlanCode, setEntitlementPlanCode] = useState<string | null>(null);
 
   const currentPlanId = useMemo(() => {
-    // Normalize the plan ID. If null, empty, or "No_Plan", treat as null.
     const raw = (garage?.plan ?? "").trim();
-    if (!raw || raw === "No_Plan") return null;
+    if (!raw || raw === "No_Plan" || raw === "no_plan") return null;
     return raw.toLowerCase();
   }, [garage?.plan]);
 
+  const effectivePlanId = useMemo(() => {
+    return entitlementPlanCode ?? currentPlanId;
+  }, [currentPlanId, entitlementPlanCode]);
+
   useEffect(() => {
     let cancelled = false;
+    let intervalId: number | null = null;
+
     async function load() {
       try {
         const ent = await getDealerEntitlement(garage);
         if (cancelled) return;
+
         if (ent.kind === "trial") {
           const name = ent.planName ?? ent.planCode;
           setEntitlementLabel(`${name} (Trial bis ${formatDateTimeDeCH(ent.endsAt)})`);
           setEntitlementKind("trial");
           setTrialEndsAt(ent.endsAt);
+          setEntitlementPlanCode(ent.planCode);
           return;
         }
+
         if (ent.kind === "subscription") {
+          const name = ent.planName ?? ent.planCode;
+          const suffix = ent.endsAt ? ` (bis ${formatDateTimeDeCH(ent.endsAt)})` : "";
+          setEntitlementLabel(`${name}${suffix}`);
+          setEntitlementKind("subscription");
+          setTrialEndsAt(null);
+          setEntitlementPlanCode(ent.planCode);
+          return;
+        }
+
+        if (ent.kind === "garage_plan_field") {
           const name = ent.planName ?? ent.planCode;
           setEntitlementLabel(name);
           setEntitlementKind("subscription");
           setTrialEndsAt(null);
+          setEntitlementPlanCode(ent.planCode);
           return;
         }
+
         setEntitlementLabel(null);
         setEntitlementKind("none");
         setTrialEndsAt(null);
+        setEntitlementPlanCode(null);
       } catch {
         if (!cancelled) {
           setEntitlementLabel(null);
           setEntitlementKind("none");
           setTrialEndsAt(null);
+          setEntitlementPlanCode(null);
         }
       }
     }
-    load();
+
+    void load();
+
+    intervalId = window.setInterval(() => {
+      void load();
+    }, 5 * 60 * 1000);
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
     return () => {
       cancelled = true;
+      if (intervalId !== null) window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [garage?.id]);
 
   const currentPlanDetails = useMemo(() => {
-    if (!currentPlanId) return null;
-    return PLANS.find(p => p.id === currentPlanId);
-  }, [currentPlanId]);
+    if (!effectivePlanId) return null;
+    return PLANS.find((p) => p.id === effectivePlanId);
+  }, [effectivePlanId]);
 
   function handleUpgrade(planId: string) {
     router.push(`/garage-plan?plan=${planId}`);
@@ -192,7 +228,7 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
         <h3 className="text-xl font-bold tracking-tight text-neutral-900 mb-6">Verfügbare Pakete</h3>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {PLANS.map((plan) => {
-            const isCurrent = plan.id === currentPlanId;
+            const isCurrent = plan.id === effectivePlanId;
             return (
               <Card
                 key={plan.id}

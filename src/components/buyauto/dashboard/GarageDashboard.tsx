@@ -178,25 +178,73 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
 
   useEffect(() => {
     let cancelled = false;
+    let intervalId: number | null = null;
+    let timeoutId: number | null = null;
 
-    async function loadEntitlement() {
+    function clearTimers() {
+      if (intervalId !== null) window.clearInterval(intervalId);
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      intervalId = null;
+      timeoutId = null;
+    }
+
+    function scheduleRefreshAt(iso: string) {
+      const targetMs = Date.parse(iso);
+      if (!Number.isFinite(targetMs)) return;
+
+      const delayMs = targetMs - Date.now() + 5000;
+      if (delayMs <= 0) {
+        void refreshEntitlement();
+        return;
+      }
+
+      const capped = Math.min(delayMs, 2_147_483_647);
+      timeoutId = window.setTimeout(() => {
+        void refreshEntitlement();
+      }, capped);
+    }
+
+    async function refreshEntitlement() {
+      clearTimers();
+
       if (!garage?.id) {
         setEntitlement({ kind: "none" });
         return;
       }
+
       try {
         const e = await getDealerEntitlement(garage);
-        if (!cancelled) setEntitlement(e);
+        if (cancelled) return;
+
+        setEntitlement(e);
+
+        if (e.kind === "trial") scheduleRefreshAt(e.endsAt);
+        if (e.kind === "subscription" && e.endsAt) scheduleRefreshAt(e.endsAt);
       } catch {
         if (!cancelled) setEntitlement({ kind: "none" });
       }
+
+      intervalId = window.setInterval(() => {
+        void refreshEntitlement();
+      }, 5 * 60 * 1000);
     }
 
-    loadEntitlement();
+    if (!hasMounted) return;
+
+    void refreshEntitlement();
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") void refreshEntitlement();
+    };
+
+    document.addEventListener("visibilitychange", onVis);
+
     return () => {
       cancelled = true;
+      clearTimers();
+      document.removeEventListener("visibilitychange", onVis);
     };
-  }, [garage]);
+  }, [garage, hasMounted]);
 
   async function reloadStatsAndListings() {
     if (!garage?.id) return;
