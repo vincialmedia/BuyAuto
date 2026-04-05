@@ -31,8 +31,7 @@ const footerSections = [
   {
     title: "Unternehmen",
     links: [
-      { label: "Über BuyAuto", href: "/#ueber-buyauto" },
-      { label: "Kontakt", href: "/#kontakt" }
+      { label: "Über BuyAuto", href: "/#ueber-buyauto" }
     ]
   },
   {
