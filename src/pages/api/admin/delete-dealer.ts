@@ -218,6 +218,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       basePath: targetUserId,
     });
 
+    const avatarPaths = await listAllStoragePaths({
+      supabaseAdmin,
+      bucket: LISTING_IMAGES_BUCKET,
+      basePath: `avatars/${targetUserId}`,
+    });
+
     const garageLogoPaths = await listAllStoragePaths({
       supabaseAdmin,
       bucket: LISTING_IMAGES_BUCKET,
@@ -265,6 +271,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
     deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: listingImagePaths });
+    deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: avatarPaths });
     deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: garageLogoPaths });
     deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: garageHeaderPaths });
     deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: GARAGE_TEAM_BUCKET, paths: garageTeamPaths });
