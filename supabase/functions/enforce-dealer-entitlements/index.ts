@@ -10,6 +10,8 @@ type EnforcementResult = {
   overridesExpiredDealerIds: string[];
   subscriptionsGraceEndedCount: number;
   subscriptionsGraceEndedDealerIds: string[];
+  garagesDowngradedCount: number;
+  garagesDowngradedDealerIds: string[];
   listingsDraftedCount: number;
   listingsDraftedIds: string[];
 };
@@ -43,6 +45,8 @@ Deno.serve(async (req) => {
       overridesExpiredDealerIds: [],
       subscriptionsGraceEndedCount: 0,
       subscriptionsGraceEndedDealerIds: [],
+      garagesDowngradedCount: 0,
+      garagesDowngradedDealerIds: [],
       listingsDraftedCount: 0,
       listingsDraftedIds: [],
     };
@@ -89,6 +93,16 @@ Deno.serve(async (req) => {
         status: 200,
       });
     }
+
+    const { error: downgradeError } = await supabaseAdmin
+      .from("garages")
+      .update({ plan: "no_plan", listing_limit: 0 })
+      .in("id", dealersToDraft);
+
+    if (downgradeError) throw downgradeError;
+
+    result.garagesDowngradedCount = dealersToDraft.length;
+    result.garagesDowngradedDealerIds = dealersToDraft;
 
     const { data: affectedListings, error: listError } = await supabaseAdmin
       .from("listings")
