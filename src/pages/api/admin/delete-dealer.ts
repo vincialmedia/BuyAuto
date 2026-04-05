@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { stripe } from "@/lib/stripe-server";
 
 type ApiOk = {
@@ -32,7 +32,7 @@ function chunkArray<T>(items: T[], size: number): T[][] {
 }
 
 async function listAllStoragePaths(params: {
-  supabaseAdmin: ReturnType<typeof createClient>;
+  supabaseAdmin: SupabaseClient;
   bucket: string;
   basePath: string;
   maxTotal?: number;
@@ -90,7 +90,7 @@ async function listAllStoragePaths(params: {
 }
 
 async function removeStoragePaths(params: {
-  supabaseAdmin: ReturnType<typeof createClient>;
+  supabaseAdmin: SupabaseClient;
   bucket: string;
   paths: string[];
 }): Promise<number> {
@@ -117,7 +117,7 @@ async function bestEffortCancelStripeSubscription(subscriptionId: string | null)
   if (!subscriptionId) return { attempted: false, canceled: false, subscriptionId: null };
 
   try {
-    await stripe.subscriptions.del(subscriptionId);
+    await stripe.subscriptions.cancel(subscriptionId);
     return { attempted: true, canceled: true, subscriptionId };
   } catch (error) {
     console.warn("delete-dealer: stripe cancel failed", { subscriptionId, error });
@@ -275,19 +275,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   let tombstonesDeleted = 0;
 
-  const { data: tombstonesForGarage } = await supabaseAdmin
+  const { count: tombstonesForGarageCount } = await supabaseAdmin
     .from("listing_tombstones")
     .delete({ count: "exact" })
     .eq("garage_id", garageId);
 
-  tombstonesDeleted += Array.isArray(tombstonesForGarage) ? tombstonesForGarage.length : 0;
+  tombstonesDeleted += tombstonesForGarageCount ?? 0;
 
-  const { data: tombstonesForUser } = await supabaseAdmin
+  const { count: tombstonesForUserCount } = await supabaseAdmin
     .from("listing_tombstones")
     .delete({ count: "exact" })
     .eq("seller_user_id", targetUserId);
 
-  tombstonesDeleted += Array.isArray(tombstonesForUser) ? tombstonesForUser.length : 0;
+  tombstonesDeleted += tombstonesForUserCount ?? 0;
 
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
   if (deleteError) {
