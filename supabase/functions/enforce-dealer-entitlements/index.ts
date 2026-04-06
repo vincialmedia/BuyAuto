@@ -58,6 +58,10 @@ Deno.serve(async (req) => {
 
     if (overridesError) throw overridesError;
 
+    const endedOverrideDealerIds = Array.from(
+      new Set((expiredOverrides ?? []).map((r) => r.dealer_id).filter(Boolean) as string[])
+    );
+
     const overrideGraceEndedDealerIds = Array.from(
       new Set(
         (expiredOverrides ?? [])
@@ -79,15 +83,31 @@ Deno.serve(async (req) => {
 
     if (graceError) throw graceError;
 
-    const graceEndedDealerIds = Array.from(
-      new Set((graceEndedSubs ?? []).map((r) => r.dealer_id).filter(Boolean))
-    );
+    const graceEndedDealerIds = Array.from(new Set((graceEndedSubs ?? []).map((r) => r.dealer_id).filter(Boolean)));
 
     result.subscriptionsGraceEndedCount = graceEndedDealerIds.length;
     result.subscriptionsGraceEndedDealerIds = graceEndedDealerIds;
 
+    const { data: endedNoGraceSubs, error: endedNoGraceError } = await supabaseAdmin
+      .from("dealer_subscriptions")
+      .select("dealer_id, current_period_end, grace_ends_at")
+      .not("current_period_end", "is", null)
+      .lte("current_period_end", nowIso)
+      .is("grace_ends_at", null);
+
+    if (endedNoGraceError) throw endedNoGraceError;
+
+    const endedNoGraceDealerIds = Array.from(
+      new Set((endedNoGraceSubs ?? []).map((r) => r.dealer_id).filter(Boolean))
+    );
+
+    const dealersToDowngrade = Array.from(
+      new Set([...endedOverrideDealerIds, ...endedNoGraceDealerIds, ...overrideGraceEndedDealerIds, ...graceEndedDealerIds])
+    );
+
     const dealersToDraft = Array.from(new Set([...overrideGraceEndedDealerIds, ...graceEndedDealerIds]));
-    if (dealersToDraft.length === 0) {
+
+    if (dealersToDowngrade.length === 0) {
       return new Response(JSON.stringify({ ok: true, ...result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -97,12 +117,19 @@ Deno.serve(async (req) => {
     const { error: downgradeError } = await supabaseAdmin
       .from("garages")
       .update({ plan: "no_plan", listing_limit: 0 })
-      .in("id", dealersToDraft);
+      .in("id", dealersToDowngrade);
 
     if (downgradeError) throw downgradeError;
 
-    result.garagesDowngradedCount = dealersToDraft.length;
-    result.garagesDowngradedDealerIds = dealersToDraft;
+    result.garagesDowngradedCount = dealersToDowngrade.length;
+    result.garagesDowngradedDealerIds = dealersToDowngrade;
+
+    if (dealersToDraft.length === 0) {
+      return new Response(JSON.stringify({ ok: true, ...result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     const { data: affectedListings, error: listError } = await supabaseAdmin
       .from("listings")
