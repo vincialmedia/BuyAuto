@@ -96,9 +96,20 @@ export async function getDealerEntitlement(garage: Garage | null): Promise<Deale
     };
   }
 
-  const raw = safeLower(garage.plan);
-  if (raw && raw !== "no_plan") {
-    return { kind: "garage_plan_field", planCode: raw, planName: safeNameFromCode(raw) };
+  const { data: anySubscriptionRow, error: anySubscriptionError } = await supabase
+    .from("dealer_subscriptions")
+    .select("id")
+    .eq("dealer_id", garage.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (anySubscriptionError) throw anySubscriptionError;
+
+  if (!anySubscriptionRow) {
+    const raw = safeLower(garage.plan);
+    if (raw && raw !== "no_plan") {
+      return { kind: "garage_plan_field", planCode: raw, planName: safeNameFromCode(raw) };
+    }
   }
 
   return { kind: "none" };

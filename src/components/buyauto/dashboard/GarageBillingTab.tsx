@@ -77,8 +77,9 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
   }, [garage?.plan]);
 
   const effectivePlanId = useMemo(() => {
+    if (entitlementKind === "none") return null;
     return entitlementPlanCode ?? currentPlanId;
-  }, [currentPlanId, entitlementPlanCode]);
+  }, [currentPlanId, entitlementKind, entitlementPlanCode]);
 
   useEffect(() => {
     let cancelled = false;
