@@ -1700,6 +1700,10 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: string
       }
+      dealer_has_entitlement: {
+        Args: { p_dealer_id: string }
+        Returns: boolean
+      }
       ensure_dealer_premium_credits:
         | {
             Args: { p_dealer_id: string }

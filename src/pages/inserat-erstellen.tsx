@@ -21,6 +21,7 @@ export default function CreateListingPage() {
   const [gate, setGate] = useState<GateState>({ kind: "checking" });
 
   const nextAfterPlan = useMemo(() => "/inserat-erstellen", []);
+  const dealerPricingHref = useMemo(() => "/preise?type=garage", []);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -43,64 +44,35 @@ export default function CreateListingPage() {
       try {
         const { data: garage, error: garageError } = await supabase
           .from("garages")
-          .select("id, plan")
+          .select("id")
           .eq("owner_user_id", user.id)
           .maybeSingle();
 
         if (garageError) throw garageError;
 
         const dealerId = garage?.id ?? null;
+
         if (!dealerId) {
           if (!cancelled) setGate({ kind: "redirecting" });
-          await router.replace(`/garage-plan?redirect=${encodeURIComponent(nextAfterPlan)}`);
+          await router.replace(dealerPricingHref);
           return;
         }
 
-        const { data: sub, error: subError } = await supabase
-          .from("dealer_subscriptions")
-          .select("id, status, current_period_end")
-          .eq("dealer_id", dealerId)
-          .maybeSingle();
+        const { data: hasEntitlement, error: entitlementError } = await supabase.rpc("dealer_has_entitlement", {
+          p_dealer_id: dealerId,
+        });
 
-        if (subError) throw subError;
+        if (entitlementError) throw entitlementError;
 
-        const status = typeof sub?.status === "string" ? sub.status : null;
-        const periodEnd = typeof sub?.current_period_end === "string" ? Date.parse(sub.current_period_end) : null;
-
-        const now = Date.now();
-        const isActiveByStatus = status === "active";
-        const isStillInPaidPeriod = typeof periodEnd === "number" && Number.isFinite(periodEnd) ? periodEnd > now : false;
-
-        const entitled = isActiveByStatus || isStillInPaidPeriod;
-
-        if (!entitled) {
-          const { data: overrides, error: overrideError } = await supabase
-            .from("dealer_admin_overrides")
-            .select("id, ends_at")
-            .eq("dealer_id", dealerId)
-            .order("ends_at", { ascending: false })
-            .limit(1);
-
-          if (overrideError) throw overrideError;
-
-          const latest = Array.isArray(overrides) && overrides.length > 0 ? overrides[0] : null;
-          const overrideEnds = latest?.ends_at ? Date.parse(String(latest.ends_at)) : null;
-          const overrideActive = typeof overrideEnds === "number" && Number.isFinite(overrideEnds) ? overrideEnds > now : false;
-
-          if (overrideActive) {
-            if (!cancelled) setGate({ kind: "allowed" });
-            return;
-          }
-        }
-
-        if (entitled) {
+        if (hasEntitlement) {
           if (!cancelled) setGate({ kind: "allowed" });
           return;
         }
 
         if (!cancelled) setGate({ kind: "redirecting" });
-        await router.replace(`/garage-plan?redirect=${encodeURIComponent(nextAfterPlan)}`);
-      } catch {
+        await router.replace(dealerPricingHref);
+      } catch (e) {
+        console.error("Create listing entitlement check failed:", e);
         if (!cancelled) setGate({ kind: "allowed" });
       }
     }
@@ -110,7 +82,7 @@ export default function CreateListingPage() {
     return () => {
       cancelled = true;
     };
-  }, [router.isReady, loading, profileLoading, profile?.role, router, user, nextAfterPlan]);
+  }, [router.isReady, loading, profileLoading, profile?.role, router, user, nextAfterPlan, dealerPricingHref]);
 
   if (gate.kind !== "allowed") {
     return (
@@ -122,9 +94,7 @@ export default function CreateListingPage() {
         <div className="min-h-[60vh] flex items-center justify-center px-6">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <p className="mt-3 text-neutral-600">
-              {gate.kind === "checking" ? "Prüfe Garage-Paket…" : "Weiterleitung…"}
-            </p>
+            <p className="mt-3 text-neutral-600">{gate.kind === "checking" ? "Prüfe Garage-Paket…" : "Weiterleitung…"}</p>
           </div>
         </div>
       </>
