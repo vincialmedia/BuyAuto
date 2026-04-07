@@ -5,6 +5,8 @@ import { stripe } from "@/lib/stripe-server";
 
 type PrepareBody = {
   plan_code?: string;
+  success_path?: string;
+  cancel_path?: string;
 };
 
 type GaragePick = Pick<Database["public"]["Tables"]["garages"]["Row"], "id" | "owner_user_id">;
@@ -14,6 +16,10 @@ function normalizePlanCode(input: unknown): "starter" | "growth" | "pro" | null 
   const raw = typeof input === "string" ? input.trim().toLowerCase() : "";
   if (raw === "starter" || raw === "growth" || raw === "pro") return raw;
   return null;
+}
+
+function isSafeNextPath(input: unknown): input is string {
+  return typeof input === "string" && input.startsWith("/") && !input.startsWith("//");
 }
 
 function getErrorMessage(input: unknown): string {
@@ -89,12 +95,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const host = req.headers.host;
     const origin = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+    const requestedSuccessPath = isSafeNextPath(body.success_path) ? body.success_path : null;
+    const requestedCancelPath = isSafeNextPath(body.cancel_path) ? body.cancel_path : null;
+
+    const successUrl = new URL(requestedSuccessPath ?? "/dashboard/garage", origin);
+    successUrl.searchParams.set("payment_success", "true");
+
+    const cancelUrl = new URL(requestedCancelPath ?? "/billing/cancel", origin);
+
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: plan.stripe_price_id, quantity: 1 }],
-      success_url: `${origin}/dashboard/garage?payment_success=true`,
-      cancel_url: `${origin}/billing/cancel`,
+      success_url: successUrl.toString(),
+      cancel_url: cancelUrl.toString(),
       subscription_data: {
         metadata: {
           kind: "dealer_plan",

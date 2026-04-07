@@ -58,6 +58,10 @@ const packages = [
   },
 ];
 
+function isSafeNextPath(input: unknown): input is string {
+  return typeof input === "string" && input.startsWith("/") && !input.startsWith("//");
+}
+
 export default function GaragePlanPage() {
   const router = useRouter();
   const { user, profile } = useAuth();
@@ -89,6 +93,10 @@ export default function GaragePlanPage() {
   const handleSelectPlan = async (planCode: string) => {
     if (!user) return;
 
+    const redirectPathRaw = typeof router.query.redirect === "string" ? router.query.redirect : null;
+    const successPath = isSafeNextPath(redirectPathRaw) ? redirectPathRaw : null;
+    const cancelPath = successPath ? `/garage-plan?redirect=${encodeURIComponent(successPath)}` : null;
+
     setLoading(true);
     setSelectedPlan(planCode);
 
@@ -96,7 +104,11 @@ export default function GaragePlanPage() {
       const response = await fetch("/api/dealer/prepare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan_code: planCode }),
+        body: JSON.stringify({
+          plan_code: planCode,
+          success_path: successPath ?? undefined,
+          cancel_path: cancelPath ?? undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -309,7 +321,7 @@ export default function GaragePlanPage() {
                   </div>
 
                   <div className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <Check className="h-4 w-3.5 text-primary mt-0.5 flex-shrink-0" />
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-medium">
                         Deal-Chat pro Fahrzeug (Chat + Dokumente)

@@ -15,13 +15,20 @@ function isSafeNextPath(input: unknown): input is string {
   return typeof input === "string" && input.startsWith("/") && !input.startsWith("//");
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export default function CreateListingPage() {
   const router = useRouter();
   const { user, loading, profile, profileLoading } = useAuth();
   const [gate, setGate] = useState<GateState>({ kind: "checking" });
 
   const nextAfterPlan = useMemo(() => "/inserat-erstellen", []);
-  const dealerPricingHref = useMemo(() => "/preise?type=garage", []);
+  const dealerPlanHref = useMemo(
+    () => "/garage-plan?redirect=" + encodeURIComponent(nextAfterPlan),
+    [nextAfterPlan],
+  );
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -54,27 +61,38 @@ export default function CreateListingPage() {
 
         if (!dealerId) {
           if (!cancelled) setGate({ kind: "redirecting" });
-          await router.replace(dealerPricingHref);
+          await router.replace(dealerPlanHref);
           return;
         }
 
-        const { data: hasEntitlement, error: entitlementError } = await supabase.rpc("dealer_has_entitlement", {
-          p_dealer_id: dealerId,
-        });
+        const paymentSuccess = router.query.payment_success === "true";
 
-        if (entitlementError) throw entitlementError;
+        // If we just returned from Stripe, the webhook might not have updated yet.
+        // Retry entitlement a few times before sending the user back to the plan screen.
+        const maxAttempts = paymentSuccess ? 10 : 1;
 
-        if (hasEntitlement) {
-          if (!cancelled) setGate({ kind: "allowed" });
-          return;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const { data: hasEntitlement, error: entitlementError } = await supabase.rpc("dealer_has_entitlement", {
+            p_dealer_id: dealerId,
+          });
+
+          if (entitlementError) throw entitlementError;
+
+          if (hasEntitlement) {
+            if (!cancelled) setGate({ kind: "allowed" });
+            return;
+          }
+
+          if (!paymentSuccess) break;
+          if (attempt < maxAttempts) await sleep(1500);
         }
 
         if (!cancelled) setGate({ kind: "redirecting" });
-        await router.replace(dealerPricingHref);
+        await router.replace(dealerPlanHref);
       } catch (e) {
         console.error("Create listing entitlement check failed:", e);
         if (!cancelled) setGate({ kind: "redirecting" });
-        await router.replace(dealerPricingHref);
+        await router.replace(dealerPlanHref);
       }
     }
 
@@ -83,7 +101,17 @@ export default function CreateListingPage() {
     return () => {
       cancelled = true;
     };
-  }, [router.isReady, loading, profileLoading, profile?.role, router, user, nextAfterPlan, dealerPricingHref]);
+  }, [
+    router.isReady,
+    router.query.payment_success,
+    loading,
+    profileLoading,
+    profile?.role,
+    router,
+    user,
+    nextAfterPlan,
+    dealerPlanHref,
+  ]);
 
   if (gate.kind !== "allowed") {
     return (

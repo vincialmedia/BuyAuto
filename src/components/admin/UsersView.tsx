@@ -61,6 +61,7 @@ export function UsersView() {
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
   const [userToResetPassword, setUserToResetPassword] = useState<UserWithStats | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const [roleChangeDialogOpen, setRoleChangeDialogOpen] = useState(false);
   const [userToChangeRole, setUserToChangeRole] = useState<UserWithStats | null>(null);
@@ -132,9 +133,11 @@ export function UsersView() {
   };
 
   const confirmDelete = async () => {
-    if (!userToDelete) return;
+    if (!userToDelete || deleteSubmitting) return;
 
     try {
+      setDeleteSubmitting(true);
+
       if (userToDelete.role === "garage") {
         await userManagementService.deleteDealer(userToDelete.id);
         toast.success(`Dealer ${userToDelete.email} wurde gelöscht (Abo gekündigt)`);
@@ -142,13 +145,18 @@ export function UsersView() {
         await userManagementService.deleteUser(userToDelete.id);
         toast.success(`Benutzer ${userToDelete.email} wurde gelöscht`);
       }
+
       setDeleteDialogOpen(false);
       setUserToDelete(null);
       setUserDetailsOpen(false);
       loadUsers();
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error("Fehler beim Löschen des Benutzers");
+      const message = error instanceof Error ? error.message : "Fehler beim Löschen des Benutzers";
+      toast.error(message);
+      // Keep dialog open so the admin can retry.
+    } finally {
+      setDeleteSubmitting(false);
     }
   };
 
@@ -465,9 +473,16 @@ export function UsersView() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Ja, löschen
+            <AlertDialogCancel disabled={deleteSubmitting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmDelete();
+              }}
+              disabled={deleteSubmitting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteSubmitting ? "Löschen..." : "Ja, löschen"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

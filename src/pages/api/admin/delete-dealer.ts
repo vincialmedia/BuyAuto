@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { stripe } from "@/lib/stripe-server";
 
 type ApiOk = {
   ok: true;
@@ -16,7 +15,7 @@ type ApiOk = {
   tombstonesDeleted: number;
 };
 
-type ApiError = { error: string };
+type ApiError = { error: string; details?: string };
 
 const LISTING_IMAGES_BUCKET = "listing-images";
 const GARAGE_TEAM_BUCKET = "garage-team";
@@ -113,10 +112,14 @@ async function removeStoragePaths(params: {
   return deleted;
 }
 
-async function bestEffortCancelStripeSubscription(subscriptionId: string | null): Promise<{ attempted: boolean; canceled: boolean; subscriptionId: string | null }> {
+async function bestEffortCancelStripeSubscription(
+  subscriptionId: string | null
+): Promise<{ attempted: boolean; canceled: boolean; subscriptionId: string | null }> {
   if (!subscriptionId) return { attempted: false, canceled: false, subscriptionId: null };
 
   try {
+    // Lazy-load to avoid import-time crashes if Stripe env vars are misconfigured in prod.
+    const { stripe } = await import("@/lib/stripe-server");
     await stripe.subscriptions.cancel(subscriptionId);
     return { attempted: true, canceled: true, subscriptionId };
   } catch (error) {
@@ -125,186 +128,242 @@ async function bestEffortCancelStripeSubscription(subscriptionId: string | null)
   }
 }
 
+async function bestEffortDeleteByIds(params: {
+  supabaseAdmin: SupabaseClient;
+  table: string;
+  column: string;
+  ids: string[];
+  chunkSize?: number;
+}): Promise<void> {
+  const { supabaseAdmin, table, column, ids, chunkSize = 200 } = params;
+
+  const uniqueIds = Array.from(new Set(ids)).filter((id) => typeof id === "string" && id.trim().length > 0);
+  if (uniqueIds.length === 0) return;
+
+  for (const chunk of chunkArray(uniqueIds, chunkSize)) {
+    const { error } = await supabaseAdmin.from(table).delete().in(column, chunk);
+    if (error) {
+      console.warn("delete-dealer: bestEffortDeleteByIds failed", { table, column, error });
+      return;
+    }
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ApiOk | ApiError>) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-    return res.status(500).json({ error: "Server configuration error" });
-  }
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
-
-  const token = authHeader.replace("Bearer ", "").trim();
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userData, error: userError } = await supabase.auth.getUser(token);
-  if (userError || !userData?.user?.id) return res.status(401).json({ error: "Unauthorized" });
-
-  const requesterId = userData.user.id;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const { data: requesterProfile, error: requesterProfileError } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", requesterId)
-    .maybeSingle();
-
-  if (requesterProfileError || !requesterProfile || requesterProfile.role !== "admin") {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-
-  const body = (req.body ?? {}) as { userId?: unknown };
-  const targetUserId = typeof body.userId === "string" ? body.userId : "";
-  if (!targetUserId) return res.status(400).json({ error: "Missing userId in request body" });
-
-  const { data: targetProfile, error: targetProfileError } = await supabaseAdmin
-    .from("profiles")
-    .select("id,role,email")
-    .eq("id", targetUserId)
-    .maybeSingle();
-
-  if (targetProfileError || !targetProfile?.id) {
-    return res.status(404).json({ error: "User not found" });
-  }
-
-  if (targetProfile.role !== "garage") {
-    return res.status(400).json({ error: "Target user is not a dealer" });
-  }
-
-  const { data: garage, error: garageError } = await supabaseAdmin
-    .from("garages")
-    .select("id,owner_user_id,slug")
-    .eq("owner_user_id", targetUserId)
-    .maybeSingle();
-
-  if (garageError || !garage?.id) {
-    return res.status(400).json({ error: "Dealer garage not found" });
-  }
-
-  const garageId = garage.id as string;
-
-  const { data: subscription } = await supabaseAdmin
-    .from("dealer_subscriptions")
-    .select("stripe_subscription_id,status")
-    .eq("dealer_id", garageId)
-    .maybeSingle();
-
-  const stripeSubscriptionId =
-    subscription && typeof subscription.stripe_subscription_id === "string" ? subscription.stripe_subscription_id : null;
-
-  const stripeRes = await bestEffortCancelStripeSubscription(stripeSubscriptionId);
-
-  let deletedStorageCount = 0;
-  let storageAttempted = false;
-
   try {
-    storageAttempted = true;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    const listingImagePaths = await listAllStoragePaths({
-      supabaseAdmin,
-      bucket: LISTING_IMAGES_BUCKET,
-      basePath: targetUserId,
-    });
-
-    const avatarPaths = await listAllStoragePaths({
-      supabaseAdmin,
-      bucket: LISTING_IMAGES_BUCKET,
-      basePath: `avatars/${targetUserId}`,
-    });
-
-    const garageLogoPaths = await listAllStoragePaths({
-      supabaseAdmin,
-      bucket: LISTING_IMAGES_BUCKET,
-      basePath: `garage-logos/${garageId}`,
-    });
-
-    const garageHeaderPaths = await listAllStoragePaths({
-      supabaseAdmin,
-      bucket: LISTING_IMAGES_BUCKET,
-      basePath: `garage-headers/${garageId}`,
-    });
-
-    const garageTeamPaths = await listAllStoragePaths({
-      supabaseAdmin,
-      bucket: GARAGE_TEAM_BUCKET,
-      basePath: garageId,
-    });
-
-    const { data: listingRows } = await supabaseAdmin
-      .from("listings")
-      .select("id,created_by,user_id,garage_id")
-      .or(`created_by.eq.${targetUserId},user_id.eq.${targetUserId},garage_id.eq.${garageId}`);
-
-    const listingIds = Array.isArray(listingRows)
-      ? listingRows.map((r) => (r as { id?: unknown }).id).filter((id): id is string => typeof id === "string")
-      : [];
-
-    const { data: convoRows } = listingIds.length
-      ? await supabaseAdmin.from("conversations").select("id").in("listing_id", listingIds)
-      : { data: [] as unknown[] };
-
-    const conversationIds = Array.isArray(convoRows)
-      ? convoRows.map((r) => (r as { id?: unknown }).id).filter((id): id is string => typeof id === "string")
-      : [];
-
-    const attachmentPaths: string[] = [];
-    for (const conversationId of conversationIds) {
-      const paths = await listAllStoragePaths({
-        supabaseAdmin,
-        bucket: MESSAGE_ATTACHMENTS_BUCKET,
-        basePath: conversationId,
-        maxTotal: 2000,
-      });
-      attachmentPaths.push(...paths);
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+      return res.status(500).json({ error: "Server configuration error" });
     }
 
-    deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: listingImagePaths });
-    deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: avatarPaths });
-    deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: garageLogoPaths });
-    deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: garageHeaderPaths });
-    deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: GARAGE_TEAM_BUCKET, paths: garageTeamPaths });
-    deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: MESSAGE_ATTACHMENTS_BUCKET, paths: attachmentPaths });
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+    });
+
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData?.user?.id) return res.status(401).json({ error: "Unauthorized" });
+
+    const requesterId = userData.user.id;
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: requesterProfile, error: requesterProfileError } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", requesterId)
+      .maybeSingle();
+
+    if (requesterProfileError || !requesterProfile || requesterProfile.role !== "admin") {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const body = (req.body ?? {}) as { userId?: unknown };
+    const targetUserId = typeof body.userId === "string" ? body.userId : "";
+    if (!targetUserId) return res.status(400).json({ error: "Missing userId in request body" });
+
+    const { data: targetProfile, error: targetProfileError } = await supabaseAdmin
+      .from("profiles")
+      .select("id,role,email")
+      .eq("id", targetUserId)
+      .maybeSingle();
+
+    if (targetProfileError || !targetProfile?.id) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (targetProfile.role !== "garage") {
+      return res.status(400).json({ error: "Target user is not a dealer" });
+    }
+
+    const { data: garage, error: garageError } = await supabaseAdmin
+      .from("garages")
+      .select("id,owner_user_id,slug")
+      .eq("owner_user_id", targetUserId)
+      .maybeSingle();
+
+    if (garageError || !garage?.id) {
+      return res.status(400).json({ error: "Dealer garage not found" });
+    }
+
+    const garageId = garage.id as string;
+
+    const { data: subscription } = await supabaseAdmin
+      .from("dealer_subscriptions")
+      .select("stripe_subscription_id,status")
+      .eq("dealer_id", garageId)
+      .maybeSingle();
+
+    const stripeSubscriptionId =
+      subscription && typeof subscription.stripe_subscription_id === "string" ? subscription.stripe_subscription_id : null;
+
+    const stripeRes = await bestEffortCancelStripeSubscription(stripeSubscriptionId);
+
+    let deletedStorageCount = 0;
+    let storageAttempted = false;
+
+    let listingIds: string[] = [];
+    let conversationIds: string[] = [];
+
+    try {
+      storageAttempted = true;
+
+      const listingImagePaths = await listAllStoragePaths({
+        supabaseAdmin,
+        bucket: LISTING_IMAGES_BUCKET,
+        basePath: targetUserId,
+      });
+
+      const avatarPaths = await listAllStoragePaths({
+        supabaseAdmin,
+        bucket: LISTING_IMAGES_BUCKET,
+        basePath: `avatars/${targetUserId}`,
+      });
+
+      const garageLogoPaths = await listAllStoragePaths({
+        supabaseAdmin,
+        bucket: LISTING_IMAGES_BUCKET,
+        basePath: `garage-logos/${garageId}`,
+      });
+
+      const garageHeaderPaths = await listAllStoragePaths({
+        supabaseAdmin,
+        bucket: LISTING_IMAGES_BUCKET,
+        basePath: `garage-headers/${garageId}`,
+      });
+
+      const garageTeamPaths = await listAllStoragePaths({
+        supabaseAdmin,
+        bucket: GARAGE_TEAM_BUCKET,
+        basePath: garageId,
+      });
+
+      const { data: listingRows } = await supabaseAdmin
+        .from("listings")
+        .select("id,created_by,user_id,garage_id")
+        .or(`created_by.eq.${targetUserId},user_id.eq.${targetUserId},garage_id.eq.${garageId}`);
+
+      listingIds = Array.isArray(listingRows)
+        ? listingRows.map((r) => (r as { id?: unknown }).id).filter((id): id is string => typeof id === "string")
+        : [];
+
+      const { data: convoRows } = listingIds.length
+        ? await supabaseAdmin.from("conversations").select("id").in("listing_id", listingIds)
+        : { data: [] as unknown[] };
+
+      conversationIds = Array.isArray(convoRows)
+        ? convoRows.map((r) => (r as { id?: unknown }).id).filter((id): id is string => typeof id === "string")
+        : [];
+
+      const attachmentPaths: string[] = [];
+      for (const conversationId of conversationIds) {
+        const paths = await listAllStoragePaths({
+          supabaseAdmin,
+          bucket: MESSAGE_ATTACHMENTS_BUCKET,
+          basePath: conversationId,
+          maxTotal: 2000,
+        });
+        attachmentPaths.push(...paths);
+      }
+
+      deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: listingImagePaths });
+      deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: avatarPaths });
+      deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: garageLogoPaths });
+      deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: LISTING_IMAGES_BUCKET, paths: garageHeaderPaths });
+      deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: GARAGE_TEAM_BUCKET, paths: garageTeamPaths });
+      deletedStorageCount += await removeStoragePaths({ supabaseAdmin, bucket: MESSAGE_ATTACHMENTS_BUCKET, paths: attachmentPaths });
+    } catch (error) {
+      console.warn("delete-dealer: storage cleanup failed", error);
+    }
+
+    // Pre-delete related rows before deleting auth user, to avoid cascade-trigger failures.
+    try {
+      await bestEffortDeleteByIds({ supabaseAdmin, table: "message_attachments", column: "conversation_id", ids: conversationIds });
+      await bestEffortDeleteByIds({ supabaseAdmin, table: "messages", column: "conversation_id", ids: conversationIds });
+      await bestEffortDeleteByIds({ supabaseAdmin, table: "conversations", column: "id", ids: conversationIds });
+
+      await bestEffortDeleteByIds({ supabaseAdmin, table: "listing_inquiries", column: "listing_id", ids: listingIds });
+      await bestEffortDeleteByIds({ supabaseAdmin, table: "listings", column: "id", ids: listingIds });
+
+      const { error: garageDeleteError } = await supabaseAdmin.from("garages").delete().eq("id", garageId);
+      if (garageDeleteError) console.warn("delete-dealer: garage delete failed", { garageId, error: garageDeleteError });
+
+      const { error: profileDeleteError } = await supabaseAdmin.from("profiles").delete().eq("id", targetUserId);
+      if (profileDeleteError) console.warn("delete-dealer: profile delete failed", { targetUserId, error: profileDeleteError });
+    } catch (error) {
+      console.warn("delete-dealer: pre-delete cleanup failed", error);
+    }
+
+    let tombstonesDeleted = 0;
+
+    const { count: tombstonesForGarageCount } = await supabaseAdmin
+      .from("listing_tombstones")
+      .delete({ count: "exact" })
+      .eq("garage_id", garageId);
+
+    tombstonesDeleted += tombstonesForGarageCount ?? 0;
+
+    const { count: tombstonesForUserCount } = await supabaseAdmin
+      .from("listing_tombstones")
+      .delete({ count: "exact" })
+      .eq("seller_user_id", targetUserId);
+
+    tombstonesDeleted += tombstonesForUserCount ?? 0;
+
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+    if (deleteError) {
+      console.warn("delete-dealer: first auth deleteUser failed, retrying after cleanup", {
+        targetUserId,
+        message: deleteError.message,
+      });
+
+      const { error: retryError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+      if (retryError) {
+        return res.status(500).json({ error: "Failed to delete user", details: retryError.message });
+      }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      stripe: stripeRes,
+      storage: { attempted: storageAttempted, deletedCount: deletedStorageCount },
+      tombstonesDeleted,
+    });
   } catch (error) {
-    console.warn("delete-dealer: storage cleanup failed", error);
+    console.error("delete-dealer: unhandled error", error);
+    const details = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({ error: "Internal server error", details });
   }
-
-  let tombstonesDeleted = 0;
-
-  const { count: tombstonesForGarageCount } = await supabaseAdmin
-    .from("listing_tombstones")
-    .delete({ count: "exact" })
-    .eq("garage_id", garageId);
-
-  tombstonesDeleted += tombstonesForGarageCount ?? 0;
-
-  const { count: tombstonesForUserCount } = await supabaseAdmin
-    .from("listing_tombstones")
-    .delete({ count: "exact" })
-    .eq("seller_user_id", targetUserId);
-
-  tombstonesDeleted += tombstonesForUserCount ?? 0;
-
-  const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
-  if (deleteError) {
-    return res.status(500).json({ error: "Failed to delete user" });
-  }
-
-  return res.status(200).json({
-    ok: true,
-    stripe: stripeRes,
-    storage: { attempted: storageAttempted, deletedCount: deletedStorageCount },
-    tombstonesDeleted,
-  });
 }

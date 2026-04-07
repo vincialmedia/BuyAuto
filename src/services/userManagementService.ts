@@ -347,8 +347,11 @@ export const userManagementService = {
 
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { error?: string; details?: string } | null;
-      const message = payload?.error || "Failed to delete user";
-      throw new Error(payload?.details ? `${message}: ${payload.details}` : message);
+      if (payload?.error) {
+        throw new Error(payload.details ? `${payload.error}: ${payload.details}` : payload.error);
+      }
+      const text = await response.text().catch(() => "");
+      throw new Error(text || "Failed to delete user");
     }
   },
 
@@ -373,8 +376,12 @@ export const userManagementService = {
     });
 
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(payload?.error || "Failed to delete dealer");
+      const payload = (await response.json().catch(() => null)) as { error?: string; details?: string } | null;
+      if (payload?.error) {
+        throw new Error(payload.details ? `${payload.error}: ${payload.details}` : payload.error);
+      }
+      const text = await response.text().catch(() => "");
+      throw new Error(text || "Failed to delete dealer");
     }
   },
 
