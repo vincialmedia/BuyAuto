@@ -73,7 +73,8 @@ export default function CreateListingPage() {
         await router.replace(dealerPricingHref);
       } catch (e) {
         console.error("Create listing entitlement check failed:", e);
-        if (!cancelled) setGate({ kind: "allowed" });
+        if (!cancelled) setGate({ kind: "redirecting" });
+        await router.replace(dealerPricingHref);
       }
     }
 
