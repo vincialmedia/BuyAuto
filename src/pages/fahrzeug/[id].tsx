@@ -195,17 +195,31 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
   if (notFound || clientNotFound) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-bold text-neutral-900 mb-4">Inserat nicht gefunden</h1>
-          <p className="text-neutral-600 mb-6">
-            Das gewünschte Inserat existiert nicht oder ist nicht mehr verfügbar.
-          </p>
-          <Button onClick={() => router.push("/suche")} className="bg-red-500 hover:bg-red-600 text-white rounded-2xl">
-            Zurück zur Suche
-          </Button>
+      <>
+        <Head>
+          <title>Auto verkauft | BuyAuto</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+        <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-200 flex items-center justify-center">
+              <svg className="w-10 h-10 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-3">Dieses Auto wurde verkauft</h1>
+            <p className="text-neutral-600 mb-8">
+              Das Inserat ist nicht mehr verfügbar. Entdecke ähnliche Angebote in unserer Suche.
+            </p>
+            <Button
+              onClick={() => router.push("/suche")}
+              className="bg-red-500 hover:bg-red-600 text-white rounded-2xl px-8"
+            >
+              Weitere Autos entdecken
+            </Button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
