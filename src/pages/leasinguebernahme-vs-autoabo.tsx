@@ -411,6 +411,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
               <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
                 Vorteile der Leasingübernahme
               </h2>
+              <Link href="/leasinguebernahme" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
+                Mehr erfahren
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -420,7 +420,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
-                <Link href="/leasinguebernahme-vs-autoabo">
+                <Link href="/leasinguebernahme">
                   Mehr zur Leasingübernahme
                 </Link>
               </Button>

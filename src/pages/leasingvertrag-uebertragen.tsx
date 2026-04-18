@@ -162,6 +162,13 @@ export default function LeasingvertragUebertragenPage() {
                   <strong>Wichtig:</strong> Die Übertragung benötigt die Zustimmung der Leasingbank.
                 </p>
               </div>
+              
+              <div className="mt-4">
+                <Link href="/leasinguebernahme" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
+                  <ArrowRight className="w-4 h-4" />
+                  Leasingübernahme im Detail
+                </Link>
+              </div>
             </div>
           </div>
         </section>

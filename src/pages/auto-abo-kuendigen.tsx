@@ -546,8 +546,8 @@ export default function AutoAboKuendigenPage() {
                     ))}
                   </ul>
                   <Button asChild className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl">
-                    <Link href="/suche">
-                      Leasingübernahmen entdecken
+                    <Link href="/leasinguebernahme">
+                      Mehr zur Leasingübernahme
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>

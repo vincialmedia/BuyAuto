@@ -407,12 +407,20 @@ export default function LeasingConcierge() {
           <p className="text-lg text-neutral-600 mb-8 max-w-2xl mx-auto">
             Wenn du zuerst verstehen möchtest, wie Leasing abgeben in der Schweiz grundsätzlich funktioniert:
           </p>
-          <Button size="lg" variant="outline" className="bg-white hover:bg-white/90 text-blue-900 border-blue-200" asChild>
-            <Link href="/leasing-abgeben-schweiz">
-              Leasing abgeben Schweiz: Ablauf, Optionen & Kosten
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" variant="outline" className="bg-white hover:bg-white/90 text-blue-900 border-blue-200" asChild>
+              <Link href="/leasing-abgeben-schweiz">
+                Leasing abgeben Schweiz: Ablauf, Optionen & Kosten
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" className="bg-white hover:bg-white/90 text-blue-900 border-blue-200" asChild>
+              <Link href="/leasinguebernahme">
+                Alles zur Leasingübernahme
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 

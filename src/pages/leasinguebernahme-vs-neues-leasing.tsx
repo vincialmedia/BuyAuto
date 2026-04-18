@@ -338,9 +338,15 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-8">
               <TrendingDown className="w-8 h-8 text-primary" />
-              <h2 className="text-3xl font-bold text-neutral-900">
-                Vorteile der Leasingübernahme
-              </h2>
+              <div>
+                <h2 className="text-3xl font-bold text-neutral-900">
+                  Vorteile der Leasingübernahme
+                </h2>
+                <Link href="/leasinguebernahme" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline text-sm mt-1">
+                  Mehr erfahren
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

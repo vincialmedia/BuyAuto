@@ -159,6 +159,13 @@ export default function LeasinguebernahmeKostenPage() {
                   <strong>Wichtig:</strong> Versteckte Kosten wie Ummeldung, Versicherung und eventuelle Reparaturen können zusätzlich anfallen.
                 </p>
               </div>
+              
+              <div className="mt-4">
+                <Link href="/leasinguebernahme" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
+                  <ArrowRight className="w-4 h-4" />
+                  Alles zur Leasingübernahme
+                </Link>
+              </div>
             </div>
           </div>
         </section>
