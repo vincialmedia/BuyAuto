@@ -886,27 +886,6 @@ export default function LeasingUebernahmePage() {
                 </Link>
               </Button>
             </div>
-            
-            {/* Additional Internal Links */}
-            <div className="pt-12 border-t border-white/10">
-              <p className="text-neutral-400 text-sm mb-4">Weitere hilfreiche Ressourcen:</p>
-              <div className="flex flex-wrap items-center justify-center gap-6">
-                <Link 
-                  href="/leasing-abgeben-schweiz" 
-                  className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Leasing abgeben
-                </Link>
-                <Link 
-                  href="/leasinguebernahme-kosten" 
-                  className="text-neutral-300 hover:text-white transition-colors text-sm font-medium inline-flex items-center gap-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Leasingübernahme Kosten
-                </Link>
-              </div>
-            </div>
 
             {/* Trust Indicators */}
             <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-neutral-400 text-sm">
@@ -921,6 +900,171 @@ export default function LeasingUebernahmePage() {
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-green-400" />
                 <span>In wenigen Tagen</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* RELATED ARTICLES SECTION */}
+        <section className="py-20 px-4 bg-neutral-50">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                <FileText className="w-4 h-4" />
+                Weiterführende Artikel
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
+                Mehr zum Thema Leasing & Auto-Abo
+              </h2>
+              <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+                Vertiefe dein Wissen mit unseren Ratgebern und Vergleichen
+              </p>
+            </div>
+
+            {/* Leasingübernahme Guides */}
+            <div className="mb-12">
+              <h3 className="text-xl font-black text-neutral-900 mb-6 flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-primary" />
+                Leasingübernahme Ratgeber
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Link href="/leasinguebernahme-kosten" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <DollarSign className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Leasingübernahme Kosten</h4>
+                      <p className="text-neutral-600 text-sm">Alle Gebühren und Kosten im Überblick</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/leasing-abgeben-schweiz" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <UserCheck className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Leasing abgeben Schweiz</h4>
+                      <p className="text-neutral-600 text-sm">Ablauf, Optionen & Tipps für Abgeber</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/leasingvertrag-uebertragen" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <FileCheck className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Leasingvertrag übertragen</h4>
+                      <p className="text-neutral-600 text-sm">Schritt-für-Schritt Anleitung</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/leasing-concierge" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <BadgeCheck className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Leasing Concierge</h4>
+                      <p className="text-neutral-600 text-sm">Unser Premium-Service für Abgeber</p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+
+            {/* Vergleiche */}
+            <div className="mb-12">
+              <h3 className="text-xl font-black text-neutral-900 mb-6 flex items-center gap-2">
+                <TrendingDown className="w-5 h-5 text-primary" />
+                Vergleiche
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Link href="/leasinguebernahme-vs-autoabo" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <Zap className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Leasingübernahme vs. Auto-Abo</h4>
+                      <p className="text-neutral-600 text-sm">Welche Option passt besser zu dir?</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/leasinguebernahme-vs-neues-leasing" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <RefreshCw className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Leasingübernahme vs. Neues Leasing</h4>
+                      <p className="text-neutral-600 text-sm">Vor- und Nachteile im Vergleich</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/auto-abo-vs-leasing-kosten" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <DollarSign className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Auto-Abo vs. Leasing Kosten</h4>
+                      <p className="text-neutral-600 text-sm">Kostenvergleich mit Rechner</p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+
+            {/* Auto-Abo Guides */}
+            <div>
+              <h3 className="text-xl font-black text-neutral-900 mb-6 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                Auto-Abo Ratgeber
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Link href="/auto-abos-im-vergleich" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <Search className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Auto-Abos im Vergleich</h4>
+                      <p className="text-neutral-600 text-sm">Die besten Anbieter in der Schweiz</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/auto-abo-kuendigen" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <XCircle className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Auto-Abo kündigen</h4>
+                      <p className="text-neutral-600 text-sm">So kündigst du richtig + Alternativen</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/carify-alternativen" className="group bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-colors">
+                      <Users className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-neutral-900 group-hover:text-primary transition-colors mb-2">Carify Alternativen</h4>
+                      <p className="text-neutral-600 text-sm">Die besten Alternativen zu Carify</p>
+                    </div>
+                  </div>
+                </Link>
               </div>
             </div>
           </div>
