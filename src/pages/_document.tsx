@@ -5,8 +5,8 @@ export default function Document() {
     <Html lang="de-CH">
       <Head>
         {/* Favicon - BuyAuto BA icon */}
-        <link rel="icon" href="/favicon-ba.png" />
-        <link rel="apple-touch-icon" href="/favicon-ba.png" />
+        <link rel="icon" href="/BuyAuto_Favicon.png" />
+        <link rel="apple-touch-icon" href="/BuyAuto_Favicon.png" />
         
         {/* Preconnect to Supabase storage for faster image loading */}
         <link rel="preconnect" href="https://psdtkknwxzxnxnbqmdzl.supabase.co" />
