@@ -1,0 +1,200 @@
+0 verbose cli /usr/local/bin/node /usr/local/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.9.4
+2 info using node@v22.21.1
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/app/.npmrc
+5 silly config load:file:/home/softgen/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm exec stylelint **/*.css --allow-empty-input
+8 verbose argv "exec" "--yes" "--" "stylelint" "**/*.css" "--allow-empty-input"
+9 verbose logfile logs-max:10 dir:/app/.npm-cache/_logs/2026-04-19T15_15_41_573Z-
+10 verbose logfile /app/.npm-cache/_logs/2026-04-19T15_15_41_573Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+14 http fetch GET 200 https://registry.npmjs.org/stylelint 196ms (cache updated)
+15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+16 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+17 silly idealTree buildDeps
+18 silly fetch manifest stylelint@17.8.0
+19 silly packumentCache full:https://registry.npmjs.org/stylelint cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/stylelint 97ms (cache updated)
+21 silly packumentCache full:https://registry.npmjs.org/stylelint set size:undefined disposed:false
+22 silly placeDep ROOT stylelint@17.8.0 REPLACE for:  want: 17.8.0
+23 silly fetch manifest @csstools/css-syntax-patches-for-csstree@^1.1.2
+24 silly packumentCache full:https://registry.npmjs.org/@csstools%2fcss-syntax-patches-for-csstree cache-miss
+25 http fetch GET 200 https://registry.npmjs.org/@csstools%2fcss-syntax-patches-for-csstree 99ms (cache updated)
+26 silly packumentCache full:https://registry.npmjs.org/@csstools%2fcss-syntax-patches-for-csstree set size:undefined disposed:false
+27 silly fetch manifest css-tree@^3.2.1
+28 silly packumentCache full:https://registry.npmjs.org/css-tree cache-miss
+29 http fetch GET 200 https://registry.npmjs.org/css-tree 100ms (cache revalidated)
+30 silly packumentCache full:https://registry.npmjs.org/css-tree set size:229638 disposed:false
+31 silly fetch manifest fast-glob@^3.3.3
+32 silly packumentCache full:https://registry.npmjs.org/fast-glob cache-miss
+33 http fetch GET 200 https://registry.npmjs.org/fast-glob 92ms (cache revalidated)
+34 silly packumentCache full:https://registry.npmjs.org/fast-glob set size:220556 disposed:false
+35 silly fetch manifest globby@^16.2.0
+36 silly packumentCache full:https://registry.npmjs.org/globby cache-miss
+37 http fetch GET 200 https://registry.npmjs.org/globby 100ms (cache updated)
+38 silly packumentCache full:https://registry.npmjs.org/globby set size:undefined disposed:false
+39 silly fetch manifest ignore@^7.0.5
+40 silly packumentCache full:https://registry.npmjs.org/ignore cache-miss
+41 http fetch GET 200 https://registry.npmjs.org/ignore 92ms (cache revalidated)
+42 silly packumentCache full:https://registry.npmjs.org/ignore set size:237380 disposed:false
+43 silly fetch manifest micromatch@^4.0.8
+44 silly packumentCache full:https://registry.npmjs.org/micromatch cache-miss
+45 http fetch GET 200 https://registry.npmjs.org/micromatch 95ms (cache revalidated)
+46 silly packumentCache full:https://registry.npmjs.org/micromatch set size:240630 disposed:false
+47 silly fetch manifest postcss@^8.5.9
+48 silly packumentCache full:https://registry.npmjs.org/postcss cache-miss
+49 http fetch GET 200 https://registry.npmjs.org/postcss 102ms (cache updated)
+50 silly packumentCache full:https://registry.npmjs.org/postcss set size:undefined disposed:false
+51 silly placeDep ROOT @csstools/css-syntax-patches-for-csstree@1.1.3 OK for: stylelint@17.8.0 want: ^1.1.2
+52 silly placeDep ROOT css-tree@3.2.1 OK for: stylelint@17.8.0 want: ^3.2.1
+53 silly placeDep ROOT fast-glob@3.3.3 OK for: stylelint@17.8.0 want: ^3.3.3
+54 silly placeDep ROOT globby@16.2.0 OK for: stylelint@17.8.0 want: ^16.2.0
+55 silly placeDep ROOT ignore@7.0.5 OK for: stylelint@17.8.0 want: ^7.0.5
+56 silly placeDep ROOT micromatch@4.0.8 OK for: stylelint@17.8.0 want: ^4.0.8
+57 silly placeDep ROOT postcss@8.5.10 REPLACE for: stylelint@17.8.0 want: ^8.5.9
+58 silly fetch manifest mdn-data@2.27.1
+59 silly packumentCache full:https://registry.npmjs.org/mdn-data cache-miss
+60 http fetch GET 200 https://registry.npmjs.org/mdn-data 203ms (cache updated)
+61 silly packumentCache full:https://registry.npmjs.org/mdn-data set size:undefined disposed:false
+62 silly fetch manifest @nodelib/fs.stat@^2.0.2
+63 silly packumentCache full:https://registry.npmjs.org/@nodelib%2ffs.stat cache-miss
+64 http fetch GET 200 https://registry.npmjs.org/@nodelib%2ffs.stat 90ms (cache revalidated)
+65 silly packumentCache full:https://registry.npmjs.org/@nodelib%2ffs.stat set size:36993 disposed:false
+66 silly fetch manifest @nodelib/fs.walk@^1.2.3
+67 silly packumentCache full:https://registry.npmjs.org/@nodelib%2ffs.walk cache-miss
+68 http fetch GET 200 https://registry.npmjs.org/@nodelib%2ffs.walk 131ms (cache revalidated)
+69 silly packumentCache full:https://registry.npmjs.org/@nodelib%2ffs.walk set size:41589 disposed:false
+70 silly fetch manifest glob-parent@^5.1.2
+71 silly packumentCache full:https://registry.npmjs.org/glob-parent cache-miss
+72 http fetch GET 200 https://registry.npmjs.org/glob-parent 100ms (cache revalidated)
+73 silly packumentCache full:https://registry.npmjs.org/glob-parent set size:42445 disposed:false
+74 silly fetch manifest merge2@^1.3.0
+75 silly packumentCache full:https://registry.npmjs.org/merge2 cache-miss
+76 http fetch GET 200 https://registry.npmjs.org/merge2 31ms (cache revalidated)
+77 silly packumentCache full:https://registry.npmjs.org/merge2 set size:46159 disposed:false
+78 silly fetch manifest @sindresorhus/merge-streams@^4.0.0
+79 silly packumentCache full:https://registry.npmjs.org/@sindresorhus%2fmerge-streams cache-miss
+80 http fetch GET 200 https://registry.npmjs.org/@sindresorhus%2fmerge-streams 167ms (cache revalidated)
+81 silly packumentCache full:https://registry.npmjs.org/@sindresorhus%2fmerge-streams set size:23303 disposed:false
+82 silly fetch manifest is-path-inside@^4.0.0
+83 silly packumentCache full:https://registry.npmjs.org/is-path-inside cache-miss
+84 http fetch GET 200 https://registry.npmjs.org/is-path-inside 97ms (cache revalidated)
+85 silly packumentCache full:https://registry.npmjs.org/is-path-inside set size:23585 disposed:false
+86 silly fetch manifest slash@^5.1.0
+87 silly packumentCache full:https://registry.npmjs.org/slash cache-miss
+88 http fetch GET 200 https://registry.npmjs.org/slash 99ms (cache revalidated)
+89 silly packumentCache full:https://registry.npmjs.org/slash set size:20337 disposed:false
+90 silly fetch manifest unicorn-magic@^0.4.0
+91 silly packumentCache full:https://registry.npmjs.org/unicorn-magic cache-miss
+92 http fetch GET 200 https://registry.npmjs.org/unicorn-magic 29ms (cache revalidated)
+93 silly packumentCache full:https://registry.npmjs.org/unicorn-magic set size:9139 disposed:false
+94 silly fetch manifest braces@^3.0.3
+95 silly packumentCache full:https://registry.npmjs.org/braces cache-miss
+96 http fetch GET 200 https://registry.npmjs.org/braces 99ms (cache revalidated)
+97 silly packumentCache full:https://registry.npmjs.org/braces set size:114529 disposed:false
+98 silly fetch manifest picomatch@^2.3.1
+99 silly packumentCache full:https://registry.npmjs.org/picomatch cache-miss
+100 http fetch GET 200 https://registry.npmjs.org/picomatch 66ms (cache revalidated)
+101 silly packumentCache full:https://registry.npmjs.org/picomatch set size:126376 disposed:false
+102 silly placeDep ROOT mdn-data@2.27.1 OK for: css-tree@3.2.1 want: 2.27.1
+103 silly placeDep ROOT @nodelib/fs.stat@2.0.5 OK for: fast-glob@3.3.3 want: ^2.0.2
+104 silly placeDep ROOT @nodelib/fs.walk@1.2.8 OK for: fast-glob@3.3.3 want: ^1.2.3
+105 silly placeDep ROOT glob-parent@5.1.2 OK for: fast-glob@3.3.3 want: ^5.1.2
+106 silly placeDep ROOT merge2@1.4.1 OK for: fast-glob@3.3.3 want: ^1.3.0
+107 silly fetch manifest fastq@^1.6.0
+108 silly packumentCache full:https://registry.npmjs.org/fastq cache-miss
+109 http fetch GET 200 https://registry.npmjs.org/fastq 90ms (cache revalidated)
+110 silly packumentCache full:https://registry.npmjs.org/fastq set size:78301 disposed:false
+111 silly fetch manifest @nodelib/fs.scandir@2.1.5
+112 silly packumentCache full:https://registry.npmjs.org/@nodelib%2ffs.scandir cache-miss
+113 http fetch GET 200 https://registry.npmjs.org/@nodelib%2ffs.scandir 97ms (cache revalidated)
+114 silly packumentCache full:https://registry.npmjs.org/@nodelib%2ffs.scandir set size:49256 disposed:false
+115 silly fetch manifest is-glob@^4.0.1
+116 silly packumentCache full:https://registry.npmjs.org/is-glob cache-miss
+117 http fetch GET 200 https://registry.npmjs.org/is-glob 98ms (cache revalidated)
+118 silly packumentCache full:https://registry.npmjs.org/is-glob set size:40530 disposed:false
+119 silly placeDep ROOT @nodelib/fs.scandir@2.1.5 OK for: @nodelib/fs.walk@1.2.8 want: 2.1.5
+120 silly placeDep ROOT fastq@1.20.1 OK for: @nodelib/fs.walk@1.2.8 want: ^1.6.0
+121 silly fetch manifest run-parallel@^1.1.9
+122 silly packumentCache full:https://registry.npmjs.org/run-parallel cache-miss
+123 http fetch GET 200 https://registry.npmjs.org/run-parallel 96ms (cache revalidated)
+124 silly packumentCache full:https://registry.npmjs.org/run-parallel set size:35172 disposed:false
+125 silly fetch manifest reusify@^1.0.4
+126 silly packumentCache full:https://registry.npmjs.org/reusify cache-miss
+127 http fetch GET 200 https://registry.npmjs.org/reusify 98ms (cache revalidated)
+128 silly packumentCache full:https://registry.npmjs.org/reusify set size:14249 disposed:false
+129 silly placeDep ROOT run-parallel@1.2.0 OK for: @nodelib/fs.scandir@2.1.5 want: ^1.1.9
+130 silly fetch manifest queue-microtask@^1.2.2
+131 silly packumentCache full:https://registry.npmjs.org/queue-microtask cache-miss
+132 http fetch GET 200 https://registry.npmjs.org/queue-microtask 136ms (cache revalidated)
+133 silly packumentCache full:https://registry.npmjs.org/queue-microtask set size:36088 disposed:false
+134 silly placeDep ROOT reusify@1.1.0 OK for: fastq@1.20.1 want: ^1.0.4
+135 silly placeDep ROOT is-glob@4.0.3 OK for: glob-parent@5.1.2 want: ^4.0.1
+136 silly fetch manifest is-extglob@^2.1.1
+137 silly packumentCache full:https://registry.npmjs.org/is-extglob cache-miss
+138 http fetch GET 200 https://registry.npmjs.org/is-extglob 100ms (cache revalidated)
+139 silly packumentCache full:https://registry.npmjs.org/is-extglob set size:11766 disposed:false
+140 silly placeDep ROOT @sindresorhus/merge-streams@4.0.0 OK for: globby@16.2.0 want: ^4.0.0
+141 silly placeDep ROOT is-path-inside@4.0.0 OK for: globby@16.2.0 want: ^4.0.0
+142 silly placeDep ROOT slash@5.1.0 OK for: globby@16.2.0 want: ^5.1.0
+143 silly placeDep ROOT unicorn-magic@0.4.0 OK for: globby@16.2.0 want: ^0.4.0
+144 silly placeDep ROOT is-extglob@2.1.1 OK for: is-glob@4.0.3 want: ^2.1.1
+145 silly placeDep ROOT braces@3.0.3 OK for: micromatch@4.0.8 want: ^3.0.3
+146 silly placeDep ROOT picomatch@2.3.2 OK for: micromatch@4.0.8 want: ^2.3.1
+147 silly fetch manifest fill-range@^7.1.1
+148 silly packumentCache full:https://registry.npmjs.org/fill-range cache-miss
+149 http fetch GET 200 https://registry.npmjs.org/fill-range 89ms (cache revalidated)
+150 silly packumentCache full:https://registry.npmjs.org/fill-range set size:90212 disposed:false
+151 silly placeDep ROOT fill-range@7.1.1 OK for: braces@3.0.3 want: ^7.1.1
+152 silly fetch manifest to-regex-range@^5.0.1
+153 silly packumentCache full:https://registry.npmjs.org/to-regex-range cache-miss
+154 http fetch GET 200 https://registry.npmjs.org/to-regex-range 96ms (cache revalidated)
+155 silly packumentCache full:https://registry.npmjs.org/to-regex-range set size:61569 disposed:false
+156 silly placeDep ROOT to-regex-range@5.0.1 OK for: fill-range@7.1.1 want: ^5.0.1
+157 silly fetch manifest is-number@^7.0.0
+158 silly packumentCache full:https://registry.npmjs.org/is-number cache-miss
+159 http fetch GET 200 https://registry.npmjs.org/is-number 94ms (cache revalidated)
+160 silly packumentCache full:https://registry.npmjs.org/is-number set size:36183 disposed:false
+161 silly placeDep ROOT queue-microtask@1.2.3 OK for: run-parallel@1.2.0 want: ^1.2.2
+162 silly placeDep ROOT is-number@7.0.0 OK for: to-regex-range@5.0.1 want: ^7.0.0
+163 silly reify mark retired [
+163 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/@csstools/css-syntax-patches-for-csstree'
+163 silly reify ]
+164 silly reify mark retired [ '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/globby' ]
+165 silly reify mark retired [ '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/picomatch' ]
+166 silly reify mark retired [ '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/postcss' ]
+167 silly reify mark retired [
+167 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/stylelint',
+167 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/.bin/stylelint'
+167 silly reify ]
+168 silly reify moves {
+168 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/@csstools/css-syntax-patches-for-csstree': '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/@csstools/.css-syntax-patches-for-csstree-JXBzXfBM',
+168 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/globby': '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/.globby-iA1UCM0m',
+168 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/picomatch': '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/.picomatch-hRyUPtVg',
+168 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/postcss': '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/.postcss-MhECNHzg',
+168 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/stylelint': '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/.stylelint-VxX0dSny',
+168 silly reify   '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/.bin/stylelint': '/app/.npm-cache/_npx/69cd2ba96dd4b8d2/node_modules/.bin/.stylelint-s6AMJNr6'
+168 silly reify }
+169 http cache stylelint@https://registry.npmjs.org/stylelint/-/stylelint-17.8.0.tgz 0ms (cache hit)
+170 http cache postcss@https://registry.npmjs.org/postcss/-/postcss-8.5.10.tgz 0ms (cache hit)
+171 http cache globby@https://registry.npmjs.org/globby/-/globby-16.2.0.tgz 0ms (cache hit)
+172 http cache picomatch@https://registry.npmjs.org/picomatch/-/picomatch-2.3.2.tgz 0ms (cache hit)
+173 http cache @csstools/css-syntax-patches-for-csstree@https://registry.npmjs.org/@csstools/css-syntax-patches-for-csstree/-/css-syntax-patches-for-csstree-1.1.3.tgz 0ms (cache hit)
+174 silly tarball no local data for stylelint@https://registry.npmjs.org/stylelint/-/stylelint-17.8.0.tgz. Extracting by manifest.
+175 silly tarball no local data for postcss@https://registry.npmjs.org/postcss/-/postcss-8.5.10.tgz. Extracting by manifest.
+176 silly tarball no local data for globby@https://registry.npmjs.org/globby/-/globby-16.2.0.tgz. Extracting by manifest.
+177 silly tarball no local data for @csstools/css-syntax-patches-for-csstree@https://registry.npmjs.org/@csstools/css-syntax-patches-for-csstree/-/css-syntax-patches-for-csstree-1.1.3.tgz. Extracting by manifest.
+178 http fetch GET 200 https://registry.npmjs.org/globby/-/globby-16.2.0.tgz 388ms (cache miss)
+179 http fetch GET 200 https://registry.npmjs.org/postcss/-/postcss-8.5.10.tgz 503ms (cache miss)
+180 http fetch GET 200 https://registry.npmjs.org/@csstools/css-syntax-patches-for-csstree/-/css-syntax-patches-for-csstree-1.1.3.tgz 503ms (cache miss)
+181 http fetch GET 200 https://registry.npmjs.org/stylelint/-/stylelint-17.8.0.tgz 1006ms (cache miss)
+182 verbose cwd /app
+183 verbose os Linux 6.8.0-90-generic
+184 verbose node v22.21.1
+185 verbose npm  v10.9.4
+186 verbose exit 0
+187 info ok
