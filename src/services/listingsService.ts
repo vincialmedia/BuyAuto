@@ -258,7 +258,7 @@ type FuelValue = (typeof FUEL_VALUES)[number];
 const GEARBOX_VALUES = ["Automatik", "Manuell"] as const;
 type GearboxValue = (typeof GEARBOX_VALUES)[number];
 
-const BODY_VALUES = ["Limousine", "Kombi", "SUV", "Cabrio"] as const;
+const BODY_VALUES = ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"] as const;
 type BodyValue = (typeof BODY_VALUES)[number];
 
 function isOneOf<T extends readonly string[]>(values: T, input: unknown): input is T[number] {

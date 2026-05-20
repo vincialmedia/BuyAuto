@@ -41,7 +41,7 @@ export interface Listing {
   mileageKm: number;
   fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
   gearbox: "Automatik" | "Manuell";
-  body: "Limousine" | "Kombi" | "SUV" | "Cabrio";
+  body: "Limousine" | "Kombi" | "SUV" | "Cabrio" | "Coupe";
   premium: boolean;
   depositCHF?: number | null;
   images: string[];
@@ -155,7 +155,7 @@ export interface ListingFormData {
   mileage_km: number | string;
   fuel: "Benzin" | "Diesel" | "Hybrid" | "Elektro";
   gearbox: "Automatik" | "Manuell";  
-  body: "Limousine" | "Kombi" | "SUV" | "Cabrio";
+  body: "Limousine" | "Kombi" | "SUV" | "Cabrio" | "Coupe";
   description?: string; // ✅ Added description field
   
   price_per_month_chf: number | string;
