@@ -79,16 +79,10 @@ function computeDashboardStatsFromListings(listings: ListingDetail[]): Dashboard
   return stats;
 }
 
-function getStableGarageLogoUrl(garageId: string, version?: number): string {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base) return "";
-  const cleanBase = base.replace(/\/$/, "");
-  const path = `garage-logos/${garageId}/logo_medium.webp`
-    .split("/")
-    .map((seg) => encodeURIComponent(seg))
-    .join("/");
-  const url = `${cleanBase}/storage/v1/object/public/listing-images/${path}`;
-  return version ? `${url}?v=${version}` : url;
+function appendCacheBuster(url: string | null | undefined, version?: number): string | undefined {
+  if (!url) return undefined;
+  if (!version) return url;
+  return url.includes("?") ? `${url}&v=${version}` : `${url}?v=${version}`;
 }
 
 export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
@@ -129,10 +123,8 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   }, [entitlement]);
 
   const logoUrl = useMemo(() => {
-    if (!garage?.id) return undefined;
-    const url = getStableGarageLogoUrl(garage.id, logoVersion);
-    return url || undefined;
-  }, [garage?.id, logoVersion]);
+    return appendCacheBuster(garage?.logo_url, logoVersion);
+  }, [garage?.logo_url, logoVersion]);
 
   useEffect(() => {
     if (!hasMounted) return;

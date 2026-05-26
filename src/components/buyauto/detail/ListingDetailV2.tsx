@@ -397,19 +397,10 @@ export function ListingDetailV2({
 
                       const headerImageUrl = garage?.headerImageUrl ?? null;
 
-                      const garageIdForLogo =
-                        (listing as unknown as { garage_id?: string | null }).garage_id ??
-                        (listing as unknown as { garageId?: string | null }).garageId ??
-                        null;
-
-                      const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
                       const logoUrl =
-                        supabaseBase && garageIdForLogo
-                          ? `${supabaseBase}/storage/v1/object/public/listing-images/${`garage-logos/${garageIdForLogo}/logo_medium.webp`
-                              .split("/")
-                              .map((seg) => encodeURIComponent(seg))
-                              .join("/")}`
-                          : null;
+                        garage?.logoUrl ??
+                        (listing as unknown as { garage_logo_url?: string | null }).garage_logo_url ??
+                        null;
 
                       return (
                         <div className="rounded-3xl overflow-hidden border border-neutral-200/60 bg-white shadow-sm">

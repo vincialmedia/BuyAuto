@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
 interface VerticalListingCardProps {
   listing: Listing;
@@ -117,7 +118,7 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
         {/* Image Section */}
         <div className="relative w-64 h-40 flex-shrink-0 overflow-hidden">
           <Image
-            src={listing.imageUrl}
+            src={getImageVariant(listing.imageUrl, "medium")}
             alt={`${listing.brand} ${listing.model}`}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -232,15 +233,9 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
         <div className="relative h-8 w-8 overflow-hidden rounded-full bg-neutral-100 ring-1 ring-neutral-200 flex-shrink-0">
           {(() => {
             const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
-            const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
-            const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-            if (sellerType === "garage" && garageId && base) {
-              const path = `garage-logos/${garageId}/logo_medium.webp`
-                .split("/")
-                .map((seg) => encodeURIComponent(seg))
-                .join("/");
-              const src = `${base}/storage/v1/object/public/listing-images/${path}`;
-              return <img src={src} alt="Garage Logo" className="h-full w-full object-cover" loading="lazy" />;
+            const garageLogoUrl = (listing as unknown as { garage_logo_url?: string | null }).garage_logo_url;
+            if (sellerType === "garage" && garageLogoUrl) {
+              return <img src={garageLogoUrl} alt="Garage Logo" className="h-full w-full object-cover" loading="lazy" />;
             }
 
             const avatarUrl = (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;

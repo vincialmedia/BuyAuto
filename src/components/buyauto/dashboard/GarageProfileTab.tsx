@@ -339,7 +339,8 @@ export function GarageProfileTab({
     setLogoProgress(0);
 
     try {
-      await uploadGarageLogo(file, garage.id, setLogoProgress);
+      const url = await uploadGarageLogo(file, garage.id, setLogoProgress);
+      await onUpdate({ logo_url: url });
       onLogoVersionChange(Date.now());
       setBanner({ kind: "success", message: "Logo aktualisiert." });
     } catch (e) {

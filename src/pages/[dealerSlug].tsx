@@ -1,7 +1,6 @@
 import type { GetServerSideProps } from "next";
 import { SEO } from "@/components/SEO";
 import { getPublicGarageBySlug } from "@/services/garageService";
-import { getGarageLogoPublicUrl } from "@/services/storageService";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
 import { DealerHeroHeader } from "@/components/buyauto/dealer/DealerHeroHeader";
 import { DealerAboutAndMap } from "@/components/buyauto/dealer/DealerAboutAndMap";
@@ -45,7 +44,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       (process.env.NODE_ENV === "production" ? "https://www.buyauto.ch" : "http://localhost:3000");
 
     const absoluteUrl = `${base.replace(/\/$/, "")}/${garage.slug}`;
-    const logoUrl = getGarageLogoPublicUrl(garage.id);
+    const logoUrl = garage.logo_url ?? null;
 
     return {
       props: {

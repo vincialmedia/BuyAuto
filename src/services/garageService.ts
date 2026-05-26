@@ -20,6 +20,7 @@ export interface Garage {
   website_url: string | null;
   description: string | null;
   header_image_url: string | null;
+  logo_url: string | null;
   opening_hours: Record<string, { from: string; to: string; closed: boolean }> | null;
   services: string[] | null;
   team_members: TeamMember[] | null;
@@ -53,6 +54,7 @@ export type GarageUpdate = Partial<
     | "website_url"
     | "description"
     | "header_image_url"
+    | "logo_url"
     | "opening_hours"
     | "services"
     | "team_members"
@@ -87,6 +89,9 @@ function toGarage(row: unknown): Garage {
   const headerRaw = typeof r.header_image_url === "string" ? r.header_image_url : null;
   const resolvedHeader = resolveListingImagesPublicUrl(headerRaw) ?? headerRaw;
 
+  const logoRaw = typeof r.logo_url === "string" ? r.logo_url : null;
+  const resolvedLogo = resolveListingImagesPublicUrl(logoRaw) ?? logoRaw;
+
   return {
     id: String(r.id ?? ""),
     owner_user_id: String(r.owner_user_id ?? ""),
@@ -98,6 +103,7 @@ function toGarage(row: unknown): Garage {
     website_url: typeof r.website_url === "string" ? r.website_url : null,
     description: typeof r.description === "string" ? r.description : null,
     header_image_url: resolvedHeader,
+    logo_url: resolvedLogo,
     opening_hours:
       r.opening_hours && typeof r.opening_hours === "object"
         ? (r.opening_hours as Record<string, { from: string; to: string; closed: boolean }>)
@@ -207,13 +213,16 @@ export async function getGaragePublicById(garageId: string): Promise<GaragePubli
     const headerRaw = (row as any)?.header_image_url ?? null;
     const headerImageUrl = resolveListingImagesPublicUrl(typeof headerRaw === "string" ? headerRaw : null) ?? (typeof headerRaw === "string" ? headerRaw : null);
 
+    const logoRaw = (row as any)?.logo_url ?? null;
+    const logoUrl = resolveListingImagesPublicUrl(typeof logoRaw === "string" ? logoRaw : null) ?? (typeof logoRaw === "string" ? logoRaw : null);
+
     return {
       id: (row as any)?.id,
       name,
       slug,
       city,
       bio,
-      logoUrl: null,
+      logoUrl,
       headerImageUrl,
 
       location: city,

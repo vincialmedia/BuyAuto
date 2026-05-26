@@ -17,7 +17,27 @@ type PublicGarageRow = {
   slug: string | null;
   description: string | null;
   header_image_url: string | null;
+  logo_url: string | null;
 };
+
+function resolveListingImagesPublicUrl(pathOrUrl: string | null): string | null {
+  if (typeof pathOrUrl !== "string") return null;
+  const v = pathOrUrl.trim();
+  if (!v) return null;
+
+  if (/^https?:\/\//i.test(v)) return v;
+  if (v.startsWith("/")) return v;
+
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  if (!base) return null;
+
+  const encoded = v
+    .split("/")
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+
+  return `${base}/storage/v1/object/public/listing-images/${encoded}`;
+}
 
 type PublicListingOwnerProfileRow = {
   listing_id: string;
@@ -108,6 +128,7 @@ async function fetchPublicGaragesByIds(garageIds: string[]): Promise<Record<stri
       slug: typeof (r as any)?.slug === "string" ? (r as any).slug : null,
       description: typeof (r as any)?.description === "string" ? (r as any).description : null,
       header_image_url: typeof (r as any)?.header_image_url === "string" ? (r as any).header_image_url : null,
+      logo_url: typeof (r as any)?.logo_url === "string" ? (r as any).logo_url : null,
     };
   }
 
@@ -360,6 +381,7 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     seller_avatar_url,
     garage_id,
     garage_name,
+    garage_logo_url: null,
   };
 }
 
@@ -452,6 +474,7 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
     seller_avatar_url,
     garage_id,
     garage_name,
+    garage_logo_url: null,
   };
 }
 
@@ -512,6 +535,7 @@ function transformListingsTableRowToListingDetail(row: ListingsTableRow): Listin
     seller_avatar_url: null,
     garage_id: row.garage_id ?? null,
     garage_name: null,
+    garage_logo_url: null,
   };
 }
 
@@ -673,11 +697,13 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       const gId = getGarageIdFromRow(r);
       if (gId && publicGaragesById[gId]) {
         const g = publicGaragesById[gId];
+        const resolvedLogo = resolveListingImagesPublicUrl(g.logo_url) ?? g.logo_url ?? null;
         return {
           ...listing,
           seller_name: g.garage_name ?? listing.seller_name ?? null,
           garage_name: g.garage_name ?? listing.garage_name ?? null,
           garage_id: gId,
+          garage_logo_url: resolvedLogo,
         };
       }
 
@@ -873,11 +899,13 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
       const gId = getGarageIdFromRow(r);
       if (gId && publicGaragesById[gId]) {
         const g = publicGaragesById[gId];
+        const resolvedLogo = resolveListingImagesPublicUrl(g.logo_url) ?? g.logo_url ?? null;
         return {
           ...listing,
           seller_name: g.garage_name ?? listing.seller_name ?? null,
           garage_name: g.garage_name ?? listing.garage_name ?? null,
           garage_id: gId,
+          garage_logo_url: resolvedLogo,
         };
       }
 

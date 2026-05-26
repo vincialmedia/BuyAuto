@@ -62,6 +62,7 @@ export interface Listing {
   seller_avatar_url?: string | null;
   garage_id?: string | null;
   garage_name?: string | null;
+  garage_logo_url?: string | null;
 
   view_count?: number;
 }

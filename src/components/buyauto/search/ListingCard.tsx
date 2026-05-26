@@ -152,17 +152,11 @@ export default function ListingCard({ listing, className }: ListingCardProps) {
 
             {(() => {
               const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
-              const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
-              const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-              if (sellerType !== "garage" || !garageId || !base) return null;
-              const path = `garage-logos/${garageId}/logo_medium.webp`
-                .split("/")
-                .map((seg) => encodeURIComponent(seg))
-                .join("/");
-              const src = `${base}/storage/v1/object/public/listing-images/${path}`;
+              const garageLogoUrl = (listing as unknown as { garage_logo_url?: string | null }).garage_logo_url;
+              if (sellerType !== "garage" || !garageLogoUrl) return null;
               return (
                 <div className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 ring-1 ring-white/60 shadow overflow-hidden">
-                  <img src={src} alt="Garage Logo" className="h-full w-full object-cover" loading="lazy" />
+                  <img src={garageLogoUrl} alt="Garage Logo" className="h-full w-full object-cover" loading="lazy" />
                 </div>
               );
             })()}

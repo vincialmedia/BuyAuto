@@ -438,6 +438,7 @@ export type Database = {
           header_image_url: string | null
           id: string
           listing_limit: number | null
+          logo_url: string | null
           opening_hours: Json | null
           owner_user_id: string
           phone_number: string | null
@@ -458,6 +459,7 @@ export type Database = {
           header_image_url?: string | null
           id?: string
           listing_limit?: number | null
+          logo_url?: string | null
           opening_hours?: Json | null
           owner_user_id: string
           phone_number?: string | null
@@ -478,6 +480,7 @@ export type Database = {
           header_image_url?: string | null
           id?: string
           listing_limit?: number | null
+          logo_url?: string | null
           opening_hours?: Json | null
           owner_user_id?: string
           phone_number?: string | null
@@ -1838,6 +1841,7 @@ export type Database = {
           header_image_url: string
           id: string
           listing_limit: number
+          logo_url: string
           opening_hours: Json
           owner_user_id: string
           phone_number: string
@@ -1863,6 +1867,7 @@ export type Database = {
           garage_name: string
           header_image_url: string
           id: string
+          logo_url: string
           slug: string
         }[]
       }

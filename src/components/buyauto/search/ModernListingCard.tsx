@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
 interface ModernListingCardProps {
   listing: Listing;
@@ -142,7 +143,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200" />
         )}
         <Image
-          src={listing.imageUrl}
+          src={getImageVariant(listing.imageUrl, "medium")}
           alt={`${listing.brand} ${listing.model}`}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -166,17 +167,11 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
 
         {(() => {
           const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
-          const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
-          const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-          if (sellerType !== "garage" || !garageId || !base) return null;
-          const path = `garage-logos/${garageId}/logo_medium.webp`
-            .split("/")
-            .map((seg) => encodeURIComponent(seg))
-            .join("/");
-          const src = `${base}/storage/v1/object/public/listing-images/${path}`;
+          const garageLogoUrl = (listing as unknown as { garage_logo_url?: string | null }).garage_logo_url;
+          if (sellerType !== "garage" || !garageLogoUrl) return null;
           return (
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 h-9 w-9 rounded-full bg-white/90 ring-1 ring-white/60 shadow overflow-hidden">
-              <img src={src} alt="Garage Logo" className="h-full w-full object-cover" loading="lazy" />
+              <img src={garageLogoUrl} alt="Garage Logo" className="h-full w-full object-cover" loading="lazy" />
             </div>
           );
         })()}
@@ -246,15 +241,9 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           <div className="relative h-9 w-9 overflow-hidden rounded-full bg-neutral-100 ring-1 ring-neutral-200 flex-shrink-0">
             {(() => {
               const sellerType = (listing as unknown as { seller_type?: string | null }).seller_type;
-              const garageId = (listing as unknown as { garage_id?: string | null }).garage_id;
-              const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-              if (sellerType === "garage" && garageId && base) {
-                const path = `garage-logos/${garageId}/logo_medium.webp`
-                  .split("/")
-                  .map((seg) => encodeURIComponent(seg))
-                  .join("/");
-                const src = `${base}/storage/v1/object/public/listing-images/${path}`;
-                return <img src={src} alt={sellerName} className="h-full w-full object-cover" loading="lazy" />;
+              const garageLogoUrl = (listing as unknown as { garage_logo_url?: string | null }).garage_logo_url;
+              if (sellerType === "garage" && garageLogoUrl) {
+                return <img src={garageLogoUrl} alt={sellerName} className="h-full w-full object-cover" loading="lazy" />;
               }
 
               if (sellerAvatarUrl) {
