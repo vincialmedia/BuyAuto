@@ -52,17 +52,40 @@ export async function resizeImage(
       // Draw and compress
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      // Convert to blob with specified format and quality
+      const requestedMime = `image/${config.format || "webp"}`;
+      const quality = config.quality / 100;
+
       canvas.toBlob(
         (blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
+          if (!blob) {
             reject(new Error("Failed to create blob"));
+            return;
           }
+
+          // Some browsers (notably older iOS Safari) silently fall back to
+          // PNG when an unsupported encoder is requested. PNG bloats
+          // photographic content (often 10-30x larger than WebP/JPEG). If the
+          // actual blob type doesn't match what we asked for, re-encode as
+          // JPEG — universally supported and much smaller for photos.
+          if (blob.type !== requestedMime) {
+            canvas.toBlob(
+              (jpegBlob) => {
+                if (jpegBlob) {
+                  resolve(jpegBlob);
+                } else {
+                  reject(new Error("Failed to re-encode as JPEG fallback"));
+                }
+              },
+              "image/jpeg",
+              quality
+            );
+            return;
+          }
+
+          resolve(blob);
         },
-        `image/${config.format || "webp"}`,
-        config.quality / 100
+        requestedMime,
+        quality
       );
     };
 
@@ -110,6 +133,24 @@ export async function optimizeImage(
   size: keyof typeof IMAGE_SIZE_CONFIGS = "large"
 ): Promise<Blob> {
   return resizeImage(file, IMAGE_SIZE_CONFIGS[size]);
+}
+
+/**
+ * Map a Blob's MIME type to its canonical file extension. Used by upload code
+ * so the storage filename matches the actual encoded content (which may differ
+ * from what we requested — see resizeImage's fallback handling).
+ */
+export function getImageExtension(blob: Blob): string {
+  switch (blob.type) {
+    case "image/webp":
+      return "webp";
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    default:
+      return "webp";
+  }
 }
 
 /**

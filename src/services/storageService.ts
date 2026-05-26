@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { generateImageVariants, shouldOptimizeImage, formatFileSize } from "@/lib/buyauto/imageOptimization";
+import { generateImageVariants, shouldOptimizeImage, formatFileSize, getImageExtension } from "@/lib/buyauto/imageOptimization";
 
 const LISTING_IMAGES_BUCKET = "listing-images";
 const GARAGE_TEAM_BUCKET = "garage-team";
@@ -38,29 +38,36 @@ export async function uploadOptimizedImage(
       
       // Generate optimized variants
       const variants = await generateImageVariants(file);
-      
+
       if (onProgress) onProgress(40);
 
-      // Upload all variants
+      // Derive paths from each blob's actual MIME type. resizeImage may have
+      // re-encoded as JPEG if the browser couldn't produce WebP (iOS Safari),
+      // so we must not hardcode .webp here or the served content-type and
+      // file extension will mismatch.
+      const thumbPath = basePath.replace(/\.[^.]+$/, `_thumbnail.${getImageExtension(variants.thumbnail)}`);
+      const mediumPath = basePath.replace(/\.[^.]+$/, `_medium.${getImageExtension(variants.medium)}`);
+      const largePath = basePath.replace(/\.[^.]+$/, `_large.${getImageExtension(variants.large)}`);
+
       const uploadPromises = [
         supabase.storage
           .from(bucket)
-          .upload(basePath.replace(/\.[^.]+$/, "_thumbnail.webp"), variants.thumbnail, {
-            contentType: "image/webp",
+          .upload(thumbPath, variants.thumbnail, {
+            contentType: variants.thumbnail.type,
             cacheControl: "3600",
             upsert: false,
           }),
         supabase.storage
           .from(bucket)
-          .upload(basePath.replace(/\.[^.]+$/, "_medium.webp"), variants.medium, {
-            contentType: "image/webp",
+          .upload(mediumPath, variants.medium, {
+            contentType: variants.medium.type,
             cacheControl: "3600",
             upsert: false,
           }),
         supabase.storage
           .from(bucket)
-          .upload(basePath.replace(/\.[^.]+$/, "_large.webp"), variants.large, {
-            contentType: "image/webp",
+          .upload(largePath, variants.large, {
+            contentType: variants.large.type,
             cacheControl: "3600",
             upsert: false,
           }),
@@ -79,13 +86,13 @@ export async function uploadOptimizedImage(
       // Get public URLs
       const { data: thumbnailData } = supabase.storage
         .from(bucket)
-        .getPublicUrl(basePath.replace(/\.[^.]+$/, "_thumbnail.webp"));
+        .getPublicUrl(thumbPath);
       const { data: mediumData } = supabase.storage
         .from(bucket)
-        .getPublicUrl(basePath.replace(/\.[^.]+$/, "_medium.webp"));
+        .getPublicUrl(mediumPath);
       const { data: largeData } = supabase.storage
         .from(bucket)
-        .getPublicUrl(basePath.replace(/\.[^.]+$/, "_large.webp"));
+        .getPublicUrl(largePath);
 
       if (onProgress) onProgress(100);
 
@@ -203,19 +210,25 @@ export async function uploadGarageLogo(
       const variants = await generateImageVariants(safeFile);
       if (onProgress) onProgress(45);
 
+      // Derive paths from each blob's actual MIME type — resizeImage may have
+      // re-encoded as JPEG when canvas WebP encoding isn't available (iOS Safari).
+      const thumbPath = `${basePath}_thumbnail.${getImageExtension(variants.thumbnail)}`;
+      const mediumPath = `${basePath}_medium.${getImageExtension(variants.medium)}`;
+      const largePath = `${basePath}_large.${getImageExtension(variants.large)}`;
+
       const uploads = await Promise.all([
-        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_thumbnail.webp`, variants.thumbnail, {
-          contentType: "image/webp",
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(thumbPath, variants.thumbnail, {
+          contentType: variants.thumbnail.type,
           cacheControl: "3600",
           upsert: true,
         }),
-        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_medium.webp`, variants.medium, {
-          contentType: "image/webp",
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(mediumPath, variants.medium, {
+          contentType: variants.medium.type,
           cacheControl: "3600",
           upsert: true,
         }),
-        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_large.webp`, variants.large, {
-          contentType: "image/webp",
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(largePath, variants.large, {
+          contentType: variants.large.type,
           cacheControl: "3600",
           upsert: true,
         }),
@@ -228,7 +241,7 @@ export async function uploadGarageLogo(
 
       const { data: mediumData } = supabase.storage
         .from(LISTING_IMAGES_BUCKET)
-        .getPublicUrl(`${basePath}_medium.webp`);
+        .getPublicUrl(mediumPath);
 
       if (onProgress) onProgress(100);
 
@@ -239,7 +252,8 @@ export async function uploadGarageLogo(
       return mediumData.publicUrl;
     }
 
-    const { error } = await supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_medium.webp`, safeFile, {
+    const mediumPath = `${basePath}_medium.${getImageExtension(safeFile)}`;
+    const { error } = await supabase.storage.from(LISTING_IMAGES_BUCKET).upload(mediumPath, safeFile, {
       contentType: safeFile.type,
       cacheControl: "3600",
       upsert: true,
@@ -247,7 +261,7 @@ export async function uploadGarageLogo(
 
     if (error) throw error;
 
-    const { data: mediumData } = supabase.storage.from(LISTING_IMAGES_BUCKET).getPublicUrl(`${basePath}_medium.webp`);
+    const { data: mediumData } = supabase.storage.from(LISTING_IMAGES_BUCKET).getPublicUrl(mediumPath);
 
     if (onProgress) onProgress(100);
 
@@ -282,19 +296,25 @@ export async function uploadGarageHeaderImage(
       const variants = await generateImageVariants(safeFile);
       if (onProgress) onProgress(45);
 
+      // Derive paths from each blob's actual MIME type — resizeImage may have
+      // re-encoded as JPEG when canvas WebP encoding isn't available (iOS Safari).
+      const thumbPath = `${basePath}_thumbnail.${getImageExtension(variants.thumbnail)}`;
+      const mediumPath = `${basePath}_medium.${getImageExtension(variants.medium)}`;
+      const largePath = `${basePath}_large.${getImageExtension(variants.large)}`;
+
       const uploads = await Promise.all([
-        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_thumbnail.webp`, variants.thumbnail, {
-          contentType: "image/webp",
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(thumbPath, variants.thumbnail, {
+          contentType: variants.thumbnail.type,
           cacheControl: "3600",
           upsert: true,
         }),
-        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_medium.webp`, variants.medium, {
-          contentType: "image/webp",
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(mediumPath, variants.medium, {
+          contentType: variants.medium.type,
           cacheControl: "3600",
           upsert: true,
         }),
-        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_large.webp`, variants.large, {
-          contentType: "image/webp",
+        supabase.storage.from(LISTING_IMAGES_BUCKET).upload(largePath, variants.large, {
+          contentType: variants.large.type,
           cacheControl: "3600",
           upsert: true,
         }),
@@ -307,7 +327,7 @@ export async function uploadGarageHeaderImage(
 
       const { data: largeData } = supabase.storage
         .from(LISTING_IMAGES_BUCKET)
-        .getPublicUrl(`${basePath}_large.webp`);
+        .getPublicUrl(largePath);
 
       if (onProgress) onProgress(100);
 
@@ -318,7 +338,8 @@ export async function uploadGarageHeaderImage(
       return largeData.publicUrl;
     }
 
-    const { error } = await supabase.storage.from(LISTING_IMAGES_BUCKET).upload(`${basePath}_large.webp`, safeFile, {
+    const largePath = `${basePath}_large.${safeFile.type === "image/png" ? "png" : safeFile.type === "image/jpeg" ? "jpg" : "webp"}`;
+    const { error } = await supabase.storage.from(LISTING_IMAGES_BUCKET).upload(largePath, safeFile, {
       contentType: safeFile.type,
       cacheControl: "3600",
       upsert: true,
@@ -326,7 +347,7 @@ export async function uploadGarageHeaderImage(
 
     if (error) throw error;
 
-    const { data: largeData } = supabase.storage.from(LISTING_IMAGES_BUCKET).getPublicUrl(`${basePath}_large.webp`);
+    const { data: largeData } = supabase.storage.from(LISTING_IMAGES_BUCKET).getPublicUrl(largePath);
 
     if (onProgress) onProgress(100);
 
@@ -336,27 +357,6 @@ export async function uploadGarageHeaderImage(
     console.error("Error uploading garage header:", error);
     throw error;
   }
-}
-
-export async function getGarageLogoUrl(garageId: string): Promise<string> {
-  try {
-    const basePath = `garage-logos/${garageId}/logo`;
-    const { data: mediumData } = supabase.storage
-      .from(LISTING_IMAGES_BUCKET)
-      .getPublicUrl(`${basePath}_medium.webp`);
-    return mediumData.publicUrl;
-  } catch (error) {
-    console.error("Error getting garage logo URL:", error);
-    throw error;
-  }
-}
-
-export function getGarageLogoPublicUrl(garageId: string): string {
-  const { data } = supabase.storage
-    .from(LISTING_IMAGES_BUCKET)
-    .getPublicUrl(`garage-logos/${garageId}/logo_medium.webp`);
-
-  return data.publicUrl;
 }
 
 export async function uploadGarageTeamMemberPhoto(
@@ -382,19 +382,25 @@ export async function uploadGarageTeamMemberPhoto(
     const variants = await generateImageVariants(safeFile);
     if (onProgress) onProgress(45);
 
+    // Derive paths from each blob's actual MIME type — resizeImage may have
+    // re-encoded as JPEG when canvas WebP encoding isn't available (iOS Safari).
+    const thumbPath = `${basePath}_thumbnail.${getImageExtension(variants.thumbnail)}`;
+    const mediumPath = `${basePath}_medium.${getImageExtension(variants.medium)}`;
+    const largePath = `${basePath}_large.${getImageExtension(variants.large)}`;
+
     const uploads = await Promise.all([
-      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(`${basePath}_thumbnail.webp`, variants.thumbnail, {
-        contentType: "image/webp",
+      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(thumbPath, variants.thumbnail, {
+        contentType: variants.thumbnail.type,
         cacheControl: "3600",
         upsert: true,
       }),
-      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(`${basePath}_medium.webp`, variants.medium, {
-        contentType: "image/webp",
+      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(mediumPath, variants.medium, {
+        contentType: variants.medium.type,
         cacheControl: "3600",
         upsert: true,
       }),
-      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(`${basePath}_large.webp`, variants.large, {
-        contentType: "image/webp",
+      supabase.storage.from(GARAGE_TEAM_BUCKET).upload(largePath, variants.large, {
+        contentType: variants.large.type,
         cacheControl: "3600",
         upsert: true,
       }),
@@ -405,14 +411,15 @@ export async function uploadGarageTeamMemberPhoto(
 
     if (onProgress) onProgress(90);
 
-    const { data } = supabase.storage.from(GARAGE_TEAM_BUCKET).getPublicUrl(`${basePath}_medium.webp`);
+    const { data } = supabase.storage.from(GARAGE_TEAM_BUCKET).getPublicUrl(mediumPath);
 
     if (onProgress) onProgress(100);
 
     return data.publicUrl;
   }
 
-  const { error } = await supabase.storage.from(GARAGE_TEAM_BUCKET).upload(`${basePath}_medium.webp`, safeFile, {
+  const mediumPath = `${basePath}_medium.${safeFile.type === "image/png" ? "png" : safeFile.type === "image/jpeg" ? "jpg" : "webp"}`;
+  const { error } = await supabase.storage.from(GARAGE_TEAM_BUCKET).upload(mediumPath, safeFile, {
     contentType: safeFile.type,
     cacheControl: "3600",
     upsert: true,
@@ -420,7 +427,7 @@ export async function uploadGarageTeamMemberPhoto(
 
   if (error) throw error;
 
-  const { data } = supabase.storage.from(GARAGE_TEAM_BUCKET).getPublicUrl(`${basePath}_medium.webp`);
+  const { data } = supabase.storage.from(GARAGE_TEAM_BUCKET).getPublicUrl(mediumPath);
 
   if (onProgress) onProgress(100);
 
