@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Listing, ListingDetail } from "@/lib/buyauto/types";
 import { getSimilarListings } from "@/services/listingsService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
 interface SimilarListingsProps {
   listing: ListingDetail;
@@ -108,7 +109,7 @@ function SimilarListingCard({ listing }: { listing: Listing }) {
         <div className="relative aspect-video bg-gradient-to-br from-neutral-100 to-neutral-200">
           {listing.imageUrl && (
             <Image
-              src={listing.imageUrl}
+              src={getImageVariant(listing.imageUrl, "medium")}
               alt={`${listing.brand} ${listing.model} ${listing.year}`}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -172,7 +173,7 @@ function SimilarListingCardMobile({ listing }: { listing: Listing }) {
         <div className="relative aspect-video bg-gradient-to-br from-neutral-100 to-neutral-200">
           {listing.imageUrl && (
             <Image
-              src={listing.imageUrl}
+              src={getImageVariant(listing.imageUrl, "medium")}
               alt={`${listing.brand} ${listing.model} ${listing.year}`}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"

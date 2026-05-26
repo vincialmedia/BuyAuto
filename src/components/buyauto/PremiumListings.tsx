@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
 type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme" | "Auto Abo";
 type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover" | "auto_abo";
@@ -31,9 +32,10 @@ function getDealTypeLabel(listing: Listing): DealTypeLabel {
 interface PremiumListingsProps {
   externalFilter?: FilterCategory;
   onFilterChange?: (filter: FilterCategory) => void;
+  flushTop?: boolean;
 }
 
-export default function PremiumListings({ externalFilter, onFilterChange }: PremiumListingsProps) {
+export default function PremiumListings({ externalFilter, onFilterChange, flushTop }: PremiumListingsProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,9 +142,13 @@ export default function PremiumListings({ externalFilter, onFilterChange }: Prem
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < maxIndex;
 
+  const topSectionClass = flushTop
+    ? "pt-8 sm:pt-10 pb-16 sm:pb-20 bg-gradient-to-b from-neutral-50 to-white"
+    : "py-16 sm:py-20 bg-gradient-to-b from-neutral-50 to-white";
+
   if (isLoading) {
     return (
-      <section className="py-16 sm:py-20 bg-gradient-to-b from-neutral-50 to-white">
+      <section className={topSectionClass}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <div className="w-48 h-8 bg-neutral-200 rounded animate-pulse mx-auto mb-4" />
@@ -166,7 +172,7 @@ export default function PremiumListings({ externalFilter, onFilterChange }: Prem
 
   if (listings.length === 0) {
     return (
-      <section className="py-16 sm:py-20 bg-gradient-to-b from-neutral-50 to-white">
+      <section className={topSectionClass}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-5 py-2 mb-5">
@@ -336,7 +342,7 @@ export default function PremiumListings({ externalFilter, onFilterChange }: Prem
                           <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-neutral-100">
                             {listing.imageUrl ? (
                               <Image
-                                src={listing.imageUrl}
+                                src={getImageVariant(listing.imageUrl, "medium")}
                                 alt={`${listing.brand} ${listing.model}`}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"

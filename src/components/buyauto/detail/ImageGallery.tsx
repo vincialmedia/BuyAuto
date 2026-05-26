@@ -2,6 +2,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
 interface ImageGalleryProps {
   images: string[];
@@ -138,7 +139,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                 }`}
               >
                 <Image
-                  src={image}
+                  src={getImageVariant(image, "thumbnail")}
                   alt={`${alt} - Bild ${index + 1}`}
                   fill
                   className="object-cover"
