@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,14 +22,6 @@ type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover" |
 
 export default function HomePage() {
   const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");
-  const premiumSectionRef = useRef<HTMLDivElement>(null);
-
-  const handleKeywordClick = (filter: FilterCategory) => {
-    setPremiumFilter(filter);
-    setTimeout(() => {
-      premiumSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  };
 
   return (
     <div className="bg-[#fafafa] min-h-screen font-sans overflow-x-hidden">
@@ -123,39 +115,26 @@ export default function HomePage() {
         <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center">
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
-              Der einfachere Weg
+              Raus aus dem Leasing.
               <br />
-              zum nächsten <span className="text-red-500">Auto.</span>
+              Ohne <span className="text-red-500">Verlust.</span>
             </h1>
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/80 font-medium max-w-2xl mx-auto drop-shadow-md">
-              <button
-                onClick={() => handleKeywordClick("direct_purchase")}
+              BuyAuto ist die Schweizer Plattform, um ein Leasing zu{" "}
+              <Link
+                href="/suche?dealType=lease_takeover"
                 className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
               >
-                Kauf
-              </button>
-              {", "}
-              <button
-                onClick={() => handleKeywordClick("leasing")}
+                übernehmen
+              </Link>{" "}
+              oder{" "}
+              <Link
+                href="/leasinguebernahme"
                 className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
               >
-                Leasing
-              </button>
-              {", "}
-              <button
-                onClick={() => handleKeywordClick("lease_takeover")}
-                className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
-              >
-                Leasingübernahmen
-              </button>
-              {" und "}
-              <button
-                onClick={() => handleKeywordClick("auto_abo")}
-                className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
-              >
-                Abos
-              </button>
-              {" – finde das passende Auto in der Schweiz."}
+                abzugeben
+              </Link>
+              .
             </p>
           </div>
         </div>
@@ -176,8 +155,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div ref={premiumSectionRef} className="scroll-mt-4">
-        <PremiumListings externalFilter={premiumFilter} onFilterChange={setPremiumFilter} />
+      <div className="scroll-mt-4">
+        <PremiumListings flushTop externalFilter={premiumFilter} onFilterChange={setPremiumFilter} />
       </div>
 
       <WhyBuyAutoSection />

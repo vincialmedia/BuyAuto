@@ -1,11 +1,11 @@
-import { 
-  Car, 
-  Calculator, 
-  MessageSquare, 
-  MapPin, 
-  Coins, 
+import {
+  DoorOpen,
+  Landmark,
+  ConciergeBell,
+  Wallet,
+  CalendarClock,
+  TrendingDown,
   Sparkles,
-  Wrench,
   LucideIcon
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -16,37 +16,51 @@ interface ValueCard {
   description: string;
 }
 
-const valueCards: ValueCard[] = [
+interface CardGroup {
+  heading: string;
+  cards: ValueCard[];
+}
+
+const cardGroups: CardGroup[] = [
   {
-    icon: Car,
-    title: "Alle Wege zum Auto an einem Ort",
-    description: "Kauf, Leasing, Auto-Abo und Leasingübernahme – alles auf einer Plattform."
+    heading: "Du willst dein Leasing abgeben",
+    cards: [
+      {
+        icon: DoorOpen,
+        title: "Raus ohne Strafgebühren",
+        description: "Keine teure Vertragsauflösung. Jemand übernimmt dein Leasing, du bist raus."
+      },
+      {
+        icon: Landmark,
+        title: "Bank-konform abgewickelt",
+        description: "Wir führen dich durch die Übertragung, die deine Leasinggesellschaft akzeptiert."
+      },
+      {
+        icon: ConciergeBell,
+        title: "Kein Inserate-Stress",
+        description: "Unser Concierge übernimmt alles, von der Bewerbung bis zur Übergabe."
+      }
+    ]
   },
   {
-    icon: Calculator,
-    title: "Leasing Direkt Berechnen",
-    description: "Berechne Leasingkosten direkt im Inserat und frage gleich nach dem berechneten Angebot."
-  },
-  {
-    icon: MessageSquare,
-    title: "Direkter Kontakt",
-    description: "Kommuniziere direkt mit Anbietern und Garagen – ohne unnötige Umwege."
-  },
-  {
-    icon: MapPin,
-    title: "Für die Schweiz gebaut",
-    description: "Relevante Angebote aus der ganzen Schweiz, passend für den Schweizer Markt."
-  },
-  {
-    icon: Coins,
-    title: "Attraktive Konditionen",
-    description: "Faire Preise, transparente Gebühren und ein Marktplatz, der auf Mehrwert für dich ausgelegt ist."
-  },
-  {
-    icon: Wrench,
-    title: "Alles unter einem Dach",
-    description:
-      "Analyse Tools, Finanzierung Tools, Eingebauter Chat, Deal Tools und Website Tools.",
+    heading: "Du suchst eine Übernahme",
+    cards: [
+      {
+        icon: Wallet,
+        title: "Keine Anzahlung nötig",
+        description: "Steig in ein laufendes Leasing ein, ohne hohe Startkosten."
+      },
+      {
+        icon: CalendarClock,
+        title: "Kürzere Bindung",
+        description: "Übernimm nur die Restlaufzeit statt 48 Monate neu zu unterschreiben."
+      },
+      {
+        icon: TrendingDown,
+        title: "Oft günstiger als neu",
+        description: "Übernahmen haben häufig tiefere Raten als ein frischer Vertrag."
+      }
+    ]
   }
 ];
 
@@ -114,54 +128,71 @@ export function WhyBuyAutoSection() {
           </p>
         </div>
 
-        {/* Value Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {valueCards.map((card, index) => {
-            const IconComponent = card.icon;
-            return (
-              <div
-                key={index}
-                className={`group relative transition-all duration-700 ${
-                  isVisible 
-                    ? "opacity-100 translate-y-0" 
-                    : "opacity-0 translate-y-12"
+        {/* Value Card Groups */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+          {cardGroups.map((group, groupIndex) => (
+            <div key={group.heading}>
+              {/* Group Heading */}
+              <h3
+                className={`text-2xl sm:text-3xl font-bold text-neutral-900 mb-8 text-center transition-all duration-700 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
-                style={{ transitionDelay: `${index * 100 + 200}ms` }}
+                style={{ transitionDelay: `${groupIndex * 100 + 200}ms` }}
               >
-                {/* Card */}
-                <div className="relative h-full bg-white rounded-3xl p-7 sm:p-8 border border-neutral-200/80 shadow-lg shadow-neutral-200/40 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-500 hover:-translate-y-2 hover:border-red-200 overflow-hidden">
-                  
-                  {/* Hover Gradient Overlay - Red tint */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-red-600 opacity-0 group-hover:opacity-[0.02] transition-opacity duration-500 rounded-3xl" />
-                  
-                  {/* Animated Corner Accent */}
-                  <div className="absolute -top-10 -right-10 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:opacity-100 group-hover:scale-150 transition-all duration-700 opacity-0" />
-                  
-                  {/* Icon Container */}
-                  <div className="relative mb-6">
-                    <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-red-500 transition-all duration-500">
-                      <IconComponent className="h-7 w-7 text-white" strokeWidth={2} />
+                {group.heading}
+              </h3>
+
+              {/* Cards */}
+              <div className="grid grid-cols-1 gap-6 sm:gap-8">
+                {group.cards.map((card, index) => {
+                  const IconComponent = card.icon;
+                  return (
+                    <div
+                      key={index}
+                      className={`group relative transition-all duration-700 ${
+                        isVisible
+                          ? "opacity-100 translate-y-0"
+                          : "opacity-0 translate-y-12"
+                      }`}
+                      style={{ transitionDelay: `${(groupIndex * 3 + index) * 100 + 300}ms` }}
+                    >
+                      {/* Card */}
+                      <div className="relative h-full bg-white rounded-3xl p-7 sm:p-8 border border-neutral-200/80 shadow-lg shadow-neutral-200/40 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-500 hover:-translate-y-2 hover:border-red-200 overflow-hidden">
+
+                        {/* Hover Gradient Overlay - Red tint */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-red-600 opacity-0 group-hover:opacity-[0.02] transition-opacity duration-500 rounded-3xl" />
+
+                        {/* Animated Corner Accent */}
+                        <div className="absolute -top-10 -right-10 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:opacity-100 group-hover:scale-150 transition-all duration-700 opacity-0" />
+
+                        {/* Icon Container */}
+                        <div className="relative mb-6">
+                          <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-red-500 transition-all duration-500">
+                            <IconComponent className="h-7 w-7 text-white" strokeWidth={2} />
+                          </div>
+                          {/* Icon Glow on hover */}
+                          <div className="absolute inset-0 w-14 h-14 bg-red-500 rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="relative text-xl font-bold text-neutral-900 mb-3 leading-snug group-hover:text-neutral-800 transition-colors">
+                          {card.title}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="relative text-neutral-500 text-base leading-relaxed group-hover:text-neutral-600 transition-colors">
+                          {card.description}
+                        </p>
+
+                        {/* Bottom Accent Line - Red */}
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left rounded-b-3xl" />
+                      </div>
                     </div>
-                    {/* Icon Glow on hover */}
-                    <div className="absolute inset-0 w-14 h-14 bg-red-500 rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
-                  </div>
-                  
-                  {/* Title */}
-                  <h3 className="relative text-xl font-bold text-neutral-900 mb-3 leading-snug group-hover:text-neutral-800 transition-colors">
-                    {card.title}
-                  </h3>
-                  
-                  {/* Description */}
-                  <p className="relative text-neutral-500 text-base leading-relaxed group-hover:text-neutral-600 transition-colors">
-                    {card.description}
-                  </p>
-                  
-                  {/* Bottom Accent Line - Red */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left rounded-b-3xl" />
-                </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
         {/* Bottom Decorative Element */}
