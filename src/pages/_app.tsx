@@ -45,6 +45,7 @@ export default function App({ Component, pageProps }: AppProps) {
           {!isListingDetailPage ? (
             <Head>
               <meta key="og:image" property="og:image" content={absoluteOgImage} />
+              <meta key="tw:card" name="twitter:card" content="summary_large_image" />
               <meta key="tw:image" name="twitter:image" content={absoluteOgImage} />
             </Head>
           ) : null}
