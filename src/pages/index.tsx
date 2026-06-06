@@ -26,17 +26,17 @@ export default function HomePage() {
   return (
     <div className="bg-[#fafafa] min-h-screen font-sans overflow-x-hidden">
       <Head>
-        <title>Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto</title>
+        <title>Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto</title>
         <meta
           name="description"
-          content="Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
 
-        <meta property="og:title" content="Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto" />
+        <meta property="og:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           property="og:description"
-          content="Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
@@ -48,10 +48,10 @@ export default function HomePage() {
         <meta property="og:locale" content="de_CH" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto" />
+        <meta name="twitter:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           name="twitter:description"
-          content="Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
         />
         <meta name="twitter:image" content="https://www.buyauto.ch/share-logo.jpg" />
 
@@ -120,21 +120,7 @@ export default function HomePage() {
               Ohne <span className="text-red-500">Verlust.</span>
             </h1>
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/80 font-medium max-w-2xl mx-auto drop-shadow-md">
-              BuyAuto ist die Schweizer Plattform, um ein Leasing zu{" "}
-              <Link
-                href="/suche?dealType=lease_takeover"
-                className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
-              >
-                übernehmen
-              </Link>{" "}
-              oder{" "}
-              <Link
-                href="/leasinguebernahme"
-                className="text-white hover:text-red-400 underline decoration-white/40 hover:decoration-red-400 underline-offset-4 transition-colors duration-200"
-              >
-                abzugeben
-              </Link>
-              .
+              Die Schweizer Plattform für Leasingübernahme – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.
             </p>
           </div>
         </div>
