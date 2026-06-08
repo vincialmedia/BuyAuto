@@ -20,10 +20,12 @@ function toSitemapLastmod(value: string | null | undefined): string | null {
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const baseUrl = "https://www.buyauto.ch";
 
+  // Source from the listings_public view so the sitemap equals exactly what renders:
+  // it already filters to status='published', not expired, and (via the is_internal
+  // safeguard) excludes internal/test accounts. No manual status filter here.
   const { data: listings, error: listingsError } = await supabase
-    .from("listings")
-    .select("id, brand, model, updated_at, created_at")
-    .eq("status", "published");
+    .from("listings_public")
+    .select("id, brand, model, updated_at, created_at");
 
   if (listingsError) {
     console.error("Sitemap: failed to load listings", listingsError);
