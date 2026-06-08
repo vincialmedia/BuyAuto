@@ -20,10 +20,6 @@ const RESERVED_ROOT_SLUGS = new Set([
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
-  if (pathname === "/carify-alternativen") {
-    return NextResponse.redirect(new URL("/auto-abos-im-vergleich", req.url), 301);
-  }
-
   const rootSegment = pathname.split("/").filter(Boolean)[0];
 
   if (rootSegment && RESERVED_ROOT_SLUGS.has(rootSegment)) {
