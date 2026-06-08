@@ -3,10 +3,9 @@ import { MapPin } from "lucide-react";
 
 export function SeoCopyBlock() {
   const internalLinks = [
-    { label: "Occasionen in der Schweiz", href: "/suche?deal_type=direct_purchase" },
-    { label: "Auto Leasing in der Schweiz", href: "/suche?deal_type=leasing" },
-    { label: "Leasingübernahme in der Schweiz", href: "/suche?deal_type=lease_takeover" },
-    { label: "Fahrzeuge von Garagen", href: "/suche?seller_type=garage" },
+    { label: "Occasionen in der Schweiz", href: "/suche?dealType=direct_purchase" },
+    { label: "Auto Leasing in der Schweiz", href: "/suche?dealType=direct_purchase&financingType=leasing" },
+    { label: "Leasingübernahme in der Schweiz", href: "/suche?dealType=lease_takeover" },
     { label: "Alle Fahrzeuge", href: "/suche" },
   ];
 

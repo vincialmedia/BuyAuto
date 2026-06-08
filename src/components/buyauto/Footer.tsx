@@ -14,9 +14,9 @@ const footerSections = [
     title: "Fahrzeuge",
     links: [
       { label: "Alle Fahrzeuge", href: "/suche" },
-      { label: "Occasionen", href: "/suche?deal_type=direct_purchase" },
-      { label: "Leasing", href: "/suche?deal_type=leasing" },
-      { label: "Leasingübernahme", href: "/suche?deal_type=lease_takeover" }
+      { label: "Occasionen", href: "/suche?dealType=direct_purchase" },
+      { label: "Leasing", href: "/suche?dealType=direct_purchase&financingType=leasing" },
+      { label: "Leasingübernahme", href: "/suche?dealType=lease_takeover" }
     ]
   },
   {

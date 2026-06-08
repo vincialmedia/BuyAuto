@@ -148,17 +148,17 @@ export default function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" className="w-56">
                   <DropdownMenuItem asChild>
-                    <Link href="/suche?deal_type=lease_takeover" className="cursor-pointer">
+                    <Link href="/suche?dealType=lease_takeover" className="cursor-pointer">
                       Leasingübernahmen
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/suche?deal_type=direct_purchase" className="cursor-pointer">
+                    <Link href="/suche?dealType=direct_purchase" className="cursor-pointer">
                       Occasion & Neuwagen
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/suche?deal_type=garage_leasing" className="cursor-pointer">
+                    <Link href="/suche?dealType=direct_purchase&financingType=leasing" className="cursor-pointer">
                       Leasing Suchen
                     </Link>
                   </DropdownMenuItem>
@@ -288,21 +288,21 @@ export default function Header() {
                 Fahrzeuge Suchen
               </div>
               <Link 
-                href="/suche?deal_type=lease_takeover" 
+                href="/suche?dealType=lease_takeover" 
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Leasingübernahmen
               </Link>
               <Link 
-                href="/suche?deal_type=direct_purchase" 
+                href="/suche?dealType=direct_purchase" 
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Occasion & Neuwagen
               </Link>
               <Link 
-                href="/suche?deal_type=garage_leasing" 
+                href="/suche?dealType=direct_purchase&financingType=leasing" 
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >

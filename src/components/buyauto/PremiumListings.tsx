@@ -427,7 +427,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, flushT
                 size="lg"
                 className="bg-red-500 hover:bg-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all rounded-xl px-8"
               >
-                <Link href="/suche?premium=true">Alle Premium-Angebote ansehen</Link>
+                <Link href="/suche?premiumOnly=true">Alle Premium-Angebote ansehen</Link>
               </Button>
             </div>
           </div>
