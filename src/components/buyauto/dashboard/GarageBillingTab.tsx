@@ -314,7 +314,7 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
         <Button 
           variant="outline" 
           className="mt-4 sm:mt-0 rounded-xl px-6 h-11 border-neutral-300 hover:bg-white"
-          onClick={() => router.push("/kontakt")}
+          onClick={() => { window.location.href = "mailto:kontakt@buyauto.ch"; }}
         >
           Kontakt aufnehmen
         </Button>

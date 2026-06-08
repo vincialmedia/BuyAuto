@@ -45,7 +45,7 @@ export default function TrustBadges() {
         
         <div className="mt-6 pt-4 border-t border-neutral-200/60">
           <a
-            href="#"
+            href="/leasingvertrag-uebertragen#tipps"
             className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline transition-colors"
           >
             Sicher kaufen / übernehmen – Tipps →

@@ -423,7 +423,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
                         </div>
                         <p className="text-neutral-600 text-lg">
                           {item.step === 4 ? (
-                            <>Der <Link href="/leasing-transfer" className="text-primary hover:underline underline-offset-4">Umschreibungsvertrag</Link> wird von allen Parteien unterzeichnet.</>
+                            <>Der <Link href="/leasingvertrag-uebertragen" className="text-primary hover:underline underline-offset-4">Umschreibungsvertrag</Link> wird von allen Parteien unterzeichnet.</>
                           ) : item.desc}
                         </p>
                       </div>
