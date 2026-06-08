@@ -31,6 +31,7 @@ export default function SearchPage() {
 
   const parseQueryFromUrl = useCallback((query: any): SearchQuery => {
     const newQuery: SearchQuery = {};
+    if (query.query) newQuery.query = query.query as string;
     if (query.brand) newQuery.brand = query.brand as string;
     if (query.model) newQuery.model = query.model as string;
     if (query.yearMin) newQuery.yearMin = parseInt(query.yearMin as string, 10);

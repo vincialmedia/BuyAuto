@@ -632,6 +632,12 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       }
     }
 
+    // Free-text keyword (e.g. Google sitelinks searchbox `?query=bmw`): match across brand + model.
+    if (searchQuery.query) {
+      const term = searchQuery.query.trim().replace(/[%,()\\*]/g, " ").trim();
+      if (term) query = query.or(`brand.ilike.%${term}%,model.ilike.%${term}%`);
+    }
+
     if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
     if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
     if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);

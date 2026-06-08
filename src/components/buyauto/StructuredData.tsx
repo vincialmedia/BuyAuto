@@ -70,7 +70,7 @@ export function StructuredData({ type = "homepage", listingData, dealerData }: S
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${baseUrl}/suche?q={search_term_string}`,
+        urlTemplate: `${baseUrl}/suche?query={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },

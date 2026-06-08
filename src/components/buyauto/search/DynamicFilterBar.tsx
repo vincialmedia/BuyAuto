@@ -19,6 +19,7 @@ type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
 
 type FilterChipKey =
   | "saleType"
+  | "query"
   | "brand"
   | "model"
   | "yearMin"
@@ -191,6 +192,7 @@ export default function DynamicFilterBar({
       chips.push({ key: "saleType", label: "Verkaufsart", value: getSaleTypeLabel(saleType) });
     }
 
+    if (searchQuery.query) chips.push({ key: "query", label: "Suche", value: searchQuery.query });
     if (searchQuery.brand) chips.push({ key: "brand", label: "Marke", value: searchQuery.brand });
     if (searchQuery.model) chips.push({ key: "model", label: "Modell", value: searchQuery.model });
     if (searchQuery.yearMin) chips.push({ key: "yearMin", label: "Ab Jahr", value: searchQuery.yearMin.toString() });
