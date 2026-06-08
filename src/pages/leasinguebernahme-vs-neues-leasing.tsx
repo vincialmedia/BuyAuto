@@ -54,6 +54,24 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
           content="Leasingübernahme vs. Neues Leasing: Detaillierter Vergleich der Kosten, Vorteile und Nachteile beider Optionen für Ihre Entscheidung."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-vs-neues-leasing" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Leasingübernahme vs. Neues Leasing",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme-vs-neues-leasing",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasingübernahme vs. Neues Leasing – Was lohnt sich mehr?" />

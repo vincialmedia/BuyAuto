@@ -53,6 +53,24 @@ export default function AutoAboKuendigenPage() {
           content="Auto-Abo kündigen: Alle Fristen, Kosten und wichtige Tipps für eine reibungslose Kündigung. Jetzt informieren und Alternativen entdecken."
         />
         <link rel="canonical" href="https://www.buyauto.ch/auto-abo-kuendigen" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Auto-Abo kündigen",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/auto-abo-kuendigen",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Auto-Abo kündigen in der Schweiz – Fristen, Kosten & Tipps" />

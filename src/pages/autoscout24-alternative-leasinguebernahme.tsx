@@ -159,6 +159,24 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
           content="BuyAuto ist auf Leasingübernahmen spezialisiert: Inserat in Minuten erstellen, relevante Leasingdaten klar sichtbar, fairer Ablauf. Jetzt Leasing abgeben/übernehmen."
         />
         <link rel="canonical" href="https://www.buyauto.ch/autoscout24-alternative-leasinguebernahme" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Die Alternative zu AutoScout24 für Leasingübernahmen",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/autoscout24-alternative-leasinguebernahme",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Alternative zu AutoScout24 für Leasingübernahmen | BuyAuto" />

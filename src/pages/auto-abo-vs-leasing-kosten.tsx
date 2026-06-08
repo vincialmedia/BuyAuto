@@ -106,6 +106,24 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
           content="Vergleiche Auto-Abo vs Leasing mit Vollkostenrechnung: Rate, Versicherung, Service, Reifen, Steuern, Kilometer & Gebühren. In 2 Minuten wissen, was günstiger ist."
         />
         <link rel="canonical" href="https://www.buyauto.ch/auto-abo-vs-leasing-kosten" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Auto-Abo vs Leasing Kosten: der Vollkosten-Rechner für die Schweiz",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/auto-abo-vs-leasing-kosten",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Auto-Abo vs Leasing Kosten (Schweiz): Rechner & Vollkostenvergleich" />

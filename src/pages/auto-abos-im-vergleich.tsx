@@ -317,6 +317,24 @@ export default function AutoAbosImVergleichPage() {
           content="Auto-Abos im Vergleich (Schweiz): Carify, Carvolution, Clyde, FlatDrive, SIXT+ & mehr. Unterschiede bei Laufzeit, Leistungen & Flexibilität – plus Alternative."
         />
         <link rel="canonical" href="https://www.buyauto.ch/auto-abos-im-vergleich" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Auto-Abos im Vergleich: Anbieter & Alternativen in der Schweiz",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/auto-abos-im-vergleich",
+            }),
+          }}
+        />
         
         <meta property="og:title" content="Auto-Abos im Vergleich 2026: Die besten Anbieter in der Schweiz | BuyAuto" />
         <meta

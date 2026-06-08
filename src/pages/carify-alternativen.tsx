@@ -193,6 +193,24 @@ export default function CarifyAlternativen() {
           content="Carify Alternativen in der Schweiz: Vergleich von Auto-Abo Anbietern (Carvolution, Clyde, FlatDrive, SIXT+ & mehr) + warum Leasingübernahme oft smarter ist."
         />
         <link rel="canonical" href="https://www.buyauto.ch/carify-alternativen" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Carify Alternativen: Anbieter im Vergleich.",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/carify-alternativen",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Carify Alternativen 2026: Auto-Abo Anbieter im Vergleich | BuyAuto" />

@@ -77,6 +77,24 @@ export default function LeasingUebernahmePage() {
           content="Erfahre, wie du einen bestehenden Leasingvertrag übernehmen oder übertragen kannst – inklusive Ablauf, Voraussetzungen, Kosten und praxisnahen Tipps für Käufer und Abgeber."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Leasingübernahme & Leasing Transfer in der Schweiz",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasingübernahme & Leasing Transfer Schweiz – Kompletter Leitfaden" />

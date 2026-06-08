@@ -25,6 +25,18 @@ const caveat = Caveat({
   preload: false,
 });
 
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "BuyAuto",
+  url: "https://www.buyauto.ch",
+  logo: "https://www.buyauto.ch/share-logo.jpg",
+  description:
+    "Schweizer Plattform für Leasingübernahme – Leasing übernehmen oder ohne Verlust abgeben.",
+  founder: { "@type": "Person", name: "Vincent Hänggi" },
+  sameAs: [],
+};
+
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
@@ -40,6 +52,12 @@ export default function App({ Component, pageProps }: AppProps) {
     <div className={`${manrope.variable} ${caveat.variable} font-sans overflow-x-hidden min-h-screen`}>
       <AuthProvider>
         <MainLayout>
+          <Head>
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+            />
+          </Head>
           <Component {...pageProps} />
 
           {!isListingDetailPage ? (

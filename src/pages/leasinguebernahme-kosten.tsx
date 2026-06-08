@@ -58,6 +58,24 @@ export default function LeasinguebernahmeKostenPage() {
           content="Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail – transparent und verständlich erklärt."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-kosten" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Leasingübernahme Kosten in der Schweiz",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme-kosten",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasingübernahme Kosten Schweiz – Kompletter Gebühren-Überblick" />

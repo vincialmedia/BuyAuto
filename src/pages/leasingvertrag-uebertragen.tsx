@@ -61,6 +61,24 @@ export default function LeasingvertragUebertragenPage() {
           content="Leasingvertrag übertragen in der Schweiz: Alles zu Voraussetzungen, Ablauf, Kosten und rechtlichen Aspekten der Vertragsübertragung."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasingvertrag-uebertragen" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Leasingvertrag übertragen in der Schweiz",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/leasingvertrag-uebertragen",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasingvertrag übertragen Schweiz – So funktioniert die Vertragsübertragung" />

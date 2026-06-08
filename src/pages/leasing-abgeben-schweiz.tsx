@@ -85,6 +85,24 @@ export default function LeasingAbgebenSchweiz() {
           content="Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen – und warum die Leasingübernahme oft die günstigste Lösung ist."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasing-abgeben-schweiz" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: "Leasing abgeben ohne Stress.",
+              author: { "@type": "Person", name: "Vincent Hänggi" },
+              publisher: {
+                "@type": "Organization",
+                name: "BuyAuto",
+                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+              },
+              dateModified: "2026-06-08",
+              mainEntityOfPage: "https://www.buyauto.ch/leasing-abgeben-schweiz",
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasing abgeben in der Schweiz (2025): So wirst du dein Auto-Leasing legal & stressfrei los" />
