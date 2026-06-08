@@ -176,7 +176,7 @@ export default function HomePage() {
                 {
                   step: "01",
                   title: "Weg wählen",
-                  desc: "Entscheide, ob du kaufen, leasen, im Auto-Abo fahren oder eine Leasingübernahme suchst.",
+                  desc: "Entscheide, ob du kaufen, leasen oder eine Leasingübernahme suchst.",
                   icon: Car,
                 },
                 {
