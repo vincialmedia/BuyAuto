@@ -18,7 +18,7 @@ const SeoCopyBlock = dynamic(() => import("@/components/buyauto/SeoCopyBlock").t
   loading: () => <div className="h-64 bg-neutral-50 animate-pulse" />,
 });
 
-type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover" | "auto_abo";
+type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
 
 export default function HomePage() {
   const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");

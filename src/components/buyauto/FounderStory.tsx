@@ -54,7 +54,7 @@ export function FounderStory() {
               </p>
               
               <p>
-                Wer heute nach dem passenden Auto sucht, landet oft auf mehreren Plattformen gleichzeitig: eine für <span className="font-semibold text-neutral-900">Occasionen</span>, eine für <span className="font-semibold text-neutral-900">Neuwagen</span>, eine für <span className="font-semibold text-neutral-900">Leasing</span>, eine für <span className="font-semibold text-neutral-900">Leasingübernahmen</span> und vielleicht noch eine weitere für <span className="font-semibold text-neutral-900">Auto-Abos</span>. Dazu kommen oft hohe Kosten, veraltete Nutzerführung und zu wenig Übersicht.
+                Wer heute nach dem passenden Auto sucht, landet oft auf mehreren Plattformen gleichzeitig: eine für <span className="font-semibold text-neutral-900">Occasionen</span>, eine für <span className="font-semibold text-neutral-900">Neuwagen</span>, eine für <span className="font-semibold text-neutral-900">Leasing</span> und eine für <span className="font-semibold text-neutral-900">Leasingübernahmen</span>. Dazu kommen oft hohe Kosten, veraltete Nutzerführung und zu wenig Übersicht.
               </p>
 
               <p className="font-semibold text-neutral-900">
@@ -66,7 +66,7 @@ export function FounderStory() {
               </p>
 
               <p>
-                Egal ob <span className="font-semibold text-neutral-900">Kauf, Leasing, Auto-Abo oder Leasingübernahme</span>: BuyAuto soll den Prozess einfacher machen und die Plattform sein, auf der man nicht fünfmal neu anfangen muss.
+                Egal ob <span className="font-semibold text-neutral-900">Kauf, Leasing oder Leasingübernahme</span>: BuyAuto soll den Prozess einfacher machen und die Plattform sein, auf der man nicht fünfmal neu anfangen muss.
               </p>
               
               <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-200 hover:border-red-200 hover:shadow-lg hover:shadow-red-500/5 transition-all duration-300 group">

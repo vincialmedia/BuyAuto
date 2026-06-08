@@ -16,7 +16,6 @@ const footerSections = [
       { label: "Alle Fahrzeuge", href: "/suche" },
       { label: "Occasionen", href: "/suche?deal_type=direct_purchase" },
       { label: "Leasing", href: "/suche?deal_type=leasing" },
-      { label: "Auto-Abo", href: "/suche?deal_type=auto_abo" },
       { label: "Leasingübernahme", href: "/suche?deal_type=lease_takeover" }
     ]
   },
@@ -77,7 +76,7 @@ export function Footer() {
               Die Schweizer Plattform für den einfacheren Weg zum nächsten Auto.
             </p>
             <p className="text-neutral-400 text-sm leading-relaxed max-w-sm mb-6">
-              Occasionen, Neuwagen, Leasing, Auto-Abo und Leasingübernahmen – alles auf BuyAuto.
+              Occasionen, Neuwagen, Leasing und Leasingübernahmen – alles auf BuyAuto.
             </p>
             
             {/* Contact info */}

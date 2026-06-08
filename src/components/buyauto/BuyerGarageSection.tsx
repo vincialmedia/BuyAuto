@@ -101,7 +101,7 @@ export function BuyerGarageSection() {
 
               {/* Description */}
               <p className="text-neutral-400 mb-6 leading-relaxed">
-                Präsentiere deine Fahrzeuge dort, wo Käufer nach Occasionen, Neuwagen, Leasing und Auto Abos suchen.
+                Präsentiere deine Fahrzeuge dort, wo Käufer nach Occasionen, Neuwagen, Leasing und Leasingübernahmen suchen.
               </p>
 
               {/* Bullet Points */}

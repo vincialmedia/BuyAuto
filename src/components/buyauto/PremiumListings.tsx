@@ -12,15 +12,14 @@ import { searchListings } from "@/services/listingsService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
-type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme" | "Auto Abo";
-type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover" | "auto_abo";
+type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme";
+type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
 
 const FILTER_OPTIONS: { label: DealTypeLabel | "Alle"; value: FilterCategory }[] = [
   { label: "Alle", value: "all" },
   { label: "Direktkauf", value: "direct_purchase" },
   { label: "Leasing", value: "leasing" },
   { label: "Leasingübernahme", value: "lease_takeover" },
-  { label: "Auto Abo", value: "auto_abo" },
 ];
 
 function getDealTypeLabel(listing: Listing): DealTypeLabel {
@@ -107,11 +106,6 @@ export default function PremiumListings({ externalFilter, onFilterChange, flushT
       if (activeFilter === "lease_takeover") {
         // Show if deal_type is lease_takeover OR if it has a lease takeover offer enabled
         return listing.deal_type === "lease_takeover" || hasLeaseTakeoverOffer;
-      }
-      if (activeFilter === "auto_abo") {
-        // Auto Abo not yet implemented - return empty for now
-        // Will match when subscription/auto_abo types are added to schema
-        return false;
       }
       return true;
     });

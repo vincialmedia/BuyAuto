@@ -5,7 +5,6 @@ export function SeoCopyBlock() {
   const internalLinks = [
     { label: "Occasionen in der Schweiz", href: "/suche?deal_type=direct_purchase" },
     { label: "Auto Leasing in der Schweiz", href: "/suche?deal_type=leasing" },
-    { label: "Auto-Abo in der Schweiz", href: "/suche?deal_type=auto_abo" },
     { label: "Leasingübernahme in der Schweiz", href: "/suche?deal_type=lease_takeover" },
     { label: "Fahrzeuge von Garagen", href: "/suche?seller_type=garage" },
     { label: "Alle Fahrzeuge", href: "/suche" },
@@ -28,15 +27,15 @@ export function SeoCopyBlock() {
         {/* Body copy */}
         <div className="prose prose-lg max-w-none text-neutral-600 space-y-4">
           <p>
-            Wer ein Auto in der Schweiz kaufen will, hat heute mehr Möglichkeiten denn je. Mit BuyAuto findest du Occasionen, Neuwagen, Leasingangebote, Auto-Abos und Leasingübernahmen auf einer Plattform – übersichtlich, modern und einfach vergleichbar.
+            Wer ein Auto in der Schweiz kaufen will, hat heute mehr Möglichkeiten denn je. Mit BuyAuto findest du Occasionen, Neuwagen, Leasingangebote und Leasingübernahmen auf einer Plattform – übersichtlich, modern und einfach vergleichbar.
           </p>
 
           <p>
-            Egal ob du nach einer günstigen Occasion, einem Neuwagen, einem passenden Leasing oder einer flexiblen Alternative wie dem Auto-Abo suchst: BuyAuto bringt Angebote aus der ganzen Schweiz zusammen und macht den Weg zum nächsten Auto einfacher.
+            Egal ob du nach einer günstigen Occasion, einem Neuwagen, einem passenden Leasing oder einer flexiblen Leasingübernahme suchst: BuyAuto bringt Angebote aus der ganzen Schweiz zusammen und macht den Weg zum nächsten Auto einfacher.
           </p>
 
           <p>
-            Entdecke jetzt Fahrzeuge zum <strong>Kauf</strong>, <strong>Leasing</strong>, <strong>Auto-Abo</strong> oder zur <strong>Leasingübernahme</strong> – alles an einem Ort.
+            Entdecke jetzt Fahrzeuge zum <strong>Kauf</strong>, <strong>Leasing</strong> oder zur <strong>Leasingübernahme</strong> – alles an einem Ort.
           </p>
         </div>
 

@@ -123,7 +123,7 @@ export function WhyBuyAutoSection() {
           
           {/* Supporting Text */}
           <p className="text-neutral-500 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            BuyAuto bringt Kauf, Leasing, Auto-Abo und Leasingübernahme auf einer Plattform zusammen – 
+            BuyAuto bringt Kauf, Leasing und Leasingübernahme auf einer Plattform zusammen –
             <span className="text-neutral-700 font-medium"> einfach, modern und für die Schweiz gebaut.</span>
           </p>
         </div>
