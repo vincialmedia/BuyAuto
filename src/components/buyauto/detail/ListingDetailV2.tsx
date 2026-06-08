@@ -247,7 +247,7 @@ export function ListingDetailV2({
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
-                    {listing.brand} {listing.model}
+                    {listing.brand} {listing.model} {listing.year}
                   </h1>
                   <p className="mt-1 text-sm text-neutral-600">{listing.location}</p>
                 </div>

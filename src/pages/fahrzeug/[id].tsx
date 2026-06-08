@@ -7,7 +7,6 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ListingDetail } from "@/lib/buyauto/types";
 import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
-import { StructuredData } from "@/components/buyauto/StructuredData";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
@@ -25,6 +24,8 @@ const SimilarListings = dynamic(() => import("@/components/buyauto/detail/Simila
 interface ListingDetailPageProps {
   listing: ListingDetail | null;
   notFound?: boolean;
+  // Set when the id is not a live listing (handled with a 404/410 status in getServerSideProps).
+  gone?: boolean;
 }
 
 function serializeListing(listing: ListingDetail | null): ListingDetail | null {
@@ -48,7 +49,7 @@ function serializeListing(listing: ListingDetail | null): ListingDetail | null {
   };
 }
 
-export default function ListingDetailPage({ listing: initialListing, notFound }: ListingDetailPageProps) {
+export default function ListingDetailPage({ listing: initialListing, notFound, gone }: ListingDetailPageProps) {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
@@ -193,12 +194,12 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
 
   const images = useMemo(() => (Array.isArray(listing?.images) ? listing?.images : []) ?? [], [listing]);
 
-  if (notFound || clientNotFound) {
+  if (notFound || clientNotFound || gone) {
     return (
       <>
         <Head>
           <title>Auto verkauft | BuyAuto</title>
-          <meta name="robots" content="noindex" />
+          <meta name="robots" content="noindex,follow" />
         </Head>
         <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
           <div className="text-center max-w-md">
@@ -283,14 +284,71 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
       ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
       : null;
 
-  const structuredPrice = dealType === "direct_purchase" ? (purchasePriceChf ?? 0) : listing.pricePerMonthCHF;
-
   const metaPriceText =
     dealType === "direct_purchase"
       ? purchasePriceChf
         ? `${new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(purchasePriceChf)} Kaufpreis`
         : "Kaufpreis"
       : `${new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(listing.pricePerMonthCHF)}/Monat`;
+
+  // Per-deal-type Offer: a one-time sale price for direct purchase, a monthly rate for
+  // lease takeover (never a hardcoded monthly unit on a purchase price).
+  const isDirectPurchase = dealType === "direct_purchase";
+  const offerPrice = isDirectPurchase
+    ? purchasePriceChf
+    : typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
+      ? listing.pricePerMonthCHF
+      : null;
+
+  const vehicleOffer =
+    typeof offerPrice === "number" && offerPrice > 0
+      ? {
+          "@type": "Offer",
+          price: offerPrice,
+          priceCurrency: "CHF",
+          availability: "https://schema.org/InStock",
+          itemCondition: "https://schema.org/UsedCondition",
+          url: listingUrl,
+          ...(isDirectPurchase
+            ? {}
+            : {
+                priceSpecification: {
+                  "@type": "UnitPriceSpecification",
+                  price: offerPrice,
+                  priceCurrency: "CHF",
+                  unitCode: "MON",
+                  unitText: "MONTH",
+                },
+              }),
+        }
+      : undefined;
+
+  const vehicleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Car",
+    name: `${listing.brand} ${listing.model} ${listing.year}`,
+    brand: { "@type": "Brand", name: listing.brand },
+    model: listing.model,
+    vehicleModelDate: listing.year,
+    url: listingUrl,
+    image: images.length > 0 ? images : undefined,
+    ...(listing.mileageKm
+      ? { mileageFromOdometer: { "@type": "QuantitativeValue", value: listing.mileageKm, unitCode: "KMT" } }
+      : {}),
+    ...(listing.fuel ? { fuelType: listing.fuel } : {}),
+    ...(listing.gearbox ? { vehicleTransmission: listing.gearbox } : {}),
+    ...(listing.body ? { bodyType: listing.body } : {}),
+    ...(listing.vin ? { vehicleIdentificationNumber: listing.vin } : {}),
+    ...(typeof listing.powerHp === "number" && listing.powerHp > 0
+      ? {
+          vehicleEngine: {
+            "@type": "EngineSpecification",
+            enginePower: { "@type": "QuantitativeValue", value: listing.powerHp, unitCode: "BHP" },
+          },
+        }
+      : {}),
+    ...(vehicleOffer ? { offers: vehicleOffer } : {}),
+  };
 
   return (
     <>
@@ -319,19 +377,12 @@ export default function ListingDetailPage({ listing: initialListing, notFound }:
         <meta name="twitter:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
         <meta name="twitter:description" content={`${listing.brand} ${listing.model} ${listing.year} - ${metaPriceText}`} />
         <meta name="twitter:image" content={ogImage} />
-      </Head>
 
-      <StructuredData
-        type="listing"
-        listingData={{
-          id: listing.id,
-          brand: listing.brand,
-          model: listing.model,
-          year: listing.year,
-          price: structuredPrice,
-          images: images,
-        }}
-      />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleJsonLd) }}
+        />
+      </Head>
 
       <div className="bg-white border-b border-neutral-200 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -433,7 +484,22 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     })();
 
     if (!listing) {
-      return { props: { listing: null } };
+      // Not a live listing in listings_public (expired / sold / draft / rejected / test /
+      // unknown). Emit a real non-200 status so crawlers never index it. Distinguish
+      // "was live, now gone" (410) from "never public / unknown" (404): anon RLS only
+      // exposes status='published' on the base table, so a hit here means the row is
+      // published-but-expired (or excluded as internal) → 410 Gone; a miss → 404.
+      const { data: publishedRow } = await supabase
+        .from("listings")
+        .select("id")
+        .eq("id", listingId)
+        .eq("status", "published")
+        .maybeSingle();
+
+      if (context.res) {
+        context.res.statusCode = publishedRow ? 410 : 404;
+      }
+      return { props: { listing: null, gone: true } };
     }
 
     const serializedListing = serializeListing(listing);
