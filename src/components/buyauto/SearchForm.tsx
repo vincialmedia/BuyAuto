@@ -28,7 +28,9 @@ function getRestlaufzeitLabel(option: RestlaufzeitOption): string {
 }
 
 function formatChf(value: number): string {
-  return `CHF ${value.toLocaleString("de-CH")}`;
+  // Deterministic Swiss grouping (500'000): Node and browsers disagree on the de-CH
+  // apostrophe (U+0027 vs U+2019), which breaks hydration when this renders server-side.
+  return `CHF ${String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, "'")}`;
 }
 
 function getModeLabel(mode: DealTypeMode): string {

@@ -66,7 +66,11 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         })
       : null;
 
-  const chf = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
+  // Deterministic Swiss grouping (117'000). Intl/toLocaleString("de-CH") is NOT used
+  // here because Node and browsers disagree on the apostrophe character (U+0027 vs
+  // U+2019), which caused hydration mismatches on every server-rendered card.
+  const swissInt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  const chf = { format: swissInt };
 
   const primaryLine =
     dealType === "lease_takeover"
@@ -196,7 +200,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         <div className="grid grid-cols-2 gap-2 sm:gap-2.5 mb-3 sm:mb-4">
           <div className="flex items-center text-xs text-neutral-600">
             <Gauge className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
-            <span className="font-medium truncate">{listing.mileageKm.toLocaleString("de-CH")} km</span>
+            <span className="font-medium truncate">{swissInt(listing.mileageKm)} km</span>
           </div>
           <div className="flex items-center text-xs text-neutral-600">
             <Fuel className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
@@ -222,7 +226,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
             {listing.remaining_km && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Verbleibende KM</span>
-                <span className="font-medium">{listing.remaining_km.toLocaleString("de-CH")} km</span>
+                <span className="font-medium">{swissInt(listing.remaining_km)} km</span>
               </div>
             )}
           </>
