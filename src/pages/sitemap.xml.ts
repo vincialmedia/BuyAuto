@@ -1,11 +1,13 @@
 import type { GetServerSideProps } from "next";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { LEASING_BRANDS } from "@/lib/buyauto/leasingBrands";
 
 type ListingSitemapRow = {
   id: string;
   brand: string;
   model: string;
+  deal_type: string | null;
   updated_at: string | null;
   created_at: string | null;
 };
@@ -25,7 +27,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // safeguard) excludes internal/test accounts. No manual status filter here.
   const { data: listings, error: listingsError } = await supabase
     .from("listings_public")
-    .select("id, brand, model, updated_at, created_at");
+    .select("id, brand, model, deal_type, updated_at, created_at");
 
   if (listingsError) {
     console.error("Sitemap: failed to load listings", listingsError);
@@ -101,9 +103,50 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     })
     .join("");
 
+  // Indexable category views (see /suche isIndexableSearchQuery). Single query param, so
+  // no XML entity escaping needed. The Leasingübernahme grid is our top commercial page.
+  const categoryPages: { path: string; priority: string }[] = [
+    { path: "/suche?dealType=lease_takeover", priority: "0.9" },
+    { path: "/suche?dealType=direct_purchase", priority: "0.8" },
+  ];
+
+  const categoryUrls = categoryPages
+    .map(({ path, priority }) => {
+      return `
+      <url>
+        <loc>${baseUrl}${path}</loc>
+        <changefreq>daily</changefreq>
+        <priority>${priority}</priority>
+      </url>
+    `;
+    })
+    .join("");
+
+  // Programmatic brand landing pages — only the brands that actually have at least one
+  // live lease_takeover listing (others render noindex, so we keep them out of the map).
+  const takeoverBrandSet = new Set(
+    ((listings as ListingSitemapRow[] | null) || [])
+      .filter((l) => l.deal_type === "lease_takeover" && typeof l.brand === "string" && l.brand.trim() !== "")
+      .map((l) => l.brand)
+  );
+
+  const brandUrls = LEASING_BRANDS.filter((b) => takeoverBrandSet.has(b.name))
+    .map((b) => {
+      return `
+      <url>
+        <loc>${baseUrl}/leasinguebernahme/${b.slug}</loc>
+        <changefreq>daily</changefreq>
+        <priority>0.7</priority>
+      </url>
+    `;
+    })
+    .join("");
+
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       ${staticUrls}
+      ${categoryUrls}
+      ${brandUrls}
       ${garageUrls}
       ${listingUrls}
     </urlset>

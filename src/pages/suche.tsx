@@ -59,8 +59,8 @@ function parseSearchQueryFromParams(query: Record<string, string | string[] | un
   return newQuery;
 }
 
-// The bare /suche (page 1, no filters/sort/search term) is the single indexable view.
-// Any filtered / sorted / paginated drill-down is a noindex,follow variant.
+// The bare /suche (page 1, no filters/sort/search term). This is the mixed-inventory
+// hub view with its own hub-specific title/H1/meta.
 function isDefaultSearchQuery(q: SearchQuery): boolean {
   if (q.page && q.page > 1) return false;
   if (q.sort) return false;
@@ -71,6 +71,36 @@ function isDefaultSearchQuery(q: SearchQuery): boolean {
   if (q.monthlyOnly || q.noDeposit || q.premiumOnly) return false;
   if ((q.canton && q.canton.length) || (q.fuel && q.fuel.length) || (q.gearbox && q.gearbox.length) || (q.body && q.body.length)) return false;
   return true;
+}
+
+// A single dealType filter (e.g. /suche?dealType=lease_takeover) with nothing else set.
+// These are the high-value category views — the Leasingübernahme listings grid is the
+// single most important commercial page for our ranking goal — so they are indexable
+// (with a self-canonical), not lumped in with thin filtered drill-downs.
+function isSingleDealTypeQuery(q: SearchQuery): boolean {
+  if (q.dealType !== "lease_takeover" && q.dealType !== "direct_purchase") return false;
+  if (q.financingType) return false;
+  if (q.page && q.page > 1) return false;
+  if (q.sort) return false;
+  if (q.query && q.query.trim() !== "") return false;
+  if (q.brand || q.model) return false;
+  if (q.yearMin || q.yearMax || q.priceMin || q.priceMax || q.kmMax || q.monthsMin || q.monthsMax) return false;
+  if (q.monthlyOnly || q.noDeposit || q.premiumOnly) return false;
+  if ((q.canton && q.canton.length) || (q.fuel && q.fuel.length) || (q.gearbox && q.gearbox.length) || (q.body && q.body.length)) return false;
+  return true;
+}
+
+// Indexable views = the bare hub + the single dealType category views. They are SSR'd
+// (see getServerSideProps) and get a self-referencing canonical. Everything else
+// (extra filters, sort, pagination, free-text search) stays noindex,follow.
+function isIndexableSearchQuery(q: SearchQuery): boolean {
+  return isDefaultSearchQuery(q) || isSingleDealTypeQuery(q);
+}
+
+// Self-referencing canonical target for an indexable view.
+function canonicalUrlForQuery(q: SearchQuery): string {
+  if (isSingleDealTypeQuery(q)) return `${CANONICAL_SEARCH_URL}?dealType=${q.dealType}`;
+  return CANONICAL_SEARCH_URL;
 }
 
 function getSaleTypeLabel(query: SearchQuery): string {
@@ -191,24 +221,25 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
   const currentPage = searchResults?.page || 1;
   const totalPages = Math.ceil(totalResults / (searchResults?.pageSize || 12));
 
-  const isIndexableView = useMemo(() => isDefaultSearchQuery(searchQuery), [searchQuery]);
+  const isDefaultView = useMemo(() => isDefaultSearchQuery(searchQuery), [searchQuery]);
+  const isIndexable = useMemo(() => isIndexableSearchQuery(searchQuery), [searchQuery]);
   const saleTypeLabel = useMemo(() => getSaleTypeLabel(searchQuery), [searchQuery]);
 
   const heading = useMemo(() => {
-    if (isIndexableView) return "Autos kaufen & Leasingübernahmen in der Schweiz";
+    if (isDefaultView) return "Autos kaufen & Leasingübernahmen in der Schweiz";
     if (saleTypeLabel === "Leasingübernahme") return "Leasingübernahme – Fahrzeuge in der Schweiz";
     if (saleTypeLabel === "Direktkauf") return "Autos kaufen in der Schweiz";
     if (saleTypeLabel === "Leasing") return "Leasing-Angebote in der Schweiz";
     return "Fahrzeuge in der Schweiz";
-  }, [isIndexableView, saleTypeLabel]);
+  }, [isDefaultView, saleTypeLabel]);
 
-  const pageTitle = isIndexableView
+  const pageTitle = isDefaultView
     ? "Auto kaufen oder Leasing übernehmen in der Schweiz | BuyAuto"
     : totalResults > 0
       ? `${saleTypeLabel} – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz`
       : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
 
-  const metaDescription = isIndexableView
+  const metaDescription = isDefaultView
     ? "Entdecke aktuelle Fahrzeuge in der Schweiz – direkt kaufen oder einen laufenden Leasingvertrag übernehmen. Geprüfte Angebote von Privatpersonen und Garagen auf BuyAuto."
     : saleTypeLabel === "Leasingübernahme"
       ? "Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto."
@@ -271,7 +302,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
     };
   };
 
-  const jsonLd = isIndexableView ? generateJsonLd() : null;
+  const jsonLd = isIndexable ? generateJsonLd() : null;
 
   return (
     <>
@@ -279,8 +310,8 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        {isIndexableView ? (
-          <link rel="canonical" href={CANONICAL_SEARCH_URL} />
+        {isIndexable ? (
+          <link rel="canonical" href={canonicalUrlForQuery(searchQuery)} />
         ) : (
           <meta name="robots" content="noindex,follow" />
         )}
@@ -339,9 +370,10 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
 export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ query }) => {
   const initialQuery = parseSearchQueryFromParams(query as Record<string, string | string[] | undefined>);
 
-  // Only the bare default view is server-rendered for indexing. Filtered / paginated
-  // drill-downs stay client-fetched (and are emitted as noindex,follow).
-  if (!isDefaultSearchQuery(initialQuery)) {
+  // The indexable views (bare hub + single dealType category views, incl. the
+  // Leasingübernahme listings grid) are server-rendered so crawlers get the listings
+  // in the initial HTML. Filtered / paginated drill-downs stay client-fetched (noindex).
+  if (!isIndexableSearchQuery(initialQuery)) {
     return { props: { initialResults: null, initialQuery } };
   }
 
