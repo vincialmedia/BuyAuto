@@ -85,8 +85,8 @@ export default function CarifyAlternativen() {
           {
             "@type": "ListItem",
             "position": 2,
-            "name": "Auto-Abo",
-            "item": "https://www.buyauto.ch/auto-abo"
+            "name": "Auto-Abos im Vergleich",
+            "item": "https://www.buyauto.ch/auto-abos-im-vergleich"
           },
           {
             "@type": "ListItem",
@@ -161,22 +161,6 @@ export default function CarifyAlternativen() {
             "acceptedAnswer": {
               "@type": "Answer",
               "text": "Auf Plattformen wie BuyAuto.ch kannst du gezielt nach Restlaufzeit filtern. Viele Inserenten wollen ihr Leasing nach 1-2 Jahren abgeben, sodass du perfekte Laufzeiten für den Übergang findest."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Welche Angaben sind wichtig beim Vergleich (KM, Selbstbehalt, Inklusivleistungen)?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Achte auf die Freikilometer (Mehrkilometer sind teuer!), den Selbstbehalt bei der Versicherung (oft hoch bei Abos) und die Kündigungsfristen. Beim Leasing: Achte auf den effektiven Zinssatz und Restwert."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Wann ist Auto-Abo trotzdem die bessere Wahl?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Wenn du das Auto nur für sehr kurze Zeit (1-3 Monate) brauchst oder dich absolut nicht um Versicherung und Anmeldung kümmern willst. Für diesen 'Concierge-Service' ist der Aufpreis gerechtfertigt."
             }
           }
         ]
@@ -254,7 +238,7 @@ export default function CarifyAlternativen() {
                   <button
                     onClick={() => setShowStickyCTA(false)}
                     className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                    aria-label="Schließen"
+                    aria-label="Schliessen"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -383,7 +367,7 @@ export default function CarifyAlternativen() {
                 Die wichtigsten Carify Alternativen (Schweiz)
               </h2>
               <p className="text-neutral-600 text-lg">
-                Der Markt ist dynamisch: Angebote, Mindestlaufzeiten und Inklusivleistungen ändern sich je nach Anbieter und Paket.
+                Der Markt ist dynamisch: Angebote, Mindestlaufzeiten und Inklusivleistungen ändern sich je nach Anbieter und Paket — <Link href="/auto-abos-im-vergleich" className="text-primary font-semibold hover:underline">alle Auto-Abo-Anbieter im Vergleich</Link> findest du in unserer laufend aktualisierten Übersicht.
               </p>
             </div>
 
@@ -662,7 +646,7 @@ export default function CarifyAlternativen() {
 
             <div className="mt-12 text-center bg-neutral-50 rounded-2xl p-6 md:p-8 border border-neutral-200">
               <p className="text-lg md:text-xl font-bold text-neutral-800">
-                Auto-Abo ist wie Hotel mit Frühstück. Leasingübernahme ist wie eine gute Wohnung: weniger inklusive — aber oft günstiger, wenn du's schlau machst.
+                Auto-Abo ist wie Hotel mit Frühstück. Leasingübernahme ist wie eine gute Wohnung: weniger inklusive — aber oft günstiger, wenn du's schlau machst. Wie sich die Kosten konkret unterscheiden, zeigt unser ausführlicher <Link href="/leasinguebernahme-vs-autoabo" className="text-primary font-semibold hover:underline">Vergleich Leasingübernahme vs. Auto-Abo</Link>.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
                 <Button
@@ -735,7 +719,7 @@ export default function CarifyAlternativen() {
               </p>
               <p>
                 Wenn du nach Carify Alternativen suchst, ist das oft die gleiche Frage dahinter: "Wie komme ich günstig und flexibel zu einem Auto?"
-                Und genau da ist Leasingübernahme für viele die unterschätzte Option.
+                Und genau da ist Leasingübernahme für viele die unterschätzte Option — ein Blick auf die <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">aktuellen Leasingübernahme-Angebote</Link> lohnt sich fast immer.
               </p>
               <div className="mt-8 font-serif italic text-neutral-800 text-xl">
                 — Vincent Hänggi, Gründer von BuyAuto

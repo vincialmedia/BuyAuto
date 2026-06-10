@@ -34,60 +34,55 @@ interface PageProps {
   updatedDate: string;
 }
 
+// Honest last-edit date (was a fake daily-refreshing new Date() — a freshness-spoofing
+// signal). Bump this when the content actually changes; keep in sync with the Article
+// schema dateModified below.
+const LAST_UPDATED = "08.06.2026";
+
+// Single source of truth for the FAQ: feeds BOTH the visible accordion and the FAQPage
+// JSON-LD, so the schema can never drift from what the user (and Google) actually sees.
+const FAQ_ITEMS = [
+  {
+    q: "Ist Versicherung im Leasing wirklich nie dabei?",
+    a: "Meistens nicht. Es gibt 'Full-Service-Leasing' Angebote, wo Versicherung und Service inkludiert sind. Diese sind aber teurer. Unser Rechner geht vom Standard-Leasing (ohne Versicherung) aus, du kannst den Versicherungswert aber auf 0 setzen, falls inkludiert."
+  },
+  {
+    q: "Kann ich das Auto nach dem Abo behalten?",
+    a: "Manchmal ja. Viele Abo-Anbieter bieten eine Kaufoption am Ende der Laufzeit an. Das ist aber meist nicht der Hauptzweck des Modells. Beim Leasing ist die Übernahme am Ende oft vertraglich als Option geregelt."
+  },
+  {
+    q: "Was ist mit der Anzahlung?",
+    a: "Beim Leasing ist eine Anzahlung ('Leasing-Sonderzahlung') üblich, um die monatliche Rate zu senken. Beim Auto-Abo gibt es fast nie eine Anzahlung, nur manchmal eine Startgebühr."
+  },
+  {
+    q: "Für wen ist Abo das Richtige?",
+    a: "Für Expats, Projektmitarbeiter, Leute die gerne oft das Auto wechseln oder unsicher sind, welches Auto (z.B. Elektro) zu ihnen passt."
+  },
+  {
+    q: "Zählt die Bonität bei beiden gleich?",
+    a: "Ja. Sowohl Abo-Anbieter als auch Leasingbanken prüfen die Bonität (Betreibungsauskunft). Ein negativer Eintrag führt meist bei beiden zur Ablehnung."
+  }
+];
+
 export async function getStaticProps() {
-  const now = new Date();
-  const day = now.getDate().toString().padStart(2, '0');
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  const year = now.getFullYear();
-  const updatedDate = `${day}.${month}.${year}`;
-  
   return {
     props: {
-      updatedDate,
+      updatedDate: LAST_UPDATED,
     },
     revalidate: 86400,
   };
 }
 
 export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
-  // FAQ Schema
+  // FAQ schema generated from the same array the accordion renders.
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "Ist ein Auto-Abo teurer als Leasing?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Auf den ersten Blick wirkt die Abo-Rate höher als die Leasingrate. Aber: Im Abo sind Versicherung, Steuern, Reifen und Service inklusive. Rechnet man beim Leasing alle diese Nebenkosten dazu ('Vollkosten'), ist das Abo oft konkurrenzfähig oder bei kurzen Laufzeiten sogar günstiger."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Wann lohnt sich ein Auto-Abo?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Ein Auto-Abo lohnt sich meist bei Laufzeiten unter 24 Monaten, für Fahranfänger mit teurer Versicherung oder wenn man volle Flexibilität braucht. Ab 3–4 Jahren Laufzeit ist Leasing oft günstiger."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Welche versteckten Kosten gibt es beim Leasing?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Neben der monatlichen Rate fallen an: Anzahlung, Vollkasko-Versicherung, Verkehrssteuer, Service/Wartung, Reifenwechsel & Einlagerung sowie oft hohe Kosten bei der Rückgabe für kleine Schäden."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Kann ich Leasing vorzeitig kündigen?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Leasingverträge sind schwer vorzeitig zu kündigen und wenn, dann nur gegen hohe Entschädigungszahlungen. Eine Leasingübernahme (Weitergabe des Vertrags an Dritte) ist oft die günstigere Lösung."
-        }
-      }
-    ]
+    "mainEntity": FAQ_ITEMS.map((f) => ({
+      "@type": "Question",
+      "name": f.q,
+      "acceptedAnswer": { "@type": "Answer", "text": f.a },
+    })),
   };
 
   const scrollToSection = (id: string) => {
@@ -409,7 +404,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
             </h2>
             <p className="text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
               Du willst kurze Laufzeiten wie beim Abo, aber günstige Raten wie beim Leasing? <br/>
-              Übernimm einen laufenden Leasingvertrag von jemand anderem.
+              Übernimm einen laufenden Leasingvertrag von jemand anderem – wann sich das gegenüber dem Abo lohnt, zeigt dir <Link href="/leasinguebernahme-vs-autoabo" className="text-red-400 font-semibold hover:underline">Leasingübernahme vs. Auto-Abo – der grosse Vergleich</Link>.
             </p>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 text-left">
@@ -421,7 +416,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
                 <TrendingDown className="w-8 h-8 text-red-400 mb-4" />
                 <h3 className="font-bold text-lg mb-2">Keine Anzahlung</h3>
-                <p className="text-sm text-neutral-400">Die Anzahlung hat meist der Vorbesitzer schon geleistet.</p>
+                <p className="text-sm text-neutral-400">Die Anzahlung hat meist der Vorbesitzer schon geleistet. Welche Gebühren trotzdem anfallen, zeigen dir die <Link href="/leasinguebernahme-kosten" className="text-red-400 font-semibold hover:underline">Leasingübernahme-Kosten im Überblick</Link>.</p>
               </div>
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
                 <Car className="w-8 h-8 text-red-400 mb-4" />
@@ -454,33 +449,12 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                 Häufige Fragen (FAQ)
               </h2>
               <p className="text-neutral-600 text-lg">
-                Expertenwissen kurz & knapp
+                Expertenwissen kurz & knapp – oder direkt <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">aktuelle Leasingübernahme-Angebote ansehen</Link>
               </p>
             </div>
             
             <Accordion type="single" collapsible className="w-full space-y-4">
-              {[
-                {
-                  q: "Ist Versicherung im Leasing wirklich nie dabei?",
-                  a: "Meistens nicht. Es gibt 'Full-Service-Leasing' Angebote, wo Versicherung und Service inkludiert sind. Diese sind aber teurer. Unser Rechner geht vom Standard-Leasing (ohne Versicherung) aus, du kannst den Versicherungswert aber auf 0 setzen, falls inkludiert."
-                },
-                {
-                  q: "Kann ich das Auto nach dem Abo behalten?",
-                  a: "Manchmal ja. Viele Abo-Anbieter bieten eine Kaufoption am Ende der Laufzeit an. Das ist aber meist nicht der Hauptzweck des Modells. Beim Leasing ist die Übernahme am Ende oft vertraglich als Option geregelt."
-                },
-                {
-                  q: "Was ist mit der Anzahlung?",
-                  a: "Beim Leasing ist eine Anzahlung ('Leasing-Sonderzahlung') üblich, um die monatliche Rate zu senken. Beim Auto-Abo gibt es fast nie eine Anzahlung, nur manchmal eine Startgebühr."
-                },
-                {
-                  q: "Für wen ist Abo das Richtige?",
-                  a: "Für Expats, Projektmitarbeiter, Leute die gerne oft das Auto wechseln oder unsicher sind, welches Auto (z.B. Elektro) zu ihnen passt."
-                },
-                {
-                  q: "Zählt die Bonität bei beiden gleich?",
-                  a: "Ja. Sowohl Abo-Anbieter als auch Leasingbanken prüfen die Bonität (Betreibungsauskunft). Ein negativer Eintrag führt meist bei beiden zur Ablehnung."
-                }
-              ].map((faq, i) => (
+              {FAQ_ITEMS.map((faq, i) => (
                 <AccordionItem 
                   key={i} 
                   value={`item-${i}`}

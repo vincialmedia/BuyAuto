@@ -140,7 +140,7 @@ export default function LeasingAbgebenSchweiz() {
                   <button
                     onClick={() => setShowStickyCTA(false)}
                     className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                    aria-label="Schließen"
+                    aria-label="Schliessen"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -369,7 +369,7 @@ export default function LeasingAbgebenSchweiz() {
                 <div>
                   <p className="text-xl font-black text-neutral-900 mb-2">Wichtig zu wissen:</p>
                   <p className="text-neutral-700 text-lg leading-relaxed">
-                    Ein Leasingvertrag ist rechtlich bindend – einfach zurückgeben ist nicht möglich. Aber es gibt legale, kostengünstige Alternativen.
+                    Ein Leasingvertrag ist rechtlich bindend – einfach zurückgeben ist nicht möglich. Aber es gibt legale, kostengünstige Alternativen. Und wenn dir die Suche nach einem Nachfolger zu stressig ist: Nutze den <Link href="/leasing-concierge" className="text-primary font-semibold hover:underline">BuyAuto Concierge-Service – wir übernehmen den Verkauf für dich</Link>.
                   </p>
                 </div>
               </div>
@@ -514,7 +514,7 @@ export default function LeasingAbgebenSchweiz() {
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
                 So funktioniert's
               </h2>
-              <p className="text-neutral-600 text-lg">In 5 einfachen Schritten zum Ziel</p>
+              <p className="text-neutral-600 text-lg">In 5 einfachen Schritten zum Ziel – <Link href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline">so wird der Leasingvertrag übertragen</Link></p>
             </div>
 
             <div className="space-y-8">

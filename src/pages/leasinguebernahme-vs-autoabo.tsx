@@ -61,7 +61,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
   return (
     <>
       <Head>
-        <title>Leasingübernahme vs. Auto-Abo – Der große Vergleich | BuyAuto</title>
+        <title>Leasingübernahme vs. Auto-Abo – Der grosse Vergleich | BuyAuto</title>
         <meta
           name="description"
           content="Leasingübernahme oder Auto-Abo? Vergleichen Sie Kosten, Flexibilität und Vorteile beider Modelle für Ihre ideale Mobilitätslösung."
@@ -85,9 +85,68 @@ export default function LeasingubernahmeVsAutoAboPage() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "Was ist günstiger: Leasingübernahme oder Auto-Abo?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Eine Leasingübernahme ist in der Regel 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und oft von einer bereits geleisteten Anzahlung profitieren.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Welche Option bietet mehr Flexibilität?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Ein Auto-Abo bietet deutlich mehr Flexibilität mit monatlicher Kündigungsfrist. Eine Leasingübernahme bindet Sie für die Restlaufzeit (meist 6-24 Monate).",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Brauche ich eine Anzahlung bei einem Auto-Abo?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Nein, Auto-Abos erfordern keine Anzahlung. Sie zahlen nur die monatliche All-Inclusive-Rate. Bei einer Leasingübernahme kann eine kleine Anzahlung (0-2'000 CHF) anfallen.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Welche versteckten Kosten gibt es?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Bei Leasingübernahme: Versicherung, Service, Steuern separat. Bei Auto-Abo: Alles inklusive, nur Tanken/Laden extra. Beide: Kilometerlimit-Überschreitungen kosten extra.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Kann ich beim Auto-Abo das Fahrzeug wechseln?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Ja, viele Auto-Abo-Anbieter erlauben nach einer Mindestlaufzeit (oft 6-12 Monate) einen Fahrzeugwechsel. Bei Leasingübernahme ist ein Wechsel nicht möglich.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Für wen ist eine Leasingübernahme die bessere Wahl?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Ideal für kostenbewusste Personen mit mittelfristigem Bedarf (6-24 Monate), die bereit sind, Versicherung und Service selbst zu organisieren und Wert auf Kostenersparnis legen.",
+                  },
+                },
+              ],
+            }),
+          }}
+        />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingübernahme vs. Auto-Abo – Der große Vergleich" />
+        <meta property="og:title" content="Leasingübernahme vs. Auto-Abo – Der grosse Vergleich" />
         <meta property="og:description" content="Vergleichen Sie Leasingübernahme und Auto-Abo: Kosten, Flexibilität und beste Option für Sie." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
@@ -129,7 +188,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     onClick={() => setShowStickyCTA(false)}
                     className="text-white hover:bg-white/20 md:hidden h-12 w-12 rounded-xl"
                   >
-                    <span className="sr-only">Schließen</span>
+                    <span className="sr-only">Schliessen</span>
                     ✕
                   </Button>
                 </div>
@@ -389,7 +448,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 <div>
                   <p className="text-green-900 font-semibold mb-1">Spartipp</p>
                   <p className="text-green-800">
-                    Leasingübernahme ist oft 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und von der bereits geleisteten Anzahlung profitieren.
+                    Leasingübernahme ist oft 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und von der bereits geleisteten Anzahlung profitieren. Eine detaillierte Übersicht über <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">alle Leasingübernahme-Kosten</Link> finden Sie in unserem separaten Ratgeber – und mit dem <Link href="/auto-abo-vs-leasing-kosten" className="text-primary font-semibold hover:underline">Auto-Abo vs. Leasing Kostenrechner</Link> berechnen Sie Ihre individuellen Gesamtkosten interaktiv.
                   </p>
                 </div>
               </div>
@@ -463,7 +522,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                   icon: ShieldCheck
                 },
                 {
-                  title: "Große Auswahl",
+                  title: "Grosse Auswahl",
                   desc: "Viele verschiedene Fahrzeuge verfügbar",
                   icon: Check
                 }
@@ -519,7 +578,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 },
                 {
                   title: "Fahrzeugwechsel",
-                  desc: "Regelmäßiger Wechsel zu neuen Modellen möglich",
+                  desc: "Regelmässiger Wechsel zu neuen Modellen möglich",
                   icon: TrendingUp
                 },
                 {
@@ -606,8 +665,8 @@ export default function LeasingubernahmeVsAutoAboPage() {
                       "Sie maximale Flexibilität wünschen",
                       "Sie nicht langfristig binden möchten",
                       "Sie All-Inclusive-Service schätzen",
-                      "Sie regelmäßig Fahrzeuge wechseln wollen",
-                      "Sie keine separate Versicherung abschließen möchten",
+                      "Sie regelmässig Fahrzeuge wechseln wollen",
+                      "Sie keine separate Versicherung abschliessen möchten",
                       "Sie bereit sind, mehr für Komfort zu zahlen"
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
@@ -645,7 +704,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                   "Wie lange planen Sie, das Fahrzeug zu nutzen?",
                   "Ist Kostenersparnis oder Komfort wichtiger für Sie?",
                   "Benötigen Sie das Fahrzeug sofort oder können Sie warten?",
-                  "Möchten Sie regelmäßig verschiedene Fahrzeuge testen?",
+                  "Möchten Sie regelmässig verschiedene Fahrzeuge testen?",
                   "Wie wichtig ist Ihnen Planungssicherheit?"
                 ].map((question, i) => (
                   <div key={i} className="bg-white border border-neutral-200 rounded-lg p-4">
@@ -664,7 +723,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                   💡 Unser Tipp:
                 </p>
                 <p className="text-neutral-700">
-                  Wenn Sie "Kostenersparnis", "Mittelfristig" und "Sofort" priorisieren, ist eine <strong>Leasingübernahme</strong> ideal. Wenn Sie "Flexibilität", "All-Inclusive" und "Fahrzeugwechsel" bevorzugen, ist ein <strong>Auto-Abo</strong> besser geeignet.
+                  Wenn Sie "Kostenersparnis", "Mittelfristig" und "Sofort" priorisieren, ist eine <strong>Leasingübernahme</strong> ideal – werfen Sie am besten gleich einen Blick auf die aktuell <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">verfügbaren Leasingübernahmen</Link>. Wenn Sie "Flexibilität", "All-Inclusive" und "Fahrzeugwechsel" bevorzugen, ist ein <strong>Auto-Abo</strong> besser geeignet.
                 </p>
               </div>
             </div>

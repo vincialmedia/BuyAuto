@@ -306,7 +306,7 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
       {/* Enterprise / Contact Section */}
       <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-8 text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-6">
         <div>
-          <h4 className="text-lg font-bold text-neutral-900">Größeres Inventar?</h4>
+          <h4 className="text-lg font-bold text-neutral-900">Grösseres Inventar?</h4>
           <p className="text-sm text-neutral-600 mt-1 max-w-xl">
             Für Garagen mit mehr als 100 Fahrzeugen oder speziellen Anforderungen bieten wir individuelle Enterprise-Lösungen an.
           </p>

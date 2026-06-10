@@ -79,6 +79,65 @@ export default function LeasingvertragUebertragenPage() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "Wie lange dauert die Vertragsübertragung?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "In der Regel 5–10 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Bank.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Wer zahlt die Übertragungsgebühren?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Das wird zwischen den Parteien frei vereinbart. Oft übernimmt der Abgeber die Kosten, um die Übertragung attraktiver zu machen.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Kann die Bank die Übertragung ablehnen?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Ja, die Leasingbank prüft die Bonität des neuen Vertragspartners und kann die Übertragung bei negativer Bonität ablehnen.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Was passiert mit der Anzahlung?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Die Anzahlung bleibt im Vertrag und wird nicht rückerstattet. Der neue Vertragspartner profitiert von den dadurch oft günstigeren Monatsraten.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Muss ich das Fahrzeug vor der Übergabe prüfen lassen?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeiden Sie spätere Streitigkeiten.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Ändert sich die Versicherung bei der Übertragung?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Der neue Vertragspartner muss eine eigene Versicherung abschliessen. Die Konditionen können sich je nach Fahrerprofil ändern.",
+                  },
+                },
+              ],
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasingvertrag übertragen Schweiz – So funktioniert die Vertragsübertragung" />
@@ -298,7 +357,7 @@ export default function LeasingvertragUebertragenPage() {
                   { text: "Zustimmung der Leasingbank erforderlich", icon: ShieldCheck },
                   { text: "Positive Bonität des neuen Vertragspartners", icon: CheckCircle },
                   { text: "Keine offenen Zahlungen des bisherigen Leasingnehmers", icon: DollarSign },
-                  { text: "Fahrzeug in vertragsgemäßem Zustand", icon: Check },
+                  { text: "Fahrzeug in vertragsgemässem Zustand", icon: Check },
                   { text: "Leasingvertrag erlaubt die Übertragung", icon: FileText },
                   { text: "Beide Parteien einverstanden", icon: Users }
                 ].map((item, i) => {
@@ -458,7 +517,11 @@ export default function LeasingvertragUebertragenPage() {
             </div>
             
             <p className="text-lg text-neutral-600 mb-8">
-              Die Kosten variieren je nach Leasingbank und Vereinbarung:
+              Die Kosten variieren je nach Leasingbank und Vereinbarung – in unserem Ratgeber finden Sie{" "}
+              <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">
+                alle Kosten der Leasingübernahme im Detail
+              </Link>
+              . Hier die wichtigsten Posten im Überblick:
             </p>
             
             <div className="overflow-x-auto rounded-xl border-2 border-primary shadow-lg">
@@ -571,6 +634,13 @@ export default function LeasingvertragUebertragenPage() {
                     </li>
                   ))}
                 </ul>
+                <p className="mt-6 text-neutral-700">
+                  Wie Sie als Abgeber Schritt für Schritt vorgehen, zeigt unser Ratgeber{" "}
+                  <Link href="/leasing-abgeben-schweiz" className="text-primary font-semibold hover:underline">
+                    Leasing abgeben in der Schweiz
+                  </Link>
+                  .
+                </p>
               </div>
             </div>
           </div>
@@ -770,7 +840,7 @@ export default function LeasingvertragUebertragenPage() {
                   Ändert sich die Versicherung bei der Übertragung?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Der neue Vertragspartner muss eine eigene Versicherung abschließen. Die Konditionen können sich je nach Fahrerprofil ändern.
+                  Der neue Vertragspartner muss eine eigene Versicherung abschliessen. Die Konditionen können sich je nach Fahrerprofil ändern.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -784,7 +854,11 @@ export default function LeasingvertragUebertragenPage() {
               Bereit für die Vertragsübertragung?
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Erstellen Sie jetzt ein kostenloses Inserat oder entdecken Sie verfügbare Angebote.
+              Erstellen Sie jetzt ein kostenloses Inserat – oder Sie können direkt alle{" "}
+              <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">
+                verfügbaren Leasingübernahmen durchsuchen
+              </Link>
+              .
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">

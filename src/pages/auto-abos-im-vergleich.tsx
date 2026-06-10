@@ -567,7 +567,11 @@ export default function AutoAbosImVergleichPage() {
                 Wenn du nach <strong>"Carify Alternativen"</strong> suchst, meinst du meistens: ein ähnliches Auto-Abo, aber mit anderer Laufzeit, Auswahl oder Konditionen.
               </p>
               <p>
-                Nahegelegene Alternativen sind zum Beispiel: <strong>Carvolution, Clyde, FlatDrive, SIXT+</strong> und <strong>Emil Frey move</strong>. Alle bieten Auto-Abo-Modelle mit unterschiedlichen Schwerpunkten.
+                Nahegelegene Alternativen sind zum Beispiel: <strong>Carvolution, Clyde, FlatDrive, SIXT+</strong> und <strong>Emil Frey move</strong>. Alle bieten Auto-Abo-Modelle mit unterschiedlichen Schwerpunkten — wir haben die{" "}
+                <Link href="/carify-alternativen" className="text-primary font-semibold hover:underline">
+                  Carify-Alternativen im Detail
+                </Link>{" "}
+                verglichen.
               </p>
               <p className="text-sm text-neutral-600 border-l-4 border-primary pl-4 mt-4">
                 Für den besten Match lohnt sich der Vergleich nach Mindestlaufzeit, Kilometer und Versicherung (siehe Vergleichstabelle oben).
@@ -597,7 +601,11 @@ export default function AutoAbosImVergleichPage() {
                 "Wenn du keine Lust hast, die Komfort-Steuer zu zahlen: Leasingübernahme ist für viele der Cheatcode."
               </p>
               <p className="text-sm text-neutral-600 mt-4">
-                <strong>Fairness-Hinweis:</strong> Ob es günstiger ist, hängt vom Auto, Vertrag und deiner Versicherung ab — aber wenn du den Monatsbetrag optimieren willst, lohnt sich Leasingübernahme fast immer als erster Check.
+                <strong>Fairness-Hinweis:</strong> Ob es günstiger ist, hängt vom Auto, Vertrag und deiner Versicherung ab — aber wenn du den Monatsbetrag optimieren willst, lohnt sich Leasingübernahme fast immer als erster Check. Den direkten Vergleich der beiden Modelle findest du in unserem Guide{" "}
+                <Link href="/leasinguebernahme-vs-autoabo" className="text-primary font-semibold hover:underline">
+                  Leasingübernahme vs. Auto-Abo
+                </Link>
+                .
               </p>
             </div>
           </div>

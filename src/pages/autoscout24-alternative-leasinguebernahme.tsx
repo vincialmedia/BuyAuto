@@ -220,7 +220,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
                   <button
                     onClick={() => setShowStickyCTA(false)}
                     className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                    aria-label="Schließen"
+                    aria-label="Schliessen"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -468,7 +468,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="flex-1">
                   <p className="text-xl text-neutral-700 leading-relaxed mb-6">
-                    Oft fallen Gebühren für die Umschreibung/Übertragung an. Die genaue Höhe hängt vom Leasinggeber ab (oft zwischen CHF 300 und CHF 600).
+                    Oft fallen Gebühren für die Umschreibung/Übertragung an. Die genaue Höhe hängt vom Leasinggeber ab (oft zwischen CHF 300 und CHF 600) – eine detaillierte Aufschlüsselung, <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline underline-offset-4 decoration-primary/30">was eine Leasingübernahme kostet</Link>, findest du in unserem Kosten-Ratgeber.
                   </p>
                   <p className="text-xl text-neutral-700 leading-relaxed font-medium">
                     Im Vergleich zu <span className="text-red-600">"vorzeitig kündigen und alles zahlen"</span> ist die Übernahme für viele der deutlich sinnvollere und günstigere Exit.
@@ -560,7 +560,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
             
             <div className="mt-12 text-center bg-primary/5 rounded-2xl p-6 border border-primary/10 mx-auto max-w-3xl">
               <p className="text-lg text-neutral-700 font-medium">
-                "Wenn du Leasingübernahme suchst, willst du kein 'Marktplatz mit Leasing-Option irgendwo im Text'. Du willst Leasingübernahme als Fokus."
+                "Wenn du Leasingübernahme suchst, willst du kein 'Marktplatz mit Leasing-Option irgendwo im Text'. Du willst Leasingübernahme als Fokus." Genau dafür gibt es die <Link href="/suche?dealType=lease_takeover" className="text-primary hover:underline underline-offset-4 decoration-primary/30">Leasingübernahme-Angebote auf BuyAuto</Link> – gefiltert, vergleichbar, ohne Umwege.
               </p>
             </div>
           </div>

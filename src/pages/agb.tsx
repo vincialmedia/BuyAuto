@@ -66,7 +66,7 @@ export default function AGB() {
               </h2>
               <div className="text-neutral-600 space-y-4 leading-relaxed pl-11">
                 <p>
-                  Für die Nutzung bestimmter Funktionen der Plattform ist eine Registrierung erforderlich. Der Nutzer ist verpflichtet, bei der Registrierung wahrheitsgemäße Angaben zu machen.
+                  Für die Nutzung bestimmter Funktionen der Plattform ist eine Registrierung erforderlich. Der Nutzer ist verpflichtet, bei der Registrierung wahrheitsgemässe Angaben zu machen.
                 </p>
                 <p>
                   Der Nutzer ist für die Geheimhaltung seiner Zugangsdaten verantwortlich. Dritte dürfen das Nutzerkonto nicht nutzen.
@@ -82,10 +82,10 @@ export default function AGB() {
               </h2>
               <div className="text-neutral-600 space-y-4 leading-relaxed pl-11">
                 <p>
-                  Nutzer, die Inserate einstellen, sind verpflichtet, die Fahrzeuge wahrheitsgemäß und vollständig zu beschreiben. Insbesondere sind Mängel und Schäden offen zu legen.
+                  Nutzer, die Inserate einstellen, sind verpflichtet, die Fahrzeuge wahrheitsgemäss und vollständig zu beschreiben. Insbesondere sind Mängel und Schäden offen zu legen.
                 </p>
                 <p>
-                  Es ist untersagt, Inhalte einzustellen, die gegen geltendes Recht oder Rechte Dritter verstoßen.
+                  Es ist untersagt, Inhalte einzustellen, die gegen geltendes Recht oder Rechte Dritter verstossen.
                 </p>
               </div>
             </section>

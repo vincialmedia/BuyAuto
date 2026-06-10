@@ -326,7 +326,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 <div>
                   <p className="text-green-900 font-semibold mb-1">Spartipp</p>
                   <p className="text-green-800">
-                    Bei Leasingübernahmen können Sie oft 30-50% der Gesamtkosten sparen, da die Anzahlung bereits geleistet wurde und die Restlaufzeit kürzer ist.
+                    Bei Leasingübernahmen können Sie oft 30-50% der Gesamtkosten sparen, da die Anzahlung bereits geleistet wurde und die Restlaufzeit kürzer ist. Welche Gebühren im Einzelnen anfallen, zeigt unsere <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">detaillierte Kostenübersicht zur Leasingübernahme</Link>.
                   </p>
                 </div>
               </div>
@@ -592,7 +592,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                   💡 Unser Tipp:
                 </p>
                 <p className="text-neutral-700">
-                  Wenn Sie bei den meisten Fragen auf "Budget", "Sofort" und "Kurz" antworten, ist eine <strong>Leasingübernahme</strong> ideal. Wenn Sie auf "Flexibilität", "Geduld" und "Lang" setzen, ist ein <strong>neues Leasing</strong> besser geeignet.
+                  Wenn Sie bei den meisten Fragen auf "Budget", "Sofort" und "Kurz" antworten, ist eine <strong>Leasingübernahme</strong> ideal – werfen Sie am besten direkt einen Blick auf die <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">aktuellen Leasingübernahme-Angebote</Link>. Wenn Sie auf "Flexibilität", "Geduld" und "Lang" setzen, ist ein <strong>neues Leasing</strong> besser geeignet.
                 </p>
               </div>
             </div>

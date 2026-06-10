@@ -121,7 +121,11 @@ export default function LeasingConcierge() {
 
           <p className="text-xl text-neutral-600 mb-8 leading-relaxed max-w-3xl">
             Wir sind keine Leasingbank und entscheiden nichts &quot;im Hintergrund&quot;. Wir sind der Koordinator, der
-            dafür sorgt, dass alles richtig läuft und du keine Zeit verlierst.
+            dafür sorgt, dass alles richtig läuft und du keine Zeit verlierst. Wenn du zuerst verstehen willst,{" "}
+            <Link href="/leasinguebernahme" className="text-blue-600 hover:underline font-medium">
+              wie die Leasingübernahme funktioniert
+            </Link>
+            , findest du alle Grundlagen in unserem Ratgeber.
           </p>
 
           <div className="grid md:grid-cols-2 gap-8">
@@ -232,7 +236,11 @@ export default function LeasingConcierge() {
                 <CardTitle className="text-2xl font-bold text-blue-700">Option 2: Leasing Exit – Full Service</CardTitle>
                 <CardDescription className="text-base mt-3 text-neutral-600">
                   Du willst raus, hast aber keinen Übernehmer oder keine klare Strategie? Dann übernehmen wir den ganzen
-                  Weg bis zur Lösung.
+                  Weg bis zur Lösung. Wenn du die Abgabe lieber selbst organisierst, zeigt dir{" "}
+                  <Link href="/leasing-abgeben-schweiz" className="text-blue-600 hover:underline font-medium">
+                    Leasing abgeben in der Schweiz – der Leitfaden
+                  </Link>{" "}
+                  jeden Schritt.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">

@@ -211,7 +211,11 @@ export default function AutoAboKuendigenPage() {
             
             <div className="space-y-6">
               <p className="text-lg text-neutral-700 leading-relaxed">
-                Die Kündigungsfrist variiert je nach Anbieter und Vertragsmodell. In der Schweiz gelten folgende Richtwerte:
+                Die Kündigungsfrist variiert je nach Anbieter und Vertragsmodell – falls Sie nach der Kündigung den Anbieter wechseln möchten, lohnt sich ein Blick auf die{" "}
+                <Link href="/auto-abos-im-vergleich" className="text-primary font-semibold hover:underline">
+                  Auto-Abo-Anbieter im Vergleich
+                </Link>
+                . In der Schweiz gelten folgende Richtwerte:
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -416,7 +420,11 @@ export default function AutoAboKuendigenPage() {
                   Alternative: Leasingübernahme
                 </h2>
                 <p className="text-neutral-600 text-base md:text-lg">
-                  Günstiger und flexibler als ein neues Auto-Abo – entdecken Sie verfügbare Leasingübernahmen.
+                  Günstiger und flexibler als ein neues Auto-Abo – entdecken Sie{" "}
+                  <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">
+                    aktuelle Leasingübernahme-Angebote
+                  </Link>
+                  .
                 </p>
               </div>
               <SearchForm />
@@ -436,7 +444,7 @@ export default function AutoAboKuendigenPage() {
             
             <div className="space-y-4">
               {[
-                "Fahrzeug gründlich innen und außen reinigen",
+                "Fahrzeug gründlich innen und aussen reinigen",
                 "Alle persönlichen Gegenstände entfernen",
                 "Zustand des Fahrzeugs mit Fotos dokumentieren",
                 "Alle Schlüssel, Papiere und Zubehör bereithalten",
@@ -483,7 +491,7 @@ export default function AutoAboKuendigenPage() {
             
             <div className="space-y-6">
               <p className="text-lg text-neutral-700 leading-relaxed">
-                In bestimmten Fällen können Sie Ihr Auto-Abo außerordentlich kündigen:
+                In bestimmten Fällen können Sie Ihr Auto-Abo ausserordentlich kündigen:
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -555,7 +563,7 @@ export default function AutoAboKuendigenPage() {
                       "Sofort verfügbar",
                       "Mittelfristige Bindung (6-24 Monate)",
                       "Fixe monatliche Rate",
-                      "Große Auswahl an Fahrzeugen"
+                      "Grosse Auswahl an Fahrzeugen"
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-2 text-neutral-700">
                         <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />

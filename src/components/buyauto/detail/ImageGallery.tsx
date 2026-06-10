@@ -169,7 +169,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
             <button
               onClick={closeLightbox}
               className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
-              aria-label="Galerie schließen"
+              aria-label="Galerie schliessen"
             >
               <X size={32} />
             </button>

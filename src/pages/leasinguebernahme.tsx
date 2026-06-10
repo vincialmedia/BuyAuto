@@ -1,3 +1,4 @@
+import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -29,6 +30,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
+import { searchListings } from "@/services/listingsService";
+import type { Listing } from "@/lib/buyauto/types";
+import { supabase } from "@/integrations/supabase/client";
+import { LEASING_BRANDS } from "@/lib/buyauto/leasingBrands";
 import {
   Accordion,
   AccordionContent,
@@ -47,8 +53,17 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
   loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
 });
 
-export default function LeasingUebernahmePage() {
+type LeasingUebernahmePageProps = {
+  takeoverListings: Listing[];
+  takeoverTotal: number;
+  // Brand landing pages that currently have live takeover inventory. Only these are
+  // linked from the brand section — empty brand pages are noindex and must stay unlinked.
+  availableBrands: { slug: string; name: string }[];
+};
+
+export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal, availableBrands }: LeasingUebernahmePageProps) {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
+  const hasTakeoverListings = Array.isArray(takeoverListings) && takeoverListings.length > 0;
 
   // Handle sticky CTA visibility
   useEffect(() => {
@@ -95,7 +110,116 @@ export default function LeasingUebernahmePage() {
             }),
           }}
         />
-        
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "Gibt es einen Unterschied zwischen Leasingübernahme und Leasing Transfer?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung. „Leasingübernahme“ ist der gängige Verbraucherbegriff, während „Leasing Transfer“ der formale Begriff ist, der oft von Banken und Leasinggesellschaften verwendet wird.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Wie lange dauert der Prozess?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Meist 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Leasingbank.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Wer übernimmt die Gebühren?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Das wird frei vereinbart. Oft übernimmt der Abgeber die Transferkosten, um den Transfer attraktiver zu machen.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Kann ich ein Leasingauto verkaufen?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Nein. Du bist nicht Eigentümer. Aber du kannst den Vertrag übertragen – genau darum geht es beim Leasing Transfer bzw. der Leasingübernahme.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Was passiert mit der Anzahlung?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Sie bleibt im Vertrag und kommt dem Übernehmer zugute. Die Anzahlung wird nicht ausbezahlt oder zurückerstattet.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Kann eine Leasingübernahme abgelehnt werden?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Ja – meistens wegen fehlender Bonität oder offener Zahlungen. Die Leasingbank hat immer das letzte Wort bei der Genehmigung.",
+                  },
+                },
+              ],
+            }),
+          }}
+        />
+        {hasTakeoverListings && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                name: "Aktuelle Leasingübernahme-Angebote in der Schweiz",
+                numberOfItems: takeoverTotal,
+                itemListElement: takeoverListings.map((l, index) => {
+                  const price = typeof l.pricePerMonthCHF === "number" && l.pricePerMonthCHF > 0 ? l.pricePerMonthCHF : null;
+                  return {
+                    "@type": "ListItem",
+                    position: index + 1,
+                    item: {
+                      "@type": "Car",
+                      name: `${l.brand} ${l.model} ${l.year}`,
+                      brand: { "@type": "Brand", name: l.brand },
+                      model: l.model,
+                      vehicleModelDate: l.year,
+                      ...(l.mileageKm
+                        ? { mileageFromOdometer: { "@type": "QuantitativeValue", value: l.mileageKm, unitCode: "KMT" } }
+                        : {}),
+                      ...(l.fuel ? { fuelType: l.fuel } : {}),
+                      ...(l.gearbox ? { vehicleTransmission: l.gearbox } : {}),
+                      ...(price
+                        ? {
+                            offers: {
+                              "@type": "Offer",
+                              price,
+                              priceCurrency: "CHF",
+                              availability: "https://schema.org/InStock",
+                              itemCondition: "https://schema.org/UsedCondition",
+                              priceSpecification: {
+                                "@type": "UnitPriceSpecification",
+                                price,
+                                priceCurrency: "CHF",
+                                unitCode: "MON",
+                                unitText: "MONTH",
+                              },
+                            },
+                          }
+                        : {}),
+                    },
+                  };
+                }),
+              }),
+            }}
+          />
+        )}
+
         {/* Open Graph */}
         <meta property="og:title" content="Leasingübernahme & Leasing Transfer Schweiz – Kompletter Leitfaden" />
         <meta property="og:description" content="Erfahre, wie du einen bestehenden Leasingvertrag übernehmen oder übertragen kannst – inklusive Ablauf, Voraussetzungen, Kosten und praxisnahen Tipps." />
@@ -124,7 +248,7 @@ export default function LeasingUebernahmePage() {
                     size="lg"
                     className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl px-8 py-6 rounded-xl"
                   >
-                    <Link href="/suche">
+                    <Link href="/suche?dealType=lease_takeover">
                       Jetzt Angebote durchsuchen
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
@@ -132,7 +256,7 @@ export default function LeasingUebernahmePage() {
                   <button
                     onClick={() => setShowStickyCTA(false)}
                     className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                    aria-label="Schließen"
+                    aria-label="Schliessen"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -190,7 +314,7 @@ export default function LeasingUebernahmePage() {
                     size="lg"
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl"
                   >
-                    <Link href="/suche">
+                    <Link href="/suche?dealType=lease_takeover">
                       Jetzt Leasingübernahme starten
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
@@ -244,6 +368,69 @@ export default function LeasingUebernahmePage() {
           </div>
         </section>
 
+        {/* LIVE TAKEOVER LISTINGS (SSR — crawlable on the head-term page) */}
+        {hasTakeoverListings && (
+          <section id="angebote" className="py-20 px-4 bg-white scroll-mt-20">
+            <div className="max-w-7xl mx-auto">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                  <Zap className="w-4 h-4" />
+                  Live auf BuyAuto
+                </div>
+                <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
+                  Aktuelle Leasingübernahme-Angebote
+                </h2>
+                <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+                  {takeoverTotal}{" "}
+                  {takeoverTotal === 1 ? "laufender Leasingvertrag wartet" : "laufende Leasingverträge warten"} auf eine
+                  Übernahme – ohne hohe Anzahlung, mit kurzer Restlaufzeit.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {takeoverListings.map((listing, index) => (
+                  <ModernListingCard key={listing.id} listing={listing} priority={index < 3} />
+                ))}
+              </div>
+
+              <div className="mt-10 text-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 px-8 py-7 text-lg font-bold rounded-2xl"
+                >
+                  <Link href="/suche?dealType=lease_takeover">
+                    Alle Leasingübernahmen ansehen
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Brand drill-downs — only brands with live inventory (empty brand
+                  pages are noindex and must not receive internal links). */}
+              {availableBrands.length > 0 && (
+                <div className="mt-12 border-t border-neutral-200 pt-8">
+                  <h3 className="text-xl font-bold text-neutral-900 mb-4 text-center">
+                    Leasingübernahme nach Marke
+                  </h3>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {availableBrands.map((b) => (
+                      <Link
+                        key={b.slug}
+                        href={`/leasinguebernahme/${b.slug}`}
+                        className="inline-flex items-center gap-1.5 bg-neutral-50 border-2 border-neutral-200 hover:border-primary hover:text-primary transition-colors rounded-full px-5 py-2.5 text-sm font-semibold text-neutral-700"
+                      >
+                        Leasingübernahme {b.name}
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* TOC SECTION */}
         <section className="py-16 px-4 bg-white">
           <div className="max-w-4xl mx-auto">
@@ -251,6 +438,7 @@ export default function LeasingUebernahmePage() {
             <div className="bg-neutral-50 p-8 rounded-3xl border-2 border-neutral-200 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
+                  { id: "angebote", label: "Aktuelle Angebote" },
                   { id: "definition", label: "Was ist eine Leasingübernahme?" },
                   { id: "transfer", label: "Leasing Transfer (Synonym)" },
                   { id: "search", label: "Angebote entdecken" },
@@ -632,7 +820,12 @@ export default function LeasingUebernahmePage() {
                 <div>
                   <p className="text-green-900 font-black mb-2 text-lg">Hinweis</p>
                   <p className="text-green-800 text-lg">
-                    Viele Abgeber übernehmen die Gebühren, um den Transfer attraktiver zu machen.
+                    Viele Abgeber übernehmen die Gebühren, um den Transfer attraktiver zu machen. Eine
+                    detaillierte Aufschlüsselung aller Gebühren und Spartipps findest du im{" "}
+                    <Link href="/leasinguebernahme-kosten" className="font-bold underline hover:text-green-700">
+                      kompletten Kosten-Überblick zur Leasingübernahme
+                    </Link>
+                    .
                   </p>
                 </div>
               </div>
@@ -1155,3 +1348,31 @@ export default function LeasingUebernahmePage() {
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps<LeasingUebernahmePageProps> = async () => {
+  try {
+    const [results, brandRows] = await Promise.all([
+      searchListings({ dealType: "lease_takeover", sort: "dateDesc" }),
+      // listings_public already filters to published + not expired; we only need the
+      // distinct brands that currently have a live takeover listing.
+      supabase.from("listings_public").select("brand").eq("deal_type", "lease_takeover"),
+    ]);
+
+    const liveBrandNames = new Set(
+      (brandRows.data ?? [])
+        .map((r) => (typeof r.brand === "string" ? r.brand : ""))
+        .filter((b) => b.trim() !== "")
+    );
+    const availableBrands = LEASING_BRANDS.filter((b) => liveBrandNames.has(b.name)).map((b) => ({
+      slug: b.slug,
+      name: b.name,
+    }));
+
+    // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
+    const takeoverListings = JSON.parse(JSON.stringify(results.items.slice(0, 6))) as Listing[];
+    return { props: { takeoverListings, takeoverTotal: results.total, availableBrands } };
+  } catch (error) {
+    console.error("Leasinguebernahme hub SSR search failed:", error);
+    return { props: { takeoverListings: [], takeoverTotal: 0, availableBrands: [] } };
+  }
+};

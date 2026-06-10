@@ -76,6 +76,65 @@ export default function LeasinguebernahmeKostenPage() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "Wie viel kostet eine Leasingübernahme insgesamt?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Die Gesamtkosten liegen typischerweise zwischen 200 und 650 CHF für den Einstieg (Transfer, Ummeldung, Administration). Hinzu kommen monatliche Kosten wie Leasingrate und Versicherung.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Wer zahlt die Transfergebühr?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Das ist frei verhandelbar. In den meisten Fällen übernimmt der Abgeber die Transfergebühr, um den Vertrag attraktiver zu machen. Manchmal teilen sich beide Parteien die Kosten.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Gibt es versteckte Kosten?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Ja, achte auf: eventuelle Reparaturen, fällige Services, Kilometerüberschreitungen und nicht übertragbare Servicepakete. Ein detailliertes Übergabeprotokoll schützt dich vor Überraschungen.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Ist eine Leasingübernahme günstiger als ein neues Leasing?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Wie viel kostet die Ummeldung?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Die Ummeldung beim Strassenverkehrsamt kostet je nach Kanton 50–150 CHF. Hinzu kommen eventuell Kosten für einen neuen Fahrzeugausweis (ca. 50 CHF).",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Kann ich die Kosten mit dem Abgeber teilen?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Ja, absolut. Die Kostenaufteilung ist Verhandlungssache. Viele Abgeber sind bereit, Kosten zu übernehmen, um den Transfer zu beschleunigen.",
+                  },
+                },
+              ],
+            }),
+          }}
+        />
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasingübernahme Kosten Schweiz – Kompletter Gebühren-Überblick" />
@@ -311,7 +370,10 @@ export default function LeasinguebernahmeKostenPage() {
                     Die <strong>Transfergebühr</strong> ist die Hauptgebühr bei einer Leasingübernahme. Sie wird von der Leasingbank erhoben und deckt die administrativen Kosten der Vertragsübertragung ab.
                   </p>
                   <p className="text-neutral-700 leading-relaxed">
-                    Diese Gebühr variiert je nach Bank und kann zwischen <strong>100 und 400 CHF</strong> liegen.
+                    Diese Gebühr variiert je nach Bank und kann zwischen <strong>100 und 400 CHF</strong> liegen. Wie die Übertragung selbst Schritt für Schritt abläuft, zeigt unser Ratgeber{" "}
+                    <Link href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline">
+                      Leasingvertrag übertragen – so funktioniert es
+                    </Link>.
                   </p>
                 </CardContent>
               </Card>
@@ -650,7 +712,11 @@ export default function LeasinguebernahmeKostenPage() {
                   Finde jetzt günstige Leasingübernahmen
                 </h2>
                 <p className="text-neutral-600 text-base md:text-lg">
-                  Durchsuche aktuelle Angebote und spare bei deiner nächsten Leasingübernahme.
+                  Durchsuche{" "}
+                  <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">
+                    aktuelle Leasingübernahme-Angebote
+                  </Link>{" "}
+                  und spare bei deinem nächsten Vertrag.
                 </p>
               </div>
               <SearchForm />
@@ -715,7 +781,10 @@ export default function LeasinguebernahmeKostenPage() {
                   Ist eine Leasingübernahme günstiger als ein neues Leasing?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten.
+                  Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten. Alle Unterschiede im Detail zeigt{" "}
+                  <Link href="/leasinguebernahme-vs-neues-leasing" className="text-primary font-semibold hover:underline">
+                    Leasingübernahme vs. neues Leasing im Vergleich
+                  </Link>.
                 </AccordionContent>
               </AccordionItem>
 
