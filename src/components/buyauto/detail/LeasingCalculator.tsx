@@ -286,7 +286,7 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
 
         <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
           <div className="text-sm font-medium text-neutral-600">Geschätzte Monatsrate</div>
-          <div className="mt-2 text-5xl font-bold tracking-tight text-neutral-900">
+          <div className="mt-2 text-4xl sm:text-5xl font-bold tracking-tight text-neutral-900">
             CHF {formattedRate}.–
           </div>
 

@@ -1,24 +1,18 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, X, GripVertical, Loader2, ChevronLeft } from "lucide-react";
 import Image from "next/image";
-import Head from "next/head";
 import { useDropzone } from "react-dropzone";
 import { Reorder } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadListingImages } from "@/services/storageService";
 import { useWizard } from "./ListingWizard";
-import Uppy from '@uppy/core';
-import { Dashboard } from '@uppy/react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
 import { uploadOptimizedImage } from "@/services/storageService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
-
-// CSS is now loaded via Head to avoid build errors with package exports
-// and to enable better caching/performance
 
 interface ImageItem {
   id: string;
@@ -37,79 +31,11 @@ export function Step4_Images() {
   const maxPhotos = getMaxPhotos();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
 
   // Initialize image items state
   const [imageItems, setImageItems] = useState<ImageItem[]>(() =>
     images.map((url: string, index: number) => ({ id: `${index}-${Date.now()}`, url }))
   );
-
-  const [uppy] = useState(() =>
-    new Uppy({
-      autoProceed: true,
-      restrictions: {
-        maxFileSize: 10 * 1024 * 1024,
-        maxNumberOfFiles: maxPhotos,
-        allowedFileTypes: ['image/*'],
-      },
-    })
-  );
-
-  // Handle component mount for client-side only rendering
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isMounted) return;
-
-    uppy.on('upload-error', (file, error) => {
-      console.error('Uppy upload error:', error);
-      toast({
-        title: 'Upload-Fehler',
-        description: `Fehler beim Hochladen von ${file?.name}: ${error.message}`,
-        variant: 'destructive',
-      });
-    });
-
-    uppy.on('error', (error) => {
-      console.error('Uppy generic error:', error);
-      toast({
-        title: 'Ein Fehler ist aufgetreten',
-        description: 'Beim Uploader ist ein Problem aufgetreten. Bitte laden Sie die Seite neu.',
-        variant: 'destructive',
-      });
-    });
-    
-    uppy.on('complete', (result) => {
-      const successfulUploads = result.successful;
-      if (successfulUploads.length > 0) {
-        const permanentUrls = successfulUploads.map(file => file.response?.body.url).filter(Boolean) as string[];
-        console.log('Uploaded file URLs:', permanentUrls);
-        
-        const newImages = [...(data.images || []), ...permanentUrls];
-        updateData({ images: newImages });
-
-        toast({
-          title: 'Upload erfolgreich',
-          description: `${permanentUrls.length} Bilder wurden erfolgreich hochgeladen.`,
-        });
-      }
-
-      if (result.failed.length > 0) {
-        toast({
-          title: 'Einige Uploads sind fehlgeschlagen',
-          description: `${result.failed.length} Bilder konnten nicht hochgeladen werden.`,
-          variant: 'destructive',
-        });
-      }
-    });
-
-    return () => {
-      // Fix: Use destroy instead of close
-      uppy.destroy();
-    };
-  }, [uppy, data.images, toast, updateData]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!user) {
@@ -316,9 +242,6 @@ export function Step4_Images() {
 
   return (
     <div className="space-y-8">
-      <Head>
-        <link href="https://releases.transloadit.com/uppy/v3.27.3/uppy.min.css" rel="stylesheet" />
-      </Head>
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
           Bilder hochladen

@@ -687,15 +687,16 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       .map((r) => (r as unknown as { garage_id?: string | null }).garage_id ?? null)
       .filter((v): v is string => typeof v === "string" && v.length > 0);
 
-    const publicGaragesById = await fetchPublicGaragesByIds(garageIds);
-
     const privateRows = rows.filter((r) => !isGarageSellerFromRow(r));
 
     const privateListingIds = privateRows
       .map((r) => getListingIdFromRow(r))
       .filter((v): v is string => typeof v === "string" && v.trim() !== "");
 
-    const ownerProfilesByListingId = await fetchPublicListingOwnerProfilesByListingIds(privateListingIds);
+    const [publicGaragesById, ownerProfilesByListingId] = await Promise.all([
+      fetchPublicGaragesByIds(garageIds),
+      fetchPublicListingOwnerProfilesByListingIds(privateListingIds),
+    ]);
 
     const items = rows.map((r) => {
       const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
@@ -946,30 +947,46 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
   }
 }
 
+// Brands are static-ish data fetched on every mount of SearchBarV2/SearchForm/DynamicFilterBar.
+// Cache in module scope (with inflight dedup) so repeat calls within a session don't refetch.
+let cachedBrands: string[] | null = null;
+let brandsInflight: Promise<string[]> | null = null;
+
 export async function getBrands(): Promise<string[]> {
-  try {
-    const { data, error } = await supabase
-      .from(PUBLIC_LISTINGS_VIEW)
-      .select("brand");
+  if (cachedBrands) return cachedBrands;
+  if (brandsInflight) return brandsInflight;
 
-    if (error) {
-      console.error("Error fetching brands:", error);
+  brandsInflight = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from(PUBLIC_LISTINGS_VIEW)
+        .select("brand");
+
+      if (error) {
+        console.error("Error fetching brands:", error);
+        return [];
+      }
+
+      const brands = Array.from(
+        new Set(
+          (data ?? [])
+            .map((r) => (r as { brand?: string | null }).brand)
+            .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        )
+      ).sort((a, b) => a.localeCompare(b, "de-CH"));
+
+      if (brands.length > 0) cachedBrands = brands;
+
+      return brands;
+    } catch (error) {
+      console.error("Get brands error:", error);
       return [];
+    } finally {
+      brandsInflight = null;
     }
+  })();
 
-    const brands = Array.from(
-      new Set(
-        (data ?? [])
-          .map((r) => (r as { brand?: string | null }).brand)
-          .filter((v): v is string => typeof v === "string" && v.trim() !== "")
-      )
-    ).sort((a, b) => a.localeCompare(b, "de-CH"));
-
-    return brands;
-  } catch (error) {
-    console.error("Get brands error:", error);
-    return [];
-  }
+  return brandsInflight;
 }
 
 export async function getModelsForBrand(brand: string): Promise<string[]> {

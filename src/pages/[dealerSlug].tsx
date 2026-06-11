@@ -32,6 +32,9 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 
   if (!dealerSlug) return { props: { ok: false } };
 
+  // Dealer profiles change rarely – let the CDN cache them briefly.
+  ctx.res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
+
   try {
     const garage = await getPublicGarageBySlug(dealerSlug);
 

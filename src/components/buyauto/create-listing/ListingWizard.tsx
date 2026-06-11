@@ -1,20 +1,38 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "./ProgressBar";
 import Step1_VehicleData from "./Step1_VehicleData";
 import Step2_LeasingDetails from "./Step2_LeasingDetails";
-import Step3_PlanSelection from "./Step3_PlanSelection";
-import { Step4_Images } from "./Step4_Images";
-import Step5_PreviewAndPay from "./Step5_PreviewAndPay";
-import SuccessScreen from "./SuccessScreen";
 import type { DealType, ListingData } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, getListingDraftById, updateListingDraft } from "@/services/listingDraftService";
-import { Save } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
+
+const StepLoading = () => (
+  <div className="flex items-center justify-center py-12">
+    <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+  </div>
+);
+
+// Steps 3-5 and the success screen only render after user interaction,
+// so load them lazily to keep them out of the initial bundle.
+const Step3_PlanSelection = dynamic(() => import("./Step3_PlanSelection"), {
+  loading: StepLoading,
+});
+const Step4_Images = dynamic(() => import("./Step4_Images").then((mod) => mod.Step4_Images), {
+  loading: StepLoading,
+});
+const Step5_PreviewAndPay = dynamic(() => import("./Step5_PreviewAndPay"), {
+  loading: StepLoading,
+});
+const SuccessScreen = dynamic(() => import("./SuccessScreen"), {
+  loading: StepLoading,
+});
 
 interface WizardContextType {
   data: ListingData;

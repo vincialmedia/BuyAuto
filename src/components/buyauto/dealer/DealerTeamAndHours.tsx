@@ -76,7 +76,15 @@ export function DealerTeamAndHours({ teamMembers, openingHours, className }: Dea
                       <div className="h-12 w-12 overflow-hidden rounded-2xl bg-neutral-100">
                         {m.image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={m.image_url} alt={m.name ?? "Team"} className="h-full w-full object-cover" />
+                          <img
+                            src={m.image_url}
+                            alt={m.name ?? "Team"}
+                            width={48}
+                            height={48}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover"
+                          />
                         ) : null}
                       </div>
                       <div className="min-w-0">

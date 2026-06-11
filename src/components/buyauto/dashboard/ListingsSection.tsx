@@ -389,8 +389,8 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-24 h-18 bg-neutral-200 rounded-lg"></div>
+                <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="w-full lg:w-32 h-48 lg:h-24 bg-neutral-200 rounded-lg"></div>
                   <div className="flex-1 space-y-3">
                     <div className="w-48 h-6 bg-neutral-200 rounded"></div>
                     <div className="w-32 h-4 bg-neutral-200 rounded"></div>
@@ -432,7 +432,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             <p>Weitere Upgrades: CHF 30 / Inserat</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {!isControlledView && (
             <Button
               type="button"
@@ -520,6 +520,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                             src={coverImage}
                             alt={`${listing.brand} ${listing.model}`}
                             fill
+                            sizes="(max-width: 1023px) 100vw, 128px"
                             className="object-cover"
                           />
                         </div>
@@ -582,7 +583,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"

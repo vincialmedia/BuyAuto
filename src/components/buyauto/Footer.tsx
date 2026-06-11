@@ -1,13 +1,8 @@
 import { Mail, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useHasMounted } from "@/hooks/use-has-mounted";
-import dynamic from "next/dynamic";
 import Image from "next/image";
-
-const NewsletterSignup = dynamic(() => import("./NewsletterSignup").then(mod => mod.NewsletterSignup), {
-  loading: () => <div className="h-48 bg-neutral-100/50 rounded-lg animate-pulse" />,
-  ssr: false
-});
+import { NewsletterSignup } from "./NewsletterSignup";
 
 const footerSections = [
   {
@@ -64,11 +59,12 @@ export function Footer() {
           <div className="col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-5 group hover:opacity-80 transition-opacity">
               <Image
-                src="/buyauto-logo-full.png"
+                src="/buyauto-logo-header.png"
                 alt="BuyAuto"
-                width={320}
-                height={88}
+                width={96}
+                height={64}
                 className="h-14 sm:h-16 w-auto bg-transparent"
+                sizes="96px"
                 priority={false}
               />
             </Link>

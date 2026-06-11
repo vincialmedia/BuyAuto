@@ -77,23 +77,14 @@ export default function VerticalResultsList({
         </div>
       )}
 
-      {/* Results Grid with staggered animation */}
+      {/* Results Grid (no entrance animation: SSR'd cards must paint immediately for LCP) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {listings.map((listing, index) => (
-          <div
+          <ModernListingCard
             key={listing.id}
-            className="animate-in fade-in slide-in-from-bottom-4"
-            style={{
-              animationDelay: `${index * 50}ms`,
-              animationDuration: '500ms',
-              animationFillMode: 'backwards'
-            }}
-          >
-            <ModernListingCard 
-              listing={listing}
-              priority={index < 3}
-            />
-          </div>
+            listing={listing}
+            priority={index < 3}
+          />
         ))}
       </div>
 

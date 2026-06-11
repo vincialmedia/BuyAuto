@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { searchDealerListings } from "@/services/listingsService";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
@@ -336,9 +336,16 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
 
       <div className="px-6 py-6">
         {loading && !results ? (
-          <div className="flex items-center gap-2 text-sm text-neutral-600">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Lade Fahrzeuge…
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="animate-pulse overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
+                <div className="aspect-[16/10] w-full bg-neutral-100" />
+                <div className="p-5">
+                  <div className="h-4 w-2/3 rounded-full bg-neutral-100" />
+                  <div className="mt-3 h-3 w-1/2 rounded-full bg-neutral-100" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : null}
 
