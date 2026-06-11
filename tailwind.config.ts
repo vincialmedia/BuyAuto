@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: '400px'
+      },
       fontFamily: {
         sans: ["var(--font-manrope)", "sans-serif"],
         scribble: ["var(--font-caveat)", "cursive"],
