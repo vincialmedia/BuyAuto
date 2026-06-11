@@ -1,4 +1,4 @@
-import type { GetServerSideProps } from "next";
+import type { GetStaticProps } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -46,11 +46,11 @@ import { useState, useEffect } from "react";
 
 // Dynamically import heavy interactive components that are below the fold
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
-  loading: () => <div className="h-96 bg-white rounded-2xl border-2 border-neutral-100 animate-pulse" />
+  loading: () => <div className="min-h-[600px] bg-white rounded-2xl border-2 border-neutral-100 animate-pulse" />
 });
 
 const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
-  loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
+  loading: () => <div className="min-h-[900px] bg-neutral-50 animate-pulse" />
 });
 
 type LeasingUebernahmePageProps = {
@@ -227,7 +227,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme" />
       </Head>
 
-      <main className="bg-white min-h-screen">
+      <main className={`bg-white min-h-screen ${showStickyCTA ? "pb-24 md:pb-0" : ""}`}>
         
         {/* STICKY CTA BAR */}
         <div 
@@ -246,7 +246,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                   <Button
                     asChild
                     size="lg"
-                    className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl px-8 py-6 rounded-xl"
+                    className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl whitespace-normal h-auto px-4 sm:px-8 py-6 rounded-xl"
                   >
                     <Link href="/suche?dealType=lease_takeover">
                       Jetzt Angebote durchsuchen
@@ -276,6 +276,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               fill
               className="object-cover"
               priority
+              fetchPriority="high"
               quality={75}
               sizes="100vw"
             />
@@ -298,7 +299,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                   <Sparkles className="w-4 h-4" />
                   Kompletter Leitfaden
                 </div>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-6">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-6">
                   Leasingübernahme & Leasing Transfer in der Schweiz
                 </h1>
                 <p className="text-xl md:text-2xl text-white font-semibold mb-4">
@@ -312,7 +313,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                   <Button
                     asChild
                     size="lg"
-                    className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl"
+                    className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 whitespace-normal h-auto px-6 sm:px-8 py-7 text-base sm:text-lg font-bold rounded-2xl"
                   >
                     <Link href="/suche?dealType=lease_takeover">
                       Jetzt Leasingübernahme starten
@@ -388,8 +389,8 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {takeoverListings.map((listing, index) => (
-                  <ModernListingCard key={listing.id} listing={listing} priority={index < 3} />
+                {takeoverListings.map((listing) => (
+                  <ModernListingCard key={listing.id} listing={listing} />
                 ))}
               </div>
 
@@ -397,7 +398,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 <Button
                   asChild
                   size="lg"
-                  className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 px-8 py-7 text-lg font-bold rounded-2xl"
+                  className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 whitespace-normal h-auto px-6 sm:px-8 py-7 text-base sm:text-lg font-bold rounded-2xl"
                 >
                   <Link href="/suche?dealType=lease_takeover">
                     Alle Leasingübernahmen ansehen
@@ -1084,13 +1085,13 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               Kostenloses Inserat erstellen, Übernehmer finden oder Angebote entdecken – schnell, transparent und unkompliziert.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Button asChild size="lg" className="w-full sm:w-auto h-16 px-10 text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/40 transition-all group">
+              <Button asChild size="lg" className="w-full sm:w-auto h-16 px-6 sm:px-10 text-lg sm:text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/40 transition-all group">
                 <Link href="/suche">
                   <Search className="w-6 h-6 mr-2" />
                   Angebote durchsuchen
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-16 px-10 text-xl font-black border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-2xl transition-all">
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-16 px-6 sm:px-10 text-lg sm:text-xl font-black border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-2xl transition-all">
                 <Link href="/inserat-erstellen">
                   Jetzt starten
                   <ArrowRight className="w-6 h-6 ml-2" />
@@ -1349,7 +1350,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
   );
 }
 
-export const getServerSideProps: GetServerSideProps<LeasingUebernahmePageProps> = async () => {
+export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async () => {
   try {
     const [results, brandRows] = await Promise.all([
       searchListings({ dealType: "lease_takeover", sort: "dateDesc" }),
@@ -1370,9 +1371,9 @@ export const getServerSideProps: GetServerSideProps<LeasingUebernahmePageProps> 
 
     // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
     const takeoverListings = JSON.parse(JSON.stringify(results.items.slice(0, 6))) as Listing[];
-    return { props: { takeoverListings, takeoverTotal: results.total, availableBrands } };
+    return { props: { takeoverListings, takeoverTotal: results.total, availableBrands }, revalidate: 300 };
   } catch (error) {
     console.error("Leasinguebernahme hub SSR search failed:", error);
-    return { props: { takeoverListings: [], takeoverTotal: 0, availableBrands: [] } };
+    return { props: { takeoverListings: [], takeoverTotal: 0, availableBrands: [] }, revalidate: 300 };
   }
 };

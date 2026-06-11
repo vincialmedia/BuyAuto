@@ -450,11 +450,11 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                   </div>
 
                   {/* Sub-tabs for Active vs Drafts */}
-                  <div className="flex gap-3 mb-6">
+                  <div className="flex flex-wrap gap-3 mb-6">
                     <Button
                       onClick={() => setInventorySubTab("active")}
                       variant={inventorySubTab === "active" ? "default" : "outline"}
-                      className="rounded-2xl px-8 py-6 text-base font-semibold"
+                      className="rounded-2xl px-4 py-2 sm:px-8 sm:py-6 text-base font-semibold"
                       size="lg"
                     >
                       Aktive Inserate
@@ -462,7 +462,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                     <Button
                       onClick={() => setInventorySubTab("drafts")}
                       variant={inventorySubTab === "drafts" ? "default" : "outline"}
-                      className="rounded-2xl px-8 py-6 text-base font-semibold"
+                      className="rounded-2xl px-4 py-2 sm:px-8 sm:py-6 text-base font-semibold"
                       size="lg"
                     >
                       Entwürfe
@@ -470,7 +470,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                     <Button
                       onClick={() => setInventorySubTab("sold")}
                       variant={inventorySubTab === "sold" ? "default" : "outline"}
-                      className="rounded-2xl px-8 py-6 text-base font-semibold"
+                      className="rounded-2xl px-4 py-2 sm:px-8 sm:py-6 text-base font-semibold"
                       size="lg"
                     >
                       Verkauft

@@ -120,8 +120,8 @@ export function DealerHeroHeader({
             </div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between text-xs text-white/70">
-            <div>{publicPath ? `buyauto.ch/${publicPath}` : "buyauto.ch"}</div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-white/70">
+            <div className="break-all">{publicPath ? `buyauto.ch/${publicPath}` : "buyauto.ch"}</div>
             <div>© 2026 BuyAuto</div>
           </div>
         </div>

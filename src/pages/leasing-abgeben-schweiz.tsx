@@ -162,7 +162,8 @@ export default function LeasingAbgebenSchweiz() {
                 fill
                 className="object-cover object-center"
                 priority
-                quality={90}
+                quality={75}
+                sizes="100vw"
               />
             </div>
             
@@ -215,7 +216,7 @@ export default function LeasingAbgebenSchweiz() {
                 </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-4">
                   {[
                     { value: "< 1 Woche", label: "Durchschnittliche Dauer" },
                     { value: "CHF 350", label: "Typische Kosten" },

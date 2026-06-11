@@ -1,7 +1,9 @@
+import { useState } from "react";
 import Head from "next/head";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, ArrowRight, Mail, Clock, Shield } from "lucide-react";
+import { Check, ArrowRight, Mail, Clock, Shield, X } from "lucide-react";
 import Link from "next/link";
 
 function buildMailtoHref(params: { subject: string; body?: string }) {
@@ -13,6 +15,7 @@ function buildMailtoHref(params: { subject: string; body?: string }) {
 
 export default function LeasingConcierge() {
   const baseUrl = "https://www.buyauto.ch";
+  const [showMobileCta, setShowMobileCta] = useState(true);
 
   const option1Mailto = buildMailtoHref({
     subject: "Leasing Concierge Anfrage – Übernahme begleiten",
@@ -51,8 +54,22 @@ export default function LeasingConcierge() {
         <meta property="og:url" content={`${baseUrl}/leasing-concierge`} />
       </Head>
 
+      {/* pb-24 compensates the fixed mobile CTA bar so it never covers the final content/footer */}
+      <div className={showMobileCta ? "pb-24 md:pb-0" : ""}>
+
       <section className="relative bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 text-white py-20 md:py-32">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=2070')] bg-cover bg-center opacity-10" />
+        <div className="absolute inset-0 opacity-10">
+          <Image
+            src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=2070"
+            alt=""
+            fill
+            priority
+            fetchPriority="high"
+            sizes="100vw"
+            quality={70}
+            className="object-cover object-center"
+          />
+        </div>
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-8">
@@ -89,7 +106,7 @@ export default function LeasingConcierge() {
             </div>
 
             <div className="flex flex-col items-center gap-4 justify-center pt-8">
-              <Button size="lg" className="bg-white text-neutral-900 hover:bg-neutral-100 text-lg px-8 py-6 h-auto" asChild>
+              <Button size="lg" className="bg-white text-neutral-900 hover:bg-neutral-100 whitespace-normal text-center text-base sm:text-lg px-6 sm:px-8 py-6 h-auto" asChild>
                 <a href={generalMailto}>
                   Kostenlose Ersteinschätzung per E-Mail
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -211,7 +228,7 @@ export default function LeasingConcierge() {
                   <p className="text-sm text-neutral-500 mb-6 font-medium">(nur fällig, wenn die Übernahme zustande kommt)</p>
 
                   <div className="space-y-4">
-                    <Button className="w-full text-lg py-6" size="lg" asChild>
+                    <Button className="w-full whitespace-normal h-auto text-center text-base sm:text-lg py-6" size="lg" asChild>
                       <a href={option1Mailto}>
                         Übernahme per E-Mail anfragen
                         <ArrowRight className="ml-2 w-5 h-5" />
@@ -284,7 +301,7 @@ export default function LeasingConcierge() {
                   <p className="text-sm text-neutral-500 mb-6 font-medium">(je nach Aufwand & Fall)</p>
 
                   <div className="space-y-4">
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6" size="lg" asChild>
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 whitespace-normal h-auto text-center text-base sm:text-lg py-6" size="lg" asChild>
                       <a href={option2Mailto}>
                         Leasing Exit per E-Mail anfragen
                         <ArrowRight className="ml-2 w-5 h-5" />
@@ -416,13 +433,13 @@ export default function LeasingConcierge() {
             Wenn du zuerst verstehen möchtest, wie Leasing abgeben in der Schweiz grundsätzlich funktioniert:
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="outline" className="bg-white hover:bg-white/90 text-blue-900 border-blue-200" asChild>
+            <Button size="lg" variant="outline" className="bg-white hover:bg-white/90 text-blue-900 border-blue-200 whitespace-normal h-auto text-center" asChild>
               <Link href="/leasing-abgeben-schweiz">
                 Leasing abgeben Schweiz: Ablauf, Optionen & Kosten
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="bg-white hover:bg-white/90 text-blue-900 border-blue-200" asChild>
+            <Button size="lg" variant="outline" className="bg-white hover:bg-white/90 text-blue-900 border-blue-200 whitespace-normal h-auto text-center" asChild>
               <Link href="/leasinguebernahme">
                 Alles zur Leasingübernahme
                 <ArrowRight className="ml-2 w-4 h-4" />
@@ -476,14 +493,27 @@ export default function LeasingConcierge() {
         </div>
       </section>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-neutral-200 shadow-[0_-5px_15px_rgba(0,0,0,0.08)] md:hidden z-50">
-        <Button size="lg" className="w-full h-12 text-lg font-bold shadow-lg" asChild>
-          <a href={generalMailto}>
-            E-Mail schreiben
-            <Mail className="ml-2 w-5 h-5" />
-          </a>
-        </Button>
       </div>
+
+      {showMobileCta && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-neutral-200 shadow-[0_-5px_15px_rgba(0,0,0,0.08)] md:hidden z-50">
+          <div className="flex items-center gap-3">
+            <Button size="lg" className="flex-1 h-12 px-4 text-base min-[400px]:text-lg font-bold shadow-lg" asChild>
+              <a href={generalMailto}>
+                E-Mail schreiben
+                <Mail className="ml-2 w-5 h-5" />
+              </a>
+            </Button>
+            <button
+              onClick={() => setShowMobileCta(false)}
+              className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-lg transition-colors"
+              aria-label="Schliessen"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

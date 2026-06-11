@@ -931,6 +931,7 @@ export default function Step5_PreviewAndPay() {
                       alt={`${data.brand} ${data.model}` || "Fahrzeugbild"}
                       fill
                       className="object-cover"
+                      sizes="(max-width: 1024px) 100vw, 66vw"
                     />
                   </div>
                   <div className="absolute left-4 top-4 flex gap-2">
@@ -1165,13 +1166,13 @@ export default function Step5_PreviewAndPay() {
             </div>
           </div>
 
-          <div className="flex justify-between pt-6">
-            <Button variant="outline" onClick={prevStep} className="rounded-2xl">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between pt-6">
+            <Button variant="outline" onClick={prevStep} className="rounded-2xl w-full sm:w-auto">
               Zurück
             </Button>
-            
+
             {isGarage ? (
-              <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-col items-stretch sm:items-end gap-3">
                 {garagePublishError && (
                   <Alert className="max-w-[520px]" variant="destructive">
                     <AlertTitle>Veröffentlichen fehlgeschlagen</AlertTitle>
@@ -1190,10 +1191,10 @@ export default function Step5_PreviewAndPay() {
                   </Alert>
                 )}
 
-                <Button 
-                  onClick={handleGaragePublish} 
+                <Button
+                  onClick={handleGaragePublish}
                   disabled={isPublishingGarage}
-                  className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 min-w-[200px]"
+                  className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 w-full sm:w-auto sm:min-w-[200px]"
                 >
                   {isPublishingGarage ? (
                     <>
@@ -1209,10 +1210,10 @@ export default function Step5_PreviewAndPay() {
                 </Button>
               </div>
             ) : (
-              <Button 
-                onClick={handlePreparePayment} 
+              <Button
+                onClick={handlePreparePayment}
                 disabled={isPreparingPayment}
-                className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 min-w-[200px]"
+                className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 w-full sm:w-auto sm:min-w-[200px]"
               >
                 {isPreparingPayment ? (
                   <>

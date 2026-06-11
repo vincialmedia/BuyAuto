@@ -209,7 +209,7 @@ export default function CarifyAlternativen() {
         />
       </Head>
 
-      <main className="bg-white min-h-screen">
+      <main className={`bg-white min-h-screen ${showStickyCTA ? "pb-28 md:pb-0" : ""}`}>
         
         {/* STICKY CTA BAR */}
         <div 
@@ -260,7 +260,9 @@ export default function CarifyAlternativen() {
                 fill
                 className="object-cover object-center"
                 priority
-                quality={90}
+                fetchPriority="high"
+                sizes="100vw"
+                quality={75}
               />
             </div>
             
@@ -692,14 +694,14 @@ export default function CarifyAlternativen() {
                   { q: "Brauchst du es 12–36 Monate?", a: "→ Leasingübernahme ideal", icon: CheckCircle },
                   { q: "Stört dich, Versicherung selbst zu organisieren?", a: "→ Wenn ja: Abo. Wenn nein: Leasing.", icon: FileCheck },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between border-b border-neutral-100 pb-6 last:border-0 last:pb-0">
+                  <div key={i} className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-6 last:border-0 last:pb-0">
                     <div className="flex items-center gap-4">
                       <div className="bg-neutral-100 p-2 rounded-lg hidden sm:block">
                         <item.icon className="w-5 h-5 text-neutral-600" />
                       </div>
                       <span className="text-lg md:text-xl font-medium text-neutral-800">{item.q}</span>
                     </div>
-                    <span className="text-primary font-black text-right min-w-[140px]">{item.a}</span>
+                    <span className="text-primary font-black text-right sm:min-w-[140px]">{item.a}</span>
                   </div>
                 ))}
               </div>
