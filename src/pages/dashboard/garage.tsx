@@ -64,11 +64,18 @@ export const getServerSideProps: GetServerSideProps<GarageDashboardPageProps> = 
     };
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: garage }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .maybeSingle(),
+    supabase
+      .from("garages")
+      .select("*")
+      .eq("owner_user_id", session.user.id)
+      .maybeSingle(),
+  ]);
 
   const role = (profile as unknown as { role?: string } | null)?.role ?? "private";
 
@@ -80,12 +87,6 @@ export const getServerSideProps: GetServerSideProps<GarageDashboardPageProps> = 
       },
     };
   }
-
-  const { data: garage } = await supabase
-    .from("garages")
-    .select("*")
-    .eq("owner_user_id", session.user.id)
-    .maybeSingle();
 
   return {
     props: {

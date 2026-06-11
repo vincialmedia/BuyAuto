@@ -28,7 +28,49 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Image from "next/image";
-import { AutoAboVsLeasingCalculator } from "@/components/buyauto/calculator/AutoAboVsLeasingCalculator";
+import dynamic from "next/dynamic";
+
+// Mirrors CalculatorSkeleton in AutoAboVsLeasingCalculator.tsx (duplicated here so the
+// calculator chunk stays code-split); the calculator renders the same skeleton until its
+// own isClient effect runs, so the chunk-load swap causes no layout shift.
+const CalculatorSkeleton = () => (
+  <div className="w-full space-y-8 animate-pulse" aria-hidden="true">
+    {/* Presets bar */}
+    <div className="h-28 sm:h-16 bg-neutral-50 rounded-xl border border-neutral-200" />
+    {/* Controls bar */}
+    <div className="h-40 md:h-28 bg-white rounded-xl border border-neutral-200 shadow-sm" />
+    {/* Shared inputs */}
+    <div className="h-52 md:h-32 bg-neutral-50/50 rounded-xl border border-neutral-200" />
+    {/* Abo / Leasing input cards */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="h-[440px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
+      <div className="h-[560px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
+    </div>
+    {/* Results: two result cards + summary + breakdown */}
+    <div className="bg-neutral-900 rounded-2xl p-4 sm:p-6 md:p-10">
+      <div className="flex flex-col md:flex-row items-stretch gap-4 md:gap-8 mb-10">
+        <div className="flex-1 h-44 bg-white/5 rounded-xl border border-white/10" />
+        <div className="flex-1 h-44 bg-white/5 rounded-xl border border-white/10" />
+      </div>
+      <div className="max-w-3xl mx-auto h-24 bg-white/10 rounded-xl mb-8" />
+      <div className="max-w-3xl mx-auto h-72 bg-neutral-950/50 rounded-lg border border-white/5" />
+    </div>
+  </div>
+);
+
+// The calculator is fully client-gated (it renders only a placeholder until hydration),
+// so load it as a client-only chunk instead of shipping it in the initial page bundle.
+// ssr: false matches its existing SSR output (placeholder markup, no calculator).
+const AutoAboVsLeasingCalculator = dynamic(
+  () =>
+    import("@/components/buyauto/calculator/AutoAboVsLeasingCalculator").then(
+      (mod) => mod.AutoAboVsLeasingCalculator
+    ),
+  {
+    ssr: false,
+    loading: () => <CalculatorSkeleton />,
+  }
+);
 
 interface PageProps {
   updatedDate: string;

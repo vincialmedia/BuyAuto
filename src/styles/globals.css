@@ -6,8 +6,9 @@ html,
 body {
   color: rgb(10, 10, 10);
   background: rgb(255, 255, 255);
-  overflow-x: hidden;
-  max-width: 100vw;
+  /* clip (not hidden): suppresses horizontal overflow without creating a
+     scroll container, so position:sticky descendants keep working. */
+  overflow-x: clip;
 }
 
 @layer utilities {
@@ -52,6 +53,16 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* German compound words (Leasingübernahme, Vertragsübertragung, …) can be
+     wider than a phone viewport in large display sizes. hyphens:auto only
+     kicks in when a word would otherwise overflow its line, so headings that
+     fit are untouched. Requires lang="de-CH" on <html> (set in _document). */
+  h1,
+  h2,
+  h3 {
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
 }
 

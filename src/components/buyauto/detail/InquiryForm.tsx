@@ -151,7 +151,7 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
   if (!authLoading && !user) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
+        <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
           <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-blue-50 rounded-3xl overflow-hidden">
             <CardContent className="p-8 text-center space-y-6">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mx-auto flex items-center justify-center">
@@ -192,7 +192,7 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
   if (submitted) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
+        <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
           <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-green-50 rounded-3xl overflow-hidden">
             <CardContent className="p-8 text-center space-y-6">
               <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full mx-auto flex items-center justify-center">
@@ -216,7 +216,7 @@ export default function InquiryForm({ listingId, listingTitle, open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-0 bg-transparent shadow-none">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
         <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-neutral-50 rounded-3xl overflow-hidden">
           <DialogHeader className="p-8 pb-0">
             <div className="flex items-center justify-between">

@@ -913,11 +913,11 @@ export function Step1Form() {
           locationRequired={locationRequired}
         />
 
-        <div className="flex items-center justify-between pt-2">
-          <Button type="button" variant="outline" onClick={onBack} className="rounded-2xl">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
+          <Button type="button" variant="outline" onClick={onBack} className="rounded-2xl w-full sm:w-auto">
             Zurück
           </Button>
-          <Button type="submit" className="rounded-2xl" disabled={isSubmitting || !canProceed}>
+          <Button type="submit" className="rounded-2xl w-full sm:w-auto" disabled={isSubmitting || !canProceed}>
             {isSubmitting ? "Speichern..." : "Weiter zu Finanzierungsdetails"}
           </Button>
         </div>

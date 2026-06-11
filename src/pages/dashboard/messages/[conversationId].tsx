@@ -332,7 +332,7 @@ export default function DashboardConversationPage() {
                 </Button>
               </div>
 
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="min-w-0">
                   <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 truncate">
                     {ctxLoading ? "Unterhaltung" : title}
@@ -346,7 +346,7 @@ export default function DashboardConversationPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   {canArchive && context?.conversation.status !== "archived" && context?.conversation.status !== "buyer_selected" ? (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -395,7 +395,18 @@ export default function DashboardConversationPage() {
                 </div>
               </div>
 
-              {listing ? (
+              {ctxLoading ? (
+                <div className="rounded-3xl border border-neutral-200/60 bg-neutral-50 p-4 sm:p-5 animate-pulse">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="h-28 w-full sm:w-44 rounded-2xl bg-neutral-200" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-4 w-40 rounded bg-neutral-200" />
+                      <div className="h-4 w-32 rounded bg-neutral-200" />
+                      <div className="h-4 w-36 rounded bg-neutral-200" />
+                    </div>
+                  </div>
+                </div>
+              ) : listing ? (
                 <Link
                   href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}
                   className="block rounded-3xl border border-neutral-200/60 bg-neutral-50 p-4 sm:p-5 transition hover:bg-neutral-100/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/20"

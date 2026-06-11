@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Car, Clock, CheckCircle2, XCircle } from "lucide-react";
 
 interface StatsCardsProps {
@@ -15,14 +15,18 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   // Handle null/undefined stats gracefully
   if (!stats || isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-8 w-20 bg-gray-200 animate-pulse rounded" />
+          <Card key={i} className="border-neutral-200/60">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gray-200 animate-pulse rounded-xl" />
+                <div className="h-8 w-12 bg-gray-200 animate-pulse rounded" />
+              </div>
+              <div>
+                <div className="h-6 w-32 bg-gray-200 animate-pulse rounded mb-1" />
+                <div className="h-5 w-40 bg-gray-200 animate-pulse rounded" />
+              </div>
             </CardContent>
           </Card>
         ))}

@@ -242,6 +242,36 @@ const KmInput = ({
   </div>
 );
 
+// Structured placeholder approximating the calculator's real layout/height
+// (presets bar, controls, shared inputs, two input cards, results block) so the
+// pre-hydration -> hydrated swap causes minimal layout shift.
+// Keep in sync with the dynamic-import loading fallback in
+// src/pages/auto-abo-vs-leasing-kosten.tsx (duplicated there so this module stays code-split).
+const CalculatorSkeleton = () => (
+  <div className="w-full space-y-8 animate-pulse" aria-hidden="true">
+    {/* Presets bar */}
+    <div className="h-28 sm:h-16 bg-neutral-50 rounded-xl border border-neutral-200" />
+    {/* Controls bar */}
+    <div className="h-40 md:h-28 bg-white rounded-xl border border-neutral-200 shadow-sm" />
+    {/* Shared inputs */}
+    <div className="h-52 md:h-32 bg-neutral-50/50 rounded-xl border border-neutral-200" />
+    {/* Abo / Leasing input cards */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="h-[440px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
+      <div className="h-[560px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
+    </div>
+    {/* Results: two result cards + summary + breakdown */}
+    <div className="bg-neutral-900 rounded-2xl p-4 sm:p-6 md:p-10">
+      <div className="flex flex-col md:flex-row items-stretch gap-4 md:gap-8 mb-10">
+        <div className="flex-1 h-44 bg-white/5 rounded-xl border border-white/10" />
+        <div className="flex-1 h-44 bg-white/5 rounded-xl border border-white/10" />
+      </div>
+      <div className="max-w-3xl mx-auto h-24 bg-white/10 rounded-xl mb-8" />
+      <div className="max-w-3xl mx-auto h-72 bg-neutral-950/50 rounded-lg border border-white/5" />
+    </div>
+  </div>
+);
+
 // --- Main Component ---
 
 export function AutoAboVsLeasingCalculator() {
@@ -378,7 +408,7 @@ export function AutoAboVsLeasingCalculator() {
     });
   };
 
-  if (!isClient) return <div className="h-[600px] w-full bg-neutral-100 animate-pulse rounded-xl" />;
+  if (!isClient) return <CalculatorSkeleton />;
 
   return (
     <div className="w-full space-y-8" id="calculator-tool">
@@ -417,7 +447,7 @@ export function AutoAboVsLeasingCalculator() {
       </div>
 
       {/* --- Controls Bar --- */}
-      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-6 sticky top-20 z-20">
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-6 md:sticky md:top-20 z-20">
         <div className="w-full md:w-auto flex flex-col items-center md:items-start gap-2">
           <Label className="text-neutral-500 uppercase tracking-wide text-xs font-bold">Laufzeit (Monate)</Label>
           <Tabs 
@@ -629,7 +659,7 @@ export function AutoAboVsLeasingCalculator() {
       </div>
 
       {/* --- RESULTS SECTION --- */}
-      <div className="bg-neutral-900 rounded-2xl p-6 md:p-10 text-white shadow-2xl relative overflow-hidden" id="results">
+      <div className="bg-neutral-900 rounded-2xl p-4 sm:p-6 md:p-10 text-white shadow-2xl relative overflow-hidden" id="results">
         {/* Background Effects */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/20 blur-[100px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/20 blur-[100px] rounded-full pointer-events-none" />
@@ -688,11 +718,11 @@ export function AutoAboVsLeasingCalculator() {
           </div>
 
           {/* BREAKDOWN TABLE */}
-           <div className="max-w-3xl mx-auto text-sm bg-neutral-950/50 rounded-lg p-4 md:p-6 border border-white/5">
+           <div className="max-w-3xl mx-auto text-sm bg-neutral-950/50 rounded-lg p-3 sm:p-4 md:p-6 border border-white/5">
               <div className="flex justify-between items-center text-neutral-500 font-bold uppercase text-xs tracking-wider mb-4 border-b border-white/10 pb-2">
                 <span>Kostenfaktor (Total)</span>
-                <span className="w-24 text-right">Abo</span>
-                <span className="w-24 text-right">Leasing</span>
+                <span className="w-16 sm:w-24 text-right">Abo</span>
+                <span className="w-16 sm:w-24 text-right">Leasing</span>
               </div>
               
               <BreakdownRow label="Monatsraten (Basis)" val1={results.abo.breakdown.rate} val2={results.leasing.breakdown.rate} highlight />
@@ -704,10 +734,10 @@ export function AutoAboVsLeasingCalculator() {
               <BreakdownRow label="Schäden / Risiko" val1={results.abo.breakdown.damage} val2={0} />
               <BreakdownRow label="Sonstiges (Fix)" val1={results.abo.breakdown.extraMonthly + results.abo.breakdown.fixed} val2={results.leasing.breakdown.fixed} />
               
-              <div className="border-t border-white/20 mt-3 pt-3 flex justify-between items-center font-bold text-base">
+              <div className="border-t border-white/20 mt-3 pt-3 flex justify-between items-center font-bold text-sm sm:text-base">
                 <span>Total</span>
-                <span className="w-24 text-right text-white">CHF {results.abo.total.toFixed(0)}</span>
-                <span className="w-24 text-right text-white">CHF {results.leasing.total.toFixed(0)}</span>
+                <span className="w-20 sm:w-24 text-right text-white">CHF {results.abo.total.toFixed(0)}</span>
+                <span className="w-20 sm:w-24 text-right text-white">CHF {results.leasing.total.toFixed(0)}</span>
               </div>
            </div>
            
@@ -774,9 +804,9 @@ const BreakdownRow = ({
 }) => (
   <div className={`flex justify-between items-center py-1.5 ${highlight ? 'text-white font-medium' : 'text-neutral-400'}`}>
     <span>{label}</span>
-    <div className="flex gap-4 text-right font-mono text-sm">
-      <span className="w-24">{val1 > 0 ? val1.toFixed(0) : '-'}</span>
-      <span className="w-24">{val2 > 0 ? val2.toFixed(0) : '-'}</span>
+    <div className="flex gap-2 sm:gap-4 text-right font-mono text-xs sm:text-sm">
+      <span className="w-16 sm:w-24">{val1 > 0 ? val1.toFixed(0) : '-'}</span>
+      <span className="w-16 sm:w-24">{val2 > 0 ? val2.toFixed(0) : '-'}</span>
     </div>
   </div>
 );

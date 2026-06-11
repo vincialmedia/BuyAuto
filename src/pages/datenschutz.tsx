@@ -1,9 +1,10 @@
 import Head from "next/head";
-import { useHasMounted } from "@/hooks/use-has-mounted";
+
+// Fixed revision date (see agb.tsx): a privacy policy carries the date it was
+// last changed, and a static value avoids a post-hydration text swap.
+const DATENSCHUTZ_STAND = "26.11.2025";
 
 export default function Datenschutz() {
-  const hasMounted = useHasMounted();
-
   return (
     <div className="min-h-screen bg-neutral-50 font-sans text-neutral-900">
       <Head>
@@ -17,7 +18,7 @@ export default function Datenschutz() {
 
           <div className="prose prose-neutral max-w-none">
             <p className="text-sm text-neutral-500 mb-8">
-              Stand: {hasMounted ? new Date().toLocaleDateString('de-CH') : '26.11.2025'}
+              Stand: {DATENSCHUTZ_STAND}
             </p>
 
             <section className="mb-10">

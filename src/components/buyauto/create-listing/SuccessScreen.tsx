@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import Script from "next/script";
 import { CheckCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -193,7 +194,11 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
-      <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js" async></script>
+      <Script
+        src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"
+        strategy="lazyOnload"
+        onLoad={() => confetti.launch()}
+      />
 
       <div className="text-center">
         <CheckCircle className="mx-auto h-16 w-16 text-green-500" />

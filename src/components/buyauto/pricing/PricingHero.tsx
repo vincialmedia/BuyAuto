@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { PricingToggle, type PricingPersona } from "@/components/buyauto/pricing/PricingToggle";
 
 export interface PricingHeroProps {
@@ -13,14 +14,20 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
         className="absolute inset-0 bg-neutral-950"
       />
 
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-cover bg-center opacity-60"
-        style={{
-          backgroundImage:
-            "url('/pexels-maitree-rimthong-444156-1602726.jpg')",
-        }}
-      />
+      {/* next/image instead of a CSS background so the LCP image is
+          discoverable in the initial HTML and served responsive/AVIF. */}
+      <div aria-hidden="true" className="absolute inset-0 opacity-60">
+        <Image
+          src="/pexels-maitree-rimthong-444156-1602726.jpg"
+          alt=""
+          fill
+          priority
+          fetchPriority="high"
+          className="object-cover"
+          sizes="100vw"
+          quality={60}
+        />
+      </div>
 
       <div
         aria-hidden="true"

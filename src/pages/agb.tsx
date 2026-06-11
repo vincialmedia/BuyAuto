@@ -1,11 +1,10 @@
 import Head from "next/head";
-import { useHasMounted } from "@/hooks/use-has-mounted";
+
+// Fixed revision date: legal terms carry the date they were last changed, not
+// the visitor's current date — and a static value lets the page fully SSR.
+const AGB_STAND = "26.11.2025";
 
 export default function AGB() {
-  const hasMounted = useHasMounted();
-
-  if (!hasMounted) return null;
-
   return (
     <>
       <Head>
@@ -20,7 +19,7 @@ export default function AGB() {
           {/* Header Section */}
           <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 p-8 mb-8">
             <h1 className="text-3xl font-bold text-neutral-900 mb-4">Allgemeine Geschäftsbedingungen (AGB)</h1>
-            <p className="text-neutral-500">Stand: {new Date().toLocaleDateString('de-CH', { year: 'numeric', month: '2-digit', day: '2-digit' })}</p>
+            <p className="text-neutral-500">Stand: {AGB_STAND}</p>
           </div>
 
           {/* Content Section */}

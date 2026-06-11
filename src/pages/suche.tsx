@@ -315,13 +315,11 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
         ) : (
           <meta name="robots" content="noindex,follow" />
         )}
-        <link rel="preconnect" href="https://images.unsplash.com" />
-        <link rel="dns-prefetch" href="https://images.unsplash.com" />
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
       </Head>
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
-        <div className={`transition-all duration-300 ${filterBarSticky ? "fixed top-0 left-0 right-0 z-50 shadow-lg" : "relative z-40"}`}>
+        <div className={`transition-shadow duration-300 ${filterBarSticky ? "fixed top-0 left-0 right-0 z-50 shadow-lg" : "relative z-40"}`}>
           <DynamicFilterBar
             searchQuery={searchQuery}
             onSearchQueryChange={handleSearchQueryChange}
@@ -329,27 +327,29 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
         </div>
 
         <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`${filterBarSticky ? "pt-24" : "pt-8"} pb-16 transition-all duration-300`}>
-            {!isLoading && searchResults && (
-              <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
-                  {totalResults > 0 ? heading : "Keine Ergebnisse"}
-                </h1>
-                <p className="text-sm text-neutral-600">
-                  {totalResults > 0 ? (
-                    <>
-                      <span className="font-semibold text-neutral-900">{totalResults.toLocaleString()}</span> {totalResults === 1 ? "Fahrzeug" : "Fahrzeuge"} verfügbar
-                      {currentPage > 1 && <span className="text-neutral-400 mx-2">·</span>}
-                      {currentPage > 1 && `Seite ${currentPage} von ${totalPages}`}
-                    </>
-                  ) : (
-                    <>Passe deine Filter an, um Ergebnisse zu sehen</>
-                  )}
-                </p>
+          <div className={`${filterBarSticky ? "pt-24" : "pt-8"} pb-16`}>
+            {/* Stays mounted while isLoading (previous count / placeholder) so the
+                results grid below doesn't shift ~110px on every search (CLS). */}
+            <div className="mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
+                {!isLoading && searchResults && totalResults === 0 ? "Keine Ergebnisse" : heading}
+              </h1>
+              <p className="text-sm text-neutral-600">
+                {isLoading && !searchResults ? (
+                  <>Fahrzeuge werden geladen…</>
+                ) : totalResults > 0 ? (
+                  <>
+                    <span className="font-semibold text-neutral-900">{totalResults.toLocaleString()}</span> {totalResults === 1 ? "Fahrzeug" : "Fahrzeuge"} verfügbar
+                    {currentPage > 1 && <span className="text-neutral-400 mx-2">·</span>}
+                    {currentPage > 1 && `Seite ${currentPage} von ${totalPages}`}
+                  </>
+                ) : (
+                  <>Passe deine Filter an, um Ergebnisse zu sehen</>
+                )}
+              </p>
 
-                <div className="mt-4 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
-              </div>
-            )}
+              <div className="mt-4 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
+            </div>
 
             <VerticalResultsList
               listings={searchResults?.items || []}
@@ -367,7 +367,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
   );
 }
 
-export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ query }) => {
+export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ query, res }) => {
   const initialQuery = parseSearchQueryFromParams(query as Record<string, string | string[] | undefined>);
 
   // The indexable views (bare hub + single dealType category views, incl. the
@@ -378,6 +378,8 @@ export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ 
   }
 
   try {
+    // Indexable views are the same for every visitor — let the CDN serve them.
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     const results = await searchListings(initialQuery);
     // Strip any `undefined` fields so Next can serialize the props.
     const initialResults = JSON.parse(JSON.stringify(results)) as SearchResult;

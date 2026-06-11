@@ -109,13 +109,13 @@ export default function Header() {
             <div className="flex-shrink-0 flex items-center relative z-50 -my-6">
               <Link href="/" className="relative block">
                 <Image
-                  src="/buyauto-logo-full.png"
+                  src="/buyauto-logo-header.png"
                   alt="BuyAuto"
-                  width={420}
+                  width={180}
                   height={120}
                   priority
-                  className="h-[120px] md:h-[144px] w-auto bg-transparent"
-                  sizes="(max-width: 768px) 330px, 420px"
+                  className="h-[96px] sm:h-[120px] md:h-[144px] w-auto bg-transparent"
+                  sizes="(max-width: 639px) 144px, (max-width: 768px) 180px, 216px"
                 />
               </Link>
             </div>
@@ -185,7 +185,7 @@ export default function Header() {
             <div className="flex md:hidden items-center flex-shrink-0 gap-3">
               <Button
                 size="sm"
-                className="bg-red-500 hover:bg-red-600 text-white shadow-sm relative px-2 xs:px-3 py-2 text-xs font-medium"
+                className="bg-red-500 hover:bg-red-600 text-white shadow-sm relative px-2 sm:px-3 py-2 text-xs font-medium"
                 onClick={handleCreateListingClick}
               >
                 <Plus className="h-4 w-4 mr-1 md:mr-1.5" />

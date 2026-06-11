@@ -31,13 +31,15 @@ function getDealTypeLabel(listing: Listing): DealTypeLabel {
 interface PremiumListingsProps {
   externalFilter?: FilterCategory;
   onFilterChange?: (filter: FilterCategory) => void;
-  flushTop?: boolean;
+  /** Listings fetched at build/request time. When provided, no client fetch
+   *  happens and the cards are part of the first paint (no layout shift). */
+  initialListings?: Listing[];
 }
 
-export default function PremiumListings({ externalFilter, onFilterChange, flushTop }: PremiumListingsProps) {
-  const [listings, setListings] = useState<Listing[]>([]);
+export default function PremiumListings({ externalFilter, onFilterChange, initialListings }: PremiumListingsProps) {
+  const [listings, setListings] = useState<Listing[]>(initialListings ?? []);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(initialListings === undefined);
   const [internalFilter, setInternalFilter] = useState<FilterCategory>("all");
 
   // Use external filter if provided, otherwise use internal
@@ -54,6 +56,8 @@ export default function PremiumListings({ externalFilter, onFilterChange, flushT
   const pageSize = 3;
 
   useEffect(() => {
+    if (initialListings !== undefined) return;
+
     let cancelled = false;
 
     const loadPremiumListings = async () => {
@@ -85,7 +89,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, flushT
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialListings]);
 
   const filteredListings = useMemo(() => {
     if (activeFilter === "all") return listings;
@@ -136,28 +140,37 @@ export default function PremiumListings({ externalFilter, onFilterChange, flushT
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < maxIndex;
 
-  const topSectionClass = flushTop
-    ? "pt-8 sm:pt-10 pb-16 sm:pb-20 bg-gradient-to-b from-neutral-50 to-white"
-    : "py-16 sm:py-20 bg-gradient-to-b from-neutral-50 to-white";
-
   if (isLoading) {
+    // Mirrors the loaded state's geometry exactly (same floating card pulled
+    // up by -mt-16) so swapping skeleton → content causes no layout shift.
     return (
-      <section className={topSectionClass}>
+      <section className="relative z-10 -mt-16 sm:-mt-20 pb-16 sm:pb-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <div className="w-48 h-8 bg-neutral-200 rounded animate-pulse mx-auto mb-4" />
-            <div className="w-80 h-5 bg-neutral-100 rounded animate-pulse mx-auto" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-white rounded-2xl overflow-hidden shadow-lg border border-neutral-100">
-                <div className="w-full h-48 bg-neutral-100" />
-                <div className="p-5 space-y-3">
-                  <div className="w-32 h-4 bg-neutral-100 rounded" />
-                  <div className="w-24 h-4 bg-neutral-100 rounded" />
-                </div>
+          <div className="bg-white rounded-3xl shadow-2xl shadow-neutral-900/10 border border-neutral-100 p-6 sm:p-10">
+            <div className="text-center mb-8 sm:mb-10">
+              <div className="w-44 h-10 bg-amber-50 rounded-full animate-pulse mx-auto mb-5" />
+              <div className="w-72 max-w-full h-8 bg-neutral-200 rounded animate-pulse mx-auto mb-3" />
+              <div className="w-80 max-w-full h-5 bg-neutral-100 rounded animate-pulse mx-auto mb-6" />
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="w-24 h-9 bg-neutral-100 rounded-full animate-pulse" />
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse bg-white rounded-2xl overflow-hidden shadow-md border border-neutral-200">
+                  <div className="w-full h-48 sm:h-52 bg-neutral-100" />
+                  <div className="p-5 space-y-3">
+                    <div className="w-32 h-4 bg-neutral-100 rounded" />
+                    <div className="w-24 h-4 bg-neutral-100 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-center mt-10">
+              <div className="w-64 h-11 bg-neutral-100 rounded-xl animate-pulse mx-auto" />
+            </div>
           </div>
         </div>
       </section>
@@ -166,9 +179,9 @@ export default function PremiumListings({ externalFilter, onFilterChange, flushT
 
   if (listings.length === 0) {
     return (
-      <section className={topSectionClass}>
+      <section className="relative z-10 -mt-16 sm:-mt-20 pb-16 sm:pb-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
+          <div className="bg-white rounded-3xl shadow-2xl shadow-neutral-900/10 border border-neutral-100 p-6 sm:p-10 text-center">
             <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-5 py-2 mb-5">
               <Crown className="w-4 h-4 text-amber-600" />
               <span className="text-amber-700 font-medium text-sm">Premium Inserate</span>

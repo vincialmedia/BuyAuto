@@ -133,9 +133,11 @@ export default function GaragePlanPage() {
     }
   };
 
-  if (!user || userRole !== "garage") {
-    return null;
-  }
+  // The pricing shell has no per-user data: render it on SSR and while client
+  // auth resolves (instead of a blank page), and keep the plan buttons disabled
+  // until we know a garage user is signed in. Logged-out / non-garage visitors
+  // are redirected by the effect above.
+  const authReady = Boolean(user && userRole === "garage");
 
   return (
     <>
@@ -231,7 +233,7 @@ export default function GaragePlanPage() {
                       : "bg-neutral-900 hover:bg-neutral-800"
                   }`}
                   onClick={() => handleSelectPlan(pkg.code)}
-                  disabled={loading}
+                  disabled={loading || !authReady}
                 >
                   {loading && selectedPlan === pkg.code ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

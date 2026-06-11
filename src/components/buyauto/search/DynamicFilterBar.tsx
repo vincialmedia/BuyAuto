@@ -238,7 +238,9 @@ export default function DynamicFilterBar({
   const priceMinPlaceholder = isDirectPurchase ? "Min. Kaufpreis" : "Min. Rate";
   const priceMaxPlaceholder = isDirectPurchase ? "Max. Kaufpreis" : "Max. Rate";
 
-  const DesktopFilters = () => (
+  // Inline JSX (not inner components): declaring these as components inside the render
+  // body gives them a new identity every render, remounting the whole Radix Select subtree.
+  const desktopFilters = (
     <div className="space-y-3">
       <div className="grid grid-cols-8 items-center gap-4">
         <div className="col-span-1">
@@ -386,7 +388,7 @@ export default function DynamicFilterBar({
     </div>
   );
 
-  const MobileFilters = () => (
+  const mobileFilters = (
     <div className="space-y-6 py-4">
       <div>
         <label className="text-sm font-semibold text-neutral-900 mb-2 block">Verkaufsart</label>
@@ -570,7 +572,7 @@ export default function DynamicFilterBar({
     <div className={cn("bg-white/80 backdrop-blur-md border-b border-white/30 shadow-sm transition-all duration-300", className)}>
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="hidden md:block">
-          <DesktopFilters />
+          {desktopFilters}
         </div>
 
         <div className="md:hidden">
@@ -586,7 +588,7 @@ export default function DynamicFilterBar({
                 <SheetHeader className="border-b border-neutral-200 pb-4 mb-2">
                   <SheetTitle className="text-lg font-bold">Fahrzeuge filtern</SheetTitle>
                 </SheetHeader>
-                <MobileFilters />
+                {mobileFilters}
               </SheetContent>
             </Sheet>
 

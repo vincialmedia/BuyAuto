@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import type { GetStaticProps } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,6 +11,8 @@ import PremiumListings from "@/components/buyauto/PremiumListings";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { Button } from "@/components/ui/button";
+import type { Listing } from "@/lib/buyauto/types";
+import { searchListings } from "@/services/listingsService";
 
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"), {
   loading: () => <div className="h-96 bg-white animate-pulse" />,
@@ -20,7 +23,11 @@ const SeoCopyBlock = dynamic(() => import("@/components/buyauto/SeoCopyBlock").t
 
 type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
 
-export default function HomePage() {
+interface HomePageProps {
+  premiumListings: Listing[];
+}
+
+export default function HomePage({ premiumListings }: HomePageProps) {
   const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");
 
   return (
@@ -105,9 +112,10 @@ export default function HomePage() {
             alt="Red Porsche Macan on Swiss mountain road"
             fill
             priority
+            fetchPriority="high"
             className="object-cover object-[center_30%]"
             sizes="100vw"
-            quality={90}
+            quality={75}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/70 to-neutral-900/40" />
         </div>
@@ -142,7 +150,7 @@ export default function HomePage() {
       </div>
 
       <div className="scroll-mt-4">
-        <PremiumListings flushTop externalFilter={premiumFilter} onFilterChange={setPremiumFilter} />
+        <PremiumListings initialListings={premiumListings} externalFilter={premiumFilter} onFilterChange={setPremiumFilter} />
       </div>
 
       <WhyBuyAutoSection />
@@ -312,3 +320,26 @@ export default function HomePage() {
     </div>
   );
 }
+
+// ISR: premium listings are part of the static HTML (no client fetch, no
+// layout shift) and refresh in the background every 5 minutes.
+export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
+  try {
+    const [directPurchaseResult, leaseTakeoverResult] = await Promise.all([
+      searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
+      searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
+    ]);
+
+    const ordered = [...directPurchaseResult.items, ...leaseTakeoverResult.items];
+    const uniqueById = new Map<string, Listing>();
+    for (const l of ordered) uniqueById.set(l.id, l);
+
+    // Strip undefined fields so Next can serialize.
+    const premiumListings = JSON.parse(JSON.stringify(Array.from(uniqueById.values()))) as Listing[];
+
+    return { props: { premiumListings }, revalidate: 300 };
+  } catch (error) {
+    console.error("Homepage premium listings fetch failed:", error);
+    return { props: { premiumListings: [] }, revalidate: 60 };
+  }
+};

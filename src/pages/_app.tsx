@@ -9,10 +9,11 @@ import "@/styles/globals.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
 
+// Both families are variable fonts: omitting `weight` loads a single
+// variable file per family instead of one file per weight.
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
-  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
   preload: true,
 });
@@ -20,7 +21,6 @@ const manrope = Manrope({
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
-  weight: ["400", "700"],
   display: "swap",
   preload: false,
 });
@@ -49,7 +49,11 @@ export default function App({ Component, pageProps }: AppProps) {
   const absoluteOgImage = `${base.replace(/\/$/, "")}/share-logo.jpg`;
 
   return (
-    <div className={`${manrope.variable} ${caveat.variable} font-sans overflow-x-hidden min-h-screen`}>
+    // No overflow-x-hidden on this wrapper: an overflow clip here turns it
+    // into the scroll container and silently breaks position:sticky for the
+    // header. Horizontal overflow is clipped via overflow-x:clip on html/body
+    // in globals.css instead, which keeps sticky working.
+    <div className={`${manrope.variable} ${caveat.variable} font-sans min-h-screen`}>
       <AuthProvider>
         <MainLayout>
           <Head>

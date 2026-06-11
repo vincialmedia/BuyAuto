@@ -81,7 +81,7 @@ export function DealerAboutAndMap({
                   <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">E-Mail</div>
                   <div className="mt-1 text-sm">
                     <a
-                      className="font-semibold text-neutral-900 underline underline-offset-4"
+                      className="break-words font-semibold text-neutral-900 underline underline-offset-4"
                       href={`mailto:${contactEmail.trim()}`}
                     >
                       {contactEmail.trim()}
@@ -95,7 +95,7 @@ export function DealerAboutAndMap({
                   <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Website</div>
                   <div className="mt-1 text-sm">
                     <a
-                      className="font-semibold text-neutral-900 underline underline-offset-4"
+                      className="break-all font-semibold text-neutral-900 underline underline-offset-4"
                       href={websiteUrl.trim()}
                       target="_blank"
                       rel="noreferrer"

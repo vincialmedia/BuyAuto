@@ -1,4 +1,4 @@
-import type { GetServerSideProps } from "next";
+import type { GetStaticPaths, GetStaticProps } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronRight } from "lucide-react";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
 import { searchListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
-import { getLeasingBrandBySlug, type LeasingBrand } from "@/lib/buyauto/leasingBrands";
+import { getLeasingBrandBySlug, LEASING_BRANDS, type LeasingBrand } from "@/lib/buyauto/leasingBrands";
 
 const SITE_URL = "https://www.buyauto.ch";
 
@@ -179,13 +179,13 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
             </ul>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="font-bold">
+              <Button asChild size="lg" className="font-bold whitespace-normal h-auto text-center">
                 <Link href={searchHref}>
                   Alle {brand.name} Leasingübernahmen ansehen
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="font-bold">
+              <Button asChild size="lg" variant="outline" className="font-bold whitespace-normal h-auto text-center">
                 <Link href="/leasinguebernahme">So funktioniert die Leasingübernahme</Link>
               </Button>
             </div>
@@ -193,8 +193,8 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
 
           {/* Listings */}
           <section className="mt-14">
-            <div className="flex items-end justify-between gap-4 mb-6">
-              <h2 className="text-2xl font-bold text-neutral-900">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+              <h2 className="min-w-0 text-2xl font-bold text-neutral-900">
                 {hasListings
                   ? `${total} ${brand.name}-${total === 1 ? "Angebot" : "Angebote"} zur Leasingübernahme`
                   : `Aktuell keine ${brand.name}-Leasingübernahmen verfügbar`}
@@ -208,8 +208,8 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
 
             {hasListings ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {listings.map((listing, index) => (
-                  <ModernListingCard key={listing.id} listing={listing} priority={index < 3} />
+                {listings.map((listing) => (
+                  <ModernListingCard key={listing.id} listing={listing} />
                 ))}
               </div>
             ) : (
@@ -261,7 +261,14 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
   );
 }
 
-export const getServerSideProps: GetServerSideProps<BrandPageProps> = async (context) => {
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: LEASING_BRANDS.map((b) => ({ params: { marke: b.slug } })),
+    fallback: "blocking",
+  };
+};
+
+export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) => {
   const slug = String(context.params?.marke ?? "");
   const brand = getLeasingBrandBySlug(slug);
 
@@ -273,9 +280,9 @@ export const getServerSideProps: GetServerSideProps<BrandPageProps> = async (con
     const results = await searchListings({ dealType: "lease_takeover", brand: brand.name, sort: "dateDesc" });
     // Strip undefined fields so Next can serialize the props.
     const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-    return { props: { brand, listings, total: results.total } };
+    return { props: { brand, listings, total: results.total }, revalidate: 300 };
   } catch (error) {
     console.error("Brand page SSR search failed:", { slug, error });
-    return { props: { brand, listings: [], total: 0 } };
+    return { props: { brand, listings: [], total: 0 }, revalidate: 300 };
   }
 };

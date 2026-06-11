@@ -224,11 +224,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     };
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: draftRows, error: draftsError }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .maybeSingle(),
+    supabase
+      .from("listing_drafts")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("updated_at", { ascending: false }),
+  ]);
 
   const role = (profile as unknown as { role?: string } | null)?.role ?? "private";
 
@@ -240,12 +247,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       },
     };
   }
-
-  const { data: draftRows, error: draftsError } = await supabase
-    .from("listing_drafts")
-    .select("*")
-    .eq("user_id", session.user.id)
-    .order("updated_at", { ascending: false });
 
   if (draftsError) {
     console.warn("Failed to fetch listing drafts (SSR):", draftsError);

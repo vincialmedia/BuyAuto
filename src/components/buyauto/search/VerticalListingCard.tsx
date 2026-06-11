@@ -113,10 +113,10 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
     (isGarage ? "Garage" : "Privatanbieter");
 
   return (
-    <div className="group bg-white border border-neutral-200/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-neutral-900/10 transition-all duration-300 hover:-translate-y-1 hover:bg-neutral-50/30">
-      <div className="flex">
+    <div className="group relative bg-white border border-neutral-200/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-neutral-900/10 transition-all duration-300 hover:-translate-y-1 hover:bg-neutral-50/30">
+      <div className="flex flex-col sm:flex-row">
         {/* Image Section */}
-        <div className="relative w-64 h-40 flex-shrink-0 overflow-hidden">
+        <div className="relative w-full aspect-[16/10] sm:w-64 sm:aspect-auto sm:h-40 flex-shrink-0 overflow-hidden">
           <Image
             src={getImageVariant(listing.imageUrl, "medium")}
             alt={`${listing.brand} ${listing.model}`}
@@ -137,7 +137,7 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
 
         {/* Content Section */}
         <div className="flex-1 p-6">
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:gap-0 sm:items-start sm:justify-between">
             {/* Left Content */}
             <div className="flex-1">
               {/* Title */}
@@ -187,7 +187,7 @@ export default function VerticalListingCard({ listing, onDetailsClick }: Vertica
             </div>
 
             {/* Right Content - Price & CTA */}
-            <div className="flex flex-col items-end space-y-4 ml-6">
+            <div className="flex flex-col items-end space-y-4 sm:ml-6">
               {/* Price */}
               <div className="text-right">
                 <div className="text-2xl font-bold text-red-600">

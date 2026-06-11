@@ -191,7 +191,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
         />
       </Head>
 
-      <main className="bg-white min-h-screen">
+      <main className={`bg-white min-h-screen ${showStickyCTA ? "pb-28 md:pb-0" : ""}`}>
         
         {/* STICKY CTA BAR */}
         <div 
@@ -242,7 +242,8 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
                 fill
                 className="object-cover object-center"
                 priority
-                quality={90}
+                quality={75}
+                sizes="100vw"
               />
             </div>
             
@@ -432,12 +433,12 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
                         {item.step}
                       </div>
                       
-                      <div className="flex-1 bg-neutral-50 rounded-3xl p-8 border-2 border-neutral-100 hover:border-primary/30 transition-all duration-300 hover:shadow-lg group">
+                      <div className="flex-1 min-w-0 bg-neutral-50 rounded-3xl p-8 border-2 border-neutral-100 hover:border-primary/30 transition-all duration-300 hover:shadow-lg group">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="bg-primary/10 p-2 rounded-xl group-hover:bg-primary/20 transition-colors">
                             <IconComponent className="w-6 h-6 text-primary" />
                           </div>
-                          <h3 className="text-2xl font-black text-neutral-900">{item.title}</h3>
+                          <h3 className="min-w-0 text-xl md:text-2xl font-black text-neutral-900">{item.title}</h3>
                         </div>
                         <p className="text-neutral-600 text-lg">
                           {item.step === 4 ? (

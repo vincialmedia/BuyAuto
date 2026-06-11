@@ -18,7 +18,9 @@ import { buildListingHref, buildListingSlugSegment, extractListingIdFromParam } 
 const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), { ssr: false });
 
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
-  loading: () => <div className="h-96 bg-neutral-50 animate-pulse rounded-2xl mt-16" />,
+  // No extra top margin: the bottomContent wrapper already applies mt-10,
+  // matching the real component's position so the chunk swap doesn't shift.
+  loading: () => <div className="h-96 bg-neutral-50 animate-pulse rounded-2xl" />,
 });
 
 interface ListingDetailPageProps {
@@ -384,7 +386,8 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         />
       </Head>
 
-      <div className="bg-white border-b border-neutral-200 sticky top-0 z-20">
+      {/* Stacks below the global sticky header (h-16 md:h-20), not under it. */}
+      <div className="bg-white border-b border-neutral-200 sticky top-16 md:top-20 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2 hover:bg-neutral-100">
@@ -513,6 +516,10 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
           permanent: true,
         },
       };
+    }
+
+    if (context.res) {
+      context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     }
 
     return { props: { listing: serializedListing } };

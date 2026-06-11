@@ -39,7 +39,7 @@ export default function MinimalPagination({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className={`flex items-center justify-center h-9 sm:h-10 px-3 sm:px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
+        className={`flex items-center justify-center h-9 sm:h-10 px-2 sm:px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
           currentPage === 1
             ? 'text-neutral-400 cursor-not-allowed bg-neutral-100'
             : 'text-neutral-700 hover:text-red-600 hover:bg-red-50 bg-white border border-neutral-200 hover:border-red-200 active:scale-95'
@@ -57,7 +57,7 @@ export default function MinimalPagination({
             return (
               <span
                 key={`ellipsis-${index}`}
-                className="flex items-center justify-center h-9 sm:h-10 px-2 sm:px-3 text-neutral-400 text-sm"
+                className="flex items-center justify-center h-9 sm:h-10 px-1 sm:px-3 text-neutral-400 text-sm"
               >
                 ...
               </span>
@@ -69,7 +69,7 @@ export default function MinimalPagination({
             <button
               key={page}
               onClick={() => onPageChange(page as number)}
-              className={`flex items-center justify-center h-9 sm:h-10 min-w-[36px] sm:min-w-[40px] px-2 sm:px-3 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-95 ${
+              className={`flex items-center justify-center h-9 sm:h-10 min-w-[32px] sm:min-w-[40px] px-1.5 sm:px-3 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-95 ${
                 isCurrentPage
                   ? 'bg-red-600 text-white shadow-md shadow-red-600/20 hover:bg-red-700'
                   : 'text-neutral-700 hover:text-red-600 hover:bg-red-50 bg-white border border-neutral-200 hover:border-red-200'
@@ -87,7 +87,7 @@ export default function MinimalPagination({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className={`flex items-center justify-center h-9 sm:h-10 px-3 sm:px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
+        className={`flex items-center justify-center h-9 sm:h-10 px-2 sm:px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
           currentPage === totalPages
             ? 'text-neutral-400 cursor-not-allowed bg-neutral-100'
             : 'text-neutral-700 hover:text-red-600 hover:bg-red-50 bg-white border border-neutral-200 hover:border-red-200 active:scale-95'

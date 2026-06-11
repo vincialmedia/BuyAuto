@@ -1,6 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,10 @@ import {
 
 const PremiumListings = dynamic(
   () => import("@/components/buyauto/PremiumListings"),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <div className="w-full min-h-[600px] bg-neutral-100 animate-pulse" />,
+  }
 );
 
 export default function AutoAbosImVergleichPage() {
@@ -360,14 +364,18 @@ export default function AutoAbosImVergleichPage() {
       <main className="min-h-screen">
         {/* HERO SECTION */}
         <section className="relative bg-gradient-to-t from-neutral-900 via-neutral-900/95 to-neutral-900/90 text-white py-24 md:py-32">
-          <div
-            className="absolute inset-0 -z-10"
-            style={{
-              backgroundImage: "url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1920')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
+          <div className="absolute inset-0 -z-10">
+            <Image
+              src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1920"
+              alt=""
+              fill
+              priority
+              fetchPriority="high"
+              sizes="100vw"
+              quality={70}
+              className="object-cover object-center"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/80 to-transparent -z-10" />
 
           <div className="container mx-auto px-4 max-w-5xl text-center relative z-10">

@@ -4,7 +4,6 @@ import { Listing } from "@/lib/buyauto/types";
 import { Star, MapPin, Gauge, Fuel, Settings } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { useState } from "react";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
@@ -17,7 +16,6 @@ interface ModernListingCardProps {
 
 export function ModernListingCard({ listing, onDetailsClick, priority = false }: ModernListingCardProps) {
   const router = useRouter();
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const uiVersion = listing.ui_version === "v2" ? "v2" : "v1";
   const rawDealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
@@ -143,20 +141,15 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
     >
       {/* Image Section */}
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-neutral-100">
-        {!imageLoaded && (
-          <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200" />
-        )}
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200" />
         <Image
           src={getImageVariant(listing.imageUrl, "medium")}
           alt={`${listing.brand} ${listing.model}`}
           fill
-          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
           priority={priority}
           quality={85}
-          className={`object-cover group-hover:scale-105 transition-all duration-500 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          onLoad={() => setImageLoaded(true)}
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
         
         {/* Premium Badge */}

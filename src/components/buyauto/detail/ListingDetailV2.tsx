@@ -19,6 +19,7 @@ import type { GaragePublicInfo } from "@/services/garageService";
 import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
 import { MessagingPanel } from "@/components/buyauto/detail/MessagingPanel";
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,7 @@ import { GarageMiniBanner } from "@/components/buyauto/detail/GarageMiniBanner";
 
 const LeasingCalculator = dynamic<LeasingCalculatorProps>(
   () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
-  { ssr: false, loading: () => <div className="h-80 bg-neutral-50 animate-pulse rounded-2xl" /> }
+  { ssr: false, loading: () => <div className="min-h-[600px] bg-neutral-50 animate-pulse rounded-2xl" /> }
 );
 
 function formatChf(value: number): string {
@@ -406,11 +407,12 @@ export function ListingDetailV2({
                         <div className="rounded-3xl overflow-hidden border border-neutral-200/60 bg-white shadow-sm">
                           <div className="relative h-28 sm:h-32">
                             {headerImageUrl && headerImageUrl.trim() ? (
-                              <img
+                              <Image
                                 src={headerImageUrl}
                                 alt={`${name} Header`}
-                                className="absolute inset-0 h-full w-full object-cover"
-                                loading="lazy"
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 1024px) 100vw, 480px"
                               />
                             ) : (
                               <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80" />
@@ -421,11 +423,12 @@ export function ListingDetailV2({
                               <div className="flex items-end gap-3">
                                 <div className="shrink-0">
                                   {logoUrl ? (
-                                    <img
+                                    <Image
                                       src={logoUrl}
                                       alt={`${name} Logo`}
+                                      width={56}
+                                      height={56}
                                       className="h-14 w-14 rounded-2xl object-cover bg-white ring-2 ring-white shadow"
-                                      loading="lazy"
                                     />
                                   ) : (
                                     <div className="h-14 w-14 rounded-2xl bg-white/15 backdrop-blur border border-white/20 ring-2 ring-white/40 flex items-center justify-center text-sm font-bold text-white">
@@ -496,7 +499,7 @@ export function ListingDetailV2({
             </Card>
 
             {!isSold && (
-              <div id="messages" className="scroll-mt-24">
+              <div id="messages" className="scroll-mt-36 md:scroll-mt-40">
                 <MessagingPanel 
                   listingId={listing.id} 
                   listingTitle={`${listing.brand} ${listing.model} ${listing.year}`}
@@ -576,12 +579,12 @@ export function ListingDetailV2({
           </div>
         </div>
 
-        <div className="mt-10 lg:hidden">
-          {bottomContent}
-        </div>
       </div>
 
-      <div className="hidden lg:block">
+      {/* Mounted once for all breakpoints so children (e.g. SimilarListings) fetch
+          only once; the responsive padding mirrors the previous in-container
+          placement below lg and the bare root placement at lg+. */}
+      <div className="px-4 sm:px-6 lg:px-0">
         {bottomContent}
       </div>
     </div>

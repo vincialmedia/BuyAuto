@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,8 +18,25 @@ interface DashboardLayoutProps {
   hideSidebar?: boolean;
 }
 
+// Mount-gate for desktop-only content: false on SSR/first render, then tracks
+// the lg breakpoint via matchMedia so mobile never mounts (or fetches for) it.
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  return isDesktop;
+}
+
 export default function DashboardLayout({ children, currentSection = "overview", leftRail, hideSidebar = false }: DashboardLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isDesktop = useIsDesktop();
   const router = useRouter();
 
   const navigation = [
@@ -60,7 +77,7 @@ export default function DashboardLayout({ children, currentSection = "overview",
           <aside className={cn("hidden lg:block", hideSidebar ? "lg:col-span-3 xl:col-span-3" : "lg:col-span-3 xl:col-span-2")}>
             <div className="sticky top-20 p-6">
               {hideSidebar ? (
-                leftRail ? <>{leftRail}</> : null
+                isDesktop && leftRail ? <>{leftRail}</> : null
               ) : (
                 <>
                   <nav className="space-y-2">

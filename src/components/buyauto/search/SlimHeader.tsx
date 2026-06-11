@@ -14,13 +14,13 @@ export default function SlimHeader() {
           {/* Logo - Minimal and clean */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/buyauto-logo-full.png"
+              src="/buyauto-logo-header.png"
               alt="BuyAuto Logo"
-              width={140}
-              height={38}
+              width={48}
+              height={32}
               className="h-8 w-auto"
               priority
-              sizes="140px"
+              sizes="48px"
             />
           </Link>
 
