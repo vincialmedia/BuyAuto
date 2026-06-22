@@ -46,6 +46,8 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const staticPages = [
     "",
     "/suche",
+    "/preise",
+    "/garage-plan",
     "/leasing-concierge",
     "/leasinguebernahme",
     "/leasinguebernahme-kosten",
