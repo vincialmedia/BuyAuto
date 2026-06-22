@@ -525,6 +525,12 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     return { props: { listing: serializedListing } };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
+    // Transient backend failure: signal 503 (retry later) instead of a 200 skeleton that
+    // Google could soft-404 and de-index. The URL stays indexed; Google just retries.
+    if (context.res) {
+      context.res.statusCode = 503;
+      context.res.setHeader("Retry-After", "120");
+    }
     return { props: { listing: null } };
   }
 };

@@ -113,7 +113,7 @@ export default function Header() {
                   alt="BuyAuto"
                   width={180}
                   height={120}
-                  priority
+                  loading="eager"
                   className="h-[96px] sm:h-[120px] md:h-[144px] w-auto bg-transparent"
                   sizes="(max-width: 639px) 144px, (max-width: 768px) 180px, 216px"
                 />
@@ -166,6 +166,12 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/suche" className="cursor-pointer font-medium">
                       Alle Fahrzeuge
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/leasinguebernahme" className="cursor-pointer">
+                      Leasingübernahme – Ratgeber
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -308,14 +314,21 @@ export default function Header() {
               >
                 Leasing Suchen
               </Link>
-              <Link 
-                href="/suche" 
+              <Link
+                href="/suche"
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Alle Fahrzeuge
               </Link>
-              
+              <Link
+                href="/leasinguebernahme"
+                className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Leasingübernahme – Ratgeber
+              </Link>
+
               <div className="border-t border-neutral-100 my-2"></div>
               
               {/* Preise */}

@@ -86,10 +86,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
   return (
     <>
       <Head>
-        <title>Leasingübernahme & Leasing Transfer Schweiz – Kompletter Leitfaden | BuyAuto</title>
+        <title>Leasingübernahme: Ablauf, Voraussetzungen & Kosten – Ratgeber | BuyAuto</title>
         <meta
           name="description"
-          content="Erfahre, wie du einen bestehenden Leasingvertrag übernehmen oder übertragen kannst – inklusive Ablauf, Voraussetzungen, Kosten und praxisnahen Tipps für Käufer und Abgeber."
+          content="Leasingübernahme in der Schweiz Schritt für Schritt: Ablauf, Voraussetzungen, Kosten und Tipps, um einen laufenden Leasingvertrag ohne hohe Anzahlung zu übernehmen – der Ratgeber von BuyAuto."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme" />
         <script
@@ -177,7 +177,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 "@context": "https://schema.org",
                 "@type": "ItemList",
                 name: "Aktuelle Leasingübernahme-Angebote in der Schweiz",
-                numberOfItems: takeoverTotal,
+                numberOfItems: takeoverListings.length,
                 itemListElement: takeoverListings.map((l, index) => {
                   const price = typeof l.pricePerMonthCHF === "number" && l.pricePerMonthCHF > 0 ? l.pricePerMonthCHF : null;
                   return {
@@ -198,15 +198,14 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                         ? {
                             offers: {
                               "@type": "Offer",
-                              price,
-                              priceCurrency: "CHF",
+                              // No top-level price: this is a recurring monthly lease rate, not
+                              // a one-time sale price. Express it only via priceSpecification.
                               availability: "https://schema.org/InStock",
                               itemCondition: "https://schema.org/UsedCondition",
                               priceSpecification: {
                                 "@type": "UnitPriceSpecification",
                                 price,
                                 priceCurrency: "CHF",
-                                unitCode: "MON",
                                 unitText: "MONTH",
                               },
                             },
@@ -221,8 +220,8 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
         )}
 
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingübernahme & Leasing Transfer Schweiz – Kompletter Leitfaden" />
-        <meta property="og:description" content="Erfahre, wie du einen bestehenden Leasingvertrag übernehmen oder übertragen kannst – inklusive Ablauf, Voraussetzungen, Kosten und praxisnahen Tipps." />
+        <meta property="og:title" content="Leasingübernahme: Ablauf, Voraussetzungen & Kosten – Ratgeber" />
+        <meta property="og:description" content="Leasingübernahme in der Schweiz Schritt für Schritt: Ablauf, Voraussetzungen, Kosten und Tipps, um einen laufenden Leasingvertrag ohne hohe Anzahlung zu übernehmen." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme" />
       </Head>

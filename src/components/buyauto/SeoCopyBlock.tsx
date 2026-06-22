@@ -5,7 +5,10 @@ export function SeoCopyBlock() {
   const internalLinks = [
     { label: "Occasionen in der Schweiz", href: "/suche?dealType=direct_purchase" },
     { label: "Auto Leasing in der Schweiz", href: "/suche?dealType=direct_purchase&financingType=leasing" },
-    { label: "Leasingübernahme in der Schweiz", href: "/suche?dealType=lease_takeover" },
+    // Descriptive head-term anchor points at the editorial hub (the page meant to own the
+    // term); a separate, plainer anchor sends transactional intent to the listings grid.
+    { label: "Leasingübernahme in der Schweiz", href: "/leasinguebernahme" },
+    { label: "Aktuelle Leasingübernahme-Angebote", href: "/suche?dealType=lease_takeover" },
     { label: "Alle Fahrzeuge", href: "/suche" },
   ];
 

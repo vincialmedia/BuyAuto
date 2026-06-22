@@ -29,11 +29,16 @@ export default function GaragePreisePage() {
   return (
     <>
       <Head>
-        <title>BuyAuto – Preise</title>
+        <title>Preise – Inserate & Pakete für Private & Garagen | BuyAuto</title>
         <meta
           name="description"
           content="BuyAuto Preise für Privatkunden & Garagen. Transparente Pakete für Inserate, Premium Boost, Garage-Profil & Deal-Chat pro Fahrzeug."
         />
+        <link rel="canonical" href="https://www.buyauto.ch/preise" />
+        <meta property="og:title" content="Preise – Inserate & Pakete für Private & Garagen | BuyAuto" />
+        <meta property="og:description" content="Transparente Pakete für Inserate, Premium Boost, Garage-Profil & Deal-Chat pro Fahrzeug." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.buyauto.ch/preise" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -63,3 +68,8 @@ export default function GaragePreisePage() {
     </>
   );
 }
+
+// ISR so /preise joins the prerender path (was served as a frozen static file).
+export const getStaticProps = async () => {
+  return { props: {}, revalidate: 300 };
+};

@@ -1,5 +1,6 @@
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -235,9 +236,11 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
 
   const pageTitle = isDefaultView
     ? "Auto kaufen oder Leasing übernehmen in der Schweiz | BuyAuto"
-    : totalResults > 0
-      ? `${saleTypeLabel} – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz`
-      : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
+    : saleTypeLabel === "Leasingübernahme"
+      ? `Leasingübernahme Angebote – ${totalResults} Fahrzeuge in der Schweiz | BuyAuto`
+      : totalResults > 0
+        ? `${saleTypeLabel} – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz`
+        : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
 
   const metaDescription = isDefaultView
     ? "Entdecke aktuelle Fahrzeuge in der Schweiz – direkt kaufen oder einen laufenden Leasingvertrag übernehmen. Geprüfte Angebote von Privatpersonen und Garagen auf BuyAuto."
@@ -265,22 +268,27 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
         const price = typeof priceCandidate === "number" && priceCandidate > 0 ? priceCandidate : null;
 
         const offer = price
-          ? {
-              "@type": "Offer",
-              "price": price,
-              "priceCurrency": "CHF",
-              "availability": "https://schema.org/InStock",
-              ...(isDirectPurchase
-                ? {}
-                : {
-                    "priceSpecification": {
-                      "@type": "UnitPriceSpecification",
-                      "price": price,
-                      "priceCurrency": "CHF",
-                      "unitText": "MONTH",
-                    },
-                  }),
-            }
+          ? isDirectPurchase
+            ? {
+                // Direct purchase: a one-time sale price is correct at the top level.
+                "@type": "Offer",
+                "price": price,
+                "priceCurrency": "CHF",
+                "availability": "https://schema.org/InStock",
+              }
+            : {
+                // Lease takeover: a recurring monthly rate — express via priceSpecification
+                // only, never as a top-level Offer.price (which reads as a sale price).
+                "@type": "Offer",
+                "priceCurrency": "CHF",
+                "availability": "https://schema.org/InStock",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": price,
+                  "priceCurrency": "CHF",
+                  "unitText": "MONTH",
+                },
+              }
           : undefined;
 
         return {
@@ -360,6 +368,32 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
               totalResults={totalResults}
               onClearFilters={handleResetFilters}
             />
+
+            {/* SSR contextual links UP to the editorial hub. Only on the indexable
+                Leasingübernahme grid, so the high-priority category page passes an
+                on-page authority signal back to the page meant to own the term. */}
+            {isIndexable && saleTypeLabel === "Leasingübernahme" && (
+              <section className="mt-12 border-t border-neutral-200 pt-8">
+                <h2 className="text-lg font-bold text-neutral-900 mb-3">
+                  Mehr zur Leasingübernahme in der Schweiz
+                </h2>
+                <p className="text-sm text-neutral-600 mb-4 max-w-2xl">
+                  Neu beim Thema? Im Ratgeber erfährst du Schritt für Schritt, wie eine
+                  Leasingübernahme abläuft, was sie kostet und worauf du achten musst.
+                </p>
+                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                  <Link href="/leasinguebernahme" className="font-semibold text-primary hover:underline">
+                    Leasingübernahme – kompletter Ratgeber
+                  </Link>
+                  <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline">
+                    Was kostet eine Leasingübernahme?
+                  </Link>
+                  <Link href="/leasingvertrag-uebertragen" className="text-primary hover:underline">
+                    Leasingvertrag übertragen (für Abgeber)
+                  </Link>
+                </div>
+              </section>
+            )}
           </div>
         </main>
       </div>
@@ -379,7 +413,7 @@ export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ 
 
   try {
     // Indexable views are the same for every visitor — let the CDN serve them.
-    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+    res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
     const results = await searchListings(initialQuery);
     // Strip any `undefined` fields so Next can serialize the props.
     const initialResults = JSON.parse(JSON.stringify(results)) as SearchResult;

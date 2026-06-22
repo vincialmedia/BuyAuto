@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -55,7 +56,7 @@ export default function LeasingvertragUebertragenPage() {
   return (
     <>
       <Head>
-        <title>Leasingvertrag übertragen Schweiz – So funktioniert die Vertragsübertragung | BuyAuto</title>
+        <title>Leasingvertrag übertragen Schweiz: Ablauf & Kosten | BuyAuto</title>
         <meta
           name="description"
           content="Leasingvertrag übertragen in der Schweiz: Alles zu Voraussetzungen, Ablauf, Kosten und rechtlichen Aspekten der Vertragsübertragung."
@@ -147,6 +148,15 @@ export default function LeasingvertragUebertragenPage() {
       </Head>
 
       <main className="bg-neutral-50 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <Breadcrumbs
+            items={[
+              { name: "Home", href: "/" },
+              { name: "Leasingübernahme", href: "/leasinguebernahme" },
+              { name: "Vertrag übertragen", href: "/leasingvertrag-uebertragen" },
+            ]}
+          />
+        </div>
         
         {/* HERO SECTION */}
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
@@ -884,3 +894,9 @@ export default function LeasingvertragUebertragenPage() {
     </>
   );
 }
+
+// Served via ISR (static + periodic revalidation) instead of a frozen build-time file,
+// so the page refreshes without a redeploy and shares the prerender path of its siblings.
+export const getStaticProps = async () => {
+  return { props: {}, revalidate: 300 };
+};

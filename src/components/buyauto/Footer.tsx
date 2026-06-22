@@ -15,6 +15,18 @@ const footerSections = [
     ]
   },
   {
+    title: "Leasingübernahme",
+    links: [
+      { label: "Leasingübernahme – Ratgeber", href: "/leasinguebernahme" },
+      { label: "Was kostet eine Übernahme?", href: "/leasinguebernahme-kosten" },
+      { label: "Leasingvertrag übertragen", href: "/leasingvertrag-uebertragen" },
+      { label: "Übernahme vs. neues Leasing", href: "/leasinguebernahme-vs-neues-leasing" },
+      { label: "Übernahme vs. Auto-Abo", href: "/leasinguebernahme-vs-autoabo" },
+      { label: "AutoScout24-Alternative", href: "/autoscout24-alternative-leasinguebernahme" },
+      { label: "Leasing abgeben", href: "/leasing-abgeben-schweiz" }
+    ]
+  },
+  {
     title: "Für Anbieter",
     links: [
       { label: "Inserat erstellen", href: "/inserat-erstellen" },
@@ -54,7 +66,7 @@ export function Footer() {
 
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8 lg:gap-6">
           {/* Brand column - spans 2 on lg */}
           <div className="col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-5 group hover:opacity-80 transition-opacity">

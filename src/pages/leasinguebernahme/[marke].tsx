@@ -95,15 +95,14 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
                 ? {
                     offers: {
                       "@type": "Offer",
-                      price,
-                      priceCurrency: "CHF",
+                      // Recurring monthly lease rate, not a sale price — express only via
+                      // priceSpecification so Google doesn't read it as the vehicle price.
                       availability: "https://schema.org/InStock",
                       itemCondition: "https://schema.org/UsedCondition",
                       priceSpecification: {
                         "@type": "UnitPriceSpecification",
                         price,
                         priceCurrency: "CHF",
-                        unitCode: "MON",
                         unitText: "MONTH",
                       },
                     },
@@ -120,16 +119,19 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
-        <link rel="canonical" href={canonical} />
-        {/* Empty brand views carry no useful index value yet — keep them crawlable
-            (follow) but out of the index until inventory exists. They flip to indexable
-            automatically once at least one matching listing is published. */}
-        {!hasListings && <meta name="robots" content="noindex,follow" />}
+        {hasListings ? (
+          <link rel="canonical" href={canonical} />
+        ) : (
+          /* Empty brand views carry no index value yet: noindex,follow (crawlable, out of
+             the index) and NO self-canonical — so we never send canonical + noindex
+             together. They flip to indexable automatically once inventory is published. */
+          <meta name="robots" content="noindex,follow" />
+        )}
 
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={canonical} />
+        {hasListings && <meta property="og:url" content={canonical} />}
         <meta property="og:image" content={`${SITE_URL}/share-logo.jpg`} />
         <meta property="og:locale" content="de_CH" />
 

@@ -60,6 +60,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     "/auto-abos-im-vergleich",
     "/datenschutz",
     "/agb",
+    "/preise",
   ];
 
   const staticUrls = staticPages
@@ -103,24 +104,11 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     })
     .join("");
 
-  // Indexable category views (see /suche isIndexableSearchQuery). Single query param, so
-  // no XML entity escaping needed. The Leasingübernahme grid is our top commercial page.
-  const categoryPages: { path: string; priority: string }[] = [
-    { path: "/suche?dealType=lease_takeover", priority: "0.9" },
-    { path: "/suche?dealType=direct_purchase", priority: "0.8" },
-  ];
-
-  const categoryUrls = categoryPages
-    .map(({ path, priority }) => {
-      return `
-      <url>
-        <loc>${baseUrl}${path}</loc>
-        <changefreq>daily</changefreq>
-        <priority>${priority}</priority>
-      </url>
-    `;
-    })
-    .join("");
+  // NOTE: the indexable category views (/suche?dealType=lease_takeover &
+  // /suche?dealType=direct_purchase) are intentionally NOT submitted here. Parameterized
+  // URLs in a sitemap read as index-bloat; these pages stay self-canonical and are reached
+  // via strong internal links (header, footer, home, hub, brand pages), so Google still
+  // crawls and indexes them — without the faceted-URL signal.
 
   // Programmatic brand landing pages — only the brands that actually have at least one
   // live lease_takeover listing (others render noindex, so we keep them out of the map).
@@ -145,7 +133,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       ${staticUrls}
-      ${categoryUrls}
       ${brandUrls}
       ${garageUrls}
       ${listingUrls}

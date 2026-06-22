@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Listing } from "@/lib/buyauto/types";
 import { Star, MapPin, Gauge, Fuel, Settings } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/router";
+import Link from "next/link";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
@@ -15,7 +15,19 @@ interface ModernListingCardProps {
 }
 
 export function ModernListingCard({ listing, onDetailsClick, priority = false }: ModernListingCardProps) {
-  const router = useRouter();
+  // Real, server-rendered href to the vehicle detail page. Crucial for SEO: Googlebot
+  // follows <a href>, not onClick handlers — without this the entire detail-page layer
+  // is orphaned from the crawl graph.
+  const href = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
+
+  // When a parent passes onDetailsClick (e.g. to open a modal) intercept the anchor and
+  // call it instead of navigating; otherwise the <a href> navigates normally.
+  const handleAnchorClick = onDetailsClick
+    ? (e: React.MouseEvent) => {
+        e.preventDefault();
+        onDetailsClick(listing.id);
+      }
+    : undefined;
 
   const uiVersion = listing.ui_version === "v2" ? "v2" : "v1";
   const rawDealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
@@ -88,17 +100,6 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
           : null;
 
-  const handleDetailsClick = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const href = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
-
-    if (onDetailsClick) {
-      onDetailsClick(listing.id);
-    } else {
-      router.push(href);
-    }
-  };
-
   const formatLocation = (location: string) => {
     if (location.includes(",")) {
       return location.split(",").pop()?.trim() || location;
@@ -137,7 +138,6 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           ? "border-2 border-amber-200/60 shadow-lg shadow-amber-500/10 hover:shadow-2xl hover:shadow-amber-500/20 active:shadow-lg"
           : "border border-neutral-200/60 shadow-sm hover:shadow-xl hover:shadow-neutral-900/10 active:shadow-md"
       }`}
-      onClick={handleDetailsClick}
     >
       {/* Image Section */}
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-neutral-100">
@@ -179,9 +179,15 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
 
       {/* Content Section */}
       <div className="p-4 sm:p-5">
-        {/* Title */}
+        {/* Title — real crawlable link, stretched (::before) to make the whole card clickable */}
         <h3 className="text-base sm:text-lg font-bold text-neutral-900 group-hover:text-red-600 transition-colors duration-200 mb-2 sm:mb-3 line-clamp-1">
-          {listing.brand} {listing.model}
+          <Link
+            href={href}
+            onClick={handleAnchorClick}
+            className="before:absolute before:inset-0 before:z-[1] before:content-['']"
+          >
+            {listing.brand} {listing.model}
+          </Link>
         </h3>
 
         {/* Year Pill */}
@@ -268,11 +274,13 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           </div>
 
           <Button
-            onClick={handleDetailsClick}
+            asChild
             variant="ghost"
-            className="flex-shrink-0 bg-transparent hover:bg-red-50 border border-neutral-200 text-neutral-700 hover:border-red-500 hover:text-red-600 text-sm font-semibold h-9 sm:h-10 px-4 sm:px-5 group-hover:border-red-500 group-hover:text-red-600 group-hover:bg-red-50 transition-all duration-200 active:scale-95"
+            className="relative z-[2] flex-shrink-0 bg-transparent hover:bg-red-50 border border-neutral-200 text-neutral-700 hover:border-red-500 hover:text-red-600 text-sm font-semibold h-9 sm:h-10 px-4 sm:px-5 group-hover:border-red-500 group-hover:text-red-600 group-hover:bg-red-50 transition-all duration-200 active:scale-95"
           >
-            Details
+            <Link href={href} onClick={handleAnchorClick} aria-label={`Details zu ${listing.brand} ${listing.model}`}>
+              Details
+            </Link>
           </Button>
         </div>
       </div>
