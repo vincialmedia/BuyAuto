@@ -143,6 +143,9 @@ export default function GaragePlanPage() {
     <>
       <Head>
         <title>BuyAuto – Wähle dein Paket</title>
+        {/* Conversion-funnel step (package selection), not a destination to rank — keep it
+            out of the index but crawlable. */}
+        <meta name="robots" content="noindex,follow" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -81,7 +82,16 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
       </Head>
 
       <main className="bg-neutral-50 min-h-screen">
-        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <Breadcrumbs
+            items={[
+              { name: "Home", href: "/" },
+              { name: "Leasingübernahme", href: "/leasinguebernahme" },
+              { name: "Übernahme vs. neues Leasing", href: "/leasinguebernahme-vs-neues-leasing" },
+            ]}
+          />
+        </div>
+
         {/* HERO SECTION */}
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
           {/* Background Image */}

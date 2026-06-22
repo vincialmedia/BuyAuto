@@ -1,4 +1,5 @@
 import type { GetServerSideProps } from "next";
+import Head from "next/head";
 import { SEO } from "@/components/SEO";
 import { getPublicGarageBySlug } from "@/services/garageService";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
@@ -30,7 +31,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
   const dealerSlugRaw = ctx.params?.dealerSlug;
   const dealerSlug = typeof dealerSlugRaw === "string" ? dealerSlugRaw : null;
 
-  if (!dealerSlug) return { props: { ok: false } };
+  if (!dealerSlug) return { notFound: true };
 
   // Dealer profiles change rarely – let the CDN cache them briefly.
   ctx.res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
@@ -58,6 +59,12 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       },
     };
   } catch {
+    // Transient backend error on a real, sitemap-listed URL: respond 503 (retry later) +
+    // noindex instead of a 200 soft-404 page Google can de-list.
+    if (ctx.res) {
+      ctx.res.statusCode = 503;
+      ctx.res.setHeader("Retry-After", "120");
+    }
     return { props: { ok: false } };
   }
 };
@@ -65,12 +72,18 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 export default function DealerMicrositePage(props: PageProps) {
   if (!props.ok) {
     return (
-      <main className="min-h-screen bg-white">
-        <div className="mx-auto max-w-4xl px-6 py-16">
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Händlerprofil nicht verfügbar</h1>
-          <p className="mt-3 text-neutral-600">Dieses Händlerprofil konnte nicht geladen werden.</p>
-        </div>
-      </main>
+      <>
+        <Head>
+          <title>Händlerprofil nicht verfügbar | BuyAuto</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+        <main className="min-h-screen bg-white">
+          <div className="mx-auto max-w-4xl px-6 py-16">
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Händlerprofil nicht verfügbar</h1>
+            <p className="mt-3 text-neutral-600">Dieses Händlerprofil konnte nicht geladen werden.</p>
+          </div>
+        </main>
+      </>
     );
   }
 

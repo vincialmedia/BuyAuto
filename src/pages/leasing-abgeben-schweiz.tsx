@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -79,7 +80,7 @@ export default function LeasingAbgebenSchweiz() {
   return (
     <>
       <Head>
-        <title>Leasing abgeben in der Schweiz (2025): So wirst du dein Auto-Leasing legal & stressfrei los</title>
+        <title>Leasing abgeben Schweiz 2026: legal & ohne Verlust raus | BuyAuto</title>
         <meta
           name="description"
           content="Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen – und warum die Leasingübernahme oft die günstigste Lösung ist."
@@ -105,13 +106,22 @@ export default function LeasingAbgebenSchweiz() {
         />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasing abgeben in der Schweiz (2025): So wirst du dein Auto-Leasing legal & stressfrei los" />
+        <meta property="og:title" content="Leasing abgeben Schweiz 2026: legal & ohne Verlust raus" />
         <meta property="og:description" content="Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasing-abgeben-schweiz" />
       </Head>
 
       <main className="bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <Breadcrumbs
+            items={[
+              { name: "Home", href: "/" },
+              { name: "Leasingübernahme", href: "/leasinguebernahme" },
+              { name: "Leasing abgeben", href: "/leasing-abgeben-schweiz" },
+            ]}
+          />
+        </div>
         
         {/* STICKY CTA BAR */}
         <div 
@@ -184,7 +194,7 @@ export default function LeasingAbgebenSchweiz() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/20 backdrop-blur-sm">
                   <Sparkles className="w-4 h-4" />
-                  Der ultimative Guide 2025
+                  Der ultimative Guide 2026
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-neutral-900 tracking-tight leading-[1.1] mb-6">
                   Leasing abgeben<br />

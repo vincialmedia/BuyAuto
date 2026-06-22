@@ -37,14 +37,39 @@ const organizationSchema = {
   sameAs: [],
 };
 
+// WebSite + SearchAction makes BuyAuto eligible for the Google Sitelinks Searchbox. Shipped
+// site-wide here (it was previously dead code gated on a page type that never rendered).
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "BuyAuto",
+  url: "https://www.buyauto.ch",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: "https://www.buyauto.ch/suche?query={search_term_string}",
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
+
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
   const isListingDetailPage = router.pathname === "/fahrzeug/[id]";
 
+  // Never let og:image point at a Vercel preview domain (buyauto-*.vercel.app): if
+  // NEXT_PUBLIC_SITE_URL is unset OR misconfigured to a preview host, fall back to the
+  // canonical production host. A cross-host og:image breaks social unfurls and muddies
+  // the canonical-host signal.
+  const rawBase = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
   const base =
-    (process.env.NEXT_PUBLIC_SITE_URL || "").trim() ||
-    (process.env.NODE_ENV === "production" ? "https://www.buyauto.ch" : "http://localhost:3000");
+    !rawBase || rawBase.includes("vercel.app")
+      ? process.env.NODE_ENV === "production"
+        ? "https://www.buyauto.ch"
+        : "http://localhost:3000"
+      : rawBase;
 
   const absoluteOgImage = `${base.replace(/\/$/, "")}/share-logo.jpg`;
 
@@ -60,6 +85,10 @@ export default function App({ Component, pageProps }: AppProps) {
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+            />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
             />
           </Head>
           <Component {...pageProps} />

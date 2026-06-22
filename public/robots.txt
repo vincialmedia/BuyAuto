@@ -3,6 +3,5 @@ Allow: /
 Disallow: /admin
 Disallow: /dashboard
 Disallow: /api/
-Disallow: /inserat-erstellen
 
 Sitemap: https://www.buyauto.ch/sitemap.xml

@@ -10,6 +10,14 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "buyauto.ch" }],
+      "destination": "https://www.buyauto.ch/:path*",
+      "permanent": true
+    }
+  ],
   "cleanUrls": true,
   "trailingSlash": false
 }

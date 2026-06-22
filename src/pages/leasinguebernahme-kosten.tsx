@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -52,7 +53,7 @@ export default function LeasinguebernahmeKostenPage() {
   return (
     <>
       <Head>
-        <title>Leasingübernahme Kosten Schweiz – Kompletter Gebühren-Überblick | BuyAuto</title>
+        <title>Leasingübernahme Kosten Schweiz: Gebühren-Überblick | BuyAuto</title>
         <meta
           name="description"
           content="Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail – transparent und verständlich erklärt."
@@ -144,6 +145,15 @@ export default function LeasinguebernahmeKostenPage() {
       </Head>
 
       <main className="bg-neutral-50 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <Breadcrumbs
+            items={[
+              { name: "Home", href: "/" },
+              { name: "Leasingübernahme", href: "/leasinguebernahme" },
+              { name: "Kosten", href: "/leasinguebernahme-kosten" },
+            ]}
+          />
+        </div>
         
         {/* HERO SECTION */}
         <section className="relative min-h-[500px] md:min-h-[550px] flex items-center overflow-hidden pt-16">
@@ -848,3 +858,9 @@ export default function LeasinguebernahmeKostenPage() {
     </>
   );
 }
+
+// Served via ISR (static + periodic revalidation) instead of a frozen build-time file,
+// so the page refreshes without a redeploy and shares the prerender path of its siblings.
+export const getStaticProps = async () => {
+  return { props: {}, revalidate: 300 };
+};
