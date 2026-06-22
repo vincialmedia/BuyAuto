@@ -47,7 +47,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     "",
     "/suche",
     "/preise",
-    "/garage-plan",
     "/leasing-concierge",
     "/leasinguebernahme",
     "/leasinguebernahme-kosten",
@@ -62,7 +61,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     "/auto-abos-im-vergleich",
     "/datenschutz",
     "/agb",
-    "/preise",
   ];
 
   const staticUrls = staticPages
