@@ -180,11 +180,14 @@ export const adminService = {
 
     if (error) throw error;
 
-    const stats = (data as any).reduce((acc: any, listing: any) => {
+    const stats = (data as any).reduce((acc: AdminStats, listing: any) => {
       acc.total++;
-      acc[listing.status as keyof AdminStats]++;
+      const key = listing.status as keyof AdminStats;
+      if (key in acc && key !== "total") {
+        acc[key]++;
+      }
       return acc;
-    }, { total: 0, pending: 0, published: 0, rejected: 0, expired: 0 });
+    }, { total: 0, pending: 0, published: 0, rejected: 0, expired: 0 } as AdminStats);
 
     return stats;
   },
@@ -212,15 +215,9 @@ export const adminService = {
       .from('listings')
       .select('*', { count: 'exact' });
 
-    // Apply filters
+    // Apply filters. archived and expired are distinct statuses and filtered separately.
     if (status !== 'all') {
-      if (status === "archived") {
-        query = query.in("status", ["archived", "expired"] as any);
-      } else if (status === "expired") {
-        query = query.in("status", ["archived", "expired"] as any);
-      } else {
-        query = query.eq('status', status);
-      }
+      query = query.eq('status', status);
     }
 
     if (brand) {
@@ -392,7 +389,7 @@ export const adminService = {
 
   async adminUpdateListingStatus(
     listingId: string,
-    input: { status: "pending" | "published" | "rejected" | "archived"; moderationNote?: string | null; notificationStatus?: "published" | "rejected" | "archived" | null }
+    input: { status: "pending" | "published" | "rejected" | "archived" | "expired"; moderationNote?: string | null; notificationStatus?: "published" | "rejected" | "archived" | null }
   ): Promise<AdminListing | null> {
     const response = await fetch("/api/admin/listings/update-status", {
       method: "POST",

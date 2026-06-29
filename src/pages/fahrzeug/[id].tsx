@@ -69,6 +69,18 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
 
   const [showInquiryForm, setShowInquiryForm] = useState(false);
 
+  // Keep the displayed listing in sync when navigating between detail pages.
+  // Next.js reuses this component instance across /fahrzeug/[id] route changes,
+  // so `useState(initialListing)` alone would keep showing the first listing —
+  // making every similar-listing click appear to open the same vehicle.
+  useEffect(() => {
+    setListing(initialListing ?? null);
+    setClientNotFound(false);
+    setIsOwnerPreview(false);
+    setIsLoading(!initialListing && !notFound);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listingId, initialListing, notFound]);
+
   const [garage, setGarage] = useState<GaragePublicInfo | null>(null);
 
   useEffect(() => {
