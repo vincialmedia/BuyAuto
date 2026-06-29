@@ -61,6 +61,14 @@ export const useWizard = () => {
   return context;
 };
 
+const normalizeDealTypeFromQuery = (value: unknown): DealType | null => {
+  if (typeof value !== "string") return null;
+  const v = value.trim().toLowerCase();
+  if (v === "lease_takeover") return "lease_takeover";
+  if (v === "direct_purchase") return "direct_purchase";
+  return null;
+};
+
 const createEmptyListingData = (): ListingData => ({
   id: undefined,
   deal_type: "direct_purchase",
@@ -385,6 +393,23 @@ export default function ListingWizard() {
           return;
         }
 
+        // Clean create (no draft, no edit): honor an explicit ?deal_type= deep-link so
+        // e.g. "Leasing abgeben" CTAs can pre-select a pure Leasingübernahme listing.
+        const seededDealType = normalizeDealTypeFromQuery(router.query.deal_type);
+        if (seededDealType) {
+          setData((prev) =>
+            prev.deal_type === seededDealType
+              ? prev
+              : {
+                  ...prev,
+                  deal_type: seededDealType,
+                  ...(seededDealType === "lease_takeover"
+                    ? { financing_type: null, leasing_offer: null, purchase_price_chf: null }
+                    : {}),
+                }
+          );
+        }
+
         setIsLoadingFromQuery(false);
       } catch (e) {
         setIsLoadingFromQuery(false);
@@ -397,7 +422,7 @@ export default function ListingWizard() {
     };
 
     void run();
-  }, [isGarage, router.isReady, router.query.draft, router.query.edit, toast, user]);
+  }, [isGarage, router.isReady, router.query.draft, router.query.edit, router.query.deal_type, toast, user]);
 
   const onSaveDraft = useCallback(async () => {
     if (isSavingDraft) return;
