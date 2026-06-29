@@ -5,7 +5,7 @@ import { adminService } from "@/services/adminService";
 
 type Body = {
   listing_id?: string;
-  status?: "pending" | "published" | "rejected" | "archived";
+  status?: "pending" | "published" | "rejected" | "archived" | "expired";
   moderation_note?: string | null;
   notification_status?: "published" | "rejected" | "archived" | null;
 };
@@ -52,7 +52,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       : body.notification_status ?? null;
 
   if (!listingId) return res.status(400).json({ ok: false, error: "Missing listing_id" });
-  if (status !== "pending" && status !== "published" && status !== "rejected" && status !== "archived") {
+  if (
+    status !== "pending" &&
+    status !== "published" &&
+    status !== "rejected" &&
+    status !== "archived" &&
+    status !== "expired"
+  ) {
     return res.status(400).json({ ok: false, error: "Invalid status" });
   }
 
