@@ -112,6 +112,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: "Listing not found or you do not have permission to access it." });
     }
 
+    // Guard: the initial-publish payment flow must never re-charge or wipe the
+    // payment record of a listing that is already paid/refunded. Without this,
+    // the free-plan path below silently knocks a paid listing back to 'pending'
+    // and a paid listing can be charged a second time. (Premium upgrades run
+    // through their own endpoint, not this one.)
+    if (listing.payment_status === "paid" || listing.payment_status === "refunded") {
+      return res
+        .status(409)
+        .json({ error: "Dieses Inserat wurde bereits bezahlt und kann nicht erneut bezahlt werden." });
+    }
+
     const totalCHF = calculateTotal(plan, premium) + donation.amount;
     const planDetails = getPlanDetails(plan);
 

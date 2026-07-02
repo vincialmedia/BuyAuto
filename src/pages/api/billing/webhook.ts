@@ -355,19 +355,38 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const listingId = paymentIntent.metadata?.listing_id;
       if (listingId) {
-        // Fetch current listing to check its status
+        // Fetch current listing to validate the intent and check its state.
         const { data: listing } = await supabaseAdmin
           .from("listings")
-          .select("status")
+          .select("status, payment_status, stripe_payment_intent_id")
           .eq("id", listingId)
           .single();
 
-        const updateData: { payment_status: "paid"; status?: "pending" } = { 
-          payment_status: "paid" 
+        if (!listing) {
+          console.warn(`Webhook: listing ${listingId} not found for payment_intent.succeeded`);
+          break;
+        }
+
+        // The intent must be the one currently attached to the listing — never
+        // let a superseded or unrelated succeeded intent promote it.
+        if (listing.stripe_payment_intent_id && listing.stripe_payment_intent_id !== paymentIntent.id) {
+          console.warn(
+            `Webhook: payment_intent ${paymentIntent.id} does not match listing ${listingId} current intent ${listing.stripe_payment_intent_id}; skipping`
+          );
+          break;
+        }
+
+        // Non-destructive: never overwrite a terminal paid/refunded state.
+        if (listing.payment_status === "refunded" || listing.payment_status === "paid") {
+          break;
+        }
+
+        const updateData: { payment_status: "paid"; status?: "pending" } = {
+          payment_status: "paid",
         };
 
         // If the listing is currently a draft (waiting for payment), move it to pending for review
-        if (listing && listing.status === "draft") {
+        if (listing.status === "draft") {
           updateData.status = "pending";
         }
 
