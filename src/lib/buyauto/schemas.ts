@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zBody, zFuel, zGearbox, zYear, zDescriptionOptional, zCantonOptional } from "@/lib/buyauto/listingContract";
 
 export const loginSchema = z.object({
   email: z.string().email("Gültige E-Mail-Adresse eingeben"),
@@ -95,22 +96,13 @@ export const vehicleDataSchema = z
     }),
     brand: z.string().min(1, "Marke ist erforderlich"),
     model: z.string().min(1, "Modell ist erforderlich"),
-    year: z
-      .number()
-      .min(1990, "Baujahr muss mindestens 1990 sein")
-      .max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
+    year: zYear,
     km: kmInput,
     purchase_price_chf: numberInput.optional(),
-    body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"].includes(val), {
-      message: "Bitte wählen Sie eine gültige Karosserie",
-    }),
-    fuel: z.string().refine((val) => ["Benzin", "Diesel", "Hybrid", "Elektro"].includes(val), {
-      message: "Bitte wählen Sie einen gültigen Antrieb",
-    }),
-    gearbox: z.string().refine((val) => ["Automatik", "Manuell"].includes(val), {
-      message: "Bitte wählen Sie ein gültiges Getriebe",
-    }),
-    description: z.string().max(2000, "Beschreibung darf maximal 2000 Zeichen enthalten").optional().or(z.literal("")),
+    body: zBody,
+    fuel: zFuel,
+    gearbox: zGearbox,
+    description: zDescriptionOptional,
   })
   .superRefine((data, ctx) => {
     if (data.deal_type === "direct_purchase") {
@@ -135,21 +127,12 @@ export const listingStep1Schema = z
     }),
     brand: z.string().min(1, "Marke ist erforderlich"),
     model: z.string().min(1, "Modell ist erforderlich"),
-    year: z
-      .number()
-      .min(1990, "Baujahr muss mindestens 1990 sein")
-      .max(new Date().getFullYear(), "Baujahr kann nicht in der Zukunft liegen"),
+    year: zYear,
     km: kmInput,
-    body: z.string().refine((val) => ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"].includes(val), {
-      message: "Bitte wählen Sie eine gültige Karosserie",
-    }),
-    fuel: z.string().refine((val) => ["Benzin", "Diesel", "Hybrid", "Elektro"].includes(val), {
-      message: "Bitte wählen Sie einen gültigen Antrieb",
-    }),
-    gearbox: z.string().refine((val) => ["Automatik", "Manuell"].includes(val), {
-      message: "Bitte wählen Sie ein gültiges Getriebe",
-    }),
-    description: z.string().max(2000, "Beschreibung darf maximal 2000 Zeichen enthalten").optional().or(z.literal("")),
+    body: zBody,
+    fuel: zFuel,
+    gearbox: zGearbox,
+    description: zDescriptionOptional,
 
     purchase_price_chf: numberInput.optional(),
 
@@ -158,7 +141,7 @@ export const listingStep1Schema = z
     remaining_months: z.number().int().min(1, "Restlaufzeit muss mindestens 1 Monat betragen").optional(),
     deposit_chf: numberInput.optional(),
     remaining_km: numberInput.optional(),
-    canton_code: z.string().optional(),
+    canton_code: zCantonOptional,
 
     leasing_enabled: z.boolean().optional().default(false),
     interest_rate_pct: numberInput.optional(),

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VehicleBasicsSection, type CanonicalOption, type VehicleStepFormValues } from "./VehicleBasicsSection";
 import type { DealType, FinancingType, ListingData } from "@/lib/buyauto/types";
+import { zBody, zFuel, zGearbox, zYear } from "@/lib/buyauto/listingContract";
 
 const vehicleStepSchema = z.object({
   vin: z
@@ -29,12 +30,12 @@ const vehicleStepSchema = z.object({
   model_id: z.string().min(1, "Modell ist erforderlich"),
   variant_id: z.string().optional(),
 
-  year: z.number().int().min(1900, "Bitte ein gültiges Jahr eingeben"),
+  year: zYear,
   km: z.number().int().min(0, "Kilometerstand ist erforderlich"),
 
-  fuel: z.string().min(1, "Treibstoff ist erforderlich"),
-  gearbox: z.string().min(1, "Getriebe ist erforderlich"),
-  body: z.string().min(1, "Karosserie ist erforderlich"),
+  fuel: zFuel,
+  gearbox: zGearbox,
+  body: zBody,
 
   location: z.string(),
 

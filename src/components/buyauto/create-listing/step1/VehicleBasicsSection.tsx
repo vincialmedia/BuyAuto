@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { VehicleDescriptionField } from "@/components/buyauto/create-listing/step1/VehicleDescriptionField";
 import { VehicleFirstRegistrationField } from "@/components/buyauto/create-listing/step1/VehicleFirstRegistrationField";
 import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
+import { BODY_TYPES, FUEL_TYPES, GEARBOX_TYPES, DRIVETRAIN_TYPES } from "@/lib/buyauto/listingContract";
 
 export interface CanonicalOption {
   id: string;
@@ -35,11 +36,12 @@ export interface VehicleStepFormValues {
   description?: string;
 }
 
-const bodyTypes = ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"];
-const fuelTypes = ["Benzin", "Diesel", "Hybrid", "Elektro"];
-const gearboxTypes = ["Automatik", "Manuell"];
-
-const drivetrainTypes = ["Frontantrieb", "Heckantrieb", "Allrad"];
+// Body/fuel/gearbox/drivetrain options come from the single field contract so
+// the dropdown can never offer a value the DB CHECK will reject (the Coupe bug).
+const bodyTypes = BODY_TYPES;
+const fuelTypes = FUEL_TYPES;
+const gearboxTypes = GEARBOX_TYPES;
+const drivetrainTypes = DRIVETRAIN_TYPES;
 const VARIANT_NONE_VALUE = "__none__";
 
 export interface VehicleBasicsSectionProps {

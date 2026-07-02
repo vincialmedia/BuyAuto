@@ -9,6 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { RotateCcw } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
+import {
+  BODY_TYPES as CONTRACT_BODY_TYPES,
+  FUEL_TYPES as CONTRACT_FUEL_TYPES,
+  GEARBOX_TYPES as CONTRACT_GEARBOX_TYPES,
+} from "@/lib/buyauto/listingContract";
 
 interface FacetPanelProps {
   searchQuery: SearchQuery;
@@ -17,9 +22,11 @@ interface FacetPanelProps {
   isMobile?: boolean;
 }
 
-const BODY_TYPES: ("Limousine" | "Kombi" | "SUV" | "Cabrio")[] = ["Limousine", "Kombi", "SUV", "Cabrio"];
-const FUEL_TYPES: ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[] = ["Benzin", "Diesel", "Hybrid", "Elektro"];
-const GEARBOX_TYPES: ("Automatik" | "Manuell")[] = ["Automatik", "Manuell"];
+// Search facets come from the single field contract so every listable body/
+// fuel/gearbox value is also filterable (previously "Coupe" was unlistable-by-filter).
+const BODY_TYPES: readonly string[] = CONTRACT_BODY_TYPES;
+const FUEL_TYPES: readonly string[] = CONTRACT_FUEL_TYPES;
+const GEARBOX_TYPES: readonly string[] = CONTRACT_GEARBOX_TYPES;
 const YEAR_OPTIONS = [
   { value: 2018, label: "ab 2018" },
   { value: 2019, label: "ab 2019" },
@@ -85,17 +92,12 @@ export default function FacetPanel({
     const fieldValue = localQuery[field];
     if (!Array.isArray(fieldValue)) return false;
     
-    // Type guard for different array types
-    if (field === 'body') {
-      return (fieldValue as ("Limousine" | "Kombi" | "SUV" | "Cabrio")[]).includes(value as "Limousine" | "Kombi" | "SUV" | "Cabrio");
-    } else if (field === 'fuel') {
-      return (fieldValue as ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[]).includes(value as "Benzin" | "Diesel" | "Hybrid" | "Elektro");
-    } else if (field === 'gearbox') {
-      return (fieldValue as ("Automatik" | "Manuell")[]).includes(value as "Automatik" | "Manuell");
-    } else if (field === 'canton') {
+    // All facet arrays are string[] on SearchQuery — a plain membership check
+    // avoids brittle per-field literal unions that silently excluded new values.
+    if (field === 'body' || field === 'fuel' || field === 'gearbox' || field === 'canton') {
       return (fieldValue as string[]).includes(value);
     }
-    
+
     return false;
   };
 
@@ -111,22 +113,10 @@ export default function FacetPanel({
       ? currentValues.filter(v => v !== value)
       : [...currentValues, value];
     
-    // Handle different array field types properly
-    if (field === 'body') {
+    // All of these are string[] on SearchQuery.
+    if (field === 'body' || field === 'fuel' || field === 'gearbox' || field === 'canton') {
       updateLocalQuery({
-        [field]: newValues.length > 0 ? newValues as ("Limousine" | "Kombi" | "SUV" | "Cabrio")[] : undefined
-      });
-    } else if (field === 'fuel') {
-      updateLocalQuery({
-        [field]: newValues.length > 0 ? newValues as ("Benzin" | "Diesel" | "Hybrid" | "Elektro")[] : undefined
-      });
-    } else if (field === 'gearbox') {
-      updateLocalQuery({
-        [field]: newValues.length > 0 ? newValues as ("Automatik" | "Manuell")[] : undefined
-      });
-    } else if (field === 'canton') {
-      updateLocalQuery({
-        [field]: newValues.length > 0 ? newValues : undefined
+        [field]: newValues.length > 0 ? newValues : undefined,
       });
     }
   };
