@@ -13,6 +13,7 @@ import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/cre
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 import { getMyGarage } from "@/services/garageService";
 
+import { Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VehicleBasicsSection, type CanonicalOption, type VehicleStepFormValues } from "./VehicleBasicsSection";
@@ -142,6 +143,7 @@ export function Step1Form() {
       : "idle"
   );
   const [vinError, setVinError] = useState<string | null>(null);
+  const [vinReview, setVinReview] = useState<VinDecodeResponse | null>(null);
 
   const [makes, setMakes] = useState<CanonicalOption[]>([]);
   const [models, setModels] = useState<CanonicalOption[]>([]);
@@ -376,6 +378,7 @@ export function Step1Form() {
 
     setVinLoading(true);
     setVinStatus("loading");
+    setVinReview(null);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -429,6 +432,7 @@ export function Step1Form() {
       updateData(providerPatch as any);
 
       applyVinAutofill(json, vin);
+      setVinReview(json);
 
       setVinStatus("success");
       setVinError(null);
@@ -798,7 +802,9 @@ export function Step1Form() {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Fahrzeugdaten</h2>
-        <p className="text-neutral-600 font-light leading-relaxed">VIN ist optional – wenn du sie hast, füllen wir viele Felder automatisch aus.</p>
+        <p className="text-neutral-600 font-light leading-relaxed">
+          Gib deine VIN ein – wir füllen so viele Felder wie möglich automatisch aus. Kein VIN? Erfasse die Daten einfach manuell.
+        </p>
       </div>
 
       <div className="rounded-3xl border border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 p-4 md:p-6 shadow-sm space-y-3">
@@ -849,6 +855,8 @@ export function Step1Form() {
         </div>
       </div>
 
+      {vinReview && vinStatus === "success" ? <VinReviewCard data={vinReview} /> : null}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
         <VehicleBasicsSection
           register={register}
@@ -885,4 +893,58 @@ export function Step1Form() {
 
 function LabelVin() {
   return <div className="text-sm font-medium text-neutral-700">VIN (optional)</div>;
+}
+
+function VinReviewCard({ data }: { data: VinDecodeResponse }) {
+  const rows: Array<{ label: string; value: string | null }> = [
+    { label: "Marke", value: data.provider_make ?? null },
+    { label: "Modell", value: data.provider_model ?? null },
+    { label: "Ausführung", value: data.provider_trim ?? data.variant_text ?? null },
+    { label: "Baujahr", value: typeof data.year === "number" ? String(data.year) : null },
+    { label: "Treibstoff", value: data.fuel ?? null },
+    { label: "Getriebe", value: data.transmission ?? null },
+    { label: "Karosserie", value: data.body_type ?? null },
+    { label: "Leistung", value: typeof data.power_hp === "number" ? `${data.power_hp} PS` : null },
+    { label: "Antrieb", value: data.drivetrain ?? null },
+    { label: "Erstzulassung", value: data.first_registration ?? null },
+  ];
+
+  const detected = rows.filter((r) => r.value && r.value.trim().length > 0).length;
+
+  return (
+    <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-4 md:p-6 shadow-sm space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white">
+          <Check className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-neutral-900">Aus der VIN erkannt</p>
+          <p className="text-xs text-neutral-600">
+            {detected} von {rows.length} Feldern automatisch ausgefüllt · bitte unten prüfen und Fehlendes ergänzen.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+        {rows.map((row) => {
+          const hasValue = !!row.value && row.value.trim().length > 0;
+          return (
+            <div key={row.label} className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wide text-neutral-500">{row.label}</p>
+              {hasValue ? (
+                <p className="truncate text-sm font-medium text-neutral-900" title={row.value ?? undefined}>
+                  {row.value}
+                </p>
+              ) : (
+                <p className="flex items-center gap-1 text-sm text-amber-600">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>nicht erkannt</span>
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
