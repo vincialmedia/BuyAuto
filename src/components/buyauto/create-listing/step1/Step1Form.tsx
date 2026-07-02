@@ -144,14 +144,11 @@ export function Step1Form() {
 
   const [makes, setMakes] = useState<CanonicalOption[]>([]);
   const [models, setModels] = useState<CanonicalOption[]>([]);
-  const [variants, setVariants] = useState<CanonicalOption[]>([]);
 
   const [loadingMakes, setLoadingMakes] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
-  const [loadingVariants, setLoadingVariants] = useState(false);
 
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
-  const [pendingVariantId, setPendingVariantId] = useState<string | null>(null);
 
   const defaultYear = useMemo(() => {
     return typeof data.year === "number" && Number.isFinite(data.year) ? data.year : new Date().getFullYear();
@@ -205,7 +202,6 @@ export function Step1Form() {
 
   const selectedMake = useMemo(() => makes.find((m) => m.id === selectedMakeId) ?? null, [makes, selectedMakeId]);
   const selectedModel = useMemo(() => models.find((m) => m.id === selectedModelId) ?? null, [models, selectedModelId]);
-  const selectedVariant = useMemo(() => variants.find((v) => v.id === watch("variant_id")) ?? null, [variants, watch]);
 
   const isVinReady = vinStatus === "success";
   const fieldsDisabled = false;
@@ -233,7 +229,6 @@ export function Step1Form() {
     const loadModels = async () => {
       if (!selectedMakeId) {
         setModels([]);
-        setVariants([]);
         return;
       }
 
@@ -256,33 +251,6 @@ export function Step1Form() {
   }, [selectedMakeId, toast]);
 
   useEffect(() => {
-    const loadVariants = async () => {
-      if (!selectedModelId) {
-        setVariants([]);
-        return;
-      }
-
-      try {
-        setLoadingVariants(true);
-        const res = await fetchJson<any>(
-          `/api/vehicles/variants?model_id=${encodeURIComponent(selectedModelId)}`
-        );
-        setVariants(Array.isArray(res) ? res : (res?.variants ?? []));
-      } catch {
-        toast({
-          title: "Fehler",
-          description: "Fehler beim Laden der Varianten.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoadingVariants(false);
-      }
-    };
-
-    void loadVariants();
-  }, [selectedModelId, toast]);
-
-  useEffect(() => {
     if (!pendingModelId) return;
     if (!selectedMakeId) return;
 
@@ -295,25 +263,8 @@ export function Step1Form() {
     }
 
     setValue("model_id", pendingModelId, { shouldValidate: true });
-    setValue("variant_id", "", { shouldValidate: false });
     setPendingModelId(null);
   }, [models, pendingModelId, selectedMakeId, setValue]);
-
-  useEffect(() => {
-    if (!pendingVariantId) return;
-    if (!selectedModelId) return;
-
-    const exists = variants.some((v) => v.id === pendingVariantId);
-    if (!exists) return;
-
-    if (!shouldAutofill("variant_id")) {
-      setPendingVariantId(null);
-      return;
-    }
-
-    setValue("variant_id", pendingVariantId, { shouldValidate: true });
-    setPendingVariantId(null);
-  }, [pendingVariantId, selectedModelId, setValue, variants]);
 
   const shouldAutofill = (field: keyof VehicleStepFormValues): boolean => {
     const dirty = (dirtyFields as any)?.[field] === true;
@@ -349,13 +300,10 @@ export function Step1Form() {
     if (payload.make_id && shouldAutofill("make_id")) {
       setValue("make_id", payload.make_id, { shouldValidate: true });
       setValue("model_id", "", { shouldValidate: false });
-      setValue("variant_id", "", { shouldValidate: false });
 
       setPendingModelId(payload.model_id ?? null);
-      setPendingVariantId(payload.variant_id ?? null);
     } else {
       if (payload.model_id && shouldAutofill("model_id")) setPendingModelId(payload.model_id);
-      if (payload.variant_id && shouldAutofill("variant_id")) setPendingVariantId(payload.variant_id);
     }
 
     if (typeof payload.year === "number" && Number.isFinite(payload.year) && shouldAutofill("year")) {
@@ -514,9 +462,8 @@ export function Step1Form() {
 
       const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
-      const variantName = variants.find((v) => v.id === values.variant_id)?.name ?? "";
 
-      const title = makeName ? `${makeName} ${variantName || modelName}`.trim() : (data as any)?.title;
+      const title = makeName ? `${makeName} ${modelName}`.trim() : (data as any)?.title;
 
       return {
         ...values,
@@ -535,7 +482,7 @@ export function Step1Form() {
     return () => {
       registerDraftSnapshotter(() => ({}));
     };
-  }, [data, getValues, makes, models, registerDraftSnapshotter, variants]);
+  }, [data, getValues, makes, models, registerDraftSnapshotter]);
 
   useEffect(() => {
     const values = getValues();
@@ -627,9 +574,8 @@ export function Step1Form() {
     try {
       const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
-      const variantName = variants.find((v) => v.id === values.variant_id)?.name ?? "";
 
-      const generatedTitle = `${makeName} ${variantName || modelName}`.trim();
+      const generatedTitle = `${makeName} ${modelName}`.trim();
       const isNewListing = !(data as any).id;
 
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");
@@ -906,10 +852,8 @@ export function Step1Form() {
           errors={errors}
           makes={makes}
           models={models}
-          variants={variants}
           loadingMakes={loadingMakes}
           loadingModels={loadingModels}
-          loadingVariants={loadingVariants}
           disableAllFields={fieldsDisabled}
           locationRequired={locationRequired}
         />
