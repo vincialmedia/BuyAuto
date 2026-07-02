@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { VehicleDescriptionField } from "@/components/buyauto/create-listing/step1/VehicleDescriptionField";
 import { VehicleFirstRegistrationField } from "@/components/buyauto/create-listing/step1/VehicleFirstRegistrationField";
 import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
-import { BODY_TYPES, FUEL_TYPES, GEARBOX_TYPES, DRIVETRAIN_TYPES } from "@/lib/buyauto/listingContract";
+import { BODY_TYPES, FUEL_TYPES, GEARBOX_TYPES, DRIVETRAIN_TYPES, CANTON_CODES, CANTON_LABELS } from "@/lib/buyauto/listingContract";
 
 export interface CanonicalOption {
   id: string;
@@ -29,6 +29,7 @@ export interface VehicleStepFormValues {
   body: string;
 
   location: string;
+  canton_code: string;
   power_hp: number | undefined;
   drivetrain: string;
   first_registration?: string | null;
@@ -171,6 +172,28 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 }}
               />
               {errors.location && <p className="text-sm text-red-500 font-light">{errors.location.message as string}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-neutral-700">Kanton *</Label>
+              <Select
+                value={watch("canton_code") ?? ""}
+                onValueChange={(value) => setValue("canton_code", value, { shouldValidate: true, shouldDirty: true })}
+                disabled={disableAllFields}
+              >
+                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                  <SelectValue placeholder="Kanton auswählen" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {CANTON_CODES.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {CANTON_LABELS[code]} ({code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-neutral-500 font-light">Damit Käufer in deiner Region dein Inserat finden.</p>
+              {errors.canton_code && <p className="text-sm text-red-500 font-light">{errors.canton_code.message as string}</p>}
             </div>
 
             <div className="space-y-2">

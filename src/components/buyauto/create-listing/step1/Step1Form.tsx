@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VehicleBasicsSection, type CanonicalOption, type VehicleStepFormValues } from "./VehicleBasicsSection";
 import type { DealType, FinancingType, ListingData } from "@/lib/buyauto/types";
-import { zBody, zFuel, zGearbox, zYear } from "@/lib/buyauto/listingContract";
+import { zBody, zFuel, zGearbox, zYear, isCantonCode } from "@/lib/buyauto/listingContract";
 
 const vehicleStepSchema = z.object({
   vin: z
@@ -38,6 +38,7 @@ const vehicleStepSchema = z.object({
   body: zBody,
 
   location: z.string(),
+  canton_code: z.string().refine(isCantonCode, "Bitte wähle einen Kanton"),
 
   power_hp: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
@@ -171,6 +172,7 @@ export function Step1Form() {
       body: (data as any).body || "",
 
       location: (data as any).location || "",
+      canton_code: (data as any).canton_code || "",
 
       power_hp: Number.isFinite(Number((data as any).power_hp)) && Number((data as any).power_hp) > 0 ? Number((data as any).power_hp) : undefined,
       drivetrain: typeof (data as any).drivetrain === "string" ? (data as any).drivetrain : "",
@@ -603,6 +605,7 @@ export function Step1Form() {
         gearbox: values.gearbox,
         body: values.body,
         location: values.location,
+        canton_code: values.canton_code,
         power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Number(values.power_hp) : null,
         drivetrain: values.drivetrain,
         first_registration: values.first_registration ?? null,
@@ -631,6 +634,7 @@ export function Step1Form() {
           gearbox: values.gearbox as any,
           body: values.body as any,
           location: values.location as any,
+          canton_code: values.canton_code as any,
           title: generatedTitle as any,
 
           power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
@@ -685,6 +689,7 @@ export function Step1Form() {
           gearbox: values.gearbox as any,
           body: values.body as any,
           location: values.location as any,
+          canton_code: values.canton_code as any,
           title: generatedTitle as any,
 
           power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
@@ -734,6 +739,7 @@ export function Step1Form() {
         gearbox: values.gearbox,
         body: values.body,
         location: values.location,
+        canton_code: values.canton_code,
         power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
         drivetrain: values.drivetrain,
         first_registration: values.first_registration ?? null,
