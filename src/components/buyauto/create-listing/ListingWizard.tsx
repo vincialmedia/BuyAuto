@@ -11,7 +11,7 @@ import type { DealType, ListingData } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, getListingDraftById, updateListingDraft } from "@/services/listingDraftService";
-import { Loader2, Save } from "lucide-react";
+import { Check, Loader2, Save } from "lucide-react";
 
 const StepLoading = () => (
   <div className="flex items-center justify-center py-12">
@@ -133,51 +133,6 @@ const hasAnyUserInput = (data: ListingData) => {
   );
 };
 
-const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload => {
-  const mileageKm =
-    typeof wizardData.km === "number"
-      ? wizardData.km
-      : typeof (wizardData as any)?.mileage === "number"
-        ? (wizardData as any).mileage
-        : undefined;
-
-  const dealType: DealType = wizardData.deal_type ?? "direct_purchase";
-
-  return {
-    id: wizardData.id,
-    deal_type: dealType,
-    financing_type: dealType === "direct_purchase" ? (wizardData.financing_type ?? "cash") : null,
-    brand: wizardData.brand,
-    model: wizardData.model,
-    year: wizardData.year,
-    mileage_km: mileageKm,
-    remaining_km: (wizardData as any)?.remaining_km ?? null,
-    fuel: wizardData.fuel,
-    gearbox: wizardData.gearbox ?? (wizardData as any)?.transmission,
-    body: wizardData.body,
-    description: wizardData.description,
-    price_per_month_chf: wizardData.price_per_month_chf,
-    purchase_price_chf: (wizardData as any)?.purchase_price_chf ?? null,
-    remaining_months: wizardData.remaining_months,
-    deposit_chf: wizardData.deposit_chf ?? null,
-    location: wizardData.location,
-    canton_code: (wizardData as any)?.canton_code,
-    title: (wizardData as any)?.title,
-    price_plan: wizardData.price_plan,
-    premium: wizardData.premium,
-    images: wizardData.images,
-    cover_image_index: wizardData.cover_image_index,
-    leasing_offer: (wizardData as unknown as { leasing_offer?: unknown }).leasing_offer as any,
-
-    vin: (wizardData as any)?.vin ?? null,
-    make_id: (wizardData as any)?.make_id ?? null,
-    model_id: (wizardData as any)?.model_id ?? null,
-    variant_id: (wizardData as any)?.variant_id ?? null,
-    power_hp: (wizardData as any)?.power_hp ?? null,
-    drivetrain: (wizardData as any)?.drivetrain ?? null,
-    first_registration: (wizardData as any)?.first_registration ?? null,
-  };
-};
 
 const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<ListingData> => {
   const dealType: DealType = (listing?.deal_type ?? prev.deal_type ?? "direct_purchase") as DealType;
@@ -261,8 +216,11 @@ export default function ListingWizard() {
   const [data, setData] = useState<ListingData>(() => createEmptyListingData());
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingFromQuery, setIsLoadingFromQuery] = useState(true);
+  const [autosaveState, setAutosaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const draftSnapshotterRef = useRef<() => Partial<ListingData> | Promise<Partial<ListingData>>>(() => ({}));
+  const autosaveInFlightRef = useRef(false);
+  const lastAutosavedRef = useRef<string>("");
 
   const registerDraftSnapshotter = useCallback(
     (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => {
@@ -284,6 +242,17 @@ export default function ListingWizard() {
   useEffect(() => {
     if (isGarage && currentStep === 3) setCurrentStep(4);
   }, [currentStep, isGarage]);
+
+  // Returning from a Stripe redirect (TWINT, some 3DS cards): Stripe sends the
+  // buyer back to /inserat-erstellen?payment_confirmed=true&payment_intent_...
+  // Jump straight to Step 5 so its payment-confirmation effect runs and shows
+  // the success screen, instead of dumping the user on an empty Step 1.
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.payment_confirmed === "true") {
+      setCurrentStep(5);
+    }
+  }, [router.isReady, router.query.payment_confirmed]);
 
   const nextStep = useCallback(() => {
     setCurrentStep((prev) => {
@@ -498,11 +467,82 @@ export default function ListingWizard() {
     }
   }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, router, toast, updateData, user]);
 
+  // Continuous autosave: periodically capture the active step's live form values
+  // (via the snapshotter) plus committed wizard data, and upsert the draft with
+  // last-write-wins. Purely additive — the explicit "Entwurf speichern" button
+  // and per-step draft writes keep working; this just means work is never lost.
+  const runAutosave = useCallback(async () => {
+    if (!user || isLoadingFromQuery || isEditingExistingListing || isComplete) return;
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("payment_confirmed") === "true") {
+      return;
+    }
+    if (autosaveInFlightRef.current) return;
+
+    let livePatch: Partial<ListingData> = {};
+    try {
+      livePatch = (await Promise.resolve(draftSnapshotterRef.current?.() ?? {})) ?? {};
+    } catch {
+      livePatch = {};
+    }
+
+    const draftData: Partial<ListingData> = { ...data, ...livePatch };
+    if (isGarage && !isEditingExistingListing) {
+      delete (draftData as any).id;
+    } else if (typeof data.id === "string" && data.id.length > 0) {
+      (draftData as any).id = data.id;
+    }
+
+    if (!hasAnyUserInput(draftData as ListingData)) return;
+
+    const snapshot = JSON.stringify(draftData);
+    if (snapshot === lastAutosavedRef.current) return;
+
+    autosaveInFlightRef.current = true;
+    setAutosaveState("saving");
+    try {
+      if (!draftId) {
+        const created = await createListingDraft({ user, data: draftData });
+        setDraftId(created.id);
+        if (router.isReady && router.query.draft !== created.id) {
+          await router.replace(
+            { pathname: router.pathname, query: { ...router.query, draft: created.id } },
+            undefined,
+            { shallow: true }
+          );
+        }
+      } else {
+        await updateListingDraft({ user, draftId, data: draftData });
+      }
+      lastAutosavedRef.current = snapshot;
+      setAutosaveState("saved");
+    } catch (e) {
+      console.warn("Autosave failed:", e);
+      setAutosaveState("error");
+    } finally {
+      autosaveInFlightRef.current = false;
+    }
+  }, [data, draftId, isComplete, isEditingExistingListing, isGarage, isLoadingFromQuery, router, user]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void runAutosave();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [runAutosave]);
+
   if (isComplete) {
     return <SuccessScreen draft={data} />;
   }
 
   const canSaveDraft = Boolean(user && !isLoadingFromQuery);
+  const autosaveLabel =
+    autosaveState === "saving"
+      ? "Speichert…"
+      : autosaveState === "saved"
+        ? "Automatisch gespeichert"
+        : autosaveState === "error"
+          ? "Speichern fehlgeschlagen"
+          : "";
 
   return (
     <WizardContext.Provider value={contextValue}>
@@ -520,7 +560,22 @@ export default function ListingWizard() {
                   </p>
                 </div>
 
-                <div className="shrink-0 flex items-center gap-2 sm:pt-1">
+                <div className="shrink-0 flex items-center gap-3 sm:pt-1">
+                  {autosaveLabel && (
+                    <span
+                      className={`hidden sm:flex items-center gap-1.5 text-xs ${
+                        autosaveState === "error" ? "text-red-500" : "text-neutral-500"
+                      }`}
+                      aria-live="polite"
+                    >
+                      {autosaveState === "saving" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : autosaveState === "saved" ? (
+                        <Check className="h-3.5 w-3.5 text-green-600" />
+                      ) : null}
+                      {autosaveLabel}
+                    </span>
+                  )}
                   <Button
                     type="button"
                     variant="outline"
