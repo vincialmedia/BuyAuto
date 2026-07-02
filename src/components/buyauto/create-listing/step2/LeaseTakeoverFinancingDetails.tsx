@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWizard } from "../ListingWizard";
-import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
+import { createOrUpdateListing, vehicleCoreFieldsFromWizard, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 import {
   leaseTakeoverFinancingSchema,
@@ -331,6 +331,9 @@ export function LeaseTakeoverFinancingDetails() {
         premium: data.premium,
         images: data.images,
         cover_image_index: data.cover_image_index,
+
+        // Carry the Step-1 technical fields so this INSERT never drops them (U4).
+        ...vehicleCoreFieldsFromWizard(data),
 
         price_per_month_chf: Number(formData.price_per_month_chf),
         remaining_months: Number(formData.remaining_months),

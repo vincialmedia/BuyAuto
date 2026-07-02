@@ -48,6 +48,41 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function coerceNumber(v: unknown): number | undefined {
+  if (typeof v === "number") return Number.isFinite(v) ? v : undefined;
+  if (typeof v === "string") {
+    const n = Number(v.replace(/[^0-9.\-]/g, ""));
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+}
+
+/**
+ * The vehicle "core" / technical fields (VIN, canonical make/model/variant ids,
+ * power, drivetrain, first registration). These come from Step 1 and used to be
+ * hand-copied into some write payloads but dropped from others (the Step-2
+ * INSERT dropped all seven — audit finding U4). Centralising them here means
+ * every write path includes the same set and they can never silently drift.
+ */
+export function vehicleCoreFieldsFromWizard(
+  data: ListingData
+): Pick<
+  ListingUpdatePayload,
+  "vin" | "make_id" | "model_id" | "variant_id" | "power_hp" | "drivetrain" | "first_registration"
+> {
+  const anyData = data as any;
+  const hp = coerceNumber(anyData?.power_hp);
+  return {
+    vin: typeof anyData?.vin === "string" ? anyData.vin : null,
+    make_id: typeof anyData?.make_id === "string" ? anyData.make_id : null,
+    model_id: typeof anyData?.model_id === "string" ? anyData.model_id : null,
+    variant_id: typeof anyData?.variant_id === "string" ? anyData.variant_id : null,
+    power_hp: typeof hp === "number" ? Math.round(hp) : null,
+    drivetrain: typeof anyData?.drivetrain === "string" ? anyData.drivetrain : null,
+    first_registration: typeof anyData?.first_registration === "string" ? anyData.first_registration : null,
+  };
+}
+
 function normalizeLeasingOfferForDirectPurchaseInsert(
   payload: ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType }
 ): ListingUpdatePayload {

@@ -11,7 +11,7 @@ import { pricingPlans, PREMIUM_BOOST_PRICE } from "@/lib/buyauto/stripe_config";
 import type { Plan } from "@/lib/buyauto/stripe_config";
 import { cantons } from "@/lib/buyauto/data";
 import { useToast } from "@/hooks/use-toast";
-import { createOrUpdateListing, getListingByIdForOwner } from "@/services/createListingService";
+import { createOrUpdateListing, getListingByIdForOwner, vehicleCoreFieldsFromWizard } from "@/services/createListingService";
 import type { PaymentIntent } from "@stripe/stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "next/router";
@@ -428,16 +428,8 @@ export default function Step5_PreviewAndPay() {
       images: Array.isArray(anyData?.images) ? anyData.images : [],
       cover_image_index: typeof anyData?.cover_image_index === "number" ? anyData.cover_image_index : 0,
 
-      vin: typeof anyData?.vin === "string" ? anyData.vin : null,
-      make_id: typeof anyData?.make_id === "string" ? anyData.make_id : null,
-      model_id: typeof anyData?.model_id === "string" ? anyData.model_id : null,
-      variant_id: typeof anyData?.variant_id === "string" ? anyData.variant_id : null,
-      power_hp: (() => {
-        const hp = getNumber(anyData?.power_hp);
-        return typeof hp === "number" ? Math.round(hp) : null;
-      })(),
-      drivetrain: typeof anyData?.drivetrain === "string" ? anyData.drivetrain : null,
-      first_registration: typeof anyData?.first_registration === "string" ? anyData.first_registration : null,
+      // Step-1 technical fields via the shared helper (single source — U4).
+      ...vehicleCoreFieldsFromWizard(data),
     };
 
     const remainingMonths = getNumber(anyData?.remaining_months);
