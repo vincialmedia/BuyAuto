@@ -341,10 +341,11 @@ export function Step1Form() {
 
   const onDecodeVin = async () => {
     if (!user) {
+      // Guests can still fill everything by hand; VIN auto-fill is the one thing
+      // that needs an account (it calls a metered decode service on your behalf).
       toast({
-        title: "Bitte anmelden",
-        description: "Um ein Inserat zu erstellen, musst du eingeloggt sein.",
-        variant: "destructive",
+        title: "Anmelden für VIN-Erkennung",
+        description: "Melde dich an, um die Fahrzeugdaten automatisch aus der VIN zu laden – oder fülle die Felder unten manuell aus.",
       });
       return;
     }

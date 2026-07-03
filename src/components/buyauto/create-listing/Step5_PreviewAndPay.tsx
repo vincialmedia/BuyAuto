@@ -3,8 +3,9 @@ import dynamic from "next/dynamic";
 import { useWizard } from "./ListingWizard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertTriangle, Check, Star } from "lucide-react";
+import { Check, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import GuestAuthGate from "./GuestAuthGate";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { pricingPlans, PREMIUM_BOOST_PRICE } from "@/lib/buyauto/stripe_config";
@@ -885,14 +886,13 @@ export default function Step5_PreviewAndPay() {
     );
   }
 
+  // Deferred login: a guest can fill the whole wizard and only needs to
+  // authenticate here, at the final step. They sign in/register inline (no
+  // navigation), so the listing they just entered stays in memory and the flow
+  // continues straight to publishing. Garages always sign in earlier (plan/
+  // entitlement), so this only affects private sellers.
   if (!user && !userLoading) {
-    return (
-      <div className="text-center p-8">
-        <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-        <h2 className="mt-4 text-xl font-bold">Bitte anmelden</h2>
-        <p className="mt-2 text-neutral-600">Sie müssen angemeldet sein, um fortzufahren.</p>
-      </div>
-    );
+    return <GuestAuthGate />;
   }
 
   return (

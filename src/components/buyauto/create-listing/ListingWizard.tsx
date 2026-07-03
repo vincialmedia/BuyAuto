@@ -61,6 +61,10 @@ export const useWizard = () => {
   return context;
 };
 
+// Guests (not logged in) can't write server-side drafts, so their in-progress
+// listing is mirrored to localStorage and restored on return.
+const GUEST_DRAFT_KEY = "buyauto:guest-listing-draft";
+
 const normalizeDealTypeFromQuery = (value: unknown): DealType | null => {
   if (typeof value !== "string") return null;
   const v = value.trim().toLowerCase();
@@ -320,6 +324,23 @@ export default function ListingWizard() {
         const editQuery = router.query.edit;
 
         if (!user) {
+          // Guest: restore an in-progress listing from localStorage (if any) so
+          // reopening the page — or returning after email confirmation — resumes
+          // where they left off. Only applies to a fresh, non-edit visit.
+          if (typeof editQuery !== "string" && typeof window !== "undefined") {
+            try {
+              const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
+              if (raw) {
+                const parsed = JSON.parse(raw) as { data?: Partial<ListingData> };
+                const restored = parsed?.data;
+                if (restored && hasAnyUserInput({ ...createEmptyListingData(), ...restored } as ListingData)) {
+                  setData((prev) => ({ ...prev, ...restored, id: undefined }));
+                }
+              }
+            } catch {
+              /* ignore malformed local draft */
+            }
+          }
           setIsLoadingFromQuery(false);
           return;
         }
@@ -472,7 +493,7 @@ export default function ListingWizard() {
   // last-write-wins. Purely additive — the explicit "Entwurf speichern" button
   // and per-step draft writes keep working; this just means work is never lost.
   const runAutosave = useCallback(async () => {
-    if (!user || isLoadingFromQuery || isEditingExistingListing || isComplete) return;
+    if (isLoadingFromQuery || isEditingExistingListing || isComplete) return;
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("payment_confirmed") === "true") {
       return;
     }
@@ -486,7 +507,7 @@ export default function ListingWizard() {
     }
 
     const draftData: Partial<ListingData> = { ...data, ...livePatch };
-    if (isGarage && !isEditingExistingListing) {
+    if ((isGarage && !isEditingExistingListing) || !user) {
       delete (draftData as any).id;
     } else if (typeof data.id === "string" && data.id.length > 0) {
       (draftData as any).id = data.id;
@@ -496,6 +517,19 @@ export default function ListingWizard() {
 
     const snapshot = JSON.stringify(draftData);
     if (snapshot === lastAutosavedRef.current) return;
+
+    // Guest (not logged in): keep the draft in localStorage so nothing is lost
+    // before they sign in at the final step. Server-side drafts need a user_id.
+    if (!user) {
+      try {
+        window.localStorage.setItem(GUEST_DRAFT_KEY, JSON.stringify({ savedAt: new Date().toISOString(), data: draftData }));
+        lastAutosavedRef.current = snapshot;
+        setAutosaveState("saved");
+      } catch {
+        setAutosaveState("error");
+      }
+      return;
+    }
 
     autosaveInFlightRef.current = true;
     setAutosaveState("saving");
@@ -529,6 +563,17 @@ export default function ListingWizard() {
     }, 4000);
     return () => clearInterval(interval);
   }, [runAutosave]);
+
+  // Once the listing is published, the guest draft has served its purpose.
+  useEffect(() => {
+    if (isComplete && typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(GUEST_DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [isComplete]);
 
   if (isComplete) {
     return <SuccessScreen draft={data} />;
