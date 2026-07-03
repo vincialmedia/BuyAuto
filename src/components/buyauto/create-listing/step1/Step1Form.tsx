@@ -38,8 +38,8 @@ const vehicleStepSchema = z.object({
   gearbox: zGearbox,
   body: zBody,
 
-  location: z.string(),
-  canton_code: z.string().refine(isCantonCode, "Bitte wähle einen Kanton"),
+  location: z.string().min(1, "Standort ist erforderlich"),
+  canton_code: z.string().refine(isCantonCode, "Bitte wähle deinen Ort aus der Liste, damit der Kanton erkannt wird."),
 
   power_hp: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
