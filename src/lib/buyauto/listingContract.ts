@@ -88,7 +88,7 @@ export const zBody = z
 
 export const zFuel = z
   .string()
-  .refine(isFuelType, { message: "Bitte wählen Sie einen gültigen Antrieb" });
+  .refine(isFuelType, { message: "Bitte wählen Sie einen gültigen Treibstoff" });
 
 export const zGearbox = z
   .string()

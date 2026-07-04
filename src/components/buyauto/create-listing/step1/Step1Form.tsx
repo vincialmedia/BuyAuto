@@ -44,7 +44,7 @@ const vehicleStepSchema = z.object({
   power_hp: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
     z
-      .number()
+      .number({ required_error: "Leistung ist erforderlich", invalid_type_error: "Leistung ist erforderlich" })
       .int()
       .min(1, "Leistung ist erforderlich")
       .max(2000, "Bitte eine gültige Leistung eingeben")
@@ -791,6 +791,44 @@ export function Step1Form() {
     router.back();
   };
 
+  // When "Weiter" is clicked but required fields are missing, react-hook-form
+  // silently blocks and only paints per-field errors — which are easy to miss
+  // (the Weiter button enables on make+model alone, and errors sit below the
+  // fold). Surface a clear toast naming exactly what's still needed.
+  const onInvalid = (formErrors: typeof errors) => {
+    const FIELD_LABELS: Record<string, string> = {
+      make_id: "Marke",
+      model_id: "Modell",
+      year: "Baujahr",
+      km: "Kilometerstand",
+      fuel: "Treibstoff",
+      gearbox: "Getriebe",
+      body: "Karosserie",
+      power_hp: "Leistung (PS)",
+      drivetrain: "Antrieb",
+      location: "Standort",
+      canton_code: "Kanton (Standort aus der Liste wählen)",
+      vin: "VIN",
+    };
+
+    const missing = Array.from(
+      new Set(
+        Object.keys(formErrors)
+          .map((key) => FIELD_LABELS[key])
+          .filter((label): label is string => Boolean(label))
+      )
+    );
+
+    toast({
+      title: "Bitte noch ausfüllen",
+      description:
+        missing.length > 0
+          ? `Es fehlt noch: ${missing.join(", ")}.`
+          : "Bitte fülle alle rot markierten Pflichtfelder aus, um fortzufahren.",
+      variant: "destructive",
+    });
+  };
+
   if (profileLoading) {
     return <div className="text-sm text-neutral-600">Lade Profil...</div>;
   }
@@ -858,7 +896,7 @@ export function Step1Form() {
 
       {vinReview && vinStatus === "success" ? <VinReviewCard data={vinReview} /> : null}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-10">
         <VehicleBasicsSection
           register={register}
           setValue={setValue}
