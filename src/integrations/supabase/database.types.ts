@@ -793,6 +793,7 @@ export type Database = {
           body: string
           brand: string
           canton_code: string | null
+          contract_end_date: string | null
           cover_image_index: number | null
           cover_image_url: string | null
           created_at: string | null
@@ -856,6 +857,7 @@ export type Database = {
           body: string
           brand: string
           canton_code?: string | null
+          contract_end_date?: string | null
           cover_image_index?: number | null
           cover_image_url?: string | null
           created_at?: string | null
@@ -919,6 +921,7 @@ export type Database = {
           body?: string
           brand?: string
           canton_code?: string | null
+          contract_end_date?: string | null
           cover_image_index?: number | null
           cover_image_url?: string | null
           created_at?: string | null

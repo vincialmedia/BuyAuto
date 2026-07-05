@@ -82,23 +82,50 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
   const swissInt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
   const chf = { format: swissInt };
 
-  const primaryLine =
-    dealType === "lease_takeover"
-      ? `CHF ${chf.format(Math.round(listing.pricePerMonthCHF))} / Monat`
-      : purchasePriceChf
-        ? `CHF ${chf.format(Math.round(purchasePriceChf))}`
-        : "Preis auf Anfrage";
+  // Which financing to highlight. Product rule: a listing is either a pure
+  // Leasingübernahme, a plain Direktkauf, or a Direktkauf that additionally offers
+  // Leasing OR Leasingübernahme (never both). Leasingübernahme takes precedence.
+  const isLeaseTakeover = dealType === "lease_takeover" || leaseTakeoverEnabled;
+  const isLeasing = !isLeaseTakeover && dealType === "direct_purchase" && leasingOffer?.enabled === true;
+  const dealLabel = isLeaseTakeover ? "Leasingübernahme" : isLeasing ? "Leasing" : "Direktkauf";
+  const dealChipClass = isLeaseTakeover
+    ? "bg-red-50 text-red-700"
+    : isLeasing
+      ? "bg-blue-50 text-blue-700"
+      : "bg-neutral-100 text-neutral-700";
 
-  const secondaryLine =
+  // Monthly rate for the takeover case: a concrete figure for pure takeovers
+  // (pricePerMonthCHF) or the add-on's price_per_month_chf for Direktkauf + Übernahme.
+  const takeoverMonthlyChf =
     dealType === "lease_takeover"
-      ? purchasePriceChf
-        ? `CHF ${chf.format(Math.round(purchasePriceChf))}`
+      ? typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
+        ? listing.pricePerMonthCHF
         : null
-      : leaseTakeoverMonthlyChf
-        ? `Leasingübernahme: CHF ${chf.format(Math.round(leaseTakeoverMonthlyChf))} / Monat`
-        : teaserMonthlyChf
-          ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
-          : null;
+      : leaseTakeoverMonthlyChf;
+
+  const purchasePriceLine = purchasePriceChf ? `CHF ${chf.format(Math.round(purchasePriceChf))}` : null;
+
+  // Highlighted price: lead with the monthly figure for Leasing / Leasingübernahme,
+  // and drop the Kaufpreis to the secondary line. Plain Direktkauf shows the price only.
+  const primaryLine = isLeaseTakeover
+    ? takeoverMonthlyChf
+      ? `CHF ${chf.format(Math.round(takeoverMonthlyChf))} / Monat`
+      : purchasePriceLine ?? "Preis auf Anfrage"
+    : isLeasing
+      ? teaserMonthlyChf
+        ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
+        : purchasePriceLine ?? "Preis auf Anfrage"
+      : purchasePriceLine ?? "Preis auf Anfrage";
+
+  const secondaryLine = isLeaseTakeover
+    ? takeoverMonthlyChf && purchasePriceLine
+      ? `Kaufpreis: ${purchasePriceLine}`
+      : null
+    : isLeasing
+      ? teaserMonthlyChf && purchasePriceLine
+        ? `Kaufpreis: ${purchasePriceLine}`
+        : null
+      : null;
 
   const formatLocation = (location: string) => {
     if (location.includes(",")) {
@@ -231,15 +258,6 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           </>
         )}
 
-        {dealType === "direct_purchase" && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Deal</span>
-            <span className="font-medium">
-              {leaseTakeoverEnabled ? "Direktkauf + Leasingübernahme" : leasingOffer?.enabled ? "Direktkauf + Leasing" : "Direktkauf"}
-            </span>
-          </div>
-        )}
-
         <div className="mt-3 flex items-center gap-3">
           <div className="relative h-9 w-9 overflow-hidden rounded-full bg-neutral-100 ring-1 ring-neutral-200 flex-shrink-0">
             {(() => {
@@ -269,6 +287,9 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         {/* Price & CTA */}
         <div className="flex items-end justify-between gap-2">
           <div className="flex-1 min-w-0">
+            <span className={`inline-flex items-center mb-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${dealChipClass}`}>
+              {dealLabel}
+            </span>
             <div className="text-xl sm:text-2xl font-bold text-red-600 truncate">{primaryLine}</div>
             {secondaryLine && <div className="text-xs text-neutral-500 font-medium mt-0.5 truncate">{secondaryLine}</div>}
           </div>

@@ -31,7 +31,6 @@ export interface GarageLeasingOfferSectionProps<T extends GarageLeasingOfferForm
   setValue: UseFormSetValue<T>;
   errors: FieldErrors<T>;
 
-  isGarage: boolean;
   hasMounted: boolean;
 
   leasingEnabled: boolean;
@@ -47,7 +46,6 @@ export function GarageLeasingOfferSection<T extends GarageLeasingOfferFormValues
     register,
     setValue,
     errors,
-    isGarage,
     hasMounted,
     leasingEnabled,
     purchasePriceChf,
@@ -57,7 +55,6 @@ export function GarageLeasingOfferSection<T extends GarageLeasingOfferFormValues
 
   const exampleRestwert = useMemo(() => {
     if (!hasMounted) return null;
-    if (!isGarage) return null;
     if (!leasingEnabled) return null;
 
     if (!purchasePriceChf || purchasePriceChf <= 0) return null;
@@ -80,9 +77,7 @@ export function GarageLeasingOfferSection<T extends GarageLeasingOfferFormValues
       adjustedPct,
       adjustedChf,
     };
-  }, [hasMounted, isGarage, leasingEnabled, listingInputs, purchasePriceChf, residualAdjustmentPp]);
-
-  if (!isGarage) return null;
+  }, [hasMounted, leasingEnabled, listingInputs, purchasePriceChf, residualAdjustmentPp]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 p-6">
