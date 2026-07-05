@@ -35,7 +35,6 @@ function serializeListing(listing: ListingDetail | null): ListingDetail | null {
 
   return {
     ...listing,
-    ui_version: (listing as unknown as { ui_version?: string | null }).ui_version === "v2" ? "v2" : "v1",
     description: listing.description ?? null,
     imageUrl: listing.imageUrl ?? null,
     depositCHF: listing.depositCHF ?? null,

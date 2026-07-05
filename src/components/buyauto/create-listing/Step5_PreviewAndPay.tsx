@@ -129,10 +129,10 @@ export default function Step5_PreviewAndPay() {
   }, [donationEnabled, (data as any)?.donation_amount_chf]);
 
   const selectedPlanId = useMemo<Plan | null>(() => {
-    const raw = (data as any)?.price_plan ?? (data as any)?.pricing_plan;
+    const raw = (data as any)?.price_plan;
     if (raw === "standard" || raw === "extended" || raw === "unlimited") return raw;
     return null;
-  }, [(data as any)?.price_plan, (data as any)?.pricing_plan]);
+  }, [(data as any)?.price_plan]);
 
   const planDetails = useMemo(() => {
     const key = selectedPlanId ?? "standard";
@@ -644,7 +644,6 @@ export default function Step5_PreviewAndPay() {
               payment_status: "paid",
               status: "pending",
               price_plan: selectedPlanId,
-              pricing_plan: selectedPlanId,
               duration_days: planDetails?.duration_days ?? null,
               premium: false,
               premium_until: null,
@@ -657,7 +656,6 @@ export default function Step5_PreviewAndPay() {
             payment_status: "paid",
             status: "pending",
             price_plan: selectedPlanId,
-            pricing_plan: selectedPlanId,
             duration_days: planDetails?.duration_days ?? null,
             premium: false,
             premium_until: null,

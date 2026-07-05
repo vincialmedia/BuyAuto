@@ -1,6 +1,5 @@
 export type DealType = "lease_takeover" | "direct_purchase";
 export type FinancingType = "cash" | "leasing";
-export type ListingUiVersion = "v1" | "v2";
 
 export interface LeaseTakeoverOffer {
   enabled: boolean;
@@ -26,7 +25,6 @@ export interface LeasingOffer {
 export interface Listing {
   id: string;
   user_id?: string; // ✅ Made optional to fix build errors
-  ui_version?: ListingUiVersion;
   deal_type?: DealType;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOffer | null;
@@ -79,7 +77,6 @@ export interface PricePlan {
 }
 
 export interface ListingData {
-  ui_version?: ListingUiVersion;
   deal_type?: DealType;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOffer | null;
@@ -124,7 +121,6 @@ export interface ListingData {
   donation_amount_chf?: number;
   
   price_plan?: PricePlanId;
-  pricing_plan?: string;
   premium?: boolean;
   duration_days?: number;
   expires_at?: string;
@@ -135,7 +131,6 @@ export interface ListingData {
   stripe_refund_id?: string;
   refunded_at?: string;
   plan_price?: number;
-  is_premium?: boolean;
   plan?: string;
   price?: number;
   
@@ -184,7 +179,6 @@ export interface ListingDetail extends Listing {
   premium_until: string | null;
   cover_image_index?: number;
   listing_price?: number;
-  is_premium?: boolean;
   description?: string; // ✅ Added description field
 }
 

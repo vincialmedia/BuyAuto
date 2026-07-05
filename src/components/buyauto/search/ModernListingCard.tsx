@@ -29,24 +29,20 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
       }
     : undefined;
 
-  const uiVersion = listing.ui_version === "v2" ? "v2" : "v1";
-  const rawDealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
-  const dealType = uiVersion === "v1" ? "lease_takeover" : rawDealType;
+  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
 
   const purchasePriceChf =
-    uiVersion === "v1"
-      ? null
-      : typeof listing.purchasePriceCHF === "number"
-        ? listing.purchasePriceCHF
-        : typeof (listing as unknown as { purchase_price_chf?: unknown }).purchase_price_chf === "number"
-          ? ((listing as unknown as { purchase_price_chf?: number }).purchase_price_chf ?? null)
-          : typeof (listing as unknown as { price_chf?: unknown }).price_chf === "number"
-            ? ((listing as unknown as { price_chf?: number }).price_chf ?? null)
-            : typeof (listing as unknown as { listing_price?: unknown }).listing_price === "number"
-              ? ((listing as unknown as { listing_price?: number }).listing_price ?? null)
-              : null;
+    typeof listing.purchasePriceCHF === "number"
+      ? listing.purchasePriceCHF
+      : typeof (listing as unknown as { purchase_price_chf?: unknown }).purchase_price_chf === "number"
+        ? ((listing as unknown as { purchase_price_chf?: number }).purchase_price_chf ?? null)
+        : typeof (listing as unknown as { price_chf?: unknown }).price_chf === "number"
+          ? ((listing as unknown as { price_chf?: number }).price_chf ?? null)
+          : typeof (listing as unknown as { listing_price?: unknown }).listing_price === "number"
+            ? ((listing as unknown as { listing_price?: number }).listing_price ?? null)
+            : null;
 
-  const leasingOffer = uiVersion === "v1" ? null : (listing.leasing_offer ?? null);
+  const leasingOffer = listing.leasing_offer ?? null;
 
   const leaseTakeoverOffer =
     dealType === "direct_purchase" && leasingOffer && typeof leasingOffer === "object"

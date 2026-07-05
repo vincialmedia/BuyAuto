@@ -131,7 +131,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from("listings")
         .update({
           price_plan: plan,
-          pricing_plan: plan,
           duration_days: planDetails.duration_days,
           expires_at: getExpiresAt(planDetails.duration_days),
           premium: false,
@@ -206,7 +205,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from("listings")
       .update({
         price_plan: plan,
-        pricing_plan: plan,
         duration_days: planDetails.duration_days,
         expires_at: getExpiresAt(planDetails.duration_days),
         premium: premium,

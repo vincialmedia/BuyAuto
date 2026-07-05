@@ -1,12 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import type { DealType, FinancingType, PricePlanId, LeasingOffer, ListingData, ListingUiVersion } from "@/lib/buyauto/types";
+import type { DealType, FinancingType, PricePlanId, LeasingOffer, ListingData } from "@/lib/buyauto/types";
 
 export type LeasingOfferPayload = LeasingOffer;
 
 export type ListingUpdatePayload = Partial<{
   id?: string;
-  ui_version?: ListingUiVersion | null;
   deal_type?: DealType;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOfferPayload | null;
@@ -189,13 +188,11 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
 
 function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpdatePayload {
   const dealType: DealType = payload.deal_type ?? "direct_purchase";
-  const uiVersion: ListingUiVersion = "v2";
 
   if (dealType === "lease_takeover") {
     const deal_type: DealType = "lease_takeover";
     return {
       ...payload,
-      ui_version: uiVersion,
       deal_type,
       financing_type: null,
       leasing_offer: null,
@@ -212,7 +209,6 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
 
   const base: ListingUpdatePayload = {
     ...payload,
-    ui_version: uiVersion,
     deal_type,
     financing_type,
     purchase_price_chf: hasPurchasePrice ? payload.purchase_price_chf : hasLegacyPricePerMonth ? payload.price_per_month_chf : payload.purchase_price_chf,

@@ -245,7 +245,7 @@ export const listingStep1Schema = z
 export type ListingStep1Form = z.infer<typeof listingStep1Schema>;
 
 export const planSelectionSchema = z.object({
-  pricing_plan: z.string().optional(),
+  price_plan: z.string().optional(),
   premium: z.boolean().optional(),
   price_paid_chf: z.number().optional(),
   payment_status: z.string().optional(),

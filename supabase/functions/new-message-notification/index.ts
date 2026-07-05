@@ -28,12 +28,10 @@ function formatListingTitle(record: {
   brand?: string | null;
   model?: string | null;
   title?: string | null;
-  make_model?: string | null;
 }): string {
-  const makeModel = record.make_model?.trim() || "";
   const brand = record.brand?.trim() || "";
   const model = record.model?.trim() || "";
-  const base = makeModel || [brand, model].filter(Boolean).join(" ");
+  const base = [brand, model].filter(Boolean).join(" ");
   const suffix = record.title?.trim() ? ` – ${record.title.trim()}` : "";
   return (base || "Ihr Fahrzeug") + suffix;
 }
@@ -121,7 +119,7 @@ type MessageRow = {
 };
 
 type ConversationRow = { id: string; listing_id: string; status: string | null };
-type ListingRow = { id: string; brand: string | null; model: string | null; make_model: string | null; title: string | null };
+type ListingRow = { id: string; brand: string | null; model: string | null; title: string | null };
 type ProfileRow = { id: string; full_name: string | null };
 
 serve(async (req) => {
@@ -216,7 +214,7 @@ serve(async (req) => {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id,brand,model,make_model,title")
+    .select("id,brand,model,title")
     .eq("id", convo.listing_id)
     .single<ListingRow>();
 

@@ -348,7 +348,6 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
 
   return {
     id: String(row.id ?? ""),
-    ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: row.deal_type ?? "lease_takeover",
     financing_type: row.financing_type ?? null,
     leasing_offer,
@@ -432,7 +431,6 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 
   return {
     id: String(row.id ?? ""),
-    ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: row.deal_type ?? "lease_takeover",
     financing_type: row.financing_type ?? null,
     leasing_offer,
@@ -493,7 +491,6 @@ function transformListingsTableRowToListingDetail(row: ListingsTableRow): Listin
 
   return {
     id: row.id,
-    ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: (row.deal_type ?? "lease_takeover") as any,
     financing_type: (row.financing_type ?? null) as any,
     leasing_offer: leasingOffer,

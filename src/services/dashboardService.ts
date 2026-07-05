@@ -39,7 +39,6 @@ export interface DashboardListing {
   gearbox: string;
   body: string;
   premium: boolean;
-  is_premium: boolean;
   premium_until: string | null;
   paused_at?: string | null;
   pause_until?: string | null;
