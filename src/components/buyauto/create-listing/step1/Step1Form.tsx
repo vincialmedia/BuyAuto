@@ -98,15 +98,6 @@ function isEmptyValue(v: unknown): boolean {
   return false;
 }
 
-function normalizeDealTypeFromQuery(value: unknown): DealType | null {
-  if (typeof value !== "string") return null;
-  const v = value.trim().toLowerCase();
-
-  if (v === "lease_takeover") return "lease_takeover";
-  if (v === "direct_purchase") return "direct_purchase";
-
-  return null;
-}
 
 export function Step1Form() {
   const router = useRouter();
@@ -124,13 +115,9 @@ export function Step1Form() {
         ? "direct_purchase"
         : null;
 
-  const dealTypeFromQuery =
-    normalizeDealTypeFromQuery(router.query.deal_type) ??
-    normalizeDealTypeFromQuery((router.query as any)?.dealType) ??
-    normalizeDealTypeFromQuery((router.query as any)?.deal) ??
-    normalizeDealTypeFromQuery((router.query as any)?.type);
-
-  const effectiveDealType: DealType = dealTypeFromWizard ?? dealTypeFromQuery ?? "direct_purchase";
+  // New listings are always a Direktkauf (the Übernahme is a Step-2 option);
+  // lease_takeover only ever arrives here from an existing legacy listing.
+  const effectiveDealType: DealType = dealTypeFromWizard ?? "direct_purchase";
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const didPrefillLocationRef = useRef(false);
