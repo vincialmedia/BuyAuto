@@ -146,7 +146,10 @@ export default function Step3_PlanSelection() {
         <p className="text-neutral-600 font-light leading-relaxed">Wähle den passenden Plan für dein Inserat.</p>
       </div>
 
-      {!(data as any).id && (
+      {/* Guests have no listing row by design (deferred login — the row is
+          created after sign-in at Step 5), so the missing-id warning is a
+          logged-in-only signal. */}
+      {Boolean(user) && !(data as any).id && (
         <Alert variant="destructive">
           <AlertTitle>Weiter zu Fotos ist blockiert</AlertTitle>
           <AlertDescription>
