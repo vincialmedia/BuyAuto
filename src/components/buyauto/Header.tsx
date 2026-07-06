@@ -52,8 +52,9 @@ export default function Header() {
   const displayName = firstName || user?.email?.split('@')[0] || 'Benutzer';
   const safeMessageCount = Math.max(0, messageCount);
 
-  // Determine the create listing link based on auth state
-  const createListingHref = user ? "/inserat-erstellen" : "/auth?redirect=/inserat-erstellen";
+  // Deferred login: guests go straight into the wizard and sign in at the
+  // final publish step — never route them to /auth first.
+  const createListingHref = "/inserat-erstellen";
 
   const handleCreateListingClick = async (e: React.MouseEvent) => {
     // If just opening in new tab (cmd/ctrl click), let default behavior happen
