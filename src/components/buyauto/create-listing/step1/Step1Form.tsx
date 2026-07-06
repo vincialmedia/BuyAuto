@@ -534,17 +534,11 @@ export function Step1Form() {
   }, [data, getValues, isEditingExistingListing, isGarage, profileLoading, setValue, updateData, user]);
 
   const onSubmit = async (values: VehicleStepFormValues) => {
-    if (!user) {
-      toast({
-        title: "Bitte anmelden",
-        description: "Um ein Inserat zu erstellen, musst du eingeloggt sein.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (profileLoading) return;
-    const isGarageDraftFlow = Boolean(isGarage && !isEditingExistingListing);
+    // Deferred login: guests fill the whole wizard and sign in at Step 5
+    // (GuestAuthGate). Guests therefore pass through here — they just skip
+    // every server write below; the wizard mirrors their state to localStorage.
+    if (user && profileLoading) return;
+    const isGarageDraftFlow = Boolean(user && isGarage && !isEditingExistingListing);
 
     const nextDealType: DealType = effectiveDealType;
     const normalizedLocation = String(values.location ?? "").trim();
@@ -616,6 +610,13 @@ export function Step1Form() {
         first_registration: values.first_registration ?? null,
         description: values.description || "",
       } as any);
+
+      if (!user) {
+        // Guest: wizard state is updated above and mirrored to localStorage by
+        // the wizard itself; drafts/listings are created after sign-in at Step 5.
+        nextStep();
+        return;
+      }
 
       if (isGarageDraftFlow) {
         const nextDraftData: Partial<ListingData> = {
