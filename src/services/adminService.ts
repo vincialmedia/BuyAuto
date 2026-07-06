@@ -89,6 +89,8 @@ export interface AdminBusinessEditableListingUpdate {
   expires_at?: string | null;
 
   price_plan?: string | null;
+  /** Legacy mirror of price_plan; dual-written until the column is dropped. */
+  pricing_plan?: string | null;
   user_id?: string | null;
   created_by?: string | null;
   garage_id?: string | null;

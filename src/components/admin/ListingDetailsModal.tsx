@@ -186,6 +186,10 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
         duration_days: typeof editData.duration_days === "number" ? editData.duration_days : safeInt(String(editData.duration_days ?? "")),
         expires_at: safeString(String(editData.expires_at ?? "")),
         price_plan: safeString(String(editData.price_plan ?? "")),
+        // Dual-write the legacy column until it is dropped: the approve flow on
+        // the deployed main branch still reads pricing_plan first, so an admin
+        // plan edit must not leave a stale legacy value behind.
+        pricing_plan: safeString(String(editData.price_plan ?? "")),
 
         images: Array.isArray(editData.images) ? editData.images : undefined,
         cover_image_index: typeof editData.cover_image_index === "number" ? editData.cover_image_index : safeInt(String(editData.cover_image_index ?? "")) ?? listing.cover_image_index,

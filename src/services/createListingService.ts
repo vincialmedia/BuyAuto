@@ -6,6 +6,13 @@ export type LeasingOfferPayload = LeasingOffer;
 
 export type ListingUpdatePayload = Partial<{
   id?: string;
+  /**
+   * Legacy column, dual-written as "v2" on insert until it is dropped: the
+   * deployed main branch's listing cards render rows without it as v1
+   * (forced Leasingübernahme, no purchase price). Nothing on this branch
+   * reads it.
+   */
+  ui_version?: "v2" | null;
   deal_type?: DealType;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOfferPayload | null;
@@ -193,6 +200,7 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
     const deal_type: DealType = "lease_takeover";
     return {
       ...payload,
+      ui_version: "v2",
       deal_type,
       financing_type: null,
       leasing_offer: null,
@@ -209,6 +217,7 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
 
   const base: ListingUpdatePayload = {
     ...payload,
+    ui_version: "v2",
     deal_type,
     financing_type,
     purchase_price_chf: hasPurchasePrice ? payload.purchase_price_chf : hasLegacyPricePerMonth ? payload.price_per_month_chf : payload.purchase_price_chf,

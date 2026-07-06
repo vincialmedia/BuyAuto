@@ -131,6 +131,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from("listings")
         .update({
           price_plan: plan,
+          // Dual-write until the legacy column drop: the live trigger
+          // ensure_listing_expiry_defaults resolves the plan legacy-first
+          // (coalesce(NEW.pricing_plan, NEW.price_plan)), so a plan change that
+          // leaves a stale pricing_plan behind would compute the wrong expiry.
+          pricing_plan: plan,
           duration_days: planDetails.duration_days,
           expires_at: getExpiresAt(planDetails.duration_days),
           premium: false,
@@ -205,6 +210,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from("listings")
       .update({
         price_plan: plan,
+        // Dual-write until the legacy column drop (see the free-plan path above).
+        pricing_plan: plan,
         duration_days: planDetails.duration_days,
         expires_at: getExpiresAt(planDetails.duration_days),
         premium: premium,
