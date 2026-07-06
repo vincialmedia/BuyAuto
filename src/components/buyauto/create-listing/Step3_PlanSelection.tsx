@@ -74,11 +74,16 @@ export default function Step3_PlanSelection() {
 
   const handlePlanSelection = async () => {
     if (!user) {
-      toast({
-        title: "Fehler",
-        description: "Du musst angemeldet sein, um fortzufahren.",
-        variant: "destructive",
-      });
+      // Deferred login: keep the plan choice in wizard state — the listing row
+      // is created after sign-in at Step 5.
+      updateData({
+        price_plan: selectedPlan,
+        premium: isPremium,
+        donation_enabled: donationEnabled,
+        donation_amount_chf: donationAmountEffective > 0 ? donationAmountEffective : 0,
+        price_paid_chf: total,
+      } as any);
+      nextStep();
       return;
     }
 
@@ -336,7 +341,7 @@ export default function Step3_PlanSelection() {
 
         <Button
           onClick={handlePlanSelection}
-          disabled={isLoading || !(data as any).id}
+          disabled={isLoading || (Boolean(user) && !(data as any).id)}
           className="bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl"
         >
           {isLoading ? (
@@ -344,7 +349,7 @@ export default function Step3_PlanSelection() {
               <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               Wird geladen...
             </>
-          ) : !(data as any).id ? (
+          ) : user && !(data as any).id ? (
             "Listing-ID fehlt – bitte zurück"
           ) : (
             "Weiter zu den Bildern"

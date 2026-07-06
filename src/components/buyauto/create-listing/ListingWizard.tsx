@@ -44,8 +44,10 @@ interface WizardContextType {
   isComplete: boolean;
   setIsComplete: (complete: boolean) => void;
   getMaxPhotos: () => number;
-  guestImageFiles: File[];
-  setGuestImageFiles: (files: File[]) => void;
+  /** Guest images awaiting upload: File plus its blob preview URL (the URL is
+   *  what sits in data.images until the post-sign-in upload swaps it out). */
+  guestImageFiles: { url: string; file: File }[];
+  setGuestImageFiles: (files: { url: string; file: File }[]) => void;
   draftId: string | null;
   setDraftId: (id: string | null) => void;
   registerDraftSnapshotter: (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => void;
@@ -206,7 +208,7 @@ export default function ListingWizard() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
-  const [guestImageFiles, setGuestImageFiles] = useState<File[]>([]);
+  const [guestImageFiles, setGuestImageFiles] = useState<{ url: string; file: File }[]>([]);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [data, setData] = useState<ListingData>(() => createEmptyListingData());
   const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -395,11 +397,31 @@ export default function ListingWizard() {
     if (isSavingDraft) return;
 
     if (!user) {
-      toast({
-        title: "Bitte anmelden",
-        description: "Um einen Entwurf zu speichern, musst du eingeloggt sein.",
-        variant: "destructive",
-      });
+      // Guests: the wizard mirrors state to localStorage continuously, so a
+      // manual save just captures the live form state and confirms — the
+      // server-side draft is created after sign-in at Step 5.
+      try {
+        const livePatch = (await Promise.resolve(draftSnapshotterRef.current?.() ?? {})) ?? {};
+        const draftData = { ...data, ...livePatch };
+        if (!hasAnyUserInput(draftData as ListingData)) {
+          toast({
+            title: "Noch nichts zu speichern",
+            description: "Fülle mindestens ein Feld aus, um einen Entwurf zu speichern.",
+          });
+          return;
+        }
+        updateData(draftData);
+        toast({
+          title: "Entwurf gespeichert",
+          description: "Dein Entwurf ist auf diesem Gerät gespeichert und wird beim Anmelden übernommen.",
+        });
+      } catch {
+        toast({
+          title: "Entwurf konnte nicht gespeichert werden",
+          description: "Bitte versuche es erneut.",
+          variant: "destructive",
+        });
+      }
       return;
     }
 

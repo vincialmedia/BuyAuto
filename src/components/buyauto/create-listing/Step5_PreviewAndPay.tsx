@@ -20,6 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import type { Tables } from "@/integrations/supabase/types";
 import { deleteListingDraft, deleteListingDraftsForListingId } from "@/services/listingDraftService";
+import { uploadListingImages } from "@/services/storageService";
 import type { ListingUpdatePayload } from "@/services/createListingService";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
@@ -97,7 +98,7 @@ function getNumber(value: unknown): number | null {
 const DUMMY_IMAGE_URL = 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&h=600&fit=crop';
 
 export default function Step5_PreviewAndPay() {
-  const { data, updateData, nextStep, prevStep, setIsComplete, draftId, setDraftId } = useWizard();
+  const { data, updateData, nextStep, prevStep, setIsComplete, draftId, setDraftId, guestImageFiles, setGuestImageFiles } = useWizard();
   const { user, loading: userLoading, profile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -426,7 +427,11 @@ export default function Step5_PreviewAndPay() {
 
       price_plan: anyData?.price_plan ?? undefined,
       premium: Boolean(anyData?.premium),
-      images: Array.isArray(anyData?.images) ? anyData.images : [],
+      // blob: URLs are guest previews (see uploadPendingGuestImages) and must
+      // never reach the database.
+      images: (Array.isArray(anyData?.images) ? anyData.images : []).filter(
+        (u: unknown): u is string => typeof u === "string" && !u.startsWith("blob:")
+      ),
       cover_image_index: typeof anyData?.cover_image_index === "number" ? anyData.cover_image_index : 0,
 
       // Step-1 technical fields via the shared helper (single source — U4).
@@ -451,6 +456,34 @@ export default function Step5_PreviewAndPay() {
 
     return payload;
   }, [data, inferredDealType]);
+
+  // Guests park their images as in-memory Files with blob: preview URLs
+  // (Step 4). Once they've signed in at this step, upload the files and swap
+  // every blob preview in the wizard state for its real storage URL.
+  const uploadPendingGuestImages = useCallback(async (): Promise<string[] | null> => {
+    if (!user || guestImageFiles.length === 0) return null;
+
+    const uploadedUrls = await uploadListingImages(
+      guestImageFiles.map((p) => p.file),
+      user.id
+    );
+
+    const uploadedByPreview = new Map<string, string>();
+    guestImageFiles.forEach((p, i) => {
+      if (uploadedUrls[i]) uploadedByPreview.set(p.url, uploadedUrls[i]);
+    });
+
+    const currentImages: string[] = Array.isArray((data as any)?.images) ? (data as any).images : [];
+    const nextImages = currentImages
+      .map((u) => uploadedByPreview.get(u) ?? u)
+      .filter((u) => typeof u === "string" && !u.startsWith("blob:"));
+
+    guestImageFiles.forEach((p) => URL.revokeObjectURL(p.url));
+    setGuestImageFiles([]);
+    updateData({ images: nextImages } as any);
+
+    return nextImages;
+  }, [data, guestImageFiles, setGuestImageFiles, updateData, user]);
 
   const handlePaymentConfirmation = useCallback(async (paymentIntentClientSecret: string) => {
     const url = new URL(window.location.href);
@@ -583,7 +616,10 @@ export default function Step5_PreviewAndPay() {
       let listingIdToUse: string | null = typeof data.id === "string" && data.id.length > 0 ? data.id : null;
 
       try {
-        const saved = await createOrUpdateListing(buildListingPayloadFromWizard(), user);
+        const uploadedImages = await uploadPendingGuestImages();
+        const payload = buildListingPayloadFromWizard();
+        if (uploadedImages) payload.images = uploadedImages;
+        const saved = await createOrUpdateListing(payload, user);
         if (saved?.id) {
           listingIdToUse = saved.id;
           if (saved.id !== data.id) {

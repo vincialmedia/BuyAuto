@@ -502,15 +502,6 @@ export function DirectPurchaseFinancingDetails() {
   const purchasePriceChf = toNumberOrUndefined(watch("purchase_price_chf")) ?? 0;
 
   const onSubmit = async (formData: DirectPurchaseFinancingForm) => {
-    if (!user) {
-      toast({
-        title: "Nicht eingeloggt",
-        description: "Bitte logge dich ein, um fortzufahren.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSubmitAttempted(true);
     setSubmitError(null);
 
@@ -570,6 +561,14 @@ export function DirectPurchaseFinancingDetails() {
         purchase_price_chf: purchasePriceChfClean ?? undefined,
         price_per_month_chf: undefined,
       };
+
+      if (!user) {
+        // Deferred login: the financing details live in wizard state (mirrored
+        // to localStorage) — server writes happen after sign-in at Step 5.
+        updateData(financingPatch);
+        nextStep();
+        return;
+      }
 
       if (isGarage && !isEditingExistingListing) {
         updateData({ ...financingPatch, id: undefined } as any);

@@ -241,15 +241,6 @@ export function LeaseTakeoverFinancingDetails() {
   }, [contractEndDate, data, getValues, isDirty, updateData]);
 
   const onSubmit = async (formData: LeaseTakeoverFinancingForm) => {
-    if (!user) {
-      toast({
-        title: "Nicht eingeloggt",
-        description: "Bitte logge dich ein, um fortzufahren.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSubmitAttempted(true);
     setSubmitError(null);
 
@@ -275,6 +266,14 @@ export function LeaseTakeoverFinancingDetails() {
         remaining_km: remainingKm,
         contract_end_date: contractEnd,
       };
+
+      if (!user) {
+        // Deferred login: keep the details in wizard state (mirrored to
+        // localStorage) — server writes happen after sign-in at Step 5.
+        updateData(financingPatch as any);
+        nextStep();
+        return;
+      }
 
       if (isGarage && !isEditingExistingListing) {
         updateData({ ...financingPatch, id: undefined } as any);
