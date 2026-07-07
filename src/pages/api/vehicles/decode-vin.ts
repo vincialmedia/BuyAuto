@@ -443,11 +443,31 @@ function getEnv() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!baseUrl || !apiKey || !secretKey || !supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-    return null;
+  // Name (never value) the vars that are absent — "Server misconfiguration"
+  // alone can't distinguish a keyless local checkout from a Vercel env whose
+  // variables aren't enabled for the Preview environment.
+  const missing = [
+    !baseUrl && "VINCARIO_API_BASE_URL",
+    !apiKey && "VINCARIO_API_KEY",
+    !secretKey && "VINCARIO_SECRET_KEY",
+    !supabaseUrl && "NEXT_PUBLIC_SUPABASE_URL",
+    !supabaseAnonKey && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    !serviceRoleKey && "SUPABASE_SERVICE_ROLE_KEY",
+  ].filter((v): v is string => Boolean(v));
+
+  if (missing.length > 0) {
+    return { missing } as const;
   }
 
-  return { baseUrl, apiKey, secretKey, supabaseUrl, supabaseAnonKey, serviceRoleKey };
+  return {
+    missing: null,
+    baseUrl: baseUrl!,
+    apiKey: apiKey!,
+    secretKey: secretKey!,
+    supabaseUrl: supabaseUrl!,
+    supabaseAnonKey: supabaseAnonKey!,
+    serviceRoleKey: serviceRoleKey!,
+  } as const;
 }
 
 function pickString(obj: unknown, keys: string[]): string | null {
@@ -1228,8 +1248,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const env = getEnv();
-  if (!env) {
-    return res.status(500).json({ error: "Server misconfiguration" });
+  if (env.missing) {
+    console.error("decode-vin: missing env vars", env.missing);
+    return res.status(500).json({
+      error: "Server misconfiguration",
+      message: `Fehlende Server-Konfiguration: ${env.missing.join(", ")}`,
+    });
   }
 
   const rawVin = typeof req.body?.vin === "string" ? req.body.vin : "";
