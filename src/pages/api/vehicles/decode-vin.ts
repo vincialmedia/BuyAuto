@@ -1197,6 +1197,30 @@ function hasUsefulNormalizedData(payload: unknown): boolean {
   });
 }
 
+// Guests may trigger a handful of UNCACHED (= metered provider) decodes per
+// IP per hour; cache hits don't count. Best-effort in-memory sliding window.
+const GUEST_DECODE_LIMIT_PER_HOUR = 5;
+const guestDecodeLog = new Map<string, number[]>();
+
+function guestDecodeRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const cutoff = now - 60 * 60 * 1000;
+  const recent = (guestDecodeLog.get(ip) ?? []).filter((t) => t > cutoff);
+
+  if (recent.length >= GUEST_DECODE_LIMIT_PER_HOUR) {
+    guestDecodeLog.set(ip, recent);
+    return true;
+  }
+
+  recent.push(now);
+  guestDecodeLog.set(ip, recent);
+
+  // Crude memory bound; a clear resets everyone but keeps the map small.
+  if (guestDecodeLog.size > 10_000) guestDecodeLog.clear();
+
+  return false;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -1215,20 +1239,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: "Invalid VIN" });
   }
 
+  // Auth is optional: guests may decode too (deferred login — the wizard is
+  // VIN-first even before sign-in). Signed-in users are unmetered; guests get
+  // a small per-IP budget, enforced just before the metered provider call
+  // below (cache hits stay free for everyone).
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  let isAuthenticated = false;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice("Bearer ".length).trim();
 
-  const token = authHeader.slice("Bearer ".length).trim();
+    const supabaseAnon = createClient(env.supabaseUrl, env.supabaseAnonKey, {
+      auth: { persistSession: false },
+    });
 
-  const supabaseAnon = createClient(env.supabaseUrl, env.supabaseAnonKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: authData, error: authErr } = await supabaseAnon.auth.getUser(token);
-  if (authErr || !authData?.user) {
-    return res.status(401).json({ error: "Unauthorized" });
+    const { data: authData } = await supabaseAnon.auth.getUser(token);
+    isAuthenticated = Boolean(authData?.user);
   }
 
   const supabaseAdmin = createClient<Database>(env.supabaseUrl, env.serviceRoleKey, {
@@ -1629,6 +1654,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (result.ok) {
         return res.status(200).json({ ...result.payload, vin, cached: true });
       }
+    }
+  }
+
+  // Everything above was answered from vin_cache; from here on we call the
+  // metered provider. Guests get a small per-IP budget so an anonymous
+  // scraper can't burn decode credits (in-memory, per instance — combined
+  // with the cache this bounds spend without a datastore roundtrip).
+  if (!isAuthenticated) {
+    const forwarded = req.headers["x-forwarded-for"];
+    const ip =
+      (typeof forwarded === "string" ? forwarded.split(",")[0]?.trim() : Array.isArray(forwarded) ? forwarded[0] : null) ||
+      req.socket.remoteAddress ||
+      "unknown";
+
+    if (guestDecodeRateLimited(ip)) {
+      return res.status(429).json({
+        error: "Rate limited",
+        message: "Zu viele VIN-Abfragen. Bitte melde dich an oder versuche es in einer Stunde erneut.",
+      });
     }
   }
 

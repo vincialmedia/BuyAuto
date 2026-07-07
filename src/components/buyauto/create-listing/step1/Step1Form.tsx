@@ -327,16 +327,6 @@ export function Step1Form() {
   };
 
   const onDecodeVin = async () => {
-    if (!user) {
-      // Guests can still fill everything by hand; VIN auto-fill is the one thing
-      // that needs an account (it calls a metered decode service on your behalf).
-      toast({
-        title: "Anmelden für VIN-Erkennung",
-        description: "Melde dich an, um die Fahrzeugdaten automatisch aus der VIN zu laden – oder fülle die Felder unten manuell aus.",
-      });
-      return;
-    }
-
     const vin = vinInput.trim().toUpperCase();
     setVinInput(vin);
     setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
@@ -368,25 +358,16 @@ export function Step1Form() {
     setVinStatus("loading");
     setVinReview(null);
     try {
+      // Auth is optional here: guests may decode too (they get a small per-IP
+      // budget server-side); a signed-in session is sent along when present.
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-
-      if (!token) {
-        setVinStatus("error");
-        setVinError("Bitte melde dich erneut an.");
-        toast({
-          title: "Nicht angemeldet",
-          description: "Bitte melde dich erneut an.",
-          variant: "destructive",
-        });
-        return;
-      }
 
       const resp = await fetch("/api/vehicles/decode-vin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ vin }),
       });
