@@ -209,7 +209,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
             onClick={handleAnchorClick}
             className="before:absolute before:inset-0 before:z-[1] before:content-['']"
           >
-            {listing.brand} {listing.model}
+            {listing.title?.trim() || `${listing.brand} ${listing.model}`}
           </Link>
         </h3>
 

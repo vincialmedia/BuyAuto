@@ -544,7 +544,24 @@ export function Step1Form() {
       const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
 
-      const generatedTitle = `${makeName} ${modelName}`.trim();
+      // The model picker deliberately holds the catalog FAMILY ("5 Series") so
+      // search facets group correctly — but the decoded trim ("530i xDrive")
+      // must not get lost, so it's folded into the title. Strip a leading
+      // repeat of the model name ("A4 40 TDI" under model "A4" → "40 TDI").
+      const variantTextRaw =
+        typeof (data as any)?.variant_text === "string"
+          ? (data as any).variant_text.trim()
+          : typeof (data as any)?.provider_trim === "string"
+            ? (data as any).provider_trim.trim()
+            : "";
+      const variantForTitle =
+        variantTextRaw && modelName && variantTextRaw.toLowerCase() !== modelName.toLowerCase()
+          ? variantTextRaw.toLowerCase().startsWith(modelName.toLowerCase())
+            ? variantTextRaw.slice(modelName.length).trim()
+            : variantTextRaw
+          : "";
+
+      const generatedTitle = [makeName, modelName, variantForTitle].filter(Boolean).join(" ").trim();
       const isNewListing = !(data as any).id;
 
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");
