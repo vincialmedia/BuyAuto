@@ -16,7 +16,7 @@ export default function SeoHead({ searchResults, searchQuery }: SeoHeadProps) {
       "@type": "ListItem",
       "position": (searchResults.page - 1) * searchResults.pageSize + index + 1,
       "url": buildListingHref(listing),
-      "name": `${listing.brand} ${listing.model}${listing.title ? ` ${listing.title}` : ''} (${listing.year})`,
+      "name": `${listing.title?.trim() || `${listing.brand} ${listing.model}`} (${listing.year})`,
       "item": {
         "@type": "Car",
         "name": `${listing.brand} ${listing.model}`,

@@ -297,6 +297,10 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
       ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
       : null;
 
+  // Prefer the stored title — it carries the decoded trim ("BMW 5 Series 530i
+  // xDrive"), which is what long-tail searches match — over bare brand+model.
+  const seoName = listing.title?.trim() || `${listing.brand} ${listing.model}`;
+
   const metaPriceText =
     dealType === "direct_purchase"
       ? purchasePriceChf
@@ -339,7 +343,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const vehicleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Car",
-    name: `${listing.brand} ${listing.model} ${listing.year}`,
+    name: `${seoName} ${listing.year}`,
     brand: { "@type": "Brand", name: listing.brand },
     model: listing.model,
     vehicleModelDate: listing.year,
@@ -366,14 +370,14 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   return (
     <>
       <Head>
-        <title>{`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`}</title>
+        <title>{`${seoName} ${listing.year} - BuyAuto`}</title>
         <meta
           name="description"
-          content={`${listing.brand} ${listing.model} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
+          content={`${seoName} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
         />
         <link rel="canonical" href={listingUrl} />
 
-        <meta property="og:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
+        <meta property="og:title" content={`${seoName} ${listing.year} - BuyAuto`} />
         <meta
           property="og:description"
           content={`${listing.brand} ${listing.model} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
