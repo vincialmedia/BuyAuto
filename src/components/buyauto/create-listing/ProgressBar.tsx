@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWizard } from "./ListingWizard";
 
@@ -8,7 +9,7 @@ interface StepDef {
 }
 
 export default function ProgressBar() {
-  const { currentStep } = useWizard();
+  const { currentStep, setCurrentStep } = useWizard();
   const { profile } = useAuth();
   const isGarage = profile?.role === "garage";
 
@@ -37,51 +38,91 @@ export default function ProgressBar() {
   }, [currentStep, steps]);
 
   const currentLabel = steps[currentIndex]?.label ?? "Schritt";
+  const isNearGoal = currentIndex >= steps.length - 2;
+  const isLastStep = currentIndex === steps.length - 1;
+
+  // Endowed progress: treat the completed account as a pre-credited first
+  // segment so the bar never renders at 0% and finishing the first real step
+  // already feels like meaningful progress (goal-gradient / Nunes & Drèze).
   const progressPct = useMemo(() => {
-    const denom = steps.length;
-    if (denom <= 0) return 0;
-    return Math.round(((currentIndex + 1) / denom) * 100);
+    const total = steps.length + 1; // +1 = the "Konto" segment, already done
+    const filled = currentIndex + 2; // account + completed steps + current
+    return Math.min(100, Math.round((filled / total) * 100));
   }, [currentIndex, steps.length]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between gap-3">
+    <div className="space-y-4">
+      <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-neutral-600">
-            Schritt <span className="text-neutral-900">{currentIndex + 1}</span> von{" "}
-            <span className="text-neutral-900">{steps.length}</span>
+          <p className="text-sm font-semibold text-neutral-900">
+            Schritt {currentIndex + 1} von {steps.length}
+          </p>
+          <p
+            className={[
+              "mt-0.5 text-xs font-medium",
+              isNearGoal ? "text-primary" : "text-neutral-500",
+            ].join(" ")}
+          >
+            {isLastStep
+              ? "Fast geschafft – nur noch veröffentlichen 🎉"
+              : isNearGoal
+                ? `Fast geschafft! Weiter mit: ${currentLabel}`
+                : currentLabel}
           </p>
         </div>
-        <p className="text-xs font-medium text-neutral-600 text-right leading-snug">{currentLabel}</p>
+        <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary tabular-nums">
+          {progressPct}%
+        </span>
       </div>
 
-      <div className="h-2.5 w-full rounded-full bg-neutral-200/80 overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-primary to-primary/80" style={{ width: `${progressPct}%` }} />
+      <div className="h-3 w-full rounded-full bg-neutral-200 overflow-hidden shadow-inner">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-[width] duration-500 ease-out"
+          style={{ width: `${progressPct}%` }}
+        />
       </div>
 
-      <div className="hidden lg:flex items-center justify-between gap-3">
+      {/* Stepper — always visible. Circles on every screen; labels from sm up. */}
+      <div className="flex items-start justify-between gap-1">
         {steps.map((step, idx) => {
           const isActive = idx === currentIndex;
           const isDone = idx < currentIndex;
+          const canJump = isDone;
 
           return (
-            <div key={step.id} className="flex items-center gap-2 min-w-0">
+            <button
+              key={step.id}
+              type="button"
+              disabled={!canJump}
+              onClick={canJump ? () => setCurrentStep(step.id) : undefined}
+              className={[
+                "flex flex-1 flex-col items-center gap-1.5 min-w-0",
+                canJump ? "cursor-pointer group" : "cursor-default",
+              ].join(" ")}
+              aria-current={isActive ? "step" : undefined}
+              aria-label={canJump ? `Zurück zu Schritt: ${step.label}` : step.label}
+            >
               <div
-                aria-current={isActive ? "step" : undefined}
                 className={[
-                  "h-2.5 w-2.5 rounded-full",
-                  isDone ? "bg-primary" : isActive ? "bg-primary/70" : "bg-neutral-300",
+                  "flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold shrink-0 transition-colors",
+                  isDone
+                    ? "bg-primary text-white group-hover:bg-primary/90"
+                    : isActive
+                      ? "bg-primary/15 text-primary ring-2 ring-primary/40"
+                      : "bg-neutral-200 text-neutral-500",
                 ].join(" ")}
-              />
-              <p
+              >
+                {isDone ? <Check className="h-3.5 w-3.5" /> : idx + 1}
+              </div>
+              <span
                 className={[
-                  "text-xs leading-tight min-w-0",
-                  isActive ? "text-neutral-900 font-medium" : isDone ? "text-neutral-700" : "text-neutral-500",
+                  "hidden sm:block text-[11px] leading-tight text-center min-w-0",
+                  isActive ? "text-neutral-900 font-semibold" : isDone ? "text-neutral-600" : "text-neutral-400",
                 ].join(" ")}
               >
                 {step.label}
-              </p>
-            </div>
+              </span>
+            </button>
           );
         })}
       </div>

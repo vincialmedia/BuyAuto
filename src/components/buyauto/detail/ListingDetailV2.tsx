@@ -114,6 +114,12 @@ export function ListingDetailV2({
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
   const isSold = (listing.status as any) === "sold";
 
+  // Prefer the stored title (it carries the decoded trim, e.g. "530i xDrive")
+  // over the bare brand+model; only append the year when the title doesn't
+  // already end with it (legacy titles sometimes embed the year).
+  const baseTitle = listing.title?.trim() || `${listing.brand} ${listing.model}`.trim();
+  const displayTitle = listing.year && !baseTitle.endsWith(String(listing.year)) ? `${baseTitle} ${listing.year}` : baseTitle;
+
   const hasLeasing =
     dealType === "direct_purchase" &&
     ((listing as unknown as { financing_type?: string | null }).financing_type === "leasing" ||
@@ -248,7 +254,7 @@ export function ListingDetailV2({
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
-                    {listing.brand} {listing.model} {listing.year}
+                    {displayTitle}
                   </h1>
                   <p className="mt-1 text-sm text-neutral-600">{listing.location}</p>
                 </div>
@@ -502,7 +508,7 @@ export function ListingDetailV2({
               <div id="messages" className="scroll-mt-36 md:scroll-mt-40">
                 <MessagingPanel 
                   listingId={listing.id} 
-                  listingTitle={`${listing.brand} ${listing.model} ${listing.year}`}
+                  listingTitle={displayTitle}
                   ownerId={((listing as any).user_id ?? (listing as any).created_by ?? null) as string | null}
                   isSold={isSold}
                 />

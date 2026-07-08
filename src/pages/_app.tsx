@@ -5,6 +5,10 @@ import { Analytics } from "@vercel/analytics/react";
 import MainLayout from "@/components/layout/MainLayout";
 import AuthProvider from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+// Second toast system: 11 files (the whole create-listing wizard among them)
+// fire toasts through @/hooks/use-toast, which renders via this Toaster — it
+// was never mounted, so all of that feedback was silently dropped.
+import { Toaster as RadixToaster } from "@/components/ui/toaster";
 import "@/styles/globals.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -102,6 +106,7 @@ export default function App({ Component, pageProps }: AppProps) {
           ) : null}
         </MainLayout>
         <Toaster />
+        <RadixToaster />
         <Analytics />
       </AuthProvider>
     </div>

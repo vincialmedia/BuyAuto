@@ -320,7 +320,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
   };
 
   const isPremium = (listing: ListingDetail) => {
-    if (!listing.premium && !listing.is_premium) return false;
+    if (!listing.premium) return false;
     if (!listing.premium_until) return true;
     return new Date(listing.premium_until) > new Date();
   };

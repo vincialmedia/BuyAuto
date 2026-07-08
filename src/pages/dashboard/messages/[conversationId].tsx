@@ -417,7 +417,7 @@ export default function DashboardConversationPage() {
                       {listing.cover_image_url ? (
                         <Image
                           src={listing.cover_image_url}
-                          alt={listing.make_model}
+                          alt={`${listing.brand} ${listing.model}`.trim()}
                           fill
                           className="object-cover"
                           sizes="(max-width: 640px) 100vw, 176px"
@@ -430,7 +430,7 @@ export default function DashboardConversationPage() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-neutral-900">{listing.make_model}</div>
+                      <div className="text-sm font-semibold text-neutral-900">{`${listing.brand} ${listing.model}`.trim() || "Fahrzeug"}</div>
                       <div className="mt-1 text-sm text-neutral-600">
                         {listing.year ? `Jahr ${listing.year}` : null}
                         {listing.year && listing.mileage_km ? " · " : null}

@@ -29,24 +29,20 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
       }
     : undefined;
 
-  const uiVersion = listing.ui_version === "v2" ? "v2" : "v1";
-  const rawDealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
-  const dealType = uiVersion === "v1" ? "lease_takeover" : rawDealType;
+  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
 
   const purchasePriceChf =
-    uiVersion === "v1"
-      ? null
-      : typeof listing.purchasePriceCHF === "number"
-        ? listing.purchasePriceCHF
-        : typeof (listing as unknown as { purchase_price_chf?: unknown }).purchase_price_chf === "number"
-          ? ((listing as unknown as { purchase_price_chf?: number }).purchase_price_chf ?? null)
-          : typeof (listing as unknown as { price_chf?: unknown }).price_chf === "number"
-            ? ((listing as unknown as { price_chf?: number }).price_chf ?? null)
-            : typeof (listing as unknown as { listing_price?: unknown }).listing_price === "number"
-              ? ((listing as unknown as { listing_price?: number }).listing_price ?? null)
-              : null;
+    typeof listing.purchasePriceCHF === "number"
+      ? listing.purchasePriceCHF
+      : typeof (listing as unknown as { purchase_price_chf?: unknown }).purchase_price_chf === "number"
+        ? ((listing as unknown as { purchase_price_chf?: number }).purchase_price_chf ?? null)
+        : typeof (listing as unknown as { price_chf?: unknown }).price_chf === "number"
+          ? ((listing as unknown as { price_chf?: number }).price_chf ?? null)
+          : typeof (listing as unknown as { listing_price?: unknown }).listing_price === "number"
+            ? ((listing as unknown as { listing_price?: number }).listing_price ?? null)
+            : null;
 
-  const leasingOffer = uiVersion === "v1" ? null : (listing.leasing_offer ?? null);
+  const leasingOffer = listing.leasing_offer ?? null;
 
   const leaseTakeoverOffer =
     dealType === "direct_purchase" && leasingOffer && typeof leasingOffer === "object"
@@ -60,6 +56,19 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
       ? (leaseTakeoverOffer.price_per_month_chf as number)
       : null;
 
+  // "Ab CHF …" must be the cheapest rate the calculator on the detail page can
+  // actually reproduce: the offer's LONGEST term (monthly amortization falls
+  // with term) and its smallest km package — not a hardcoded 60/10'000.
+  const teaserTermMonths = (() => {
+    const min = Math.max(1, Math.floor(Number(leasingOffer?.min_term_months)) || 1);
+    const max = Math.max(min, Math.floor(Number(leasingOffer?.max_term_months)) || 60);
+    return Math.min(max, 120);
+  })();
+  const teaserKmPerYear =
+    Array.isArray(leasingOffer?.km_options) && leasingOffer.km_options.length > 0
+      ? Math.min(...leasingOffer.km_options.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0))
+      : 10000;
+
   const teaserMonthlyChf =
     dealType === "direct_purchase" &&
     leasingOffer?.enabled === true &&
@@ -70,8 +79,8 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           mileageKm: listing.mileageKm,
           interestRatePct: Number(leasingOffer.interest_rate_pct),
           residualPctAdjustmentPp: leasingOffer.residual_pct_adjustment_pp ?? 0,
-          termMonths: 60,
-          kmPerYear: 10000,
+          termMonths: teaserTermMonths,
+          kmPerYear: Number.isFinite(teaserKmPerYear) ? teaserKmPerYear : 10000,
           downPaymentPct: 5,
         })
       : null;
@@ -82,23 +91,50 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
   const swissInt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
   const chf = { format: swissInt };
 
-  const primaryLine =
-    dealType === "lease_takeover"
-      ? `CHF ${chf.format(Math.round(listing.pricePerMonthCHF))} / Monat`
-      : purchasePriceChf
-        ? `CHF ${chf.format(Math.round(purchasePriceChf))}`
-        : "Preis auf Anfrage";
+  // Which financing to highlight. Product rule: a listing is either a pure
+  // Leasingübernahme, a plain Direktkauf, or a Direktkauf that additionally offers
+  // Leasing OR Leasingübernahme (never both). Leasingübernahme takes precedence.
+  const isLeaseTakeover = dealType === "lease_takeover" || leaseTakeoverEnabled;
+  const isLeasing = !isLeaseTakeover && dealType === "direct_purchase" && leasingOffer?.enabled === true;
+  const dealLabel = isLeaseTakeover ? "Leasingübernahme" : isLeasing ? "Leasing" : "Direktkauf";
+  const dealChipClass = isLeaseTakeover
+    ? "bg-red-50 text-red-700"
+    : isLeasing
+      ? "bg-blue-50 text-blue-700"
+      : "bg-neutral-100 text-neutral-700";
 
-  const secondaryLine =
+  // Monthly rate for the takeover case: a concrete figure for pure takeovers
+  // (pricePerMonthCHF) or the add-on's price_per_month_chf for Direktkauf + Übernahme.
+  const takeoverMonthlyChf =
     dealType === "lease_takeover"
-      ? purchasePriceChf
-        ? `CHF ${chf.format(Math.round(purchasePriceChf))}`
+      ? typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
+        ? listing.pricePerMonthCHF
         : null
-      : leaseTakeoverMonthlyChf
-        ? `Leasingübernahme: CHF ${chf.format(Math.round(leaseTakeoverMonthlyChf))} / Monat`
-        : teaserMonthlyChf
-          ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
-          : null;
+      : leaseTakeoverMonthlyChf;
+
+  const purchasePriceLine = purchasePriceChf ? `CHF ${chf.format(Math.round(purchasePriceChf))}` : null;
+
+  // Highlighted price: lead with the monthly figure for Leasing / Leasingübernahme,
+  // and drop the Kaufpreis to the secondary line. Plain Direktkauf shows the price only.
+  const primaryLine = isLeaseTakeover
+    ? takeoverMonthlyChf
+      ? `CHF ${chf.format(Math.round(takeoverMonthlyChf))} / Monat`
+      : purchasePriceLine ?? "Preis auf Anfrage"
+    : isLeasing
+      ? teaserMonthlyChf
+        ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
+        : purchasePriceLine ?? "Preis auf Anfrage"
+      : purchasePriceLine ?? "Preis auf Anfrage";
+
+  const secondaryLine = isLeaseTakeover
+    ? takeoverMonthlyChf && purchasePriceLine
+      ? `Kaufpreis: ${purchasePriceLine}`
+      : null
+    : isLeasing
+      ? teaserMonthlyChf && purchasePriceLine
+        ? `Kaufpreis: ${purchasePriceLine}`
+        : null
+      : null;
 
   const formatLocation = (location: string) => {
     if (location.includes(",")) {
@@ -186,7 +222,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
             onClick={handleAnchorClick}
             className="before:absolute before:inset-0 before:z-[1] before:content-['']"
           >
-            {listing.brand} {listing.model}
+            {listing.title?.trim() || `${listing.brand} ${listing.model}`}
           </Link>
         </h3>
 
@@ -231,15 +267,6 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           </>
         )}
 
-        {dealType === "direct_purchase" && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Deal</span>
-            <span className="font-medium">
-              {leaseTakeoverEnabled ? "Direktkauf + Leasingübernahme" : leasingOffer?.enabled ? "Direktkauf + Leasing" : "Direktkauf"}
-            </span>
-          </div>
-        )}
-
         <div className="mt-3 flex items-center gap-3">
           <div className="relative h-9 w-9 overflow-hidden rounded-full bg-neutral-100 ring-1 ring-neutral-200 flex-shrink-0">
             {(() => {
@@ -269,6 +296,9 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         {/* Price & CTA */}
         <div className="flex items-end justify-between gap-2">
           <div className="flex-1 min-w-0">
+            <span className={`inline-flex items-center mb-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${dealChipClass}`}>
+              {dealLabel}
+            </span>
             <div className="text-xl sm:text-2xl font-bold text-red-600 truncate">{primaryLine}</div>
             {secondaryLine && <div className="text-xs text-neutral-500 font-medium mt-0.5 truncate">{secondaryLine}</div>}
           </div>

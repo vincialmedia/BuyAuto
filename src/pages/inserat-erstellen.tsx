@@ -31,13 +31,20 @@ export default function CreateListingPage() {
 
   useEffect(() => {
     if (!router.isReady) return;
-    if (loading || profileLoading) return;
+    // Wait for auth to resolve, but NOT for the profile — a guest has no profile
+    // to load, so gating on profileLoading would leave them stuck on the spinner.
+    if (loading) return;
 
+    // Deferred login: guests may fill the whole wizard as a private seller and
+    // are only asked to sign in at the final publish step. Garages still need to
+    // authenticate (below) because listing requires an active plan/entitlement.
     if (!user) {
-      setGate({ kind: "redirecting" });
-      void router.replace("/auth?redirect=" + encodeURIComponent(nextAfterPlan));
+      setGate({ kind: "allowed" });
       return;
     }
+
+    // Logged in: the role check needs the profile, so wait for it here.
+    if (profileLoading) return;
 
     if (profile?.role !== "garage") {
       setGate({ kind: "allowed" });

@@ -23,7 +23,7 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     setIsLoading(true);
     setMessage(null);
 
-    const { error } = await stripe.confirmPayment({
+    const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/inserat-erstellen?payment_confirmed=true`,
@@ -41,7 +41,19 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       return;
     }
 
-    onSuccess();
+    // With redirect: "if_required", a payment that needed a redirect (TWINT,
+    // some 3DS cards) has already navigated away and this code won't run. When
+    // it does run, only treat an actually-succeeded intent as success — a
+    // "processing" intent is not yet paid and must not advance the wizard.
+    if (paymentIntent?.status === "succeeded") {
+      onSuccess();
+    } else if (paymentIntent?.status === "processing") {
+      setMessage(
+        "Ihre Zahlung wird verarbeitet. Sobald sie bestätigt ist, wird Ihr Inserat automatisch veröffentlicht."
+      );
+    } else {
+      setMessage("Die Zahlung ist noch nicht abgeschlossen. Bitte versuchen Sie es erneut.");
+    }
     setIsLoading(false);
   };
 

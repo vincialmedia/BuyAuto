@@ -17,9 +17,7 @@ function safeViews(listing: ListingDetail): number {
 }
 
 function isPremiumListing(listing: ListingDetail): boolean {
-  const premiumA = (listing as unknown as { premium?: boolean | null }).premium;
-  const premiumB = (listing as unknown as { is_premium?: boolean | null }).is_premium;
-  return premiumA === true || premiumB === true;
+  return listing.premium === true;
 }
 
 function formatVehicleName(listing: ListingDetail): string {

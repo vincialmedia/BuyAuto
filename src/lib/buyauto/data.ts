@@ -186,5 +186,4 @@ export const cantons = [
   { value: "VS", label: "Wallis" },
   { value: "ZG", label: "Zug" },
   { value: "ZH", label: "Zürich" },
-  { value: 'unlimited', label: 'Unbegrenzt' },
 ];

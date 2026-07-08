@@ -13,10 +13,12 @@ import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/cre
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 import { getMyGarage } from "@/services/garageService";
 
+import { Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VehicleBasicsSection, type CanonicalOption, type VehicleStepFormValues } from "./VehicleBasicsSection";
 import type { DealType, FinancingType, ListingData } from "@/lib/buyauto/types";
+import { zBody, zFuel, zGearbox, zYear, isCantonCode } from "@/lib/buyauto/listingContract";
 
 const vehicleStepSchema = z.object({
   vin: z
@@ -29,19 +31,20 @@ const vehicleStepSchema = z.object({
   model_id: z.string().min(1, "Modell ist erforderlich"),
   variant_id: z.string().optional(),
 
-  year: z.number().int().min(1900, "Bitte ein gültiges Jahr eingeben"),
+  year: zYear,
   km: z.number().int().min(0, "Kilometerstand ist erforderlich"),
 
-  fuel: z.string().min(1, "Treibstoff ist erforderlich"),
-  gearbox: z.string().min(1, "Getriebe ist erforderlich"),
-  body: z.string().min(1, "Karosserie ist erforderlich"),
+  fuel: zFuel,
+  gearbox: zGearbox,
+  body: zBody,
 
-  location: z.string(),
+  location: z.string().min(1, "Standort ist erforderlich"),
+  canton_code: z.string().refine(isCantonCode, "Bitte wähle deinen Ort aus der Liste, damit der Kanton erkannt wird."),
 
   power_hp: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
     z
-      .number()
+      .number({ required_error: "Leistung ist erforderlich", invalid_type_error: "Leistung ist erforderlich" })
       .int()
       .min(1, "Leistung ist erforderlich")
       .max(2000, "Bitte eine gültige Leistung eingeben")
@@ -95,15 +98,6 @@ function isEmptyValue(v: unknown): boolean {
   return false;
 }
 
-function normalizeDealTypeFromQuery(value: unknown): DealType | null {
-  if (typeof value !== "string") return null;
-  const v = value.trim().toLowerCase();
-
-  if (v === "lease_takeover") return "lease_takeover";
-  if (v === "direct_purchase") return "direct_purchase";
-
-  return null;
-}
 
 export function Step1Form() {
   const router = useRouter();
@@ -121,13 +115,9 @@ export function Step1Form() {
         ? "direct_purchase"
         : null;
 
-  const dealTypeFromQuery =
-    normalizeDealTypeFromQuery(router.query.deal_type) ??
-    normalizeDealTypeFromQuery((router.query as any)?.dealType) ??
-    normalizeDealTypeFromQuery((router.query as any)?.deal) ??
-    normalizeDealTypeFromQuery((router.query as any)?.type);
-
-  const effectiveDealType: DealType = dealTypeFromWizard ?? dealTypeFromQuery ?? "direct_purchase";
+  // New listings are always a Direktkauf (the Übernahme is a Step-2 option);
+  // lease_takeover only ever arrives here from an existing legacy listing.
+  const effectiveDealType: DealType = dealTypeFromWizard ?? "direct_purchase";
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const didPrefillLocationRef = useRef(false);
@@ -140,17 +130,15 @@ export function Step1Form() {
       : "idle"
   );
   const [vinError, setVinError] = useState<string | null>(null);
+  const [vinReview, setVinReview] = useState<VinDecodeResponse | null>(null);
 
   const [makes, setMakes] = useState<CanonicalOption[]>([]);
   const [models, setModels] = useState<CanonicalOption[]>([]);
-  const [variants, setVariants] = useState<CanonicalOption[]>([]);
 
   const [loadingMakes, setLoadingMakes] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
-  const [loadingVariants, setLoadingVariants] = useState(false);
 
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
-  const [pendingVariantId, setPendingVariantId] = useState<string | null>(null);
 
   const defaultYear = useMemo(() => {
     return typeof data.year === "number" && Number.isFinite(data.year) ? data.year : new Date().getFullYear();
@@ -173,6 +161,7 @@ export function Step1Form() {
       body: (data as any).body || "",
 
       location: (data as any).location || "",
+      canton_code: (data as any).canton_code || "",
 
       power_hp: Number.isFinite(Number((data as any).power_hp)) && Number((data as any).power_hp) > 0 ? Number((data as any).power_hp) : undefined,
       drivetrain: typeof (data as any).drivetrain === "string" ? (data as any).drivetrain : "",
@@ -204,7 +193,6 @@ export function Step1Form() {
 
   const selectedMake = useMemo(() => makes.find((m) => m.id === selectedMakeId) ?? null, [makes, selectedMakeId]);
   const selectedModel = useMemo(() => models.find((m) => m.id === selectedModelId) ?? null, [models, selectedModelId]);
-  const selectedVariant = useMemo(() => variants.find((v) => v.id === watch("variant_id")) ?? null, [variants, watch]);
 
   const isVinReady = vinStatus === "success";
   const fieldsDisabled = false;
@@ -232,7 +220,6 @@ export function Step1Form() {
     const loadModels = async () => {
       if (!selectedMakeId) {
         setModels([]);
-        setVariants([]);
         return;
       }
 
@@ -255,33 +242,6 @@ export function Step1Form() {
   }, [selectedMakeId, toast]);
 
   useEffect(() => {
-    const loadVariants = async () => {
-      if (!selectedModelId) {
-        setVariants([]);
-        return;
-      }
-
-      try {
-        setLoadingVariants(true);
-        const res = await fetchJson<any>(
-          `/api/vehicles/variants?model_id=${encodeURIComponent(selectedModelId)}`
-        );
-        setVariants(Array.isArray(res) ? res : (res?.variants ?? []));
-      } catch {
-        toast({
-          title: "Fehler",
-          description: "Fehler beim Laden der Varianten.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoadingVariants(false);
-      }
-    };
-
-    void loadVariants();
-  }, [selectedModelId, toast]);
-
-  useEffect(() => {
     if (!pendingModelId) return;
     if (!selectedMakeId) return;
 
@@ -294,25 +254,8 @@ export function Step1Form() {
     }
 
     setValue("model_id", pendingModelId, { shouldValidate: true });
-    setValue("variant_id", "", { shouldValidate: false });
     setPendingModelId(null);
   }, [models, pendingModelId, selectedMakeId, setValue]);
-
-  useEffect(() => {
-    if (!pendingVariantId) return;
-    if (!selectedModelId) return;
-
-    const exists = variants.some((v) => v.id === pendingVariantId);
-    if (!exists) return;
-
-    if (!shouldAutofill("variant_id")) {
-      setPendingVariantId(null);
-      return;
-    }
-
-    setValue("variant_id", pendingVariantId, { shouldValidate: true });
-    setPendingVariantId(null);
-  }, [pendingVariantId, selectedModelId, setValue, variants]);
 
   const shouldAutofill = (field: keyof VehicleStepFormValues): boolean => {
     const dirty = (dirtyFields as any)?.[field] === true;
@@ -348,13 +291,10 @@ export function Step1Form() {
     if (payload.make_id && shouldAutofill("make_id")) {
       setValue("make_id", payload.make_id, { shouldValidate: true });
       setValue("model_id", "", { shouldValidate: false });
-      setValue("variant_id", "", { shouldValidate: false });
 
       setPendingModelId(payload.model_id ?? null);
-      setPendingVariantId(payload.variant_id ?? null);
     } else {
       if (payload.model_id && shouldAutofill("model_id")) setPendingModelId(payload.model_id);
-      if (payload.variant_id && shouldAutofill("variant_id")) setPendingVariantId(payload.variant_id);
     }
 
     if (typeof payload.year === "number" && Number.isFinite(payload.year) && shouldAutofill("year")) {
@@ -387,15 +327,6 @@ export function Step1Form() {
   };
 
   const onDecodeVin = async () => {
-    if (!user) {
-      toast({
-        title: "Bitte anmelden",
-        description: "Um ein Inserat zu erstellen, musst du eingeloggt sein.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const vin = vinInput.trim().toUpperCase();
     setVinInput(vin);
     setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
@@ -425,26 +356,18 @@ export function Step1Form() {
 
     setVinLoading(true);
     setVinStatus("loading");
+    setVinReview(null);
     try {
+      // Auth is optional here: guests may decode too (they get a small per-IP
+      // budget server-side); a signed-in session is sent along when present.
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-
-      if (!token) {
-        setVinStatus("error");
-        setVinError("Bitte melde dich erneut an.");
-        toast({
-          title: "Nicht angemeldet",
-          description: "Bitte melde dich erneut an.",
-          variant: "destructive",
-        });
-        return;
-      }
 
       const resp = await fetch("/api/vehicles/decode-vin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ vin }),
       });
@@ -478,6 +401,7 @@ export function Step1Form() {
       updateData(providerPatch as any);
 
       applyVinAutofill(json, vin);
+      setVinReview(json);
 
       setVinStatus("success");
       setVinError(null);
@@ -513,9 +437,8 @@ export function Step1Form() {
 
       const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
-      const variantName = variants.find((v) => v.id === values.variant_id)?.name ?? "";
 
-      const title = makeName ? `${makeName} ${variantName || modelName}`.trim() : (data as any)?.title;
+      const title = makeName ? `${makeName} ${modelName}`.trim() : (data as any)?.title;
 
       return {
         ...values,
@@ -534,7 +457,7 @@ export function Step1Form() {
     return () => {
       registerDraftSnapshotter(() => ({}));
     };
-  }, [data, getValues, makes, models, registerDraftSnapshotter, variants]);
+  }, [data, getValues, makes, models, registerDraftSnapshotter]);
 
   useEffect(() => {
     const values = getValues();
@@ -579,17 +502,11 @@ export function Step1Form() {
   }, [data, getValues, isEditingExistingListing, isGarage, profileLoading, setValue, updateData, user]);
 
   const onSubmit = async (values: VehicleStepFormValues) => {
-    if (!user) {
-      toast({
-        title: "Bitte anmelden",
-        description: "Um ein Inserat zu erstellen, musst du eingeloggt sein.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (profileLoading) return;
-    const isGarageDraftFlow = Boolean(isGarage && !isEditingExistingListing);
+    // Deferred login: guests fill the whole wizard and sign in at Step 5
+    // (GuestAuthGate). Guests therefore pass through here — they just skip
+    // every server write below; the wizard mirrors their state to localStorage.
+    if (user && profileLoading) return;
+    const isGarageDraftFlow = Boolean(user && isGarage && !isEditingExistingListing);
 
     const nextDealType: DealType = effectiveDealType;
     const normalizedLocation = String(values.location ?? "").trim();
@@ -626,9 +543,25 @@ export function Step1Form() {
     try {
       const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
-      const variantName = variants.find((v) => v.id === values.variant_id)?.name ?? "";
 
-      const generatedTitle = `${makeName} ${variantName || modelName}`.trim();
+      // The model picker deliberately holds the catalog FAMILY ("5 Series") so
+      // search facets group correctly — but the decoded trim ("530i xDrive")
+      // must not get lost, so it's folded into the title. Strip a leading
+      // repeat of the model name ("A4 40 TDI" under model "A4" → "40 TDI").
+      const variantTextRaw =
+        typeof (data as any)?.variant_text === "string"
+          ? (data as any).variant_text.trim()
+          : typeof (data as any)?.provider_trim === "string"
+            ? (data as any).provider_trim.trim()
+            : "";
+      const variantForTitle =
+        variantTextRaw && modelName && variantTextRaw.toLowerCase() !== modelName.toLowerCase()
+          ? variantTextRaw.toLowerCase().startsWith(modelName.toLowerCase())
+            ? variantTextRaw.slice(modelName.length).trim()
+            : variantTextRaw
+          : "";
+
+      const generatedTitle = [makeName, modelName, variantForTitle].filter(Boolean).join(" ").trim();
       const isNewListing = !(data as any).id;
 
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");
@@ -656,11 +589,19 @@ export function Step1Form() {
         gearbox: values.gearbox,
         body: values.body,
         location: values.location,
+        canton_code: values.canton_code,
         power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Number(values.power_hp) : null,
         drivetrain: values.drivetrain,
         first_registration: values.first_registration ?? null,
         description: values.description || "",
       } as any);
+
+      if (!user) {
+        // Guest: wizard state is updated above and mirrored to localStorage by
+        // the wizard itself; drafts/listings are created after sign-in at Step 5.
+        nextStep();
+        return;
+      }
 
       if (isGarageDraftFlow) {
         const nextDraftData: Partial<ListingData> = {
@@ -684,6 +625,7 @@ export function Step1Form() {
           gearbox: values.gearbox as any,
           body: values.body as any,
           location: values.location as any,
+          canton_code: values.canton_code as any,
           title: generatedTitle as any,
 
           power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
@@ -738,6 +680,7 @@ export function Step1Form() {
           gearbox: values.gearbox as any,
           body: values.body as any,
           location: values.location as any,
+          canton_code: values.canton_code as any,
           title: generatedTitle as any,
 
           power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
@@ -787,6 +730,7 @@ export function Step1Form() {
         gearbox: values.gearbox,
         body: values.body,
         location: values.location,
+        canton_code: values.canton_code,
         power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
         drivetrain: values.drivetrain,
         first_registration: values.first_registration ?? null,
@@ -833,6 +777,44 @@ export function Step1Form() {
     router.back();
   };
 
+  // When "Weiter" is clicked but required fields are missing, react-hook-form
+  // silently blocks and only paints per-field errors — which are easy to miss
+  // (the Weiter button enables on make+model alone, and errors sit below the
+  // fold). Surface a clear toast naming exactly what's still needed.
+  const onInvalid = (formErrors: typeof errors) => {
+    const FIELD_LABELS: Record<string, string> = {
+      make_id: "Marke",
+      model_id: "Modell",
+      year: "Baujahr",
+      km: "Kilometerstand",
+      fuel: "Treibstoff",
+      gearbox: "Getriebe",
+      body: "Karosserie",
+      power_hp: "Leistung (PS)",
+      drivetrain: "Antrieb",
+      location: "Standort",
+      canton_code: "Kanton (Standort aus der Liste wählen)",
+      vin: "VIN",
+    };
+
+    const missing = Array.from(
+      new Set(
+        Object.keys(formErrors)
+          .map((key) => FIELD_LABELS[key])
+          .filter((label): label is string => Boolean(label))
+      )
+    );
+
+    toast({
+      title: "Bitte noch ausfüllen",
+      description:
+        missing.length > 0
+          ? `Es fehlt noch: ${missing.join(", ")}.`
+          : "Bitte fülle alle rot markierten Pflichtfelder aus, um fortzufahren.",
+      variant: "destructive",
+    });
+  };
+
   if (profileLoading) {
     return <div className="text-sm text-neutral-600">Lade Profil...</div>;
   }
@@ -845,7 +827,9 @@ export function Step1Form() {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Fahrzeugdaten</h2>
-        <p className="text-neutral-600 font-light leading-relaxed">VIN ist optional – wenn du sie hast, füllen wir viele Felder automatisch aus.</p>
+        <p className="text-neutral-600 font-light leading-relaxed">
+          Gib deine VIN ein – wir füllen so viele Felder wie möglich automatisch aus. Kein VIN? Erfasse die Daten einfach manuell.
+        </p>
       </div>
 
       <div className="rounded-3xl border border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 p-4 md:p-6 shadow-sm space-y-3">
@@ -896,7 +880,9 @@ export function Step1Form() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+      {vinReview && vinStatus === "success" ? <VinReviewCard data={vinReview} /> : null}
+
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-10">
         <VehicleBasicsSection
           register={register}
           setValue={setValue}
@@ -905,10 +891,8 @@ export function Step1Form() {
           errors={errors}
           makes={makes}
           models={models}
-          variants={variants}
           loadingMakes={loadingMakes}
           loadingModels={loadingModels}
-          loadingVariants={loadingVariants}
           disableAllFields={fieldsDisabled}
           locationRequired={locationRequired}
         />
@@ -934,4 +918,58 @@ export function Step1Form() {
 
 function LabelVin() {
   return <div className="text-sm font-medium text-neutral-700">VIN (optional)</div>;
+}
+
+function VinReviewCard({ data }: { data: VinDecodeResponse }) {
+  const rows: Array<{ label: string; value: string | null }> = [
+    { label: "Marke", value: data.provider_make ?? null },
+    { label: "Modell", value: data.provider_model ?? null },
+    { label: "Ausführung", value: data.provider_trim ?? data.variant_text ?? null },
+    { label: "Baujahr", value: typeof data.year === "number" ? String(data.year) : null },
+    { label: "Treibstoff", value: data.fuel ?? null },
+    { label: "Getriebe", value: data.transmission ?? null },
+    { label: "Karosserie", value: data.body_type ?? null },
+    { label: "Leistung", value: typeof data.power_hp === "number" ? `${data.power_hp} PS` : null },
+    { label: "Antrieb", value: data.drivetrain ?? null },
+    { label: "Erstzulassung", value: data.first_registration ?? null },
+  ];
+
+  const detected = rows.filter((r) => r.value && r.value.trim().length > 0).length;
+
+  return (
+    <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-4 md:p-6 shadow-sm space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white">
+          <Check className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-neutral-900">Aus der VIN erkannt</p>
+          <p className="text-xs text-neutral-600">
+            {detected} von {rows.length} Feldern automatisch ausgefüllt · bitte unten prüfen und Fehlendes ergänzen.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+        {rows.map((row) => {
+          const hasValue = !!row.value && row.value.trim().length > 0;
+          return (
+            <div key={row.label} className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wide text-neutral-500">{row.label}</p>
+              {hasValue ? (
+                <p className="truncate text-sm font-medium text-neutral-900" title={row.value ?? undefined}>
+                  {row.value}
+                </p>
+              ) : (
+                <p className="flex items-center gap-1 text-sm text-amber-600">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>nicht erkannt</span>
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

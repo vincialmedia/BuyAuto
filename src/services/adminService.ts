@@ -89,6 +89,7 @@ export interface AdminBusinessEditableListingUpdate {
   expires_at?: string | null;
 
   price_plan?: string | null;
+  /** Legacy mirror of price_plan; dual-written until the column is dropped. */
   pricing_plan?: string | null;
   user_id?: string | null;
   created_by?: string | null;
@@ -307,13 +308,13 @@ export const adminService = {
 
     const { data: listing, error: listingError } = await supabase
       .from("listings")
-      .select("duration_days, expires_at, price_plan, pricing_plan")
+      .select("duration_days, expires_at, price_plan")
       .eq("id", id)
       .single();
 
     if (listingError) throw listingError;
 
-    const effectivePlan = (listing?.pricing_plan ?? listing?.price_plan ?? "standard") as string;
+    const effectivePlan = (listing?.price_plan ?? "standard") as string;
 
     const derivedDurationDays: number | null =
       effectivePlan === "unlimited"

@@ -312,7 +312,7 @@ export default function ListingsSection({ listings, onRefresh }: ListingsSection
                     Kein Bild
                   </div>
                 )}
-                {listing.is_premium && (
+                {listing.premium && (
                   <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded font-medium shadow-sm">
                     Premium
                   </div>

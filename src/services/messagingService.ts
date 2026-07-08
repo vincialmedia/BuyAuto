@@ -39,7 +39,6 @@ export interface ConversationContext {
     id: string;
     brand: string;
     model: string;
-    make_model: string;
     year: number | null;
     price_per_month_chf: number | null;
     purchase_price_chf: number | null;

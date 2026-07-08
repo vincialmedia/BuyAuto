@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 
-type LocationSuggestion = {
+export type LocationSuggestion = {
   label: string;
   value: string;
+  canton: string | null;
 };
 
 type SuggestResponse = {
@@ -13,6 +14,8 @@ type SuggestResponse = {
 export interface LocationAutocompleteProps {
   value: string;
   onValueChange: (next: string) => void;
+  /** Fired when the user picks a suggestion — carries the derived canton. */
+  onSelect?: (suggestion: LocationSuggestion) => void;
   disabled?: boolean;
   placeholder?: string;
   inputClassName?: string;
@@ -25,6 +28,7 @@ export function LocationAutocomplete(props: LocationAutocompleteProps) {
   const {
     value,
     onValueChange,
+    onSelect,
     disabled = false,
     placeholder,
     inputClassName,
@@ -137,6 +141,7 @@ export function LocationAutocomplete(props: LocationAutocompleteProps) {
                 onClick={() => {
                   setQuery(item.value);
                   onValueChange(item.value);
+                  onSelect?.(item);
                   setOpen(false);
                 }}
               >

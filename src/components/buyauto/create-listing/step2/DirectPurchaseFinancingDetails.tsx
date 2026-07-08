@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
-import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
+import { createOrUpdateListing, vehicleCoreFieldsFromWizard, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 
 import { LeaseTakeoverOfferSection, type LeaseTakeoverOfferFormValues } from "./LeaseTakeoverOfferSection";
@@ -236,8 +236,9 @@ export function DirectPurchaseFinancingDetails() {
 
   const existingTakeover = existingOffer?.lease_takeover_offer ?? null;
 
+  // Leasing is now available to every seller (not garage-only), so it re-opens for
+  // any existing leasing listing regardless of role.
   const leasingEnabledInitial =
-    isGarage === true &&
     data.deal_type === "direct_purchase" &&
     data.financing_type === "leasing" &&
     existingOffer?.enabled === true;
@@ -436,11 +437,25 @@ export function DirectPurchaseFinancingDetails() {
     };
   }, [getValues, registerDraftSnapshotter, step1CantonCode]);
 
+  // Mutual exclusivity: a Direktkauf can add EITHER a Leasing offer OR a
+  // Leasingübernahme offer, never both. Detect which switch just turned on (rising
+  // edge) and turn the other off. Setting a flag false re-runs this effect but nothing
+  // "rises" on that pass, so there's no loop.
+  const prevLeasingEnabled = useRef(leasingEnabled);
+  const prevLeaseTakeoverEnabled = useRef(leaseTakeoverEnabled);
   useEffect(() => {
-    if (!isGarage) {
+    const leasingRose = leasingEnabled && !prevLeasingEnabled.current;
+    const takeoverRose = leaseTakeoverEnabled && !prevLeaseTakeoverEnabled.current;
+
+    if (leasingRose && leaseTakeoverEnabled) {
+      setValue("lease_takeover_enabled", false, { shouldValidate: false });
+    } else if (takeoverRose && leasingEnabled) {
       setValue("leasing_enabled", false, { shouldValidate: false });
     }
-  }, [isGarage, setValue]);
+
+    prevLeasingEnabled.current = leasingEnabled;
+    prevLeaseTakeoverEnabled.current = leaseTakeoverEnabled;
+  }, [leasingEnabled, leaseTakeoverEnabled, setValue]);
 
   useEffect(() => {
     if (leaseTakeoverEnabled) return;
@@ -487,15 +502,6 @@ export function DirectPurchaseFinancingDetails() {
   const purchasePriceChf = toNumberOrUndefined(watch("purchase_price_chf")) ?? 0;
 
   const onSubmit = async (formData: DirectPurchaseFinancingForm) => {
-    if (!user) {
-      toast({
-        title: "Nicht eingeloggt",
-        description: "Bitte logge dich ein, um fortzufahren.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSubmitAttempted(true);
     setSubmitError(null);
 
@@ -556,6 +562,14 @@ export function DirectPurchaseFinancingDetails() {
         price_per_month_chf: undefined,
       };
 
+      if (!user) {
+        // Deferred login: the financing details live in wizard state (mirrored
+        // to localStorage) — server writes happen after sign-in at Step 5.
+        updateData(financingPatch);
+        nextStep();
+        return;
+      }
+
       if (isGarage && !isEditingExistingListing) {
         updateData({ ...financingPatch, id: undefined } as any);
 
@@ -612,6 +626,9 @@ export function DirectPurchaseFinancingDetails() {
         premium: data.premium,
         images: data.images,
         cover_image_index: data.cover_image_index,
+
+        // Carry the Step-1 technical fields so this INSERT never drops them (U4).
+        ...vehicleCoreFieldsFromWizard(data),
 
         purchase_price_chf: purchasePriceChfClean,
         price_per_month_chf: null,
@@ -758,7 +775,6 @@ export function DirectPurchaseFinancingDetails() {
           register={register as any}
           setValue={setValue as any}
           errors={errors as any}
-          isGarage={Boolean(isGarage)}
           hasMounted={hasMounted}
           leasingEnabled={leasingEnabled}
           noDownPayment={false}

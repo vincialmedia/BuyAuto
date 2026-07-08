@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
 import type { Database } from "@/integrations/supabase/types";
+import { BODY_TYPES, FUEL_TYPES, GEARBOX_TYPES } from "@/lib/buyauto/listingContract";
 
 type PublicListingRow = Database["public"]["Views"]["listings_public"]["Row"];
 type ListingsTableRow = Database["public"]["Tables"]["listings"]["Row"];
@@ -271,15 +272,17 @@ function parseImagesFromDatabase(imagesField: any, coverImageUrl?: string): stri
 }
 
 /**
- * Normalize enum-ish string fields coming from DB views (typed as string)
+ * Normalize enum-ish string fields coming from DB views (typed as string).
+ * Allowed values come from the single field contract, so read-side and
+ * write-side can never disagree about what a valid body/fuel/gearbox is.
  */
-const FUEL_VALUES = ["Benzin", "Diesel", "Hybrid", "Elektro"] as const;
+const FUEL_VALUES = FUEL_TYPES;
 type FuelValue = (typeof FUEL_VALUES)[number];
 
-const GEARBOX_VALUES = ["Automatik", "Manuell"] as const;
+const GEARBOX_VALUES = GEARBOX_TYPES;
 type GearboxValue = (typeof GEARBOX_VALUES)[number];
 
-const BODY_VALUES = ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"] as const;
+const BODY_VALUES = BODY_TYPES;
 type BodyValue = (typeof BODY_VALUES)[number];
 
 function isOneOf<T extends readonly string[]>(values: T, input: unknown): input is T[number] {
@@ -345,7 +348,6 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
 
   return {
     id: String(row.id ?? ""),
-    ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: row.deal_type ?? "lease_takeover",
     financing_type: row.financing_type ?? null,
     leasing_offer,
@@ -429,7 +431,6 @@ function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail
 
   return {
     id: String(row.id ?? ""),
-    ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: row.deal_type ?? "lease_takeover",
     financing_type: row.financing_type ?? null,
     leasing_offer,
@@ -490,7 +491,6 @@ function transformListingsTableRowToListingDetail(row: ListingsTableRow): Listin
 
   return {
     id: row.id,
-    ui_version: row.ui_version === "v2" ? "v2" : "v1",
     deal_type: (row.deal_type ?? "lease_takeover") as any,
     financing_type: (row.financing_type ?? null) as any,
     leasing_offer: leasingOffer,

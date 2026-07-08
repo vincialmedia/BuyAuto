@@ -20,7 +20,7 @@ interface ImageItem {
 }
 
 export function Step4_Images() {
-  const { data, updateData, nextStep, prevStep, getMaxPhotos, draftId, setDraftId } = useWizard();
+  const { data, updateData, nextStep, prevStep, getMaxPhotos, draftId, setDraftId, guestImageFiles, setGuestImageFiles } = useWizard();
   const images = data.images || [];
   const coverImageIndex = data.cover_image_index || 0;
   const { toast } = useToast();
@@ -38,20 +38,34 @@ export function Step4_Images() {
   );
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!user) {
-      toast({
-        title: "Fehler",
-        description: "Sie müssen angemeldet sein, um Bilder hochzuladen.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     if ((imageItems.length + acceptedFiles.length) > maxPhotos) {
       toast({
         title: "Limit erreicht",
         description: `Sie können maximal ${maxPhotos} Bilder hochladen.`,
         variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user) {
+      // Deferred login: hold the files in memory with blob previews — they are
+      // uploaded after sign-in, right before publishing (Step 5).
+      const pairs = acceptedFiles.map((file) => ({ file, url: URL.createObjectURL(file) }));
+      setGuestImageFiles([...guestImageFiles, ...pairs]);
+
+      const newImageItems = pairs.map((p, index) => ({ id: `guest-${Date.now()}-${index}`, url: p.url }));
+      const updatedItems = [...imageItems, ...newImageItems];
+      setImageItems(updatedItems);
+
+      const updatedUrls = updatedItems.map((item) => item.url);
+      updateData({
+        images: updatedUrls,
+        cover_image_index: coverImageIndex < updatedUrls.length ? coverImageIndex : 0,
+      });
+
+      toast({
+        title: "Bilder hinzugefügt",
+        description: `${acceptedFiles.length} Bild(er) werden beim Veröffentlichen hochgeladen.`,
       });
       return;
     }
@@ -84,7 +98,7 @@ export function Step4_Images() {
     } finally {
       setIsUploading(false);
     }
-  }, [user, imageItems, maxPhotos, updateData, coverImageIndex, toast]);
+  }, [user, imageItems, maxPhotos, updateData, coverImageIndex, toast, guestImageFiles, setGuestImageFiles]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -93,6 +107,12 @@ export function Step4_Images() {
   });
 
   const handleRemoveImage = (indexToRemove: number) => {
+    const removed = imageItems[indexToRemove];
+    if (removed?.url.startsWith("blob:")) {
+      setGuestImageFiles(guestImageFiles.filter((p) => p.url !== removed.url));
+      URL.revokeObjectURL(removed.url);
+    }
+
     const updatedItems = imageItems.filter((_, index) => index !== indexToRemove);
     setImageItems(updatedItems);
     
@@ -129,20 +149,19 @@ export function Step4_Images() {
   };
 
   const handleNext = async () => {
-    if (!user) {
-      toast({ 
-        title: "Nicht angemeldet", 
-        description: "Bitte melden Sie sich an.", 
-        variant: "destructive" 
-      });
-      return;
-    }
     if (!data.images || data.images.length === 0) {
       toast({ 
         title: "Keine Bilder", 
         description: "Bitte laden Sie mindestens ein Bild hoch.", 
         variant: "destructive" 
       });
+      return;
+    }
+
+    if (!user) {
+      // Deferred login: previews live in wizard state; the actual upload
+      // happens after sign-in at Step 5.
+      nextStep();
       return;
     }
 

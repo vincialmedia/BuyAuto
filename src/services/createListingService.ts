@@ -1,12 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import type { DealType, FinancingType, PricePlanId, LeasingOffer, ListingData, ListingUiVersion } from "@/lib/buyauto/types";
+import type { DealType, FinancingType, PricePlanId, LeasingOffer, ListingData } from "@/lib/buyauto/types";
 
 export type LeasingOfferPayload = LeasingOffer;
 
 export type ListingUpdatePayload = Partial<{
   id?: string;
-  ui_version?: ListingUiVersion | null;
+  /**
+   * Legacy column, dual-written as "v2" on insert until it is dropped: the
+   * deployed main branch's listing cards render rows without it as v1
+   * (forced Leasingübernahme, no purchase price). Nothing on this branch
+   * reads it.
+   */
+  ui_version?: "v2" | null;
   deal_type?: DealType;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOfferPayload | null;
@@ -46,6 +52,41 @@ export type ListingUpdatePayload = Partial<{
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function coerceNumber(v: unknown): number | undefined {
+  if (typeof v === "number") return Number.isFinite(v) ? v : undefined;
+  if (typeof v === "string") {
+    const n = Number(v.replace(/[^0-9.\-]/g, ""));
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+}
+
+/**
+ * The vehicle "core" / technical fields (VIN, canonical make/model/variant ids,
+ * power, drivetrain, first registration). These come from Step 1 and used to be
+ * hand-copied into some write payloads but dropped from others (the Step-2
+ * INSERT dropped all seven — audit finding U4). Centralising them here means
+ * every write path includes the same set and they can never silently drift.
+ */
+export function vehicleCoreFieldsFromWizard(
+  data: ListingData
+): Pick<
+  ListingUpdatePayload,
+  "vin" | "make_id" | "model_id" | "variant_id" | "power_hp" | "drivetrain" | "first_registration"
+> {
+  const anyData = data as any;
+  const hp = coerceNumber(anyData?.power_hp);
+  return {
+    vin: typeof anyData?.vin === "string" ? anyData.vin : null,
+    make_id: typeof anyData?.make_id === "string" ? anyData.make_id : null,
+    model_id: typeof anyData?.model_id === "string" ? anyData.model_id : null,
+    variant_id: typeof anyData?.variant_id === "string" ? anyData.variant_id : null,
+    power_hp: typeof hp === "number" ? Math.round(hp) : null,
+    drivetrain: typeof anyData?.drivetrain === "string" ? anyData.drivetrain : null,
+    first_registration: typeof anyData?.first_registration === "string" ? anyData.first_registration : null,
+  };
 }
 
 function normalizeLeasingOfferForDirectPurchaseInsert(
@@ -154,13 +195,12 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
 
 function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpdatePayload {
   const dealType: DealType = payload.deal_type ?? "direct_purchase";
-  const uiVersion: ListingUiVersion = "v2";
 
   if (dealType === "lease_takeover") {
     const deal_type: DealType = "lease_takeover";
     return {
       ...payload,
-      ui_version: uiVersion,
+      ui_version: "v2",
       deal_type,
       financing_type: null,
       leasing_offer: null,
@@ -177,7 +217,7 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
 
   const base: ListingUpdatePayload = {
     ...payload,
-    ui_version: uiVersion,
+    ui_version: "v2",
     deal_type,
     financing_type,
     purchase_price_chf: hasPurchasePrice ? payload.purchase_price_chf : hasLegacyPricePerMonth ? payload.price_per_month_chf : payload.purchase_price_chf,

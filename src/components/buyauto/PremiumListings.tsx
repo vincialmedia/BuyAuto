@@ -23,7 +23,11 @@ const FILTER_OPTIONS: { label: DealTypeLabel | "Alle"; value: FilterCategory }[]
 ];
 
 function getDealTypeLabel(listing: Listing): DealTypeLabel {
-  if (listing.deal_type === "lease_takeover") return "Leasingübernahme";
+  // A Direktkauf with an enabled Übernahme-Angebot presents as Leasingübernahme —
+  // same precedence as the search cards (ModernListingCard).
+  if (listing.deal_type === "lease_takeover" || listing.leasing_offer?.lease_takeover_offer?.enabled === true) {
+    return "Leasingübernahme";
+  }
   if (listing.financing_type === "leasing") return "Leasing";
   return "Direktkauf";
 }
@@ -205,6 +209,24 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     const hasLeasingMonthly = typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0;
     const hasTakeoverMonthly = typeof takeoverOffer?.price_per_month_chf === "number" && takeoverOffer.price_per_month_chf > 0;
 
+    // An enabled Übernahme-Angebot leads with the monthly rate — the Kaufpreis
+    // becomes the secondary line (same rule as the search cards).
+    if (hasTakeoverMonthly) {
+      return (
+        <div className="text-right">
+          <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Leasingübernahme</div>
+          <div className="text-xl font-bold text-red-600">{formatPrice(takeoverOffer!.price_per_month_chf)}</div>
+          <div className="text-xs text-neutral-500">/ Monat</div>
+
+          {hasPurchasePrice && (
+            <div className="mt-1 text-xs text-neutral-500">
+              Kaufpreis: <span className="font-semibold text-neutral-700">{formatPrice(listing.purchasePriceCHF as number)}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     if (hasPurchasePrice) {
       return (
         <div className="text-right">
@@ -214,12 +236,6 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
           {hasLeasingMonthly && (
             <div className="mt-1 text-xs text-neutral-500">
               Leasing: <span className="font-semibold text-neutral-700">{formatPrice(listing.pricePerMonthCHF)}/Mt.</span>
-            </div>
-          )}
-
-          {hasTakeoverMonthly && (
-            <div className="text-xs text-neutral-500">
-              Übernahme: <span className="font-semibold text-neutral-700">{formatPrice(takeoverOffer!.price_per_month_chf)}/Mt.</span>
             </div>
           )}
         </div>
@@ -234,12 +250,6 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
         <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">{getDealTypeLabel(listing)}</div>
         <div className="text-xl font-bold text-red-600">{formatPrice(mainMonthly)}</div>
         <div className="text-xs text-neutral-500">/ Monat</div>
-
-        {hasTakeoverMonthly && (
-          <div className="mt-1 text-xs text-neutral-500">
-            Übernahme ab <span className="font-semibold text-neutral-700">{formatPrice(takeoverOffer!.price_per_month_chf)}/Mt.</span>
-          </div>
-        )}
 
         <div className="text-xs text-neutral-500 mt-0.5">
           {deposit ? `Kaution: ${formatPrice(deposit)}` : "Keine Kaution"}

@@ -11,7 +11,7 @@ import type { DealType, ListingData } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, getListingDraftById, updateListingDraft } from "@/services/listingDraftService";
-import { Loader2, Save } from "lucide-react";
+import { Check, Loader2, Save } from "lucide-react";
 
 const StepLoading = () => (
   <div className="flex items-center justify-center py-12">
@@ -44,8 +44,10 @@ interface WizardContextType {
   isComplete: boolean;
   setIsComplete: (complete: boolean) => void;
   getMaxPhotos: () => number;
-  guestImageFiles: File[];
-  setGuestImageFiles: (files: File[]) => void;
+  /** Guest images awaiting upload: File plus its blob preview URL (the URL is
+   *  what sits in data.images until the post-sign-in upload swaps it out). */
+  guestImageFiles: { url: string; file: File }[];
+  setGuestImageFiles: (files: { url: string; file: File }[]) => void;
   draftId: string | null;
   setDraftId: (id: string | null) => void;
   registerDraftSnapshotter: (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => void;
@@ -61,13 +63,9 @@ export const useWizard = () => {
   return context;
 };
 
-const normalizeDealTypeFromQuery = (value: unknown): DealType | null => {
-  if (typeof value !== "string") return null;
-  const v = value.trim().toLowerCase();
-  if (v === "lease_takeover") return "lease_takeover";
-  if (v === "direct_purchase") return "direct_purchase";
-  return null;
-};
+// Guests (not logged in) can't write server-side drafts, so their in-progress
+// listing is mirrored to localStorage and restored on return.
+const GUEST_DRAFT_KEY = "buyauto:guest-listing-draft";
 
 const createEmptyListingData = (): ListingData => ({
   id: undefined,
@@ -92,7 +90,6 @@ const createEmptyListingData = (): ListingData => ({
   plan_price: 0,
   images: [],
   cover_image_index: 0,
-  ui_version: "v2",
 
   purchase_price_chf: null,
 
@@ -133,51 +130,6 @@ const hasAnyUserInput = (data: ListingData) => {
   );
 };
 
-const toListingUpdatePayload = (wizardData: ListingData): ListingUpdatePayload => {
-  const mileageKm =
-    typeof wizardData.km === "number"
-      ? wizardData.km
-      : typeof (wizardData as any)?.mileage === "number"
-        ? (wizardData as any).mileage
-        : undefined;
-
-  const dealType: DealType = wizardData.deal_type ?? "direct_purchase";
-
-  return {
-    id: wizardData.id,
-    deal_type: dealType,
-    financing_type: dealType === "direct_purchase" ? (wizardData.financing_type ?? "cash") : null,
-    brand: wizardData.brand,
-    model: wizardData.model,
-    year: wizardData.year,
-    mileage_km: mileageKm,
-    remaining_km: (wizardData as any)?.remaining_km ?? null,
-    fuel: wizardData.fuel,
-    gearbox: wizardData.gearbox ?? (wizardData as any)?.transmission,
-    body: wizardData.body,
-    description: wizardData.description,
-    price_per_month_chf: wizardData.price_per_month_chf,
-    purchase_price_chf: (wizardData as any)?.purchase_price_chf ?? null,
-    remaining_months: wizardData.remaining_months,
-    deposit_chf: wizardData.deposit_chf ?? null,
-    location: wizardData.location,
-    canton_code: (wizardData as any)?.canton_code,
-    title: (wizardData as any)?.title,
-    price_plan: wizardData.price_plan,
-    premium: wizardData.premium,
-    images: wizardData.images,
-    cover_image_index: wizardData.cover_image_index,
-    leasing_offer: (wizardData as unknown as { leasing_offer?: unknown }).leasing_offer as any,
-
-    vin: (wizardData as any)?.vin ?? null,
-    make_id: (wizardData as any)?.make_id ?? null,
-    model_id: (wizardData as any)?.model_id ?? null,
-    variant_id: (wizardData as any)?.variant_id ?? null,
-    power_hp: (wizardData as any)?.power_hp ?? null,
-    drivetrain: (wizardData as any)?.drivetrain ?? null,
-    first_registration: (wizardData as any)?.first_registration ?? null,
-  };
-};
 
 const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<ListingData> => {
   const dealType: DealType = (listing?.deal_type ?? prev.deal_type ?? "direct_purchase") as DealType;
@@ -256,13 +208,16 @@ export default function ListingWizard() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
-  const [guestImageFiles, setGuestImageFiles] = useState<File[]>([]);
+  const [guestImageFiles, setGuestImageFiles] = useState<{ url: string; file: File }[]>([]);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [data, setData] = useState<ListingData>(() => createEmptyListingData());
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingFromQuery, setIsLoadingFromQuery] = useState(true);
+  const [autosaveState, setAutosaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const draftSnapshotterRef = useRef<() => Partial<ListingData> | Promise<Partial<ListingData>>>(() => ({}));
+  const autosaveInFlightRef = useRef(false);
+  const lastAutosavedRef = useRef<string>("");
 
   const registerDraftSnapshotter = useCallback(
     (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => {
@@ -284,6 +239,17 @@ export default function ListingWizard() {
   useEffect(() => {
     if (isGarage && currentStep === 3) setCurrentStep(4);
   }, [currentStep, isGarage]);
+
+  // Returning from a Stripe redirect (TWINT, some 3DS cards): Stripe sends the
+  // buyer back to /inserat-erstellen?payment_confirmed=true&payment_intent_...
+  // Jump straight to Step 5 so its payment-confirmation effect runs and shows
+  // the success screen, instead of dumping the user on an empty Step 1.
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.payment_confirmed === "true") {
+      setCurrentStep(5);
+    }
+  }, [router.isReady, router.query.payment_confirmed]);
 
   const nextStep = useCallback(() => {
     setCurrentStep((prev) => {
@@ -351,6 +317,23 @@ export default function ListingWizard() {
         const editQuery = router.query.edit;
 
         if (!user) {
+          // Guest: restore an in-progress listing from localStorage (if any) so
+          // reopening the page — or returning after email confirmation — resumes
+          // where they left off. Only applies to a fresh, non-edit visit.
+          if (typeof editQuery !== "string" && typeof window !== "undefined") {
+            try {
+              const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
+              if (raw) {
+                const parsed = JSON.parse(raw) as { data?: Partial<ListingData> };
+                const restored = parsed?.data;
+                if (restored && hasAnyUserInput({ ...createEmptyListingData(), ...restored } as ListingData)) {
+                  setData((prev) => ({ ...prev, ...restored, id: undefined }));
+                }
+              }
+            } catch {
+              /* ignore malformed local draft */
+            }
+          }
           setIsLoadingFromQuery(false);
           return;
         }
@@ -393,23 +376,9 @@ export default function ListingWizard() {
           return;
         }
 
-        // Clean create (no draft, no edit): honor an explicit ?deal_type= deep-link so
-        // e.g. "Leasing abgeben" CTAs can pre-select a pure Leasingübernahme listing.
-        const seededDealType = normalizeDealTypeFromQuery(router.query.deal_type);
-        if (seededDealType) {
-          setData((prev) =>
-            prev.deal_type === seededDealType
-              ? prev
-              : {
-                  ...prev,
-                  deal_type: seededDealType,
-                  ...(seededDealType === "lease_takeover"
-                    ? { financing_type: null, leasing_offer: null, purchase_price_chf: null }
-                    : {}),
-                }
-          );
-        }
-
+        // Clean create (no draft, no edit): every new listing is a Direktkauf —
+        // a Leasingübernahme is offered as an option inside Step 2, so the old
+        // ?deal_type= deep-link no longer seeds a pure lease_takeover.
         setIsLoadingFromQuery(false);
       } catch (e) {
         setIsLoadingFromQuery(false);
@@ -428,11 +397,31 @@ export default function ListingWizard() {
     if (isSavingDraft) return;
 
     if (!user) {
-      toast({
-        title: "Bitte anmelden",
-        description: "Um einen Entwurf zu speichern, musst du eingeloggt sein.",
-        variant: "destructive",
-      });
+      // Guests: the wizard mirrors state to localStorage continuously, so a
+      // manual save just captures the live form state and confirms — the
+      // server-side draft is created after sign-in at Step 5.
+      try {
+        const livePatch = (await Promise.resolve(draftSnapshotterRef.current?.() ?? {})) ?? {};
+        const draftData = { ...data, ...livePatch };
+        if (!hasAnyUserInput(draftData as ListingData)) {
+          toast({
+            title: "Noch nichts zu speichern",
+            description: "Fülle mindestens ein Feld aus, um einen Entwurf zu speichern.",
+          });
+          return;
+        }
+        updateData(draftData);
+        toast({
+          title: "Entwurf gespeichert",
+          description: "Dein Entwurf ist auf diesem Gerät gespeichert und wird beim Anmelden übernommen.",
+        });
+      } catch {
+        toast({
+          title: "Entwurf konnte nicht gespeichert werden",
+          description: "Bitte versuche es erneut.",
+          variant: "destructive",
+        });
+      }
       return;
     }
 
@@ -498,11 +487,106 @@ export default function ListingWizard() {
     }
   }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, router, toast, updateData, user]);
 
+  // Continuous autosave: periodically capture the active step's live form values
+  // (via the snapshotter) plus committed wizard data, and upsert the draft with
+  // last-write-wins. Purely additive — the explicit "Entwurf speichern" button
+  // and per-step draft writes keep working; this just means work is never lost.
+  const runAutosave = useCallback(async () => {
+    if (isLoadingFromQuery || isEditingExistingListing || isComplete) return;
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("payment_confirmed") === "true") {
+      return;
+    }
+    if (autosaveInFlightRef.current) return;
+
+    let livePatch: Partial<ListingData> = {};
+    try {
+      livePatch = (await Promise.resolve(draftSnapshotterRef.current?.() ?? {})) ?? {};
+    } catch {
+      livePatch = {};
+    }
+
+    const draftData: Partial<ListingData> = { ...data, ...livePatch };
+    if ((isGarage && !isEditingExistingListing) || !user) {
+      delete (draftData as any).id;
+    } else if (typeof data.id === "string" && data.id.length > 0) {
+      (draftData as any).id = data.id;
+    }
+
+    if (!hasAnyUserInput(draftData as ListingData)) return;
+
+    const snapshot = JSON.stringify(draftData);
+    if (snapshot === lastAutosavedRef.current) return;
+
+    // Guest (not logged in): keep the draft in localStorage so nothing is lost
+    // before they sign in at the final step. Server-side drafts need a user_id.
+    if (!user) {
+      try {
+        window.localStorage.setItem(GUEST_DRAFT_KEY, JSON.stringify({ savedAt: new Date().toISOString(), data: draftData }));
+        lastAutosavedRef.current = snapshot;
+        setAutosaveState("saved");
+      } catch {
+        setAutosaveState("error");
+      }
+      return;
+    }
+
+    autosaveInFlightRef.current = true;
+    setAutosaveState("saving");
+    try {
+      if (!draftId) {
+        const created = await createListingDraft({ user, data: draftData });
+        setDraftId(created.id);
+        if (router.isReady && router.query.draft !== created.id) {
+          await router.replace(
+            { pathname: router.pathname, query: { ...router.query, draft: created.id } },
+            undefined,
+            { shallow: true }
+          );
+        }
+      } else {
+        await updateListingDraft({ user, draftId, data: draftData });
+      }
+      lastAutosavedRef.current = snapshot;
+      setAutosaveState("saved");
+    } catch (e) {
+      console.warn("Autosave failed:", e);
+      setAutosaveState("error");
+    } finally {
+      autosaveInFlightRef.current = false;
+    }
+  }, [data, draftId, isComplete, isEditingExistingListing, isGarage, isLoadingFromQuery, router, user]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void runAutosave();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [runAutosave]);
+
+  // Once the listing is published, the guest draft has served its purpose.
+  useEffect(() => {
+    if (isComplete && typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(GUEST_DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [isComplete]);
+
   if (isComplete) {
     return <SuccessScreen draft={data} />;
   }
 
   const canSaveDraft = Boolean(user && !isLoadingFromQuery);
+  const autosaveLabel =
+    autosaveState === "saving"
+      ? "Speichert…"
+      : autosaveState === "saved"
+        ? "Automatisch gespeichert"
+        : autosaveState === "error"
+          ? "Speichern fehlgeschlagen"
+          : "";
 
   return (
     <WizardContext.Provider value={contextValue}>
@@ -520,7 +604,22 @@ export default function ListingWizard() {
                   </p>
                 </div>
 
-                <div className="shrink-0 flex items-center gap-2 sm:pt-1">
+                <div className="shrink-0 flex items-center gap-3 sm:pt-1">
+                  {autosaveLabel && (
+                    <span
+                      className={`hidden sm:flex items-center gap-1.5 text-xs ${
+                        autosaveState === "error" ? "text-red-500" : "text-neutral-500"
+                      }`}
+                      aria-live="polite"
+                    >
+                      {autosaveState === "saving" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : autosaveState === "saved" ? (
+                        <Check className="h-3.5 w-3.5 text-green-600" />
+                      ) : null}
+                      {autosaveLabel}
+                    </span>
+                  )}
                   <Button
                     type="button"
                     variant="outline"

@@ -186,7 +186,10 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
         duration_days: typeof editData.duration_days === "number" ? editData.duration_days : safeInt(String(editData.duration_days ?? "")),
         expires_at: safeString(String(editData.expires_at ?? "")),
         price_plan: safeString(String(editData.price_plan ?? "")),
-        pricing_plan: safeString(String(editData.pricing_plan ?? "")),
+        // Dual-write the legacy column until it is dropped: the approve flow on
+        // the deployed main branch still reads pricing_plan first, so an admin
+        // plan edit must not leave a stale legacy value behind.
+        pricing_plan: safeString(String(editData.price_plan ?? "")),
 
         images: Array.isArray(editData.images) ? editData.images : undefined,
         cover_image_index: typeof editData.cover_image_index === "number" ? editData.cover_image_index : safeInt(String(editData.cover_image_index ?? "")) ?? listing.cover_image_index,
@@ -572,14 +575,6 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
                         <Input value={String(editData.price_plan ?? "")} onChange={(e) => setEditData((p) => ({ ...p, price_plan: e.target.value }))} placeholder="Raw value" />
                       ) : (
                         <p className="font-medium">{listing.price_plan || <span className="text-neutral-400">—</span>}</p>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-sm text-neutral-600">Plan (pricing_plan)</label>
-                      {editing ? (
-                        <Input value={String(editData.pricing_plan ?? "")} onChange={(e) => setEditData((p) => ({ ...p, pricing_plan: e.target.value }))} placeholder="Raw value" />
-                      ) : (
-                        <p className="font-medium">{(listing as any).pricing_plan || <span className="text-neutral-400">—</span>}</p>
                       )}
                     </div>
                   </div>

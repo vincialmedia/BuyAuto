@@ -12,16 +12,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const supabase = createPagesServerClient({ req, res });
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (!session) {
+  if (!session?.user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  
-  // TODO: Implement a robust admin check. For now, we assume this endpoint is protected.
-  // const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
-  // if(!profile?.is_admin) {
-  //   return res.status(403).json({ error: 'Forbidden: Admins only' });
-  // }
 
+  // Admin-only: refunds move money and must never be self-serve. Mirror the
+  // profiles.role === 'admin' gate used by the other admin API routes.
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .maybeSingle<{ role: string | null }>();
+
+  if (!me || me.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: Admins only' });
+  }
 
   const { listing_id, reason = 'requested_by_customer' } = req.body;
 

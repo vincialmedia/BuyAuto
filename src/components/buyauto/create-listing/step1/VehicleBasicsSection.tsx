@@ -1,12 +1,35 @@
 import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormTrigger, UseFormWatch } from "react-hook-form";
 import { useEffect, useMemo } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Car,
+  CarFront,
+  Calendar,
+  CalendarClock,
+  Gauge,
+  Fuel,
+  Cog,
+  Zap,
+  Route,
+  MapPin,
+  Check,
+} from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VehicleDescriptionField } from "@/components/buyauto/create-listing/step1/VehicleDescriptionField";
 import { VehicleFirstRegistrationField } from "@/components/buyauto/create-listing/step1/VehicleFirstRegistrationField";
-import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
+import { LocationAutocomplete, type LocationSuggestion } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
+import {
+  BODY_TYPES,
+  FUEL_TYPES,
+  GEARBOX_TYPES,
+  DRIVETRAIN_TYPES,
+  CANTON_LABELS,
+  isCantonCode,
+  type CantonCode,
+} from "@/lib/buyauto/listingContract";
 
 export interface CanonicalOption {
   id: string;
@@ -28,6 +51,7 @@ export interface VehicleStepFormValues {
   body: string;
 
   location: string;
+  canton_code: string;
   power_hp: number | undefined;
   drivetrain: string;
   first_registration?: string | null;
@@ -35,12 +59,63 @@ export interface VehicleStepFormValues {
   description?: string;
 }
 
-const bodyTypes = ["Limousine", "Kombi", "SUV", "Cabrio", "Coupe"];
-const fuelTypes = ["Benzin", "Diesel", "Hybrid", "Elektro"];
-const gearboxTypes = ["Automatik", "Manuell"];
+// Body/fuel/gearbox/drivetrain options come from the single field contract so
+// the dropdown can never offer a value the DB CHECK will reject (the Coupe bug).
+const bodyTypes = BODY_TYPES;
+const fuelTypes = FUEL_TYPES;
+const gearboxTypes = GEARBOX_TYPES;
+const drivetrainTypes = DRIVETRAIN_TYPES;
 
-const drivetrainTypes = ["Frontantrieb", "Heckantrieb", "Allrad"];
-const VARIANT_NONE_VALUE = "__none__";
+const selectTriggerCls =
+  "bg-white border border-neutral-200/60 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm rounded-xl";
+
+/** One labelled field: icon + label (+ required marker), the control, hint, error. */
+function Field({
+  icon: Icon,
+  label,
+  required,
+  hint,
+  error,
+  children,
+  className,
+}: {
+  icon: LucideIcon;
+  label: string;
+  required?: boolean;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`space-y-1.5 ${className ?? ""}`}>
+      <Label className="flex items-center gap-1.5 text-sm font-medium text-neutral-700">
+        <Icon className="h-3.5 w-3.5 text-neutral-400 shrink-0" aria-hidden />
+        <span>{label}</span>
+        {required ? <span className="text-red-500">*</span> : null}
+      </Label>
+      {children}
+      {hint ? <p className="text-xs text-neutral-500 font-light">{hint}</p> : null}
+      {error ? <p className="text-sm text-red-500 font-light">{error}</p> : null}
+    </div>
+  );
+}
+
+/** A titled group of related fields, so Step 1 reads as a few tidy sections
+ *  instead of one long wall of inputs. */
+function Section({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+          <Icon className="h-4 w-4" aria-hidden />
+        </div>
+        <h3 className="text-base font-semibold tracking-tight text-neutral-900">{title}</h3>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">{children}</div>
+    </section>
+  );
+}
 
 export interface VehicleBasicsSectionProps {
   register: UseFormRegister<VehicleStepFormValues>;
@@ -51,11 +126,9 @@ export interface VehicleBasicsSectionProps {
 
   makes: CanonicalOption[];
   models: CanonicalOption[];
-  variants: CanonicalOption[];
 
   loadingMakes: boolean;
   loadingModels: boolean;
-  loadingVariants: boolean;
 
   disableAllFields?: boolean;
   locationRequired?: boolean;
@@ -70,10 +143,8 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
     errors,
     makes,
     models,
-    variants,
     loadingMakes,
     loadingModels,
-    loadingVariants,
     disableAllFields = false,
     locationRequired = true,
   } = props;
@@ -81,6 +152,9 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
   const selectedMakeId = watch("make_id");
   const selectedModelId = watch("model_id");
   const descriptionLength = (watch("description") ?? "").length;
+
+  const cantonCode = watch("canton_code");
+  const cantonLabel = cantonCode && isCantonCode(cantonCode) ? CANTON_LABELS[cantonCode as CantonCode] : null;
 
   const currentYear = new Date().getFullYear();
   const years = useMemo(() => Array.from({ length: currentYear - 1989 }, (_, i) => currentYear - i), [currentYear]);
@@ -95,6 +169,13 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleLocationSelect = (s: LocationSuggestion) => {
+    setValue("location", s.value, { shouldValidate: true, shouldDirty: true });
+    if (s.canton && isCantonCode(s.canton)) {
+      setValue("canton_code", s.canton, { shouldValidate: true, shouldDirty: true });
+    }
+  };
+
   return (
     <div className="relative">
       {disableAllFields ? (
@@ -106,10 +187,10 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
       ) : null}
 
       <div className={disableAllFields ? "opacity-50 pointer-events-none select-none" : ""}>
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Marke *</Label>
+        <div className="space-y-9">
+          {/* ── Fahrzeug ─────────────────────────────────────────────── */}
+          <Section icon={Car} title="Fahrzeug">
+            <Field icon={Car} label="Marke" required error={errors.make_id?.message as string | undefined}>
               <Select
                 value={selectedMakeId || ""}
                 onValueChange={(value) => {
@@ -119,7 +200,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 }}
                 disabled={disableAllFields}
               >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectTrigger className={selectTriggerCls}>
                   <SelectValue placeholder={loadingMakes ? "Lädt..." : "Marke auswählen"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -130,11 +211,9 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.make_id && <p className="text-sm text-red-500 font-light">{errors.make_id.message as string}</p>}
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Modell (Basis) *</Label>
+            <Field icon={CarFront} label="Modell" required error={errors.model_id?.message as string | undefined}>
               <Select
                 value={selectedModelId || ""}
                 onValueChange={(value) => {
@@ -143,7 +222,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 }}
                 disabled={disableAllFields || !selectedMakeId || loadingModels}
               >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectTrigger className={selectTriggerCls}>
                   <SelectValue placeholder={!selectedMakeId ? "Zuerst Marke wählen" : loadingModels ? "Lädt..." : "Modell auswählen"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -154,65 +233,15 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.model_id && <p className="text-sm text-red-500 font-light">{errors.model_id.message as string}</p>}
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Variante (Trim)</Label>
-              <Select
-                value={selectedModelId ? (watch("variant_id") ?? "") : ""}
-                onValueChange={(value) =>
-                  setValue("variant_id", value === VARIANT_NONE_VALUE ? "" : value, { shouldValidate: true, shouldDirty: true })
-                }
-                disabled={disableAllFields || !selectedModelId || loadingVariants}
-              >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
-                  <SelectValue
-                    placeholder={!selectedModelId ? "Zuerst Modell wählen" : loadingVariants ? "Lädt..." : "Variante auswählen (optional)"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={VARIANT_NONE_VALUE}>Ohne Variante</SelectItem>
-                  {(variants ?? []).map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.variant_id && <p className="text-sm text-red-500 font-light">{errors.variant_id.message as string}</p>}
-              {selectedModelId && !loadingVariants && (variants ?? []).length === 0 ? (
-                <p className="text-xs text-neutral-500 font-light">Keine Varianten vorhanden. Mit VIN werden Varianten automatisch erstellt.</p>
-              ) : null}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">
-                Standort{locationRequired ? " *" : " (optional)"}
-              </Label>
-              <LocationAutocomplete
-                name={register("location").name}
-                inputRef={register("location").ref}
-                value={String(watch("location") ?? "")}
-                placeholder="z.B. Schlieren, ZH"
-                disabled={disableAllFields}
-                inputClassName="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm placeholder:text-neutral-400"
-                onValueChange={(next) => setValue("location", next, { shouldValidate: true, shouldDirty: true })}
-                onBlur={() => {
-                  void trigger("location");
-                }}
-              />
-              {errors.location && <p className="text-sm text-red-500 font-light">{errors.location.message as string}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Baujahr *</Label>
+            <Field icon={Calendar} label="Baujahr" required error={errors.year?.message as string | undefined}>
               <Select
                 value={String(watch("year") ?? "")}
                 onValueChange={(value) => setValue("year", parseInt(value, 10), { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectTrigger className={selectTriggerCls}>
                   <SelectValue placeholder="Jahr auswählen" />
                 </SelectTrigger>
                 <SelectContent>
@@ -223,13 +252,9 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.year && <p className="text-sm text-red-500 font-light">{errors.year.message as string}</p>}
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <Label htmlFor="km" className="text-sm font-medium text-neutral-700">
-                Kilometerstand *
-              </Label>
+            <Field icon={Gauge} label="Kilometerstand" required error={errors.km?.message as string | undefined}>
               <div className="relative">
                 <Input
                   id="km"
@@ -237,7 +262,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   type="text"
                   placeholder="z.B. 35'000"
                   disabled={disableAllFields}
-                  className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
+                  className={`${selectTriggerCls} pr-12`}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^0-9]/g, "");
                     setValue("km", value ? parseInt(value, 10) : 0, { shouldValidate: true, shouldDirty: true });
@@ -258,17 +283,18 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">km</span>
               </div>
-              {errors.km && <p className="text-sm text-red-500 font-light">{errors.km.message as string}</p>}
-            </div>
+            </Field>
+          </Section>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Treibstoff *</Label>
+          {/* ── Motor & Technik ──────────────────────────────────────── */}
+          <Section icon={Cog} title="Motor & Technik">
+            <Field icon={Fuel} label="Treibstoff" required error={errors.fuel?.message as string | undefined}>
               <Select
                 value={watch("fuel")}
                 onValueChange={(value) => setValue("fuel", value, { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectTrigger className={selectTriggerCls}>
                   <SelectValue placeholder="Treibstoff auswählen" />
                 </SelectTrigger>
                 <SelectContent>
@@ -279,17 +305,15 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.fuel && <p className="text-sm text-red-500 font-light">{errors.fuel.message as string}</p>}
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Getriebe *</Label>
+            <Field icon={Cog} label="Getriebe" required error={errors.gearbox?.message as string | undefined}>
               <Select
                 value={watch("gearbox")}
                 onValueChange={(value) => setValue("gearbox", value, { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectTrigger className={selectTriggerCls}>
                   <SelectValue placeholder="Getriebe auswählen" />
                 </SelectTrigger>
                 <SelectContent>
@@ -300,17 +324,15 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.gearbox && <p className="text-sm text-red-500 font-light">{errors.gearbox.message as string}</p>}
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Karosserie *</Label>
+            <Field icon={Car} label="Karosserie" required error={errors.body?.message as string | undefined}>
               <Select
                 value={watch("body")}
                 onValueChange={(value) => setValue("body", value, { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectTrigger className={selectTriggerCls}>
                   <SelectValue placeholder="Karosserie auswählen" />
                 </SelectTrigger>
                 <SelectContent>
@@ -321,34 +343,30 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.body && <p className="text-sm text-red-500 font-light">{errors.body.message as string}</p>}
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Leistung (PS) *</Label>
+            <Field icon={Zap} label="Leistung (PS)" required error={errors.power_hp?.message as string | undefined}>
               <Input
                 type="number"
                 inputMode="numeric"
                 placeholder="z.B. 306"
                 disabled={disableAllFields}
-                className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm"
+                className={selectTriggerCls}
                 value={watch("power_hp") == null ? "" : String(watch("power_hp"))}
                 onChange={(e) => {
                   const num = e.target.value === "" ? undefined : Number(e.target.value);
                   setValue("power_hp", Number.isFinite(num as number) ? (num as number) : undefined, { shouldValidate: true, shouldDirty: true });
                 }}
               />
-              {errors.power_hp && <p className="text-sm text-red-500 font-light">{errors.power_hp.message as string}</p>}
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-neutral-700">Antrieb (Drivetrain) *</Label>
+            <Field icon={Route} label="Antrieb" required error={errors.drivetrain?.message as string | undefined}>
               <Select
                 value={watch("drivetrain") ?? ""}
                 onValueChange={(value) => setValue("drivetrain", value, { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
-                <SelectTrigger className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm">
+                <SelectTrigger className={selectTriggerCls}>
                   <SelectValue placeholder="Antrieb auswählen" />
                 </SelectTrigger>
                 <SelectContent>
@@ -359,18 +377,53 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.drivetrain && <p className="text-sm text-red-500 font-light">{errors.drivetrain.message as string}</p>}
-            </div>
+            </Field>
 
-            <div className="space-y-2">
+            <Field icon={CalendarClock} label="Erstzulassung" error={errors.first_registration?.message as string | undefined}>
               <VehicleFirstRegistrationField
                 value={watch("first_registration")}
                 disabled={disableAllFields}
-                error={errors.first_registration?.message as string | undefined}
+                error={undefined}
                 onChange={(value) => setValue("first_registration", value, { shouldValidate: true, shouldDirty: true })}
+                hideLabel
               />
-            </div>
-          </div>
+            </Field>
+          </Section>
+
+          {/* ── Standort ─────────────────────────────────────────────── */}
+          <Section icon={MapPin} title="Standort">
+            <Field
+              icon={MapPin}
+              label="Standort"
+              required={locationRequired}
+              hint="Ort eingeben und aus der Liste wählen – der Kanton wird automatisch erkannt."
+              error={
+                (errors.location?.message as string | undefined) ??
+                (errors.canton_code?.message as string | undefined)
+              }
+              className="md:col-span-2"
+            >
+              <LocationAutocomplete
+                name={register("location").name}
+                inputRef={register("location").ref}
+                value={String(watch("location") ?? "")}
+                placeholder="z.B. Schlieren"
+                disabled={disableAllFields}
+                inputClassName={`${selectTriggerCls} placeholder:text-neutral-400`}
+                onValueChange={(next) => setValue("location", next, { shouldValidate: true, shouldDirty: true })}
+                onSelect={handleLocationSelect}
+                onBlur={() => {
+                  void trigger("location");
+                }}
+              />
+              {cantonLabel ? (
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                  <Check className="h-3.5 w-3.5" aria-hidden />
+                  Kanton erkannt: {cantonLabel} ({cantonCode})
+                </div>
+              ) : null}
+            </Field>
+          </Section>
 
           <VehicleDescriptionField
             registration={register("description")}
