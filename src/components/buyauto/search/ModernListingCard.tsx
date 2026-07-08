@@ -56,6 +56,19 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
       ? (leaseTakeoverOffer.price_per_month_chf as number)
       : null;
 
+  // "Ab CHF …" must be the cheapest rate the calculator on the detail page can
+  // actually reproduce: the offer's LONGEST term (monthly amortization falls
+  // with term) and its smallest km package — not a hardcoded 60/10'000.
+  const teaserTermMonths = (() => {
+    const min = Math.max(1, Math.floor(Number(leasingOffer?.min_term_months)) || 1);
+    const max = Math.max(min, Math.floor(Number(leasingOffer?.max_term_months)) || 60);
+    return Math.min(max, 120);
+  })();
+  const teaserKmPerYear =
+    Array.isArray(leasingOffer?.km_options) && leasingOffer.km_options.length > 0
+      ? Math.min(...leasingOffer.km_options.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0))
+      : 10000;
+
   const teaserMonthlyChf =
     dealType === "direct_purchase" &&
     leasingOffer?.enabled === true &&
@@ -66,8 +79,8 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           mileageKm: listing.mileageKm,
           interestRatePct: Number(leasingOffer.interest_rate_pct),
           residualPctAdjustmentPp: leasingOffer.residual_pct_adjustment_pp ?? 0,
-          termMonths: 60,
-          kmPerYear: 10000,
+          termMonths: teaserTermMonths,
+          kmPerYear: Number.isFinite(teaserKmPerYear) ? teaserKmPerYear : 10000,
           downPaymentPct: 5,
         })
       : null;
