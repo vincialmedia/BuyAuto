@@ -43,7 +43,14 @@ export default function GuestAuthGate() {
         toast({ title: "Willkommen zurück!", description: "Dein Inserat wird jetzt veröffentlicht." });
         // AuthContext updates `user`; the parent re-renders past this gate.
       } else {
-        const res = await authService.signUp({ email: mail, password, accountType: "private" });
+        // Send the confirmation link back into the wizard: the draft (and, with
+        // the IndexedDB photo store, the photos) are waiting there.
+        const res = await authService.signUp({
+          email: mail,
+          password,
+          accountType: "private",
+          emailRedirectTo: `${window.location.origin}/inserat-erstellen`,
+        });
         if (res.session) {
           toast({ title: "Konto erstellt!", description: "Dein Inserat wird jetzt veröffentlicht." });
         } else {

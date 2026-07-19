@@ -21,6 +21,7 @@ import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import type { Tables } from "@/integrations/supabase/types";
 import { deleteListingDraft, deleteListingDraftsForListingId } from "@/services/listingDraftService";
 import { uploadListingImages } from "@/services/storageService";
+import { clearGuestImages } from "@/lib/buyauto/guestImageStore";
 import type { ListingUpdatePayload } from "@/services/createListingService";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
@@ -480,6 +481,7 @@ export default function Step5_PreviewAndPay() {
 
     guestImageFiles.forEach((p) => URL.revokeObjectURL(p.url));
     setGuestImageFiles([]);
+    void clearGuestImages();
     updateData({ images: nextImages } as any);
 
     return nextImages;
