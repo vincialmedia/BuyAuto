@@ -10,7 +10,14 @@ import Step2_LeasingDetails from "./Step2_LeasingDetails";
 import type { DealType, ListingData } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
-import { createListingDraft, getListingDraftById, updateListingDraft } from "@/services/listingDraftService";
+import { createListingDraft, getListingDraftById, getMyListingDrafts, updateListingDraft } from "@/services/listingDraftService";
+import {
+  clearGuestImages,
+  loadGuestImages,
+  removeGuestImage,
+  saveGuestImages,
+  type GuestImagePair,
+} from "@/lib/buyauto/guestImageStore";
 import { Check, Loader2, Save } from "lucide-react";
 
 const StepLoading = () => (
@@ -122,8 +129,9 @@ const hasAnyUserInput = (data: ListingData) => {
       (typeof anyData?.purchase_price_chf === "number" && anyData.purchase_price_chf > 0) ||
       (data.price_plan && data.price_plan !== "standard") ||
       data.premium === true ||
+      // donation_amount_chf is deliberately NOT checked: it defaults to 5, so a
+      // pristine wizard would count as "has input" and autosave junk drafts.
       (anyData?.donation_enabled === true) ||
-      (typeof anyData?.donation_amount_chf === "number" && anyData.donation_amount_chf > 0) ||
       (Array.isArray(data.images) && data.images.length > 0) ||
       (anyData?.leasing_offer?.enabled === true) ||
       (anyData?.leasing_offer?.lease_takeover_offer?.enabled === true)
@@ -199,6 +207,60 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
   };
 };
 
+// blob: preview URLs stored in a draft die with the tab that minted them. Try
+// to rebuild each one from the IndexedDB-persisted guest photos (fresh object
+// URL per file, matched in insertion order); anything unrecoverable is dropped
+// so the wizard never claims photos it cannot publish.
+const rehydrateGuestImagesInData = async (
+  draftData: Partial<ListingData>,
+  livePairs: GuestImagePair[]
+): Promise<{ data: Partial<ListingData>; pairs: GuestImagePair[] }> => {
+  const images = Array.isArray(draftData.images) ? (draftData.images as string[]) : [];
+  const blobUrls = images.filter((u) => typeof u === "string" && u.startsWith("blob:"));
+  if (blobUrls.length === 0) return { data: draftData, pairs: livePairs };
+
+  const liveByUrl = new Map(livePairs.map((p) => [p.url, p]));
+  const stored = await loadGuestImages();
+  let storedIdx = 0;
+
+  const nextPairs: GuestImagePair[] = [...livePairs];
+  const urlReplacements = new Map<string, string | null>();
+
+  for (const blobUrl of blobUrls) {
+    if (liveByUrl.has(blobUrl)) {
+      urlReplacements.set(blobUrl, blobUrl);
+      continue;
+    }
+    const record = stored[storedIdx];
+    storedIdx += 1;
+    if (record) {
+      const freshUrl = URL.createObjectURL(record.file);
+      nextPairs.push({ url: freshUrl, file: record.file });
+      urlReplacements.set(blobUrl, freshUrl);
+      // Re-key the stored record to the live preview URL so a later removal
+      // at Step 4 (which deletes by preview URL) finds it.
+      void saveGuestImages([{ url: freshUrl, file: record.file }]);
+      void removeGuestImage(record.previewUrl);
+    } else {
+      urlReplacements.set(blobUrl, null);
+    }
+  }
+
+  const nextImages = images
+    .map((u) => (u.startsWith("blob:") ? urlReplacements.get(u) ?? null : u))
+    .filter((u): u is string => typeof u === "string");
+
+  const coverIndex =
+    typeof draftData.cover_image_index === "number" && draftData.cover_image_index < nextImages.length
+      ? draftData.cover_image_index
+      : 0;
+
+  return {
+    data: { ...draftData, images: nextImages, cover_image_index: coverIndex },
+    pairs: nextPairs,
+  };
+};
+
 export default function ListingWizard() {
   const router = useRouter();
   const { toast } = useToast();
@@ -218,6 +280,11 @@ export default function ListingWizard() {
   const draftSnapshotterRef = useRef<() => Partial<ListingData> | Promise<Partial<ListingData>>>(() => ({}));
   const autosaveInFlightRef = useRef(false);
   const lastAutosavedRef = useRef<string>("");
+  const guestImageFilesRef = useRef(guestImageFiles);
+
+  useEffect(() => {
+    guestImageFilesRef.current = guestImageFiles;
+  }, [guestImageFiles]);
 
   const registerDraftSnapshotter = useCallback(
     (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => {
@@ -327,7 +394,12 @@ export default function ListingWizard() {
                 const parsed = JSON.parse(raw) as { data?: Partial<ListingData> };
                 const restored = parsed?.data;
                 if (restored && hasAnyUserInput({ ...createEmptyListingData(), ...restored } as ListingData)) {
-                  setData((prev) => ({ ...prev, ...restored, id: undefined }));
+                  const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
+                    { ...restored, id: undefined },
+                    guestImageFilesRef.current
+                  );
+                  setGuestImageFiles(pairs);
+                  setData((prev) => ({ ...prev, ...hydrated, id: undefined }));
                 }
               }
             } catch {
@@ -347,7 +419,12 @@ export default function ListingWizard() {
               const { id: _id, status: _status, ...rest } = draftDataRaw ?? {};
               setData((prev) => ({ ...prev, ...(rest as any), id: undefined }));
             } else {
-              setData((prev) => ({ ...prev, ...(draftDataRaw as any) }));
+              const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
+                draftDataRaw as Partial<ListingData>,
+                guestImageFilesRef.current
+              );
+              setGuestImageFiles(pairs);
+              setData((prev) => ({ ...prev, ...(hydrated as any) }));
 
               const draftListingId = draftDataRaw?.id;
               if (typeof draftListingId === "string" && draftListingId.length > 0) {
@@ -376,9 +453,85 @@ export default function ListingWizard() {
           return;
         }
 
-        // Clean create (no draft, no edit): every new listing is a Direktkauf —
-        // a Leasingübernahme is offered as an option inside Step 2, so the old
-        // ?deal_type= deep-link no longer seeds a pure lease_takeover.
+        // Signed-in visit without an explicit draft/edit target: don't start
+        // from scratch while recoverable work exists. This is the path a seller
+        // lands on after the signup email round trip — before this check, their
+        // guest draft was silently ignored and the wizard came up empty.
+        if (!isGarage && typeof window !== "undefined") {
+          // 1) A guest draft in localStorage is unmigrated pre-sign-in work
+          //    (it is removed once a server draft owns the state). Adopt it.
+          let guestDraft: Partial<ListingData> | null = null;
+          try {
+            const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
+            const parsed = raw ? (JSON.parse(raw) as { data?: Partial<ListingData> }) : null;
+            guestDraft = parsed?.data ?? null;
+          } catch {
+            guestDraft = null;
+          }
+
+          if (guestDraft && hasAnyUserInput({ ...createEmptyListingData(), ...guestDraft } as ListingData)) {
+            const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
+              { ...guestDraft, id: undefined },
+              guestImageFilesRef.current
+            );
+            setGuestImageFiles(pairs);
+            setData((prev) => ({ ...prev, ...hydrated, id: undefined }));
+            try {
+              const created = await createListingDraft({ user, data: hydrated });
+              setDraftId(created.id);
+              window.localStorage.removeItem(GUEST_DRAFT_KEY);
+              await router.replace(
+                { pathname: router.pathname, query: { ...router.query, draft: created.id } },
+                undefined,
+                { shallow: true }
+              );
+            } catch (e) {
+              console.warn("Could not migrate guest draft to a server draft:", e);
+            }
+            toast({
+              title: "Entwurf wiederhergestellt",
+              description: "Dein begonnenes Inserat wurde übernommen.",
+            });
+            setIsLoadingFromQuery(false);
+            return;
+          }
+
+          // 2) Otherwise resume the newest server draft that contains real work
+          //    (empty autosave shells are skipped).
+          try {
+            const drafts = await getMyListingDrafts({ user });
+            const resumable = drafts.find((d) =>
+              hasAnyUserInput({ ...createEmptyListingData(), ...(d.data as any) } as ListingData)
+            );
+            if (resumable) {
+              setDraftId(resumable.id);
+              const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
+                resumable.data,
+                guestImageFilesRef.current
+              );
+              setGuestImageFiles(pairs);
+              setData((prev) => ({ ...prev, ...(hydrated as any) }));
+              await router.replace(
+                { pathname: router.pathname, query: { ...router.query, draft: resumable.id } },
+                undefined,
+                { shallow: true }
+              );
+              toast({
+                title: "Entwurf wiederhergestellt",
+                description: "Du kannst dein begonnenes Inserat fortsetzen.",
+              });
+              setIsLoadingFromQuery(false);
+              return;
+            }
+          } catch (e) {
+            console.warn("Could not check for resumable drafts:", e);
+          }
+        }
+
+        // Clean create (no draft, no edit, nothing to resume): every new
+        // listing is a Direktkauf — a Leasingübernahme is offered as an option
+        // inside Step 2, so the old ?deal_type= deep-link no longer seeds a
+        // pure lease_takeover.
         setIsLoadingFromQuery(false);
       } catch (e) {
         setIsLoadingFromQuery(false);
@@ -548,6 +701,14 @@ export default function ListingWizard() {
       }
       lastAutosavedRef.current = snapshot;
       setAutosaveState("saved");
+      // The server draft now owns the state; drop the pre-sign-in mirror so a
+      // later fresh visit resumes the server draft instead of re-migrating a
+      // stale local copy into a duplicate.
+      try {
+        window.localStorage.removeItem(GUEST_DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
     } catch (e) {
       console.warn("Autosave failed:", e);
       setAutosaveState("error");
@@ -571,6 +732,7 @@ export default function ListingWizard() {
       } catch {
         /* ignore */
       }
+      void clearGuestImages();
     }
   }, [isComplete]);
 

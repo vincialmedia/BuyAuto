@@ -15,6 +15,9 @@ interface SignUpData {
   garageName?: string;
   city?: string;
   contactEmail?: string;
+  /** Where the confirmation-email link should land (must be in the Supabase
+   *  auth redirect allow-list; falls back to the Site URL otherwise). */
+  emailRedirectTo?: string;
 }
 
 const authService = {
@@ -61,15 +64,16 @@ const authService = {
     return data;
   },
 
-  async signUp({ email, password, firstName, lastName, newsletterConsent, accountType, garageName, city, contactEmail }: SignUpData) {
+  async signUp({ email, password, firstName, lastName, newsletterConsent, accountType, garageName, city, contactEmail, emailRedirectTo }: SignUpData) {
     console.log("Starting sign up process");
-    
+
     const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        ...(emailRedirectTo ? { emailRedirectTo } : {}),
         data: {
           first_name: firstName,
           last_name: lastName,

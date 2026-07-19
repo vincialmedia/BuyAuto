@@ -541,8 +541,11 @@ export function Step1Form() {
 
     setIsSubmitting(true);
     try {
-      const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
-      const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
+      // Catalog lookups come up empty while the makes/models fetch is loading
+      // or after it failed — fall back to the names already in wizard state
+      // instead of committing "" and wiping brand/model from the draft.
+      const makeName = makes.find((m) => m.id === values.make_id)?.name || ((data as any)?.brand ?? "");
+      const modelName = models.find((m) => m.id === values.model_id)?.name || ((data as any)?.model ?? "");
 
       // The model picker deliberately holds the catalog FAMILY ("5 Series") so
       // search facets group correctly — but the decoded trim ("530i xDrive")
@@ -561,7 +564,8 @@ export function Step1Form() {
             : variantTextRaw
           : "";
 
-      const generatedTitle = [makeName, modelName, variantForTitle].filter(Boolean).join(" ").trim();
+      const generatedTitle =
+        [makeName, modelName, variantForTitle].filter(Boolean).join(" ").trim() || ((data as any)?.title ?? "");
       const isNewListing = !(data as any).id;
 
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");

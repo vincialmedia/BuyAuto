@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
 import { uploadOptimizedImage } from "@/services/storageService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
+import { removeGuestImage, saveGuestImages } from "@/lib/buyauto/guestImageStore";
 
 interface ImageItem {
   id: string;
@@ -49,9 +50,12 @@ export function Step4_Images() {
 
     if (!user) {
       // Deferred login: hold the files in memory with blob previews — they are
-      // uploaded after sign-in, right before publishing (Step 5).
+      // uploaded after sign-in, right before publishing (Step 5). Also persist
+      // them to IndexedDB so they survive reloads and the signup email
+      // round trip (blob: URLs alone do not).
       const pairs = acceptedFiles.map((file) => ({ file, url: URL.createObjectURL(file) }));
       setGuestImageFiles([...guestImageFiles, ...pairs]);
+      void saveGuestImages(pairs);
 
       const newImageItems = pairs.map((p, index) => ({ id: `guest-${Date.now()}-${index}`, url: p.url }));
       const updatedItems = [...imageItems, ...newImageItems];
@@ -111,6 +115,7 @@ export function Step4_Images() {
     if (removed?.url.startsWith("blob:")) {
       setGuestImageFiles(guestImageFiles.filter((p) => p.url !== removed.url));
       URL.revokeObjectURL(removed.url);
+      void removeGuestImage(removed.url);
     }
 
     const updatedItems = imageItems.filter((_, index) => index !== indexToRemove);
