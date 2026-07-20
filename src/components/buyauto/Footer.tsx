@@ -31,7 +31,8 @@ const footerSections = [
     links: [
       { label: "Inserat erstellen", href: "/inserat-erstellen" },
       { label: "Preise", href: "/preise" },
-      { label: "Für Garagen", href: "/garage-plan" }
+      { label: "Für Garagen", href: "/garage-plan" },
+      { label: "Eintauschwert-Rechner", href: "/eintauschwert-rechner" }
     ]
   },
   {
