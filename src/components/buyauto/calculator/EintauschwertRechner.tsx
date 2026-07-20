@@ -11,6 +11,9 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  Search,
+  Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +38,21 @@ interface CompRow {
   km: number;    // Kilometerstand des Vergleichsfahrzeugs
 }
 
+interface FoundListing {
+  price: number;
+  km: number;
+  title: string;
+  url: string;
+  source: string;
+}
+
 type MarginMode = 'percent' | 'fixed';
+type CompsMode = 'auto' | 'manual';
 
 interface CalculatorState {
-  vehicleLabel: string;
+  make: string;
+  model: string;
+  year: number;
   vehicleKm: number;
   comps: CompRow[];
   kmRate: number;        // CHF pro km Laufleistungs-Differenz
@@ -67,9 +81,13 @@ interface CalcResult {
   compCount: number;
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 const DEFAULT_STATE: CalculatorState = {
-  vehicleLabel: "",
-  vehicleKm: 80000,
+  make: "",
+  model: "",
+  year: 0,
+  vehicleKm: 0,
   comps: [
     { price: 0, km: 0 },
     { price: 0, km: 0 },
@@ -85,7 +103,9 @@ const DEFAULT_STATE: CalculatorState = {
 };
 
 const PRESET_GOLF: CalculatorState = {
-  vehicleLabel: "VW Golf 1.5 TSI (2020)",
+  make: "VW",
+  model: "Golf 1.5 TSI",
+  year: 2020,
   vehicleKm: 78000,
   comps: [
     { price: 18900, km: 65000 },
@@ -173,6 +193,7 @@ const MoneyInput = ({
   highlight = false,
   unit = "CHF",
   step,
+  placeholder = "0",
 }: {
   label: string;
   value: number;
@@ -181,6 +202,7 @@ const MoneyInput = ({
   highlight?: boolean;
   unit?: string;
   step?: string;
+  placeholder?: string;
 }) => (
   <div className="space-y-1.5">
     <div className="flex items-center gap-2">
@@ -207,7 +229,7 @@ const MoneyInput = ({
         step={step}
         value={value === 0 ? "" : value}
         onChange={(e) => onChange(Number(e.target.value))}
-        placeholder="0"
+        placeholder={placeholder}
         className={`pr-12 ${highlight ? "border-neutral-400 bg-white shadow-sm font-semibold" : "bg-neutral-50/50"}`}
       />
       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">
@@ -226,8 +248,8 @@ const CalculatorSkeleton = () => (
     <div className="h-24 sm:h-16 bg-neutral-50 rounded-xl border border-neutral-200" />
     {/* Vehicle + comps card / deductions card */}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="h-[520px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
-      <div className="h-[520px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
+      <div className="h-[560px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
+      <div className="h-[560px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
     </div>
     {/* Calculate button */}
     <div className="h-16 max-w-md mx-auto bg-neutral-100 rounded-xl" />
@@ -246,12 +268,31 @@ export function EintauschwertRechner() {
   const [gated, setGated] = useState(false);
   const [freeLookupUsed, setFreeLookupUsed] = useState(false);
   const [showFormulas, setShowFormulas] = useState(false);
+  const [compsMode, setCompsMode] = useState<CompsMode>('auto');
+  const [searching, setSearching] = useState(false);
+  const [foundListings, setFoundListings] = useState<FoundListing[]>([]);
+  const [makeOptions, setMakeOptions] = useState<string[]>([]);
 
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined') {
       setFreeLookupUsed(window.localStorage.getItem(FREE_LOOKUP_KEY) === "1");
     }
+  }, []);
+
+  // Brand autocomplete from the existing vehicles API — purely best-effort.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/vehicles/makes")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((makes: Array<{ name?: string }>) => {
+        if (cancelled || !Array.isArray(makes)) return;
+        setMakeOptions(makes.map((m) => m?.name ?? "").filter(Boolean));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // A login lifts the gate: recompute nothing, just unlock the button again.
@@ -288,16 +329,81 @@ export function EintauschwertRechner() {
 
   const handlePreset = () => {
     setState(PRESET_GOLF);
-    toast.success("Beispielwerte geladen");
+    setCompsMode('manual');
+    setFoundListings([]);
+    toast.success("Beispielwerte geladen", {
+      description: "Manuelle Vergleichswerte für einen VW Golf (2020).",
+    });
   };
 
   const handleReset = () => {
     setState(DEFAULT_STATE);
     setResult(null);
     setGated(false);
+    setFoundListings([]);
   };
 
-  const handleCalculate = () => {
+  const vehicleLabel = [state.make, state.model, state.year > 0 ? `(${state.year})` : ""]
+    .filter(Boolean)
+    .join(" ");
+
+  const validateVehicle = (): boolean => {
+    if (!state.make.trim() || !state.model.trim()) {
+      toast.error("Marke und Modell fehlen", {
+        description: "Marke und Modell sind Pflichtfelder.",
+      });
+      return false;
+    }
+    if (state.year < 1980 || state.year > CURRENT_YEAR + 1) {
+      toast.error("Jahrgang fehlt", {
+        description: `Gib einen Jahrgang zwischen 1980 und ${CURRENT_YEAR + 1} ein.`,
+      });
+      return false;
+    }
+    if (state.vehicleKm <= 0) {
+      toast.error("Kilometerstand fehlt", {
+        description: "Trag den Kilometerstand des Eintausch-Fahrzeugs ein.",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // Returns false when the anonymous freebie is spent (gate shown instead).
+  const passesGate = (): boolean => {
+    if (user) return true;
+    if (freeLookupUsed) {
+      setGated(true);
+      setResult(null);
+      return false;
+    }
+    return true;
+  };
+
+  const consumeFreeLookup = () => {
+    if (!user) {
+      window.localStorage.setItem(FREE_LOOKUP_KEY, "1");
+      setFreeLookupUsed(true);
+    }
+  };
+
+  const finishWithComputation = (nextState: CalculatorState) => {
+    const computed = compute(nextState);
+    if (!computed) {
+      toast.error("Keine Vergleichspreise vorhanden", {
+        description: "Trag mindestens ein Vergleichsfahrzeug mit Preis ein.",
+      });
+      return;
+    }
+    setResult(computed);
+    setGated(false);
+    consumeFreeLookup();
+  };
+
+  const handleManualCalculate = () => {
+    if (!validateVehicle()) return;
+    if (!passesGate()) return;
+
     const validComps = state.comps.filter((c) => c.price > 0);
     if (validComps.length === 0) {
       toast.error("Mindestens 1 Vergleichsfahrzeug nötig", {
@@ -305,32 +411,82 @@ export function EintauschwertRechner() {
       });
       return;
     }
-    if (state.vehicleKm <= 0) {
-      toast.error("Kilometerstand fehlt", {
-        description: "Trag den Kilometerstand des Eintausch-Fahrzeugs ein.",
-      });
-      return;
-    }
-
-    // Gate: one anonymous calculation, unlimited (still free) with an account.
-    if (!user) {
-      if (freeLookupUsed) {
-        setGated(true);
-        setResult(null);
-        return;
-      }
-      window.localStorage.setItem(FREE_LOOKUP_KEY, "1");
-      setFreeLookupUsed(true);
-    }
-
-    const computed = compute(state);
-    setResult(computed);
-    setGated(false);
-
     if (validComps.length < 3) {
       toast.info("Tipp: 3–5 Vergleichsfahrzeuge", {
         description: "Je mehr Vergleichsinserate, desto belastbarer der Marktwert.",
       });
+    }
+    finishWithComputation(state);
+  };
+
+  const handleSearchAndCalculate = async () => {
+    if (!validateVehicle()) return;
+    if (!passesGate()) return;
+
+    setSearching(true);
+    setFoundListings([]);
+    try {
+      const res = await fetch("/api/valuation/comps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          make: state.make.trim(),
+          model: state.model.trim(),
+          year: state.year,
+          km: state.vehicleKm,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 503) {
+          toast.error("Automatische Suche momentan nicht verfügbar", {
+            description: "Erfasse die Vergleichsfahrzeuge manuell – der Rechner funktioniert weiterhin.",
+          });
+          setCompsMode('manual');
+        } else if (res.status === 429) {
+          toast.error("Zu viele Anfragen", {
+            description: body?.message ?? "Bitte versuch es in einer Stunde nochmals.",
+          });
+        } else {
+          toast.error("Suche fehlgeschlagen", {
+            description: body?.message ?? "Bitte prüf deine Eingaben und versuch es nochmals.",
+          });
+        }
+        return;
+      }
+
+      const data: { comps: FoundListing[]; warning?: string } = await res.json();
+      const comps = Array.isArray(data.comps) ? data.comps : [];
+
+      if (comps.length === 0) {
+        toast.warning("Keine Vergleichsinserate gefunden", {
+          description: "Erfasse 3–5 Vergleichsfahrzeuge manuell – z.B. von AutoScout24 oder tutti.",
+        });
+        setCompsMode('manual');
+        return;
+      }
+
+      setFoundListings(comps);
+      const nextState: CalculatorState = {
+        ...state,
+        comps: comps.map((c) => ({ price: c.price, km: c.km })),
+      };
+      setState(nextState);
+
+      if (data.warning) {
+        toast.warning("Wenige Treffer", { description: data.warning });
+      } else {
+        toast.success(`${comps.length} Vergleichsinserate gefunden`);
+      }
+
+      finishWithComputation(nextState);
+    } catch {
+      toast.error("Suche fehlgeschlagen", {
+        description: "Netzwerkfehler – erfasse die Vergleichsfahrzeuge manuell.",
+      });
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -377,31 +533,60 @@ export function EintauschwertRechner() {
           <CardContent className="p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-neutral-600">Fahrzeug (optional)</Label>
+                <Label className="text-sm font-bold text-neutral-900">Marke *</Label>
                 <Input
                   type="text"
-                  value={state.vehicleLabel}
-                  onChange={(e) => updateState('vehicleLabel', e.target.value)}
-                  placeholder="z.B. VW Golf 1.5 TSI (2020)"
-                  className="bg-neutral-50/50"
+                  list="eintausch-makes"
+                  value={state.make}
+                  onChange={(e) => updateState('make', e.target.value)}
+                  placeholder="z.B. VW"
+                  className="border-neutral-400 bg-white shadow-sm font-semibold"
+                />
+                <datalist id="eintausch-makes">
+                  {makeOptions.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-bold text-neutral-900">Modell *</Label>
+                <Input
+                  type="text"
+                  value={state.model}
+                  onChange={(e) => updateState('model', e.target.value)}
+                  placeholder="z.B. Golf 1.5 TSI"
+                  className="border-neutral-400 bg-white shadow-sm font-semibold"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-bold text-neutral-900">Jahrgang *</Label>
+                <Input
+                  type="number"
+                  min={1980}
+                  max={CURRENT_YEAR + 1}
+                  value={state.year === 0 ? "" : state.year}
+                  onChange={(e) => updateState('year', Number(e.target.value))}
+                  placeholder={`z.B. ${CURRENT_YEAR - 5}`}
+                  className="border-neutral-400 bg-white shadow-sm font-semibold"
                 />
               </div>
               <MoneyInput
-                label="Kilometerstand"
+                label="Kilometerstand *"
                 value={state.vehicleKm}
                 onChange={(v) => updateState('vehicleKm', v)}
                 unit="km"
                 highlight
+                placeholder="z.B. 80'000"
                 tooltip="Kilometerstand des Fahrzeugs, das du in Eintausch nimmst."
               />
             </div>
 
             <Separator />
 
-            <div className="space-y-1">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-bold text-neutral-900">
-                  Vergleichsfahrzeuge am Markt
+                  Vergleichsfahrzeuge
                 </Label>
                 <TooltipProvider>
                   <Tooltip delayDuration={300}>
@@ -410,72 +595,120 @@ export function EintauschwertRechner() {
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
                       <p className="text-xs">
-                        Suche 3–5 vergleichbare Inserate (gleiches Modell, ähnliches Alter und Ausstattung)
-                        und trag Preis und Kilometerstand ein. Der Rechner gleicht die Laufleistung
-                        automatisch an.
+                        Automatisch: der Rechner durchsucht öffentliche Schweizer Occasions-Portale
+                        nach passenden Inseraten. Manuell: trag Preis und Kilometerstand von 3–5
+                        Inseraten selbst ein. Gefundene Werte kannst du immer noch anpassen.
                       </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <p className="text-xs text-neutral-400">
-                Inseratspreise vergleichbarer Occasionen – der Rechner rechnet die km-Differenz an.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {state.comps.map((comp, i) => (
-                <div key={i} className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <MoneyInput
-                      label={i === 0 ? "Inseratspreis" : ""}
-                      value={comp.price}
-                      onChange={(v) => updateComp(i, 'price', v)}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <MoneyInput
-                      label={i === 0 ? "Kilometerstand" : ""}
-                      value={comp.km}
-                      onChange={(v) => updateComp(i, 'km', v)}
-                      unit="km"
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 text-neutral-400 hover:text-red-600"
-                    onClick={() => removeComp(i)}
-                    disabled={state.comps.length <= 1}
-                    title="Zeile entfernen"
+              <Tabs value={compsMode} onValueChange={(v) => setCompsMode(v as CompsMode)}>
+                <TabsList className="h-9 bg-neutral-100 p-1">
+                  <TabsTrigger
+                    value="auto"
+                    className="data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm font-semibold text-xs px-3"
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+                    Automatisch suchen
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="manual"
+                    className="data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm font-semibold text-xs px-3"
+                  >
+                    Manuell erfassen
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
-            <div className="flex items-center justify-between gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addComp}
-                disabled={state.comps.length >= MAX_COMPS}
-                className="border-neutral-300 text-neutral-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Vergleichsfahrzeug
-              </Button>
-              <div className="w-40">
-                <MoneyInput
-                  label="km-Angleich"
-                  value={state.kmRate}
-                  onChange={(v) => updateState('kmRate', v)}
-                  unit="CHF/km"
-                  step="0.01"
-                  tooltip="Wert pro Kilometer Laufleistungs-Differenz. Faustregel: 0.05–0.15 CHF/km je nach Segment (Kleinwagen tiefer, Premium höher)."
-                />
+            {compsMode === 'auto' && foundListings.length === 0 && (
+              <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 text-sm text-neutral-600 leading-relaxed">
+                <Search className="w-4 h-4 inline-block mr-2 text-red-600" />
+                Der Rechner sucht live nach vergleichbaren Inseraten auf Schweizer
+                Occasions-Portalen (AutoScout24, tutti & Co.), gleicht die Kilometer an und
+                übernimmt bis zu 5 Treffer. Die Suche dauert ca. 10–30 Sekunden.
               </div>
+            )}
+
+            {(compsMode === 'manual' || foundListings.length > 0) && (
+              <>
+                <div className="space-y-3">
+                  {state.comps.map((comp, i) => (
+                    <div key={i} className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <MoneyInput
+                          label={i === 0 ? "Inseratspreis" : ""}
+                          value={comp.price}
+                          onChange={(v) => updateComp(i, 'price', v)}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <MoneyInput
+                          label={i === 0 ? "Kilometerstand" : ""}
+                          value={comp.km}
+                          onChange={(v) => updateComp(i, 'km', v)}
+                          unit="km"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-neutral-400 hover:text-red-600"
+                        onClick={() => removeComp(i)}
+                        disabled={state.comps.length <= 1}
+                        title="Zeile entfernen"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addComp}
+                  disabled={state.comps.length >= MAX_COMPS}
+                  className="border-neutral-300 text-neutral-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Vergleichsfahrzeug
+                </Button>
+              </>
+            )}
+
+            {foundListings.length > 0 && (
+              <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 space-y-2">
+                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
+                  Gefundene Inserate
+                </p>
+                {foundListings.map((l, i) => (
+                  <a
+                    key={i}
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="flex items-center justify-between gap-2 text-sm text-neutral-600 hover:text-red-600 transition-colors group"
+                  >
+                    <span className="truncate">{l.title}</span>
+                    <span className="shrink-0 flex items-center gap-2 text-xs text-neutral-400 group-hover:text-red-600">
+                      CHF {chf(l.price)} · {chf(l.km)} km · {l.source}
+                      <ExternalLink className="w-3 h-3" />
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <div className="w-40">
+              <MoneyInput
+                label="km-Angleich"
+                value={state.kmRate}
+                onChange={(v) => updateState('kmRate', v)}
+                unit="CHF/km"
+                step="0.01"
+                tooltip="Wert pro Kilometer Laufleistungs-Differenz. Faustregel: 0.05–0.15 CHF/km je nach Segment (Kleinwagen tiefer, Premium höher)."
+              />
             </div>
           </CardContent>
         </Card>
@@ -587,11 +820,26 @@ export function EintauschwertRechner() {
       <div className="flex flex-col items-center gap-3">
         <Button
           size="lg"
-          onClick={handleCalculate}
+          onClick={compsMode === 'auto' ? handleSearchAndCalculate : handleManualCalculate}
+          disabled={searching}
           className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 px-10 py-6 text-base font-semibold rounded-xl w-full max-w-md"
         >
-          <Calculator className="w-5 h-5 mr-2" />
-          Eintauschwert berechnen
+          {searching ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Suche Vergleichsinserate…
+            </>
+          ) : compsMode === 'auto' ? (
+            <>
+              <Search className="w-5 h-5 mr-2" />
+              Inserate suchen & Eintauschwert berechnen
+            </>
+          ) : (
+            <>
+              <Calculator className="w-5 h-5 mr-2" />
+              Eintauschwert berechnen
+            </>
+          )}
         </Button>
         {!user && (
           <p className="text-xs text-neutral-400 text-center">
@@ -655,7 +903,7 @@ export function EintauschwertRechner() {
 
           <div className="relative z-10">
             <h3 className="text-center text-neutral-400 font-medium uppercase tracking-widest text-sm mb-8">
-              Ergebnis{state.vehicleLabel ? ` – ${state.vehicleLabel}` : ""}
+              Ergebnis{vehicleLabel ? ` – ${vehicleLabel}` : ""}
             </h3>
 
             <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 md:gap-8 mb-10">

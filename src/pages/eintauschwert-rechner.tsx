@@ -84,6 +84,10 @@ const FAQ_ITEMS = [
     a: "3–5 vergleichbare Inserate (gleiches Modell, ähnliches Alter, ähnliche Ausstattung) reichen in der Praxis. Der Rechner nutzt den Median der km-bereinigten Preise – so verzerrt ein einzelnes überteuertes oder verschleudertes Inserat das Ergebnis nicht."
   },
   {
+    q: "Woher kommen die Vergleichspreise bei der automatischen Suche?",
+    a: "Der Rechner durchsucht öffentlich zugängliche Inserate auf Schweizer Occasions-Portalen (z.B. AutoScout24 oder tutti) nach deinem Modell und Jahrgang und übernimmt bis zu 5 Treffer mit Preis und Kilometerstand. Jeder Treffer ist verlinkt und editierbar – du behältst die Kontrolle über die Vergleichsbasis. Findet die Suche nichts Passendes, erfasst du die Inserate einfach manuell."
+  },
+  {
     q: "Ist der Eintauschwert-Rechner gratis?",
     a: "Ja. Eine Berechnung ist ohne Konto möglich. Danach brauchst du ein kostenloses BuyAuto-Konto und rechnest unbegrenzt weiter – der Rechner selbst bleibt gratis."
   },
@@ -222,9 +226,10 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                   Schluss mit Bauchgefühl beim Autoankauf.
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Vergleichsinserate suchen, Kilometer im Kopf umrechnen und dann eine Zahl schätzen?
-                  Unser Rechner macht daraus eine saubere Occasionsbewertung: Marktwert aus echten
-                  Inseratspreisen, minus deine Kosten und Marge – fertig ist der Ankaufspreis.
+                  Marke, Modell, Jahrgang und Kilometerstand eingeben – der Rechner sucht
+                  automatisch vergleichbare Inserate auf Schweizer Occasions-Portalen, gleicht die
+                  Kilometer an und zieht deine Kosten und Marge ab. Fertig ist der Ankaufspreis –
+                  mit Rechenweg fürs Kundengespräch.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -322,8 +327,9 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                 Der Eintauschwert-Rechner
               </h2>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                Trag 3–5 Vergleichsinserate und deine Kosten ein. <br className="hidden md:block" />
-                Der Rechner liefert <strong>Marktwert, Rechenweg und Ankaufspreis</strong> – transparent und nachvollziehbar.
+                Fahrzeug eingeben – die Vergleichsinserate sucht der Rechner automatisch
+                (oder du erfasst sie manuell). <br className="hidden md:block" />
+                Er liefert <strong>Marktwert, Rechenweg und Ankaufspreis</strong> – transparent und nachvollziehbar.
               </p>
             </div>
 
@@ -352,11 +358,11 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 list-none pl-0">
                 <li className="bg-white p-4 rounded-lg border border-neutral-200 flex items-start gap-3">
                   <span className="text-red-600 font-bold text-xl">1.</span>
-                  <span><strong>Vergleichsfahrzeuge erfassen:</strong> 3–5 Inserate mit gleichem Modell, ähnlichem Alter und Ausstattung – Preis und Kilometerstand genügen.</span>
+                  <span><strong>Fahrzeug eingeben:</strong> Marke, Modell, Jahrgang und Kilometerstand. Der Rechner sucht automatisch bis zu 5 passende Inserate auf Schweizer Occasions-Portalen – oder du erfasst 3–5 Vergleichsinserate manuell.</span>
                 </li>
                 <li className="bg-white p-4 rounded-lg border border-neutral-200 flex items-start gap-3">
                   <span className="text-red-600 font-bold text-xl">2.</span>
-                  <span><strong>Kilometer angleichen:</strong> Jeder Vergleichspreis wird um die km-Differenz korrigiert (Standard: 0.10 CHF/km, einstellbar).</span>
+                  <span><strong>Kilometer angleichen:</strong> Jeder Vergleichspreis wird um die km-Differenz korrigiert (Standard: 0.10 CHF/km, einstellbar). Gefundene Werte bleiben editierbar.</span>
                 </li>
                 <li className="bg-white p-4 rounded-lg border border-neutral-200 flex items-start gap-3">
                   <span className="text-red-600 font-bold text-xl">3.</span>
