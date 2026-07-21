@@ -564,7 +564,7 @@ export function EintauschwertRechner() {
         return;
       }
 
-      const data: { comps: FoundListing[]; warning?: string } = await res.json();
+      const data: { comps: FoundListing[]; warning?: string; diagnosis?: string } = await res.json();
       const comps = Array.isArray(data.comps) ? data.comps : [];
 
       // The user switched to manual entry while the search ran — their typed
@@ -578,7 +578,10 @@ export function EintauschwertRechner() {
 
       if (comps.length === 0) {
         toast.warning("Keine Vergleichsinserate gefunden", {
-          description: "Erfasse 3–5 Vergleichsfahrzeuge manuell – z.B. von AutoScout24 oder tutti.",
+          description:
+            data.diagnosis ??
+            "Erfasse 3–5 Vergleichsfahrzeuge manuell – z.B. von AutoScout24 oder tutti.",
+          duration: 10000,
         });
         setCompsMode('manual');
         return;

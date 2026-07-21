@@ -12,12 +12,19 @@ import {
 export const config = { maxDuration: 60 };
 
 const FIRECRAWL_API = "https://api.firecrawl.dev/v2";
-// Per-call timeout and overall budget: worst case is 3 sequential searches, which
-// must stay under the 60s function limit (3 × 18s + overhead ≈ 56s).
+// Per-call timeout and overall budget: worst case is 2 sequential searches plus one
+// parallel scrape round, which must stay under the 60s function limit.
 const FIRECRAWL_TIMEOUT_MS = 18_000;
-const TIER_DEADLINE_MS = 32_000;
+const TIER_DEADLINE_MS = 38_000;
 
 const MAX_COMPS = 5;
+const MAX_SCRAPE_CANDIDATES = 5;
+
+// Vehicle DB names vs. how listings are actually titled on the portals.
+const MAKE_ALIASES: Record<string, string> = {
+  volkswagen: "VW",
+  "mercedes-benz": "Mercedes",
+};
 
 interface CompOut {
   price: number;
@@ -27,11 +34,30 @@ interface CompOut {
   source: string;
 }
 
+interface Candidate {
+  url: string;
+  title: string;
+  source: string;
+}
+
 interface FirecrawlWebResult {
   title?: string;
   url?: string;
   description?: string;
   markdown?: string;
+}
+
+interface SearchOutcome {
+  results: FirecrawlWebResult[];
+  status: number | "network";
+}
+
+interface TierStat {
+  query: string;
+  status: number | "network";
+  results: number;
+  onMarketplace: number;
+  parsed: number;
 }
 
 // Best-effort per-IP limiter. Serverless instances don't share memory, so this
@@ -52,19 +78,15 @@ function rateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
-async function firecrawlSearch(
+async function firecrawlPost(
   apiKey: string,
-  query: string,
-  limit: number,
-  withContent: boolean
-): Promise<FirecrawlWebResult[]> {
+  path: string,
+  payload: Record<string, unknown>
+): Promise<{ status: number | "network"; body: unknown }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FIRECRAWL_TIMEOUT_MS);
   try {
-    const payload: Record<string, unknown> = { query, limit };
-    if (withContent) payload.scrapeOptions = { formats: ["markdown"] };
-
-    const res = await fetch(`${FIRECRAWL_API}/search`, {
+    const res = await fetch(`${FIRECRAWL_API}${path}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -73,60 +95,87 @@ async function firecrawlSearch(
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-
-    if (!res.ok) {
-      console.error(`Firecrawl search failed: HTTP ${res.status}`);
-      return [];
-    }
-
-    const data = await res.json();
-    return (data?.data?.web ?? []) as FirecrawlWebResult[];
+    const body = await res.json().catch(() => null);
+    return { status: res.status, body };
   } catch (err) {
-    console.error("Firecrawl search error:", err);
-    return [];
+    console.error(`Firecrawl ${path} error:`, err);
+    return { status: "network", body: null };
   } finally {
     clearTimeout(timer);
   }
 }
 
+async function firecrawlSearch(
+  apiKey: string,
+  query: string,
+  limit: number
+): Promise<SearchOutcome> {
+  const { status, body } = await firecrawlPost(apiKey, "/search", { query, limit });
+  if (status !== 200) {
+    console.error(`Firecrawl search failed: ${status}`, JSON.stringify(body)?.slice(0, 300));
+    return { results: [], status };
+  }
+  const data = body as { data?: { web?: FirecrawlWebResult[] } };
+  return { results: data?.data?.web ?? [], status };
+}
+
+async function firecrawlScrape(apiKey: string, url: string): Promise<string> {
+  const { status, body } = await firecrawlPost(apiKey, "/scrape", {
+    url,
+    formats: ["markdown"],
+    onlyMainContent: true,
+  });
+  if (status !== 200) return "";
+  const data = body as { data?: { markdown?: string } };
+  return data?.data?.markdown ?? "";
+}
+
+function parseFromTexts(snippet: string, markdown: string | undefined): ReturnType<typeof parseListingText> {
+  // Snippet first (title + description). A snippet carrying 3+ distinct prices
+  // is a list page that slipped through the URL filter — never a single car.
+  let parsed = extractPrices(snippet).length <= 2 ? parseListingText(snippet) : null;
+
+  // Scraped page markdown as fallback. Capped: price and mileage sit in the top
+  // section of a listing page, and further down "similar vehicles" widgets carry
+  // misleading pairs. A top section flooded with prices is again a list page.
+  if (!parsed && markdown) {
+    const top = markdown.slice(0, 4_000);
+    parsed = extractPrices(top).length <= 6 ? parseListingText(top) : null;
+  }
+  return parsed;
+}
+
 function resultsToComps(
   results: FirecrawlWebResult[],
   targetYear: number,
-  seenUrls: Set<string>
-): CompOut[] {
+  seenUrls: Set<string>,
+  candidates: Candidate[]
+): { comps: CompOut[]; onMarketplace: number } {
   const comps: CompOut[] = [];
+  let onMarketplace = 0;
   for (const r of results) {
     if (!r.url) continue;
     // Individual listings only — model-overview/search pages are not comps.
     const source = identifyListingUrl(r.url);
     if (!source) continue;
     if (seenUrls.has(r.url)) continue;
+    onMarketplace += 1;
 
-    // Snippet first (title + description). A snippet carrying 3+ distinct prices
-    // is a list page that slipped through the URL filter — never a single car.
-    const snippet = `${r.title ?? ""} ${r.description ?? ""}`;
-    let parsed = extractPrices(snippet).length <= 2 ? parseListingText(snippet) : null;
-
-    // Scraped page markdown as fallback. Capped: price and mileage sit in the top
-    // section of a listing page, and further down "similar vehicles" widgets carry
-    // misleading pairs. A top section flooded with prices is again a list page.
-    if (!parsed && r.markdown) {
-      const top = r.markdown.slice(0, 4_000);
-      parsed = extractPrices(top).length <= 6 ? parseListingText(top) : null;
+    const title = (r.title ?? "").slice(0, 120) || `${source} Inserat`;
+    const parsed = parseFromTexts(`${r.title ?? ""} ${r.description ?? ""}`, r.markdown);
+    if (!parsed) {
+      // Listing URL without readable price/km in the snippet: remember it, a
+      // targeted page scrape (tier 3) can still extract the numbers.
+      seenUrls.add(r.url);
+      candidates.push({ url: r.url, title, source });
+      continue;
     }
-    if (!parsed) continue;
     if (!yearMatches(parsed, targetYear)) continue;
 
     seenUrls.add(r.url);
-    comps.push({
-      price: parsed.price,
-      km: parsed.km,
-      title: (r.title ?? "").slice(0, 120) || `${source} Inserat`,
-      url: r.url,
-      source,
-    });
+    comps.push({ price: parsed.price, km: parsed.km, title, url: r.url, source });
   }
-  return comps;
+  return { comps, onMarketplace };
 }
 
 /**
@@ -160,6 +209,21 @@ function pickBySimilarKm(
     }
   }
   return { picked, relaxed };
+}
+
+function buildDiagnosis(stats: TierStat[], candidatesTried: number): string {
+  const totalResults = stats.reduce((s, t) => s + t.results, 0);
+  const totalMarketplace = stats.reduce((s, t) => s + t.onMarketplace, 0);
+  if (stats.every((t) => t.status === "network")) {
+    return "Die Suchanfragen sind fehlgeschlagen (Netzwerk) – bitte später nochmals versuchen.";
+  }
+  if (totalResults === 0) {
+    return "Die Web-Suche lieferte keine Treffer für dieses Modell – prüf Schreibweise/Jahrgang oder erfasse manuell.";
+  }
+  if (totalMarketplace === 0) {
+    return `Die Suche fand ${totalResults} Web-Treffer, aber keine einzelnen Inserate auf Occasions-Portalen.`;
+  }
+  return `Die Suche fand ${totalMarketplace} Inserat(e)${candidatesTried > 0 ? `, auch nach Seitenabruf` : ""} ohne lesbaren Preis + Kilometerstand.`;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -217,33 +281,86 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  const vehicle = `${makeStr} ${modelStr}`;
-  const queried: string[] = [];
+  // Query with the name listings actually use ("VW", not "Volkswagen").
+  const queryMake = MAKE_ALIASES[makeStr.toLowerCase()] ?? makeStr;
+  const vehicle = `${queryMake} ${modelStr}`;
+  const stats: TierStat[] = [];
   const seenUrls = new Set<string>();
+  const candidates: Candidate[] = [];
   let comps: CompOut[] = [];
   const startedAt = Date.now();
   const withinBudget = () => Date.now() - startedAt < TIER_DEADLINE_MS;
 
-  // Tier 1: cheap snippet-only search, pinned to AutoScout24 DETAIL pages
-  // (/de/d/...) so results are individual cars, not model-overview pages.
-  const q1 = `site:autoscout24.ch/de/d "${vehicle}" ${yearNum}`;
-  queried.push(q1);
-  comps.push(...resultsToComps(await firecrawlSearch(apiKey, q1, 10, false), yearNum, seenUrls));
+  const runSearchTier = async (query: string, limit: number) => {
+    const outcome = await firecrawlSearch(apiKey, query, limit);
+    const { comps: found, onMarketplace } = resultsToComps(
+      outcome.results,
+      yearNum,
+      seenUrls,
+      candidates
+    );
+    comps.push(...found);
+    stats.push({
+      query,
+      status: outcome.status,
+      results: outcome.results.length,
+      onMarketplace,
+      parsed: found.length,
+    });
+    return outcome.status;
+  };
+
+  // Tier 1: snippet-only search, pinned to AutoScout24 DETAIL pages (/de/d/...)
+  // so results are individual cars, not model-overview pages. Unquoted terms —
+  // an exact-phrase match is too brittle for listing titles.
+  const t1Status = await runSearchTier(`site:autoscout24.ch/de/d ${vehicle} ${yearNum}`, 10);
+
+  // A key/quota problem hits every call the same way — fail loudly instead of
+  // reporting a misleading "no listings found".
+  if (t1Status === 401 || t1Status === 403) {
+    return res.status(502).json({
+      error: "firecrawl_auth",
+      message: "Die Inserats-Suche meldet einen ungültigen API-Key (Firecrawl). Bitte FIRECRAWL_API_KEY in Vercel prüfen.",
+    });
+  }
+  if (t1Status === 402) {
+    return res.status(502).json({
+      error: "firecrawl_credits",
+      message: "Das Firecrawl-Guthaben ist aufgebraucht – Suche vorübergehend nicht möglich.",
+    });
+  }
 
   // Tier 2: widen to all Swiss marketplaces, still snippet-only. The URL filter
   // keeps it to individual listings.
   if (comps.length < MAX_COMPS && withinBudget()) {
-    const q2 = `${vehicle} ${yearNum} Occasion Schweiz CHF km`;
-    queried.push(q2);
-    comps.push(...resultsToComps(await firecrawlSearch(apiKey, q2, 10, false), yearNum, seenUrls));
+    await runSearchTier(`${vehicle} ${yearNum} Occasion Schweiz CHF km`, 10);
   }
 
-  // Tier 3 (expensive, only when snippets were too thin): re-run the detail-page
-  // search with page content so price/km can be parsed from the listings themselves.
-  if (comps.length < 3 && withinBudget()) {
-    const q3 = `site:autoscout24.ch/de/d "${vehicle}" ${yearNum}`;
-    queried.push(`${q3} (mit Seiteninhalt)`);
-    comps.push(...resultsToComps(await firecrawlSearch(apiKey, q3, 5, true), yearNum, seenUrls));
+  // Tier 3: we often already FOUND the right listings but their snippets carry no
+  // price/km — scrape those pages directly (parallel) and parse the content.
+  let candidatesTried = 0;
+  if (comps.length < 3 && candidates.length > 0 && withinBudget()) {
+    const toScrape = candidates.slice(0, MAX_SCRAPE_CANDIDATES);
+    candidatesTried = toScrape.length;
+    const scraped = await Promise.allSettled(
+      toScrape.map((c) => firecrawlScrape(apiKey, c.url))
+    );
+    let addedFromScrapes = 0;
+    scraped.forEach((s, i) => {
+      if (s.status !== "fulfilled" || !s.value) return;
+      const parsed = parseFromTexts("", s.value);
+      if (!parsed || !yearMatches(parsed, yearNum)) return;
+      const c = toScrape[i];
+      comps.push({ price: parsed.price, km: parsed.km, title: c.title, url: c.url, source: c.source });
+      addedFromScrapes += 1;
+    });
+    stats.push({
+      query: `(Seitenabruf von ${candidatesTried} Inseraten)`,
+      status: 200,
+      results: candidatesTried,
+      onMarketplace: candidatesTried,
+      parsed: addedFromScrapes,
+    });
   }
 
   // Drop duplicate price/km pairs (same car listed twice), then keep the comps
@@ -257,9 +374,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
   const { picked, relaxed } = pickBySimilarKm(comps, kmNum);
 
+  // Funnel stats land in the Vercel function logs for every request.
+  console.log("valuation/comps funnel:", JSON.stringify({ vehicle, yearNum, kmNum, stats, picked: picked.length }));
+
   return res.status(200).json({
     comps: picked,
-    queried,
+    queried: stats.map((s) => s.query),
+    diagnosis: picked.length === 0 ? buildDiagnosis(stats, candidatesTried) : undefined,
     warning:
       picked.length === 0
         ? "Keine Vergleichsinserate gefunden – erfasse sie manuell."
