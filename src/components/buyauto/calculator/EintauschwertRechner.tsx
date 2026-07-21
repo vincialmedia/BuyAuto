@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Info,
@@ -25,6 +25,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,6 +51,11 @@ interface FoundListing {
   title: string;
   url: string;
   source: string;
+}
+
+interface VehicleOption {
+  id: string;
+  name: string;
 }
 
 type MarginMode = 'percent' | 'fixed';
@@ -271,7 +283,25 @@ export function EintauschwertRechner() {
   const [compsMode, setCompsMode] = useState<CompsMode>('auto');
   const [searching, setSearching] = useState(false);
   const [foundListings, setFoundListings] = useState<FoundListing[]>([]);
-  const [makeOptions, setMakeOptions] = useState<string[]>([]);
+  const [makes, setMakes] = useState<VehicleOption[]>([]);
+  const [models, setModels] = useState<VehicleOption[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [makeId, setMakeId] = useState("");
+  const [modelId, setModelId] = useState("");
+  // Explicit user-facing choice between dropdowns and free text. Deriving this
+  // from "is the field empty" flips the input type mid-keystroke — never do that.
+  const [vehicleFieldMode, setVehicleFieldMode] = useState<'select' | 'text'>('select');
+
+  // Latest committed values for async handlers: the search response must merge
+  // into what the user sees NOW, not into a snapshot from click time.
+  const stateRef = useRef(state);
+  const compsModeRef = useRef(compsMode);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+  useEffect(() => {
+    compsModeRef.current = compsMode;
+  }, [compsMode]);
 
   useEffect(() => {
     setIsClient(true);
@@ -280,20 +310,56 @@ export function EintauschwertRechner() {
     }
   }, []);
 
-  // Brand autocomplete from the existing vehicles API — purely best-effort.
+  // Make/model dropdowns from the existing vehicles API — best-effort; when the
+  // lists are unavailable the fields degrade to free-text inputs below.
   useEffect(() => {
     let cancelled = false;
     fetch("/api/vehicles/makes")
       .then((r) => (r.ok ? r.json() : []))
-      .then((makes: Array<{ name?: string }>) => {
-        if (cancelled || !Array.isArray(makes)) return;
-        setMakeOptions(makes.map((m) => m?.name ?? "").filter(Boolean));
+      .then((rows: Array<{ id?: string; name?: string }>) => {
+        if (cancelled || !Array.isArray(rows)) return;
+        setMakes(
+          rows
+            .filter((m) => m?.id && m?.name)
+            .map((m) => ({ id: String(m.id), name: String(m.name) }))
+        );
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    // Always drop the previous make's models immediately — a stale list must
+    // never be selectable under the newly chosen make.
+    setModels([]);
+    if (!makeId) {
+      setModelsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setModelsLoading(true);
+    fetch(`/api/vehicles/models?make_id=${encodeURIComponent(makeId)}`)
+      .then((r) => (r.ok ? r.json() : { models: [] }))
+      .then((data: { models?: Array<{ id?: string; name?: string }> }) => {
+        if (cancelled) return;
+        setModels(
+          (data?.models ?? [])
+            .filter((m) => m?.id && m?.name)
+            .map((m) => ({ id: String(m.id), name: String(m.name) }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setModels([]);
+      })
+      .finally(() => {
+        if (!cancelled) setModelsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [makeId]);
 
   // A login lifts the gate: recompute nothing, just unlock the button again.
   useEffect(() => {
@@ -331,6 +397,10 @@ export function EintauschwertRechner() {
     setState(PRESET_GOLF);
     setCompsMode('manual');
     setFoundListings([]);
+    // Preset names don't map to dropdown ids — show them as text fields.
+    setMakeId("");
+    setModelId("");
+    setVehicleFieldMode('text');
     toast.success("Beispielwerte geladen", {
       description: "Manuelle Vergleichswerte für einen VW Golf (2020).",
     });
@@ -341,7 +411,45 @@ export function EintauschwertRechner() {
     setResult(null);
     setGated(false);
     setFoundListings([]);
+    setMakeId("");
+    setModelId("");
+    setVehicleFieldMode('select');
   };
+
+  const handleMakeSelect = (id: string) => {
+    const selected = makes.find((m) => m.id === id);
+    // Drop the previous make's models synchronously so the model dropdown can
+    // never offer a stale list while the new fetch is in flight.
+    setModels([]);
+    setModelsLoading(true);
+    setMakeId(id);
+    setModelId("");
+    setState((prev) => ({ ...prev, make: selected?.name ?? "", model: "" }));
+  };
+
+  const handleModelSelect = (id: string) => {
+    const selected = models.find((m) => m.id === id);
+    setModelId(id);
+    setState((prev) => ({ ...prev, model: selected?.name ?? "" }));
+  };
+
+  const switchToTextFields = () => {
+    setVehicleFieldMode('text');
+    setMakeId("");
+    setModelId("");
+  };
+
+  const switchToSelectFields = () => {
+    setVehicleFieldMode('select');
+    setMakeId("");
+    setModelId("");
+    setState((prev) => ({ ...prev, make: "", model: "" }));
+  };
+
+  // Dropdowns only when the vehicle DB delivered options AND the user hasn't
+  // opted into free text (preset values or "not in the list" cases).
+  const useSelectFields = vehicleFieldMode === 'select' && makes.length > 0;
+  const modelSelectReady = useSelectFields && makeId !== "" && models.length > 0;
 
   const vehicleLabel = [state.make, state.model, state.year > 0 ? `(${state.year})` : ""]
     .filter(Boolean)
@@ -459,6 +567,15 @@ export function EintauschwertRechner() {
       const data: { comps: FoundListing[]; warning?: string } = await res.json();
       const comps = Array.isArray(data.comps) ? data.comps : [];
 
+      // The user switched to manual entry while the search ran — their typed
+      // comps win, the late results are discarded.
+      if (compsModeRef.current === 'manual') {
+        toast.info("Manuelle Erfassung aktiv", {
+          description: "Die Suchergebnisse wurden verworfen – deine Eingaben bleiben erhalten.",
+        });
+        return;
+      }
+
       if (comps.length === 0) {
         toast.warning("Keine Vergleichsinserate gefunden", {
           description: "Erfasse 3–5 Vergleichsfahrzeuge manuell – z.B. von AutoScout24 oder tutti.",
@@ -468,8 +585,10 @@ export function EintauschwertRechner() {
       }
 
       setFoundListings(comps);
+      // Merge into the LATEST state, not the click-time snapshot — the user may
+      // have corrected km, costs or margin while the search was running.
       const nextState: CalculatorState = {
-        ...state,
+        ...stateRef.current,
         comps: comps.map((c) => ({ price: c.price, km: c.km })),
       };
       setState(nextState);
@@ -534,29 +653,96 @@ export function EintauschwertRechner() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-sm font-bold text-neutral-900">Marke *</Label>
-                <Input
-                  type="text"
-                  list="eintausch-makes"
-                  value={state.make}
-                  onChange={(e) => updateState('make', e.target.value)}
-                  placeholder="z.B. VW"
-                  className="border-neutral-400 bg-white shadow-sm font-semibold"
-                />
-                <datalist id="eintausch-makes">
-                  {makeOptions.map((name) => (
-                    <option key={name} value={name} />
-                  ))}
-                </datalist>
+                {useSelectFields ? (
+                  <Select value={makeId} onValueChange={handleMakeSelect}>
+                    <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
+                      <SelectValue placeholder="Marke wählen" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {makes.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    type="text"
+                    value={state.make}
+                    onChange={(e) => updateState('make', e.target.value)}
+                    placeholder="z.B. VW"
+                    className="border-neutral-400 bg-white shadow-sm font-semibold"
+                  />
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm font-bold text-neutral-900">Modell *</Label>
-                <Input
-                  type="text"
-                  value={state.model}
-                  onChange={(e) => updateState('model', e.target.value)}
-                  placeholder="z.B. Golf 1.5 TSI"
-                  className="border-neutral-400 bg-white shadow-sm font-semibold"
-                />
+                {useSelectFields ? (
+                  modelSelectReady ? (
+                    <Select value={modelId} onValueChange={handleModelSelect}>
+                      <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
+                        <SelectValue placeholder="Modell wählen" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {models.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : makeId && modelsLoading ? (
+                    <Select value="" disabled>
+                      <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
+                        <SelectValue placeholder="Modelle laden…" />
+                      </SelectTrigger>
+                      <SelectContent />
+                    </Select>
+                  ) : makeId ? (
+                    <Input
+                      type="text"
+                      value={state.model}
+                      onChange={(e) => updateState('model', e.target.value)}
+                      placeholder="z.B. Golf"
+                      className="border-neutral-400 bg-white shadow-sm font-semibold"
+                    />
+                  ) : (
+                    <Select value="" disabled>
+                      <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
+                        <SelectValue placeholder="Zuerst Marke wählen" />
+                      </SelectTrigger>
+                      <SelectContent />
+                    </Select>
+                  )
+                ) : (
+                  <Input
+                    type="text"
+                    value={state.model}
+                    onChange={(e) => updateState('model', e.target.value)}
+                    placeholder="z.B. Golf"
+                    className="border-neutral-400 bg-white shadow-sm font-semibold"
+                  />
+                )}
+              </div>
+              <div className="sm:col-span-2 -mt-2">
+                {useSelectFields ? (
+                  <button
+                    type="button"
+                    onClick={switchToTextFields}
+                    className="text-xs text-neutral-400 hover:text-red-600 underline underline-offset-2 transition-colors"
+                  >
+                    Marke oder Modell nicht in der Liste? Manuell eingeben
+                  </button>
+                ) : makes.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={switchToSelectFields}
+                    className="text-xs text-neutral-400 hover:text-red-600 underline underline-offset-2 transition-colors"
+                  >
+                    Aus Liste wählen
+                  </button>
+                ) : null}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm font-bold text-neutral-900">Jahrgang *</Label>

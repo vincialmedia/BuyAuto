@@ -1,25 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { parseListingText, yearMatches } from "@/lib/buyauto/compsParser";
+import {
+  extractPrices,
+  identifyListingUrl,
+  parseListingText,
+  yearMatches,
+} from "@/lib/buyauto/compsParser";
 
 // Firecrawl search calls can take 10-30s; lift the serverless limit accordingly.
-export const maxDuration = 60;
+// Pages Router API routes configure maxDuration via the config export (the bare
+// `export const maxDuration` form is App Router segment config and gets ignored).
+export const config = { maxDuration: 60 };
 
 const FIRECRAWL_API = "https://api.firecrawl.dev/v2";
-const FIRECRAWL_TIMEOUT_MS = 25_000;
-
-// Only accept comps from real Swiss vehicle marketplaces — a blog post that happens
-// to mention a price and a mileage is not a comparable listing.
-const MARKETPLACE_HOSTS = [
-  "autoscout24.ch",
-  "tutti.ch",
-  "comparis.ch",
-  "carforyou.ch",
-  "autolina.ch",
-  "gowago.ch",
-  "carmarket.ch",
-  "anibis.ch",
-  "buyauto.ch",
-];
+// Per-call timeout and overall budget: worst case is 3 sequential searches, which
+// must stay under the 60s function limit (3 × 18s + overhead ≈ 56s).
+const FIRECRAWL_TIMEOUT_MS = 18_000;
+const TIER_DEADLINE_MS = 32_000;
 
 const MAX_COMPS = 5;
 
@@ -54,16 +50,6 @@ function rateLimited(ip: string): boolean {
   }
   entry.count += 1;
   return entry.count > RATE_LIMIT;
-}
-
-function marketplaceHost(url: string): string | null {
-  try {
-    const host = new URL(url).hostname.replace(/^www\./, "");
-    const match = MARKETPLACE_HOSTS.find((h) => host === h || host.endsWith(`.${h}`));
-    return match ?? null;
-  } catch {
-    return null;
-  }
 }
 
 async function firecrawlSearch(
@@ -111,16 +97,23 @@ function resultsToComps(
   const comps: CompOut[] = [];
   for (const r of results) {
     if (!r.url) continue;
-    const source = marketplaceHost(r.url);
+    // Individual listings only — model-overview/search pages are not comps.
+    const source = identifyListingUrl(r.url);
     if (!source) continue;
     if (seenUrls.has(r.url)) continue;
 
-    // Snippet first (title + description); scraped page markdown as fallback.
-    // Markdown is capped: price and mileage sit in the top section of a listing
-    // page, and further down "similar vehicles" widgets carry misleading pairs.
+    // Snippet first (title + description). A snippet carrying 3+ distinct prices
+    // is a list page that slipped through the URL filter — never a single car.
     const snippet = `${r.title ?? ""} ${r.description ?? ""}`;
-    const parsed =
-      parseListingText(snippet) ?? parseListingText((r.markdown ?? "").slice(0, 4_000));
+    let parsed = extractPrices(snippet).length <= 2 ? parseListingText(snippet) : null;
+
+    // Scraped page markdown as fallback. Capped: price and mileage sit in the top
+    // section of a listing page, and further down "similar vehicles" widgets carry
+    // misleading pairs. A top section flooded with prices is again a list page.
+    if (!parsed && r.markdown) {
+      const top = r.markdown.slice(0, 4_000);
+      parsed = extractPrices(top).length <= 6 ? parseListingText(top) : null;
+    }
     if (!parsed) continue;
     if (!yearMatches(parsed, targetYear)) continue;
 
@@ -134,6 +127,39 @@ function resultsToComps(
     });
   }
   return comps;
+}
+
+/**
+ * Prefer comps with a similar mileage; widen the band only when the strict one
+ * yields too few. Returns the picked comps plus whether relaxation was needed.
+ */
+function pickBySimilarKm(
+  comps: CompOut[],
+  targetKm: number
+): { picked: CompOut[]; relaxed: boolean } {
+  const byDistance = [...comps].sort(
+    (a, b) => Math.abs(a.km - targetKm) - Math.abs(b.km - targetKm)
+  );
+  const bands = [
+    Math.max(30_000, targetKm * 0.4),
+    Math.max(60_000, targetKm * 0.8),
+    Number.POSITIVE_INFINITY,
+  ];
+
+  const picked: CompOut[] = [];
+  let relaxed = false;
+  for (let i = 0; i < bands.length && picked.length < MAX_COMPS; i++) {
+    if (i > 0 && picked.length >= 3) break; // enough similar-km comps, stop widening
+    for (const c of byDistance) {
+      if (picked.length >= MAX_COMPS) break;
+      if (picked.includes(c)) continue;
+      if (Math.abs(c.km - targetKm) <= bands[i]) {
+        picked.push(c);
+        if (i > 0) relaxed = true;
+      }
+    }
+  }
+  return { picked, relaxed };
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -195,29 +221,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const queried: string[] = [];
   const seenUrls = new Set<string>();
   let comps: CompOut[] = [];
+  const startedAt = Date.now();
+  const withinBudget = () => Date.now() - startedAt < TIER_DEADLINE_MS;
 
-  // Tier 1: cheap snippet-only search on AutoScout24 (largest Swiss inventory).
-  const q1 = `"${vehicle}" ${yearNum} site:autoscout24.ch`;
+  // Tier 1: cheap snippet-only search, pinned to AutoScout24 DETAIL pages
+  // (/de/d/...) so results are individual cars, not model-overview pages.
+  const q1 = `site:autoscout24.ch/de/d "${vehicle}" ${yearNum}`;
   queried.push(q1);
-  comps.push(...resultsToComps(await firecrawlSearch(apiKey, q1, 8, false), yearNum, seenUrls));
+  comps.push(...resultsToComps(await firecrawlSearch(apiKey, q1, 10, false), yearNum, seenUrls));
 
-  // Tier 2: widen to all Swiss marketplaces, still snippet-only.
-  if (comps.length < MAX_COMPS) {
+  // Tier 2: widen to all Swiss marketplaces, still snippet-only. The URL filter
+  // keeps it to individual listings.
+  if (comps.length < MAX_COMPS && withinBudget()) {
     const q2 = `${vehicle} ${yearNum} Occasion Schweiz CHF km`;
     queried.push(q2);
-    comps.push(...resultsToComps(await firecrawlSearch(apiKey, q2, 8, false), yearNum, seenUrls));
+    comps.push(...resultsToComps(await firecrawlSearch(apiKey, q2, 10, false), yearNum, seenUrls));
   }
 
-  // Tier 3 (expensive, only when snippets were too thin): re-run tier 1 with page
-  // content so price/km can be parsed from the listing pages themselves.
-  if (comps.length < 3) {
-    const q3 = `"${vehicle}" ${yearNum} site:autoscout24.ch`;
+  // Tier 3 (expensive, only when snippets were too thin): re-run the detail-page
+  // search with page content so price/km can be parsed from the listings themselves.
+  if (comps.length < 3 && withinBudget()) {
+    const q3 = `site:autoscout24.ch/de/d "${vehicle}" ${yearNum}`;
     queried.push(`${q3} (mit Seiteninhalt)`);
     comps.push(...resultsToComps(await firecrawlSearch(apiKey, q3, 5, true), yearNum, seenUrls));
   }
 
-  // Drop duplicate price/km pairs (same car listed twice), rank by mileage
-  // proximity to the target vehicle, keep the best 5.
+  // Drop duplicate price/km pairs (same car listed twice), then keep the comps
+  // closest in mileage — widening the km band only if the strict band is thin.
   const uniquePairs = new Set<string>();
   comps = comps.filter((c) => {
     const key = `${c.price}:${c.km}`;
@@ -225,17 +255,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     uniquePairs.add(key);
     return true;
   });
-  comps.sort((a, b) => Math.abs(a.km - kmNum) - Math.abs(b.km - kmNum));
-  comps = comps.slice(0, MAX_COMPS);
+  const { picked, relaxed } = pickBySimilarKm(comps, kmNum);
 
   return res.status(200).json({
-    comps,
+    comps: picked,
     queried,
     warning:
-      comps.length === 0
+      picked.length === 0
         ? "Keine Vergleichsinserate gefunden – erfasse sie manuell."
-        : comps.length < 3
+        : picked.length < 3
           ? "Nur wenige Vergleichsinserate gefunden – prüf die Werte und ergänze manuell."
-          : undefined,
+          : relaxed
+            ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
+            : undefined,
   });
 }
