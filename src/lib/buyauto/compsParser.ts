@@ -86,6 +86,40 @@ export function parseListingText(text: string): ParsedComp | null {
   return { price, km, year: years.length > 0 ? years[0] : null, years };
 }
 
+// Spec-table labels on detail pages: "Kilometerstand 78'000 km", "Kilometer: 78'000".
+const LABELED_KM = new RegExp(`Kilometer(?:stand)?[^0-9]{0,20}(${NUM})\\s*km\\b`, "i");
+
+/**
+ * Parse a scraped INDIVIDUAL listing page (URL already verified as a detail
+ * page). Unlike snippet parsing this reads the whole page and tolerates many
+ * prices (financing offers, "similar vehicles" widgets): the car's own price is
+ * the first CHF amount, and the mileage prefers the labeled spec-table value
+ * over the first bare "... km" occurrence.
+ */
+export function parseDetailMarkdown(markdown: string): ParsedComp | null {
+  if (!markdown) return null;
+  const text = markdown.slice(0, 15_000);
+
+  const prices = extractPrices(text);
+  if (prices.length === 0) return null;
+  const price = prices[0];
+
+  const labeled = LABELED_KM.exec(text);
+  let km: number | null = null;
+  if (labeled) {
+    const n = Number(labeled[1].replace(/\D/g, ""));
+    if (Number.isFinite(n) && n >= MIN_KM && n <= MAX_KM) km = n;
+  }
+  if (km === null) {
+    const kms = extractKms(text);
+    km = kms.find((k) => k !== price) ?? kms[0] ?? null;
+  }
+  if (km === null) return null;
+
+  const years = extractYears(text.slice(0, 4_000));
+  return { price, km, year: years.length > 0 ? years[0] : null, years };
+}
+
 /**
  * True when ANY year found in the listing text is within `tolerance` of the
  * target (or when no year was detectable). Listing text routinely contains
@@ -104,12 +138,17 @@ export function yearMatches(comp: ParsedComp, targetYear: number, tolerance = 2)
 // we KNOW are accepted, and the URL must match that shape. Hosts without a known
 // detail pattern are rejected outright — a category page sneaking in as a comp
 // (teaser minimum prices) skews the valuation far worse than a missed listing.
-const DETAIL_PATH_PATTERNS: Array<{ host: string; detail: RegExp }> = [
+const DETAIL_PATH_PATTERNS: Array<{ host: string; detail: RegExp; exclude?: RegExp }> = [
   // autoscout24.ch/de/d/vw-golf-...-10826494 (also /fr/d/, /it/d/)
   { host: "autoscout24.ch", detail: /\/d\// },
-  // tutti.ch/de/vi/luzern/fahrzeuge/autos/vw-golf-.../26438195 — the /autos/
-  // segment matters: /vi/.../fahrzeuge/autozubehoer/ carries wheels & parts ads.
-  { host: "tutti.ch", detail: /\/vi\/[^/]+\/fahrzeuge\/autos\// },
+  // tutti.ch car listings exist in TWO shapes: /de/vi/{region}/fahrzeuge/autos/
+  // {slug}/{id} and the older /de/vi/{slug}/{id}. Accept /vi/ but never the
+  // non-car categories (wheels, parts, motorbikes, ...).
+  {
+    host: "tutti.ch",
+    detail: /\/vi\//,
+    exclude: /\/(autozubehoer|ersatzteile|motorraeder|motorradzubehoer|velos|wohnmobile|nutzfahrzeuge|boote)\//,
+  },
   // anibis.ch/de/d/...
   { host: "anibis.ch", detail: /\/d\// },
   // comparis.ch/carfinder/marktplatz/details/show/12345
@@ -120,46 +159,59 @@ const DETAIL_PATH_PATTERNS: Array<{ host: string; detail: RegExp }> = [
   { host: "buyauto.ch", detail: /\/fahrzeug\// },
 ];
 
+// Harvestable category/inventory pages — a strict allowlist just like details.
+// (The earlier "on a marketplace but not a detail page" heuristic let tutti
+// accessory ads pose as category pages and burn the scrape budget.)
+const CATEGORY_PATH_PATTERNS: Array<{ host: string; category: RegExp }> = [
+  // /de/s/mo-golf/mk-vw, /de/autos/vw--golf, /de/auto-modelle/vw--golf
+  { host: "autoscout24.ch", category: /\/(s|autos|auto-modelle|modeles-voitures)\// },
+  // /carfinder/marktplatz/vw/golf/occasion (but not /details/show/)
+  { host: "comparis.ch", category: /\/carfinder\// },
+  // /de/li/... search-result pages
+  { host: "tutti.ch", category: /\/li\// },
+  // /en/vw/golf (lang/make/model, exactly 3 segments)
+  { host: "autolina.ch", category: /^\/[a-z]{2}\/[^/]+\/[^/]+\/?$/ },
+];
+
+function hostOf(url: string): { host: string; parsed: URL } | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  return { host: parsed.hostname.replace(/^www\./, ""), parsed };
+}
+
 /**
  * Returns the marketplace host (e.g. "autoscout24.ch") when the URL matches a
  * KNOWN individual-listing path shape on a Swiss marketplace, null otherwise.
  */
 export function identifyListingUrl(url: string): string | null {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return null;
-  }
-  const host = parsed.hostname.replace(/^www\./, "");
+  const h = hostOf(url);
+  if (!h) return null;
   const known = DETAIL_PATH_PATTERNS.find(
-    (p) => host === p.host || host.endsWith(`.${p.host}`)
+    (p) => h.host === p.host || h.host.endsWith(`.${p.host}`)
   );
   if (!known) return null;
-  return known.detail.test(parsed.pathname) ? known.host : null;
+  if (!known.detail.test(h.parsed.pathname)) return null;
+  if (known.exclude && known.exclude.test(h.parsed.pathname)) return null;
+  return known.host;
 }
 
 /**
- * Returns the marketplace host when the URL is on a known marketplace but is NOT
- * an individual listing — i.e. a category/search/model-overview page whose cards
- * can be harvested via parseCategoryMarkdown. Root pages (no meaningful path)
- * are excluded.
+ * Returns the marketplace host when the URL matches a KNOWN harvestable
+ * category/inventory page shape (and is not an individual listing).
  */
 export function identifyCategoryUrl(url: string): string | null {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return null;
-  }
-  const host = parsed.hostname.replace(/^www\./, "");
-  const known = DETAIL_PATH_PATTERNS.find(
-    (p) => host === p.host || host.endsWith(`.${p.host}`)
+  const h = hostOf(url);
+  if (!h) return null;
+  if (identifyListingUrl(url)) return null; // individual listing
+  const known = CATEGORY_PATH_PATTERNS.find(
+    (p) => h.host === p.host || h.host.endsWith(`.${p.host}`)
   );
   if (!known) return null;
-  if (known.detail.test(parsed.pathname)) return null; // individual listing
-  if (parsed.pathname.replace(/\/+$/, "").split("/").filter(Boolean).length < 2) return null;
-  return known.host;
+  return known.category.test(h.parsed.pathname) ? known.host : null;
 }
 
 // --- Category-page harvesting ---

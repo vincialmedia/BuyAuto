@@ -8,6 +8,7 @@ import {
   isNewVehicleText,
   modelPrecision,
   parseCategoryMarkdown,
+  parseDetailMarkdown,
   parseListingText,
   yearMatches,
 } from "@/lib/buyauto/compsParser";
@@ -25,7 +26,7 @@ const TIER_DEADLINE_MS = 38_000;
 
 const MAX_COMPS = 5;
 // Total page scrapes per request (category pages + individual listings).
-const MAX_SCRAPES = 6;
+const MAX_SCRAPES = 8;
 const MAX_CATEGORY_SCRAPES = 3;
 
 // Vehicle DB names vs. how listings are actually titled on the portals.
@@ -384,11 +385,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // sources and never depends on the search surfacing one.
   let candidatesTried = 0;
   const scrapeDebug: Array<{ url: string; status: number | "network"; chars: number; added: number }> = [];
-  for (const direct of [comparisCategoryUrl(makeStr, modelStr), as24CategoryUrl(makeStr, modelStr)]) {
-    if (!categoryUrls.includes(direct)) categoryUrls.unshift(direct);
-  }
+  // Deterministic inventory pages FIRST — search-discovered categories only fill
+  // the remaining slot, so junk can never crowd out the two known-good sources.
+  const orderedCategoryUrls = [
+    as24CategoryUrl(makeStr, modelStr),
+    comparisCategoryUrl(makeStr, modelStr),
+    ...categoryUrls,
+  ].filter((u, i, arr) => arr.indexOf(u) === i);
   if (comps.length < MAX_COMPS && withinBudget()) {
-    const catPages = categoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
+    const catPages = orderedCategoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
     const detailPages = candidates.slice(0, MAX_SCRAPES - catPages.length);
     candidatesTried = catPages.length + detailPages.length;
 
@@ -423,9 +428,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             addedHere += 1;
           }
         } else {
-          // Individual listing page: parse its content.
+          // Individual listing page (URL-verified): full-page parse that
+          // tolerates financing offers and similar-vehicle widgets.
           const c = detailPages[i - catPages.length];
-          const parsed = parseFromTexts("", markdown);
+          const parsed = parseDetailMarkdown(markdown);
           if (parsed && yearMatches(parsed, yearNum)) {
             comps.push({ price: parsed.price, km: parsed.km, title: c.title, url: c.url, source: c.source });
             addedHere += 1;
@@ -465,7 +471,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ? {
           input: { make: makeStr, model: modelStr, year: yearNum, km: kmNum, vehicleQuery: vehicle },
           stats,
-          categoryUrls,
+          categoryUrls: orderedCategoryUrls,
           scrapes: scrapeDebug,
           candidates: candidates.map((c) => c.url),
           allComps: comps,
