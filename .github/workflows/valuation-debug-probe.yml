@@ -1,26 +1,26 @@
 # Temporary diagnostic: curl the valuation debug endpoint from a GitHub runner
-# (the dev sandbox cannot reach vercel.app directly). Trigger manually, read the
-# job log. Remove once the comp-search funnel is verified.
+# (the dev sandbox cannot reach vercel.app directly). Runs on every push to the
+# calculator branch, AFTER waiting for the Vercel preview to redeploy. Remove
+# once the comp-search funnel is verified.
 name: valuation-debug-probe
 
 on:
-  workflow_dispatch:
-    inputs:
-      url:
-        description: Debug endpoint URL to fetch
-        required: true
-        type: string
+  push:
+    branches:
+      - claude/trade-in-value-calculator-7ywced
 
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
+      - name: Wait for Vercel preview redeploy
+        run: sleep 150
       - name: Fetch debug endpoint
-        env:
-          PROBE_URL: ${{ inputs.url }}
         run: |
-          curl -sS --max-time 120 "$PROBE_URL" -o out.json -w "HTTP %{http_code} in %{time_total}s\n"
+          curl -sS --max-time 120 \
+            "https://sg-e0f88b33-2555-4eac-800d-c7-git-0cbc75-vincialmedias-projects.vercel.app/api/valuation/comps?make=VW&model=Golf&year=2020&km=78003&debug=2" \
+            -o out.json -w "HTTP %{http_code} in %{time_total}s\n"
           echo "=== BODY START ==="
           head -c 80000 out.json
           echo ""
