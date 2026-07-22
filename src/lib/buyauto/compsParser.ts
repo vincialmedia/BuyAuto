@@ -230,6 +230,40 @@ export function parseCategoryMarkdown(markdown: string, pageUrl: string): Catego
 }
 
 /**
+ * AutoScout24's own listing titles mark brand-new cars as ", Neu," — those are
+ * dead stock-listing zombies in the search index or new cars, never trade-in
+ * comps. (Deliberately narrow: a used listing saying "neu bereift" must pass.)
+ */
+export function isNewVehicleText(text: string): boolean {
+  return /,\s*neu\s*[,.]/i.test(text);
+}
+
+/**
+ * The live AutoScout24 model-overview page, built deterministically from
+ * make/model — e.g. ("VW", "Golf Plus") -> .../de/s/mo-golf-plus/mk-vw.
+ * Engine/trim tokens ("1.5", "TSI", "R-Line") are stripped: category slugs are
+ * BASE model names. Verified URL shape: autoscout24.ch/de/s/mo-golf/mk-vw.
+ */
+const TRIM_TOKEN =
+  /^(\d+(\.\d+)?|e-?tsi|tsi|tdi|tfsi|fsi|cdi|dci|hdi|dsg|cvt|mhev|phev|evo|4motion|quattro|xdrive|gti|gtd|gte|r-line|life|style|comfortline|highline|trendline)$/i;
+
+export function as24CategoryUrl(make: string, model: string): string {
+  const slug = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[äàâ]/g, "a")
+      .replace(/[öô]/g, "o")
+      .replace(/[üû]/g, "u")
+      .replace(/[éèê]/g, "e")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  const tokens = model.split(/\s+/).filter(Boolean);
+  const baseTokens = tokens.filter((t) => !TRIM_TOKEN.test(t));
+  const modelBase = (baseTokens.length > 0 ? baseTokens : tokens.slice(0, 1)).join(" ");
+  return `https://www.autoscout24.ch/de/s/mo-${slug(modelBase)}/mk-${slug(make)}`;
+}
+
+/**
  * How precisely a listing title matches the requested model: 0 = full model
  * string (incl. trim) present, 1 = base model word present, 2 = no match info.
  * Whitespace-insensitive so "1.5tsi" matches "1.5 TSI".

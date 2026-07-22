@@ -1,8 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
+  as24CategoryUrl,
   extractPrices,
   identifyCategoryUrl,
   identifyListingUrl,
+  isNewVehicleText,
   modelPrecision,
   parseCategoryMarkdown,
   parseListingText,
@@ -171,6 +173,10 @@ function resultsToComps(
     }
     if (seenUrls.has(r.url)) continue;
     onMarketplace += 1;
+
+    // Brand-new cars (and Google's zombie index of long-dead "Neu" stock
+    // listings) are not trade-in comps.
+    if (isNewVehicleText(`${r.title ?? ""} ${r.description ?? ""}`)) continue;
 
     const title = (r.title ?? "").slice(0, 120) || `${source} Inserat`;
     const parsed = parseFromTexts(`${r.title ?? ""} ${r.description ?? ""}`, r.markdown);
@@ -353,13 +359,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Round 2: when snippets alone weren't enough, scrape in parallel — up to 2
   // category/model-overview pages (dozens of listing cards each) and up to 4
-  // individual listings whose snippets lacked price/km.
+  // individual listings whose snippets lacked price/km. The AutoScout24 model
+  // page is constructed directly from make/model, so this round ALWAYS has a
+  // live-inventory source and never depends on the search surfacing one.
   let candidatesTried = 0;
-  if (
-    comps.length < MAX_COMPS &&
-    withinBudget() &&
-    (categoryUrls.length > 0 || candidates.length > 0)
-  ) {
+  const directCategory = as24CategoryUrl(makeStr, modelStr);
+  if (!categoryUrls.includes(directCategory)) categoryUrls.unshift(directCategory);
+  if (comps.length < MAX_COMPS && withinBudget()) {
     const catPages = categoryUrls.slice(0, 2);
     const detailPages = candidates.slice(0, MAX_SCRAPE_CANDIDATES - catPages.length);
     candidatesTried = catPages.length + detailPages.length;
@@ -375,6 +381,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Category page: harvest every parseable listing card.
         for (const card of parseCategoryMarkdown(s.value, catPages[i])) {
           if (seenUrls.has(card.url)) continue;
+          if (isNewVehicleText(card.title)) continue;
           if (!yearMatches(card, yearNum)) continue;
           seenUrls.add(card.url);
           comps.push({
