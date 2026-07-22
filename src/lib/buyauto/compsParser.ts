@@ -107,12 +107,15 @@ export function yearMatches(comp: ParsedComp, targetYear: number, tolerance = 2)
 const DETAIL_PATH_PATTERNS: Array<{ host: string; detail: RegExp }> = [
   // autoscout24.ch/de/d/vw-golf-...-10826494 (also /fr/d/, /it/d/)
   { host: "autoscout24.ch", detail: /\/d\// },
-  // tutti.ch/de/vi/zuerich/...
-  { host: "tutti.ch", detail: /\/vi\// },
+  // tutti.ch/de/vi/luzern/fahrzeuge/autos/vw-golf-.../26438195 — the /autos/
+  // segment matters: /vi/.../fahrzeuge/autozubehoer/ carries wheels & parts ads.
+  { host: "tutti.ch", detail: /\/vi\/[^/]+\/fahrzeuge\/autos\// },
   // anibis.ch/de/d/...
   { host: "anibis.ch", detail: /\/d\// },
   // comparis.ch/carfinder/marktplatz/details/show/12345
   { host: "comparis.ch", detail: /\/details\/show\// },
+  // autolina.ch/en/vw/golf/golf-1.5-tsi-act-life (lang/make/model/listing-slug)
+  { host: "autolina.ch", detail: /^\/[a-z]{2}\/[^/]+\/[^/]+\/[^/]+/ },
   // our own listing detail pages
   { host: "buyauto.ch", detail: /\/fahrzeug\// },
 ];
@@ -247,20 +250,30 @@ export function isNewVehicleText(text: string): boolean {
 const TRIM_TOKEN =
   /^(\d+(\.\d+)?|e-?tsi|tsi|tdi|tfsi|fsi|cdi|dci|hdi|dsg|cvt|mhev|phev|evo|4motion|quattro|xdrive|gti|gtd|gte|r-line|life|style|comfortline|highline|trendline)$/i;
 
-export function as24CategoryUrl(make: string, model: string): string {
-  const slug = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[äàâ]/g, "a")
-      .replace(/[öô]/g, "o")
-      .replace(/[üû]/g, "u")
-      .replace(/[éèê]/g, "e")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+const marketplaceSlug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[äàâ]/g, "a")
+    .replace(/[öô]/g, "o")
+    .replace(/[üû]/g, "u")
+    .replace(/[éèê]/g, "e")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+/** "Golf 1.5 TSI" -> "Golf": category slugs are BASE model names. */
+function baseModel(model: string): string {
   const tokens = model.split(/\s+/).filter(Boolean);
   const baseTokens = tokens.filter((t) => !TRIM_TOKEN.test(t));
-  const modelBase = (baseTokens.length > 0 ? baseTokens : tokens.slice(0, 1)).join(" ");
-  return `https://www.autoscout24.ch/de/s/mo-${slug(modelBase)}/mk-${slug(make)}`;
+  return (baseTokens.length > 0 ? baseTokens : tokens.slice(0, 1)).join(" ");
+}
+
+export function as24CategoryUrl(make: string, model: string): string {
+  return `https://www.autoscout24.ch/de/s/mo-${marketplaceSlug(baseModel(model))}/mk-${marketplaceSlug(make)}`;
+}
+
+/** Verified shape: comparis.ch/carfinder/marktplatz/vw/golf/occasion (aggregates all portals). */
+export function comparisCategoryUrl(make: string, model: string): string {
+  return `https://www.comparis.ch/carfinder/marktplatz/${marketplaceSlug(make)}/${marketplaceSlug(baseModel(model))}/occasion`;
 }
 
 /**

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   as24CategoryUrl,
+  comparisCategoryUrl,
   extractPrices,
   identifyCategoryUrl,
   identifyListingUrl,
@@ -23,7 +24,9 @@ const FIRECRAWL_TIMEOUT_MS = 18_000;
 const TIER_DEADLINE_MS = 38_000;
 
 const MAX_COMPS = 5;
-const MAX_SCRAPE_CANDIDATES = 5;
+// Total page scrapes per request (category pages + individual listings).
+const MAX_SCRAPES = 6;
+const MAX_CATEGORY_SCRAPES = 3;
 
 // Vehicle DB names vs. how listings are actually titled on the portals.
 const MAKE_ALIASES: Record<string, string> = {
@@ -124,15 +127,27 @@ async function firecrawlSearch(
   return { results: data?.data?.web ?? [], status };
 }
 
-async function firecrawlScrape(apiKey: string, url: string): Promise<string> {
+async function firecrawlScrape(
+  apiKey: string,
+  url: string
+): Promise<{ markdown: string; status: number | "network" }> {
   const { status, body } = await firecrawlPost(apiKey, "/scrape", {
     url,
     formats: ["markdown"],
     onlyMainContent: true,
+    // Swiss portals sit behind aggressive bot protection — let Firecrawl escalate
+    // to its stealth proxy when the basic fetch gets blocked.
+    proxy: "auto",
+    // Category inventories don't move fast; serve Firecrawl's cache for 1h so
+    // repeated lookups of popular models cost no extra scrape.
+    maxAge: 3_600_000,
+    // Firecrawl-side cap below our own AbortController so we get a real status
+    // instead of an aborted socket.
+    timeout: 15_000,
   });
-  if (status !== 200) return "";
+  if (status !== 200) return { markdown: "", status };
   const data = body as { data?: { markdown?: string } };
-  return data?.data?.markdown ?? "";
+  return { markdown: data?.data?.markdown ?? "", status };
 }
 
 function parseFromTexts(snippet: string, markdown: string | undefined): ReturnType<typeof parseListingText> {
@@ -249,10 +264,15 @@ function buildDiagnosis(stats: TierStat[], candidatesTried: number): string {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+  // POST is the UI path. GET exists for diagnosis: open
+  //   /api/valuation/comps?make=VW&model=Golf&year=2020&km=78000&debug=1
+  // in a browser and the response includes the full search funnel.
+  if (req.method !== "POST" && req.method !== "GET") {
+    res.setHeader("Allow", "GET, POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
+  const input = req.method === "GET" ? req.query : req.body ?? {};
+  const debug = String((input as Record<string, unknown>).debug ?? "") === "1";
 
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
@@ -275,7 +295,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  const { make, model, year, km } = (req.body ?? {}) as {
+  const { make, model, year, km } = input as {
     make?: unknown;
     model?: unknown;
     year?: unknown;
@@ -357,17 +377,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   });
 
-  // Round 2: when snippets alone weren't enough, scrape in parallel — up to 2
-  // category/model-overview pages (dozens of listing cards each) and up to 4
-  // individual listings whose snippets lacked price/km. The AutoScout24 model
-  // page is constructed directly from make/model, so this round ALWAYS has a
-  // live-inventory source and never depends on the search surfacing one.
+  // Round 2: when snippets alone weren't enough, scrape in parallel — category/
+  // model-overview pages (dozens of listing cards each) plus individual listings
+  // whose snippets lacked price/km. The AutoScout24 and Comparis inventory pages
+  // are constructed directly from make/model, so this round ALWAYS has live
+  // sources and never depends on the search surfacing one.
   let candidatesTried = 0;
-  const directCategory = as24CategoryUrl(makeStr, modelStr);
-  if (!categoryUrls.includes(directCategory)) categoryUrls.unshift(directCategory);
+  const scrapeDebug: Array<{ url: string; status: number | "network"; chars: number; added: number }> = [];
+  for (const direct of [comparisCategoryUrl(makeStr, modelStr), as24CategoryUrl(makeStr, modelStr)]) {
+    if (!categoryUrls.includes(direct)) categoryUrls.unshift(direct);
+  }
   if (comps.length < MAX_COMPS && withinBudget()) {
-    const catPages = categoryUrls.slice(0, 2);
-    const detailPages = candidates.slice(0, MAX_SCRAPE_CANDIDATES - catPages.length);
+    const catPages = categoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
+    const detailPages = candidates.slice(0, MAX_SCRAPES - catPages.length);
     candidatesTried = catPages.length + detailPages.length;
 
     const scraped = await Promise.allSettled(
@@ -376,31 +398,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let added = 0;
     scraped.forEach((s, i) => {
-      if (s.status !== "fulfilled" || !s.value) return;
-      if (i < catPages.length) {
-        // Category page: harvest every parseable listing card.
-        for (const card of parseCategoryMarkdown(s.value, catPages[i])) {
-          if (seenUrls.has(card.url)) continue;
-          if (isNewVehicleText(card.title)) continue;
-          if (!yearMatches(card, yearNum)) continue;
-          seenUrls.add(card.url);
-          comps.push({
-            price: card.price,
-            km: card.km,
-            title: card.title,
-            url: card.url,
-            source: identifyListingUrl(card.url) ?? "inserat",
-          });
-          added += 1;
-        }
-      } else {
-        // Individual listing page: parse its content.
-        const c = detailPages[i - catPages.length];
-        const parsed = parseFromTexts("", s.value);
-        if (!parsed || !yearMatches(parsed, yearNum)) return;
-        comps.push({ price: parsed.price, km: parsed.km, title: c.title, url: c.url, source: c.source });
-        added += 1;
+      const url = i < catPages.length ? catPages[i] : detailPages[i - catPages.length].url;
+      if (s.status !== "fulfilled") {
+        scrapeDebug.push({ url, status: "network", chars: 0, added: 0 });
+        return;
       }
+      const { markdown, status } = s.value;
+      let addedHere = 0;
+      if (markdown) {
+        if (i < catPages.length) {
+          // Category page: harvest every parseable listing card.
+          for (const card of parseCategoryMarkdown(markdown, catPages[i])) {
+            if (seenUrls.has(card.url)) continue;
+            if (isNewVehicleText(card.title)) continue;
+            if (!yearMatches(card, yearNum)) continue;
+            seenUrls.add(card.url);
+            comps.push({
+              price: card.price,
+              km: card.km,
+              title: card.title,
+              url: card.url,
+              source: identifyListingUrl(card.url) ?? "inserat",
+            });
+            addedHere += 1;
+          }
+        } else {
+          // Individual listing page: parse its content.
+          const c = detailPages[i - catPages.length];
+          const parsed = parseFromTexts("", markdown);
+          if (parsed && yearMatches(parsed, yearNum)) {
+            comps.push({ price: parsed.price, km: parsed.km, title: c.title, url: c.url, source: c.source });
+            addedHere += 1;
+          }
+        }
+      }
+      added += addedHere;
+      scrapeDebug.push({ url, status, chars: markdown.length, added: addedHere });
     });
     stats.push({
       query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate)`,
@@ -428,6 +461,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   return res.status(200).json({
     comps: picked,
     queried: stats.map((s) => s.query),
+    debug: debug
+      ? {
+          input: { make: makeStr, model: modelStr, year: yearNum, km: kmNum, vehicleQuery: vehicle },
+          stats,
+          categoryUrls,
+          scrapes: scrapeDebug,
+          candidates: candidates.map((c) => c.url),
+          allComps: comps,
+        }
+      : undefined,
     diagnosis: picked.length === 0 ? buildDiagnosis(stats, candidatesTried) : undefined,
     warning:
       picked.length === 0
