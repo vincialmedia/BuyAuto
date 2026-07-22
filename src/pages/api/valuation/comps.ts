@@ -139,6 +139,9 @@ async function firecrawlScrape(
     // Swiss portals sit behind aggressive bot protection — let Firecrawl escalate
     // to its stealth proxy when the basic fetch gets blocked.
     proxy: "auto",
+    // The inventory pages are client-rendered SPAs: give hydration a moment so
+    // the listing cards are in the DOM before capture.
+    waitFor: 3_000,
     // Category inventories don't move fast; serve Firecrawl's cache for 1h so
     // repeated lookups of popular models cost no extra scrape.
     maxAge: 3_600_000,
@@ -273,7 +276,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
   const input = req.method === "GET" ? req.query : req.body ?? {};
-  const debug = String((input as Record<string, unknown>).debug ?? "") === "1";
+  // debug=1: funnel stats. debug=2: additionally raw markdown samples per scrape.
+  const debugLevel = Number((input as Record<string, unknown>).debug ?? 0) || 0;
+  const debug = debugLevel >= 1;
 
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
@@ -384,7 +389,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // are constructed directly from make/model, so this round ALWAYS has live
   // sources and never depends on the search surfacing one.
   let candidatesTried = 0;
-  const scrapeDebug: Array<{ url: string; status: number | "network"; chars: number; added: number }> = [];
+  const scrapeDebug: Array<{
+    url: string;
+    status: number | "network";
+    chars: number;
+    added: number;
+    mdLinks?: number;
+    sample?: string;
+  }> = [];
   // Deterministic inventory pages FIRST — search-discovered categories only fill
   // the remaining slot, so junk can never crowd out the two known-good sources.
   const orderedCategoryUrls = [
@@ -439,7 +451,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
       added += addedHere;
-      scrapeDebug.push({ url, status, chars: markdown.length, added: addedHere });
+      scrapeDebug.push({
+        url,
+        status,
+        chars: markdown.length,
+        added: addedHere,
+        ...(debugLevel >= 2
+          ? { mdLinks: (markdown.match(/\]\(/g) ?? []).length, sample: markdown.slice(0, 1500) }
+          : {}),
+      });
     });
     stats.push({
       query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate)`,

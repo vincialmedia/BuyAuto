@@ -1,0 +1,27 @@
+# Temporary diagnostic: curl the valuation debug endpoint from a GitHub runner
+# (the dev sandbox cannot reach vercel.app directly). Trigger manually, read the
+# job log. Remove once the comp-search funnel is verified.
+name: valuation-debug-probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Debug endpoint URL to fetch
+        required: true
+        type: string
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch debug endpoint
+        env:
+          PROBE_URL: ${{ inputs.url }}
+        run: |
+          curl -sS --max-time 120 "$PROBE_URL" -o out.json -w "HTTP %{http_code} in %{time_total}s\n"
+          echo "=== BODY START ==="
+          head -c 80000 out.json
+          echo ""
+          echo "=== BODY END ==="
