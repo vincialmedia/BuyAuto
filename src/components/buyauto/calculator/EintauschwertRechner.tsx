@@ -14,6 +14,8 @@ import {
   Search,
   Loader2,
   ExternalLink,
+  ArrowRight,
+  Pencil,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -258,15 +260,8 @@ const CalculatorSkeleton = () => (
   <div className="w-full space-y-8 animate-pulse" aria-hidden="true">
     {/* Presets bar */}
     <div className="h-24 sm:h-16 bg-neutral-50 rounded-xl border border-neutral-200" />
-    {/* Vehicle + comps card / deductions card */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="h-[560px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
-      <div className="h-[560px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
-    </div>
-    {/* Calculate button */}
-    <div className="h-16 max-w-md mx-auto bg-neutral-100 rounded-xl" />
-    {/* Results */}
-    <div className="h-[420px] bg-neutral-900 rounded-2xl" />
+    {/* Step-1 vehicle card */}
+    <div className="h-[560px] max-w-2xl mx-auto bg-white rounded-xl border border-neutral-200 shadow-sm" />
   </div>
 );
 
@@ -291,6 +286,10 @@ export function EintauschwertRechner() {
   // Explicit user-facing choice between dropdowns and free text. Deriving this
   // from "is the field empty" flips the input type mid-keystroke — never do that.
   const [vehicleFieldMode, setVehicleFieldMode] = useState<'select' | 'text'>('select');
+  // Two-step flow: 1 = vehicle & market, 2 = garage deductions + result.
+  const [step, setStep] = useState<1 | 2>(1);
+  // Vehicle identity at calculation time — changing the car invalidates comps.
+  const searchedVehicleRef = useRef("");
 
   // Latest committed values for async handlers: the search response must merge
   // into what the user sees NOW, not into a snapshot from click time.
@@ -401,19 +400,21 @@ export function EintauschwertRechner() {
     setMakeId("");
     setModelId("");
     setVehicleFieldMode('text');
+    setStep(2);
     toast.success("Beispielwerte geladen", {
       description: "Manuelle Vergleichswerte für einen VW Golf (2020).",
     });
   };
 
   const handleReset = () => {
-    setState(DEFAULT_STATE);
+    setState({ ...DEFAULT_STATE, comps: DEFAULT_STATE.comps.map((c) => ({ ...c })) });
     setResult(null);
     setGated(false);
     setFoundListings([]);
     setMakeId("");
     setModelId("");
     setVehicleFieldMode('select');
+    setStep(1);
   };
 
   const handleMakeSelect = (id: string) => {
@@ -505,7 +506,67 @@ export function EintauschwertRechner() {
     }
     setResult(computed);
     setGated(false);
+    searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}`;
     consumeFreeLookup();
+  };
+
+  // Recompute with edited deductions/comps — the comps are already paid for, so
+  // no new search, no gate, no freebie consumption.
+  const handleRecalculate = () => {
+    const computed = compute(state);
+    if (!computed) {
+      toast.error("Keine Vergleichspreise vorhanden", {
+        description: "Trag mindestens ein Vergleichsfahrzeug mit Preis ein.",
+      });
+      return;
+    }
+    setResult(computed);
+    toast.success("Neu berechnet");
+  };
+
+  // Fresh car, same garage: vehicle and comps reset, the Abzüge (the garage's
+  // own cost structure) are kept.
+  const handleNewCar = () => {
+    setState((prev) => ({
+      ...DEFAULT_STATE,
+      comps: DEFAULT_STATE.comps.map((c) => ({ ...c })),
+      kmRate: prev.kmRate,
+      reconCost: prev.reconCost,
+      warrantyCost: prev.warrantyCost,
+      standingCost: prev.standingCost,
+      marginMode: prev.marginMode,
+      marginPercent: prev.marginPercent,
+      marginFixed: prev.marginFixed,
+    }));
+    setResult(null);
+    setFoundListings([]);
+    setGated(false);
+    setMakeId("");
+    setModelId("");
+    setVehicleFieldMode('select');
+    setCompsMode('auto');
+    setStep(1);
+    searchedVehicleRef.current = "";
+    document.getElementById('calculator-tool')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Step 1 -> 2. If the car changed since the last calculation, the old comps
+  // and result no longer describe it — clear them (auto mode only; manually
+  // entered comps are the user's own data).
+  const handleContinue = () => {
+    if (!validateVehicle()) return;
+    const key = `${state.make}|${state.model}|${state.year}`;
+    if (result && searchedVehicleRef.current && key !== searchedVehicleRef.current) {
+      setResult(null);
+      if (compsMode === 'auto') {
+        setFoundListings([]);
+        setState((prev) => ({
+          ...prev,
+          comps: DEFAULT_STATE.comps.map((c) => ({ ...c })),
+        }));
+      }
+    }
+    setStep(2);
   };
 
   const handleManualCalculate = () => {
@@ -552,6 +613,7 @@ export function EintauschwertRechner() {
             description: "Erfasse die Vergleichsfahrzeuge manuell – der Rechner funktioniert weiterhin.",
           });
           setCompsMode('manual');
+          setStep(1); // the manual comp rows live in step 1
         } else if (res.status === 429) {
           toast.error("Zu viele Anfragen", {
             description: body?.message ?? "Bitte versuch es in einer Stunde nochmals.",
@@ -584,6 +646,7 @@ export function EintauschwertRechner() {
           duration: 10000,
         });
         setCompsMode('manual');
+        setStep(1); // the manual comp rows live in step 1
         return;
       }
 
@@ -614,6 +677,91 @@ export function EintauschwertRechner() {
 
   if (!isClient) return <CalculatorSkeleton />;
 
+  // Shared blocks (plain JSX values, NOT components — a component defined inside
+  // the render body remounts on every keystroke and inputs lose focus).
+  const compRowsEditor = (
+    <>
+      <div className="space-y-3">
+        {state.comps.map((comp, i) => (
+          <div key={i} className="flex items-end gap-2">
+            <div className="flex-1">
+              <MoneyInput
+                label={i === 0 ? "Inseratspreis" : ""}
+                value={comp.price}
+                onChange={(v) => updateComp(i, 'price', v)}
+              />
+            </div>
+            <div className="flex-1">
+              <MoneyInput
+                label={i === 0 ? "Kilometerstand" : ""}
+                value={comp.km}
+                onChange={(v) => updateComp(i, 'km', v)}
+                unit="km"
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-neutral-400 hover:text-red-600"
+              onClick={() => removeComp(i)}
+              disabled={state.comps.length <= 1}
+              title="Zeile entfernen"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={addComp}
+        disabled={state.comps.length >= MAX_COMPS}
+        className="border-neutral-300 text-neutral-700"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Vergleichsfahrzeug
+      </Button>
+    </>
+  );
+
+  const foundListingsBlock = foundListings.length > 0 && (
+    <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 space-y-2">
+      <p className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
+        Gefundene Inserate
+      </p>
+      {foundListings.map((l, i) => (
+        <a
+          key={i}
+          href={l.url}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          className="flex items-center justify-between gap-2 text-sm text-neutral-600 hover:text-red-600 transition-colors group"
+        >
+          <span className="truncate">{l.title}</span>
+          <span className="shrink-0 flex items-center gap-2 text-xs text-neutral-400 group-hover:text-red-600">
+            CHF {chf(l.price)} · {chf(l.km)} km · {l.source}
+            <ExternalLink className="w-3 h-3" />
+          </span>
+        </a>
+      ))}
+    </div>
+  );
+
+  const kmRateInput = (
+    <div className="w-40">
+      <MoneyInput
+        label="km-Angleich"
+        value={state.kmRate}
+        onChange={(v) => updateState('kmRate', v)}
+        unit="CHF/km"
+        step="0.01"
+        tooltip="Wert pro Kilometer Laufleistungs-Differenz. Faustregel: 0.05–0.15 CHF/km je nach Segment (Kleinwagen tiefer, Premium höher)."
+      />
+    </div>
+  );
+
   return (
     <div className="w-full space-y-8" id="calculator-tool">
 
@@ -641,11 +789,9 @@ export function EintauschwertRechner() {
         </Button>
       </div>
 
-      {/* --- Main Input Grid --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-        {/* LEFT: Vehicle + Comps */}
-        <Card className="border-neutral-200 shadow-sm overflow-hidden h-full">
+      {/* --- STEP 1: Vehicle & Market --- */}
+      {step === 1 && (
+        <Card className="max-w-2xl mx-auto border-neutral-200 shadow-sm overflow-hidden">
           <CardHeader className="bg-neutral-50 border-b border-neutral-100 pb-4">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-full bg-neutral-900 text-white flex items-center justify-center text-sm font-bold">1</div>
@@ -821,89 +967,53 @@ export function EintauschwertRechner() {
 
             {(compsMode === 'manual' || foundListings.length > 0) && (
               <>
-                <div className="space-y-3">
-                  {state.comps.map((comp, i) => (
-                    <div key={i} className="flex items-end gap-2">
-                      <div className="flex-1">
-                        <MoneyInput
-                          label={i === 0 ? "Inseratspreis" : ""}
-                          value={comp.price}
-                          onChange={(v) => updateComp(i, 'price', v)}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <MoneyInput
-                          label={i === 0 ? "Kilometerstand" : ""}
-                          value={comp.km}
-                          onChange={(v) => updateComp(i, 'km', v)}
-                          unit="km"
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 text-neutral-400 hover:text-red-600"
-                        onClick={() => removeComp(i)}
-                        disabled={state.comps.length <= 1}
-                        title="Zeile entfernen"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addComp}
-                  disabled={state.comps.length >= MAX_COMPS}
-                  className="border-neutral-300 text-neutral-700"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Vergleichsfahrzeug
-                </Button>
+                {compRowsEditor}
+                {foundListingsBlock}
+                {kmRateInput}
               </>
             )}
 
-            {foundListings.length > 0 && (
-              <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 space-y-2">
-                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                  Gefundene Inserate
-                </p>
-                {foundListings.map((l, i) => (
-                  <a
-                    key={i}
-                    href={l.url}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className="flex items-center justify-between gap-2 text-sm text-neutral-600 hover:text-red-600 transition-colors group"
-                  >
-                    <span className="truncate">{l.title}</span>
-                    <span className="shrink-0 flex items-center gap-2 text-xs text-neutral-400 group-hover:text-red-600">
-                      CHF {chf(l.price)} · {chf(l.km)} km · {l.source}
-                      <ExternalLink className="w-3 h-3" />
-                    </span>
-                  </a>
-                ))}
-              </div>
-            )}
-
-            <div className="w-40">
-              <MoneyInput
-                label="km-Angleich"
-                value={state.kmRate}
-                onChange={(v) => updateState('kmRate', v)}
-                unit="CHF/km"
-                step="0.01"
-                tooltip="Wert pro Kilometer Laufleistungs-Differenz. Faustregel: 0.05–0.15 CHF/km je nach Segment (Kleinwagen tiefer, Premium höher)."
-              />
-            </div>
+            <Button
+              size="lg"
+              onClick={handleContinue}
+              className="w-full bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 py-6 text-base font-semibold rounded-xl"
+            >
+              Weiter zu den Abzügen
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
           </CardContent>
         </Card>
+      )}
 
-        {/* RIGHT: Deductions */}
-        <Card className="border-neutral-200 shadow-sm overflow-hidden h-full">
+      {/* --- STEP 2: Deductions + Result --- */}
+      {step === 2 && (
+        <div className="max-w-2xl mx-auto space-y-6">
+
+        {/* Vehicle summary strip */}
+        <div className="flex items-center justify-between gap-4 bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+              <Car className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-neutral-900 truncate">{vehicleLabel || "Fahrzeug"}</p>
+              <p className="text-xs text-neutral-500">
+                {chf(state.vehicleKm)} km · {compsMode === 'auto' ? "Automatische Suche" : "Manuelle Vergleichswerte"}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setStep(1)}
+            className="shrink-0 text-neutral-500 hover:text-red-600"
+          >
+            <Pencil className="w-4 h-4 mr-2" />
+            Bearbeiten
+          </Button>
+        </div>
+
+        <Card className="border-neutral-200 shadow-sm overflow-hidden">
           <CardHeader className="bg-neutral-50 border-b border-neutral-100 pb-4">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-full bg-white border-2 border-neutral-900 text-neutral-900 flex items-center justify-center text-sm font-bold">2</div>
@@ -1003,41 +1113,82 @@ export function EintauschwertRechner() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* --- CALCULATE BUTTON --- */}
-      <div className="flex flex-col items-center gap-3">
-        <Button
-          size="lg"
-          onClick={compsMode === 'auto' ? handleSearchAndCalculate : handleManualCalculate}
-          disabled={searching}
-          className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 px-10 py-6 text-base font-semibold rounded-xl w-full max-w-md"
-        >
-          {searching ? (
-            <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Suche Vergleichsinserate…
-            </>
-          ) : compsMode === 'auto' ? (
-            <>
-              <Search className="w-5 h-5 mr-2" />
-              Inserate suchen & Eintauschwert berechnen
-            </>
-          ) : (
-            <>
-              <Calculator className="w-5 h-5 mr-2" />
-              Eintauschwert berechnen
-            </>
-          )}
-        </Button>
-        {!user && (
-          <p className="text-xs text-neutral-400 text-center">
-            {freeLookupUsed
-              ? "Deine Gratis-Berechnung ist aufgebraucht – mit kostenlosem Konto rechnest du unbegrenzt weiter."
-              : "1 Berechnung gratis ohne Konto. Danach: unbegrenzt kostenlos mit BuyAuto-Konto."}
-          </p>
+        {/* Comps stay editable after a calculation — "Neuberechnung" reuses them. */}
+        {result && state.comps.some((c) => c.price > 0) && (
+          <Card className="border-neutral-200 shadow-sm overflow-hidden">
+            <CardHeader className="bg-neutral-50 border-b border-neutral-100 pb-4">
+              <CardTitle className="text-base font-bold text-neutral-700">
+                Vergleichsinserate (anpassbar)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              {foundListingsBlock}
+              {compRowsEditor}
+              {kmRateInput}
+            </CardContent>
+          </Card>
         )}
-      </div>
+
+        {/* --- CALCULATE / RECALCULATE --- */}
+        <div className="flex flex-col items-center gap-3">
+          <Button
+            size="lg"
+            onClick={
+              result
+                ? handleRecalculate
+                : compsMode === 'auto'
+                  ? handleSearchAndCalculate
+                  : handleManualCalculate
+            }
+            disabled={searching}
+            className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 px-10 py-6 text-base font-semibold rounded-xl w-full max-w-md"
+          >
+            {searching ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Suche Vergleichsinserate…
+              </>
+            ) : result ? (
+              <>
+                <RotateCcw className="w-5 h-5 mr-2" />
+                Neuberechnung
+              </>
+            ) : compsMode === 'auto' ? (
+              <>
+                <Search className="w-5 h-5 mr-2" />
+                Inserate suchen & Eintauschwert berechnen
+              </>
+            ) : (
+              <>
+                <Calculator className="w-5 h-5 mr-2" />
+                Eintauschwert berechnen
+              </>
+            )}
+          </Button>
+          {result && (
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleNewCar}
+              className="border-neutral-300 text-neutral-700 hover:text-red-600 hover:border-red-300 rounded-xl w-full max-w-md"
+            >
+              <Car className="w-5 h-5 mr-2" />
+              Neues Auto berechnen
+            </Button>
+          )}
+          {!user && (
+            <p className="text-xs text-neutral-400 text-center">
+              {result
+                ? "Neuberechnungen mit angepassten Abzügen sind gratis – für ein neues Auto brauchst du ein kostenloses Konto."
+                : freeLookupUsed
+                  ? "Deine Gratis-Berechnung ist aufgebraucht – mit kostenlosem Konto rechnest du unbegrenzt weiter."
+                  : "1 Berechnung gratis ohne Konto. Danach: unbegrenzt kostenlos mit BuyAuto-Konto."}
+            </p>
+          )}
+        </div>
+        </div>
+      )}
 
       {/* --- SIGNUP GATE --- */}
       {gated && (

@@ -31,15 +31,8 @@ const CalculatorSkeleton = () => (
   <div className="w-full space-y-8 animate-pulse" aria-hidden="true">
     {/* Presets bar */}
     <div className="h-24 sm:h-16 bg-neutral-50 rounded-xl border border-neutral-200" />
-    {/* Vehicle + comps card / deductions card */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="h-[520px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
-      <div className="h-[520px] bg-white rounded-xl border border-neutral-200 shadow-sm" />
-    </div>
-    {/* Calculate button */}
-    <div className="h-16 max-w-md mx-auto bg-neutral-100 rounded-xl" />
-    {/* Results */}
-    <div className="h-[420px] bg-neutral-900 rounded-2xl" />
+    {/* Step-1 vehicle card */}
+    <div className="h-[560px] max-w-2xl mx-auto bg-white rounded-xl border border-neutral-200 shadow-sm" />
   </div>
 );
 
