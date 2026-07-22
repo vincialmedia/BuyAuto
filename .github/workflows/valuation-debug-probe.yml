@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - name: Wait for Vercel preview redeploy
-        run: sleep 150
-      - name: Fetch debug endpoint
+      - name: Fetch debug endpoint (show redirect chain)
         run: |
-          curl -sS --max-time 120 \
+          curl -sS -D headers.txt -L --max-time 120 \
             "https://sg-e0f88b33-2555-4eac-800d-c7-git-0cbc75-vincialmedias-projects.vercel.app/api/valuation/comps?make=VW&model=Golf&year=2020&km=78003&debug=2" \
-            -o out.json -w "HTTP %{http_code} in %{time_total}s\n"
+            -o out.json -w "final HTTP %{http_code} after %{num_redirects} redirects in %{time_total}s\n" || true
+          echo "=== HEADERS ==="
+          cat headers.txt
           echo "=== BODY START ==="
           head -c 80000 out.json
           echo ""
