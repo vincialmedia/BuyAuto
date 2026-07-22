@@ -98,9 +98,22 @@ export default function AuthPage() {
     );
   }
 
+  // ?view=register (and optionally ?type=garage) lets a link land straight on the
+  // registration tab with the account type preselected — used by the calculator's
+  // "signup for more searches" CTA.
+  const viewParam = Array.isArray(router.query.view) ? router.query.view[0] : router.query.view;
+  const typeParam = Array.isArray(router.query.type) ? router.query.type[0] : router.query.type;
+  const initialView = isRecovery
+    ? "update-password"
+    : viewParam === "register"
+      ? "register"
+      : "login";
+  const initialAccountType =
+    typeParam === "garage" || typeParam === "dealer" ? "garage" : undefined;
+
   return (
     <AuthLayout>
-      <AuthForm initialView={isRecovery ? "update-password" : "login"} />
+      <AuthForm initialView={initialView} initialAccountType={initialAccountType} />
     </AuthLayout>
   );
 }

@@ -30,6 +30,12 @@ export const garageIncludedFeatures: GarageIncludedFeature[] = [
     tooltip:
       "Du kannst mit Leads chatten, Dokumente hochladen und direkt pro Fahrzeug anfordern.",
   },
+  {
+    key: "eintauschwert_rechner",
+    label: "Eintauschwert-Rechner: 100 Suchen / Monat",
+    tooltip:
+      "Ankaufspreis aus echten Vergleichsinseraten berechnen – direkt im Dashboard und einbettbar auf deiner Website. Bis zu 100 automatische Suchen pro Monat, manuelle Berechnungen unbegrenzt.",
+  },
   { key: "basic_stats", label: "Basis-Statistiken: Views & Anfragen" },
 ];
 

@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import {
   as24CategoryUrl,
   comparisCategoryUrl,
@@ -13,6 +14,7 @@ import {
   stripMarkdownImages,
   yearMatches,
 } from "@/lib/buyauto/compsParser";
+import { checkAndConsumeQuota, type QuotaResult } from "@/lib/buyauto/valuationQuota";
 
 // Firecrawl search calls can take 10-30s; lift the serverless limit accordingly.
 // Pages Router API routes configure maxDuration via the config export (the bare
@@ -341,6 +343,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
+  // --- Monthly quota (logged-in users) ---
+  // Consumed AFTER validation and the Firecrawl-key check, BEFORE the billable
+  // search. Anonymous users are metered client-side (localStorage) + the IP soft
+  // limit above; a logged-in user gets a server-authoritative 5/mo (free) or
+  // 100/mo (paid dealer). debug=* calls never consume quota.
+  let quota: QuotaResult | null = null;
+  if (!debug) {
+    const supabase = createPagesServerClient({ req, res });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      quota = await checkAndConsumeQuota(supabase, user.id);
+      if (!quota.allowed) {
+        return res.status(402).json({
+          error: "quota_exceeded",
+          message:
+            quota.plan === "paid"
+              ? `Dein Monatskontingent von ${quota.limit} Suchen ist aufgebraucht.`
+              : `Dein Gratis-Kontingent von ${quota.limit} Suchen pro Monat ist aufgebraucht.`,
+          quota,
+        });
+      }
+    }
+  }
+
   // Query with the name listings actually use ("VW", not "Volkswagen").
   const queryMake = MAKE_ALIASES[makeStr.toLowerCase()] ?? makeStr;
   const vehicle = `${queryMake} ${modelStr}`;
@@ -508,6 +536,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   return res.status(200).json({
     comps: picked,
     queried: stats.map((s) => s.query),
+    quota: quota ?? undefined,
     debug: debug
       ? {
           input: { make: makeStr, model: modelStr, year: yearNum, km: kmNum, vehicleQuery: vehicle },

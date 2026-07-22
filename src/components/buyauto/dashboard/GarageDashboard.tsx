@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { Building2, Crown, Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Building2, Crown, Loader2, Calculator } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,15 @@ import { formatDealerEntitlementLabel, formatDateTimeDeCH, getDealerEntitlement,
 import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { GarageBasisTab } from "@/components/buyauto/dashboard/GarageBasisTab";
+
+// Client-only chunk, kept out of the dashboard's initial bundle.
+const EintauschwertRechner = dynamic(
+  () =>
+    import("@/components/buyauto/calculator/EintauschwertRechner").then(
+      (mod) => mod.EintauschwertRechner
+    ),
+  { ssr: false }
+);
 
 export interface GarageDashboardProps {
   initialGarage: Garage | null;
@@ -115,7 +125,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const [banner, setBanner] = useState<BannerState>({ kind: "idle" });
   const [logoVersion, setLogoVersion] = useState<number>(0);
 
-  const [mainTab, setMainTab] = useState<"inventory" | "basis" | "profile" | "subscription" | "stats">("inventory");
+  const [mainTab, setMainTab] = useState<"inventory" | "basis" | "profile" | "subscription" | "stats" | "rechner">("inventory");
   const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts" | "sold">("active");
 
   const planLabel = useMemo(() => {
@@ -135,6 +145,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
       const hash = window.location.hash || "";
       if (hash.toLowerCase() === "#zahlung") setMainTab("subscription");
       if (hash.toLowerCase() === "#stats") setMainTab("stats");
+      if (hash.toLowerCase() === "#rechner") setMainTab("rechner");
     };
 
     applyFromHash();
@@ -421,10 +432,13 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
               </div>
             )}
 
-            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "inventory" | "basis" | "profile" | "subscription" | "stats")} className="w-full">
+            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "inventory" | "basis" | "profile" | "subscription" | "stats" | "rechner")} className="w-full">
               <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-neutral-100 p-1.5 h-auto">
                 <TabsTrigger value="inventory" className="rounded-xl px-6 py-3 text-base font-semibold">
                   Inventar
+                </TabsTrigger>
+                <TabsTrigger value="rechner" className="rounded-xl px-6 py-3 text-base font-semibold">
+                  Eintausch-Rechner
                 </TabsTrigger>
                 <TabsTrigger value="basis" className="rounded-xl px-6 py-3 text-base font-semibold">
                   Basis Daten
@@ -484,6 +498,51 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                   ) : (
                     <ListingsSection view="sold" />
                   )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="rechner" className="mt-5">
+                <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-4 sm:p-6">
+                  <div className="mb-6 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center shrink-0">
+                      <Calculator className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">Eintauschwert-Rechner</h2>
+                      <p className="text-sm text-neutral-600 mt-1">
+                        Marktwert aus echten Vergleichsinseraten, minus deine Abzüge. Automatische
+                        Suchen zählen zu deinem Monatskontingent; manuelle Berechnungen sind unbegrenzt.
+                      </p>
+                    </div>
+                  </div>
+
+                  <EintauschwertRechner />
+
+                  <details className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                    <summary className="cursor-pointer select-none font-medium text-neutral-900">
+                      Rechner auf der eigenen Website einbetten
+                    </summary>
+                    <div className="mt-3 space-y-3">
+                      <p className="text-neutral-600">
+                        Füge diesen Code auf deiner Website ein – die Höhe passt sich automatisch an.
+                      </p>
+                      <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-xs text-white">
+{`<iframe
+  id="buyauto-eintauschwert-rechner"
+  src="https://www.buyauto.ch/embed/eintauschwert-rechner?embedId=buyauto-eintauschwert-rechner"
+  style="width:100%;border:0;display:block;min-height:640px;"
+  loading="lazy"
+></iframe>
+<script>
+  window.addEventListener("message", function (e) {
+    if (!e.data || e.data.type !== "buyauto:resize") return;
+    var f = document.getElementById(e.data.id);
+    if (f && typeof e.data.height === "number") f.style.height = Math.max(640, e.data.height) + "px";
+  });
+</script>`}
+                      </pre>
+                    </div>
+                  </details>
                 </div>
               </TabsContent>
 

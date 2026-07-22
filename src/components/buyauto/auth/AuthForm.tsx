@@ -18,9 +18,13 @@ type AuthView = "login" | "register" | "reset-password" | "update-password";
 
 interface AuthFormProps {
   initialView?: AuthView;
+  initialAccountType?: "private" | "garage";
 }
 
-export default function AuthForm({ initialView = "login" }: AuthFormProps = {}) {
+export default function AuthForm({
+  initialView = "login",
+  initialAccountType,
+}: AuthFormProps = {}) {
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -254,6 +258,7 @@ export default function AuthForm({ initialView = "login" }: AuthFormProps = {}) 
               onRegister={handleRegister}
               onShowLogin={() => setCurrentView("login")}
               isLoading={isLoading}
+              initialAccountType={initialAccountType}
             />
           </TabsContent>
         </Tabs>

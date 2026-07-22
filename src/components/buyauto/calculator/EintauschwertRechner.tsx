@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { FREE_MONTHLY_LIMIT, PAID_MONTHLY_LIMIT } from "@/lib/buyauto/valuationQuota";
 
 // --- Types ---
 
@@ -137,9 +138,24 @@ const PRESET_GOLF: CalculatorState = {
 
 const MAX_COMPS = 6;
 
-// localStorage flag for the one free anonymous calculation. Deliberately simple:
-// this is a lead magnet, not DRM — a cleared cache just grants another freebie.
-const FREE_LOOKUP_KEY = "buyauto_eintausch_free_used";
+// Anonymous users get a taste before signing up: 5 free automatic searches,
+// counted in localStorage. This is a lead magnet, not DRM — a cleared cache just
+// grants another 5. Logged-in users are metered server-side (5/mo free, 100/mo
+// paid) via /api/valuation/*. Only automatic searches count; manual entry and
+// "Neuberechnung" are always free.
+const ANON_FREE_SEARCHES = 5;
+const ANON_SEARCH_KEY = "buyauto_eintausch_anon_searches";
+
+type GateKind = null | "anon" | "free_plan" | "paid_limit";
+
+interface QuotaState {
+  used: number;
+  limit: number;
+  remaining: number;
+  plan: "free" | "paid";
+}
+
+const SIGNUP_HREF = "/auth?view=register&type=garage&redirect=/eintauschwert-rechner";
 
 const chf = (v: number) =>
   Math.round(v).toLocaleString("de-CH");
@@ -272,8 +288,9 @@ export function EintauschwertRechner() {
   const [state, setState] = useState<CalculatorState>(DEFAULT_STATE);
   const [isClient, setIsClient] = useState(false);
   const [result, setResult] = useState<CalcResult | null>(null);
-  const [gated, setGated] = useState(false);
-  const [freeLookupUsed, setFreeLookupUsed] = useState(false);
+  const [gateKind, setGateKind] = useState<GateKind>(null);
+  const [anonSearchesUsed, setAnonSearchesUsed] = useState(0);
+  const [quota, setQuota] = useState<QuotaState | null>(null);
   const [showFormulas, setShowFormulas] = useState(false);
   const [compsMode, setCompsMode] = useState<CompsMode>('auto');
   const [searching, setSearching] = useState(false);
@@ -305,9 +322,30 @@ export function EintauschwertRechner() {
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined') {
-      setFreeLookupUsed(window.localStorage.getItem(FREE_LOOKUP_KEY) === "1");
+      const raw = Number(window.localStorage.getItem(ANON_SEARCH_KEY) ?? 0);
+      setAnonSearchesUsed(Number.isFinite(raw) && raw > 0 ? raw : 0);
     }
   }, []);
+
+  // Load the logged-in user's authoritative monthly quota so the counter is
+  // correct before the first search. Anonymous users keep the localStorage count.
+  useEffect(() => {
+    if (!user) {
+      setQuota(null);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/valuation/quota")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d?.authenticated) return;
+        setQuota({ used: d.used, limit: d.limit, remaining: d.remaining, plan: d.plan });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // Make/model dropdowns from the existing vehicles API — best-effort; when the
   // lists are unavailable the fields degrade to free-text inputs below.
@@ -360,9 +398,9 @@ export function EintauschwertRechner() {
     };
   }, [makeId]);
 
-  // A login lifts the gate: recompute nothing, just unlock the button again.
+  // A login clears the anonymous gate — the server quota takes over.
   useEffect(() => {
-    if (user) setGated(false);
+    if (user) setGateKind(null);
   }, [user]);
 
   const updateState = <K extends keyof CalculatorState>(key: K, value: CalculatorState[K]) => {
@@ -409,7 +447,7 @@ export function EintauschwertRechner() {
   const handleReset = () => {
     setState({ ...DEFAULT_STATE, comps: DEFAULT_STATE.comps.map((c) => ({ ...c })) });
     setResult(null);
-    setGated(false);
+    setGateKind(null);
     setFoundListings([]);
     setMakeId("");
     setModelId("");
@@ -478,22 +516,32 @@ export function EintauschwertRechner() {
     return true;
   };
 
-  // Returns false when the anonymous freebie is spent (gate shown instead).
-  const passesGate = (): boolean => {
-    if (user) return true;
-    if (freeLookupUsed) {
-      setGated(true);
+  // Remaining automatic searches for the current viewer (used for the counter and
+  // the pre-search gate). null = unknown (e.g. logged-in quota still loading).
+  const searchesRemaining: number | null = user
+    ? quota
+      ? quota.remaining
+      : null
+    : Math.max(0, ANON_FREE_SEARCHES - anonSearchesUsed);
+  const searchesLimit = user ? quota?.limit ?? null : ANON_FREE_SEARCHES;
+
+  // Blocks an automatic search when the quota is exhausted, showing the right
+  // gate. Returns true when the search may proceed. Manual entry never calls this.
+  const gateBeforeSearch = (): boolean => {
+    if (!user) {
+      if (anonSearchesUsed >= ANON_FREE_SEARCHES) {
+        setGateKind("anon");
+        setResult(null);
+        return false;
+      }
+      return true;
+    }
+    if (quota && quota.remaining <= 0) {
+      setGateKind(quota.plan === "paid" ? "paid_limit" : "free_plan");
       setResult(null);
       return false;
     }
     return true;
-  };
-
-  const consumeFreeLookup = () => {
-    if (!user) {
-      window.localStorage.setItem(FREE_LOOKUP_KEY, "1");
-      setFreeLookupUsed(true);
-    }
   };
 
   const finishWithComputation = (nextState: CalculatorState) => {
@@ -502,12 +550,12 @@ export function EintauschwertRechner() {
       toast.error("Keine Vergleichspreise vorhanden", {
         description: "Trag mindestens ein Vergleichsfahrzeug mit Preis ein.",
       });
-      return;
+      return false;
     }
     setResult(computed);
-    setGated(false);
+    setGateKind(null);
     searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}`;
-    consumeFreeLookup();
+    return true;
   };
 
   // Recompute with edited deductions/comps — the comps are already paid for, so
@@ -540,7 +588,7 @@ export function EintauschwertRechner() {
     }));
     setResult(null);
     setFoundListings([]);
-    setGated(false);
+    setGateKind(null);
     setMakeId("");
     setModelId("");
     setVehicleFieldMode('select');
@@ -569,9 +617,10 @@ export function EintauschwertRechner() {
     setStep(2);
   };
 
+  // Manual comp entry hits no portal and spends no Firecrawl credits — it is
+  // always free and never metered.
   const handleManualCalculate = () => {
     if (!validateVehicle()) return;
-    if (!passesGate()) return;
 
     const validComps = state.comps.filter((c) => c.price > 0);
     if (validComps.length === 0) {
@@ -590,7 +639,7 @@ export function EintauschwertRechner() {
 
   const handleSearchAndCalculate = async () => {
     if (!validateVehicle()) return;
-    if (!passesGate()) return;
+    if (!gateBeforeSearch()) return;
 
     setSearching(true);
     setFoundListings([]);
@@ -608,7 +657,20 @@ export function EintauschwertRechner() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        if (res.status === 503) {
+        if (res.status === 402) {
+          // Server quota exhausted (logged-in). Reflect the authoritative numbers
+          // and show the matching gate.
+          if (body?.quota) {
+            setQuota({
+              used: body.quota.used,
+              limit: body.quota.limit,
+              remaining: body.quota.remaining ?? 0,
+              plan: body.quota.plan,
+            });
+          }
+          setGateKind(body?.quota?.plan === "paid" ? "paid_limit" : "free_plan");
+          setResult(null);
+        } else if (res.status === 503) {
           toast.error("Automatische Suche momentan nicht verfügbar", {
             description: "Erfasse die Vergleichsfahrzeuge manuell – der Rechner funktioniert weiterhin.",
           });
@@ -626,8 +688,32 @@ export function EintauschwertRechner() {
         return;
       }
 
-      const data: { comps: FoundListing[]; warning?: string; diagnosis?: string } = await res.json();
+      const data: {
+        comps: FoundListing[];
+        warning?: string;
+        diagnosis?: string;
+        quota?: QuotaState;
+      } = await res.json();
       const comps = Array.isArray(data.comps) ? data.comps : [];
+
+      // The search ran (Firecrawl was billed) — count it. Logged-in users get the
+      // server's authoritative number; anonymous users bump the localStorage tally.
+      if (data.quota) {
+        setQuota({
+          used: data.quota.used,
+          limit: data.quota.limit,
+          remaining: data.quota.remaining ?? Math.max(0, data.quota.limit - data.quota.used),
+          plan: data.quota.plan,
+        });
+      } else if (!user) {
+        const next = anonSearchesUsed + 1;
+        setAnonSearchesUsed(next);
+        try {
+          window.localStorage.setItem(ANON_SEARCH_KEY, String(next));
+        } catch {
+          /* ignore storage errors */
+        }
+      }
 
       // The user switched to manual entry while the search ran — their typed
       // comps win, the late results are discarded.
@@ -1177,60 +1263,111 @@ export function EintauschwertRechner() {
               Neues Auto berechnen
             </Button>
           )}
-          {!user && (
+          {/* Search counter — auto mode, before a result exists. */}
+          {compsMode === 'auto' && !result && searchesRemaining !== null && (
+            <div className="text-sm text-center" aria-live="polite">
+              {searchesRemaining > 0 ? (
+                <span className="text-neutral-500">
+                  Noch{" "}
+                  <strong className="text-neutral-800">{searchesRemaining}</strong>
+                  {searchesLimit !== null ? ` von ${searchesLimit}` : ""}{" "}
+                  {user ? "Suchen diesen Monat" : "gratis Suchen"} übrig
+                </span>
+              ) : (
+                <span className="text-red-600 font-medium">
+                  {user ? "Monatskontingent aufgebraucht" : "Gratis-Suchen aufgebraucht"}
+                </span>
+              )}
+            </div>
+          )}
+          {result && (
             <p className="text-xs text-neutral-400 text-center">
-              {result
-                ? "Neuberechnungen mit angepassten Abzügen sind gratis – für ein neues Auto brauchst du ein kostenloses Konto."
-                : freeLookupUsed
-                  ? "Deine Gratis-Berechnung ist aufgebraucht – mit kostenlosem Konto rechnest du unbegrenzt weiter."
-                  : "1 Berechnung gratis ohne Konto. Danach: unbegrenzt kostenlos mit BuyAuto-Konto."}
+              Neuberechnungen mit angepassten Abzügen sind gratis und zählen nicht zu deinen Suchen.
             </p>
           )}
         </div>
         </div>
       )}
 
-      {/* --- SIGNUP GATE --- */}
-      {gated && (
+      {/* --- QUOTA GATE --- */}
+      {gateKind && (
         <div className="bg-neutral-900 rounded-2xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden" id="gate">
           <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/20 blur-[100px] rounded-full pointer-events-none" />
           <div className="relative z-10 max-w-xl mx-auto text-center space-y-6">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/10 border border-white/20">
               <Lock className="w-6 h-6 text-red-400" />
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold">
-              Kostenlos weiterrechnen
-            </h3>
-            <p className="text-neutral-300 leading-relaxed">
-              Deine Gratis-Berechnung ist aufgebraucht. Erstell dir ein <strong className="text-white">kostenloses
-              BuyAuto-Konto</strong> und rechne unbegrenzt weiter – der Rechner bleibt gratis.
-            </p>
-            <ul className="text-sm text-neutral-300 space-y-2 text-left max-w-xs mx-auto">
-              <li className="flex items-start gap-2">
-                <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                Unbegrenzte Eintauschwert-Berechnungen
-              </li>
-              <li className="flex items-start gap-2">
-                <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                Occasionen direkt auf BuyAuto inserieren
-              </li>
-              <li className="flex items-start gap-2">
-                <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                Garagen-Tools: eigene Microsite & Anfragen
-              </li>
-            </ul>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
-                <Link href="/auth?redirect=/eintauschwert-rechner">
-                  Kostenlos registrieren
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
-                <Link href="/auth?redirect=/eintauschwert-rechner">
-                  Ich habe schon ein Konto
-                </Link>
-              </Button>
-            </div>
+
+            {gateKind === "anon" && (
+              <>
+                <h3 className="text-2xl md:text-3xl font-bold">Mehr Suchen freischalten</h3>
+                <p className="text-neutral-300 leading-relaxed">
+                  Deine <strong className="text-white">{ANON_FREE_SEARCHES} gratis Suchen</strong> sind
+                  aufgebraucht. Registriere dich kostenlos als Garage und such weiter –
+                  plus Zugriff auf den Rechner in deinem Dashboard.
+                </p>
+                <ul className="text-sm text-neutral-300 space-y-2 text-left max-w-xs mx-auto">
+                  <li className="flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    {FREE_MONTHLY_LIMIT} Suchen pro Monat gratis – im Paket unbegrenzt*
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    Rechner im Dashboard & manuelle Berechnung ohne Limit
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    Occasionen inserieren & eigene Garagen-Microsite
+                  </li>
+                </ul>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
+                    <Link href={SIGNUP_HREF}>Kostenlos als Garage registrieren</Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
+                    <Link href="/auth?redirect=/eintauschwert-rechner">Ich habe schon ein Konto</Link>
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {gateKind === "free_plan" && (
+              <>
+                <h3 className="text-2xl md:text-3xl font-bold">Monatslimit erreicht</h3>
+                <p className="text-neutral-300 leading-relaxed">
+                  Du hast diesen Monat alle <strong className="text-white">{FREE_MONTHLY_LIMIT} Gratis-Suchen</strong>{" "}
+                  genutzt. Mit einem Garagen-Paket suchst du unbegrenzt* – und bekommst
+                  Inserate, Microsite und Anfragen dazu.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
+                    <Link href="/garage-plan">Garagen-Paket ansehen</Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
+                    <Link href="/preise">Preise vergleichen</Link>
+                  </Button>
+                </div>
+                <p className="text-xs text-neutral-500">
+                  Manuelle Berechnungen bleiben unbegrenzt gratis.
+                </p>
+              </>
+            )}
+
+            {gateKind === "paid_limit" && (
+              <>
+                <h3 className="text-2xl md:text-3xl font-bold">Monatskontingent erreicht</h3>
+                <p className="text-neutral-300 leading-relaxed">
+                  Du hast diesen Monat {PAID_MONTHLY_LIMIT} automatische Suchen genutzt – das
+                  faire Nutzungslimit deines Pakets. Brauchst du mehr? Melde dich, wir finden
+                  eine Lösung. Manuelle Berechnungen bleiben unbegrenzt.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
+                    <Link href="/#kontakt">Kontakt aufnehmen</Link>
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
