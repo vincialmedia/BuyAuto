@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   extractPrices,
+  identifyCategoryUrl,
   identifyListingUrl,
+  modelPrecision,
+  parseCategoryMarkdown,
   parseListingText,
   yearMatches,
 } from "@/lib/buyauto/compsParser";
@@ -149,15 +152,23 @@ function resultsToComps(
   results: FirecrawlWebResult[],
   targetYear: number,
   seenUrls: Set<string>,
-  candidates: Candidate[]
+  candidates: Candidate[],
+  categoryUrls: string[]
 ): { comps: CompOut[]; onMarketplace: number } {
   const comps: CompOut[] = [];
   let onMarketplace = 0;
   for (const r of results) {
     if (!r.url) continue;
-    // Individual listings only — model-overview/search pages are not comps.
+    // Individual listings only — model-overview/search pages are not comps, but
+    // marketplace category pages are worth harvesting: each carries dozens of
+    // real listings with price + km per card.
     const source = identifyListingUrl(r.url);
-    if (!source) continue;
+    if (!source) {
+      if (identifyCategoryUrl(r.url) && !categoryUrls.includes(r.url)) {
+        categoryUrls.push(r.url);
+      }
+      continue;
+    }
     if (seenUrls.has(r.url)) continue;
     onMarketplace += 1;
 
@@ -165,7 +176,7 @@ function resultsToComps(
     const parsed = parseFromTexts(`${r.title ?? ""} ${r.description ?? ""}`, r.markdown);
     if (!parsed) {
       // Listing URL without readable price/km in the snippet: remember it, a
-      // targeted page scrape (tier 3) can still extract the numbers.
+      // targeted page scrape can still extract the numbers.
       seenUrls.add(r.url);
       candidates.push({ url: r.url, title, source });
       continue;
@@ -184,11 +195,16 @@ function resultsToComps(
  */
 function pickBySimilarKm(
   comps: CompOut[],
-  targetKm: number
+  targetKm: number,
+  model: string
 ): { picked: CompOut[]; relaxed: boolean } {
-  const byDistance = [...comps].sort(
-    (a, b) => Math.abs(a.km - targetKm) - Math.abs(b.km - targetKm)
-  );
+  // Trim precision beats km proximity: a GTI comp poisons a 1.5-TSI valuation far
+  // worse than a 20'000-km mileage gap (the km-Angleich corrects mileage anyway).
+  const byDistance = [...comps].sort((a, b) => {
+    const p = modelPrecision(a.title, model) - modelPrecision(b.title, model);
+    if (p !== 0) return p;
+    return Math.abs(a.km - targetKm) - Math.abs(b.km - targetKm);
+  });
   const bands = [
     Math.max(30_000, targetKm * 0.4),
     Math.max(60_000, targetKm * 0.8),
@@ -287,79 +303,104 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const stats: TierStat[] = [];
   const seenUrls = new Set<string>();
   const candidates: Candidate[] = [];
+  const categoryUrls: string[] = [];
   let comps: CompOut[] = [];
   const startedAt = Date.now();
   const withinBudget = () => Date.now() - startedAt < TIER_DEADLINE_MS;
 
-  const runSearchTier = async (query: string, limit: number) => {
-    const outcome = await firecrawlSearch(apiKey, query, limit);
-    const { comps: found, onMarketplace } = resultsToComps(
-      outcome.results,
-      yearNum,
-      seenUrls,
-      candidates
-    );
-    comps.push(...found);
-    stats.push({
-      query,
-      status: outcome.status,
-      results: outcome.results.length,
-      onMarketplace,
-      parsed: found.length,
-    });
-    return outcome.status;
-  };
-
-  // Tier 1: snippet-only search, pinned to AutoScout24 DETAIL pages (/de/d/...)
-  // so results are individual cars, not model-overview pages. Unquoted terms —
+  // Round 1: three snippet-only searches in parallel — AutoScout24 detail pages,
+  // tutti detail pages, and a generic marketplace-wide query. Unquoted terms —
   // an exact-phrase match is too brittle for listing titles.
-  const t1Status = await runSearchTier(`site:autoscout24.ch/de/d ${vehicle} ${yearNum}`, 10);
+  const queries = [
+    `site:autoscout24.ch/de/d ${vehicle} ${yearNum}`,
+    `site:tutti.ch/de/vi ${vehicle}`,
+    `${vehicle} ${yearNum} Occasion Schweiz CHF km`,
+  ];
+  const outcomes = await Promise.all(queries.map((q) => firecrawlSearch(apiKey, q, 10)));
 
   // A key/quota problem hits every call the same way — fail loudly instead of
   // reporting a misleading "no listings found".
-  if (t1Status === 401 || t1Status === 403) {
+  if (outcomes.some((o) => o.status === 401 || o.status === 403)) {
     return res.status(502).json({
       error: "firecrawl_auth",
       message: "Die Inserats-Suche meldet einen ungültigen API-Key (Firecrawl). Bitte FIRECRAWL_API_KEY in Vercel prüfen.",
     });
   }
-  if (t1Status === 402) {
+  if (outcomes.some((o) => o.status === 402)) {
     return res.status(502).json({
       error: "firecrawl_credits",
       message: "Das Firecrawl-Guthaben ist aufgebraucht – Suche vorübergehend nicht möglich.",
     });
   }
 
-  // Tier 2: widen to all Swiss marketplaces, still snippet-only. The URL filter
-  // keeps it to individual listings.
-  if (comps.length < MAX_COMPS && withinBudget()) {
-    await runSearchTier(`${vehicle} ${yearNum} Occasion Schweiz CHF km`, 10);
-  }
-
-  // Tier 3: we often already FOUND the right listings but their snippets carry no
-  // price/km — scrape those pages directly (parallel) and parse the content.
-  let candidatesTried = 0;
-  if (comps.length < 3 && candidates.length > 0 && withinBudget()) {
-    const toScrape = candidates.slice(0, MAX_SCRAPE_CANDIDATES);
-    candidatesTried = toScrape.length;
-    const scraped = await Promise.allSettled(
-      toScrape.map((c) => firecrawlScrape(apiKey, c.url))
+  outcomes.forEach((outcome, i) => {
+    const { comps: found, onMarketplace } = resultsToComps(
+      outcome.results,
+      yearNum,
+      seenUrls,
+      candidates,
+      categoryUrls
     );
-    let addedFromScrapes = 0;
+    comps.push(...found);
+    stats.push({
+      query: queries[i],
+      status: outcome.status,
+      results: outcome.results.length,
+      onMarketplace,
+      parsed: found.length,
+    });
+  });
+
+  // Round 2: when snippets alone weren't enough, scrape in parallel — up to 2
+  // category/model-overview pages (dozens of listing cards each) and up to 4
+  // individual listings whose snippets lacked price/km.
+  let candidatesTried = 0;
+  if (
+    comps.length < MAX_COMPS &&
+    withinBudget() &&
+    (categoryUrls.length > 0 || candidates.length > 0)
+  ) {
+    const catPages = categoryUrls.slice(0, 2);
+    const detailPages = candidates.slice(0, MAX_SCRAPE_CANDIDATES - catPages.length);
+    candidatesTried = catPages.length + detailPages.length;
+
+    const scraped = await Promise.allSettled(
+      [...catPages, ...detailPages.map((c) => c.url)].map((u) => firecrawlScrape(apiKey, u))
+    );
+
+    let added = 0;
     scraped.forEach((s, i) => {
       if (s.status !== "fulfilled" || !s.value) return;
-      const parsed = parseFromTexts("", s.value);
-      if (!parsed || !yearMatches(parsed, yearNum)) return;
-      const c = toScrape[i];
-      comps.push({ price: parsed.price, km: parsed.km, title: c.title, url: c.url, source: c.source });
-      addedFromScrapes += 1;
+      if (i < catPages.length) {
+        // Category page: harvest every parseable listing card.
+        for (const card of parseCategoryMarkdown(s.value, catPages[i])) {
+          if (seenUrls.has(card.url)) continue;
+          if (!yearMatches(card, yearNum)) continue;
+          seenUrls.add(card.url);
+          comps.push({
+            price: card.price,
+            km: card.km,
+            title: card.title,
+            url: card.url,
+            source: identifyListingUrl(card.url) ?? "inserat",
+          });
+          added += 1;
+        }
+      } else {
+        // Individual listing page: parse its content.
+        const c = detailPages[i - catPages.length];
+        const parsed = parseFromTexts("", s.value);
+        if (!parsed || !yearMatches(parsed, yearNum)) return;
+        comps.push({ price: parsed.price, km: parsed.km, title: c.title, url: c.url, source: c.source });
+        added += 1;
+      }
     });
     stats.push({
-      query: `(Seitenabruf von ${candidatesTried} Inseraten)`,
+      query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate)`,
       status: 200,
       results: candidatesTried,
       onMarketplace: candidatesTried,
-      parsed: addedFromScrapes,
+      parsed: added,
     });
   }
 
@@ -372,7 +413,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     uniquePairs.add(key);
     return true;
   });
-  const { picked, relaxed } = pickBySimilarKm(comps, kmNum);
+  const { picked, relaxed } = pickBySimilarKm(comps, kmNum, modelStr);
 
   // Funnel stats land in the Vercel function logs for every request.
   console.log("valuation/comps funnel:", JSON.stringify({ vehicle, yearNum, kmNum, stats, picked: picked.length }));

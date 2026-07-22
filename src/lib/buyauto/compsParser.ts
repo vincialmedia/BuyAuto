@@ -135,3 +135,112 @@ export function identifyListingUrl(url: string): string | null {
   if (!known) return null;
   return known.detail.test(parsed.pathname) ? known.host : null;
 }
+
+/**
+ * Returns the marketplace host when the URL is on a known marketplace but is NOT
+ * an individual listing — i.e. a category/search/model-overview page whose cards
+ * can be harvested via parseCategoryMarkdown. Root pages (no meaningful path)
+ * are excluded.
+ */
+export function identifyCategoryUrl(url: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  const host = parsed.hostname.replace(/^www\./, "");
+  const known = DETAIL_PATH_PATTERNS.find(
+    (p) => host === p.host || host.endsWith(`.${p.host}`)
+  );
+  if (!known) return null;
+  if (known.detail.test(parsed.pathname)) return null; // individual listing
+  if (parsed.pathname.replace(/\/+$/, "").split("/").filter(Boolean).length < 2) return null;
+  return known.host;
+}
+
+// --- Category-page harvesting ---
+//
+// A marketplace category/model-overview page IS a list of individual listings —
+// price and mileage per card. One scrape of it yields many comps at once. The
+// markdown structure is "link to detail page, then that card's specs" repeated,
+// so we window the text between consecutive detail links and parse each window.
+
+export interface CategoryComp extends ParsedComp {
+  title: string;
+  url: string;
+}
+
+const MD_LINK = /\[([^\]]*)\]\((https?:\/\/[^)\s]+|\/[^)\s]+)\)/g;
+const MAX_CARD_WINDOW = 800;
+const MAX_CATEGORY_COMPS = 20;
+
+/**
+ * Extract individual listings (price/km/title/url) from a scraped category page.
+ * `pageUrl` resolves relative links. Consecutive anchors to the SAME listing
+ * (image link + title link) are merged into one card.
+ */
+export function parseCategoryMarkdown(markdown: string, pageUrl: string): CategoryComp[] {
+  if (!markdown) return [];
+
+  // Locate all links to individual listing pages, with their positions.
+  const anchors: Array<{ title: string; url: string; end: number; start: number }> = [];
+  MD_LINK.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = MD_LINK.exec(markdown)) !== null) {
+    let href: string;
+    try {
+      href = new URL(m[2], pageUrl).toString();
+    } catch {
+      continue;
+    }
+    if (!identifyListingUrl(href)) continue;
+    const prev = anchors[anchors.length - 1];
+    const title = m[1].replace(/[!\[\]]/g, "").trim();
+    if (prev && prev.url === href.split("#")[0]) {
+      // Same listing linked twice in a row (image + title) — extend the anchor.
+      prev.end = m.index + m[0].length;
+      if (!prev.title && title) prev.title = title;
+      continue;
+    }
+    anchors.push({ title, url: href.split("#")[0], start: m.index, end: m.index + m[0].length });
+  }
+
+  const out: CategoryComp[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < anchors.length && out.length < MAX_CATEGORY_COMPS; i++) {
+    const a = anchors[i];
+    if (seen.has(a.url)) continue;
+
+    // The card's specs live between this link and the next one (the card ends
+    // where the next listing's link starts).
+    const windowEnd = Math.min(
+      i + 1 < anchors.length ? anchors[i + 1].start : markdown.length,
+      a.end + MAX_CARD_WINDOW
+    );
+    // Include the link text itself — some layouts put price/km inside it.
+    const cardText = `${a.title} ${markdown.slice(a.end, windowEnd)}`;
+    const parsed = parseListingText(cardText);
+    if (!parsed) continue;
+
+    seen.add(a.url);
+    out.push({ ...parsed, title: a.title.slice(0, 120) || "Inserat", url: a.url });
+  }
+  return out;
+}
+
+/**
+ * How precisely a listing title matches the requested model: 0 = full model
+ * string (incl. trim) present, 1 = base model word present, 2 = no match info.
+ * Whitespace-insensitive so "1.5tsi" matches "1.5 TSI".
+ */
+export function modelPrecision(title: string, model: string): number {
+  const norm = (s: string) => s.toLowerCase().replace(/[\s\-]/g, "");
+  const t = norm(title);
+  if (!t) return 2;
+  const full = norm(model);
+  if (full && t.includes(full)) return 0;
+  const base = norm(model.split(/\s+/)[0] ?? "");
+  if (base && t.includes(base)) return 1;
+  return 2;
+}
