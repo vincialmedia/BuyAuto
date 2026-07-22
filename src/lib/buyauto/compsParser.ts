@@ -90,6 +90,16 @@ export function parseListingText(text: string): ParsedComp | null {
 const LABELED_KM = new RegExp(`Kilometer(?:stand)?[^0-9]{0,20}(${NUM})\\s*km\\b`, "i");
 
 /**
+ * Portal markdown is drowning in inline images — AutoScout24 embeds 1'500+ char
+ * data-URI SVGs per image. They blow the card windows, hide nested listing links
+ * ([![img](data:...)](url) is invisible to a naive link regex) and push the real
+ * content past any parse budget. Strip ALL image tokens before parsing.
+ */
+export function stripMarkdownImages(markdown: string): string {
+  return markdown.replace(/!\[[^\]]*\]\([^)]*\)/g, " ");
+}
+
+/**
  * Parse a scraped INDIVIDUAL listing page (URL already verified as a detail
  * page). Unlike snippet parsing this reads the whole page and tolerates many
  * prices (financing offers, "similar vehicles" widgets): the car's own price is
@@ -98,7 +108,7 @@ const LABELED_KM = new RegExp(`Kilometer(?:stand)?[^0-9]{0,20}(${NUM})\\s*km\\b`
  */
 export function parseDetailMarkdown(markdown: string): ParsedComp | null {
   if (!markdown) return null;
-  const text = markdown.slice(0, 15_000);
+  const text = stripMarkdownImages(markdown).slice(0, 20_000);
 
   const prices = extractPrices(text);
   if (prices.length === 0) return null;
@@ -235,8 +245,9 @@ const MAX_CATEGORY_COMPS = 20;
  * `pageUrl` resolves relative links. Consecutive anchors to the SAME listing
  * (image link + title link) are merged into one card.
  */
-export function parseCategoryMarkdown(markdown: string, pageUrl: string): CategoryComp[] {
-  if (!markdown) return [];
+export function parseCategoryMarkdown(rawMarkdown: string, pageUrl: string): CategoryComp[] {
+  if (!rawMarkdown) return [];
+  const markdown = stripMarkdownImages(rawMarkdown);
 
   // Locate all links to individual listing pages, with their positions.
   const anchors: Array<{ title: string; url: string; end: number; start: number }> = [];

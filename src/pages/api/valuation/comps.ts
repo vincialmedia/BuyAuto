@@ -10,6 +10,7 @@ import {
   parseCategoryMarkdown,
   parseDetailMarkdown,
   parseListingText,
+  stripMarkdownImages,
   yearMatches,
 } from "@/lib/buyauto/compsParser";
 
@@ -19,10 +20,12 @@ import {
 export const config = { maxDuration: 60 };
 
 const FIRECRAWL_API = "https://api.firecrawl.dev/v2";
-// Per-call timeout and overall budget: worst case is 2 sequential searches plus one
-// parallel scrape round, which must stay under the 60s function limit.
-const FIRECRAWL_TIMEOUT_MS = 18_000;
-const TIER_DEADLINE_MS = 38_000;
+// Per-call timeouts and overall budget: one parallel search round (≤18s) plus one
+// parallel scrape round (≤28s) stays under the 60s function limit. Stealth-proxy
+// scrapes of the Swiss portals regularly need >15s (they 408'd before).
+const SEARCH_TIMEOUT_MS = 18_000;
+const SCRAPE_TIMEOUT_MS = 28_000;
+const TIER_DEADLINE_MS = 30_000;
 
 const MAX_COMPS = 5;
 // Total page scrapes per request (category pages + individual listings).
@@ -90,10 +93,11 @@ function rateLimited(ip: string): boolean {
 async function firecrawlPost(
   apiKey: string,
   path: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  timeoutMs: number
 ): Promise<{ status: number | "network"; body: unknown }> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FIRECRAWL_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${FIRECRAWL_API}${path}`, {
       method: "POST",
@@ -119,7 +123,7 @@ async function firecrawlSearch(
   query: string,
   limit: number
 ): Promise<SearchOutcome> {
-  const { status, body } = await firecrawlPost(apiKey, "/search", { query, limit });
+  const { status, body } = await firecrawlPost(apiKey, "/search", { query, limit }, SEARCH_TIMEOUT_MS);
   if (status !== 200) {
     console.error(`Firecrawl search failed: ${status}`, JSON.stringify(body)?.slice(0, 300));
     return { results: [], status };
@@ -132,23 +136,30 @@ async function firecrawlScrape(
   apiKey: string,
   url: string
 ): Promise<{ markdown: string; status: number | "network" }> {
-  const { status, body } = await firecrawlPost(apiKey, "/scrape", {
-    url,
-    formats: ["markdown"],
-    onlyMainContent: true,
-    // Swiss portals sit behind aggressive bot protection — let Firecrawl escalate
-    // to its stealth proxy when the basic fetch gets blocked.
-    proxy: "auto",
-    // The inventory pages are client-rendered SPAs: give hydration a moment so
-    // the listing cards are in the DOM before capture.
-    waitFor: 3_000,
-    // Category inventories don't move fast; serve Firecrawl's cache for 1h so
-    // repeated lookups of popular models cost no extra scrape.
-    maxAge: 3_600_000,
-    // Firecrawl-side cap below our own AbortController so we get a real status
-    // instead of an aborted socket.
-    timeout: 15_000,
-  });
+  const { status, body } = await firecrawlPost(
+    apiKey,
+    "/scrape",
+    {
+      url,
+      formats: ["markdown"],
+      onlyMainContent: true,
+      // The portal markdown was 90% inline data-URI SVGs — drop them at the source.
+      removeBase64Images: true,
+      // Swiss portals sit behind aggressive bot protection — let Firecrawl escalate
+      // to its stealth proxy when the basic fetch gets blocked.
+      proxy: "auto",
+      // The inventory pages are client-rendered SPAs: give hydration a moment so
+      // the listing cards are in the DOM before capture.
+      waitFor: 3_000,
+      // Category inventories don't move fast; serve Firecrawl's cache for 1h so
+      // repeated lookups of popular models cost no extra scrape.
+      maxAge: 3_600_000,
+      // Firecrawl-side cap below our own AbortController so we get a real status
+      // instead of an aborted socket. 15s produced 408s on stealth scrapes.
+      timeout: 25_000,
+    },
+    SCRAPE_TIMEOUT_MS
+  );
   if (status !== 200) return { markdown: "", status };
   const data = body as { data?: { markdown?: string } };
   return { markdown: data?.data?.markdown ?? "", status };
@@ -457,7 +468,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         chars: markdown.length,
         added: addedHere,
         ...(debugLevel >= 2
-          ? { mdLinks: (markdown.match(/\]\(/g) ?? []).length, sample: markdown.slice(0, 1500) }
+          ? {
+              mdLinks: (markdown.match(/\]\(/g) ?? []).length,
+              // Post-strip sample: this is what the parsers actually see.
+              sample: stripMarkdownImages(markdown).slice(0, 1500),
+            }
           : {}),
       });
     });
