@@ -108,7 +108,9 @@ export function stripMarkdownImages(markdown: string): string {
  */
 export function parseDetailMarkdown(markdown: string): ParsedComp | null {
   if (!markdown) return null;
-  const text = stripMarkdownImages(markdown).slice(0, 20_000);
+  // Generous budget: the Kilometerstand spec table sits mid-page and a 20k cap
+  // demonstrably cut it off on real AutoScout24 pages.
+  const text = stripMarkdownImages(markdown).slice(0, 35_000);
 
   const prices = extractPrices(text);
   if (prices.length === 0) return null;
@@ -238,7 +240,26 @@ export interface CategoryComp extends ParsedComp {
 
 const MD_LINK = /\[([^\]]*)\]\((https?:\/\/[^)\s]+|\/[^)\s]+)\)/g;
 const MAX_CARD_WINDOW = 800;
-const MAX_CATEGORY_COMPS = 20;
+// Parse the WHOLE page, not just the first screenful: aggregators sort by their
+// own score and the newest cars can sit at the bottom — a low cap starved the
+// year filter of matching cards (comparis page 1 led with 2006-2015 cars).
+const MAX_CATEGORY_COMPS = 60;
+
+/** Link text on card-style pages carries markdown noise and the whole spec block. */
+function cleanCardTitle(linkText: string): string {
+  let t = linkText
+    .replace(/\\+/g, " ")
+    .replace(/\*\*/g, "")
+    .replace(/[\n\r]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  // The card's own specs (price onward) belong to the card, not the title.
+  const chf = t.search(/\b(?:CHF|Fr\.)/);
+  if (chf > 0) t = t.slice(0, chf).trim();
+  // Drop leading UI verbs ("Merken ") that precede the model name.
+  t = t.replace(/^(Merken|Vergleichen|Details)\s+/i, "");
+  return t;
+}
 
 /**
  * Extract individual listings (price/km/title/url) from a scraped category page.
@@ -249,8 +270,10 @@ export function parseCategoryMarkdown(rawMarkdown: string, pageUrl: string): Cat
   if (!rawMarkdown) return [];
   const markdown = stripMarkdownImages(rawMarkdown);
 
-  // Locate all links to individual listing pages, with their positions.
-  const anchors: Array<{ title: string; url: string; end: number; start: number }> = [];
+  // Locate all links to individual listing pages, with their positions. The RAW
+  // link text feeds the parser (card-style pages put price/km inside it); the
+  // CLEANED text is only for display.
+  const anchors: Array<{ rawText: string; url: string; end: number; start: number }> = [];
   MD_LINK.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = MD_LINK.exec(markdown)) !== null) {
@@ -262,14 +285,14 @@ export function parseCategoryMarkdown(rawMarkdown: string, pageUrl: string): Cat
     }
     if (!identifyListingUrl(href)) continue;
     const prev = anchors[anchors.length - 1];
-    const title = m[1].replace(/[!\[\]]/g, "").trim();
+    const rawText = m[1].replace(/[!\[\]]/g, "");
     if (prev && prev.url === href.split("#")[0]) {
       // Same listing linked twice in a row (image + title) — extend the anchor.
       prev.end = m.index + m[0].length;
-      if (!prev.title && title) prev.title = title;
+      if (!prev.rawText.trim() && rawText.trim()) prev.rawText = rawText;
       continue;
     }
-    anchors.push({ title, url: href.split("#")[0], start: m.index, end: m.index + m[0].length });
+    anchors.push({ rawText, url: href.split("#")[0], start: m.index, end: m.index + m[0].length });
   }
 
   const out: CategoryComp[] = [];
@@ -278,19 +301,19 @@ export function parseCategoryMarkdown(rawMarkdown: string, pageUrl: string): Cat
     const a = anchors[i];
     if (seen.has(a.url)) continue;
 
-    // The card's specs live between this link and the next one (the card ends
-    // where the next listing's link starts).
+    // The card's specs live in the link text and/or between this link and the
+    // next one (the card ends where the next listing's link starts).
     const windowEnd = Math.min(
       i + 1 < anchors.length ? anchors[i + 1].start : markdown.length,
       a.end + MAX_CARD_WINDOW
     );
-    // Include the link text itself — some layouts put price/km inside it.
-    const cardText = `${a.title} ${markdown.slice(a.end, windowEnd)}`;
+    const cardText = `${a.rawText} ${markdown.slice(a.end, windowEnd)}`;
     const parsed = parseListingText(cardText);
     if (!parsed) continue;
 
     seen.add(a.url);
-    out.push({ ...parsed, title: a.title.slice(0, 120) || "Inserat", url: a.url });
+    const title = cleanCardTitle(a.rawText);
+    out.push({ ...parsed, title: title.slice(0, 120) || "Inserat", url: a.url });
   }
   return out;
 }

@@ -249,8 +249,9 @@ function pickBySimilarKm(
 
   const picked: CompOut[] = [];
   let relaxed = false;
+  // Always fill up to MAX_COMPS: the bands only control ORDER (similar-km comps
+  // first) — stopping early returned 4 comps while 7 were on the table.
   for (let i = 0; i < bands.length && picked.length < MAX_COMPS; i++) {
-    if (i > 0 && picked.length >= 3) break; // enough similar-km comps, stop widening
     for (const c of byDistance) {
       if (picked.length >= MAX_COMPS) break;
       if (picked.includes(c)) continue;
@@ -468,11 +469,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         chars: markdown.length,
         added: addedHere,
         ...(debugLevel >= 2
-          ? {
-              mdLinks: (markdown.match(/\]\(/g) ?? []).length,
-              // Post-strip sample: this is what the parsers actually see.
-              sample: stripMarkdownImages(markdown).slice(0, 1500),
-            }
+          ? (() => {
+              const stripped = stripMarkdownImages(markdown);
+              // Zone around the first listing-detail link — the card shape itself.
+              const idx = stripped.search(/\]\([^)]*\/(d|vi|details\/show)\//);
+              return {
+                mdLinks: (markdown.match(/\]\(/g) ?? []).length,
+                sample: stripped.slice(0, 1200),
+                cardZone: idx >= 0 ? stripped.slice(Math.max(0, idx - 200), idx + 1400) : undefined,
+              };
+            })()
           : {}),
       });
     });
