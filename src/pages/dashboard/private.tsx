@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { userManagementService } from "@/services/userManagementService";
 import { toast } from "sonner";
 import { Building2 } from "lucide-react";
+import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
 import DraftsSection from "@/components/buyauto/dashboard/DraftsSection";
 import type { ListingDraft } from "@/services/listingDraftService";
 import { MessageCenterRail } from "@/components/buyauto/messages/MessageCenterRail";
@@ -48,9 +49,19 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
 
   const handleUpgradeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // The location field uses the autocomplete (no native "required"), so guard here.
+    if (!upgradeForm.city.trim()) {
+      toast.error("Bitte wählen Sie einen Standort aus der Liste.");
+      return;
+    }
+
     setIsUpgrading(true);
     try {
-      await userManagementService.upgradeToGarage(upgradeForm);
+      await userManagementService.upgradeToGarage({
+        ...upgradeForm,
+        city: upgradeForm.city.trim(),
+      });
       toast.success("Erfolgreich zum Garage-Konto gewechselt!");
       await refreshProfile();
       router.push("/dashboard/garage");
@@ -174,25 +185,30 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">Ort</Label>
-                <Input 
-                  id="city" 
-                  required 
+                <Label htmlFor="city">Standort</Label>
+                <LocationAutocomplete
                   value={upgradeForm.city}
-                  onChange={(e) => setUpgradeForm({...upgradeForm, city: e.target.value})}
+                  onValueChange={(next) => setUpgradeForm({ ...upgradeForm, city: next })}
                   placeholder="Zürich"
+                  name="city"
                 />
+                <p className="text-xs text-neutral-500">
+                  Dieser Standort wird als Standard für Ihre Einstellungen und zukünftige Inserate verwendet.
+                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact_email">Kontakt E-Mail</Label>
-                <Input 
-                  id="contact_email" 
+                <Label htmlFor="contact_email">E-Mail-Adresse für Kontaktanfragen</Label>
+                <Input
+                  id="contact_email"
                   type="email"
-                  required 
+                  required
                   value={upgradeForm.contact_email}
                   onChange={(e) => setUpgradeForm({...upgradeForm, contact_email: e.target.value})}
                   placeholder="info@muster-garage.ch"
                 />
+                <p className="text-xs text-neutral-500">
+                  An diese Adresse werden Kaufanfragen gesendet – unabhängig von Ihrer Login-E-Mail.
+                </p>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowUpgradeModal(false)}>Abbrechen</Button>

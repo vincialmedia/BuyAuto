@@ -60,11 +60,14 @@ export default function GuestAuthGate() {
       }
     } catch (err: any) {
       const raw = String(err?.message ?? "");
+      const emailAlreadyExists = err?.code === "email_exists" || /already registered|user already/i.test(raw);
       const msg = /invalid login credentials/i.test(raw)
         ? "E-Mail oder Passwort ist falsch."
-        : /already registered|user already/i.test(raw)
-          ? "Diese E-Mail ist bereits registriert. Bitte melde dich an."
+        : emailAlreadyExists
+          ? "Diese E-Mail existiert bereits, bitte loggen Sie sich ein."
           : raw || "Etwas ist schiefgelaufen. Bitte versuche es erneut.";
+      // Flip over to the login tab so the user can sign in with the existing account.
+      if (emailAlreadyExists) setMode("login");
       toast({ title: "Anmeldung fehlgeschlagen", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);

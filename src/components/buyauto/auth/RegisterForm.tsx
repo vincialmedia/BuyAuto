@@ -267,50 +267,51 @@ export default function RegisterForm({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-neutral-700 font-medium">Ort</FormLabel>
-                    <FormControl>
-                      <LocationAutocomplete
-                        value={field.value ?? ""}
-                        onValueChange={(next) => field.onChange(next)}
-                        disabled={isLoading}
-                        placeholder="Zürich"
-                        inputClassName="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
-                        name={field.name}
-                        inputRef={field.ref}
-                        onBlur={field.onBlur}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500 text-sm" />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-neutral-700 font-medium">Ort</FormLabel>
+                  <FormControl>
+                    <LocationAutocomplete
+                      value={field.value ?? ""}
+                      onValueChange={(next) => field.onChange(next)}
+                      disabled={isLoading}
+                      placeholder="Zürich"
+                      inputClassName="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+                      name={field.name}
+                      inputRef={field.ref}
+                      onBlur={field.onBlur}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 text-sm" />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="contactEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-neutral-700 font-medium">Kontakt E-Mail</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="email"
-                        placeholder="info@muster-garage.ch"
-                        className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500 text-sm" />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="contactEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-neutral-700 font-medium">E-Mail-Adresse für Kontaktanfragen</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="email"
+                      placeholder="info@muster-garage.ch"
+                      className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <p className="text-xs text-neutral-500">
+                    An diese Adresse werden Kaufanfragen gesendet – unabhängig von Ihrer Login-E-Mail.
+                  </p>
+                  <FormMessage className="text-red-500 text-sm" />
+                </FormItem>
+              )}
+            />
           </>
         )}
 
