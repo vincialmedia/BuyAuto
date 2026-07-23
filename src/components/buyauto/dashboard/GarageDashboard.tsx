@@ -535,6 +535,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
 ></iframe>
 <script>
   window.addEventListener("message", function (e) {
+    if (e.origin !== "https://www.buyauto.ch") return;
     if (!e.data || e.data.type !== "buyauto:resize") return;
     var f = document.getElementById(e.data.id);
     if (f && typeof e.data.height === "number") f.style.height = Math.max(640, e.data.height) + "px";

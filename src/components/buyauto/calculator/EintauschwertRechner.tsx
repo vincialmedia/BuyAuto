@@ -321,9 +321,15 @@ export function EintauschwertRechner() {
 
   useEffect(() => {
     setIsClient(true);
-    if (typeof window !== 'undefined') {
+    // localStorage access throws (SecurityError) in storage-blocked contexts —
+    // notably a sandboxed / third-party-cookie-blocked iframe, which is exactly
+    // how the /embed route runs on a garage's own site. Guard the READ like the
+    // WRITE below so the calculator never crashes there.
+    try {
       const raw = Number(window.localStorage.getItem(ANON_SEARCH_KEY) ?? 0);
       setAnonSearchesUsed(Number.isFinite(raw) && raw > 0 ? raw : 0);
+    } catch {
+      setAnonSearchesUsed(0);
     }
   }, []);
 
@@ -1024,7 +1030,15 @@ export function EintauschwertRechner() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Tabs value={compsMode} onValueChange={(v) => setCompsMode(v as CompsMode)}>
+              <Tabs
+                value={compsMode}
+                onValueChange={(v) => {
+                  setCompsMode(v as CompsMode);
+                  // Leaving auto mode dismisses an auto-search quota gate — manual
+                  // entry is always free and must not sit behind a gate.
+                  if (v === 'manual') setGateKind(null);
+                }}
+              >
                 <TabsList className="h-9 bg-neutral-100 p-1">
                   <TabsTrigger
                     value="auto"

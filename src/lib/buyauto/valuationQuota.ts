@@ -24,8 +24,10 @@ export interface QuotaResult {
  * Fails OPEN: if plan detection throws, we treat the user as paid rather than
  * throttle a paying dealer because of a transient DB error. A private user with
  * no garage row simply falls through to "free" (that is not an error path).
+ *
+ * Exported so the read-only quota endpoint reuses the exact same logic (no drift).
  */
-async function resolveLimit(
+export async function resolveLimit(
   supabase: SupabaseClient,
   userId: string
 ): Promise<{ limit: number; plan: QuotaPlan }> {
@@ -73,35 +75,55 @@ async function resolveLimit(
 }
 
 /**
- * Atomically check the user's monthly quota and, if room remains, consume one
- * search. Call this AFTER input validation and the Firecrawl-key check, but
- * BEFORE the actual (billable) search — so an invalid request or an unavailable
- * search never burns quota.
- *
- * Fails OPEN on RPC error (allowed=true) for the same reason as above.
+ * Read-only quota view WITHOUT consuming. Call this BEFORE the billable search
+ * to reject an over-limit user (allowed=false) so they can't trigger Firecrawl.
+ * Fails OPEN (allowed=true) on error.
  */
-export async function checkAndConsumeQuota(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<QuotaResult> {
+export async function peekQuota(supabase: SupabaseClient, userId: string): Promise<QuotaResult> {
   const { limit, plan } = await resolveLimit(supabase, userId);
+  let used = 0;
+  try {
+    const { data, error } = await supabase.rpc("get_valuation_usage");
+    if (!error) used = Number(data ?? 0);
+  } catch (e) {
+    console.error("valuation quota: peek failed, failing open (allow)", e);
+  }
+  return {
+    authenticated: true,
+    allowed: used < limit,
+    used,
+    limit,
+    remaining: Math.max(0, limit - used),
+    plan,
+  };
+}
 
+/**
+ * Atomically consume ONE search. Call this AFTER a successful search (Firecrawl
+ * actually ran) so a platform failure never burns the user's quota. The RPC
+ * re-checks the limit under a row lock, so concurrent clicks can't both slip
+ * past. Fails OPEN (allowed=true) on RPC error.
+ */
+export async function commitSearch(
+  supabase: SupabaseClient,
+  limit: number,
+  plan: QuotaPlan
+): Promise<QuotaResult> {
   try {
     const { data, error } = await supabase.rpc("consume_valuation_search", { p_limit: limit });
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
     const used = Number(row?.used ?? 0);
-    const allowed = Boolean(row?.allowed);
     return {
       authenticated: true,
-      allowed,
+      allowed: Boolean(row?.allowed),
       used,
       limit,
       remaining: Math.max(0, limit - used),
       plan,
     };
   } catch (e) {
-    console.error("valuation quota: consume failed, failing open (allow)", e);
+    console.error("valuation quota: commit failed, failing open (allow)", e);
     return { authenticated: true, allowed: true, used: 0, limit, remaining: limit, plan };
   }
 }

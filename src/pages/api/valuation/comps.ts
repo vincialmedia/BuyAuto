@@ -11,10 +11,9 @@ import {
   parseCategoryMarkdown,
   parseDetailMarkdown,
   parseListingText,
-  stripMarkdownImages,
   yearMatches,
 } from "@/lib/buyauto/compsParser";
-import { checkAndConsumeQuota, type QuotaResult } from "@/lib/buyauto/valuationQuota";
+import { peekQuota, commitSearch, type QuotaResult } from "@/lib/buyauto/valuationQuota";
 
 // Firecrawl search calls can take 10-30s; lift the serverless limit accordingly.
 // Pages Router API routes configure maxDuration via the config export (the bare
@@ -282,17 +281,13 @@ function buildDiagnosis(stats: TierStat[], candidatesTried: number): string {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // POST is the UI path. GET exists for diagnosis: open
-  //   /api/valuation/comps?make=VW&model=Golf&year=2020&km=78000&debug=1
-  // in a browser and the response includes the full search funnel.
-  if (req.method !== "POST" && req.method !== "GET") {
-    res.setHeader("Allow", "GET, POST");
+  // POST only. (A GET/debug diagnostic path existed during development; it was a
+  // quota-bypass + unmetered-search vector, so it was removed before launch.)
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
-  const input = req.method === "GET" ? req.query : req.body ?? {};
-  // debug=1: funnel stats. debug=2: additionally raw markdown samples per scrape.
-  const debugLevel = Number((input as Record<string, unknown>).debug ?? 0) || 0;
-  const debug = debugLevel >= 1;
+  const input = (req.body ?? {}) as Record<string, unknown>;
 
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
@@ -344,29 +339,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // --- Monthly quota (logged-in users) ---
-  // Consumed AFTER validation and the Firecrawl-key check, BEFORE the billable
-  // search. Anonymous users are metered client-side (localStorage) + the IP soft
-  // limit above; a logged-in user gets a server-authoritative 5/mo (free) or
-  // 100/mo (paid dealer). debug=* calls never consume quota.
+  // Two-phase: PEEK before the billable search (reject an over-limit user so they
+  // can't trigger Firecrawl — cost protection), then COMMIT one search only after
+  // it actually ran (so a Firecrawl outage never burns the user's quota). The
+  // commit RPC re-checks the limit atomically. Anonymous users are metered
+  // client-side (localStorage) + the IP soft limit above.
+  const supabase = createPagesServerClient({ req, res });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let quotaCtx: { limit: number; plan: "free" | "paid" } | null = null;
   let quota: QuotaResult | null = null;
-  if (!debug) {
-    const supabase = createPagesServerClient({ req, res });
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      quota = await checkAndConsumeQuota(supabase, user.id);
-      if (!quota.allowed) {
-        return res.status(402).json({
-          error: "quota_exceeded",
-          message:
-            quota.plan === "paid"
-              ? `Dein Monatskontingent von ${quota.limit} Suchen ist aufgebraucht.`
-              : `Dein Gratis-Kontingent von ${quota.limit} Suchen pro Monat ist aufgebraucht.`,
-          quota,
-        });
-      }
+  if (user) {
+    const peek = await peekQuota(supabase, user.id);
+    if (!peek.allowed) {
+      return res.status(402).json({
+        error: "quota_exceeded",
+        message:
+          peek.plan === "paid"
+            ? `Dein Monatskontingent von ${peek.limit} Suchen ist aufgebraucht.`
+            : `Dein Gratis-Kontingent von ${peek.limit} Suchen pro Monat ist aufgebraucht.`,
+        quota: peek,
+      });
     }
+    quotaCtx = { limit: peek.limit, plan: peek.plan };
+    quota = peek; // provisional; replaced by the post-search commit result
   }
 
   // Query with the name listings actually use ("VW", not "Volkswagen").
@@ -429,14 +426,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // are constructed directly from make/model, so this round ALWAYS has live
   // sources and never depends on the search surfacing one.
   let candidatesTried = 0;
-  const scrapeDebug: Array<{
-    url: string;
-    status: number | "network";
-    chars: number;
-    added: number;
-    mdLinks?: number;
-    sample?: string;
-  }> = [];
   // Deterministic inventory pages FIRST — search-discovered categories only fill
   // the remaining slot, so junk can never crowd out the two known-good sources.
   const orderedCategoryUrls = [
@@ -455,12 +444,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let added = 0;
     scraped.forEach((s, i) => {
-      const url = i < catPages.length ? catPages[i] : detailPages[i - catPages.length].url;
-      if (s.status !== "fulfilled") {
-        scrapeDebug.push({ url, status: "network", chars: 0, added: 0 });
-        return;
-      }
-      const { markdown, status } = s.value;
+      if (s.status !== "fulfilled") return;
+      const { markdown } = s.value;
       let addedHere = 0;
       if (markdown) {
         if (i < catPages.length) {
@@ -491,24 +476,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
       added += addedHere;
-      scrapeDebug.push({
-        url,
-        status,
-        chars: markdown.length,
-        added: addedHere,
-        ...(debugLevel >= 2
-          ? (() => {
-              const stripped = stripMarkdownImages(markdown);
-              // Zone around the first listing-detail link — the card shape itself.
-              const idx = stripped.search(/\]\([^)]*\/(d|vi|details\/show)\//);
-              return {
-                mdLinks: (markdown.match(/\]\(/g) ?? []).length,
-                sample: stripped.slice(0, 1200),
-                cardZone: idx >= 0 ? stripped.slice(Math.max(0, idx - 200), idx + 1400) : undefined,
-              };
-            })()
-          : {}),
-      });
     });
     stats.push({
       query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate)`,
@@ -530,6 +497,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
   const { picked, relaxed } = pickBySimilarKm(comps, kmNum, modelStr);
 
+  // The search actually ran (Firecrawl was billed) — commit ONE search against
+  // the logged-in user's quota now, not before, so a platform failure above
+  // (handled via the 502 returns) never burns their quota.
+  if (user && quotaCtx) {
+    quota = await commitSearch(supabase, quotaCtx.limit, quotaCtx.plan);
+  }
+
   // Funnel stats land in the Vercel function logs for every request.
   console.log("valuation/comps funnel:", JSON.stringify({ vehicle, yearNum, kmNum, stats, picked: picked.length }));
 
@@ -537,16 +511,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     comps: picked,
     queried: stats.map((s) => s.query),
     quota: quota ?? undefined,
-    debug: debug
-      ? {
-          input: { make: makeStr, model: modelStr, year: yearNum, km: kmNum, vehicleQuery: vehicle },
-          stats,
-          categoryUrls: orderedCategoryUrls,
-          scrapes: scrapeDebug,
-          candidates: candidates.map((c) => c.url),
-          allComps: comps,
-        }
-      : undefined,
     diagnosis: picked.length === 0 ? buildDiagnosis(stats, candidatesTried) : undefined,
     warning:
       picked.length === 0

@@ -20,8 +20,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   // Embed routes are iframed on third-party sites and must be chrome-free — no
   // site header, footer, cookie banner, or wrapping <main> (the embed page
-  // renders its own). Everything else gets the full layout.
-  if (router.pathname.startsWith("/embed")) {
+  // renders its own). Everything else gets the full layout. Match the /embed
+  // segment exactly (not a greedy prefix like "/embedded-...").
+  if (router.pathname === "/embed" || router.pathname.startsWith("/embed/")) {
     return <>{children}</>;
   }
 
