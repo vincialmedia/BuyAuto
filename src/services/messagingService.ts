@@ -193,11 +193,16 @@ export async function getExistingConversationForListing(listingId: string): Prom
   const userId = sessionRes.data.session?.user?.id ?? null;
   if (!userId) return null;
 
+  // The buyer is tracked via conversation_participants (role='buyer'), not a column
+  // on conversations — so resolve the existing thread through the participant row.
+  // (Filtering conversations.buyer_user_id here silently errored and always returned
+  // null, hiding a returning buyer's history until they sent another message.)
   const { data, error } = await supabase
     .from("conversations")
-    .select("id")
+    .select("id, conversation_participants!inner(user_id, role)")
     .eq("listing_id", listingId)
-    .eq("buyer_user_id", userId)
+    .eq("conversation_participants.user_id", userId)
+    .eq("conversation_participants.role", "buyer")
     .limit(1)
     .maybeSingle();
 
