@@ -91,6 +91,19 @@ const authService = {
       throw error;
     }
 
+    // When email confirmations are enabled, Supabase does not return an error
+    // for an already-registered address (to avoid leaking which emails exist).
+    // Instead it returns an obfuscated user with an empty `identities` array.
+    // Detect that case and surface it as a proper "already exists" error.
+    const identities = data?.user?.identities;
+    if (data?.user && Array.isArray(identities) && identities.length === 0) {
+      const duplicateError = new Error("User already registered") as Error & {
+        code?: string;
+      };
+      duplicateError.code = "email_exists";
+      throw duplicateError;
+    }
+
     console.log("Sign up successful, user data:", data.user);
 
     // If user opted into newsletter, subscribe them
