@@ -6,7 +6,57 @@ The make/model catalog (`public/Makes_Models_V2.csv`, mirrored in
 `public/buyauto_master_make_model_giant_list_v2.csv`, served from the Supabase
 `makes` / `models` tables) was reviewed make-by-make against the vehicles
 actually sold new on the Swiss/European market from 2010 onwards. This
-extension adds **264 models** and **15 makes** (1,133 → 1,397 rows).
+extension adds **655 models** and **15 makes** (1,133 → 1,788 rows),
+delivered in two passes.
+
+### Pass 1 — nameplate coverage (264 models, 15 new makes)
+
+Filled the missing distinct nameplates and the 15 absent makes (Abarth,
+Aiways, Alpina, BYD, Caterham, Chrysler, Dodge, Fisker, Jaecoo, KTM, MG,
+Maxus, Omoda, RAM, Saab). See the sections further down.
+
+### Pass 2 — derivative & performance-trim audit (+391 models)
+
+A follow-up audit of every make (38 make-groups, each audited then
+adversarially verified with web checks) caught the factory
+performance/body derivatives that marketplaces list as their own model but
+that pass 1 missed — the "Golf GTI Clubsport" class of gap. Every proposal
+was rejected unless it is a real European-market production model, uses the
+Swiss/European market name, matches that make's existing catalog
+granularity, and does not collide with an existing row under
+`normalize_vehicle_name()`. Highlights:
+
+- **VW** Golf GTI Clubsport, Golf GTI TCR, Golf GTI/GTD/R Variant &
+  Cabriolet gaps, up! GTI, Scirocco R, Polo R WRC, Touareg R, XL1, and the
+  ID.3/4/5/7 GTX + ID. Buzz GTX electric-performance line.
+- **BMW** (47) the missing M-derivatives and engine designations; **Mercedes**
+  (54) the remaining AMG variants (AMG A/C/E/G/GLC/GLE/S "xx" gaps) and
+  classes; **Audi** (23) S/RS gaps and Avant/Cabriolet body styles;
+  **Porsche** (31) 911/Cayenne/Panamera derivative depth.
+- **Hot hatches / warm derivatives** Hyundai N, Renault RS/E-Tech, Peugeot
+  GTi, Opel/Vauxhall OPC/VXR-era models, MINI JCW/Cooper S body+trim combos,
+  Suzuki Swift Sport, Mitsubishi Lancer Evolution, Alfa 147/GT.
+- **Supercar/halo depth** matching each make's existing granularity: Ferrari
+  458 Speciale / F12tdf / 812 Competizione / SF90 XX / 296 Speciale;
+  Lamborghini Veneno / Sesto Elemento / Essenza SCV12; Aston Martin Zagato /
+  Speedster / Valiant one-offs; Bugatti Brouillard; Koenigsegg Sadair's
+  Spear; Rimac Nevera R.
+- **China-brand & commercial depth** BYD, MG, Maxus, XPeng, NIO, Leapmotor,
+  Voyah, Seres, SsangYong, plus vans (Nissan NV, Ford/VW e-commercials,
+  Piaggio, Ligier microcars).
+
+What the pass-2 verifiers **rejected** (kept out on purpose): UK-only badges
+that are a different make in Switzerland (Chrysler Ypsilon/Delta →
+Lancia, Mitsubishi Mirage → Space Star, Shogun Sport → Pajero Sport);
+performance trims for makes catalogued only at base-model level (all Nissan
+Nismo variants, Jaguar XKR/XFR/XJR, Lancia Ypsilon HF); obsolete regional
+names that collide with the standardised row (NIO ES8 → EL8); and
+micro-volume specials for mainstream makes (Saab 9-4X).
+
+> Note: three normalized-name collisions already exist in the base catalog
+> (`Ford Ka`/`Ka+`, `Kia Cee'd`/`Ceed`, `Toyota C-HR`/`C-HR+`). They predate
+> this work; the DB unique index on `(make_id, normalized_name)` keeps only
+> one of each pair. Not introduced here — flagged for a future cleanup.
 
 ## How to apply to the database
 
@@ -15,7 +65,7 @@ Either one of:
 1. **Migration (recommended):** apply
    `supabase/migrations/20260721120000_extend_makes_models_catalog.sql`.
    It is idempotent (`on conflict do nothing`), inserts the 15 new makes and
-   264 models, and tags new model rows with
+   655 models (both passes), and tags new model rows with
    `source = 'catalog_extension_2010_onwards'`.
 2. **Import script:** `node src/scripts/import-v2-catalog.mjs` re-imports the
    updated CSV (also idempotent).
