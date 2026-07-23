@@ -17,12 +17,14 @@ interface RegisterFormProps {
   onRegister: (data: RegisterFormData) => void;
   onShowLogin: () => void;
   isLoading: boolean;
+  initialAccountType?: "private" | "garage";
 }
 
-export default function RegisterForm({ 
-  onRegister, 
-  onShowLogin, 
-  isLoading 
+export default function RegisterForm({
+  onRegister,
+  onShowLogin,
+  isLoading,
+  initialAccountType,
 }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function RegisterForm({
     resolver: zodResolver(registerSchema),
     shouldUnregister: true,
     defaultValues: {
-      accountType: "private",
+      accountType: initialAccountType ?? "private",
       firstName: "",
       lastName: "",
       email: "",

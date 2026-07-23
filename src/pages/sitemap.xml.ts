@@ -55,6 +55,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     "/leasinguebernahme-vs-autoabo",
     "/auto-abo-kuendigen",
     "/auto-abo-vs-leasing-kosten",
+    "/eintauschwert-rechner",
     "/leasing-abgeben-schweiz",
     "/autoscout24-alternative-leasinguebernahme",
     "/carify-alternativen",
