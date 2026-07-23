@@ -634,6 +634,17 @@ export function EintauschwertRechner() {
   // entered comps are the user's own data).
   const handleContinue = () => {
     if (!validateVehicle()) return;
+    // The comparison table is empty — don't drop the user at a step-2 dead end.
+    // Point them at the search (auto) or the rows (manual) right here.
+    if (!state.comps.some((c) => c.price > 0)) {
+      toast.info("Noch keine Vergleichsfahrzeuge", {
+        description:
+          compsMode === 'auto'
+            ? "Starte die automatische Suche oder trag mindestens ein Inserat ein."
+            : "Trag den Inseratspreis von mindestens einem vergleichbaren Fahrzeug ein.",
+      });
+      return;
+    }
     const key = `${state.make}|${state.model}|${state.year}`;
     if (result && searchedVehicleRef.current && key !== searchedVehicleRef.current) {
       setResult(null);
@@ -1105,49 +1116,17 @@ export function EintauschwertRechner() {
               </Tabs>
             </div>
 
-            {compsMode === 'auto' && !searchedCurrent && (
-              <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 text-sm text-neutral-600 leading-relaxed">
-                <Search className="w-4 h-4 inline-block mr-2 text-red-600" />
-                Tipp «Inserate suchen»: der Rechner durchsucht live Schweizer
-                Occasions-Portale (AutoScout24, tutti & Co.), gleicht die Kilometer an und
-                übernimmt bis zu 5 Treffer. Die Suche dauert ca. 10–30 Sekunden.
-              </div>
-            )}
-
-            {/* After a search ran (any outcome) OR in manual mode, show the comp
-                editor so the user can always review, complete and proceed — a thin
-                or failed search must never trap them on the search button. */}
-            {(compsMode === 'manual' || searchedCurrent) && (
-              <>
-                {searchedCurrent && foundListings.length === 0 && (
-                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200 text-sm text-amber-800 leading-relaxed">
-                    Keine Inserate automatisch übernommen. Erfasse 3–5 Vergleichsfahrzeuge
-                    manuell (z.B. von AutoScout24 oder tutti) – oder starte die Suche erneut.
-                  </div>
-                )}
-                {compsFresh && foundListings.length < 3 && (
-                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200 text-sm text-amber-800 leading-relaxed">
-                    Nur {foundListings.length} Inserat{foundListings.length === 1 ? "" : "e"} gefunden.
-                    Für einen belastbareren Marktwert ergänze weitere Vergleichsfahrzeuge manuell
-                    oder starte die Suche erneut.
-                  </div>
-                )}
-                {foundListingsBlock}
-                {compRowsEditor}
-                {kmRateInput}
-              </>
-            )}
-
-            {/* Auto mode, no search yet → the search IS the primary action.
-                Otherwise (manual, or a search already ran) → proceed to the
-                deductions, with a "search again" option in auto mode. */}
-            {compsMode === 'auto' && !searchedCurrent ? (
-              <div className="flex flex-col items-center gap-3">
+            {/* AUTO MODE: a search helper that auto-fills the comparison table
+                below. It is NOT a gate — the editor and the "Weiter" CTA are
+                always available, so a thin or failed search is just a top-up the
+                user can complete by hand. Manual mode hides this button. */}
+            {compsMode === 'auto' && (
+              <div className="space-y-2">
                 <Button
                   size="lg"
                   onClick={handleAutoSearch}
                   disabled={searching}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 py-6 text-base font-semibold rounded-xl"
+                  className="w-full bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm py-6 text-base font-semibold rounded-xl"
                 >
                   {searching ? (
                     <>
@@ -1157,7 +1136,9 @@ export function EintauschwertRechner() {
                   ) : (
                     <>
                       <Search className="w-5 h-5 mr-2" />
-                      Inserate suchen
+                      {searchedCurrent
+                        ? "Erneut suchen & Vergleich starten"
+                        : "Inserate suchen & Vergleich starten"}
                     </>
                   )}
                 </Button>
@@ -1177,50 +1158,43 @@ export function EintauschwertRechner() {
                     )}
                   </p>
                 )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCompsMode('manual');
-                    setGateKind(null);
-                  }}
-                  className="text-xs text-neutral-400 hover:text-red-600 underline underline-offset-2"
-                >
-                  Lieber manuell erfassen
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-3">
-                <Button
-                  size="lg"
-                  onClick={handleContinue}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 py-6 text-base font-semibold rounded-xl"
-                >
-                  Weiter zu den Abzügen
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-                {compsMode === 'auto' && searchedCurrent && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAutoSearch}
-                    disabled={searching}
-                    className="border-neutral-300 text-neutral-600 hover:text-red-600"
-                  >
-                    {searching ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Suche…
-                      </>
-                    ) : (
-                      <>
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        Suche erneut starten
-                      </>
-                    )}
-                  </Button>
-                )}
+                <p className="text-xs text-neutral-400 text-center leading-relaxed">
+                  Durchsucht Schweizer Occasions-Portale (AutoScout24, tutti &amp; Co.) und füllt
+                  die Vergleichsfahrzeuge unten automatisch – du kannst sie danach anpassen oder
+                  ergänzen. Die Suche dauert ca. 10–30 Sekunden.
+                </p>
               </div>
             )}
+
+            {/* Guidance after an auto search returned little or nothing. */}
+            {compsMode === 'auto' && searchedCurrent && foundListings.length === 0 && (
+              <div className="bg-amber-50 rounded-lg p-4 border border-amber-200 text-sm text-amber-800 leading-relaxed">
+                Keine Inserate automatisch übernommen. Trag 3–5 Vergleichsfahrzeuge unten
+                selbst ein (z.B. von AutoScout24 oder tutti) – oder starte die Suche erneut.
+              </div>
+            )}
+            {compsMode === 'auto' && compsFresh && foundListings.length < 3 && (
+              <div className="bg-amber-50 rounded-lg p-4 border border-amber-200 text-sm text-amber-800 leading-relaxed">
+                Nur {foundListings.length} Inserat{foundListings.length === 1 ? "" : "e"} gefunden.
+                Für einen belastbareren Marktwert ergänze weitere Vergleichsfahrzeuge unten manuell.
+              </div>
+            )}
+
+            {/* The comparison table is ALWAYS editable — in both modes. Auto-search
+                fills it; the user can add/adjust rows either way. */}
+            {foundListingsBlock}
+            {compRowsEditor}
+            {kmRateInput}
+
+            {/* Primary CTA — identical in both modes. */}
+            <Button
+              size="lg"
+              onClick={handleContinue}
+              className="w-full bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 py-6 text-base font-semibold rounded-xl"
+            >
+              Weiter zu den Abzügen
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
           </CardContent>
         </Card>
       )}

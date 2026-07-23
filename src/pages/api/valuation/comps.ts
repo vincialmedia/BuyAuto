@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import {
   as24CategoryUrl,
+  baseModel,
   comparisCategoryUrl,
   extractPrices,
   identifyCategoryUrl,
@@ -369,6 +370,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Query with the name listings actually use ("VW", not "Volkswagen").
   const queryMake = MAKE_ALIASES[makeStr.toLowerCase()] ?? makeStr;
   const vehicle = `${queryMake} ${modelStr}`;
+  // Broaden discovery: search the BASE model ("Golf"), not the full trim
+  // ("Golf 1.5 TSI"), which returns far more detail-page hits. The trim
+  // precision ranking (pickBySimilarKm -> modelPrecision) still floats the exact
+  // trim to the top, so relevance is preserved while the funnel gets wider.
+  const baseVehicle = `${queryMake} ${baseModel(modelStr)}`;
   const stats: TierStat[] = [];
   const seenUrls = new Set<string>();
   const candidates: Candidate[] = [];
@@ -381,11 +387,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // tutti detail pages, and a generic marketplace-wide query. Unquoted terms —
   // an exact-phrase match is too brittle for listing titles.
   const queries = [
-    `site:autoscout24.ch/de/d ${vehicle} ${yearNum}`,
-    `site:tutti.ch/de/vi ${vehicle}`,
+    `site:autoscout24.ch/de/d ${baseVehicle} ${yearNum}`,
+    `site:tutti.ch/de/vi ${baseVehicle}`,
     `${vehicle} ${yearNum} Occasion Schweiz CHF km`,
   ];
-  const outcomes = await Promise.all(queries.map((q) => firecrawlSearch(apiKey, q, 10)));
+  const outcomes = await Promise.all(queries.map((q) => firecrawlSearch(apiKey, q, 15)));
 
   // A key/quota problem hits every call the same way — fail loudly instead of
   // reporting a misleading "no listings found".
