@@ -346,8 +346,15 @@ const marketplaceSlug = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-/** "Golf 1.5 TSI" -> "Golf": category slugs are BASE model names. */
-function baseModel(model: string): string {
+/**
+ * "Golf 1.5 TSI" -> "Golf": strips engine/trim tokens to the BASE model name.
+ * Used both for category-page slugs and to BROADEN discovery searches — a
+ * site-scoped search for the full trim ("Golf 1.5 TSI") is far too narrow and
+ * starves the funnel; searching the base model and then ranking by trim
+ * precision (see modelPrecision) yields many more candidates without losing the
+ * exact-trim ones.
+ */
+export function baseModel(model: string): string {
   const tokens = model.split(/\s+/).filter(Boolean);
   const baseTokens = tokens.filter((t) => !TRIM_TOKEN.test(t));
   return (baseTokens.length > 0 ? baseTokens : tokens.slice(0, 1)).join(" ");
