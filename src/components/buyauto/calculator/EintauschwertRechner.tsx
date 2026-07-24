@@ -1053,10 +1053,29 @@ export function EintauschwertRechner() {
               <Tabs
                 value={compsMode}
                 onValueChange={(v) => {
-                  setCompsMode(v as CompsMode);
+                  const mode = v as CompsMode;
+                  if (mode === compsMode) return;
+                  setCompsMode(mode);
                   // Leaving auto mode dismisses an auto-search quota gate — manual
                   // entry is always free and must not sit behind a gate.
-                  if (v === 'manual') setGateKind(null);
+                  if (mode === 'manual') setGateKind(null);
+                  // Switching the comparison source invalidates any previous
+                  // result: its comps belong to the OTHER mode. Clear it so the
+                  // next action recomputes correctly — a stale "Neuberechnung"
+                  // must never reuse the wrong comps.
+                  setResult(null);
+                  if (mode === 'auto') {
+                    // Auto fetches its own comps: drop the manually entered rows
+                    // and the previous search tag so step 2 offers a fresh
+                    // "Inserate suchen & Eintauschwert berechnen" search instead
+                    // of recomputing with the manual values.
+                    setFoundListings([]);
+                    setState((prev) => ({
+                      ...prev,
+                      comps: DEFAULT_STATE.comps.map((c) => ({ ...c })),
+                    }));
+                    searchedVehicleRef.current = "";
+                  }
                 }}
               >
                 <TabsList className="h-9 bg-neutral-100 p-1">
