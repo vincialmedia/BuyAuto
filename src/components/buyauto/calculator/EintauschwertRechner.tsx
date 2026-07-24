@@ -1540,15 +1540,16 @@ export function EintauschwertRechner() {
             {/* CTA */}
             <div className="max-w-2xl mx-auto mt-8 bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
               <p className="text-neutral-300 mb-4">
-                Fahrzeug übernommen? <strong className="text-white">Inserier die Occasion gratis auf BuyAuto</strong> –
-                oder hol dir als Garage die eigene Microsite.
+                Fahrzeug übernommen? <strong className="text-white">Verkauf es schneller mit BuyAuto.</strong>{" "}
+                Als Garage präsentierst du deine Occasionen auf deiner eigenen Microsite, erreichst
+                tausende Käufer und bekommst Anfragen direkt – kürzere Standzeit, mehr Marge.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild className="bg-red-600 hover:bg-red-700 text-white border-none">
-                  <Link href="/inserat-erstellen">Occasion inserieren</Link>
+                  <Link href="/garage-plan">Garagen-Paket entdecken</Link>
                 </Button>
                 <Button asChild variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
-                  <Link href="/garage-plan">Garagen-Angebot ansehen</Link>
+                  <Link href="/inserat-erstellen">Occasion inserieren</Link>
                 </Button>
               </div>
             </div>
