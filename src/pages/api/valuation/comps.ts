@@ -31,8 +31,26 @@ const TIER_DEADLINE_MS = 30_000;
 
 const MAX_COMPS = 5;
 // Total page scrapes per request (category pages + individual listings).
-const MAX_SCRAPES = 8;
+const MAX_SCRAPES = 10;
 const MAX_CATEGORY_SCRAPES = 3;
+
+// --- Comp-quality guards ---
+// A trade-in comp must be a genuinely USED car. Near-new / demo listings (e.g. a
+// 140-km showroom GTE) are a different depreciation stage and, worse, a wild
+// outlier that skews the median — drop anything below this mileage floor.
+const MIN_COMP_KM = 1_500;
+// Price-class outlier band: a base Golf 1.5 TSI (~CHF 12–15k) and a GTE/GTI/R
+// hybrid (~CHF 38k) are not comparable even after the km adjustment. Keep only
+// listings within [0.5x, 2x] of the median listing price — but only when enough
+// comps survive, so we never prune ourselves down to nothing.
+const PRICE_OUTLIER_LOW = 0.5;
+const PRICE_OUTLIER_HIGH = 2;
+
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
 
 // Vehicle DB names vs. how listings are actually titled on the portals.
 const MAKE_ALIASES: Record<string, string> = {
@@ -151,8 +169,9 @@ async function firecrawlScrape(
       // to its stealth proxy when the basic fetch gets blocked.
       proxy: "auto",
       // The inventory pages are client-rendered SPAs: give hydration a moment so
-      // the listing cards are in the DOM before capture.
-      waitFor: 3_000,
+      // the listing cards are in the DOM before capture. 3s left AutoScout24 grids
+      // thin — 4s surfaces more cards while staying under the scrape timeout.
+      waitFor: 4_000,
       // Category inventories don't move fast; serve Firecrawl's cache for 1h so
       // repeated lookups of popular models cost no extra scrape.
       maxAge: 3_600_000,
@@ -492,8 +511,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  // Drop duplicate price/km pairs (same car listed twice), then keep the comps
-  // closest in mileage — widening the km band only if the strict band is thin.
+  // Drop duplicate price/km pairs (same car listed twice).
   const uniquePairs = new Set<string>();
   comps = comps.filter((c) => {
     const key = `${c.price}:${c.km}`;
@@ -501,6 +519,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     uniquePairs.add(key);
     return true;
   });
+
+  // --- Quality guards, applied before selection ---
+  const beforeQuality = comps.length;
+  // 1) Drop near-new / demo cars (a 140-km GTE is not a comp for a used trade-in).
+  comps = comps.filter((c) => c.km >= MIN_COMP_KM);
+  // 2) Drop price-class outliers (a premium GTE/GTI/R among base 1.5 TSI Golfs).
+  //    Guarded: only prune when >=3 comps exist and >=2 would survive.
+  let droppedOutliers = 0;
+  if (comps.length >= 3) {
+    const medPrice = medianOf(comps.map((c) => c.price));
+    const kept = comps.filter(
+      (c) => c.price >= medPrice * PRICE_OUTLIER_LOW && c.price <= medPrice * PRICE_OUTLIER_HIGH
+    );
+    if (kept.length >= 2) {
+      droppedOutliers = comps.length - kept.length;
+      comps = kept;
+    }
+  }
+  const droppedForQuality = beforeQuality - comps.length;
+
   const { picked, relaxed } = pickBySimilarKm(comps, kmNum, modelStr);
 
   // The search actually ran (Firecrawl was billed) — commit ONE search against
@@ -511,7 +549,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Funnel stats land in the Vercel function logs for every request.
-  console.log("valuation/comps funnel:", JSON.stringify({ vehicle, yearNum, kmNum, stats, picked: picked.length }));
+  console.log(
+    "valuation/comps funnel:",
+    JSON.stringify({ vehicle, yearNum, kmNum, stats, droppedForQuality, droppedOutliers, picked: picked.length })
+  );
 
   return res.status(200).json({
     comps: picked,
