@@ -305,23 +305,15 @@ export function EintauschwertRechner() {
   const [vehicleFieldMode, setVehicleFieldMode] = useState<'select' | 'text'>('select');
   // Two-step flow: 1 = vehicle & market, 2 = garage deductions + result.
   const [step, setStep] = useState<1 | 2>(1);
-  // Vehicle key of the last COMPLETED auto search (any outcome: full, thin, empty
-  // or errored). Drives whether step 1 shows the "Inserate suchen" hero or the
-  // comp editor + "Weiter" — so a thin/failed search never traps the user.
-  const [searchedKey, setSearchedKey] = useState("");
   // Vehicle identity at calculation time — changing the car invalidates comps.
   const searchedVehicleRef = useRef("");
 
   // Latest committed values for async handlers: the search response must merge
   // into what the user sees NOW, not into a snapshot from click time.
   const stateRef = useRef(state);
-  const compsModeRef = useRef(compsMode);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-  useEffect(() => {
-    compsModeRef.current = compsMode;
-  }, [compsMode]);
 
   useEffect(() => {
     setIsClient(true);
@@ -444,7 +436,6 @@ export function EintauschwertRechner() {
     setState(PRESET_GOLF);
     setCompsMode('manual');
     setFoundListings([]);
-    setSearchedKey("");
     // Preset names don't map to dropdown ids — show them as text fields.
     setMakeId("");
     setModelId("");
@@ -460,7 +451,6 @@ export function EintauschwertRechner() {
     setResult(null);
     setGateKind(null);
     setFoundListings([]);
-    setSearchedKey("");
     setMakeId("");
     setModelId("");
     setVehicleFieldMode('select');
@@ -506,17 +496,9 @@ export function EintauschwertRechner() {
     .filter(Boolean)
     .join(" ");
 
-  // Was a search RUN for the vehicle currently in the form (regardless of how
-  // many comps it returned)? Editing the car changes the key and reverts step 1
-  // to the "Inserate suchen" hero, inviting a fresh search for the new vehicle.
-  const currentVehicleKey = `${state.make}|${state.model}|${state.year}`;
-  const searchedCurrent = searchedKey !== "" && searchedKey === currentVehicleKey;
-  // Did that search actually return listings? (drives the "nothing found" note.)
-  const compsFresh =
-    foundListings.length > 0 && searchedVehicleRef.current === currentVehicleKey;
-
-  // After a search resolves, bring the comps section into view — on mobile the
-  // freshly revealed editor + "Weiter" button would otherwise sit below the fold.
+  // When an automatic search finds nothing, we fall the user back to manual entry
+  // in step 1 — bring the comparison rows into view (on mobile they'd otherwise
+  // sit below the fold).
   const scrollToComps = () => {
     if (typeof document === "undefined") return;
     setTimeout(() => {
@@ -618,7 +600,6 @@ export function EintauschwertRechner() {
     }));
     setResult(null);
     setFoundListings([]);
-    setSearchedKey("");
     setGateKind(null);
     setMakeId("");
     setModelId("");
@@ -634,14 +615,12 @@ export function EintauschwertRechner() {
   // entered comps are the user's own data).
   const handleContinue = () => {
     if (!validateVehicle()) return;
-    // The comparison table is empty — don't drop the user at a step-2 dead end.
-    // Point them at the search (auto) or the rows (manual) right here.
-    if (!state.comps.some((c) => c.price > 0)) {
+    // Manual mode: the comparison rows live here in step 1, so require at least
+    // one before advancing. Auto mode has no rows yet — the search runs on the
+    // step-2 "Inserate suchen & Eintauschwert berechnen" button.
+    if (compsMode === 'manual' && !state.comps.some((c) => c.price > 0)) {
       toast.info("Noch keine Vergleichsfahrzeuge", {
-        description:
-          compsMode === 'auto'
-            ? "Starte die automatische Suche oder trag mindestens ein Inserat ein."
-            : "Trag den Inseratspreis von mindestens einem vergleichbaren Fahrzeug ein.",
+        description: "Trag den Inseratspreis von mindestens einem vergleichbaren Fahrzeug ein.",
       });
       return;
     }
@@ -678,16 +657,24 @@ export function EintauschwertRechner() {
     finishWithComputation(state);
   };
 
-  // Step 1, auto mode: the visible "Inserate suchen" action. Runs the portal
-  // search, fills the comps, and STAYS in step 1 so the user sees the found
-  // listings before moving on to the deductions. Consumes one search from quota.
-  // Whatever the outcome (full, thin, empty or errored) we mark this vehicle as
-  // searched so step 1 always reveals the editor + "Weiter" — never a dead end.
-  const handleAutoSearch = async () => {
+  // Step 2, AUTO mode: the single "Inserate suchen & Eintauschwert berechnen"
+  // action. Nothing is triggered separately — once the vehicle and deductions are
+  // filled, this one call searches the Swiss portals AND computes the result in
+  // one go. On success the result is shown; when the search finds nothing (or
+  // fails), the user is dropped into manual entry in step 1 to complete the
+  // comparison by hand. Consumes one search from quota.
+  const handleSearchAndCompute = async () => {
     if (!validateVehicle()) return;
     if (!gateBeforeSearch()) return;
 
-    const keyAtSearch = currentVehicleKey;
+    // No automatic comps: send the user to manual entry in step 1 (where the
+    // comparison rows live) so they can finish the lookup themselves.
+    const fallbackToManual = () => {
+      setCompsMode('manual');
+      setStep(1);
+      scrollToComps();
+    };
+
     setSearching(true);
     setFoundListings([]);
     try {
@@ -721,23 +708,17 @@ export function EintauschwertRechner() {
           toast.error("Automatische Suche momentan nicht verfügbar", {
             description: "Erfasse die Vergleichsfahrzeuge manuell – der Rechner funktioniert weiterhin.",
           });
-          setCompsMode('manual');
-          setStep(1); // the manual comp rows live in step 1
-          scrollToComps();
+          fallbackToManual();
         } else if (res.status === 429) {
           toast.error("Zu viele Anfragen", {
             description: body?.message ?? "Bitte versuch es in einer Stunde nochmals.",
           });
-          // Don't strand them on the search button — reveal the editor so they can
-          // enter comps manually or retry.
-          setSearchedKey(keyAtSearch);
-          scrollToComps();
+          fallbackToManual();
         } else {
           toast.error("Suche fehlgeschlagen", {
             description: body?.message ?? "Bitte prüf deine Eingaben und versuch es nochmals.",
           });
-          setSearchedKey(keyAtSearch);
-          scrollToComps();
+          fallbackToManual();
         }
         return;
       }
@@ -769,15 +750,6 @@ export function EintauschwertRechner() {
         }
       }
 
-      // The user switched to manual entry while the search ran — their typed
-      // comps win, the late results are discarded.
-      if (compsModeRef.current === 'manual') {
-        toast.info("Manuelle Erfassung aktiv", {
-          description: "Die Suchergebnisse wurden verworfen – deine Eingaben bleiben erhalten.",
-        });
-        return;
-      }
-
       if (comps.length === 0) {
         toast.warning("Keine Vergleichsinserate gefunden", {
           description:
@@ -785,43 +757,31 @@ export function EintauschwertRechner() {
             "Erfasse 3–5 Vergleichsfahrzeuge manuell – z.B. von AutoScout24 oder tutti.",
           duration: 10000,
         });
-        // Reveal the editor (with a "search again" option) instead of jumping the
-        // user into manual mode — they can retry, fill comps by hand, or proceed.
-        setSearchedKey(keyAtSearch);
-        scrollToComps();
+        fallbackToManual();
         return;
       }
 
+      // Fill the comps from the search, then compute the result in the SAME action.
       setFoundListings(comps);
       // Merge into the LATEST state, not the click-time snapshot — the user may
-      // have corrected km while the search was running.
+      // have corrected the deductions while the search was running.
       const nextState: CalculatorState = {
         ...stateRef.current,
         comps: comps.map((c) => ({ price: c.price, km: c.km })),
       };
       setState(nextState);
-      setGateKind(null);
-      // Tag which vehicle these comps belong to so editing the car flips the
-      // button back to "Inserate suchen".
-      searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}`;
-      setSearchedKey(keyAtSearch);
-      scrollToComps();
 
       if (data.warning) {
         toast.warning("Wenige Treffer", { description: data.warning });
       } else {
-        toast.success(`${comps.length} Vergleichsinserate gefunden`, {
-          description: "Weiter zu den Abzügen, um den Eintauschwert zu berechnen.",
-        });
+        toast.success(`${comps.length} Vergleichsinserate gefunden`);
       }
-      // Stay in step 1 — the button now reads "Weiter zu den Abzügen".
+      finishWithComputation(nextState);
     } catch {
       toast.error("Suche fehlgeschlagen", {
         description: "Netzwerkfehler – erfasse die Vergleichsfahrzeuge manuell oder versuch es erneut.",
       });
-      // A network error / function timeout must not trap them — reveal the editor.
-      setSearchedKey(keyAtSearch);
-      scrollToComps();
+      fallbackToManual();
     } finally {
       setSearching(false);
     }
@@ -1116,77 +1076,43 @@ export function EintauschwertRechner() {
               </Tabs>
             </div>
 
-            {/* AUTO MODE: a search helper that auto-fills the comparison table
-                below. It is NOT a gate — the editor and the "Weiter" CTA are
-                always available, so a thin or failed search is just a top-up the
-                user can complete by hand. Manual mode hides this button. */}
+            {/* AUTO MODE: no comps here and no separate search action — the search
+                runs together with the calculation on the step-2 button, once the
+                vehicle AND deductions are filled. This is just an explainer. */}
             {compsMode === 'auto' && (
-              <div className="space-y-2">
-                <Button
-                  size="lg"
-                  onClick={handleAutoSearch}
-                  disabled={searching}
-                  className="w-full bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm py-6 text-base font-semibold rounded-xl"
-                >
-                  {searching ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Suche Vergleichsinserate…
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-5 h-5 mr-2" />
-                      {searchedCurrent
-                        ? "Erneut suchen & Vergleich starten"
-                        : "Inserate suchen & Vergleich starten"}
-                    </>
-                  )}
-                </Button>
+              <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 text-sm text-neutral-600 leading-relaxed">
+                <Search className="w-4 h-4 inline-block mr-2 text-red-600" />
+                Sobald du auf «Inserate suchen &amp; Eintauschwert berechnen» klickst, durchsucht der
+                Rechner Schweizer Occasions-Portale (AutoScout24, tutti &amp; Co.), gleicht die
+                Kilometer an und berechnet den Eintauschwert – alles in einem Schritt.
                 {searchesRemaining !== null && (
-                  <p className="text-sm text-center" aria-live="polite">
+                  <span className="block mt-2" aria-live="polite">
                     {searchesRemaining > 0 ? (
-                      <span className="text-neutral-500">
+                      <>
                         Noch{" "}
                         <strong className="text-neutral-800">{searchesRemaining}</strong>
                         {searchesLimit !== null ? ` von ${searchesLimit}` : ""}{" "}
-                        {user ? "Suchen diesen Monat" : "gratis Suchen"} übrig
-                      </span>
+                        {user ? "Suchen diesen Monat" : "gratis Suchen"} übrig.
+                      </>
                     ) : (
-                      <span className="text-red-600 font-medium">
-                        {user ? "Monatskontingent aufgebraucht" : "Gratis-Suchen aufgebraucht"}
-                      </span>
+                      <strong className="text-red-600">
+                        {user ? "Monatskontingent aufgebraucht." : "Gratis-Suchen aufgebraucht."}
+                      </strong>
                     )}
-                  </p>
+                  </span>
                 )}
-                <p className="text-xs text-neutral-400 text-center leading-relaxed">
-                  Durchsucht Schweizer Occasions-Portale (AutoScout24, tutti &amp; Co.) und füllt
-                  die Vergleichsfahrzeuge unten automatisch – du kannst sie danach anpassen oder
-                  ergänzen. Die Suche dauert ca. 10–30 Sekunden.
-                </p>
               </div>
             )}
 
-            {/* Guidance after an auto search returned little or nothing. */}
-            {compsMode === 'auto' && searchedCurrent && foundListings.length === 0 && (
-              <div className="bg-amber-50 rounded-lg p-4 border border-amber-200 text-sm text-amber-800 leading-relaxed">
-                Keine Inserate automatisch übernommen. Trag 3–5 Vergleichsfahrzeuge unten
-                selbst ein (z.B. von AutoScout24 oder tutti) – oder starte die Suche erneut.
-              </div>
-            )}
-            {compsMode === 'auto' && compsFresh && foundListings.length < 3 && (
-              <div className="bg-amber-50 rounded-lg p-4 border border-amber-200 text-sm text-amber-800 leading-relaxed">
-                Nur {foundListings.length} Inserat{foundListings.length === 1 ? "" : "e"} gefunden.
-                Für einen belastbareren Marktwert ergänze weitere Vergleichsfahrzeuge unten manuell.
-              </div>
+            {/* MANUAL MODE: the comparison rows live here in step 1. */}
+            {compsMode === 'manual' && (
+              <>
+                {compRowsEditor}
+                {kmRateInput}
+              </>
             )}
 
-            {/* The comparison table is ALWAYS editable — in both modes. Auto-search
-                fills it; the user can add/adjust rows either way. */}
-            {foundListingsBlock}
-            {compRowsEditor}
-            {kmRateInput}
-
-            {/* Primary CTA — identical in both modes. */}
+            {/* Primary CTA — identical in both modes: proceed to the deductions. */}
             <Button
               size="lg"
               onClick={handleContinue}
@@ -1344,19 +1270,37 @@ export function EintauschwertRechner() {
           </Card>
         )}
 
-        {/* --- CALCULATE / RECALCULATE --- */}
-        {/* Step 2 never searches — the comps were already gathered in step 1
-            (auto-searched or manually entered). This button only computes. */}
+        {/* --- SEARCH + CALCULATE / RECALCULATE --- */}
+        {/* The single action once everything is filled: in auto mode it searches
+            the portals AND computes in one step; in manual mode it just computes.
+            After a result, it becomes a free "Neuberechnung" (no new search). */}
         <div className="flex flex-col items-center gap-3">
           <Button
             size="lg"
-            onClick={result ? handleRecalculate : handleCompute}
+            onClick={
+              result
+                ? handleRecalculate
+                : compsMode === 'auto'
+                  ? handleSearchAndCompute
+                  : handleCompute
+            }
+            disabled={searching}
             className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 px-10 py-6 text-base font-semibold rounded-xl w-full max-w-md"
           >
-            {result ? (
+            {searching ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Suche &amp; berechne…
+              </>
+            ) : result ? (
               <>
                 <RotateCcw className="w-5 h-5 mr-2" />
                 Neuberechnung
+              </>
+            ) : compsMode === 'auto' ? (
+              <>
+                <Search className="w-5 h-5 mr-2" />
+                Inserate suchen &amp; Eintauschwert berechnen
               </>
             ) : (
               <>
@@ -1365,6 +1309,23 @@ export function EintauschwertRechner() {
               </>
             )}
           </Button>
+          {/* Search counter — auto mode, before the first result. */}
+          {compsMode === 'auto' && !result && searchesRemaining !== null && (
+            <p className="text-sm text-center" aria-live="polite">
+              {searchesRemaining > 0 ? (
+                <span className="text-neutral-500">
+                  Noch{" "}
+                  <strong className="text-neutral-800">{searchesRemaining}</strong>
+                  {searchesLimit !== null ? ` von ${searchesLimit}` : ""}{" "}
+                  {user ? "Suchen diesen Monat" : "gratis Suchen"} übrig
+                </span>
+              ) : (
+                <span className="text-red-600 font-medium">
+                  {user ? "Monatskontingent aufgebraucht" : "Gratis-Suchen aufgebraucht"}
+                </span>
+              )}
+            </p>
+          )}
           {result && (
             <Button
               variant="outline"
