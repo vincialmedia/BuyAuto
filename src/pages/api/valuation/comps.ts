@@ -2,12 +2,13 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import {
   as24CategoryUrl,
-  baseModel,
   comparisCategoryUrl,
+  displacementOf,
   extractPrices,
   identifyCategoryUrl,
   identifyListingUrl,
   isNewVehicleText,
+  matchesDisplacement,
   modelPrecision,
   parseCategoryMarkdown,
   parseDetailMarkdown,
@@ -389,11 +390,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Query with the name listings actually use ("VW", not "Volkswagen").
   const queryMake = MAKE_ALIASES[makeStr.toLowerCase()] ?? makeStr;
   const vehicle = `${queryMake} ${modelStr}`;
-  // Broaden discovery: search the BASE model ("Golf"), not the full trim
-  // ("Golf 1.5 TSI"), which returns far more detail-page hits. The trim
-  // precision ranking (pickBySimilarKm -> modelPrecision) still floats the exact
-  // trim to the top, so relevance is preserved while the funnel gets wider.
-  const baseVehicle = `${queryMake} ${baseModel(modelStr)}`;
   const stats: TierStat[] = [];
   const seenUrls = new Set<string>();
   const candidates: Candidate[] = [];
@@ -405,9 +401,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Round 1: three snippet-only searches in parallel — AutoScout24 detail pages,
   // tutti detail pages, and a generic marketplace-wide query. Unquoted terms —
   // an exact-phrase match is too brittle for listing titles.
+  // Search the FULL trim ("VW Golf 1.5 TSI"), not just the base model: the
+  // category-page scrape already harvests every trim for volume, so the searches
+  // should target the exact engine to surface real matches. Wrong-trim listings
+  // that slip in are dropped by the displacement filter below.
   const queries = [
-    `site:autoscout24.ch/de/d ${baseVehicle} ${yearNum}`,
-    `site:tutti.ch/de/vi ${baseVehicle}`,
+    `site:autoscout24.ch/de/d ${vehicle} ${yearNum}`,
+    `site:tutti.ch/de/vi ${vehicle}`,
     `${vehicle} ${yearNum} Occasion Schweiz CHF km`,
   ];
   const outcomes = await Promise.all(queries.map((q) => firecrawlSearch(apiKey, q, 15)));
@@ -522,9 +522,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // --- Quality guards, applied before selection ---
   const beforeQuality = comps.length;
-  // 1) Drop near-new / demo cars (a 140-km GTE is not a comp for a used trade-in).
+  // 1) Engine/trim match. The single biggest source of garbage: for "Golf 1.5
+  //    TSI" the portals return 1.0 TSI, 1.4 PHEV GTE, 2.0 TSI R, 2.0 TDI — all
+  //    different cars and price classes. Require the requested displacement.
+  //    This is a HARD filter: a wrong-engine comp produces a wrong valuation, so
+  //    we'd rather return few (or none → manual entry) than mislead. No-ops when
+  //    the model names no displacement (e.g. an EV or a bare "Golf").
+  const requestedDisplacement = displacementOf(modelStr);
+  if (requestedDisplacement) {
+    comps = comps.filter((c) => matchesDisplacement(c.title, modelStr));
+  }
+  const droppedForTrim = beforeQuality - comps.length;
+  // 2) Drop near-new / demo cars (a 140-km GTE is not a comp for a used trade-in).
   comps = comps.filter((c) => c.km >= MIN_COMP_KM);
-  // 2) Drop price-class outliers (a premium GTE/GTI/R among base 1.5 TSI Golfs).
+  // 3) Drop price-class outliers among the remaining same-engine comps.
   //    Guarded: only prune when >=3 comps exist and >=2 would survive.
   let droppedOutliers = 0;
   if (comps.length >= 3) {
@@ -551,17 +562,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Funnel stats land in the Vercel function logs for every request.
   console.log(
     "valuation/comps funnel:",
-    JSON.stringify({ vehicle, yearNum, kmNum, stats, droppedForQuality, droppedOutliers, picked: picked.length })
+    JSON.stringify({ vehicle, yearNum, kmNum, stats, droppedForTrim, droppedForQuality, droppedOutliers, picked: picked.length })
   );
+
+  // A zero result caused by the trim filter (we DID find Golfs, just not the
+  // requested engine) needs its own message so the user knows to enter the
+  // matching listings by hand rather than thinking the model doesn't exist.
+  const trimZero = picked.length === 0 && droppedForTrim > 0;
+  const diagnosis =
+    picked.length > 0
+      ? undefined
+      : trimZero
+        ? `Es wurden Golf-Inserate gefunden, aber keine mit passender Motorisierung (${modelStr}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
+        : buildDiagnosis(stats, candidatesTried);
 
   return res.status(200).json({
     comps: picked,
     queried: stats.map((s) => s.query),
     quota: quota ?? undefined,
-    diagnosis: picked.length === 0 ? buildDiagnosis(stats, candidatesTried) : undefined,
+    diagnosis,
     warning:
       picked.length === 0
-        ? "Keine Vergleichsinserate gefunden – erfasse sie manuell."
+        ? trimZero
+          ? `Keine ${modelStr}-Inserate mit passender Motorisierung gefunden – erfasse sie manuell.`
+          : "Keine Vergleichsinserate gefunden – erfasse sie manuell."
         : picked.length < 3
           ? "Nur wenige Vergleichsinserate gefunden – prüf die Werte und ergänze manuell."
           : relaxed

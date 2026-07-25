@@ -384,3 +384,30 @@ export function modelPrecision(title: string, model: string): number {
   if (base && t.includes(base)) return 1;
   return 2;
 }
+
+/**
+ * The engine-displacement token in a model string: "Golf 1.5 TSI" -> "1.5",
+ * "A4 2.0 TDI" -> "2.0". Null when the model doesn't name one (e.g. just "Golf",
+ * or an EV like "ID.3" — no combustion displacement to match on).
+ */
+export function displacementOf(model: string): string | null {
+  // Require a decimal litre figure (1.0–9.9). Avoid matching "ID.3", "1er" etc.
+  const m = model.match(/(?<![\w.])([1-9]\.\d)(?!\d)/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Does a listing TITLE share the requested engine displacement? A "Golf 1.5 TSI"
+ * lookup must reject a 1.0 TSI, 1.4 PHEV GTE, 2.0 TSI R or 2.0 TDI — different
+ * cars and price classes that wreck a median. Accepts "1.5" or "1,5" as a
+ * standalone token. When the requested model names no displacement, or the title
+ * names none, we can't discriminate — return true (don't over-filter).
+ */
+export function matchesDisplacement(title: string, model: string): boolean {
+  const disp = displacementOf(model);
+  if (!disp) return true;
+  // The title carries no litre figure at all → nothing to contradict the request.
+  if (!/(?<![\w.])[1-9][.,]\d(?!\d)/.test(title)) return true;
+  const re = new RegExp(`(?<![\\w.])${disp[0]}[.,]${disp[2]}(?!\\d)`);
+  return re.test(title);
+}
