@@ -143,7 +143,7 @@ const MAX_COMPS = 6;
 // grants another 5. Logged-in users are metered server-side (5/mo free, 100/mo
 // paid) via /api/valuation/*. Only automatic searches count; manual entry and
 // "Neuberechnung" are always free.
-const ANON_FREE_SEARCHES = 5;
+const ANON_FREE_SEARCHES = 3;
 const ANON_SEARCH_KEY = "buyauto_eintausch_anon_searches";
 
 type GateKind = null | "anon" | "free_plan" | "paid_limit";

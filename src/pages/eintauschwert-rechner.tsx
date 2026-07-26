@@ -69,7 +69,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Ist die Eintauschwert-Berechnung kostenlos?",
-    a: "Ja. Ohne Konto rechnest du 5 automatische Suchen gratis. Mit einem kostenlosen BuyAuto-Konto sind es 5 Suchen pro Monat, in einem Garagen-Paket bis zu 100 pro Monat. Manuelle Berechnungen (eigene Vergleichspreise eintragen) sind immer unbegrenzt gratis.",
+    a: "Ja. Ohne Konto rechnest du 3 automatische Suchen gratis. Mit einem kostenlosen BuyAuto-Konto sind es 5 Suchen pro Monat, in einem Garagen-Paket bis zu 100 pro Monat. Manuelle Berechnungen (eigene Vergleichspreise eintragen) sind immer unbegrenzt gratis.",
   },
   {
     q: "Woher kommen die Vergleichspreise bei der automatischen Suche?",
