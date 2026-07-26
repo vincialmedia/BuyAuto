@@ -341,7 +341,13 @@ export function parseCategoryMarkdown(rawMarkdown: string, pageUrl: string): Cat
   // Locate all links to individual listing pages, with their positions. The RAW
   // link text feeds the parser (card-style pages put price/km inside it); the
   // CLEANED text is only for display.
-  const anchors: Array<{ rawText: string; url: string; end: number; start: number }> = [];
+  const anchors: Array<{
+    rawText: string;
+    labels: string[];
+    url: string;
+    end: number;
+    start: number;
+  }> = [];
   MD_LINK.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = MD_LINK.exec(markdown)) !== null) {
@@ -355,12 +361,22 @@ export function parseCategoryMarkdown(rawMarkdown: string, pageUrl: string): Cat
     const prev = anchors[anchors.length - 1];
     const rawText = m[1].replace(/[!\[\]]/g, "");
     if (prev && prev.url === href.split("#")[0]) {
-      // Same listing linked twice in a row (image + title) — extend the anchor.
+      // Same listing linked twice (photo link + title link). KEEP the text
+      // between the two anchors — that is where the card's price/km usually
+      // sits; skipping it silently dropped the whole card. Every label is
+      // retained so the title can prefer the real one over a gallery label.
+      prev.rawText = `${prev.rawText} ${markdown.slice(prev.end, m.index)} ${rawText}`;
+      prev.labels.push(rawText);
       prev.end = m.index + m[0].length;
-      if (!prev.rawText.trim() && rawText.trim()) prev.rawText = rawText;
       continue;
     }
-    anchors.push({ rawText, url: href.split("#")[0], start: m.index, end: m.index + m[0].length });
+    anchors.push({
+      rawText,
+      labels: [rawText],
+      url: href.split("#")[0],
+      start: m.index,
+      end: m.index + m[0].length,
+    });
   }
 
   const out: CategoryComp[] = [];
@@ -380,10 +396,16 @@ export function parseCategoryMarkdown(rawMarkdown: string, pageUrl: string): Cat
     if (!parsed) continue;
 
     seen.add(a.url);
-    // Card link text first; when it's a gallery label ("View more images") or
-    // empty, rebuild the title from the URL slug — which on autolina/AS24 carries
-    // the model AND the trim, so the comp stays identifiable for the trim filter.
-    const title = cleanCardTitle(a.rawText) || titleFromListingUrl(a.url);
+    // Prefer the first label that is a real title (a card often links the photo
+    // with a gallery label AND the name with the real one). When every label is
+    // junk, rebuild from the URL slug — on autolina/AS24 it carries the model
+    // AND the trim, so the comp stays identifiable for the trim filter.
+    let title = "";
+    for (const label of a.labels) {
+      title = cleanCardTitle(label);
+      if (title) break;
+    }
+    if (!title) title = titleFromListingUrl(a.url);
     out.push({ ...parsed, title: title.slice(0, 120) || "Inserat", url: a.url });
   }
   return out;
@@ -462,9 +484,16 @@ export function modelPrecision(title: string, model: string): number {
  * or an EV like "ID.3" — no combustion displacement to match on).
  */
 export function displacementOf(model: string): string | null {
-  // Require a decimal litre figure (1.0–9.9). Avoid matching "ID.3", "1er" etc.
-  const m = model.match(/(?<![\w.])([1-9]\.\d)(?!\d)/);
-  return m ? m[1] : null;
+  // Accept the Swiss/German decimal comma ("Golf 1,5 TSI") and a glued form
+  // ("Golf1.5 TSI") — this must NOT fail open: returning null disables the trim
+  // filter entirely, which is the exact failure mode it exists to prevent.
+  // A digit is required before the separator, so "ID.3"/"ID.4" stay null.
+  const m = model.match(/(?<!\d)(\d)[.,](\d)(?!\d)/);
+  if (!m) return null;
+  const litres = Number(`${m[1]}.${m[2]}`);
+  // Plausible car displacement — includes sub-litre engines (0.9 TCe/TwinAir).
+  if (!(litres >= 0.6 && litres <= 8.9)) return null;
+  return `${m[1]}.${m[2]}`;
 }
 
 /**
@@ -485,14 +514,22 @@ export function displacementOf(model: string): string | null {
 export function matchesDisplacement(title: string, model: string, url = ""): boolean {
   const disp = displacementOf(model);
   if (!disp) return true;
-  // Allow a preceding hyphen (slug separator) but never a digit/decimal, so
-  // "11-50" or "2015" can't masquerade as "1.5".
-  const re = new RegExp(`(?<![\\d.,])${disp[0]}[.,-]${disp[2]}(?!\\d)`);
-  if (re.test(title)) return true;
+  const [a, , b] = disp;
+  // Trailing guard, shared by both forms: not part of a longer number, and not a
+  // Swiss day-date — "MFK 1.5.2025" must not make a 2.0 TDI pass as a 1.5.
+  const tail = `(?!\\d|[.,-]\\d)`;
+  // Title: "1.5" / "1,5". A preceding letter is fine ("Golf1.5"), a preceding
+  // digit is not ("11.50"); a preceding comma is fine ("VW Golf,1.5 TSI").
+  if (new RegExp(`(?<!\\d)${a}[.,]${b}${tail}`).test(title)) return true;
   if (!url) return false;
+  // Slug: also "1-5". Here the digit must START a token — otherwise the model
+  // designation in "bmw-x1-5-turer" (X1 + 5-Türer) reads as a 1.5.
+  const slugRe = new RegExp(`(?<![\\w.,])${a}[.,-]${b}${tail}`);
+  let decoded = url;
   try {
-    return re.test(decodeURIComponent(url));
+    decoded = decodeURIComponent(url);
   } catch {
-    return re.test(url);
+    /* malformed escape — test the raw URL */
   }
+  return slugRe.test(decoded);
 }

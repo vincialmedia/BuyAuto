@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import {
   as24CategoryUrl,
+  baseModel,
   comparisCategoryUrl,
   displacementOf,
   extractPrices,
@@ -286,10 +287,16 @@ function pickBySimilarKm(
   return { picked, relaxed };
 }
 
-function buildDiagnosis(stats: TierStat[], candidatesTried: number): string {
-  const totalResults = stats.reduce((s, t) => s + t.results, 0);
-  const totalMarketplace = stats.reduce((s, t) => s + t.onMarketplace, 0);
-  if (stats.every((t) => t.status === "network")) {
+/**
+ * `searchStats` must contain ONLY the round-1 search tiers. The round-2 scrape
+ * pushes a synthetic stat whose counts describe pages fetched, not listings
+ * found — including it made the network branch unreachable and double-counted
+ * detail candidates that round 1 had already reported.
+ */
+function buildDiagnosis(searchStats: TierStat[], candidatesTried: number): string {
+  const totalResults = searchStats.reduce((s, t) => s + t.results, 0);
+  const totalMarketplace = searchStats.reduce((s, t) => s + t.onMarketplace, 0);
+  if (searchStats.length > 0 && searchStats.every((t) => t.status === "network")) {
     return "Die Suchanfragen sind fehlgeschlagen (Netzwerk) – bitte später nochmals versuchen.";
   }
   if (totalResults === 0) {
@@ -445,6 +452,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   });
 
+  // Snapshot the SEARCH tiers before round 2 appends its scrape stat — the
+  // diagnosis must reason about searches only (see buildDiagnosis).
+  const searchStats = [...stats];
+
   // Round 2: when snippets alone weren't enough, scrape in parallel — category/
   // model-overview pages (dozens of listing cards each) plus individual listings
   // whose snippets lacked price/km. The AutoScout24 and Comparis inventory pages
@@ -458,7 +469,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     comparisCategoryUrl(makeStr, modelStr),
     ...categoryUrls,
   ].filter((u, i, arr) => arr.indexOf(u) === i);
-  if (comps.length < MAX_COMPS && withinBudget()) {
+  // Gate on comps that will SURVIVE the trim filter, not on the raw haul. Round 1
+  // routinely returns a full set of wrong-engine Golfs; counting those as "enough"
+  // skipped the deterministic inventory scrape and then the filter deleted them
+  // all, handing the user an empty result while the AS24/comparis Golf inventory
+  // pages (full of real 1.5 TSI cards) were never fetched.
+  const requestedDisplacement = displacementOf(modelStr);
+  const viableSoFar = requestedDisplacement
+    ? comps.filter((c) => matchesDisplacement(c.title, modelStr, c.url)).length
+    : comps.length;
+  if (viableSoFar < MAX_COMPS && withinBudget()) {
     const catPages = orderedCategoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
     const detailPages = candidates.slice(0, MAX_SCRAPES - catPages.length);
     candidatesTried = catPages.length + detailPages.length;
@@ -502,11 +522,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       added += addedHere;
     });
+    // Logging only. results/onMarketplace stay 0: these count PAGES FETCHED, not
+    // listings found, and buildDiagnosis() must not mistake them for either.
     stats.push({
       query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate)`,
       status: 200,
-      results: candidatesTried,
-      onMarketplace: candidatesTried,
+      results: 0,
+      onMarketplace: 0,
       parsed: added,
     });
   }
@@ -530,7 +552,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   //    as the right engine is dropped, because a wrong-engine comp produces a
   //    wrong valuation — better few (or none → manual entry) than misleading.
   //    No-ops when the model names no displacement (an EV, or a bare "Golf").
-  const requestedDisplacement = displacementOf(modelStr);
   if (requestedDisplacement) {
     comps = comps.filter((c) => matchesDisplacement(c.title, modelStr, c.url));
   }
@@ -581,16 +602,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
   );
 
-  // A zero result caused by the trim filter (we DID find Golfs, just not the
-  // requested engine) needs its own message so the user knows to enter the
+  // A zero result caused by the trim filter (we DID find this model, just not
+  // the requested engine) needs its own message so the user knows to enter the
   // matching listings by hand rather than thinking the model doesn't exist.
   const trimZero = picked.length === 0 && droppedForTrim > 0;
+  const modelLabel = `${queryMake} ${baseModel(modelStr)}`.trim();
   const diagnosis =
     picked.length > 0
       ? undefined
       : trimZero
-        ? `Es wurden Golf-Inserate gefunden, aber keine mit passender Motorisierung (${modelStr}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
-        : buildDiagnosis(stats, candidatesTried);
+        ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Motorisierung (${modelStr}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
+        : buildDiagnosis(searchStats, candidatesTried);
 
   return res.status(200).json({
     comps: picked,
