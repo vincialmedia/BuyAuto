@@ -524,17 +524,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const beforeQuality = comps.length;
   // 1) Engine/trim match. The single biggest source of garbage: for "Golf 1.5
   //    TSI" the portals return 1.0 TSI, 1.4 PHEV GTE, 2.0 TSI R, 2.0 TDI — all
-  //    different cars and price classes. Require the requested displacement.
-  //    This is a HARD filter: a wrong-engine comp produces a wrong valuation, so
-  //    we'd rather return few (or none → manual entry) than mislead. No-ops when
-  //    the model names no displacement (e.g. an EV or a bare "Golf").
+  //    different cars and price classes. Require the requested displacement, in
+  //    the title OR the listing URL slug (which carries the trim on autolina and
+  //    AutoScout24). This is a HARD, POSITIVE filter: a comp we cannot identify
+  //    as the right engine is dropped, because a wrong-engine comp produces a
+  //    wrong valuation — better few (or none → manual entry) than misleading.
+  //    No-ops when the model names no displacement (an EV, or a bare "Golf").
   const requestedDisplacement = displacementOf(modelStr);
   if (requestedDisplacement) {
-    comps = comps.filter((c) => matchesDisplacement(c.title, modelStr));
+    comps = comps.filter((c) => matchesDisplacement(c.title, modelStr, c.url));
   }
   const droppedForTrim = beforeQuality - comps.length;
   // 2) Drop near-new / demo cars (a 140-km GTE is not a comp for a used trade-in).
+  const beforeKmFloor = comps.length;
   comps = comps.filter((c) => c.km >= MIN_COMP_KM);
+  const droppedNearNew = beforeKmFloor - comps.length;
   // 3) Drop price-class outliers among the remaining same-engine comps.
   //    Guarded: only prune when >=3 comps exist and >=2 would survive.
   let droppedOutliers = 0;
@@ -548,7 +552,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       comps = kept;
     }
   }
-  const droppedForQuality = beforeQuality - comps.length;
+  // Counters are disjoint (trim | near-new | outlier) so the funnel log adds up.
+  const droppedForQuality = droppedForTrim + droppedNearNew + droppedOutliers;
 
   const { picked, relaxed } = pickBySimilarKm(comps, kmNum, modelStr);
 
@@ -562,7 +567,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Funnel stats land in the Vercel function logs for every request.
   console.log(
     "valuation/comps funnel:",
-    JSON.stringify({ vehicle, yearNum, kmNum, stats, droppedForTrim, droppedForQuality, droppedOutliers, picked: picked.length })
+    JSON.stringify({
+      vehicle,
+      yearNum,
+      kmNum,
+      stats,
+      harvested: beforeQuality,
+      droppedForTrim,
+      droppedNearNew,
+      droppedOutliers,
+      droppedForQuality,
+      picked: picked.length,
+    })
   );
 
   // A zero result caused by the trim filter (we DID find Golfs, just not the

@@ -245,6 +245,73 @@ const MAX_CARD_WINDOW = 800;
 // year filter of matching cards (comparis page 1 led with 2006-2015 cars).
 const MAX_CATEGORY_COMPS = 60;
 
+/**
+ * Generic gallery/UI link labels that are NOT a listing title. autolina cards
+ * link the photo carousel with "View more images", which was ending up as the
+ * displayed comp title (and, worse, made the listing untypeable for the trim
+ * filter). Anchored: "Kaufen" alone is junk, "VW Golf 1.5 TSI … Kaufen" is not.
+ */
+const JUNK_CARD_TITLE =
+  /^(view (all |more )?(images?|photos?|pictures?|details|gallery)|mehr bilder|weitere bilder|bilder( ansehen)?|foto(s|grafien)?|details( ansehen)?|zum inserat|mehr( infos| erfahren)?|ansehen|kaufen|occasion)$/i;
+
+/** Engine-code tokens; used to locate the displacement pair inside a URL slug. */
+const ENGINE_TOKEN = /^(e?tsi|tdi|tfsi|fsi|cdi|dci|hdi|thp|crdi|mhev|phev|hybrid|bluemotion|bluem)$/i;
+
+/** Acronyms that should stay uppercase when a title is rebuilt from a URL slug. */
+const TITLE_ACRONYMS = new Set([
+  "tsi", "etsi", "tdi", "tfsi", "fsi", "cdi", "dci", "hdi", "thp", "crdi",
+  "gti", "gtd", "gte", "dsg", "suv", "4x4", "act", "bmt", "amg", "vw", "bmw", "s", "r",
+]);
+
+/**
+ * Rebuild a readable title from a listing URL slug — the fallback when the card's
+ * link text is junk. autolina: /en/vw/golf/golf-1.5-tsi-act-life; AutoScout24:
+ * /de/d/vw-golf-1-5-tsi-highline-10826494 (trailing id stripped). Digit pairs
+ * that precede an engine token are rejoined ("1-5-tsi" -> "1.5 TSI") — anchored
+ * on the engine token so a generation number ("golf-7-1-5-tsi") is not merged
+ * into a bogus "7.1".
+ */
+export function titleFromListingUrl(url: string): string {
+  let slug: string;
+  try {
+    const segs = new URL(url).pathname.split("/").filter(Boolean);
+    if (segs.length === 0) return "";
+    slug = segs[segs.length - 1];
+    // A purely numeric last segment (comparis /details/show/12345) carries nothing.
+    if (/^\d+$/.test(slug)) return "";
+  } catch {
+    return "";
+  }
+  // Trailing marketplace id: "vw-golf-1-5-tsi-highline-10826494".
+  slug = slug.replace(/\.(html?|php)$/i, "").replace(/-\d{4,}$/, "");
+  const tokens = slug.split(/[-_]/).filter(Boolean);
+  if (tokens.length === 0) return "";
+
+  // Rejoin the displacement pair sitting directly before an engine token.
+  const merged: string[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const isPair =
+      /^[1-9]$/.test(tokens[i]) &&
+      /^\d$/.test(tokens[i + 1] ?? "") &&
+      ENGINE_TOKEN.test(tokens[i + 2] ?? "");
+    if (isPair) {
+      merged.push(`${tokens[i]}.${tokens[i + 1]}`);
+      i += 1;
+      continue;
+    }
+    merged.push(tokens[i]);
+  }
+
+  return merged
+    .map((t) =>
+      TITLE_ACRONYMS.has(t.toLowerCase())
+        ? t.toUpperCase()
+        : t.charAt(0).toUpperCase() + t.slice(1)
+    )
+    .join(" ")
+    .trim();
+}
+
 /** Link text on card-style pages carries markdown noise and the whole spec block. */
 function cleanCardTitle(linkText: string): string {
   let t = linkText
@@ -258,7 +325,8 @@ function cleanCardTitle(linkText: string): string {
   if (chf > 0) t = t.slice(0, chf).trim();
   // Drop leading UI verbs ("Merken ") that precede the model name.
   t = t.replace(/^(Merken|Vergleichen|Details)\s+/i, "");
-  return t;
+  // A pure gallery/UI label is not a title — signal "no title" to the caller.
+  return JUNK_CARD_TITLE.test(t) ? "" : t;
 }
 
 /**
@@ -312,7 +380,10 @@ export function parseCategoryMarkdown(rawMarkdown: string, pageUrl: string): Cat
     if (!parsed) continue;
 
     seen.add(a.url);
-    const title = cleanCardTitle(a.rawText);
+    // Card link text first; when it's a gallery label ("View more images") or
+    // empty, rebuild the title from the URL slug — which on autolina/AS24 carries
+    // the model AND the trim, so the comp stays identifiable for the trim filter.
+    const title = cleanCardTitle(a.rawText) || titleFromListingUrl(a.url);
     out.push({ ...parsed, title: title.slice(0, 120) || "Inserat", url: a.url });
   }
   return out;
@@ -397,17 +468,31 @@ export function displacementOf(model: string): string | null {
 }
 
 /**
- * Does a listing TITLE share the requested engine displacement? A "Golf 1.5 TSI"
- * lookup must reject a 1.0 TSI, 1.4 PHEV GTE, 2.0 TSI R or 2.0 TDI — different
- * cars and price classes that wreck a median. Accepts "1.5" or "1,5" as a
- * standalone token. When the requested model names no displacement, or the title
- * names none, we can't discriminate — return true (don't over-filter).
+ * Does this comp POSITIVELY carry the requested engine displacement? A "Golf 1.5
+ * TSI" lookup must reject a 1.0 TSI, 1.4 PHEV GTE, 2.0 TSI R or 2.0 TDI —
+ * different cars and price classes that wreck a median.
+ *
+ * Checks the title AND the listing URL, because marketplace slugs carry the trim
+ * (autolina /en/vw/golf/golf-1.5-tsi-act-life, AS24 /de/d/vw-golf-1-5-tsi-...).
+ * Accepts "1.5", "1,5" and the slug form "1-5".
+ *
+ * This is deliberately STRICT: a comp we cannot positively identify as the right
+ * engine is rejected. An earlier lenient version gave untypeable listings the
+ * benefit of the doubt, which let gallery-titled autolina cards ("View more
+ * images", CHF 35'800) into a 1.5 TSI valuation. Returns true only when the
+ * request names no displacement at all (nothing to discriminate on).
  */
-export function matchesDisplacement(title: string, model: string): boolean {
+export function matchesDisplacement(title: string, model: string, url = ""): boolean {
   const disp = displacementOf(model);
   if (!disp) return true;
-  // The title carries no litre figure at all → nothing to contradict the request.
-  if (!/(?<![\w.])[1-9][.,]\d(?!\d)/.test(title)) return true;
-  const re = new RegExp(`(?<![\\w.])${disp[0]}[.,]${disp[2]}(?!\\d)`);
-  return re.test(title);
+  // Allow a preceding hyphen (slug separator) but never a digit/decimal, so
+  // "11-50" or "2015" can't masquerade as "1.5".
+  const re = new RegExp(`(?<![\\d.,])${disp[0]}[.,-]${disp[2]}(?!\\d)`);
+  if (re.test(title)) return true;
+  if (!url) return false;
+  try {
+    return re.test(decodeURIComponent(url));
+  } catch {
+    return re.test(url);
+  }
 }
