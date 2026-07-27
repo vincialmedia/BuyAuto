@@ -492,12 +492,18 @@ export function comparisCategoryUrl(make: string, model: string): string {
 }
 
 /**
- * Verified shape: autolina.ch/de/vw/golf — a third deterministic inventory page.
- * Its cards carry the trim in the listing slug (golf-1.5-tsi-act-life), so it is
- * the highest-confidence source for the engine check.
+ * Third deterministic inventory page. Its cards carry the trim in the listing
+ * slug (golf-1.5-tsi-act-life), which makes it the highest-confidence source for
+ * the engine check — the other portals often title a card with nothing but the
+ * equipment line.
+ *
+ * `/en/`, not `/de/`: every autolina URL this scraper has actually seen in the
+ * wild is the English tree (which is also what the "View more images" junk-label
+ * handling in cleanCardTitle was built against). Prices and mileage parse
+ * identically either way.
  */
 export function autolinaCategoryUrl(make: string, model: string): string {
-  return `https://www.autolina.ch/de/${portalMakeSlug(make)}/${marketplaceSlug(baseModel(model))}`;
+  return `https://www.autolina.ch/en/${portalMakeSlug(make)}/${marketplaceSlug(baseModel(model))}`;
 }
 
 /**
