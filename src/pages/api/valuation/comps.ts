@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import {
   as24CategoryUrl,
+  autolinaCategoryUrl,
   baseModel,
   comparisCategoryUrl,
   displacementOf,
@@ -10,11 +11,13 @@ import {
   identifyListingUrl,
   isNewVehicleText,
   matchesDisplacement,
-  modelPrecision,
   parseCategoryMarkdown,
   parseDetailMarkdown,
   parseListingText,
+  selectComps,
   yearMatches,
+  MAX_COMPS,
+  type CompCandidate,
 } from "@/lib/buyauto/compsParser";
 import { peekQuota, commitSearch, type QuotaResult } from "@/lib/buyauto/valuationQuota";
 
@@ -31,28 +34,12 @@ const SEARCH_TIMEOUT_MS = 18_000;
 const SCRAPE_TIMEOUT_MS = 28_000;
 const TIER_DEADLINE_MS = 30_000;
 
-const MAX_COMPS = 5;
 // Total page scrapes per request (category pages + individual listings).
 const MAX_SCRAPES = 10;
-const MAX_CATEGORY_SCRAPES = 3;
-
-// --- Comp-quality guards ---
-// A trade-in comp must be a genuinely USED car. Near-new / demo listings (e.g. a
-// 140-km showroom GTE) are a different depreciation stage and, worse, a wild
-// outlier that skews the median — drop anything below this mileage floor.
-const MIN_COMP_KM = 1_500;
-// Price-class outlier band: a base Golf 1.5 TSI (~CHF 12–15k) and a GTE/GTI/R
-// hybrid (~CHF 38k) are not comparable even after the km adjustment. Keep only
-// listings within [0.5x, 2x] of the median listing price — but only when enough
-// comps survive, so we never prune ourselves down to nothing.
-const PRICE_OUTLIER_LOW = 0.5;
-const PRICE_OUTLIER_HIGH = 2;
-
-function medianOf(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
+// Three deterministic inventory pages (AS24, comparis, autolina) plus one
+// search-discovered category page. Inventory pages yield dozens of cards each
+// and are by far the best comps-per-scrape, so they get the majority of budget.
+const MAX_CATEGORY_SCRAPES = 4;
 
 // Vehicle DB names vs. how listings are actually titled on the portals.
 const MAKE_ALIASES: Record<string, string> = {
@@ -60,13 +47,7 @@ const MAKE_ALIASES: Record<string, string> = {
   "mercedes-benz": "Mercedes",
 };
 
-interface CompOut {
-  price: number;
-  km: number;
-  title: string;
-  url: string;
-  source: string;
-}
+type CompOut = CompCandidate;
 
 interface Candidate {
   url: string;
@@ -249,45 +230,6 @@ function resultsToComps(
 }
 
 /**
- * Prefer comps with a similar mileage; widen the band only when the strict one
- * yields too few. Returns the picked comps plus whether relaxation was needed.
- */
-function pickBySimilarKm(
-  comps: CompOut[],
-  targetKm: number,
-  model: string
-): { picked: CompOut[]; relaxed: boolean } {
-  // Trim precision beats km proximity: a GTI comp poisons a 1.5-TSI valuation far
-  // worse than a 20'000-km mileage gap (the km-Angleich corrects mileage anyway).
-  const byDistance = [...comps].sort((a, b) => {
-    const p = modelPrecision(a.title, model) - modelPrecision(b.title, model);
-    if (p !== 0) return p;
-    return Math.abs(a.km - targetKm) - Math.abs(b.km - targetKm);
-  });
-  const bands = [
-    Math.max(30_000, targetKm * 0.4),
-    Math.max(60_000, targetKm * 0.8),
-    Number.POSITIVE_INFINITY,
-  ];
-
-  const picked: CompOut[] = [];
-  let relaxed = false;
-  // Always fill up to MAX_COMPS: the bands only control ORDER (similar-km comps
-  // first) — stopping early returned 4 comps while 7 were on the table.
-  for (let i = 0; i < bands.length && picked.length < MAX_COMPS; i++) {
-    for (const c of byDistance) {
-      if (picked.length >= MAX_COMPS) break;
-      if (picked.includes(c)) continue;
-      if (Math.abs(c.km - targetKm) <= bands[i]) {
-        picked.push(c);
-        if (i > 0) relaxed = true;
-      }
-    }
-  }
-  return { picked, relaxed };
-}
-
-/**
  * `searchStats` must contain ONLY the round-1 search tiers. The round-2 scrape
  * pushes a synthetic stat whose counts describe pages fetched, not listings
  * found — including it made the network branch unreachable and double-counted
@@ -467,6 +409,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const orderedCategoryUrls = [
     as24CategoryUrl(makeStr, modelStr),
     comparisCategoryUrl(makeStr, modelStr),
+    autolinaCategoryUrl(makeStr, modelStr),
     ...categoryUrls,
   ].filter((u, i, arr) => arr.indexOf(u) === i);
   // Gate on comps that will SURVIVE the trim filter, not on the raw haul. Round 1
@@ -474,6 +417,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // skipped the deterministic inventory scrape and then the filter deleted them
   // all, handing the user an empty result while the AS24/comparis Golf inventory
   // pages (full of real 1.5 TSI cards) were never fetched.
+  // Counts CONFIRMED matches only — engine-less cards are usable as a top-up but
+  // are not a reason to stop looking for the real thing.
   const requestedDisplacement = displacementOf(modelStr);
   const viableSoFar = requestedDisplacement
     ? comps.filter((c) => matchesDisplacement(c.title, modelStr, c.url)).length
@@ -542,41 +487,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return true;
   });
 
-  // --- Quality guards, applied before selection ---
-  const beforeQuality = comps.length;
-  // 1) Engine/trim match. The single biggest source of garbage: for "Golf 1.5
-  //    TSI" the portals return 1.0 TSI, 1.4 PHEV GTE, 2.0 TSI R, 2.0 TDI — all
-  //    different cars and price classes. Require the requested displacement, in
-  //    the title OR the listing URL slug (which carries the trim on autolina and
-  //    AutoScout24). This is a HARD, POSITIVE filter: a comp we cannot identify
-  //    as the right engine is dropped, because a wrong-engine comp produces a
-  //    wrong valuation — better few (or none → manual entry) than misleading.
-  //    No-ops when the model names no displacement (an EV, or a bare "Golf").
-  if (requestedDisplacement) {
-    comps = comps.filter((c) => matchesDisplacement(c.title, modelStr, c.url));
-  }
-  const droppedForTrim = beforeQuality - comps.length;
-  // 2) Drop near-new / demo cars (a 140-km GTE is not a comp for a used trade-in).
-  const beforeKmFloor = comps.length;
-  comps = comps.filter((c) => c.km >= MIN_COMP_KM);
-  const droppedNearNew = beforeKmFloor - comps.length;
-  // 3) Drop price-class outliers among the remaining same-engine comps.
-  //    Guarded: only prune when >=3 comps exist and >=2 would survive.
-  let droppedOutliers = 0;
-  if (comps.length >= 3) {
-    const medPrice = medianOf(comps.map((c) => c.price));
-    const kept = comps.filter(
-      (c) => c.price >= medPrice * PRICE_OUTLIER_LOW && c.price <= medPrice * PRICE_OUTLIER_HIGH
-    );
-    if (kept.length >= 2) {
-      droppedOutliers = comps.length - kept.length;
-      comps = kept;
-    }
-  }
+  // Quality guards + km-similarity pick. Pure and unit-tested in compsParser.
+  const {
+    picked,
+    relaxed,
+    toppedUp,
+    droppedForTrim,
+    droppedNearNew,
+    droppedOutliers,
+    unverifiedAvailable,
+    harvested,
+  } = selectComps(comps, modelStr, kmNum);
   // Counters are disjoint (trim | near-new | outlier) so the funnel log adds up.
   const droppedForQuality = droppedForTrim + droppedNearNew + droppedOutliers;
-
-  const { picked, relaxed } = pickBySimilarKm(comps, kmNum, modelStr);
 
   // The search actually ran (Firecrawl was billed) — commit ONE search against
   // the logged-in user's quota now, not before, so a platform failure above
@@ -593,11 +516,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       yearNum,
       kmNum,
       stats,
-      harvested: beforeQuality,
+      harvested,
       droppedForTrim,
       droppedNearNew,
       droppedOutliers,
       droppedForQuality,
+      unverifiedAvailable,
+      toppedUp,
       picked: picked.length,
     })
   );
@@ -626,8 +551,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           : "Keine Vergleichsinserate gefunden – erfasse sie manuell."
         : picked.length < 3
           ? "Nur wenige Vergleichsinserate gefunden – prüf die Werte und ergänze manuell."
-          : relaxed
-            ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
-            : undefined,
+          : toppedUp > 0
+            ? "Bei einigen Inseraten ist die Motorisierung nicht ausgewiesen – prüf sie kurz nach."
+            : relaxed
+              ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
+              : undefined,
   });
 }

@@ -492,6 +492,15 @@ export function comparisCategoryUrl(make: string, model: string): string {
 }
 
 /**
+ * Verified shape: autolina.ch/de/vw/golf — a third deterministic inventory page.
+ * Its cards carry the trim in the listing slug (golf-1.5-tsi-act-life), so it is
+ * the highest-confidence source for the engine check.
+ */
+export function autolinaCategoryUrl(make: string, model: string): string {
+  return `https://www.autolina.ch/de/${portalMakeSlug(make)}/${marketplaceSlug(baseModel(model))}`;
+}
+
+/**
  * How precisely a listing title matches the requested model: 0 = full model
  * string (incl. trim) present, 1 = base model word present, 2 = no match info.
  * Whitespace-insensitive so "1.5tsi" matches "1.5 TSI".
@@ -535,10 +544,13 @@ export function displacementOf(model: string): string | null {
  * Accepts "1.5", "1,5" and the slug form "1-5".
  *
  * This is deliberately STRICT: a comp we cannot positively identify as the right
- * engine is rejected. An earlier lenient version gave untypeable listings the
+ * engine returns false. An earlier lenient version gave untypeable listings the
  * benefit of the doubt, which let gallery-titled autolina cards ("View more
  * images", CHF 35'800) into a 1.5 TSI valuation. Returns true only when the
  * request names no displacement at all (nothing to discriminate on).
+ *
+ * Callers that want to distinguish "wrong engine" from "no engine stated" — and
+ * so use the latter as a last-resort top-up — want trimVerdict() below.
  */
 export function matchesDisplacement(title: string, model: string, url = ""): boolean {
   const disp = displacementOf(model);
@@ -561,4 +573,211 @@ export function matchesDisplacement(title: string, model: string, url = ""): boo
     /* malformed escape — test the raw URL */
   }
   return slugRe.test(decoded);
+}
+
+export type TrimVerdict = "match" | "mismatch" | "unknown";
+
+/**
+ * Three-way engine check, so we can be strict about WRONG cars without throwing
+ * away merely UNIDENTIFIABLE ones:
+ *   match    – carries the requested displacement (or the request names none)
+ *   mismatch – names a DIFFERENT displacement → definitely another car, drop it
+ *   unknown  – no engine info anywhere → usable to top up a thin result set
+ *
+ * The pure boolean filter dropped "unknown" too, which starved real lookups:
+ * plenty of marketplace cards are titled just "VW Golf Life" with an id-only URL
+ * — not evidence of the wrong engine, just no evidence either way.
+ */
+export function trimVerdict(title: string, model: string, url = ""): TrimVerdict {
+  const disp = displacementOf(model);
+  if (!disp) return "match";
+  if (matchesDisplacement(title, model, url)) return "match";
+  // Same boundary rules as matchesDisplacement, but looking for ANY litre figure:
+  // a hit here means the listing positively names a different engine.
+  const tail = `(?!\\d|[.,-]\\d)`;
+  if (new RegExp(`(?<!\\d)\\d[.,]\\d${tail}`).test(title)) return "mismatch";
+  if (url) {
+    let decoded = url;
+    try {
+      decoded = decodeURIComponent(url);
+    } catch {
+      /* malformed escape — test the raw URL */
+    }
+    if (new RegExp(`(?<![\\w.,])\\d[.,-]\\d${tail}`).test(decoded)) return "mismatch";
+  }
+  return "unknown";
+}
+
+// --- Comp selection ------------------------------------------------------
+// Lives here rather than in the API route so it can be unit-tested as a pure
+// function: this is the stage that decides which cars end up in the median, and
+// it is where every "garbage comps" / "only 3 results" bug has originated.
+
+export interface CompCandidate {
+  price: number;
+  km: number;
+  title: string;
+  url: string;
+  source: string;
+}
+
+export const MAX_COMPS = 5;
+// A trade-in comp must be a genuinely USED car. Near-new / demo listings (e.g. a
+// 140-km showroom GTE) are a different depreciation stage and, worse, a wild
+// outlier that skews the median — drop anything below this mileage floor.
+export const MIN_COMP_KM = 1_500;
+// Price-class outlier band: a base Golf 1.5 TSI (~CHF 12–15k) and a GTE/GTI/R
+// hybrid (~CHF 38k) are not comparable even after the km adjustment. Keep only
+// listings within [0.5x, 2x] of the median listing price — but only when enough
+// comps survive, so we never prune ourselves down to nothing.
+const PRICE_OUTLIER_LOW = 0.5;
+const PRICE_OUTLIER_HIGH = 2;
+
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * Prefer comps with a similar mileage; widen the band only when the strict one
+ * yields too few. Returns the picked comps plus whether relaxation was needed.
+ */
+function pickBySimilarKm(
+  comps: CompCandidate[],
+  targetKm: number,
+  model: string,
+  limit: number = MAX_COMPS
+): { picked: CompCandidate[]; relaxed: boolean } {
+  // Trim precision beats km proximity: a GTI comp poisons a 1.5-TSI valuation far
+  // worse than a 20'000-km mileage gap (the km-Angleich corrects mileage anyway).
+  const byDistance = [...comps].sort((a, b) => {
+    const p = modelPrecision(a.title, model) - modelPrecision(b.title, model);
+    if (p !== 0) return p;
+    return Math.abs(a.km - targetKm) - Math.abs(b.km - targetKm);
+  });
+  const bands = [
+    Math.max(30_000, targetKm * 0.4),
+    Math.max(60_000, targetKm * 0.8),
+    Number.POSITIVE_INFINITY,
+  ];
+
+  const picked: CompCandidate[] = [];
+  let relaxed = false;
+  // Always fill up to the limit: the bands only control ORDER (similar-km comps
+  // first) — stopping early returned 4 comps while 7 were on the table.
+  for (let i = 0; i < bands.length && picked.length < limit; i++) {
+    for (const c of byDistance) {
+      if (picked.length >= limit) break;
+      if (picked.includes(c)) continue;
+      if (Math.abs(c.km - targetKm) <= bands[i]) {
+        picked.push(c);
+        if (i > 0) relaxed = true;
+      }
+    }
+  }
+  return { picked, relaxed };
+}
+
+export interface CompSelection {
+  picked: CompCandidate[];
+  /** Some picks fall outside the strict mileage band. */
+  relaxed: boolean;
+  /** How many picks could not be engine-verified (top-ups). */
+  toppedUp: number;
+  /** Positively the WRONG engine — always excluded. */
+  droppedForTrim: number;
+  droppedNearNew: number;
+  droppedOutliers: number;
+  /** Unverified comps still on the bench after selection. */
+  unverifiedAvailable: number;
+  harvested: number;
+}
+
+/**
+ * Turn the raw harvest into the comps that actually drive the valuation.
+ *
+ * Order matters: engine verdict → mileage floor → price band → km-similarity
+ * pick. Confirmed comps always fill the seats first; unverified ones (no engine
+ * stated anywhere) only fill seats that would otherwise stay empty, which is
+ * what lifts a real lookup off "3 Inserate" without ever letting a known-wrong
+ * engine into the median.
+ */
+export function selectComps(
+  raw: CompCandidate[],
+  model: string,
+  targetKm: number
+): CompSelection {
+  const harvested = raw.length;
+  const requestedDisplacement = displacementOf(model);
+
+  // 1) Engine/trim verdict. The single biggest source of garbage: for "Golf 1.5
+  //    TSI" the portals return 1.0 TSI, 1.4 PHEV GTE, 2.0 TSI R, 2.0 TDI — all
+  //    different cars and price classes.
+  //    Three-way, not boolean. "mismatch" is always dropped. A boolean filter
+  //    also dropped every card that simply names no engine ("VW Golf Life" with
+  //    an id-only URL), which is most of a marketplace grid — those are held
+  //    back as a reserve instead.
+  //    No-ops when the model names no displacement (an EV, or a bare "Golf").
+  let confirmed: CompCandidate[] = [];
+  let unverified: CompCandidate[] = [];
+  if (requestedDisplacement) {
+    for (const c of raw) {
+      const verdict = trimVerdict(c.title, model, c.url);
+      if (verdict === "match") confirmed.push(c);
+      else if (verdict === "unknown") unverified.push(c);
+    }
+  } else {
+    confirmed = [...raw];
+  }
+  const droppedForTrim = harvested - confirmed.length - unverified.length;
+
+  // 2) Drop near-new / demo cars (a 140-km GTE is no comp for a used trade-in).
+  const beforeKmFloor = confirmed.length + unverified.length;
+  confirmed = confirmed.filter((c) => c.km >= MIN_COMP_KM);
+  unverified = unverified.filter((c) => c.km >= MIN_COMP_KM);
+  const droppedNearNew = beforeKmFloor - confirmed.length - unverified.length;
+
+  // 3) Drop price-class outliers. The band is anchored on the CONFIRMED comps
+  //    whenever there are enough to form a median, so an unverified card can
+  //    never move the goalposts it is being judged against.
+  //    Guarded: only prune when >=3 comps exist and >=2 would survive.
+  let droppedOutliers = 0;
+  const anchorPool = confirmed.length >= 3 ? confirmed : [...confirmed, ...unverified];
+  if (anchorPool.length >= 3) {
+    const medPrice = medianOf(anchorPool.map((c) => c.price));
+    const inBand = (c: CompCandidate) =>
+      c.price >= medPrice * PRICE_OUTLIER_LOW && c.price <= medPrice * PRICE_OUTLIER_HIGH;
+    const keptConfirmed = confirmed.filter(inBand);
+    const keptUnverified = unverified.filter(inBand);
+    if (keptConfirmed.length + keptUnverified.length >= 2) {
+      droppedOutliers =
+        confirmed.length + unverified.length - keptConfirmed.length - keptUnverified.length;
+      confirmed = keptConfirmed;
+      unverified = keptUnverified;
+    }
+  }
+
+  // 4) Pick by mileage similarity — confirmed first, then top up.
+  const confirmedPick = pickBySimilarKm(confirmed, targetKm, model);
+  const picked = confirmedPick.picked;
+  let relaxed = confirmedPick.relaxed;
+  let toppedUp = 0;
+  if (picked.length < MAX_COMPS && unverified.length > 0) {
+    const topUp = pickBySimilarKm(unverified, targetKm, model, MAX_COMPS - picked.length);
+    picked.push(...topUp.picked);
+    toppedUp = topUp.picked.length;
+    if (topUp.relaxed) relaxed = true;
+  }
+
+  return {
+    picked,
+    relaxed,
+    toppedUp,
+    droppedForTrim,
+    droppedNearNew,
+    droppedOutliers,
+    unverifiedAvailable: unverified.length - toppedUp,
+    harvested,
+  };
 }
