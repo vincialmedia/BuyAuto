@@ -410,8 +410,8 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Für Garagen: vom Ankauf bis zum Verkauf</h2>
             <p className="text-lg text-neutral-300 mb-8 max-w-2xl mx-auto">
-              Im Garagen-Paket suchst du unbegrenzt*, hast den Rechner direkt im Dashboard,
-              inserierst Occasionen und erhältst eine eigene Microsite.
+              Im Garagen-Paket suchst du unbegrenzt*, hast den Rechner direkt in deinem Konto,
+              inserierst Occasionen und bekommst eine eigene Garagen-Seite mit deinem ganzen Bestand.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 text-left">
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
@@ -426,8 +426,8 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
               </div>
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
                 <Building2 className="w-8 h-8 text-red-400 mb-4" />
-                <h3 className="font-bold text-lg mb-2">Eigene Microsite</h3>
-                <p className="text-sm text-neutral-400">Dein Bestand auf deiner eigenen BuyAuto-Seite – teilbar, auffindbar, ohne Website-Projekt.</p>
+                <h3 className="font-bold text-lg mb-2">Eigene Garagen-Seite</h3>
+                <p className="text-sm text-neutral-400">Dein ganzer Fahrzeugbestand auf einer eigenen Seite – zum Teilen, bei Google auffindbar, ohne Website-Projekt.</p>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

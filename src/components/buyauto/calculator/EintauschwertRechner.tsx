@@ -1376,24 +1376,29 @@ export function EintauschwertRechner() {
 
             {gateKind === "anon" && (
               <>
-                <h3 className="text-2xl md:text-3xl font-bold">Mehr Suchen freischalten</h3>
+                <h3 className="text-2xl md:text-3xl font-bold">
+                  {ANON_FREE_SEARCHES} gratis Suchen erreicht
+                </h3>
                 <p className="text-neutral-300 leading-relaxed">
-                  Deine <strong className="text-white">{ANON_FREE_SEARCHES} gratis Suchen</strong> sind
-                  aufgebraucht. Registriere dich kostenlos als Garage und such weiter –
-                  plus Zugriff auf den Rechner in deinem Dashboard.
+                  Registriere dich kostenlos als Garage und rechne weiter – der Rechner ist
+                  dann auch direkt in deinem Konto verfügbar.
                 </p>
-                <ul className="text-sm text-neutral-300 space-y-2 text-left max-w-xs mx-auto">
+                <ul className="text-sm text-neutral-300 space-y-2 text-left max-w-sm mx-auto">
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                     {FREE_MONTHLY_LIMIT} Suchen pro Monat gratis – im Paket unbegrenzt*
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Rechner im Dashboard & manuelle Berechnung ohne Limit
+                    Rechner in deinem Konto & manuelle Berechnung ohne Limit
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Occasionen inserieren & eigene Garagen-Microsite
+                    Fahrzeuge inserieren – plus eigene Garagen-Seite mit deinem ganzen Bestand
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    Kaufanfragen von Interessenten direkt per E-Mail
                   </li>
                 </ul>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
@@ -1412,8 +1417,9 @@ export function EintauschwertRechner() {
                 <h3 className="text-2xl md:text-3xl font-bold">Monatslimit erreicht</h3>
                 <p className="text-neutral-300 leading-relaxed">
                   Du hast diesen Monat alle <strong className="text-white">{FREE_MONTHLY_LIMIT} Gratis-Suchen</strong>{" "}
-                  genutzt. Mit einem Garagen-Paket suchst du unbegrenzt* – und bekommst
-                  Inserate, Microsite und Anfragen dazu.
+                  genutzt. Mit einem Garagen-Paket suchst du unbegrenzt* – inserierst deine
+                  Fahrzeuge, bekommst eine eigene Garagen-Seite mit deinem ganzen Bestand und
+                  Kaufanfragen direkt per E-Mail.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                   <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
@@ -1560,8 +1566,9 @@ export function EintauschwertRechner() {
             <div className="max-w-2xl mx-auto mt-8 bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
               <p className="text-neutral-300 mb-4">
                 Fahrzeug übernommen? <strong className="text-white">Verkauf es schneller mit BuyAuto.</strong>{" "}
-                Als Garage präsentierst du deine Occasionen auf deiner eigenen Microsite, erreichst
-                tausende Käufer und bekommst Anfragen direkt – kürzere Standzeit, mehr Marge.
+                Als Garage zeigst du deinen ganzen Fahrzeugbestand auf einer eigenen Garagen-Seite,
+                erreichst tausende Käufer und bekommst Kaufanfragen direkt per E-Mail – kürzere
+                Standzeit, mehr Marge.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild className="bg-red-600 hover:bg-red-700 text-white border-none">
