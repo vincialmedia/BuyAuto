@@ -426,16 +426,24 @@ export function isNewVehicleText(text: string): boolean {
  * Engine/trim tokens ("1.5", "TSI", "R-Line") are stripped: category slugs are
  * BASE model names. Verified URL shape: autoscout24.ch/de/s/mo-golf/mk-vw.
  */
+// Only a DECIMAL number is a displacement ("1.5"). A bare integer is part of the
+// model designation for many makes — stripping it turned "C 220 d" into "C d".
 const TRIM_TOKEN =
-  /^(\d+(\.\d+)?|e-?tsi|tsi|tdi|tfsi|fsi|cdi|dci|hdi|dsg|cvt|mhev|phev|evo|4motion|quattro|xdrive|gti|gtd|gte|r-line|life|style|comfortline|highline|trendline)$/i;
+  /^(\d+\.\d+|e-?tsi|tsi|tdi|tfsi|fsi|cdi|dci|hdi|thp|crdi|puretech|bluehdi|ecoboost|tce|skyactiv|multijet|bluetec|bluemotion|dsg|cvt|mhev|phev|evo|4motion|quattro|xdrive|gti|gtd|gte|r-line|life|style|comfortline|highline|trendline)$/i;
 
+/**
+ * Strip diacritics generically via Unicode decomposition — the old hand-written
+ * list missed exactly the makes our vehicle DB stores: "Škoda" became "koda" and
+ * "Citroën" became "citro-n", i.e. 404 inventory URLs.
+ */
 const marketplaceSlug = (s: string) =>
   s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/ß/gi, "ss")
+    .replace(/ø/gi, "o")
+    .replace(/æ/gi, "ae")
     .toLowerCase()
-    .replace(/[äàâ]/g, "a")
-    .replace(/[öô]/g, "o")
-    .replace(/[üû]/g, "u")
-    .replace(/[éèê]/g, "e")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
@@ -453,13 +461,34 @@ export function baseModel(model: string): string {
   return (baseTokens.length > 0 ? baseTokens : tokens.slice(0, 1)).join(" ");
 }
 
+/**
+ * The portals' own make slugs differ from the names in our vehicle DB, which
+ * stores "Volkswagen" and "Mercedes" — both verified inventory URLs above use
+ * `vw` / `mercedes-benz`. Passing the raw DB name built a 404 and silently
+ * killed the highest-yield comp source (the inventory pages), leaving only the
+ * handful of individual listings we can afford to scrape. Map the known
+ * mismatches; every other make slugifies cleanly.
+ */
+const PORTAL_MAKE_SLUG: Record<string, string> = {
+  vw: "vw",
+  volkswagen: "vw",
+  mercedes: "mercedes-benz",
+  "mercedes-benz": "mercedes-benz",
+  "vw-nutzfahrzeuge": "vw",
+};
+
+export function portalMakeSlug(make: string): string {
+  const slug = marketplaceSlug(make);
+  return PORTAL_MAKE_SLUG[slug] ?? slug;
+}
+
 export function as24CategoryUrl(make: string, model: string): string {
-  return `https://www.autoscout24.ch/de/s/mo-${marketplaceSlug(baseModel(model))}/mk-${marketplaceSlug(make)}`;
+  return `https://www.autoscout24.ch/de/s/mo-${marketplaceSlug(baseModel(model))}/mk-${portalMakeSlug(make)}`;
 }
 
 /** Verified shape: comparis.ch/carfinder/marktplatz/vw/golf/occasion (aggregates all portals). */
 export function comparisCategoryUrl(make: string, model: string): string {
-  return `https://www.comparis.ch/carfinder/marktplatz/${marketplaceSlug(make)}/${marketplaceSlug(baseModel(model))}/occasion`;
+  return `https://www.comparis.ch/carfinder/marktplatz/${portalMakeSlug(make)}/${marketplaceSlug(baseModel(model))}/occasion`;
 }
 
 /**
