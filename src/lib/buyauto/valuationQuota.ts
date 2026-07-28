@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Monthly automatic-search limits. Only the portal search (which spends Firecrawl
 // credits) is metered — manual comp entry and "Neuberechnung" never call the API.
-export const FREE_MONTHLY_LIMIT = 5;
+export const FREE_MONTHLY_LIMIT = 3;
 export const PAID_MONTHLY_LIMIT = 100;
 
 export type QuotaPlan = "free" | "paid";

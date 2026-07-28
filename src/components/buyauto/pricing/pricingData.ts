@@ -32,9 +32,9 @@ export const garageIncludedFeatures: GarageIncludedFeature[] = [
   },
   {
     key: "eintauschwert_rechner",
-    label: "Eintauschwert-Rechner: 100 Suchen / Monat",
+    label: "Eintauschwert-Rechner: unbegrenzte Suchen*",
     tooltip:
-      "Ankaufspreis aus echten Vergleichsinseraten berechnen – direkt im Dashboard und einbettbar auf deiner Website. Bis zu 100 automatische Suchen pro Monat, manuelle Berechnungen unbegrenzt.",
+      "Ankaufspreis aus echten Vergleichsinseraten berechnen – direkt im Dashboard und einbettbar auf deiner Website. Unbegrenzte Suchen (faire Nutzung: 100 automatische pro Monat), manuelle Berechnungen immer gratis.",
   },
   { key: "basic_stats", label: "Basis-Statistiken: Views & Anfragen" },
 ];
