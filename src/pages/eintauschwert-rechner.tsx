@@ -267,9 +267,10 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             </div>
             <div className="prose prose-lg text-neutral-700 max-w-none">
               <p>
-                Der <strong>Marktwert</strong> ist der Median von 3–5 vergleichbaren Inseraten, jeweils
-                um die Kilometer-Differenz zu deinem Fahrzeug bereinigt (Standard: 0.10 CHF/km,
-                einstellbar). Der Median statt des Durchschnitts sorgt dafür, dass ein einzelnes
+                Der <strong>Marktwert</strong> ist der Median von 3–5 vergleichbaren Inseraten. Hat ein
+                Vergleichsauto mehr oder weniger Kilometer als deins, wird sein Preis automatisch
+                angeglichen (10 Rappen pro Kilometer Differenz – z.B. 20&apos;000 km ≈ CHF 2&apos;000).
+                Der Median statt des Durchschnitts sorgt dafür, dass ein einzelnes
                 überteuertes oder verschleudertes Inserat das Ergebnis nicht verzerrt.
               </p>
               <p>

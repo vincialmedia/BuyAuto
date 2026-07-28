@@ -861,17 +861,14 @@ export function EintauschwertRechner() {
     </div>
   );
 
-  const kmRateInput = (
-    <div className="w-40">
-      <MoneyInput
-        label="km-Angleich"
-        value={state.kmRate}
-        onChange={(v) => updateState('kmRate', v)}
-        unit="CHF/km"
-        step="0.01"
-        tooltip="Wert pro Kilometer Laufleistungs-Differenz. Faustregel: 0.05–0.15 CHF/km je nach Segment (Kleinwagen tiefer, Premium höher)."
-      />
-    </div>
+  // The km correction is applied silently (state.kmRate, 10 Rp./km) — an
+  // editable "CHF/km" factor confused every tester, so it's explained, not asked.
+  const kmAdjustNote = (
+    <p className="text-xs text-neutral-500 leading-relaxed">
+      <strong className="text-neutral-700">Kilometerstand wird automatisch berücksichtigt:</strong>{" "}
+      Vergleichsautos mit mehr Kilometern als deins sind entsprechend günstiger – der Rechner
+      gleicht das mit 10 Rp. pro Kilometer aus. Beispiel: 20&apos;000 km Unterschied ≈ CHF 2&apos;000.
+    </p>
   );
 
   return (
@@ -1127,7 +1124,7 @@ export function EintauschwertRechner() {
             {compsMode === 'manual' && (
               <>
                 {compRowsEditor}
-                {kmRateInput}
+                {kmAdjustNote}
               </>
             )}
 
@@ -1284,7 +1281,7 @@ export function EintauschwertRechner() {
             <CardContent className="p-6 space-y-6">
               {foundListingsBlock}
               {compRowsEditor}
-              {kmRateInput}
+              {kmAdjustNote}
             </CardContent>
           </Card>
         )}
@@ -1552,7 +1549,7 @@ export function EintauschwertRechner() {
               <div className="max-w-2xl mx-auto mt-4 p-4 bg-black/20 rounded-lg text-xs text-neutral-400 font-mono">
                 <p className="mb-2 font-bold text-white">Berechnungslogik:</p>
                 <div className="space-y-1">
-                  <p>Angeglichener Preis = Inseratspreis + (km Vergleich − km Fahrzeug) × CHF/km</p>
+                  <p>Angeglichener Preis = Inseratspreis, korrigiert um die km-Differenz (10 Rp./km)</p>
                   <p>Marktwert = Median der angeglichenen Preise</p>
                   <p>Eintauschwert = Marktwert − Aufbereitung − Garantie − Standzeit − Marge</p>
                 </div>
