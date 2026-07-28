@@ -433,12 +433,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
 
     let added = 0;
+    let detailParsed = 0;
+    let detailFailed = 0;
     scraped.forEach((s, i) => {
-      if (s.status !== "fulfilled") return;
+      const isCat = i < catPages.length;
+      if (s.status !== "fulfilled") {
+        // A failed inventory scrape is THE thing that starves a run — name it.
+        if (isCat) {
+          const reason = s.reason instanceof Error ? s.reason.message : String(s.reason);
+          stats.push({
+            query: `(Übersicht ${new URL(catPages[i]).hostname}: Abruf fehlgeschlagen – ${reason.slice(0, 120)})`,
+            status: "network",
+            results: 0,
+            onMarketplace: 0,
+            parsed: 0,
+          });
+        } else {
+          detailFailed += 1;
+        }
+        return;
+      }
       const { markdown } = s.value;
       let addedHere = 0;
       if (markdown) {
-        if (i < catPages.length) {
+        if (isCat) {
           // Category page: harvest every parseable listing card.
           for (const card of parseCategoryMarkdown(markdown, catPages[i])) {
             if (seenUrls.has(card.url)) continue;
@@ -465,16 +483,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         }
       }
+      // Per-inventory-page yield: which source produced (or failed to produce)
+      // cards is the first question every thin-result diagnosis asks.
+      if (isCat) {
+        stats.push({
+          query: `(Übersicht ${new URL(catPages[i]).hostname}: ${markdown ? `${addedHere} Karten` : "leere Antwort"})`,
+          status: 200,
+          results: 0,
+          onMarketplace: 0,
+          parsed: addedHere,
+        });
+      } else {
+        detailParsed += addedHere;
+      }
       added += addedHere;
     });
     // Logging only. results/onMarketplace stay 0: these count PAGES FETCHED, not
     // listings found, and buildDiagnosis() must not mistake them for either.
     stats.push({
-      query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate)`,
+      query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate → ${added} Karten, ${detailFailed} Abrufe fehlgeschlagen)`,
       status: 200,
       results: 0,
       onMarketplace: 0,
-      parsed: added,
+      parsed: detailParsed,
     });
   }
 
@@ -508,24 +539,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     quota = await commitSearch(supabase, quotaCtx.limit, quotaCtx.plan);
   }
 
-  // Funnel stats land in the Vercel function logs for every request.
-  console.log(
-    "valuation/comps funnel:",
-    JSON.stringify({
-      vehicle,
-      yearNum,
-      kmNum,
-      stats,
-      harvested,
-      droppedForTrim,
-      droppedNearNew,
-      droppedOutliers,
-      droppedForQuality,
-      unverifiedAvailable,
-      toppedUp,
-      picked: picked.length,
-    })
-  );
+  // Funnel stats: Vercel function logs AND the valuation_search_logs table, so
+  // a thin live result can be diagnosed from the DB without Vercel log access.
+  const funnel = {
+    stats,
+    harvested,
+    droppedForTrim,
+    droppedNearNew,
+    droppedOutliers,
+    droppedForQuality,
+    unverifiedAvailable,
+    toppedUp,
+    picked: picked.length,
+    pickedComps: picked.map((c) => ({ price: c.price, km: c.km, title: c.title, source: c.source })),
+  };
+  console.log("valuation/comps funnel:", JSON.stringify({ vehicle, yearNum, kmNum, ...funnel }));
+  try {
+    await supabase.rpc("log_valuation_search", {
+      p_vehicle: { make: makeStr, model: modelStr, year: yearNum, km: kmNum },
+      p_funnel: funnel,
+    });
+  } catch {
+    // Diagnostics only — never let logging break the search response.
+  }
 
   // A zero result caused by the trim filter (we DID find this model, just not
   // the requested engine) needs its own message so the user knows to enter the
