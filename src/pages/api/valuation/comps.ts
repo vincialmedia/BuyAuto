@@ -2,17 +2,22 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import {
   as24CategoryUrl,
+  autolinaCategoryUrl,
   baseModel,
   comparisCategoryUrl,
+  displacementOf,
   extractPrices,
   identifyCategoryUrl,
   identifyListingUrl,
   isNewVehicleText,
-  modelPrecision,
+  matchesDisplacement,
   parseCategoryMarkdown,
   parseDetailMarkdown,
   parseListingText,
+  selectComps,
   yearMatches,
+  MAX_COMPS,
+  type CompCandidate,
 } from "@/lib/buyauto/compsParser";
 import { peekQuota, commitSearch, type QuotaResult } from "@/lib/buyauto/valuationQuota";
 
@@ -29,10 +34,12 @@ const SEARCH_TIMEOUT_MS = 18_000;
 const SCRAPE_TIMEOUT_MS = 28_000;
 const TIER_DEADLINE_MS = 30_000;
 
-const MAX_COMPS = 5;
 // Total page scrapes per request (category pages + individual listings).
-const MAX_SCRAPES = 8;
-const MAX_CATEGORY_SCRAPES = 3;
+const MAX_SCRAPES = 10;
+// Three deterministic inventory pages (AS24, comparis, autolina) plus one
+// search-discovered category page. Inventory pages yield dozens of cards each
+// and are by far the best comps-per-scrape, so they get the majority of budget.
+const MAX_CATEGORY_SCRAPES = 4;
 
 // Vehicle DB names vs. how listings are actually titled on the portals.
 const MAKE_ALIASES: Record<string, string> = {
@@ -40,13 +47,7 @@ const MAKE_ALIASES: Record<string, string> = {
   "mercedes-benz": "Mercedes",
 };
 
-interface CompOut {
-  price: number;
-  km: number;
-  title: string;
-  url: string;
-  source: string;
-}
+type CompOut = CompCandidate;
 
 interface Candidate {
   url: string;
@@ -151,8 +152,9 @@ async function firecrawlScrape(
       // to its stealth proxy when the basic fetch gets blocked.
       proxy: "auto",
       // The inventory pages are client-rendered SPAs: give hydration a moment so
-      // the listing cards are in the DOM before capture.
-      waitFor: 3_000,
+      // the listing cards are in the DOM before capture. 3s left AutoScout24 grids
+      // thin — 4s surfaces more cards while staying under the scrape timeout.
+      waitFor: 4_000,
       // Category inventories don't move fast; serve Firecrawl's cache for 1h so
       // repeated lookups of popular models cost no extra scrape.
       maxAge: 3_600_000,
@@ -228,48 +230,15 @@ function resultsToComps(
 }
 
 /**
- * Prefer comps with a similar mileage; widen the band only when the strict one
- * yields too few. Returns the picked comps plus whether relaxation was needed.
+ * `searchStats` must contain ONLY the round-1 search tiers. The round-2 scrape
+ * pushes a synthetic stat whose counts describe pages fetched, not listings
+ * found — including it made the network branch unreachable and double-counted
+ * detail candidates that round 1 had already reported.
  */
-function pickBySimilarKm(
-  comps: CompOut[],
-  targetKm: number,
-  model: string
-): { picked: CompOut[]; relaxed: boolean } {
-  // Trim precision beats km proximity: a GTI comp poisons a 1.5-TSI valuation far
-  // worse than a 20'000-km mileage gap (the km-Angleich corrects mileage anyway).
-  const byDistance = [...comps].sort((a, b) => {
-    const p = modelPrecision(a.title, model) - modelPrecision(b.title, model);
-    if (p !== 0) return p;
-    return Math.abs(a.km - targetKm) - Math.abs(b.km - targetKm);
-  });
-  const bands = [
-    Math.max(30_000, targetKm * 0.4),
-    Math.max(60_000, targetKm * 0.8),
-    Number.POSITIVE_INFINITY,
-  ];
-
-  const picked: CompOut[] = [];
-  let relaxed = false;
-  // Always fill up to MAX_COMPS: the bands only control ORDER (similar-km comps
-  // first) — stopping early returned 4 comps while 7 were on the table.
-  for (let i = 0; i < bands.length && picked.length < MAX_COMPS; i++) {
-    for (const c of byDistance) {
-      if (picked.length >= MAX_COMPS) break;
-      if (picked.includes(c)) continue;
-      if (Math.abs(c.km - targetKm) <= bands[i]) {
-        picked.push(c);
-        if (i > 0) relaxed = true;
-      }
-    }
-  }
-  return { picked, relaxed };
-}
-
-function buildDiagnosis(stats: TierStat[], candidatesTried: number): string {
-  const totalResults = stats.reduce((s, t) => s + t.results, 0);
-  const totalMarketplace = stats.reduce((s, t) => s + t.onMarketplace, 0);
-  if (stats.every((t) => t.status === "network")) {
+function buildDiagnosis(searchStats: TierStat[], candidatesTried: number): string {
+  const totalResults = searchStats.reduce((s, t) => s + t.results, 0);
+  const totalMarketplace = searchStats.reduce((s, t) => s + t.onMarketplace, 0);
+  if (searchStats.length > 0 && searchStats.every((t) => t.status === "network")) {
     return "Die Suchanfragen sind fehlgeschlagen (Netzwerk) – bitte später nochmals versuchen.";
   }
   if (totalResults === 0) {
@@ -370,11 +339,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Query with the name listings actually use ("VW", not "Volkswagen").
   const queryMake = MAKE_ALIASES[makeStr.toLowerCase()] ?? makeStr;
   const vehicle = `${queryMake} ${modelStr}`;
-  // Broaden discovery: search the BASE model ("Golf"), not the full trim
-  // ("Golf 1.5 TSI"), which returns far more detail-page hits. The trim
-  // precision ranking (pickBySimilarKm -> modelPrecision) still floats the exact
-  // trim to the top, so relevance is preserved while the funnel gets wider.
-  const baseVehicle = `${queryMake} ${baseModel(modelStr)}`;
   const stats: TierStat[] = [];
   const seenUrls = new Set<string>();
   const candidates: Candidate[] = [];
@@ -386,9 +350,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Round 1: three snippet-only searches in parallel — AutoScout24 detail pages,
   // tutti detail pages, and a generic marketplace-wide query. Unquoted terms —
   // an exact-phrase match is too brittle for listing titles.
+  // Search the FULL trim ("VW Golf 1.5 TSI"), not just the base model: the
+  // category-page scrape already harvests every trim for volume, so the searches
+  // should target the exact engine to surface real matches. Wrong-trim listings
+  // that slip in are dropped by the displacement filter below.
   const queries = [
-    `site:autoscout24.ch/de/d ${baseVehicle} ${yearNum}`,
-    `site:tutti.ch/de/vi ${baseVehicle}`,
+    `site:autoscout24.ch/de/d ${vehicle} ${yearNum}`,
+    `site:tutti.ch/de/vi ${vehicle}`,
     `${vehicle} ${yearNum} Occasion Schweiz CHF km`,
   ];
   const outcomes = await Promise.all(queries.map((q) => firecrawlSearch(apiKey, q, 15)));
@@ -426,6 +394,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   });
 
+  // Snapshot the SEARCH tiers before round 2 appends its scrape stat — the
+  // diagnosis must reason about searches only (see buildDiagnosis).
+  const searchStats = [...stats];
+
   // Round 2: when snippets alone weren't enough, scrape in parallel — category/
   // model-overview pages (dozens of listing cards each) plus individual listings
   // whose snippets lacked price/km. The AutoScout24 and Comparis inventory pages
@@ -437,9 +409,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const orderedCategoryUrls = [
     as24CategoryUrl(makeStr, modelStr),
     comparisCategoryUrl(makeStr, modelStr),
+    autolinaCategoryUrl(makeStr, modelStr),
     ...categoryUrls,
   ].filter((u, i, arr) => arr.indexOf(u) === i);
-  if (comps.length < MAX_COMPS && withinBudget()) {
+  // Gate on comps that will SURVIVE the trim filter, not on the raw haul. Round 1
+  // routinely returns a full set of wrong-engine Golfs; counting those as "enough"
+  // skipped the deterministic inventory scrape and then the filter deleted them
+  // all, handing the user an empty result while the AS24/comparis Golf inventory
+  // pages (full of real 1.5 TSI cards) were never fetched.
+  // Counts CONFIRMED matches only — engine-less cards are usable as a top-up but
+  // are not a reason to stop looking for the real thing.
+  const requestedDisplacement = displacementOf(modelStr);
+  const viableSoFar = requestedDisplacement
+    ? comps.filter((c) => matchesDisplacement(c.title, modelStr, c.url)).length
+    : comps.length;
+  if (viableSoFar < MAX_COMPS && withinBudget()) {
     const catPages = orderedCategoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
     const detailPages = candidates.slice(0, MAX_SCRAPES - catPages.length);
     candidatesTried = catPages.length + detailPages.length;
@@ -449,12 +433,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
 
     let added = 0;
+    let detailParsed = 0;
+    let detailFailed = 0;
     scraped.forEach((s, i) => {
-      if (s.status !== "fulfilled") return;
+      const isCat = i < catPages.length;
+      if (s.status !== "fulfilled") {
+        // A failed inventory scrape is THE thing that starves a run — name it.
+        if (isCat) {
+          const reason = s.reason instanceof Error ? s.reason.message : String(s.reason);
+          stats.push({
+            query: `(Übersicht ${new URL(catPages[i]).hostname}: Abruf fehlgeschlagen – ${reason.slice(0, 120)})`,
+            status: "network",
+            results: 0,
+            onMarketplace: 0,
+            parsed: 0,
+          });
+        } else {
+          detailFailed += 1;
+        }
+        return;
+      }
       const { markdown } = s.value;
       let addedHere = 0;
       if (markdown) {
-        if (i < catPages.length) {
+        if (isCat) {
           // Category page: harvest every parseable listing card.
           for (const card of parseCategoryMarkdown(markdown, catPages[i])) {
             if (seenUrls.has(card.url)) continue;
@@ -481,19 +483,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         }
       }
+      // Per-inventory-page yield: which source produced (or failed to produce)
+      // cards is the first question every thin-result diagnosis asks.
+      if (isCat) {
+        stats.push({
+          query: `(Übersicht ${new URL(catPages[i]).hostname}: ${markdown ? `${addedHere} Karten` : "leere Antwort"})`,
+          status: 200,
+          results: 0,
+          onMarketplace: 0,
+          parsed: addedHere,
+        });
+      } else {
+        detailParsed += addedHere;
+      }
       added += addedHere;
     });
+    // Logging only. results/onMarketplace stay 0: these count PAGES FETCHED, not
+    // listings found, and buildDiagnosis() must not mistake them for either.
     stats.push({
-      query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate)`,
+      query: `(Seitenabruf: ${catPages.length} Übersichtsseiten, ${detailPages.length} Inserate → ${added} Karten, ${detailFailed} Abrufe fehlgeschlagen)`,
       status: 200,
-      results: candidatesTried,
-      onMarketplace: candidatesTried,
-      parsed: added,
+      results: 0,
+      onMarketplace: 0,
+      parsed: detailParsed,
     });
   }
 
-  // Drop duplicate price/km pairs (same car listed twice), then keep the comps
-  // closest in mileage — widening the km band only if the strict band is thin.
+  // Drop duplicate price/km pairs (same car listed twice).
   const uniquePairs = new Set<string>();
   comps = comps.filter((c) => {
     const key = `${c.price}:${c.km}`;
@@ -501,7 +517,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     uniquePairs.add(key);
     return true;
   });
-  const { picked, relaxed } = pickBySimilarKm(comps, kmNum, modelStr);
+
+  // Quality guards + km-similarity pick. Pure and unit-tested in compsParser.
+  const {
+    picked,
+    relaxed,
+    toppedUp,
+    droppedForTrim,
+    droppedNearNew,
+    droppedOutliers,
+    unverifiedAvailable,
+    harvested,
+  } = selectComps(comps, modelStr, kmNum);
+  // Counters are disjoint (trim | near-new | outlier) so the funnel log adds up.
+  const droppedForQuality = droppedForTrim + droppedNearNew + droppedOutliers;
 
   // The search actually ran (Firecrawl was billed) — commit ONE search against
   // the logged-in user's quota now, not before, so a platform failure above
@@ -510,21 +539,58 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     quota = await commitSearch(supabase, quotaCtx.limit, quotaCtx.plan);
   }
 
-  // Funnel stats land in the Vercel function logs for every request.
-  console.log("valuation/comps funnel:", JSON.stringify({ vehicle, yearNum, kmNum, stats, picked: picked.length }));
+  // Funnel stats: Vercel function logs AND the valuation_search_logs table, so
+  // a thin live result can be diagnosed from the DB without Vercel log access.
+  const funnel = {
+    stats,
+    harvested,
+    droppedForTrim,
+    droppedNearNew,
+    droppedOutliers,
+    droppedForQuality,
+    unverifiedAvailable,
+    toppedUp,
+    picked: picked.length,
+    pickedComps: picked.map((c) => ({ price: c.price, km: c.km, title: c.title, source: c.source })),
+  };
+  console.log("valuation/comps funnel:", JSON.stringify({ vehicle, yearNum, kmNum, ...funnel }));
+  try {
+    await supabase.rpc("log_valuation_search", {
+      p_vehicle: { make: makeStr, model: modelStr, year: yearNum, km: kmNum },
+      p_funnel: funnel,
+    });
+  } catch {
+    // Diagnostics only — never let logging break the search response.
+  }
+
+  // A zero result caused by the trim filter (we DID find this model, just not
+  // the requested engine) needs its own message so the user knows to enter the
+  // matching listings by hand rather than thinking the model doesn't exist.
+  const trimZero = picked.length === 0 && droppedForTrim > 0;
+  const modelLabel = `${queryMake} ${baseModel(modelStr)}`.trim();
+  const diagnosis =
+    picked.length > 0
+      ? undefined
+      : trimZero
+        ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Motorisierung (${modelStr}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
+        : buildDiagnosis(searchStats, candidatesTried);
 
   return res.status(200).json({
     comps: picked,
     queried: stats.map((s) => s.query),
     quota: quota ?? undefined,
-    diagnosis: picked.length === 0 ? buildDiagnosis(stats, candidatesTried) : undefined,
+    diagnosis,
     warning:
       picked.length === 0
-        ? "Keine Vergleichsinserate gefunden – erfasse sie manuell."
+        ? trimZero
+          ? `Keine ${modelStr}-Inserate mit passender Motorisierung gefunden – erfasse sie manuell.`
+          : "Keine Vergleichsinserate gefunden – erfasse sie manuell."
         : picked.length < 3
           ? "Nur wenige Vergleichsinserate gefunden – prüf die Werte und ergänze manuell."
-          : relaxed
-            ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
-            : undefined,
+          : toppedUp > 0
+            ? "Bei einigen Inseraten ist die Motorisierung nicht ausgewiesen – prüf sie kurz nach."
+            : relaxed
+              ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
+              : undefined,
   });
 }
