@@ -28,6 +28,12 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
   const { user, loading: authLoading, refreshProfile, messageCount } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Deep link for upgrade CTAs elsewhere (e.g. the Rechner quota gate):
+  // /dashboard/private?upgrade=1 opens the Garage-werden modal directly.
+  useEffect(() => {
+    if (router.isReady && router.query.upgrade === "1") setShowUpgradeModal(true);
+  }, [router.isReady, router.query.upgrade]);
   const [upgradeForm, setUpgradeForm] = useState({
     garage_name: "",
     city: "",

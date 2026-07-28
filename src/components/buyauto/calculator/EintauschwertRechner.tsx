@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/router";
 import { FREE_MONTHLY_LIMIT, PAID_MONTHLY_LIMIT } from "@/lib/buyauto/valuationQuota";
 
 // --- Types ---
@@ -284,7 +285,14 @@ const CalculatorSkeleton = () => (
 // --- Main Component ---
 
 export function EintauschwertRechner() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const router = useRouter();
+  const isGarage = profile?.role === "garage";
+  // After checkout the garage lands back where it hit the gate — the dashboard
+  // Rechner tab when embedded there, the public page everywhere else.
+  const gateReturnPath = router.pathname.startsWith("/dashboard")
+    ? "/dashboard/garage?tab=rechner"
+    : "/eintauschwert-rechner";
   const [state, setState] = useState<CalculatorState>(DEFAULT_STATE);
   const [isClient, setIsClient] = useState(false);
   const [result, setResult] = useState<CalcResult | null>(null);
@@ -1383,7 +1391,7 @@ export function EintauschwertRechner() {
                 <ul className="text-sm text-neutral-300 space-y-2 text-left max-w-sm mx-auto">
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    {FREE_MONTHLY_LIMIT} Suchen pro Monat gratis – im Paket unbegrenzt*
+                    {FREE_MONTHLY_LIMIT} Suchen pro Monat gratis – mit einem Garagen-Paket unbegrenzt*
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -1406,6 +1414,9 @@ export function EintauschwertRechner() {
                     <Link href="/auth?redirect=/eintauschwert-rechner">Ich habe schon ein Konto</Link>
                   </Button>
                 </div>
+                <p className="text-xs text-neutral-500">
+                  *Faire Nutzung: {PAID_MONTHLY_LIMIT} automatische Suchen pro Monat.
+                </p>
               </>
             )}
 
@@ -1414,20 +1425,30 @@ export function EintauschwertRechner() {
                 <h3 className="text-2xl md:text-3xl font-bold">Monatslimit erreicht</h3>
                 <p className="text-neutral-300 leading-relaxed">
                   Du hast diesen Monat alle <strong className="text-white">{FREE_MONTHLY_LIMIT} Gratis-Suchen</strong>{" "}
-                  genutzt. Mit einem Garagen-Paket suchst du unbegrenzt* – inserierst deine
-                  Fahrzeuge, bekommst eine eigene Garagen-Seite mit deinem ganzen Bestand und
-                  Kaufanfragen direkt per E-Mail.
+                  genutzt. Weitere automatische Suchen sind nicht gratis – mit einem{" "}
+                  <strong className="text-white">Garagen-Paket suchst du unbegrenzt*</strong>. Dazu
+                  inserierst du deine Fahrzeuge, bekommst eine eigene Garagen-Seite mit deinem
+                  ganzen Bestand und Kaufanfragen direkt per E-Mail.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  {/* /garage-plan ejects non-garage accounts, so private users go
+                      through the Garage-werden upgrade modal on their dashboard. */}
                   <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
-                    <Link href="/garage-plan">Garagen-Paket ansehen</Link>
+                    {isGarage ? (
+                      <Link href={`/garage-plan?redirect=${encodeURIComponent(gateReturnPath)}`}>
+                        Paket wählen
+                      </Link>
+                    ) : (
+                      <Link href="/dashboard/private?upgrade=1">Jetzt Garage werden</Link>
+                    )}
                   </Button>
                   <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
                     <Link href="/preise">Preise vergleichen</Link>
                   </Button>
                 </div>
                 <p className="text-xs text-neutral-500">
-                  Manuelle Berechnungen bleiben unbegrenzt gratis.
+                  Manuelle Berechnungen bleiben unbegrenzt gratis. *Faire Nutzung:{" "}
+                  {PAID_MONTHLY_LIMIT} automatische Suchen pro Monat.
                 </p>
               </>
             )}

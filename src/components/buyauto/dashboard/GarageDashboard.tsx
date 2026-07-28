@@ -126,6 +126,19 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const [logoVersion, setLogoVersion] = useState<number>(0);
 
   const [mainTab, setMainTab] = useState<"inventory" | "basis" | "profile" | "subscription" | "stats" | "rechner">("inventory");
+
+  // Deep link support (/dashboard/garage?tab=rechner) — used by the Rechner's
+  // quota gate to bring the garage back to the right tab after checkout.
+  useEffect(() => {
+    if (!router.isReady) return;
+    const tab = router.query.tab;
+    if (
+      typeof tab === "string" &&
+      ["inventory", "basis", "profile", "subscription", "stats", "rechner"].includes(tab)
+    ) {
+      setMainTab(tab as typeof mainTab);
+    }
+  }, [router.isReady, router.query.tab]);
   const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts" | "sold">("active");
 
   const planLabel = useMemo(() => {
