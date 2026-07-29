@@ -29,6 +29,12 @@ const MAX_IDLE_STEP = 5; // steps 1-5 while active; step 6 is the archived mail
 const ARCHIVED_STEP = 6;
 const ARCHIVE_AFTER_DAYS = 30;
 const DELETE_AFTER_ARCHIVE_DAYS = 5;
+// One owner can hold many drafts, and every one of them is independently due
+// for a step. Without a cap the first run mails somebody a dozen times in one
+// morning — several with the same subject line — which reads as spam and costs
+// sender reputation. The rest are not lost: the log dedupes per step, so the
+// remainder go out on following days, most urgent first.
+const MAX_EMAILS_PER_OWNER_PER_RUN = 2;
 
 type DealType = "lease_takeover" | "direct_purchase";
 type FinancingType = "cash" | "leasing";
@@ -412,8 +418,26 @@ serve(async (req) => {
     });
   }
 
+  // --- Throttle per owner ---------------------------------------------------
+  // Highest step first, so the drafts closest to deletion are never starved by
+  // ones that merely just became due.
+  const byOwner = new Map<string, DraftCandidate[]>();
+  for (const candidate of candidates) {
+    const bucket = byOwner.get(candidate.ownerId);
+    if (bucket) bucket.push(candidate);
+    else byOwner.set(candidate.ownerId, [candidate]);
+  }
+
+  const throttled: DraftCandidate[] = [];
+  let deferred = 0;
+  for (const bucket of byOwner.values()) {
+    bucket.sort((a, b) => b.step - a.step);
+    throttled.push(...bucket.slice(0, MAX_EMAILS_PER_OWNER_PER_RUN));
+    deferred += Math.max(0, bucket.length - MAX_EMAILS_PER_OWNER_PER_RUN);
+  }
+
   // --- Recipients -----------------------------------------------------------
-  const ownerIds = Array.from(new Set(candidates.map((c) => c.ownerId)));
+  const ownerIds = Array.from(new Set(throttled.map((c) => c.ownerId)));
   const profilesById = new Map<string, ProfileRow>();
 
   if (ownerIds.length > 0) {
@@ -434,7 +458,7 @@ serve(async (req) => {
   let errors = 0;
   const preview: Array<{ entityId: string; step: number; subject: string; to: string }> = [];
 
-  for (const draft of candidates) {
+  for (const draft of throttled) {
     const profile = profilesById.get(draft.ownerId);
     const email = profile?.email?.trim() || "";
     if (!email) {
@@ -491,6 +515,8 @@ serve(async (req) => {
       success: true,
       dryRun,
       scanned: candidates.length,
+      eligible: throttled.length,
+      deferredByOwnerCap: deferred,
       sent,
       skipped,
       errors,
