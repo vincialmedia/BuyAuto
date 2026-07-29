@@ -2,19 +2,24 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { Resend } from "npm:resend@3.2.0";
 
-// Nudges owners of unfinished drafts every 5 days.
+// One reminder email per owner, listing every draft they still have open.
 //
-// Cadence — one mail per step, each with its own subject line and body:
+// An owner with a dozen drafts gets a dozen nudges if you mail per draft, so
+// the unit here is the owner: one digest listing up to MAX_DRAFTS_LISTED
+// drafts, each with its own countdown and a link straight into it, then
+// "und N weitere" for the rest.
+//
+// Tone escalates with the most urgent draft in the digest — each step has its
+// own subject line and intro:
 //   step 1  day  5   straightforward, name + vehicle in the subject
 //   step 2  day 10   "did something go wrong?" (best-opening pattern)
 //   step 3  day 15   effort reduction ("2 Minuten")
 //   step 4  day 20   value / demand
 //   step 5  day 25   deadline warning (5 days left)
-//   step 6  archived the draft is now Archiviert, 5 days left to restore
+//   step 6  archived Archiviert, 5 days left to restore
 //
-// Steps 1-5 run off updated_at (last edit). Step 6 fires once the 30-day sweep
-// has archived the draft, which keeps the whole ladder on a true 5-day spacing
-// instead of racing the sweep at day 30.
+// Steps 1-5 come from updated_at (last edit); step 6 comes from the archive
+// stamp set by the 30-day sweep.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,15 +34,12 @@ const MAX_IDLE_STEP = 5; // steps 1-5 while active; step 6 is the archived mail
 const ARCHIVED_STEP = 6;
 const ARCHIVE_AFTER_DAYS = 30;
 const DELETE_AFTER_ARCHIVE_DAYS = 5;
-// One owner can hold many drafts, and every one of them is independently due
-// for a step. Without a cap the first run mails somebody a dozen times in one
-// morning — several with the same subject line — which reads as spam and costs
-// sender reputation. The rest are not lost: the log dedupes per step, so the
-// remainder go out on following days, most urgent first.
-const MAX_EMAILS_PER_OWNER_PER_RUN = 2;
+/** Drafts shown in full before the digest collapses the rest into "und N weitere". */
+const MAX_DRAFTS_LISTED = 10;
+/** Floor between two digests to the same owner, so staggered drafts can't mail daily. */
+const MIN_DAYS_BETWEEN_DIGESTS = 5;
 
-type DealType = "lease_takeover" | "direct_purchase";
-type FinancingType = "cash" | "leasing";
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function escapeHtml(input: string): string {
   return input
@@ -62,7 +64,11 @@ function formatChf(value: number | null): string | null {
 function daysBetween(fromIso: string, now: Date): number {
   const then = Date.parse(fromIso);
   if (!Number.isFinite(then)) return 0;
-  return Math.floor((now.getTime() - then) / (24 * 60 * 60 * 1000));
+  return Math.floor((now.getTime() - then) / MS_PER_DAY);
+}
+
+function daysUntil(iso: string, now: Date): number {
+  return Math.max(0, Math.ceil((Date.parse(iso) - now.getTime()) / MS_PER_DAY));
 }
 
 function firstName(fullName: string | null | undefined): string | null {
@@ -84,6 +90,10 @@ function financingTypeLabel(value: unknown): string | null {
   return null;
 }
 
+function pluralDays(n: number): string {
+  return `${n} ${n === 1 ? "Tag" : "Tagen"}`;
+}
+
 /** A draft from either source, normalised into one shape. */
 type DraftCandidate = {
   entityId: string;
@@ -96,118 +106,176 @@ type DraftCandidate = {
   dealLabel: string | null;
   financingLabel: string | null;
   step: number;
-  /** When the draft is (or was) archived — drives the copy in steps 5 and 6. */
-  archiveDateIso: string | null;
-  deleteDateIso: string | null;
+  archived: boolean;
+  /** Days until this draft is archived (active) or deleted (archived). */
+  daysLeft: number;
+  dueDateIso: string;
 };
 
 function buildVehicleName(brand: unknown, model: unknown): { name: string; known: boolean } {
   const b = typeof brand === "string" ? brand.trim() : "";
   const m = typeof model === "string" ? model.trim() : "";
   const joined = [b, m].filter(Boolean).join(" ");
-  return joined ? { name: joined, known: true } : { name: "Ihr Entwurf", known: false };
+  return joined ? { name: joined, known: true } : { name: "Entwurf ohne Fahrzeugangabe", known: false };
+}
+
+/** "Noch 3 Tage bis zur Löschung" / "Noch 12 Tage bis zur Archivierung" */
+function countdownLabel(draft: DraftCandidate): string {
+  const what = draft.archived ? "Löschung" : "Archivierung";
+  if (draft.daysLeft <= 0) return `Heute – ${what} steht an`;
+  return `Noch ${pluralDays(draft.daysLeft)} bis zur ${what}`;
 }
 
 // ---------------------------------------------------------------------------
-// Copy. One distinct subject + body per step.
+// Copy. Subject and intro follow the most urgent draft in the digest.
 // ---------------------------------------------------------------------------
 
-type Copy = { subject: string; preheader: string; heading: string; body: string; cta: string };
+type Copy = { subject: string; preheader: string; heading: string; intro: string; cta: string };
 
-function buildCopy(step: number, d: DraftCandidate, name: string | null): Copy {
-  const vehicle = d.vehicleName;
-  const archiveDate = d.archiveDateIso ? formatDateDeCh(d.archiveDateIso) : null;
-  const deleteDate = d.deleteDateIso ? formatDateDeCh(d.deleteDateIso) : null;
-
-  // A draft may not have a brand/model yet. Keeping the vehicle out of the
-  // sentence entirely reads better than falling back to a placeholder noun,
-  // which is why prose says "Ihr Entwurf<für X>" rather than interpolating a
-  // stand-in that would collide with the surrounding article ("Ihr Ihr ...").
-  const subjectNoun = d.hasVehicleName ? `Ihr ${vehicle}` : "Ihr Entwurf";
-  const forVehicle = d.hasVehicleName ? ` für ${escapeHtml(vehicle)}` : "";
+function buildCopy(params: {
+  step: number;
+  /** Every open draft this owner has. */
+  count: number;
+  /** Only the drafts sitting at the step that drives the subject. */
+  urgentCount: number;
+  mostUrgent: DraftCandidate;
+  name: string | null;
+}): Copy {
+  const { step, mostUrgent, name } = params;
+  // Steps 5 and 6 make a claim about a deadline, so they may only ever count
+  // the drafts that deadline actually applies to — telling someone all twelve
+  // of their drafts are about to be deleted when two are archived is a lie.
+  // Steps 1-4 are generic "still unfinished" nudges, true of every draft.
+  const count = step >= 5 ? params.urgentCount : params.count;
+  const multi = count > 1;
+  const vehicle = mostUrgent.vehicleName;
+  // Only name the vehicle when we actually know it, so the article in the
+  // surrounding sentence never collides with a placeholder noun.
+  const subjectNoun = mostUrgent.hasVehicleName ? `Ihr ${vehicle}` : "Ihr Entwurf";
+  const forVehicle = mostUrgent.hasVehicleName ? ` für ${escapeHtml(vehicle)}` : "";
   // Subject lines stay under ~50 characters so they survive on mobile.
-  const withName = (text: string) => (name ? `${name}, ${text}` : text.charAt(0).toUpperCase() + text.slice(1));
+  const withName = (text: string) =>
+    name ? `${name}, ${text}` : text.charAt(0).toUpperCase() + text.slice(1);
+  const theseDrafts = multi ? `Ihre ${count} Entwürfe` : "Ihr Entwurf";
 
   switch (step) {
     case 1:
       return {
-        subject: withName(`${subjectNoun} wartet noch`),
-        preheader: "Ihr Inserat ist fast fertig – es fehlen nur noch wenige Angaben.",
-        heading: "Ihr Inserat ist fast fertig",
-        body: `Sie haben vor Kurzem angefangen zu inserieren, den Entwurf${forVehicle} aber noch nicht abgeschlossen. Er liegt bereit – Sie machen genau dort weiter, wo Sie aufgehört haben.`,
-        cta: "Entwurf abschliessen",
+        subject: withName(multi ? `${count} Entwürfe warten noch` : `${subjectNoun} wartet noch`),
+        preheader: `${theseDrafts} sind fast fertig – es fehlen nur noch wenige Angaben.`,
+        heading: multi ? "Ihre Inserate sind fast fertig" : "Ihr Inserat ist fast fertig",
+        intro: multi
+          ? `Sie haben ${count} Entwürfe angefangen, aber noch nicht abgeschlossen. Sie liegen bereit – Sie machen jeweils genau dort weiter, wo Sie aufgehört haben.`
+          : `Sie haben vor Kurzem angefangen zu inserieren, den Entwurf${forVehicle} aber noch nicht abgeschlossen. Er liegt bereit – Sie machen genau dort weiter, wo Sie aufgehört haben.`,
+        cta: multi ? "Entwürfe abschliessen" : "Entwurf abschliessen",
       };
     case 2:
       return {
         subject: "Ist beim Inserieren etwas schiefgelaufen?",
         preheader: "Falls etwas hakte: wir helfen gerne weiter.",
         heading: "Ist etwas schiefgelaufen?",
-        body: `Ihr Entwurf${forVehicle} liegt seit einer Weile unverändert bei uns. Falls beim Ausfüllen etwas nicht funktioniert hat oder eine Angabe unklar war: Antworten Sie einfach auf diese E-Mail, wir schauen es uns an.`,
-        cta: "Entwurf öffnen",
+        intro: multi
+          ? `${theseDrafts} liegen seit einer Weile unverändert bei uns. Falls beim Ausfüllen etwas nicht funktioniert hat oder eine Angabe unklar war: Antworten Sie einfach auf diese E-Mail, wir schauen es uns an.`
+          : `Ihr Entwurf${forVehicle} liegt seit einer Weile unverändert bei uns. Falls beim Ausfüllen etwas nicht funktioniert hat oder eine Angabe unklar war: Antworten Sie einfach auf diese E-Mail, wir schauen es uns an.`,
+        cta: multi ? "Entwürfe öffnen" : "Entwurf öffnen",
       };
     case 3:
       return {
-        subject: "Nur noch 2 Minuten bis zum Inserat",
+        subject: multi ? `${count} Inserate, nur Minuten entfernt` : "Nur noch 2 Minuten bis zum Inserat",
         preheader: "Die restlichen Angaben sind schnell erledigt.",
-        heading: "Zwei Minuten, dann ist es online",
-        body: `Der aufwendige Teil ist erledigt: Ihr Entwurf${forVehicle} ist bereits erfasst. Es fehlen nur noch die letzten Angaben, dann geht Ihr Inserat in die Prüfung und anschliessend online.`,
+        heading: "Zwei Minuten, dann sind sie online",
+        intro: multi
+          ? `Der aufwendige Teil ist erledigt: ${theseDrafts} sind bereits erfasst. Es fehlen nur noch die letzten Angaben, dann gehen die Inserate in die Prüfung und anschliessend online.`
+          : `Der aufwendige Teil ist erledigt: Ihr Entwurf${forVehicle} ist bereits erfasst. Es fehlen nur noch die letzten Angaben, dann geht Ihr Inserat in die Prüfung und anschliessend online.`,
         cta: "Jetzt fertigstellen",
       };
     case 4:
       return {
-        subject: withName(`${subjectNoun} findet Käufer`),
-        preheader: "Interessenten suchen täglich auf BuyAuto – Ihr Entwurf ist noch nicht sichtbar.",
-        heading: "Ihr Fahrzeug ist noch nicht sichtbar",
-        body: `Auf BuyAuto suchen täglich Interessentinnen und Interessenten nach passenden Fahrzeugen. Solange Ihr Entwurf${forVehicle} nicht abgeschlossen ist, sieht ihn niemand. Ein paar Klicks genügen.`,
-        cta: "Inserat veröffentlichen",
+        subject: withName(multi ? `${count} Fahrzeuge finden Käufer` : `${subjectNoun} findet Käufer`),
+        preheader: "Interessenten suchen täglich auf BuyAuto – Ihre Entwürfe sind noch nicht sichtbar.",
+        heading: multi ? "Ihre Fahrzeuge sind noch nicht sichtbar" : "Ihr Fahrzeug ist noch nicht sichtbar",
+        intro: multi
+          ? `Auf BuyAuto suchen täglich Interessentinnen und Interessenten nach passenden Fahrzeugen. Solange ${theseDrafts} nicht abgeschlossen sind, sieht sie niemand. Ein paar Klicks genügen.`
+          : `Auf BuyAuto suchen täglich Interessentinnen und Interessenten nach passenden Fahrzeugen. Solange Ihr Entwurf${forVehicle} nicht abgeschlossen ist, sieht ihn niemand. Ein paar Klicks genügen.`,
+        cta: multi ? "Inserate veröffentlichen" : "Inserat veröffentlichen",
       };
     case 5:
       return {
-        subject: "Noch 5 Tage für Ihren Entwurf ⏳",
-        preheader: archiveDate
-          ? `Ihr Entwurf wird am ${archiveDate} archiviert.`
-          : "Ihr Entwurf wird in 5 Tagen archiviert.",
-        heading: "Ihr Entwurf läuft bald ab",
-        body: `Entwürfe, die 30 Tage lang nicht bearbeitet werden, archivieren wir automatisch. Ihr Entwurf${forVehicle} wird ${
-          archiveDate ? `am <strong>${escapeHtml(archiveDate)}</strong>` : "in <strong>5 Tagen</strong>"
-        } archiviert. Bearbeiten Sie ihn jetzt, startet die Frist neu.`,
-        cta: "Entwurf jetzt sichern",
+        subject: multi ? `Noch 5 Tage für ${count} Entwürfe ⏳` : "Noch 5 Tage für Ihren Entwurf ⏳",
+        preheader: `${theseDrafts} werden bald automatisch archiviert.`,
+        heading: multi ? "Ihre Entwürfe laufen bald ab" : "Ihr Entwurf läuft bald ab",
+        intro: `Entwürfe, die ${ARCHIVE_AFTER_DAYS} Tage lang nicht bearbeitet werden, archivieren wir automatisch. Die Fristen sehen Sie unten. Bearbeiten Sie einen Entwurf, startet seine Frist neu.`,
+        cta: multi ? "Entwürfe jetzt sichern" : "Entwurf jetzt sichern",
       };
     default:
       return {
-        subject: d.hasVehicleName ? `Letzte Chance: ${vehicle} wird gelöscht` : "Letzte Chance für Ihren Entwurf",
-        preheader: deleteDate
-          ? `Archiviert – bis ${deleteDate} können Sie den Entwurf noch wiederherstellen.`
-          : "Archiviert – Sie haben noch 5 Tage.",
-        heading: "Ihr Entwurf wurde archiviert",
-        body: `Ihr Entwurf${forVehicle} wurde nach 30 Tagen ohne Bearbeitung archiviert. Sie können ihn noch ${
-          deleteDate ? `bis zum <strong>${escapeHtml(deleteDate)}</strong>` : "<strong>5 Tage lang</strong>"
-        } wiederherstellen – danach wird er endgültig gelöscht.`,
-        cta: "Entwurf wiederherstellen",
+        subject: multi
+          ? `Letzte Chance: ${count} Entwürfe werden gelöscht`
+          : mostUrgent.hasVehicleName
+            ? `Letzte Chance: ${vehicle} wird gelöscht`
+            : "Letzte Chance für Ihren Entwurf",
+        preheader: "Archiviert – danach werden die Entwürfe endgültig gelöscht.",
+        heading: multi ? "Entwürfe wurden archiviert" : "Ihr Entwurf wurde archiviert",
+        intro: `Nach ${ARCHIVE_AFTER_DAYS} Tagen ohne Bearbeitung archivieren wir Entwürfe und löschen sie ${DELETE_AFTER_ARCHIVE_DAYS} Tage später endgültig. Bearbeiten Sie einen Entwurf, stellen Sie ihn damit wieder her.`,
+        cta: multi ? "Entwürfe wiederherstellen" : "Entwurf wiederherstellen",
       };
   }
+}
+
+function draftRowHtml(draft: DraftCandidate): string {
+  const details: string[] = [];
+  if (draft.year) details.push(`Jahrgang ${draft.year}`);
+  const dealLine = [draft.dealLabel, draft.financingLabel].filter(Boolean).join(" · ");
+  if (dealLine) details.push(dealLine);
+  if (draft.priceLabel) details.push(draft.priceLabel);
+
+  const detailLine = details.length
+    ? `<p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">${escapeHtml(details.join(" | "))}</p>`
+    : "";
+
+  // Archived drafts are the ones actually about to disappear, so they get the
+  // warning colour; everything else stays quiet.
+  const urgent = draft.archived || draft.daysLeft <= DELETE_AFTER_ARCHIVE_DAYS;
+  const countdownColor = urgent ? "#b45309" : "#6b7280";
+
+  return `<tr>
+  <td style="padding: 14px 0; border-bottom: 1px solid #e5e7eb;">
+    <a href="${draft.resumeUrl}" style="color: #111827; font-weight: 700; font-size: 16px; text-decoration: underline;">${escapeHtml(
+      draft.vehicleName
+    )}</a>
+    ${detailLine}
+    <p style="margin: 6px 0 0 0; color: ${countdownColor}; font-size: 13px; font-weight: ${urgent ? "700" : "400"};">
+      ${escapeHtml(countdownLabel(draft))} <span style="color:#9ca3af; font-weight:400;">(${escapeHtml(
+        formatDateDeCh(draft.dueDateIso)
+      )})</span>
+    </p>
+  </td>
+</tr>`;
 }
 
 function buildHtml(params: {
   copy: Copy;
   greeting: string;
-  draft: DraftCandidate;
+  drafts: DraftCandidate[];
+  totalCount: number;
 }): string {
-  const { copy, greeting, draft } = params;
+  const { copy, greeting, drafts, totalCount } = params;
+  const hidden = totalCount - drafts.length;
 
-  const detailRows: string[] = [];
-  if (draft.year) {
-    detailRows.push(`<span>Jahrgang ${draft.year}</span>`);
-  }
-  const dealLine = [draft.dealLabel, draft.financingLabel].filter(Boolean).join(" · ");
-  if (dealLine) detailRows.push(`<span>${escapeHtml(dealLine)}</span>`);
-  if (draft.priceLabel) detailRows.push(`<span>${escapeHtml(draft.priceLabel)}</span>`);
+  const moreRow =
+    hidden > 0
+      ? `<tr>
+  <td style="padding: 14px 0;">
+    <a href="${SITE_URL}/dashboard" style="color: #2563eb; font-size: 14px;">und ${hidden} weitere ${
+      hidden === 1 ? "Entwurf" : "Entwürfe"
+    } …</a>
+  </td>
+</tr>`
+      : "";
 
-  const detailBlock = detailRows.length
-    ? `<p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">${detailRows.join(
-        ' <span style="color:#d1d5db;">|</span> '
-      )}</p>`
-    : "";
+  // One draft => send them straight to it; several => the dashboard is the
+  // only sensible single destination.
+  const ctaUrl = totalCount === 1 && drafts[0] ? drafts[0].resumeUrl : `${SITE_URL}/dashboard`;
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -219,9 +287,8 @@ function buildHtml(params: {
     .container { max-width: 640px; margin: 0 auto; padding: 24px; }
     .header { text-align: center; padding-bottom: 18px; border-bottom: 1px solid #e5e7eb; }
     .content { padding: 22px 0; }
-    .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; }
+    .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 6px 18px 12px 18px; }
     .button { display: inline-block; background-color: #dc2626; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 10px; font-weight: 700; }
-    .muted { color: #6b7280; font-size: 13px; }
     .footer { border-top: 1px solid #e5e7eb; padding-top: 16px; text-align: center; color: #6b7280; font-size: 12px; }
     a { color: #2563eb; }
     .preheader { display: none; max-height: 0; overflow: hidden; opacity: 0; }
@@ -239,30 +306,24 @@ function buildHtml(params: {
 
       <h2 style="margin: 0 0 14px 0; font-size: 20px;">${escapeHtml(copy.heading)}</h2>
 
-      <div class="card">
-        <p style="margin: 0; font-weight: 700; font-size: 17px;">
-          <a href="${draft.resumeUrl}" style="color: #111827; text-decoration: underline;">${escapeHtml(
-            draft.vehicleName
-          )}</a>
-        </p>
-        ${detailBlock}
-      </div>
+      <p style="margin-bottom: 18px;">${copy.intro}</p>
 
-      <p style="margin-top: 18px;">${copy.body}</p>
+      <div class="card">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+          ${drafts.map(draftRowHtml).join("\n")}
+          ${moreRow}
+        </table>
+      </div>
 
       <div style="text-align: center; margin: 24px 0;">
-        <a href="${draft.resumeUrl}" class="button">${escapeHtml(copy.cta)}</a>
+        <a href="${ctaUrl}" class="button">${escapeHtml(copy.cta)}</a>
       </div>
-
-      <p class="muted">
-        Direktlink zu Ihrem Entwurf: <a href="${draft.resumeUrl}">${draft.resumeUrl}</a>
-      </p>
 
       <p>Beste Grüsse<br>Ihr BuyAuto Team</p>
     </div>
 
     <div class="footer">
-      <p>Sie erhalten diese E-Mail, weil in Ihrem BuyAuto-Konto ein unvollständiger Entwurf liegt.</p>
+      <p>Sie erhalten diese E-Mail, weil in Ihrem BuyAuto-Konto unvollständige Entwürfe liegen.</p>
       <p><a href="${SITE_URL}/dashboard">Entwürfe verwalten</a></p>
       <p>&copy; ${new Date().getFullYear()} BuyAuto</p>
     </div>
@@ -330,7 +391,7 @@ serve(async (req) => {
   };
 
   const addDays = (iso: string, days: number): string =>
-    new Date(Date.parse(iso) + days * 24 * 60 * 60 * 1000).toISOString();
+    new Date(Date.parse(iso) + days * MS_PER_DAY).toISOString();
 
   // --- Wizard drafts (listing_drafts) ---------------------------------------
   const { data: wizardDrafts, error: wizardError } = await supabase
@@ -343,17 +404,19 @@ serve(async (req) => {
 
   for (const row of wizardDrafts ?? []) {
     const data = (row.data ?? {}) as Record<string, unknown>;
-    const { name, known } = buildVehicleName(data.brand, data.model);
 
     // A wizard draft that already spawned a listing row is represented by that
-    // listing below — don't mail twice about the same vehicle.
+    // listing below — don't list the same vehicle twice.
     if (typeof data.id === "string" && data.id.length > 0) continue;
 
-    const archivedAt = row.archived_at as string | null;
+    const archivedAt = (row.archived_at as string | null) ?? null;
     const step = archivedAt ? ARCHIVED_STEP : stepForIdleDays(daysBetween(row.updated_at, now));
     if (step === null) continue;
 
-    const year = typeof data.year === "number" ? data.year : null;
+    const { name, known } = buildVehicleName(data.brand, data.model);
+    const dueDateIso = archivedAt
+      ? addDays(archivedAt, DELETE_AFTER_ARCHIVE_DAYS)
+      : addDays(row.updated_at, ARCHIVE_AFTER_DAYS);
     const price =
       formatChf(typeof data.purchase_price_chf === "number" ? data.purchase_price_chf : null) ??
       (typeof data.price_per_month_chf === "number"
@@ -366,13 +429,14 @@ serve(async (req) => {
       resumeUrl: `${SITE_URL}/inserat-erstellen?draft=${row.id}`,
       vehicleName: name,
       hasVehicleName: known,
-      year,
+      year: typeof data.year === "number" ? data.year : null,
       priceLabel: price,
       dealLabel: dealTypeLabel(data.deal_type),
       financingLabel: financingTypeLabel(data.financing_type),
       step,
-      archiveDateIso: archivedAt ?? addDays(row.updated_at, ARCHIVE_AFTER_DAYS),
-      deleteDateIso: archivedAt ? addDays(archivedAt, DELETE_AFTER_ARCHIVE_DAYS) : null,
+      archived: Boolean(archivedAt),
+      daysLeft: daysUntil(dueDateIso, now),
+      dueDateIso,
     });
   }
 
@@ -393,11 +457,15 @@ serve(async (req) => {
     if (!ownerId) continue;
 
     const isArchived = row.status === "archived";
-    const archivedAt = row.archived_at as string | null;
+    const archivedAt = (row.archived_at as string | null) ?? null;
     const step = isArchived ? ARCHIVED_STEP : stepForIdleDays(daysBetween(row.updated_at, now));
     if (step === null) continue;
 
     const { name, known } = buildVehicleName(row.brand, row.model);
+    const dueDateIso =
+      isArchived && archivedAt
+        ? addDays(archivedAt, DELETE_AFTER_ARCHIVE_DAYS)
+        : addDays(row.updated_at, ARCHIVE_AFTER_DAYS);
     const price =
       formatChf(row.purchase_price_chf as number | null) ??
       (typeof row.price_per_month_chf === "number" ? `${formatChf(row.price_per_month_chf)}/Mt.` : null);
@@ -413,14 +481,13 @@ serve(async (req) => {
       dealLabel: dealTypeLabel(row.deal_type),
       financingLabel: financingTypeLabel(row.financing_type),
       step,
-      archiveDateIso: archivedAt ?? addDays(row.updated_at, ARCHIVE_AFTER_DAYS),
-      deleteDateIso: archivedAt ? addDays(archivedAt, DELETE_AFTER_ARCHIVE_DAYS) : null,
+      archived: isArchived,
+      daysLeft: daysUntil(dueDateIso, now),
+      dueDateIso,
     });
   }
 
-  // --- Throttle per owner ---------------------------------------------------
-  // Highest step first, so the drafts closest to deletion are never starved by
-  // ones that merely just became due.
+  // --- Group by owner -------------------------------------------------------
   const byOwner = new Map<string, DraftCandidate[]>();
   for (const candidate of candidates) {
     const bucket = byOwner.get(candidate.ownerId);
@@ -428,68 +495,138 @@ serve(async (req) => {
     else byOwner.set(candidate.ownerId, [candidate]);
   }
 
-  const throttled: DraftCandidate[] = [];
-  let deferred = 0;
-  for (const bucket of byOwner.values()) {
-    bucket.sort((a, b) => b.step - a.step);
-    throttled.push(...bucket.slice(0, MAX_EMAILS_PER_OWNER_PER_RUN));
-    deferred += Math.max(0, bucket.length - MAX_EMAILS_PER_OWNER_PER_RUN);
-  }
+  const ownerIds = Array.from(byOwner.keys());
 
-  // --- Recipients -----------------------------------------------------------
-  const ownerIds = Array.from(new Set(throttled.map((c) => c.ownerId)));
   const profilesById = new Map<string, ProfileRow>();
+  /** "<draftId>:<step>" for every reminder already sent. */
+  const sentPairs = new Set<string>();
+  /** Owner -> when we last mailed them, for the digest floor. */
+  const lastDigestAt = new Map<string, number>();
 
   if (ownerIds.length > 0) {
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("id,email,full_name")
-      .in("id", ownerIds);
+    const [profilesRes, logRes] = await Promise.all([
+      supabase.from("profiles").select("id,email,full_name").in("id", ownerIds),
+      supabase
+        .from("email_notification_log")
+        .select("entity_id,days_before,created_at,recipient_user_id")
+        .eq("kind", REMINDER_KIND)
+        .in("recipient_user_id", ownerIds),
+    ]);
 
-    if (profilesError) {
-      console.error("draft-completion-reminder profilesError:", profilesError);
+    if (profilesRes.error) {
+      console.error("draft-completion-reminder profilesError:", profilesRes.error);
     } else {
-      for (const p of (profiles ?? []) as ProfileRow[]) profilesById.set(p.id, p);
+      for (const p of (profilesRes.data ?? []) as ProfileRow[]) profilesById.set(p.id, p);
+    }
+
+    if (logRes.error) {
+      console.error("draft-completion-reminder logError:", logRes.error);
+    } else {
+      for (const row of logRes.data ?? []) {
+        sentPairs.add(`${row.entity_id}:${row.days_before}`);
+        const owner = row.recipient_user_id as string | null;
+        if (!owner) continue;
+        const at = Date.parse(row.created_at as string);
+        if (Number.isFinite(at)) {
+          lastDigestAt.set(owner, Math.max(lastDigestAt.get(owner) ?? 0, at));
+        }
+      }
     }
   }
 
   let sent = 0;
-  let skipped = 0;
+  let skippedNothingNew = 0;
+  let skippedTooSoon = 0;
+  let skippedNoEmail = 0;
   let errors = 0;
-  const preview: Array<{ entityId: string; step: number; subject: string; to: string }> = [];
+  const preview: Array<{
+    to: string;
+    step: number;
+    subject: string;
+    drafts: number;
+    listed: number;
+    urgent: number;
+  }> = [];
 
-  for (const draft of throttled) {
-    const profile = profilesById.get(draft.ownerId);
+  for (const [ownerId, ownerDrafts] of byOwner) {
+    // Most urgent first: archived ahead of active, then by time remaining. This
+    // is also the order the digest lists them and the order that decides which
+    // drafts make the cut when there are more than MAX_DRAFTS_LISTED.
+    ownerDrafts.sort((a, b) => {
+      if (a.archived !== b.archived) return a.archived ? -1 : 1;
+      if (a.daysLeft !== b.daysLeft) return a.daysLeft - b.daysLeft;
+      return b.step - a.step;
+    });
+
+    const listed = ownerDrafts.slice(0, MAX_DRAFTS_LISTED);
+
+    // Something is worth mailing about only if a listed draft has reached a
+    // step we have not already mailed this owner about.
+    const freshPairs = listed.filter((d) => !sentPairs.has(`${d.entityId}:${d.step}`));
+    if (freshPairs.length === 0) {
+      skippedNothingNew++;
+      continue;
+    }
+
+    // Hold to the digest floor, except when a draft is archived — those are on
+    // a 5-day fuse to deletion and must not wait for the next window.
+    const hasArchived = freshPairs.some((d) => d.step === ARCHIVED_STEP);
+    const last = lastDigestAt.get(ownerId);
+    if (!hasArchived && last && now.getTime() - last < MIN_DAYS_BETWEEN_DIGESTS * MS_PER_DAY) {
+      skippedTooSoon++;
+      continue;
+    }
+
+    const profile = profilesById.get(ownerId);
     const email = profile?.email?.trim() || "";
     if (!email) {
-      skipped++;
+      skippedNoEmail++;
       continue;
     }
 
     const name = firstName(profile?.full_name);
-    const copy = buildCopy(draft.step, draft, name);
+    const mostUrgent = listed[0];
+    const step = Math.max(...listed.map((d) => d.step));
+    const copy = buildCopy({
+      step,
+      count: ownerDrafts.length,
+      urgentCount: ownerDrafts.filter((d) => d.step === step).length,
+      mostUrgent,
+      name,
+    });
 
     if (dryRun) {
-      preview.push({ entityId: draft.entityId, step: draft.step, subject: copy.subject, to: email });
+      preview.push({
+        to: email,
+        step,
+        subject: copy.subject,
+        drafts: ownerDrafts.length,
+        listed: listed.length,
+        urgent: ownerDrafts.filter((d) => d.step === step).length,
+      });
       continue;
     }
 
-    // The unique index on (kind, entity_id, days_before, recipient_email) makes
-    // this insert the send-once lock for this step of this draft.
-    const { error: logError } = await supabase.from("email_notification_log").insert({
-      kind: REMINDER_KIND,
-      entity_id: draft.entityId,
-      recipient_user_id: draft.ownerId,
-      recipient_email: email,
-      days_before: draft.step,
-    });
+    // Claim every listed draft at its current step before sending. The unique
+    // index on (kind, entity_id, days_before, recipient_email) means a
+    // concurrent run loses the race on the first row and backs off, so the
+    // digest cannot go out twice.
+    const claim = await supabase.from("email_notification_log").insert(
+      freshPairs.map((d) => ({
+        kind: REMINDER_KIND,
+        entity_id: d.entityId,
+        recipient_user_id: ownerId,
+        recipient_email: email,
+        days_before: d.step,
+      }))
+    );
 
-    if (logError) {
-      if ((logError as unknown as { code?: string }).code === "23505") {
-        skipped++;
+    if (claim.error) {
+      if ((claim.error as unknown as { code?: string }).code === "23505") {
+        skippedNothingNew++;
         continue;
       }
-      console.error("draft-completion-reminder log insert error:", logError);
+      console.error("draft-completion-reminder log insert error:", claim.error);
       errors++;
       continue;
     }
@@ -498,7 +635,12 @@ serve(async (req) => {
       from: "BuyAuto <noreply@email.buyauto.ch>",
       to: email,
       subject: copy.subject,
-      html: buildHtml({ copy, greeting: name ?? "Guten Tag", draft }),
+      html: buildHtml({
+        copy,
+        greeting: name ?? "Guten Tag",
+        drafts: listed,
+        totalCount: ownerDrafts.length,
+      }),
     });
 
     if (sendRes.error) {
@@ -514,11 +656,12 @@ serve(async (req) => {
     JSON.stringify({
       success: true,
       dryRun,
-      scanned: candidates.length,
-      eligible: throttled.length,
-      deferredByOwnerCap: deferred,
+      draftsScanned: candidates.length,
+      owners: byOwner.size,
       sent,
-      skipped,
+      skippedNothingNew,
+      skippedTooSoon,
+      skippedNoEmail,
       errors,
       ...(dryRun ? { preview } : {}),
     }),
