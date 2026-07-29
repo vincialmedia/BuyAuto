@@ -85,12 +85,28 @@ export default function Datenschutz() {
               <p className="mb-4">
                 Der Einsatz dieser Cookies dient dazu, die Nutzung unseres Angebots für Sie angenehmer zu gestalten. So setzen wir sogenannte Session-Cookies ein, um zu erkennen, dass Sie einzelne Seiten unserer Website bereits besucht haben oder in Ihrem Benutzerkonto eingeloggt sind. Diese werden nach Verlassen unserer Seite automatisch gelöscht.
               </p>
-              <h3 className="text-lg font-medium mb-2">Analyse-Tools (Google Analytics)</h3>
+              <h3 className="text-lg font-medium mb-2">Analyse-Tools (Google Analytics 4)</h3>
               <p className="mb-4">
-                Wir nutzen oder planen die Nutzung von Google Analytics, einen Webanalysedienst der Google LLC. Google Analytics verwendet Methoden, die eine Analyse der Benutzung der Website durch Sie ermöglichen, wie zum Beispiel Cookies. Die erzeugten Informationen über Ihre Benutzung dieser Website werden in der Regel an einen Server von Google in den USA übertragen und dort gespeichert.
+                Wir nutzen Google Analytics 4, einen Webanalysedienst der Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland). Google Analytics verwendet Methoden, die eine Analyse der Benutzung der Website durch Sie ermöglichen, wie zum Beispiel Cookies. Die erzeugten Informationen über Ihre Benutzung dieser Website können an einen Server von Google, auch in den USA, übertragen und dort gespeichert werden. Ihre IP-Adresse wird dabei gekürzt (IP-Anonymisierung).
               </p>
               <p className="mb-4">
-                Wir weisen darauf hin, dass in der Schweiz und der EU der Einsatz von Cookies einer Informationspflicht unterliegt. Durch die Nutzung unserer Website erklären Sie sich mit der Bearbeitung der über Sie erhobenen Daten in der zuvor beschriebenen Art und Weise und zu dem zuvor benannten Zweck einverstanden.
+                Analyse-Cookies werden erst gesetzt, nachdem Sie im Cookie-Banner auf «Einverstanden» geklickt haben. Bis dahin – und wenn Sie «Ablehnen» wählen – werden über den Google-Consent-Modus ausschliesslich cookielose, nicht auf Sie zurückführbare Signale übermittelt. Rechtsgrundlage der Bearbeitung ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 DSG).
+              </p>
+              <p className="mb-4">
+                Sie können Ihre Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, indem Sie die in Ihrem Browser für diese Website gespeicherten Daten (Cookies und lokaler Speicher) löschen. Beim nächsten Besuch erscheint das Cookie-Banner erneut und Sie können neu entscheiden. Zusätzlich können Sie die Erfassung durch das Browser-Add-on von Google unter{" "}
+                <a
+                  href="https://tools.google.com/dlpage/gaoptout"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-red-600 hover:underline"
+                >
+                  tools.google.com/dlpage/gaoptout
+                </a>{" "}
+                unterbinden.
+              </p>
+              <h3 className="text-lg font-medium mb-2">Vercel Analytics</h3>
+              <p className="mb-4">
+                Zur Messung der Seitenaufrufe und der Ladeperformance setzen wir zusätzlich Vercel Analytics (Vercel Inc.) ein. Dieser Dienst arbeitet cookielos und erhebt keine personenbezogenen Profile.
               </p>
             </section>
 
