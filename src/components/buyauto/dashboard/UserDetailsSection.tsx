@@ -164,7 +164,9 @@ export default function UserDetailsSection() {
       toast.success(
         anonymous
           ? "Du wirst auf deinen Inseraten als «Privatanbieter» angezeigt."
-          : "Dein Name wird jetzt auf deinen Inseraten angezeigt."
+          : hasPublicName
+            ? "Dein Name wird jetzt auf deinen Inseraten angezeigt."
+            : "Sobald du deinen Namen ergänzt, wird er auf deinen Inseraten angezeigt."
       );
     } catch (err) {
       console.error("Error updating seller visibility:", err);
@@ -188,7 +190,7 @@ export default function UserDetailsSection() {
 
       if (error) throw error;
 
-      toast.success("Passwort-Reset-Link wurde an Ihre E-Mail-Adresse gesendet.");
+      toast.success("Passwort-Reset-Link wurde an deine E-Mail-Adresse gesendet.");
     } catch (error) {
       console.error("Error sending password reset:", error);
       toast.error("Fehler beim Senden des Reset-Links.");
@@ -275,7 +277,7 @@ export default function UserDetailsSection() {
                 <DialogContent className="sm:max-w-[480px] rounded-3xl">
                   <DialogHeader>
                     <DialogTitle>Profil bearbeiten</DialogTitle>
-                    <DialogDescription>Aktualisieren Sie Ihre persönlichen Informationen.</DialogDescription>
+                    <DialogDescription>Aktualisiere deine persönlichen Informationen.</DialogDescription>
                   </DialogHeader>
 
                   <div className="space-y-4 py-2">

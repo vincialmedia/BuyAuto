@@ -76,7 +76,7 @@ export default function GuestAuthGate() {
       const msg = /invalid login credentials/i.test(raw)
         ? "E-Mail oder Passwort ist falsch."
         : emailAlreadyExists
-          ? "Diese E-Mail existiert bereits, bitte loggen Sie sich ein."
+          ? "Diese E-Mail existiert bereits, bitte logge dich ein."
           : raw || "Etwas ist schiefgelaufen. Bitte versuche es erneut.";
       // Flip over to the login tab so the user can sign in with the existing account.
       if (emailAlreadyExists) setMode("login");
@@ -159,7 +159,7 @@ export default function GuestAuthGate() {
               />
             </div>
             <p className="col-span-2 text-xs text-neutral-500">
-              Dein Name wird bei deinem Inserat als Anbieter angezeigt. In den Einstellungen kannst du
+              Dein Name wird bei deinem Inserat als Anbieter angezeigt. In deinem Dashboard kannst du
               stattdessen jederzeit anonym als «Privatanbieter» auftreten.
             </p>
           </div>
