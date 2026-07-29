@@ -1,0 +1,14 @@
+{
+  "make": "Lancia",
+  "_note": "Fiat engines - T-Jet petrol, MultiJet diesel - except the Thema, Voyager and Flavia, which were rebadged Chrysler products and carry the American V6 and CRD engines they were sold with.",
+  "models": [],
+  "groups": [
+    { "models": ["Ypsilon"], "variants": ["1.2", "1.0 Hybrid", "1.3 MultiJet", "51 kWh"] },
+    { "models": ["Musa"], "variants": ["1.4", "1.3 MultiJet"] },
+    { "models": ["Delta"], "variants": ["1.4 T-Jet", "1.6 MultiJet", "1.9 MultiJet"] },
+    { "models": ["Phedra"], "variants": ["2.0", "2.0 MultiJet", "2.2 MultiJet"] },
+    { "models": ["Thema"], "variants": ["3.0 V6 MultiJet", "3.6 V6"] },
+    { "models": ["Voyager"], "variants": ["2.8 CRD", "3.6 V6"] },
+    { "models": ["Flavia"], "variants": ["2.4", "3.6 V6"] }
+  ]
+}

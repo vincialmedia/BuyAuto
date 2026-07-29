@@ -1,0 +1,12 @@
+{
+  "make": "Polestar",
+  "_note": "Polestar 1 was a plug-in hybrid; everything since is electric and sold by battery size.",
+  "models": [],
+  "groups": [
+    { "models": ["1"], "variants": ["2.0 Hybrid"] },
+    { "models": ["2"], "variants": ["64 kWh", "78 kWh", "82 kWh"] },
+    { "models": ["3"], "variants": ["111 kWh"] },
+    { "models": ["4"], "variants": ["100 kWh"] },
+    { "models": ["5"], "variants": ["112 kWh"] }
+  ]
+}

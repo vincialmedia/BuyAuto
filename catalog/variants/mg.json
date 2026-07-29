@@ -1,0 +1,20 @@
+{
+  "make": "MG",
+  "_note": "MG's current range is mostly electric and sold by battery size; the combustion cars carry displacement. Hybrid+ is MG's own hybrid badge.",
+  "models": [],
+  "groups": [
+    { "models": ["MG3"], "variants": ["1.5", "1.5 Hybrid+"] },
+    { "models": ["MG5"], "variants": ["50 kWh", "61 kWh"] },
+    { "models": ["MG6"], "variants": ["1.5 Turbo", "1.8", "1.9 Diesel"] },
+    { "models": ["MG4"], "variants": ["51 kWh", "64 kWh", "77 kWh"] },
+    { "models": ["GS"], "variants": ["1.5 Turbo", "2.0 Turbo"] },
+    { "models": ["HS"], "variants": ["1.5 Turbo", "2.0 Turbo", "1.5 Turbo PHEV"] },
+    { "models": ["EHS"], "variants": ["1.5 Turbo PHEV"] },
+    { "models": ["ZS"], "variants": ["1.0 Turbo", "1.5", "44 kWh", "51 kWh", "72 kWh"] },
+    { "models": ["Marvel R"], "variants": ["70 kWh"] },
+    { "models": ["Cyberster"], "variants": ["77 kWh"] },
+    { "models": ["S5 EV"], "variants": ["49 kWh", "64 kWh"] },
+    { "models": ["IM5", "IM6"], "variants": ["75 kWh", "100 kWh"] },
+    { "models": ["S9"], "variants": ["Electric"] }
+  ]
+}

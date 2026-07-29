@@ -1,0 +1,13 @@
+{
+  "make": "Tesla",
+  "_note": "Tesla does not sell by battery size or engine - the car is a Model 3 Long Range or a Model S Plaid, and that range name is what appears on the order, the registration and every listing. So the variant here is the range/performance name rather than a kWh figure.",
+  "models": [],
+  "groups": [
+    { "models": ["Model 3", "Model Y"],
+      "variants": ["Standard Range", "Long Range", "Long Range AWD", "Performance"] },
+    { "models": ["Model S", "Model X"],
+      "variants": ["Long Range", "Plaid", "P100D", "75D", "100D"] },
+    { "models": ["Cybertruck"], "variants": ["Long Range", "All-Wheel Drive", "Cyberbeast"] },
+    { "models": ["Roadster"], "variants": ["53 kWh", "200 kWh"] }
+  ]
+}

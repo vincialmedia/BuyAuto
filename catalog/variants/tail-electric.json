@@ -1,0 +1,157 @@
+[
+  {
+    "make": "Genesis",
+    "_note": "Hyundai's luxury make. Petrol turbo fours and V6s, a 2.2 diesel for Europe, and battery sizes for the electric cars.",
+    "groups": [
+      { "models": ["G70"], "variants": ["2.0 Turbo", "3.3 V6 Turbo", "2.2 Diesel"] },
+      { "models": ["G80"], "variants": ["2.5 Turbo", "3.5 V6 Turbo", "2.2 Diesel", "87.2 kWh"] },
+      { "models": ["G90"], "variants": ["3.5 V6 Turbo"] },
+      { "models": ["GV60"], "variants": ["77.4 kWh"] },
+      { "models": ["GV80"], "variants": ["2.5 Turbo", "3.0 Diesel", "3.5 V6 Turbo"] }
+    ]
+  },
+  {
+    "make": "Lucid",
+    "groups": [
+      { "models": ["Air"], "variants": ["88 kWh", "112 kWh", "118 kWh"] },
+      { "models": ["Gravity"], "variants": ["123 kWh"] }
+    ]
+  },
+  {
+    "make": "Zeekr",
+    "_note": "The row named 1 is the 001 with the leading zeros lost in import; it merges into 001 and keeps an alias.",
+    "groups": [
+      { "models": ["001"], "variants": ["86 kWh", "100 kWh"] },
+      { "models": ["7GT", "7X"], "variants": ["75 kWh", "100 kWh"] },
+      { "models": ["X"], "variants": ["66 kWh"] }
+    ],
+    "merge": [{ "from": "1", "model": "001" }]
+  },
+  {
+    "make": "Lynk & Co",
+    "_note": "01, 02 and 08 also appear as 1, 2 and 8 - the same cars with the leading zero dropped - so those merge and keep aliases.",
+    "groups": [
+      { "models": ["01"], "variants": ["1.5 Turbo", "2.0 Turbo", "1.5 PHEV"] },
+      { "models": ["02"], "variants": ["1.5 PHEV", "66 kWh"] },
+      { "models": ["08"], "variants": ["1.5 PHEV"] }
+    ],
+    "merge": [
+      { "from": "1", "model": "01" },
+      { "from": "2", "model": "02" },
+      { "from": "8", "model": "08" }
+    ]
+  },
+  {
+    "make": "Leapmotor",
+    "groups": [
+      { "models": ["T03"], "variants": ["37.3 kWh"] },
+      { "models": ["B10"], "variants": ["56.2 kWh", "67.1 kWh"] },
+      { "models": ["B03X", "B05"], "variants": ["56.2 kWh", "67.1 kWh"] },
+      { "models": ["C10"], "variants": ["69.9 kWh", "1.5 Range Extender"] }
+    ]
+  },
+  {
+    "make": "Seres",
+    "groups": [
+      { "models": ["3"], "variants": ["53 kWh"] },
+      { "models": ["5"], "variants": ["80 kWh"] },
+      { "models": ["A5", "E3"], "variants": ["53 kWh", "80 kWh"] },
+      { "models": ["SF5"], "variants": ["1.5 Range Extender"] }
+    ]
+  },
+  {
+    "make": "Voyah",
+    "groups": [
+      { "models": ["Courage"], "variants": ["65 kWh", "82 kWh"] },
+      { "models": ["Dream"], "variants": ["82 kWh", "108 kWh"] },
+      { "models": ["Free"], "variants": ["106 kWh", "1.5 Range Extender"] }
+    ]
+  },
+  {
+    "make": "HiPhi",
+    "groups": [
+      { "models": ["X"], "variants": ["97 kWh"] },
+      { "models": ["Y"], "variants": ["115 kWh"] },
+      { "models": ["Z"], "variants": ["120 kWh"] }
+    ]
+  },
+  {
+    "make": "Aiways",
+    "groups": [{ "models": ["U5", "U6"], "variants": ["63 kWh"] }]
+  },
+  {
+    "make": "Omoda",
+    "groups": [
+      { "models": ["5"], "variants": ["1.5 Turbo", "1.6 Turbo"] },
+      { "models": ["7", "9"], "variants": ["1.5 SHS PHEV"] },
+      { "models": ["E5"], "variants": ["61 kWh"] }
+    ]
+  },
+  {
+    "make": "Jaecoo",
+    "groups": [
+      { "models": ["5"], "variants": ["1.6 Turbo", "61 kWh"] },
+      { "models": ["7"], "variants": ["1.6 Turbo", "1.5 SHS PHEV"] },
+      { "models": ["8"], "variants": ["2.0 Turbo"] }
+    ]
+  },
+  {
+    "make": "Fisker",
+    "_note": "Karma is a range extender rather than a pure EV, so its variant is the petrol generator.",
+    "groups": [
+      { "models": ["Karma"], "variants": ["2.0 Range Extender"] },
+      { "models": ["Ocean"], "variants": ["106 kWh"] }
+    ]
+  },
+  {
+    "make": "Rimac",
+    "groups": [
+      { "models": ["Concept One", "Concept S"], "variants": ["82 kWh"] },
+      { "models": ["C Two", "Nevera", "Nevera R"], "variants": ["120 kWh"] }
+    ]
+  },
+  {
+    "make": "Pininfarina",
+    "groups": [{ "models": ["Battista", "B95"], "variants": ["120 kWh"] }]
+  },
+  {
+    "make": "Firefly",
+    "groups": [{ "models": ["Firefly"], "variants": ["42 kWh"] }]
+  },
+  {
+    "make": "Mobilize",
+    "groups": [
+      { "models": ["Duo"], "variants": ["10.3 kWh"] },
+      { "models": ["Bento"], "variants": ["10.3 kWh"] }
+    ]
+  },
+  {
+    "make": "Micro",
+    "groups": [
+      { "models": ["Microlino"], "variants": ["6 kWh", "10.5 kWh", "14 kWh"] },
+      { "models": ["Microlino Lite"], "variants": ["5.5 kWh"] }
+    ]
+  },
+  {
+    "make": "Tazzari",
+    "groups": [{ "models": ["Zero"], "variants": ["15 kWh"] }]
+  },
+  {
+    "make": "e.GO Mobile",
+    "groups": [
+      { "models": ["Life"], "variants": ["17.9 kWh", "23.9 kWh"] },
+      { "models": ["e.wave X", "Lux"], "variants": ["36 kWh"] },
+      { "models": ["Mover"], "variants": ["36 kWh"] }
+    ]
+  },
+  {
+    "make": "smart",
+    "_note": "The ForTwo and ForFour were sold with petrol, diesel and battery versions of the same car, so all three appear. The hashed models are the current Geely-built EVs.",
+    "groups": [
+      { "models": ["ForTwo"], "variants": ["0.8 cdi", "1.0", "0.9 Turbo", "17.6 kWh"] },
+      { "models": ["ForFour"], "variants": ["1.0", "0.9 Turbo", "17.6 kWh"] },
+      { "models": ["#1", "#3"], "variants": ["66 kWh"] },
+      { "models": ["#5"], "variants": ["76 kWh", "100 kWh"] }
+    ]
+  }
+]

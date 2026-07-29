@@ -58,7 +58,11 @@ function loadCatalog() {
   let pairCount = 0;
 
   for (const file of files) {
-    const raw = JSON.parse(fs.readFileSync(path.join(CATALOG_DIR, file), 'utf-8'));
+    const parsed = JSON.parse(fs.readFileSync(path.join(CATALOG_DIR, file), 'utf-8'));
+    // A file is normally one make. The long tail of makes carrying two or three models
+    // each would otherwise be one near-empty file apiece, so a file may also hold an
+    // array of make entries with the same shape.
+    for (const raw of Array.isArray(parsed) ? parsed : [parsed]) {
     const make = raw.make;
     if (!make) throw new Error(`${file}: missing "make"`);
     if (!modelKeys.has(make)) modelKeys.set(make, new Set());
@@ -132,6 +136,7 @@ function loadCatalog() {
       }
       merges.push({ make, ...m });
       modelKeys.get(make).add(m.model);
+    }
     }
   }
 

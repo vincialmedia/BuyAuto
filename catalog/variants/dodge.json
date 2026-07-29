@@ -1,0 +1,14 @@
+{
+  "make": "Dodge",
+  "_note": "The muscle cars split by V8 - the 5.7, the 6.4 and the supercharged 6.2 in the Hellcat versions - while the European-market Avenger, Caliber, Journey and Nitro were sold with VM Motori diesels.",
+  "models": [],
+  "groups": [
+    { "models": ["Avenger"], "variants": ["2.0", "2.4", "2.0 CRD"] },
+    { "models": ["Caliber"], "variants": ["1.8", "2.0", "2.0 CRD"] },
+    { "models": ["Journey"], "variants": ["2.0 CRD", "2.4", "3.6 V6"] },
+    { "models": ["Nitro"], "variants": ["2.8 CRD", "3.7 V6", "4.0 V6"] },
+    { "models": ["Challenger", "Charger"],
+      "variants": ["3.6 V6", "5.7 V8", "6.4 V8", "6.2 V8 Supercharged"] },
+    { "models": ["Durango"], "variants": ["3.6 V6", "5.7 V8", "6.4 V8"] }
+  ]
+}

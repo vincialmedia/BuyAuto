@@ -1,0 +1,16 @@
+{
+  "make": "DS",
+  "_note": "DS became a make in its own right in 2015, so these are the DS-badged cars; the earlier Citroën DS3/DS4/DS5 sit under Citroën. Engines are Stellantis PureTech and BlueHDi, with E-Tense marking the plug-in hybrids and EVs.",
+  "models": [],
+  "groups": [
+    { "models": ["3", "3 Crossback"],
+      "variants": ["1.2 PureTech", "1.5 BlueHDi", "1.6 THP", "50 kWh", "54 kWh"] },
+    { "models": ["4", "4 Crossback", "N°4"],
+      "variants": ["1.2 PureTech", "1.5 BlueHDi", "1.6 PureTech", "1.6 E-Tense"] },
+    { "models": ["5"], "variants": ["1.6 THP", "1.6 HDi", "2.0 HDi"] },
+    { "models": ["7", "7 Crossback"],
+      "variants": ["1.2 PureTech", "1.5 BlueHDi", "1.6 PureTech", "1.6 E-Tense"] },
+    { "models": ["9"], "variants": ["1.6 PureTech", "1.6 E-Tense"] },
+    { "models": ["N°8"], "variants": ["74 kWh", "97 kWh"] }
+  ]
+}

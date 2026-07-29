@@ -1,0 +1,12 @@
+{
+  "make": "Abarth",
+  "_note": "The 500, 595 and 695 are the same car at three power levels, all running the 1.4 T-Jet, so the number is part of the model name rather than the variant. The electric cars carry battery sizes.",
+  "models": [],
+  "groups": [
+    { "models": ["500", "595", "695"], "variants": ["1.4 T-Jet"] },
+    { "models": ["Punto Evo"], "variants": ["1.4 MultiAir"] },
+    { "models": ["124 Spider"], "variants": ["1.4 MultiAir"] },
+    { "models": ["500e"], "variants": ["42 kWh"] },
+    { "models": ["600e"], "variants": ["54 kWh"] }
+  ]
+}
