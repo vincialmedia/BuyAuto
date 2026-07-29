@@ -325,36 +325,36 @@ export function ModerationView({ onStatsUpdate }: ModerationViewProps) {
               </tbody>
             </table>
           </div>
-
-          {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-neutral-200 p-4">
-              <div className="text-sm text-neutral-600">
-                Zeige {((filters.page || 1) - 1) * (filters.limit || 25) + 1} bis{" "}
-                {Math.min((filters.page || 1) * (filters.limit || 25), pagination.total)} von{" "}
-                {pagination.total} Inseraten
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={(filters.page || 1) <= 1}
-                  onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) - 1 }))}
-                >
-                  Zurück
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={(filters.page || 1) >= pagination.totalPages}
-                  onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
-                >
-                  Weiter
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
+
+        {pagination.totalPages > 1 && (
+          <div className="flex flex-col gap-3 border-t border-neutral-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-neutral-600">
+              Zeige {((filters.page || 1) - 1) * (filters.limit || 25) + 1} bis{" "}
+              {Math.min((filters.page || 1) * (filters.limit || 25), pagination.total)} von{" "}
+              {pagination.total} Inseraten
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={(filters.page || 1) <= 1}
+                onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) - 1 }))}
+              >
+                Zurück
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={(filters.page || 1) >= pagination.totalPages}
+                onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
+              >
+                Weiter
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Dialog open={declineModalOpen} onOpenChange={setDeclineModalOpen}>

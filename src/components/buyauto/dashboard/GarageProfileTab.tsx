@@ -684,8 +684,8 @@ export function GarageProfileTab({
           {DAYS_OF_WEEK.map((day) => {
             const hours = profileDraft.opening_hours[day.key] || { from: "", to: "", closed: false };
             return (
-              <div key={day.key} className="grid grid-cols-[120px_1fr_1fr_auto] gap-3 items-center">
-                <Label className="text-sm font-medium">{day.label}</Label>
+              <div key={day.key} className="grid grid-cols-2 gap-3 items-center sm:grid-cols-[120px_1fr_1fr_auto]">
+                <Label className="col-span-2 text-sm font-medium sm:col-span-1">{day.label}</Label>
                 <Input
                   type="time"
                   value={hours.from}
@@ -704,7 +704,7 @@ export function GarageProfileTab({
                   variant={hours.closed ? "outline" : "secondary"}
                   size="sm"
                   onClick={() => updateOpeningHours(day.key, "closed", !hours.closed)}
-                  className="rounded-2xl whitespace-nowrap"
+                  className="col-span-2 rounded-2xl whitespace-nowrap sm:col-span-1"
                 >
                   {hours.closed ? "Öffnen" : "Geschlossen"}
                 </Button>

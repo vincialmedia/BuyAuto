@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -114,8 +114,22 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
       year: listing.year,
       location: listing.location,
       canton_code: listing.canton_code,
+      mileage_km: listing.mileage_km,
+      fuel: listing.fuel,
+      gearbox: listing.gearbox,
+      body: listing.body,
+      deal_type: listing.deal_type,
+      financing_type: listing.financing_type,
+      purchase_price_chf: listing.purchase_price_chf,
+      price_per_month_chf: listing.price_per_month_chf,
+      deposit_chf: listing.deposit_chf,
+      power_hp: listing.power_hp,
+      drivetrain: listing.drivetrain,
+      first_registration: listing.first_registration,
+      vin: listing.vin,
       status: listing.status,
       premium: listing.premium,
+      moderation_note: listing.moderation_note,
       premium_until: listing.premium_until,
       expires_at: listing.expires_at,
       duration_days: listing.duration_days,
@@ -163,11 +177,14 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
         location: safeString(String(editData.location ?? "")) ?? listing.location,
         canton_code: safeString(String(editData.canton_code ?? "")) ?? listing.canton_code,
 
-        mileage_km: typeof editData.mileage_km === "number" ? editData.mileage_km : safeInt(String(editData.mileage_km ?? "")),
-        fuel: safeString(String(editData.fuel ?? "")),
-        gearbox: safeString(String(editData.gearbox ?? "")),
-        body: safeString(String(editData.body ?? "")),
-        deal_type: safeString(String(editData.deal_type ?? "")),
+        // mileage_km, fuel, gearbox, body and deal_type are NOT NULL in the
+        // DB — a blank input falls back to the stored value instead of null,
+        // otherwise the whole update is rejected with a 400.
+        mileage_km: (typeof editData.mileage_km === "number" ? editData.mileage_km : safeInt(String(editData.mileage_km ?? ""))) ?? listing.mileage_km,
+        fuel: safeString(String(editData.fuel ?? "")) ?? listing.fuel,
+        gearbox: safeString(String(editData.gearbox ?? "")) ?? listing.gearbox,
+        body: safeString(String(editData.body ?? "")) ?? listing.body,
+        deal_type: safeString(String(editData.deal_type ?? "")) ?? listing.deal_type,
         financing_type: safeString(String(editData.financing_type ?? "")),
         purchase_price_chf: typeof editData.purchase_price_chf === "number" ? editData.purchase_price_chf : safeInt(String(editData.purchase_price_chf ?? "")),
         price_per_month_chf: typeof editData.price_per_month_chf === "number" ? editData.price_per_month_chf : safeInt(String(editData.price_per_month_chf ?? "")),
@@ -243,9 +260,9 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
                 {listing.premium && <Star className="w-5 h-5 text-amber-500" />}
                 {getStatusBadge(listing.status as ListingStatus)}
               </DialogTitle>
-              <div className="text-sm text-neutral-600">
+              <DialogDescription className="text-sm text-neutral-600">
                 Uploader: <span className="font-medium text-neutral-900">{listing.owner_profile?.email ?? "—"}</span>
-              </div>
+              </DialogDescription>
             </div>
 
             {!isModeration && (

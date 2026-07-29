@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import { useRouter } from "next/router";
 import Header from "@/components/buyauto/Header";
 // Footer is SSR-safe (year is gated via useHasMounted) — render it statically
 // so footer links are in the server HTML for SEO and there is no post-hydration
@@ -15,6 +16,16 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
+  const router = useRouter();
+
+  // Embed routes are iframed on third-party sites and must be chrome-free — no
+  // site header, footer, cookie banner, or wrapping <main> (the embed page
+  // renders its own). Everything else gets the full layout. Match the /embed
+  // segment exactly (not a greedy prefix like "/embedded-...").
+  if (router.pathname === "/embed" || router.pathname.startsWith("/embed/")) {
+    return <>{children}</>;
+  }
+
   return (
     <>
       <Header />

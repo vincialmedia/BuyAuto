@@ -18,9 +18,13 @@ type AuthView = "login" | "register" | "reset-password" | "update-password";
 
 interface AuthFormProps {
   initialView?: AuthView;
+  initialAccountType?: "private" | "garage";
 }
 
-export default function AuthForm({ initialView = "login" }: AuthFormProps = {}) {
+export default function AuthForm({
+  initialView = "login",
+  initialAccountType,
+}: AuthFormProps = {}) {
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,14 +95,27 @@ export default function AuthForm({ initialView = "login" }: AuthFormProps = {}) 
       
     } catch (error: any) {
       console.error("Registration error:", error);
+
+      const emailAlreadyExists =
+        error?.code === "email_exists" ||
+        error?.message?.includes("User already registered") ||
+        error?.message?.includes("already been registered");
+
+      if (emailAlreadyExists) {
+        const errorMessage = "Diese E-Mail existiert bereits, bitte loggen Sie sich ein.";
+        toast.error(errorMessage);
+        setError(errorMessage);
+        // Flip the toggle over to the login ("Einloggen") view so the user can
+        // sign in right away instead of re-attempting the registration.
+        setCurrentView("login");
+        return;
+      }
+
       let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
-      
-      if (error?.message?.includes("User already registered")) {
-        errorMessage = "Ein Konto mit dieser E-Mail-Adresse existiert bereits.";
-      } else if (error?.message) {
+      if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage);
       setError(errorMessage);
     } finally {
@@ -254,6 +271,7 @@ export default function AuthForm({ initialView = "login" }: AuthFormProps = {}) 
               onRegister={handleRegister}
               onShowLogin={() => setCurrentView("login")}
               isLoading={isLoading}
+              initialAccountType={initialAccountType}
             />
           </TabsContent>
         </Tabs>
