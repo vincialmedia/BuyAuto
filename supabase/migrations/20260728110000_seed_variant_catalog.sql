@@ -38,10 +38,22 @@ with m(make, name) as (values
     ('Opel','Corsa'),
     ('Opel','Insignia'),
     ('Opel','Zafira Tourer'),
+    ('Opel','Agila'),
+    ('Opel','Combo'),
+    ('Opel','Meriva'),
+    ('Opel','Movano'),
+    ('Opel','Vivaro'),
     ('Vauxhall','Astra'),
     ('Vauxhall','Corsa'),
     ('Vauxhall','Insignia'),
-    ('Vauxhall','Zafira')
+    ('Vauxhall','Zafira'),
+    ('Vauxhall','Agila'),
+    ('Vauxhall','Combo'),
+    ('Vauxhall','Meriva'),
+    ('Vauxhall','Movano'),
+    ('Vauxhall','Vivaro'),
+    ('Vauxhall','Frontera'),
+    ('Vauxhall','Zafira Tourer')
 )
 insert into public.models (make_id, name, source)
 select mk.id, m.name, 'catalog_variants_v1'
@@ -374,13 +386,43 @@ with g(make, models, variants) as (values
     ('Opel',array['Corsa'],array['1.2','1.2 Turbo','1.4','1.4 Turbo','1.3 CDTI','1.5 Diesel']),
     ('Opel',array['Insignia'],array['1.5 Turbo','1.6 CDTI','2.0 CDTI','2.0 Turbo 4x4','2.0 CDTI 4x4']),
     ('Opel',array['Zafira','Zafira Tourer'],array['1.4 Turbo','1.6 CDTI','1.8','2.0 CDTI']),
+    ('Opel',array['Adam'],array['1.0 Turbo','1.2','1.4']),
+    ('Opel',array['Agila'],array['1.0','1.2','1.3 CDTI']),
+    ('Opel',array['Karl'],array['1.0']),
+    ('Opel',array['Meriva'],array['1.4 Turbo','1.6 CDTI','1.7 CDTI','1.3 CDTI']),
+    ('Opel',array['Antara'],array['2.0 CDTI','2.2 CDTI','2.4','3.2 V6']),
+    ('Opel',array['Cascada'],array['1.4 Turbo','1.6 Turbo','2.0 CDTI']),
+    ('Opel',array['Mokka'],array['1.2 Turbo','1.4 Turbo','1.6 CDTI','1.5 Diesel','50 kWh','54 kWh']),
+    ('Opel',array['Mokka GSE'],array['GSE']),
+    ('Opel',array['Crossland'],array['1.2 Turbo','1.5 Diesel','1.6 CDTI']),
+    ('Opel',array['Grandland'],array['1.2 Turbo','1.5 Diesel','1.6 Turbo Hybrid','73 kWh']),
+    ('Opel',array['Frontera'],array['1.2 Turbo Hybrid','44 kWh']),
+    ('Opel',array['Combo','Combo Life'],array['1.2 PureTech','1.4','1.3 CDTI','1.5 Diesel','1.6 CDTI','50 kWh']),
+    ('Opel',array['Vivaro'],array['1.5 Diesel','2.0 Diesel','1.6 CDTI','2.0 CDTI','50 kWh','75 kWh']),
+    ('Opel',array['Zafira Life'],array['1.5 Diesel','2.0 Diesel','50 kWh','75 kWh']),
+    ('Opel',array['Movano'],array['2.3 CDTI','2.2 Diesel','110 kWh']),
+    ('Opel',array['Ampera'],array['1.4 Range Extender']),
+    ('Opel',array['Ampera-e'],array['60 kWh']),
+    ('Opel',array['Rocks-e'],array['5.5 kWh']),
     ('Peugeot',array['107','108'],array['1.0 VTi','1.2 PureTech','1.4 HDi']),
     ('Peugeot',array['206+'],array['1.1','1.4','1.4 HDi']),
     ('Peugeot',array['207','207 CC','207 SW'],array['1.4','1.6 VTi','1.6 THP','1.4 HDi','1.6 HDi']),
     ('Peugeot',array['208'],array['1.0 VTi','1.2 PureTech','1.4 HDi','1.5 BlueHDi','1.6 HDi']),
     ('Peugeot',array['208 GTi'],array['1.6 THP 200','1.6 THP 208']),
     ('Peugeot',array['301'],array['1.2 VTi','1.6 VTi','1.6 HDi']),
-    ('Peugeot',array['308','308 SW'],array['1.2 PureTech','1.6 THP','1.5 BlueHDi','1.6 BlueHDi','2.0 BlueHDi','1.6 Hybrid']),
+    ('Peugeot',array['308','308 SW'],array['1.2 PureTech','1.6 THP','1.5 BlueHDi','1.6 BlueHDi','2.0 BlueHDi','1.6 Hybrid'])
+)
+insert into public.variants (model_id, name, source)
+select mo.id, v.name, 'catalog_variants_v1'
+from g
+cross join lateral unnest(g.variants) as v(name)
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(g.make)
+join public.models mo on mo.make_id = mk.id and exists (
+  select 1 from unnest(g.models) m
+  where public.normalize_vehicle_name(m) = mo.normalized_name)
+on conflict (model_id, normalized_name) do nothing;
+
+with g(make, models, variants) as (values
     ('Peugeot',array['308 CC'],array['1.6 THP','2.0 HDi']),
     ('Peugeot',array['308 GTi'],array['1.6 THP 250','1.6 THP 270']),
     ('Peugeot',array['2008'],array['1.2 PureTech','1.6 VTi','1.5 BlueHDi','1.6 HDi']),
@@ -398,19 +440,7 @@ with g(make, models, variants) as (values
     ('Peugeot',array['Boxer'],array['2.0 BlueHDi','2.2 HDi','3.0 HDi']),
     ('Peugeot',array['Expert','Expert Tepee'],array['1.6 HDi','1.6 BlueHDi','2.0 HDi','2.0 BlueHDi']),
     ('Peugeot',array['Partner','Partner Rapid','Partner Tepee'],array['1.2 PureTech','1.6 HDi','1.5 BlueHDi','1.6 BlueHDi']),
-    ('Peugeot',array['Rifter'],array['1.2 PureTech','1.5 BlueHDi'])
-)
-insert into public.variants (model_id, name, source)
-select mo.id, v.name, 'catalog_variants_v1'
-from g
-cross join lateral unnest(g.variants) as v(name)
-join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(g.make)
-join public.models mo on mo.make_id = mk.id and exists (
-  select 1 from unnest(g.models) m
-  where public.normalize_vehicle_name(m) = mo.normalized_name)
-on conflict (model_id, normalized_name) do nothing;
-
-with g(make, models, variants) as (values
+    ('Peugeot',array['Rifter'],array['1.2 PureTech','1.5 BlueHDi']),
     ('Peugeot',array['Traveller'],array['1.6 BlueHDi','2.0 BlueHDi']),
     ('Peugeot',array['RCZ'],array['1.6 THP','2.0 HDi']),
     ('Peugeot',array['RCZ R'],array['1.6 THP 270']),
@@ -452,7 +482,19 @@ with g(make, models, variants) as (values
     ('Renault',array['Kadjar'],array['1.2 TCe','1.3 TCe','1.5 dCi','1.6 dCi']),
     ('Renault',array['Arkana'],array['1.3 TCe','1.6 E-Tech Hybrid']),
     ('Renault',array['Austral'],array['1.2 TCe','1.3 TCe','1.2 E-Tech Hybrid']),
-    ('Renault',array['Rafale'],array['1.2 E-Tech Hybrid','1.8 E-Tech Hybrid']),
+    ('Renault',array['Rafale'],array['1.2 E-Tech Hybrid','1.8 E-Tech Hybrid'])
+)
+insert into public.variants (model_id, name, source)
+select mo.id, v.name, 'catalog_variants_v1'
+from g
+cross join lateral unnest(g.variants) as v(name)
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(g.make)
+join public.models mo on mo.make_id = mk.id and exists (
+  select 1 from unnest(g.models) m
+  where public.normalize_vehicle_name(m) = mo.normalized_name)
+on conflict (model_id, normalized_name) do nothing;
+
+with g(make, models, variants) as (values
     ('Renault',array['Symbioz'],array['1.6 E-Tech Hybrid']),
     ('Renault',array['Scenic','Grand Scenic'],array['1.2 TCe','1.3 TCe','1.5 dCi','1.6 dCi']),
     ('Renault',array['Modus','Grand Modus'],array['1.2','1.6','1.5 dCi']),
@@ -470,19 +512,7 @@ with g(make, models, variants) as (values
     ('Renault',array['Wind'],array['1.2 TCe','1.6']),
     ('Renault',array['Kangoo','Grand Kangoo'],array['1.3 TCe','1.5 dCi','1.6','45 kWh']),
     ('Renault',array['Express'],array['1.3 TCe','1.5 dCi']),
-    ('Renault',array['Trafic','Trafic Combi','Trafic SpaceClass'],array['1.6 dCi','2.0 dCi','2.0 Blue dCi'])
-)
-insert into public.variants (model_id, name, source)
-select mo.id, v.name, 'catalog_variants_v1'
-from g
-cross join lateral unnest(g.variants) as v(name)
-join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(g.make)
-join public.models mo on mo.make_id = mk.id and exists (
-  select 1 from unnest(g.models) m
-  where public.normalize_vehicle_name(m) = mo.normalized_name)
-on conflict (model_id, normalized_name) do nothing;
-
-with g(make, models, variants) as (values
+    ('Renault',array['Trafic','Trafic Combi','Trafic SpaceClass'],array['1.6 dCi','2.0 dCi','2.0 Blue dCi']),
     ('Renault',array['Master'],array['2.3 dCi','2.3 Blue dCi','87 kWh']),
     ('Renault',array['ZOE'],array['22 kWh','41 kWh','52 kWh']),
     ('Renault',array['Twizy'],array['6.1 kWh']),
@@ -520,9 +550,38 @@ with g(make, models, variants) as (values
     ('Toyota',array['Proace Max'],array['2.2 D-4D','110 kWh']),
     ('Toyota',array['Succeed'],array['1.5 VVT-i']),
     ('Vauxhall',array['Astra'],array['1.2 Turbo','1.4 Turbo','1.6 Turbo','1.5 Diesel','1.6 CDTI','1.7 CDTI']),
-    ('Vauxhall',array['Corsa'],array['1.2','1.2 Turbo','1.4','1.4 Turbo','1.3 CDTI','1.5 Diesel']),
+    ('Vauxhall',array['Corsa'],array['1.2','1.2 Turbo','1.4','1.4 Turbo','1.3 CDTI','1.5 Diesel','50 kWh','54 kWh']),
     ('Vauxhall',array['Insignia'],array['1.5 Turbo','1.6 CDTI','2.0 CDTI','2.0 Turbo 4x4','2.0 CDTI 4x4']),
-    ('Vauxhall',array['Zafira'],array['1.4 Turbo','1.6 CDTI','1.8','2.0 CDTI']),
+    ('Vauxhall',array['Zafira','Zafira Tourer'],array['1.4 Turbo','1.6 CDTI','1.8','2.0 CDTI']),
+    ('Vauxhall',array['Adam'],array['1.0 Turbo','1.2','1.4']),
+    ('Vauxhall',array['Agila'],array['1.0','1.2','1.3 CDTI'])
+)
+insert into public.variants (model_id, name, source)
+select mo.id, v.name, 'catalog_variants_v1'
+from g
+cross join lateral unnest(g.variants) as v(name)
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(g.make)
+join public.models mo on mo.make_id = mk.id and exists (
+  select 1 from unnest(g.models) m
+  where public.normalize_vehicle_name(m) = mo.normalized_name)
+on conflict (model_id, normalized_name) do nothing;
+
+with g(make, models, variants) as (values
+    ('Vauxhall',array['Viva'],array['1.0']),
+    ('Vauxhall',array['Meriva'],array['1.4 Turbo','1.6 CDTI','1.7 CDTI','1.3 CDTI']),
+    ('Vauxhall',array['Antara'],array['2.0 CDTI','2.2 CDTI','2.4','3.2 V6']),
+    ('Vauxhall',array['Cascada'],array['1.4 Turbo','1.6 Turbo','2.0 CDTI']),
+    ('Vauxhall',array['Mokka'],array['1.2 Turbo','1.4 Turbo','1.6 CDTI','1.5 Diesel','50 kWh','54 kWh']),
+    ('Vauxhall',array['Mokka GSE'],array['GSE']),
+    ('Vauxhall',array['Crossland'],array['1.2 Turbo','1.5 Diesel','1.6 CDTI']),
+    ('Vauxhall',array['Grandland'],array['1.2 Turbo','1.5 Diesel','1.6 Turbo Hybrid','73 kWh']),
+    ('Vauxhall',array['Frontera'],array['1.2 Turbo Hybrid','44 kWh']),
+    ('Vauxhall',array['Combo','Combo Life'],array['1.2 PureTech','1.4','1.3 CDTI','1.5 Diesel','1.6 CDTI','50 kWh']),
+    ('Vauxhall',array['Vivaro','Vivaro Life'],array['1.5 Diesel','2.0 Diesel','1.6 CDTI','2.0 CDTI','50 kWh','75 kWh']),
+    ('Vauxhall',array['Movano'],array['2.3 CDTI','2.2 Diesel','110 kWh']),
+    ('Vauxhall',array['Ampera'],array['1.4 Range Extender']),
+    ('Vauxhall',array['Ampera-e'],array['60 kWh']),
+    ('Vauxhall',array['VXR8'],array['6.2 V8','6.2 V8 Supercharged']),
     ('Volkswagen',array['Golf','Golf Variant'],array['1.0 TSI','1.2 TSI','1.4 TSI','1.5 TSI','1.5 eTSI','1.6 TDI','2.0 TDI','2.0 TDI 4MOTION']),
     ('Volkswagen',array['Golf GTI'],array['2.0 TSI','Clubsport','TCR']),
     ('Volkswagen',array['Golf R','Golf R Variant'],array['2.0 TSI 4MOTION']),
@@ -542,19 +601,7 @@ with g(make, models, variants) as (values
     ('Volkswagen',array['Arteon R','Arteon R Shooting Brake','Tiguan R','T-Roc R'],array['2.0 TSI 4MOTION']),
     ('Volkswagen',array['Touareg R'],array['3.0 eHybrid 4MOTION']),
     ('Volkswagen',array['Scirocco'],array['1.4 TSI','2.0 TSI','2.0 TDI']),
-    ('Volkswagen',array['Scirocco R'],array['2.0 TSI'])
-)
-insert into public.variants (model_id, name, source)
-select mo.id, v.name, 'catalog_variants_v1'
-from g
-cross join lateral unnest(g.variants) as v(name)
-join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(g.make)
-join public.models mo on mo.make_id = mk.id and exists (
-  select 1 from unnest(g.models) m
-  where public.normalize_vehicle_name(m) = mo.normalized_name)
-on conflict (model_id, normalized_name) do nothing;
-
-with g(make, models, variants) as (values
+    ('Volkswagen',array['Scirocco R'],array['2.0 TSI']),
     ('Volkswagen',array['Polo R WRC'],array['2.0 TSI']),
     ('Volkswagen',array['Polo Sedan'],array['1.4','1.6']),
     ('Volkswagen',array['Golf Cabriolet'],array['1.2 TSI','1.4 TSI','1.6 TDI','2.0 TDI']),
@@ -579,7 +626,19 @@ with g(make, models, variants) as (values
     ('Volkswagen',array['Transporter','Caravelle','Multivan','T5 Multivan','T6 Multivan','T7 Multivan'],array['2.0 TDI','2.0 TDI 4MOTION','2.0 TSI','1.4 eHybrid']),
     ('Volkswagen',array['California','Grand California'],array['2.0 TDI','2.0 TDI 4MOTION']),
     ('Volkswagen',array['Crafter'],array['2.0 TDI','2.0 TDI 4MOTION']),
-    ('Volkswagen',array['e-Crafter'],array['35.8 kWh']),
+    ('Volkswagen',array['e-Crafter'],array['35.8 kWh'])
+)
+insert into public.variants (model_id, name, source)
+select mo.id, v.name, 'catalog_variants_v1'
+from g
+cross join lateral unnest(g.variants) as v(name)
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(g.make)
+join public.models mo on mo.make_id = mk.id and exists (
+  select 1 from unnest(g.models) m
+  where public.normalize_vehicle_name(m) = mo.normalized_name)
+on conflict (model_id, normalized_name) do nothing;
+
+with g(make, models, variants) as (values
     ('Volkswagen',array['e-Transporter','e-Caravelle'],array['32.3 kWh']),
     ('Volkswagen',array['e-Golf'],array['24.2 kWh','35.8 kWh']),
     ('Volkswagen',array['e-up!'],array['18.7 kWh','32.3 kWh']),
@@ -1043,6 +1102,57 @@ select * from (values
     ('Audi','Q6 SUV e-tron','Q6 e-tron'),
     ('Opel','Zafira B','Zafira'),
     ('Opel','Zafira Tourer C','Zafira Tourer'),
+    ('Opel','Astra H','Astra'),
+    ('Opel','Astra J','Astra'),
+    ('Opel','Astra K','Astra'),
+    ('Opel','Astra L','Astra'),
+    ('Opel','Corsa D','Corsa'),
+    ('Opel','Corsa E','Corsa'),
+    ('Opel','Corsa F','Corsa'),
+    ('Opel','Insignia A','Insignia'),
+    ('Opel','Insignia B','Insignia'),
+    ('Opel','Meriva A','Meriva'),
+    ('Opel','Meriva B','Meriva'),
+    ('Opel','Combo C','Combo'),
+    ('Opel','Combo D','Combo'),
+    ('Opel','Combo E','Combo'),
+    ('Opel','Movano A','Movano'),
+    ('Opel','Movano B','Movano'),
+    ('Opel','Movano C','Movano'),
+    ('Opel','Vivaro A','Vivaro'),
+    ('Opel','Vivaro B','Vivaro'),
+    ('Opel','Vivaro C','Vivaro'),
+    ('Opel','Agila B','Agila'),
+    ('Opel','Mokka X','Mokka'),
+    ('Opel','Crossland X','Crossland'),
+    ('Opel','Grandland X','Grandland'),
+    ('Vauxhall','Astra H','Astra'),
+    ('Vauxhall','Astra J','Astra'),
+    ('Vauxhall','Astra K','Astra'),
+    ('Vauxhall','Astra L','Astra'),
+    ('Vauxhall','Corsa D','Corsa'),
+    ('Vauxhall','Corsa E','Corsa'),
+    ('Vauxhall','Corsa F','Corsa'),
+    ('Vauxhall','Insignia A','Insignia'),
+    ('Vauxhall','Insignia B','Insignia'),
+    ('Vauxhall','Meriva A','Meriva'),
+    ('Vauxhall','Meriva B','Meriva'),
+    ('Vauxhall','Combo C','Combo'),
+    ('Vauxhall','Combo D','Combo'),
+    ('Vauxhall','Combo E','Combo'),
+    ('Vauxhall','Movano A','Movano'),
+    ('Vauxhall','Movano B','Movano'),
+    ('Vauxhall','Movano C','Movano'),
+    ('Vauxhall','Vivaro A','Vivaro'),
+    ('Vauxhall','Vivaro B','Vivaro'),
+    ('Vauxhall','Vivaro C','Vivaro'),
+    ('Vauxhall','Agila B','Agila'),
+    ('Vauxhall','Zafira B','Zafira'),
+    ('Vauxhall','Zafira Tourer C','Zafira Tourer'),
+    ('Vauxhall','Frontera C','Frontera'),
+    ('Vauxhall','Mokka X','Mokka'),
+    ('Vauxhall','Crossland X','Crossland'),
+    ('Vauxhall','Grandland X','Grandland'),
     ('Volkswagen','Passat R-Line','Passat'),
     ('Volkswagen','Tiguan R-Line','Tiguan'),
     ('Volkswagen','T-Roc R-Line','T-Roc'),
