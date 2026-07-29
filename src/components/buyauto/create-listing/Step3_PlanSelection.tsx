@@ -102,11 +102,14 @@ export default function Step3_PlanSelection() {
     try {
       const mappedPlan = planMapping[selectedPlan];
 
+      // Only the plan is persisted to the listing row. The Premium Boost choice
+      // lives in wizard/draft state until Step 5 sends it to /api/billing/prepare
+      // — persisting it here is what let sellers grant themselves premium for
+      // free, since RLS lets an owner write any column on their own listing.
       await createOrUpdateListing(
         {
           id: (data as any).id,
           price_plan: mappedPlan,
-          premium: isPremium,
         },
         user
       );

@@ -376,18 +376,38 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           break;
         }
 
-        // Non-destructive: never overwrite a terminal paid/refunded state.
+        // Non-destructive: never overwrite a terminal paid/refunded state. This
+        // also makes the premium grant below exactly-once — a replayed or
+        // duplicate succeeded event returns here instead of extending premium
+        // a second time.
         if (listing.payment_status === "refunded" || listing.payment_status === "paid") {
           break;
         }
 
-        const updateData: { payment_status: "paid"; status?: "pending" } = {
+        const updateData: {
+          payment_status: "paid";
+          status?: "pending";
+          premium?: true;
+          is_premium?: true;
+          premium_until?: string;
+        } = {
           payment_status: "paid",
         };
 
         // If the listing is currently a draft (waiting for payment), move it to pending for review
         if (listing.status === "draft") {
           updateData.status = "pending";
+        }
+
+        // The Premium Boost bought as part of the initial listing payment. This is
+        // the only place the wizard's premium request is honoured: /api/billing/
+        // prepare records the intent in metadata but must not grant it, because
+        // that runs before the card is charged. Writing it here from the
+        // service-role client is what the premium authority trigger permits.
+        if (paymentIntent.metadata?.premium === "true") {
+          updateData.premium = true;
+          updateData.is_premium = true;
+          updateData.premium_until = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         }
 
         const { error } = await supabaseAdmin
