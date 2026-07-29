@@ -1,21 +1,29 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { readStoredConsent, setConsent } from "@/lib/analytics/gtag";
 
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Check if user has already consented (client-side only)
-    const hasConsented = localStorage.getItem("buyauto_cookie_consent");
-    if (!hasConsented) {
+    // Client-side only: localStorage is unavailable during SSR, and reading it
+    // in render would desync hydration.
+    if (readStoredConsent() === null) {
       setIsVisible(true);
     }
   }, []);
 
+  // Both paths record an explicit decision. Until one of them runs, Consent
+  // Mode stays at the "denied" defaults set in _document, so Google Analytics
+  // sends cookieless pings only.
   const handleAccept = () => {
-    localStorage.setItem("buyauto_cookie_consent", "true");
+    setConsent("granted");
+    setIsVisible(false);
+  };
+
+  const handleDecline = () => {
+    setConsent("denied");
     setIsVisible(false);
   };
 
@@ -30,22 +38,26 @@ export function CookieConsent() {
           {/* Message */}
           <div className="flex-1 text-sm text-gray-700">
             <p>
-              Diese Website verwendet Cookies, um Ihnen das beste Nutzererlebnis zu bieten.
+              Diese Website verwendet Cookies und Google Analytics, um Ihnen das beste
+              Nutzererlebnis zu bieten. Details finden Sie in unserer{" "}
+              <Link href="/datenschutz" className="text-red-600 underline hover:no-underline">
+                Datenschutzerklärung
+              </Link>
+              .
             </p>
           </div>
 
           {/* Actions */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <Link href="/datenschutz">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="whitespace-nowrap border-gray-800 text-gray-800 hover:bg-gray-100"
-              >
-                Datenschutz
-              </Button>
-            </Link>
-            <Button 
+            <Button
+              onClick={handleDecline}
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap border-gray-800 text-gray-800 hover:bg-gray-100"
+            >
+              Ablehnen
+            </Button>
+            <Button
               onClick={handleAccept}
               size="sm"
               className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"

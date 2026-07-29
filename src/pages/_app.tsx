@@ -1,7 +1,7 @@
 import type { AppProps } from "next/app";
 import { Manrope, Caveat } from "next/font/google";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import MainLayout from "@/components/layout/MainLayout";
 import AuthProvider from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
@@ -108,6 +108,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <Toaster />
         <RadixToaster />
         <Analytics />
+        <GoogleAnalytics />
       </AuthProvider>
     </div>
   );
