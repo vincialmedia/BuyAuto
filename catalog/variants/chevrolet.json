@@ -1,6 +1,6 @@
 {
   "make": "Chevrolet",
-  "_note": "The European Chevrolet range was largely Daewoo-derived and sold by displacement; the American cars kept their V6 and V8 badges. Volt is a range extender rather than a pure EV, so its variant is the petrol generator.",
+  "_note": "Chevrolet's volume cars are identified by engine, but the Corvette and the hot Camaros are not - nobody shops for a 6.2 V8 Supercharged Corvette, they shop for a ZR1. Where the version name is what the car is known by, that name is the variant.",
   "models": [],
   "groups": [
     {
@@ -105,9 +105,11 @@
         "Camaro"
       ],
       "variants": [
+        "2.0 Turbo",
         "3.6 V6",
-        "6.2 V8",
-        "2.0 Turbo"
+        "SS",
+        "ZL1",
+        "Z/28"
       ]
     },
     {
@@ -115,9 +117,11 @@
         "Corvette"
       ],
       "variants": [
-        "6.2 V8",
-        "7.0 V8",
-        "6.2 V8 Supercharged"
+        "Stingray",
+        "Grand Sport",
+        "Z06",
+        "ZR1",
+        "E-Ray"
       ]
     },
     {

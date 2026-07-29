@@ -58,7 +58,8 @@ the row being renamed, or a cosmetic rename would match itself and silently skip
 
 ### Granularity contract
 
-A variant string carries **engine badge + drivetrain**, and nothing else:
+A variant is **whatever identifies the car to the person selling it**. For most of the
+catalog that is the engine badge plus drivetrain:
 
 - ✅ `40 TFSI quattro`, `320d xDrive`, `2.0 TDI`, `C 220 d 4MATIC`
 - ❌ gearbox (`S tronic`) — already a separate listing field (`gearbox`)
@@ -68,6 +69,16 @@ A variant string carries **engine badge + drivetrain**, and nothing else:
 Both badge eras are included, because the catalog covers 2010+: an A4 may be a
 `2.0 TDI` (B8, 2010-2015) or a `40 TDI quattro` (B9, 2016+). Sellers pick whichever
 is printed on their car.
+
+**Where the version name is the identifier, the name is the variant — not the engine.**
+Nobody sells a *Corvette 6.2 V8 Supercharged*; they sell a **ZR1**. The same holds for
+`Mustang GT`, `Challenger Scat Pack`, `GT-R Nismo`, `911 Carrera 4S`, `Cooper S`, and
+Tesla's `Long Range`. Displacement there is a spec, not a name, and a seller would not
+recognise their own car in the dropdown.
+
+The two can coexist on one model when that is how the range is really described: a Grand
+Cherokee is a `3.0 CRD` or a `Trackhawk`, and a Camaro is a `3.6 V6` or an `SS`. Decide
+per model by asking what the seller would type, not by applying one rule to a whole make.
 
 ### Rules
 

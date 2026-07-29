@@ -180,13 +180,13 @@
         "Mustang"
       ],
       "variants": [
-        "2.3 EcoBoost",
-        "5.0 V8 GT",
-        "5.2 V8 Shelby GT350",
-        "5.0 V8 Mach 1",
-        "5.0 V8 Bullitt",
-        "5.2 V8 Shelby GT500",
-        "5.0 V8 Dark Horse"
+        "EcoBoost",
+        "GT",
+        "Bullitt",
+        "Mach 1",
+        "Shelby GT350",
+        "Shelby GT500",
+        "Dark Horse"
       ]
     },
     {
