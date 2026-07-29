@@ -51,7 +51,7 @@ export function AdminDashboard() {
     <div className="space-y-8">
       {/* Stats Cards - Only show for listings-related tabs */}
       {(!tab || tab === 'listings') && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <StatsCard
             icon={Clock}
             label="Warteschlange"
@@ -111,17 +111,17 @@ function StatsCard({
   iconClassName = "" 
 }: StatsCardProps) {
   return (
-    <Card className={`p-6 ${className}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-neutral-600 mb-1">{label}</p>
+    <Card className={`p-4 sm:p-6 ${className}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm text-neutral-600 mb-1 truncate">{label}</p>
           {loading ? (
             <div className="h-8 w-12 bg-neutral-200 animate-pulse rounded"></div>
           ) : (
             <p className="text-2xl font-semibold text-neutral-900">{value}</p>
           )}
         </div>
-        <Icon className={`w-8 h-8 ${iconClassName}`} />
+        <Icon className={`w-6 h-6 sm:w-8 sm:h-8 flex-none ${iconClassName}`} />
       </div>
     </Card>
   );

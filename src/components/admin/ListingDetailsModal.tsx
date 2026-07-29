@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -260,9 +260,9 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
                 {listing.premium && <Star className="w-5 h-5 text-amber-500" />}
                 {getStatusBadge(listing.status as ListingStatus)}
               </DialogTitle>
-              <div className="text-sm text-neutral-600">
+              <DialogDescription className="text-sm text-neutral-600">
                 Uploader: <span className="font-medium text-neutral-900">{listing.owner_profile?.email ?? "—"}</span>
-              </div>
+              </DialogDescription>
             </div>
 
             {!isModeration && (
