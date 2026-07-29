@@ -17,6 +17,8 @@ import authService from "@/services/authService";
 export default function GuestAuthGate() {
   const { toast } = useToast();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,6 +31,14 @@ export default function GuestAuthGate() {
     const mail = email.trim();
     if (!mail || !password) {
       toast({ title: "Bitte E-Mail und Passwort eingeben", variant: "destructive" });
+      return;
+    }
+    if (mode === "register" && (!firstName.trim() || !lastName.trim())) {
+      toast({
+        title: "Bitte Vor- und Nachname eingeben",
+        description: "Dein Name wird bei deinem Inserat als Anbieter angezeigt.",
+        variant: "destructive",
+      });
       return;
     }
     if (mode === "register" && password.length < 8) {
@@ -48,6 +58,8 @@ export default function GuestAuthGate() {
         const res = await authService.signUp({
           email: mail,
           password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           accountType: "private",
           emailRedirectTo: `${window.location.origin}/inserat-erstellen`,
         });
@@ -118,6 +130,40 @@ export default function GuestAuthGate() {
       </div>
 
       <form onSubmit={submit} className="mt-5 space-y-4">
+        {mode === "register" && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="guest-auth-first-name" className="text-sm font-medium text-neutral-700">
+                Vorname
+              </Label>
+              <Input
+                id="guest-auth-first-name"
+                autoComplete="given-name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Max"
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="guest-auth-last-name" className="text-sm font-medium text-neutral-700">
+                Nachname
+              </Label>
+              <Input
+                id="guest-auth-last-name"
+                autoComplete="family-name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Muster"
+                className="rounded-xl"
+              />
+            </div>
+            <p className="col-span-2 text-xs text-neutral-500">
+              Dein Name wird bei deinem Inserat als Anbieter angezeigt. In den Einstellungen kannst du
+              stattdessen jederzeit anonym als «Privatanbieter» auftreten.
+            </p>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label htmlFor="guest-auth-email" className="text-sm font-medium text-neutral-700">
             E-Mail
