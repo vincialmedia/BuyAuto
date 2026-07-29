@@ -62,7 +62,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 lg:pl-64">
+        {/* min-w-0 lets the flex item shrink below its content width so wide
+            tables scroll inside their overflow-x-auto wrapper instead of
+            inflating the page (html/body clip horizontal overflow). */}
+        <main className="flex-1 min-w-0 lg:pl-64">
           <div className="px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
             {children}
           </div>
