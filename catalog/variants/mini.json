@@ -14,7 +14,8 @@
         "One D",
         "Cooper D",
         "Cooper SD",
-        "Cooper SE"
+        "Cooper SE",
+        "John Cooper Works GP"
       ]
     },
     {
@@ -95,14 +96,6 @@
       "variants": [
         "Cooper E",
         "Cooper SE"
-      ]
-    },
-    {
-      "models": [
-        "John Cooper Works GP"
-      ],
-      "variants": [
-        "2.0 Turbo (GP)"
       ]
     }
   ],
@@ -216,6 +209,11 @@
       "from": "Aceman John Cooper Works",
       "model": "Aceman",
       "variant": "John Cooper Works"
+    },
+    {
+      "from": "John Cooper Works GP",
+      "model": "Hatch",
+      "variant": "John Cooper Works GP"
     }
   ]
 }

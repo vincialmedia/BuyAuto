@@ -51,16 +51,8 @@
         "1.6 HDi",
         "1.4 VTi",
         "1.6 VTi",
-        "1.6 BlueHDi"
-      ]
-    },
-    {
-      "models": [
-        "208 GTi"
-      ],
-      "variants": [
-        "1.6 THP 200",
-        "1.6 THP 208"
+        "1.6 BlueHDi",
+        "GTi"
       ]
     },
     {
@@ -88,7 +80,8 @@
         "1.6 VTi",
         "1.6 PureTech",
         "1.6 HDi",
-        "2.0 HDi"
+        "2.0 HDi",
+        "GTi"
       ]
     },
     {
@@ -98,15 +91,6 @@
       "variants": [
         "1.6 THP",
         "2.0 HDi"
-      ]
-    },
-    {
-      "models": [
-        "308 GTi"
-      ],
-      "variants": [
-        "1.6 THP 250",
-        "1.6 THP 270"
       ]
     },
     {
@@ -316,15 +300,8 @@
       ],
       "variants": [
         "1.6 THP",
-        "2.0 HDi"
-      ]
-    },
-    {
-      "models": [
-        "RCZ R"
-      ],
-      "variants": [
-        "1.6 THP 270"
+        "2.0 HDi",
+        "R"
       ]
     },
     {
@@ -404,6 +381,23 @@
         "70 kWh",
         "110 kWh"
       ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "208 GTi",
+      "model": "208",
+      "variant": "GTi"
+    },
+    {
+      "from": "308 GTi",
+      "model": "308",
+      "variant": "GTi"
+    },
+    {
+      "from": "RCZ R",
+      "model": "RCZ",
+      "variant": "R"
     }
   ]
 }

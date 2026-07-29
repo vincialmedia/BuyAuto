@@ -63,16 +63,8 @@
         "1.6 TDCi",
         "1.4 Duratec",
         "1.6 Ti-VCT",
-        "1.4 TDCi"
-      ]
-    },
-    {
-      "models": [
-        "Fiesta ST"
-      ],
-      "variants": [
-        "1.5 EcoBoost",
-        "1.6 EcoBoost"
+        "1.4 TDCi",
+        "ST"
       ]
     },
     {
@@ -88,26 +80,9 @@
         "2.0 TDCi",
         "1.6 Ti-VCT",
         "1.6 EcoBoost",
-        "1.8 TDCi"
-      ]
-    },
-    {
-      "models": [
-        "Focus ST"
-      ],
-      "variants": [
-        "2.0 EcoBoost",
-        "2.3 EcoBoost",
-        "2.0 EcoBlue",
-        "2.5 Duratec"
-      ]
-    },
-    {
-      "models": [
-        "Focus RS"
-      ],
-      "variants": [
-        "2.3 EcoBoost"
+        "1.8 TDCi",
+        "ST",
+        "RS"
       ]
     },
     {
@@ -195,16 +170,8 @@
       ],
       "variants": [
         "1.0 EcoBoost",
-        "1.5 EcoBlue"
-      ]
-    },
-    {
-      "models": [
-        "Puma ST"
-      ],
-      "variants": [
-        "1.0 EcoBoost",
-        "1.5 EcoBoost"
+        "1.5 EcoBlue",
+        "ST"
       ]
     },
     {
@@ -367,6 +334,28 @@
       "variants": [
         "43 kWh"
       ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "Focus ST",
+      "model": "Focus",
+      "variant": "ST"
+    },
+    {
+      "from": "Focus RS",
+      "model": "Focus",
+      "variant": "RS"
+    },
+    {
+      "from": "Fiesta ST",
+      "model": "Fiesta",
+      "variant": "ST"
+    },
+    {
+      "from": "Puma ST",
+      "model": "Puma",
+      "variant": "ST"
     }
   ]
 }

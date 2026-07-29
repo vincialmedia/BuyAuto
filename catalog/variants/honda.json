@@ -26,15 +26,8 @@
         "1.6 i-DTEC",
         "2.0 e:HEV",
         "1.4 i-VTEC",
-        "2.2 i-DTEC"
-      ]
-    },
-    {
-      "models": [
-        "Civic Type R"
-      ],
-      "variants": [
-        "2.0 VTEC Turbo"
+        "2.2 i-DTEC",
+        "Type R"
       ]
     },
     {
@@ -143,6 +136,13 @@
       "variants": [
         "Electric"
       ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "Civic Type R",
+      "model": "Civic",
+      "variant": "Type R"
     }
   ]
 }

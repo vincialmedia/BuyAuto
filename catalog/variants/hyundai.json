@@ -67,15 +67,8 @@
         "1.4",
         "1.4 CRDi",
         "1.25",
-        "1.1 CRDi"
-      ]
-    },
-    {
-      "models": [
-        "i20 N"
-      ],
-      "variants": [
-        "1.6 T-GDi"
+        "1.1 CRDi",
+        "N"
       ]
     },
     {
@@ -91,16 +84,8 @@
         "1.6 CRDi",
         "1.4",
         "1.6",
-        "1.4 CRDi"
-      ]
-    },
-    {
-      "models": [
-        "i30 N",
-        "i30 N Fastback"
-      ],
-      "variants": [
-        "2.0 T-GDi"
+        "1.4 CRDi",
+        "N"
       ]
     },
     {
@@ -210,15 +195,8 @@
         "1.6 GDi Hybrid",
         "39 kWh",
         "64 kWh",
-        "65 kWh"
-      ]
-    },
-    {
-      "models": [
-        "Kona N"
-      ],
-      "variants": [
-        "2.0 T-GDi"
+        "65 kWh",
+        "N"
       ]
     },
     {
@@ -348,6 +326,28 @@
     {
       "from": "IONIQ 6 N",
       "to": "Ioniq 6 N"
+    }
+  ],
+  "remap": [
+    {
+      "from": "i20 N",
+      "model": "i20",
+      "variant": "N"
+    },
+    {
+      "from": "i30 N",
+      "model": "i30",
+      "variant": "N"
+    },
+    {
+      "from": "i30 N Fastback",
+      "model": "i30 Fastback",
+      "variant": "N"
+    },
+    {
+      "from": "Kona N",
+      "model": "Kona",
+      "variant": "N"
     }
   ]
 }

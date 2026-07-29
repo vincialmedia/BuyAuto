@@ -1,130 +1,627 @@
 {
   "make": "Volkswagen",
-  "_note": "Volkswagen came through the CSV in better shape than the premium makes, because VW brands by model first. GTI / GTD / GTE / R stay models: they are performance sub-brands, the same call already made for BMW M, Mercedes-AMG and Mini JCW. What is wrong here is a different failure - rows that are not cars at all. 'Passat R-Line' is an equipment line, which the granularity contract keeps out of the catalog, and 'Passat V facelift' is a generation note that leaked out of the source data.",
+  "_note": "Volkswagen came through the CSV in better shape than the premium makes, because VW brands by model first. GTI / GTD / GTE / R are versions of the car they are based on, not separate cars, so they are variants of Golf, Polo and the rest - the same call as Corvette ZR1. Separately, rows that are not cars at all were removed: 'Passat R-Line' is an equipment line, which the granularity contract keeps out of the catalog, and 'Passat V facelift' is a generation note that leaked out of the source data.",
   "models": [],
   "groups": [
     {
-      "models": ["Golf", "Golf Variant"],
-      "variants": ["1.2", "1.4", "1.6", "1.0 TSI", "1.2 TSI", "1.4 TSI", "1.5 TSI", "1.5 eTSI", "1.8 TSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4MOTION", "1.4 TGI", "1.5 TGI"]
+      "models": [
+        "Golf",
+        "Golf Variant"
+      ],
+      "variants": [
+        "1.2",
+        "1.4",
+        "1.6",
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.5 eTSI",
+        "1.8 TSI",
+        "1.6 TDI",
+        "2.0 TDI",
+        "2.0 TDI 4MOTION",
+        "1.4 TGI",
+        "1.5 TGI",
+        "GTI",
+        "GTI Clubsport",
+        "GTI TCR",
+        "R",
+        "GTD",
+        "GTE"
+      ]
     },
     {
-      "models": ["Golf GTI"],
-      "variants": ["2.0 TSI", "Clubsport", "TCR"]
+      "models": [
+        "Polo"
+      ],
+      "variants": [
+        "1.0 MPI",
+        "1.2",
+        "1.4",
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.5 TSI",
+        "1.2 TDI",
+        "1.4 TDI",
+        "1.6 TDI",
+        "1.0 TGI",
+        "GTI",
+        "R WRC"
+      ]
     },
     {
-      "models": ["Golf R", "Golf R Variant"],
-      "variants": ["2.0 TSI 4MOTION"]
+      "models": [
+        "Passat",
+        "Passat Variant"
+      ],
+      "variants": [
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.5 eTSI",
+        "1.8 TSI",
+        "2.0 TSI",
+        "1.6 TDI",
+        "2.0 TDI",
+        "2.0 TDI 4MOTION",
+        "2.0 TSI 4MOTION",
+        "1.4 TGI",
+        "1.5 eHybrid",
+        "GTE"
+      ]
     },
     {
-      "models": ["Golf GTD", "Golf GTD Variant"],
-      "variants": ["2.0 TDI"]
+      "models": [
+        "Tiguan",
+        "Tiguan Allspace"
+      ],
+      "variants": [
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.5 eTSI",
+        "2.0 TSI",
+        "2.0 TDI",
+        "2.0 TDI 4MOTION",
+        "2.0 TSI 4MOTION",
+        "1.5 eHybrid",
+        "R"
+      ]
     },
     {
-      "models": ["Golf GTE"],
-      "variants": ["1.4 eHybrid", "1.5 eHybrid"]
+      "models": [
+        "T-Roc",
+        "T-Cross",
+        "Taigo"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.5 TSI",
+        "1.5 eTSI",
+        "1.6 TDI",
+        "2.0 TDI",
+        "2.0 TSI 4MOTION",
+        "R"
+      ]
     },
     {
-      "models": ["Polo"],
-      "variants": ["1.0 MPI", "1.2", "1.4", "1.0 TSI", "1.2 TSI", "1.5 TSI", "1.2 TDI", "1.4 TDI", "1.6 TDI", "1.0 TGI"]
+      "models": [
+        "Touareg"
+      ],
+      "variants": [
+        "3.0 TDI 4MOTION",
+        "3.0 TSI 4MOTION",
+        "3.6 V6 FSI",
+        "3.0 eHybrid 4MOTION",
+        "4.0 TDI 4MOTION",
+        "4.2 V8 TDI",
+        "R"
+      ]
     },
     {
-      "models": ["Polo GTI"],
-      "variants": ["1.4 TSI", "1.8 TSI", "2.0 TSI"]
+      "models": [
+        "Touran",
+        "Sharan"
+      ],
+      "variants": [
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.5 TSI",
+        "2.0 TSI",
+        "1.6 TDI",
+        "2.0 TDI"
+      ]
     },
     {
-      "models": ["Passat", "Passat Variant"],
-      "variants": ["1.4 TSI", "1.5 TSI", "1.5 eTSI", "1.8 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION", "1.4 TGI", "1.5 eHybrid"]
+      "models": [
+        "Up!"
+      ],
+      "variants": [
+        "1.0 MPI",
+        "1.0 TSI",
+        "1.0 TGI",
+        "GTI"
+      ]
     },
     {
-      "models": ["Tiguan", "Tiguan Allspace"],
-      "variants": ["1.4 TSI", "1.5 TSI", "1.5 eTSI", "2.0 TSI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION", "1.5 eHybrid"]
+      "models": [
+        "Arteon",
+        "Arteon Shooting Brake"
+      ],
+      "variants": [
+        "1.5 TSI",
+        "2.0 TDI",
+        "2.0 TDI 4MOTION",
+        "2.0 TSI 4MOTION",
+        "1.4 eHybrid",
+        "R"
+      ]
     },
     {
-      "models": ["T-Roc", "T-Cross", "Taigo"],
-      "variants": ["1.0 TSI", "1.5 TSI", "1.5 eTSI", "1.6 TDI", "2.0 TDI", "2.0 TSI 4MOTION"]
+      "models": [
+        "ID.3",
+        "ID.4",
+        "ID.5",
+        "ID.7"
+      ],
+      "variants": [
+        "Pure",
+        "Pro",
+        "Pro S",
+        "Pro 4MOTION"
+      ]
     },
     {
-      "models": ["Touareg"],
-      "variants": ["3.0 TDI 4MOTION", "3.0 TSI 4MOTION", "3.6 V6 FSI", "3.0 eHybrid 4MOTION", "4.0 TDI 4MOTION", "4.2 V8 TDI"]
+      "models": [
+        "Amarok"
+      ],
+      "variants": [
+        "2.0 TDI",
+        "2.3 TDI",
+        "3.0 TDI 4MOTION",
+        "3.0 V6 TDI"
+      ]
     },
     {
-      "models": ["Touran", "Sharan"],
-      "variants": ["1.2 TSI", "1.4 TSI", "1.5 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI"]
+      "models": [
+        "Scirocco"
+      ],
+      "variants": [
+        "1.4 TSI",
+        "2.0 TSI",
+        "2.0 TDI",
+        "R"
+      ]
     },
     {
-      "models": ["Up!"],
-      "variants": ["1.0 MPI", "1.0 TSI", "1.0 TGI", "GTI"]
+      "models": [
+        "Polo Sedan"
+      ],
+      "variants": [
+        "1.4",
+        "1.6"
+      ]
     },
     {
-      "models": ["Arteon", "Arteon Shooting Brake"],
-      "variants": ["1.5 TSI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION", "1.4 eHybrid"]
+      "models": [
+        "Golf Cabriolet"
+      ],
+      "variants": [
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.6 TDI",
+        "2.0 TDI",
+        "GTI",
+        "R"
+      ]
     },
     {
-      "models": ["ID.3", "ID.4", "ID.5", "ID.7"],
-      "variants": ["Pure", "Pro", "Pro S", "Pro 4MOTION"]
+      "models": [
+        "Golf Alltrack"
+      ],
+      "variants": [
+        "1.8 TSI 4MOTION",
+        "2.0 TDI 4MOTION"
+      ]
     },
     {
-      "models": ["Amarok"],
-      "variants": ["2.0 TDI", "2.3 TDI", "3.0 TDI 4MOTION", "3.0 V6 TDI"]
+      "models": [
+        "Golf Plus"
+      ],
+      "variants": [
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.6",
+        "1.6 TDI",
+        "2.0 TDI"
+      ]
     },
-    { "models": ["Arteon R", "Arteon R Shooting Brake", "Tiguan R", "T-Roc R"],
-      "variants": ["2.0 TSI 4MOTION"] },
-    { "models": ["Touareg R"], "variants": ["3.0 eHybrid 4MOTION"] },
-    { "models": ["Scirocco"], "variants": ["1.4 TSI", "2.0 TSI", "2.0 TDI"] },
-    { "models": ["Scirocco R"], "variants": ["2.0 TSI"] },
-    { "models": ["Polo R WRC"], "variants": ["2.0 TSI"] },
-    { "models": ["Polo Sedan"], "variants": ["1.4", "1.6"] },
-    { "models": ["Golf Cabriolet"], "variants": ["1.2 TSI", "1.4 TSI", "1.6 TDI", "2.0 TDI"] },
-    { "models": ["Golf GTI Cabriolet"], "variants": ["2.0 TSI"] },
-    { "models": ["Golf R Cabriolet"], "variants": ["2.0 TSI 4MOTION"] },
-    { "models": ["Golf Alltrack"], "variants": ["1.8 TSI 4MOTION", "2.0 TDI 4MOTION"] },
-    { "models": ["Golf Plus"], "variants": ["1.2 TSI", "1.4 TSI", "1.6", "1.6 TDI", "2.0 TDI"] },
-    { "models": ["Golf Sportsvan"],
-      "variants": ["1.0 TSI", "1.2 TSI", "1.4 TSI", "1.5 TSI", "1.6 TDI", "2.0 TDI"] },
-    { "models": ["Passat Alltrack"],
-      "variants": ["2.0 TDI 4MOTION", "2.0 TSI 4MOTION"] },
-    { "models": ["Passat GTE"], "variants": ["1.4 eHybrid", "1.5 eHybrid"] },
-    { "models": ["CC"], "variants": ["1.8 TSI", "2.0 TSI", "2.0 TDI", "3.6 V6 4MOTION"] },
-    { "models": ["Eos"], "variants": ["1.4 TSI", "2.0 TSI", "2.0 TDI", "3.2 V6"] },
-    { "models": ["Jetta"],
-      "variants": ["1.2 TSI", "1.4 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI", "1.4 Hybrid"] },
-    { "models": ["Fox"], "variants": ["1.2", "1.4"] },
-    { "models": ["The Beetle", "The Beetle Cabriolet"],
-      "variants": ["1.2 TSI", "1.4 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI"] },
-    { "models": ["Phaeton"], "variants": ["3.0 V6 TDI", "4.2 V8", "6.0 W12"] },
-    { "models": ["Tharu"], "variants": ["1.4 TSI", "1.5 TSI"] },
-    { "models": ["Tayron"],
-      "variants": ["1.5 eTSI", "2.0 TDI 4MOTION", "1.5 eHybrid", "2.0 TSI 4MOTION"] },
-    { "models": ["T-Roc Cabriolet"], "variants": ["1.0 TSI", "1.5 TSI"] },
-    { "models": ["XL1"], "variants": ["0.8 TDI Hybrid"] },
-    { "models": ["Caddy", "Caddy Cargo", "Caddy California"],
-      "variants": ["1.2 TSI", "1.4 TSI", "1.5 TSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4MOTION", "1.4 TGI"] },
-    { "models": ["Transporter", "Caravelle", "Multivan", "T5 Multivan", "T6 Multivan", "T7 Multivan"],
-      "variants": ["2.0 TDI", "2.0 TDI 4MOTION", "2.5 TDI", "2.0 TSI", "1.4 eHybrid"] },
-    { "models": ["California", "Grand California"],
-      "variants": ["2.0 TDI", "2.0 TDI 4MOTION"] },
-    { "models": ["Crafter"], "variants": ["2.0 TDI", "2.0 TDI 4MOTION", "2.5 TDI"] },
-    { "models": ["e-Crafter"], "variants": ["35.8 kWh"] },
-    { "models": ["e-Transporter", "e-Caravelle"], "variants": ["32.3 kWh"] },
-    { "models": ["e-Golf"], "variants": ["24.2 kWh", "35.8 kWh"] },
-    { "models": ["e-up!"], "variants": ["18.7 kWh", "32.3 kWh"] },
-    { "models": ["ID. Polo"], "variants": ["38 kWh", "56 kWh"] },
-    { "models": ["ID. Buzz", "ID. Buzz Cargo"], "variants": ["77 kWh", "79 kWh", "86 kWh"] },
-    { "models": ["ID. Buzz GTX"], "variants": ["86 kWh GTX 4MOTION"] },
-    { "models": ["ID.3 GTX", "ID.4 GTX", "ID.5 GTX", "ID.7 GTX", "ID.7 GTX Tourer"],
-      "variants": ["GTX", "GTX Performance"] },
-    { "models": ["ID.7 Tourer"], "variants": ["Pro", "Pro S"] }
+    {
+      "models": [
+        "Golf Sportsvan"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.6 TDI",
+        "2.0 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Passat Alltrack"
+      ],
+      "variants": [
+        "2.0 TDI 4MOTION",
+        "2.0 TSI 4MOTION"
+      ]
+    },
+    {
+      "models": [
+        "CC"
+      ],
+      "variants": [
+        "1.8 TSI",
+        "2.0 TSI",
+        "2.0 TDI",
+        "3.6 V6 4MOTION"
+      ]
+    },
+    {
+      "models": [
+        "Eos"
+      ],
+      "variants": [
+        "1.4 TSI",
+        "2.0 TSI",
+        "2.0 TDI",
+        "3.2 V6"
+      ]
+    },
+    {
+      "models": [
+        "Jetta"
+      ],
+      "variants": [
+        "1.2 TSI",
+        "1.4 TSI",
+        "2.0 TSI",
+        "1.6 TDI",
+        "2.0 TDI",
+        "1.4 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Fox"
+      ],
+      "variants": [
+        "1.2",
+        "1.4"
+      ]
+    },
+    {
+      "models": [
+        "The Beetle",
+        "The Beetle Cabriolet"
+      ],
+      "variants": [
+        "1.2 TSI",
+        "1.4 TSI",
+        "2.0 TSI",
+        "1.6 TDI",
+        "2.0 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Phaeton"
+      ],
+      "variants": [
+        "3.0 V6 TDI",
+        "4.2 V8",
+        "6.0 W12"
+      ]
+    },
+    {
+      "models": [
+        "Tharu"
+      ],
+      "variants": [
+        "1.4 TSI",
+        "1.5 TSI"
+      ]
+    },
+    {
+      "models": [
+        "Tayron"
+      ],
+      "variants": [
+        "1.5 eTSI",
+        "2.0 TDI 4MOTION",
+        "1.5 eHybrid",
+        "2.0 TSI 4MOTION"
+      ]
+    },
+    {
+      "models": [
+        "T-Roc Cabriolet"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.5 TSI"
+      ]
+    },
+    {
+      "models": [
+        "XL1"
+      ],
+      "variants": [
+        "0.8 TDI Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Caddy",
+        "Caddy Cargo",
+        "Caddy California"
+      ],
+      "variants": [
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.6 TDI",
+        "2.0 TDI",
+        "2.0 TDI 4MOTION",
+        "1.4 TGI"
+      ]
+    },
+    {
+      "models": [
+        "Transporter",
+        "Caravelle",
+        "Multivan",
+        "T5 Multivan",
+        "T6 Multivan",
+        "T7 Multivan"
+      ],
+      "variants": [
+        "2.0 TDI",
+        "2.0 TDI 4MOTION",
+        "2.5 TDI",
+        "2.0 TSI",
+        "1.4 eHybrid"
+      ]
+    },
+    {
+      "models": [
+        "California",
+        "Grand California"
+      ],
+      "variants": [
+        "2.0 TDI",
+        "2.0 TDI 4MOTION"
+      ]
+    },
+    {
+      "models": [
+        "Crafter"
+      ],
+      "variants": [
+        "2.0 TDI",
+        "2.0 TDI 4MOTION",
+        "2.5 TDI"
+      ]
+    },
+    {
+      "models": [
+        "e-Crafter"
+      ],
+      "variants": [
+        "35.8 kWh"
+      ]
+    },
+    {
+      "models": [
+        "e-Transporter",
+        "e-Caravelle"
+      ],
+      "variants": [
+        "32.3 kWh"
+      ]
+    },
+    {
+      "models": [
+        "e-Golf"
+      ],
+      "variants": [
+        "24.2 kWh",
+        "35.8 kWh"
+      ]
+    },
+    {
+      "models": [
+        "e-up!"
+      ],
+      "variants": [
+        "18.7 kWh",
+        "32.3 kWh"
+      ]
+    },
+    {
+      "models": [
+        "ID. Polo"
+      ],
+      "variants": [
+        "38 kWh",
+        "56 kWh"
+      ]
+    },
+    {
+      "models": [
+        "ID. Buzz",
+        "ID. Buzz Cargo"
+      ],
+      "variants": [
+        "77 kWh",
+        "79 kWh",
+        "86 kWh"
+      ]
+    },
+    {
+      "models": [
+        "ID. Buzz GTX"
+      ],
+      "variants": [
+        "86 kWh GTX 4MOTION"
+      ]
+    },
+    {
+      "models": [
+        "ID.3 GTX",
+        "ID.4 GTX",
+        "ID.5 GTX",
+        "ID.7 GTX",
+        "ID.7 GTX Tourer"
+      ],
+      "variants": [
+        "GTX",
+        "GTX Performance"
+      ]
+    },
+    {
+      "models": [
+        "ID.7 Tourer"
+      ],
+      "variants": [
+        "Pro",
+        "Pro S"
+      ]
+    }
   ],
   "remap": [
-    { "from": "Golf GTI Clubsport", "model": "Golf GTI", "variant": "Clubsport" },
-    { "from": "Golf GTI TCR", "model": "Golf GTI", "variant": "TCR" },
-    { "from": "up! GTI", "model": "Up!", "variant": "GTI" }
+    {
+      "from": "Golf GTI Clubsport",
+      "model": "Golf",
+      "variant": "GTI Clubsport"
+    },
+    {
+      "from": "Golf GTI TCR",
+      "model": "Golf",
+      "variant": "GTI TCR"
+    },
+    {
+      "from": "up! GTI",
+      "model": "Up!",
+      "variant": "GTI"
+    },
+    {
+      "from": "Golf GTI",
+      "model": "Golf",
+      "variant": "GTI"
+    },
+    {
+      "from": "Golf GTI Cabriolet",
+      "model": "Golf Cabriolet",
+      "variant": "GTI"
+    },
+    {
+      "from": "Golf R",
+      "model": "Golf",
+      "variant": "R"
+    },
+    {
+      "from": "Golf R Variant",
+      "model": "Golf Variant",
+      "variant": "R"
+    },
+    {
+      "from": "Golf R Cabriolet",
+      "model": "Golf Cabriolet",
+      "variant": "R"
+    },
+    {
+      "from": "Golf GTD",
+      "model": "Golf",
+      "variant": "GTD"
+    },
+    {
+      "from": "Golf GTD Variant",
+      "model": "Golf Variant",
+      "variant": "GTD"
+    },
+    {
+      "from": "Golf GTE",
+      "model": "Golf",
+      "variant": "GTE"
+    },
+    {
+      "from": "Polo GTI",
+      "model": "Polo",
+      "variant": "GTI"
+    },
+    {
+      "from": "Polo R WRC",
+      "model": "Polo",
+      "variant": "R WRC"
+    },
+    {
+      "from": "Scirocco R",
+      "model": "Scirocco",
+      "variant": "R"
+    },
+    {
+      "from": "Arteon R",
+      "model": "Arteon",
+      "variant": "R"
+    },
+    {
+      "from": "Arteon R Shooting Brake",
+      "model": "Arteon Shooting Brake",
+      "variant": "R"
+    },
+    {
+      "from": "Tiguan R",
+      "model": "Tiguan",
+      "variant": "R"
+    },
+    {
+      "from": "T-Roc R",
+      "model": "T-Roc",
+      "variant": "R"
+    },
+    {
+      "from": "Touareg R",
+      "model": "Touareg",
+      "variant": "R"
+    },
+    {
+      "from": "Passat GTE",
+      "model": "Passat",
+      "variant": "GTE"
+    }
   ],
   "merge": [
-    { "from": "Passat R-Line", "model": "Passat" },
-    { "from": "Tiguan R-Line", "model": "Tiguan" },
-    { "from": "T-Roc R-Line", "model": "T-Roc" },
-    { "from": "Passat V facelift", "model": "Passat" },
-    { "from": "Touran I facelift", "model": "Touran" }
+    {
+      "from": "Passat R-Line",
+      "model": "Passat"
+    },
+    {
+      "from": "Tiguan R-Line",
+      "model": "Tiguan"
+    },
+    {
+      "from": "T-Roc R-Line",
+      "model": "T-Roc"
+    },
+    {
+      "from": "Passat V facelift",
+      "model": "Passat"
+    },
+    {
+      "from": "Touran I facelift",
+      "model": "Touran"
+    }
   ]
 }

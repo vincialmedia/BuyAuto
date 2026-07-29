@@ -160,14 +160,7 @@
         "50 kWh",
         "54 kWh",
         "1.6",
-        "1.7 CDTI"
-      ]
-    },
-    {
-      "models": [
-        "Mokka GSE"
-      ],
-      "variants": [
+        "1.7 CDTI",
         "GSE"
       ]
     },
@@ -295,6 +288,11 @@
       "from": "Zafira B VXR",
       "model": "Zafira",
       "variant": "VXR"
+    },
+    {
+      "from": "Mokka GSE",
+      "model": "Mokka",
+      "variant": "GSE"
     }
   ],
   "merge": [

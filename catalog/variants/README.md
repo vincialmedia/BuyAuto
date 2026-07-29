@@ -80,6 +80,22 @@ The two can coexist on one model when that is how the range is really described:
 Cherokee is a `3.0 CRD` or a `Trackhawk`, and a Camaro is a `3.6 V6` or an `SS`. Decide
 per model by asking what the seller would type, not by applying one rule to a whole make.
 
+### Performance sub-brands: model or variant?
+
+Split by tier, on one test — **does the maker sell it as a distinct line, or as a version
+of the car it is based on?**
+
+- **Its own model** when the maker runs it as a separate line: BMW `M3`, Mercedes
+  `AMG C 63`, Audi `RS6` and `S4`, Porsche `911 GT3`, Nissan `GT-R`. Nobody calls an M3
+  a 3 Series, and buyers search for it by that name.
+- **A variant of the base car** when it is plainly a hotter version of something already
+  in the catalog: Golf → `GTI`, `GTI Clubsport`, `GTI TCR`, `R`, `GTD`, `GTE`; Focus →
+  `ST`, `RS`; i30 → `N`; Octavia → `RS`; Astra → `OPC`; Mini Hatch → `John Cooper Works`.
+
+This matches how the Swiss market actually lists them — a Golf with a version field, but
+an M3 as its own entry. Demoted rows keep an alias, so `Golf GTI` typed as a model still
+resolves to Golf + GTI.
+
 ### Rules
 
 - Names are written exactly as the manufacturer brands them in the Swiss market.

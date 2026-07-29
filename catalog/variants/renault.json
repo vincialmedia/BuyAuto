@@ -1,72 +1,395 @@
 {
   "make": "Renault",
-  "_note": "Renault's rows are mostly sound - RS stays a model, as a performance sub-brand like BMW M. Two things are wrong: Trophy and Trophy-R are trims of the RS car rather than separate cars, and the make cannot decide whether the accent belongs in Mégane ('Mégane' but 'Megane RS').",
+  "_note": "Renault brands the hot cars RS and the warm ones GT, both of which are versions of the base car rather than separate cars, so they are variants of Clio, Mégane and Twingo. Trophy and Trophy-R are steps above RS and read as RS Trophy. The make cannot decide whether the accent belongs in Mégane, so the unaccented rows alias onto the accented one.",
   "models": [],
   "groups": [
     {
-      "models": ["Clio"],
-      "variants": ["1.0 SCe", "1.0 TCe", "1.2", "1.2 TCe", "1.3 TCe", "1.5 dCi", "1.6 E-Tech Hybrid"]
+      "models": [
+        "Clio"
+      ],
+      "variants": [
+        "1.0 SCe",
+        "1.0 TCe",
+        "1.2",
+        "1.2 TCe",
+        "1.3 TCe",
+        "1.5 dCi",
+        "1.6 E-Tech Hybrid",
+        "RS",
+        "RS Trophy"
+      ]
     },
     {
-      "models": ["Mégane"],
-      "variants": ["1.2 TCe", "1.3 TCe", "1.6", "1.5 dCi", "1.6 dCi", "2.0 dCi", "1.6 E-Tech Plug-in"]
+      "models": [
+        "Mégane"
+      ],
+      "variants": [
+        "1.2 TCe",
+        "1.3 TCe",
+        "1.6",
+        "1.5 dCi",
+        "1.6 dCi",
+        "2.0 dCi",
+        "1.6 E-Tech Plug-in",
+        "RS",
+        "RS Trophy",
+        "RS Trophy-R"
+      ]
     },
     {
-      "models": ["Twingo"],
-      "variants": ["1.0 SCe", "0.9 TCe", "1.2", "1.5 dCi", "22 kWh"]
+      "models": [
+        "Twingo"
+      ],
+      "variants": [
+        "1.0 SCe",
+        "0.9 TCe",
+        "1.2",
+        "1.5 dCi",
+        "22 kWh",
+        "RS"
+      ]
     },
     {
-      "models": ["Clio RS"],
-      "variants": ["1.6 Turbo", "2.0 16V", "Trophy"]
+      "models": [
+        "Megane GT"
+      ],
+      "variants": [
+        "1.6 TCe",
+        "2.0 TCe",
+        "1.6 dCi",
+        "1.5 dCi"
+      ]
     },
     {
-      "models": ["Megane RS"],
-      "variants": ["1.8 Turbo", "2.0 Turbo", "Trophy", "Trophy-R"]
+      "models": [
+        "Captur"
+      ],
+      "variants": [
+        "1.0 TCe",
+        "1.3 TCe",
+        "1.2 TCe",
+        "1.5 dCi",
+        "1.6 E-Tech Hybrid"
+      ]
     },
-    { "models": ["Megane GT"], "variants": ["1.6 TCe", "2.0 TCe", "1.6 dCi", "1.5 dCi"] },
-    { "models": ["Twingo RS"], "variants": ["1.6 16V"] },
-    { "models": ["Captur"],
-      "variants": ["1.0 TCe", "1.3 TCe", "1.2 TCe", "1.5 dCi", "1.6 E-Tech Hybrid"] },
-    { "models": ["Kadjar"], "variants": ["1.2 TCe", "1.3 TCe", "1.5 dCi", "1.6 dCi"] },
-    { "models": ["Arkana"], "variants": ["1.3 TCe", "1.6 E-Tech Hybrid"] },
-    { "models": ["Austral"], "variants": ["1.2 TCe", "1.3 TCe", "1.2 E-Tech Hybrid"] },
-    { "models": ["Rafale"], "variants": ["1.2 E-Tech Hybrid", "1.8 E-Tech Hybrid"] },
-    { "models": ["Symbioz"], "variants": ["1.6 E-Tech Hybrid"] },
-    { "models": ["Scenic", "Grand Scenic"],
-      "variants": ["1.2 TCe", "1.3 TCe", "1.5 dCi", "1.6 dCi"] },
-    { "models": ["Modus", "Grand Modus"], "variants": ["1.2", "1.6", "1.5 dCi"] },
-    { "models": ["Espace", "Grand Espace"],
-      "variants": ["1.6 dCi", "2.0 dCi", "1.8 TCe", "1.2 E-Tech Hybrid"] },
-    { "models": ["Laguna"], "variants": ["1.5 dCi", "2.0 dCi", "2.0 TCe"] },
-    { "models": ["Latitude"], "variants": ["2.0 dCi", "3.0 V6 dCi"] },
-    { "models": ["Talisman"], "variants": ["1.6 TCe", "1.6 dCi", "2.0 dCi"] },
-    { "models": ["Fluence"], "variants": ["1.6", "2.0", "1.5 dCi"] },
-    { "models": ["Symbol", "Taliant"], "variants": ["1.0 TCe", "1.2", "1.6", "1.5 dCi"] },
-    { "models": ["Koleos"], "variants": ["1.6 dCi", "2.0 dCi", "2.5"] },
-    { "models": ["Kaptur"], "variants": ["1.6", "2.0"] },
-    { "models": ["Kardian"], "variants": ["1.0 TCe", "1.6 SCe"] },
-    { "models": ["Duster Oroch", "Oroch"], "variants": ["1.6", "2.0"] },
-    { "models": ["Alaskan"], "variants": ["2.3 dCi"] },
-    { "models": ["Wind"], "variants": ["1.2 TCe", "1.6"] },
-    { "models": ["Kangoo", "Grand Kangoo"], "variants": ["1.3 TCe", "1.5 dCi", "1.6", "45 kWh"] },
-    { "models": ["Express"], "variants": ["1.3 TCe", "1.5 dCi"] },
-    { "models": ["Trafic", "Trafic Combi", "Trafic SpaceClass"],
-      "variants": ["1.6 dCi", "2.0 dCi", "2.0 Blue dCi"] },
-    { "models": ["Master"], "variants": ["2.3 dCi", "2.3 Blue dCi", "87 kWh"] },
-    { "models": ["ZOE"], "variants": ["22 kWh", "41 kWh", "52 kWh"] },
-    { "models": ["Twizy"], "variants": ["6.1 kWh"] },
-    { "models": ["4 E-Tech", "5 E-Tech"], "variants": ["40 kWh", "52 kWh"] },
-    { "models": ["Mégane E-Tech Electric"], "variants": ["40 kWh", "60 kWh"] },
-    { "models": ["Scenic E-Tech Electric"], "variants": ["60 kWh", "87 kWh"] }
+    {
+      "models": [
+        "Kadjar"
+      ],
+      "variants": [
+        "1.2 TCe",
+        "1.3 TCe",
+        "1.5 dCi",
+        "1.6 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Arkana"
+      ],
+      "variants": [
+        "1.3 TCe",
+        "1.6 E-Tech Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Austral"
+      ],
+      "variants": [
+        "1.2 TCe",
+        "1.3 TCe",
+        "1.2 E-Tech Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Rafale"
+      ],
+      "variants": [
+        "1.2 E-Tech Hybrid",
+        "1.8 E-Tech Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Symbioz"
+      ],
+      "variants": [
+        "1.6 E-Tech Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Scenic",
+        "Grand Scenic"
+      ],
+      "variants": [
+        "1.2 TCe",
+        "1.3 TCe",
+        "1.5 dCi",
+        "1.6 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Modus",
+        "Grand Modus"
+      ],
+      "variants": [
+        "1.2",
+        "1.6",
+        "1.5 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Espace",
+        "Grand Espace"
+      ],
+      "variants": [
+        "1.6 dCi",
+        "2.0 dCi",
+        "1.8 TCe",
+        "1.2 E-Tech Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Laguna"
+      ],
+      "variants": [
+        "1.5 dCi",
+        "2.0 dCi",
+        "2.0 TCe"
+      ]
+    },
+    {
+      "models": [
+        "Latitude"
+      ],
+      "variants": [
+        "2.0 dCi",
+        "3.0 V6 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Talisman"
+      ],
+      "variants": [
+        "1.6 TCe",
+        "1.6 dCi",
+        "2.0 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Fluence"
+      ],
+      "variants": [
+        "1.6",
+        "2.0",
+        "1.5 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Symbol",
+        "Taliant"
+      ],
+      "variants": [
+        "1.0 TCe",
+        "1.2",
+        "1.6",
+        "1.5 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Koleos"
+      ],
+      "variants": [
+        "1.6 dCi",
+        "2.0 dCi",
+        "2.5"
+      ]
+    },
+    {
+      "models": [
+        "Kaptur"
+      ],
+      "variants": [
+        "1.6",
+        "2.0"
+      ]
+    },
+    {
+      "models": [
+        "Kardian"
+      ],
+      "variants": [
+        "1.0 TCe",
+        "1.6 SCe"
+      ]
+    },
+    {
+      "models": [
+        "Duster Oroch",
+        "Oroch"
+      ],
+      "variants": [
+        "1.6",
+        "2.0"
+      ]
+    },
+    {
+      "models": [
+        "Alaskan"
+      ],
+      "variants": [
+        "2.3 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Wind"
+      ],
+      "variants": [
+        "1.2 TCe",
+        "1.6"
+      ]
+    },
+    {
+      "models": [
+        "Kangoo",
+        "Grand Kangoo"
+      ],
+      "variants": [
+        "1.3 TCe",
+        "1.5 dCi",
+        "1.6",
+        "45 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Express"
+      ],
+      "variants": [
+        "1.3 TCe",
+        "1.5 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Trafic",
+        "Trafic Combi",
+        "Trafic SpaceClass"
+      ],
+      "variants": [
+        "1.6 dCi",
+        "2.0 dCi",
+        "2.0 Blue dCi"
+      ]
+    },
+    {
+      "models": [
+        "Master"
+      ],
+      "variants": [
+        "2.3 dCi",
+        "2.3 Blue dCi",
+        "87 kWh"
+      ]
+    },
+    {
+      "models": [
+        "ZOE"
+      ],
+      "variants": [
+        "22 kWh",
+        "41 kWh",
+        "52 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Twizy"
+      ],
+      "variants": [
+        "6.1 kWh"
+      ]
+    },
+    {
+      "models": [
+        "4 E-Tech",
+        "5 E-Tech"
+      ],
+      "variants": [
+        "40 kWh",
+        "52 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Mégane E-Tech Electric"
+      ],
+      "variants": [
+        "40 kWh",
+        "60 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Scenic E-Tech Electric"
+      ],
+      "variants": [
+        "60 kWh",
+        "87 kWh"
+      ]
+    }
   ],
   "remap": [
-    { "from": "Clio RS Trophy", "model": "Clio RS", "variant": "Trophy" },
-    { "from": "Megane RS Trophy", "model": "Megane RS", "variant": "Trophy" },
-    { "from": "Megane RS Trophy-R", "model": "Megane RS", "variant": "Trophy-R" },
-    { "from": "Clio GT", "model": "Clio", "variant": "GT" },
-    { "from": "Twingo GT", "model": "Twingo", "variant": "GT" }
-  ],
-  "rename": [
-    { "from": "Megane RS", "to": "Mégane RS" }
+    {
+      "from": "Clio RS Trophy",
+      "model": "Clio",
+      "variant": "RS Trophy"
+    },
+    {
+      "from": "Clio GT",
+      "model": "Clio",
+      "variant": "GT"
+    },
+    {
+      "from": "Twingo GT",
+      "model": "Twingo",
+      "variant": "GT"
+    },
+    {
+      "from": "Clio RS",
+      "model": "Clio",
+      "variant": "RS"
+    },
+    {
+      "from": "Twingo RS",
+      "model": "Twingo",
+      "variant": "RS"
+    },
+    {
+      "from": "Megane RS",
+      "model": "Mégane",
+      "variant": "RS"
+    },
+    {
+      "from": "Megane RS Trophy",
+      "model": "Mégane",
+      "variant": "RS Trophy"
+    },
+    {
+      "from": "Megane RS Trophy-R",
+      "model": "Mégane",
+      "variant": "RS Trophy-R"
+    }
   ]
 }

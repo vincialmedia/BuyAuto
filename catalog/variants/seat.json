@@ -1,22 +1,141 @@
 {
   "make": "Seat",
-  "_note": "Seat uses the Volkswagen Group engine names with 4Drive for all-wheel drive. Léon is spelled with the accent here to match the row already in the catalog; Cupra is a separate make since the 2018 split, so the Cupra-badged cars are not listed under Seat.",
+  "_note": "Seat uses the Volkswagen Group engine names with 4Drive for all-wheel drive. Léon is spelled with the accent here to match the row already in the catalog. Cupra became its own make in 2018 and those cars live under Cupra, but Seat sold Cupra-badged Leon and Ibiza for years before the split and those cars are still traded, so they stay here.",
   "models": [],
   "groups": [
-    { "models": ["Mii"], "variants": ["1.0 MPI", "36.8 kWh"] },
-    { "models": ["Ibiza"],
-      "variants": ["1.0 MPI", "1.0 TSI", "1.2 TSI", "1.4 TSI", "1.5 TSI", "1.2 TDI", "1.4 TDI", "1.6 TDI"] },
-    { "models": ["Toledo"], "variants": ["1.0 TSI", "1.2 TSI", "1.4 TSI", "1.6 TDI"] },
-    { "models": ["Léon"],
-      "variants": ["1.0 TSI", "1.2 TSI", "1.4 TSI", "1.5 TSI", "1.8 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI", "1.4 eHybrid"] },
-    { "models": ["Altea"],
-      "variants": ["1.2 TSI", "1.4 TSI", "1.8 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI"] },
-    { "models": ["Exeo"], "variants": ["1.6", "1.8 TSI", "2.0 TSI", "2.0 TDI"] },
-    { "models": ["Arona"], "variants": ["1.0 TSI", "1.5 TSI", "1.6 TDI"] },
-    { "models": ["Ateca"],
-      "variants": ["1.0 TSI", "1.4 TSI", "1.5 TSI", "2.0 TSI 4Drive", "1.6 TDI", "2.0 TDI"] },
-    { "models": ["Tarraco"],
-      "variants": ["1.5 TSI", "2.0 TSI 4Drive", "2.0 TDI", "2.0 TDI 4Drive", "1.4 eHybrid"] },
-    { "models": ["Alhambra"], "variants": ["1.4 TSI", "2.0 TSI", "2.0 TDI"] }
+    {
+      "models": [
+        "Mii"
+      ],
+      "variants": [
+        "1.0 MPI",
+        "36.8 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Ibiza"
+      ],
+      "variants": [
+        "1.0 MPI",
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.2 TDI",
+        "1.4 TDI",
+        "1.6 TDI",
+        "Cupra"
+      ]
+    },
+    {
+      "models": [
+        "Toledo"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.6 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Léon"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.8 TSI",
+        "2.0 TSI",
+        "1.6 TDI",
+        "2.0 TDI",
+        "1.4 eHybrid",
+        "Cupra"
+      ]
+    },
+    {
+      "models": [
+        "Altea"
+      ],
+      "variants": [
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.8 TSI",
+        "2.0 TSI",
+        "1.6 TDI",
+        "2.0 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Exeo"
+      ],
+      "variants": [
+        "1.6",
+        "1.8 TSI",
+        "2.0 TSI",
+        "2.0 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Arona"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.5 TSI",
+        "1.6 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Ateca"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.4 TSI",
+        "1.5 TSI",
+        "2.0 TSI 4Drive",
+        "1.6 TDI",
+        "2.0 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Tarraco"
+      ],
+      "variants": [
+        "1.5 TSI",
+        "2.0 TSI 4Drive",
+        "2.0 TDI",
+        "2.0 TDI 4Drive",
+        "1.4 eHybrid"
+      ]
+    },
+    {
+      "models": [
+        "Alhambra"
+      ],
+      "variants": [
+        "1.4 TSI",
+        "2.0 TSI",
+        "2.0 TDI"
+      ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "Leon Cupra",
+      "model": "Léon",
+      "variant": "Cupra"
+    },
+    {
+      "from": "Ibiza Cupra",
+      "model": "Ibiza",
+      "variant": "Cupra"
+    }
   ]
 }
