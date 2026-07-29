@@ -1109,6 +1109,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           make_id: string
           name: string
           normalized_name: string
@@ -1118,6 +1119,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           make_id: string
           name: string
           normalized_name: string
@@ -1127,6 +1129,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           make_id?: string
           name?: string
           normalized_name?: string

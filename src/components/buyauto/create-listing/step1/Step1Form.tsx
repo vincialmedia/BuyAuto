@@ -98,6 +98,31 @@ function isEmptyValue(v: unknown): boolean {
   return false;
 }
 
+/**
+ * Join model + variant for the title without repeating shared tokens.
+ * Model "AMG G 63" + variant "G 63 4MATIC" reads "AMG G 63 4MATIC",
+ * not "AMG G 63 G 63 4MATIC": the longest model-suffix that equals a
+ * variant-prefix is dropped from the variant.
+ */
+function joinModelAndVariant(modelName: string, variantName: string): string {
+  const modelTokens = modelName.split(/\s+/).filter(Boolean);
+  const variantTokens = variantName.split(/\s+/).filter(Boolean);
+
+  let overlap = 0;
+  const max = Math.min(modelTokens.length, variantTokens.length);
+  for (let n = max; n > 0; n--) {
+    const suffix = modelTokens.slice(-n).join(" ").toLowerCase();
+    const prefix = variantTokens.slice(0, n).join(" ").toLowerCase();
+    if (suffix === prefix) {
+      overlap = n;
+      break;
+    }
+  }
+
+  const rest = variantTokens.slice(overlap).join(" ");
+  return [modelName, rest].filter(Boolean).join(" ").trim();
+}
+
 
 export function Step1Form() {
   const router = useRouter();
@@ -484,7 +509,9 @@ export function Step1Form() {
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
       const variantName = values.variant_id ? (variants.find((v) => v.id === values.variant_id)?.name ?? "") : "";
 
-      const title = makeName ? [makeName, modelName, variantName].filter(Boolean).join(" ").trim() : (data as any)?.title;
+      const title = makeName
+        ? [makeName, variantName ? joinModelAndVariant(modelName, variantName) : modelName].filter(Boolean).join(" ").trim()
+        : (data as any)?.title;
 
       return {
         ...values,
@@ -616,7 +643,10 @@ export function Step1Form() {
           : "");
 
       const generatedTitle =
-        [makeName, modelName, variantForTitle].filter(Boolean).join(" ").trim() || ((data as any)?.title ?? "");
+        [makeName, variantForTitle ? joinModelAndVariant(modelName, variantForTitle) : modelName]
+          .filter(Boolean)
+          .join(" ")
+          .trim() || ((data as any)?.title ?? "");
       const isNewListing = !(data as any).id;
 
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");

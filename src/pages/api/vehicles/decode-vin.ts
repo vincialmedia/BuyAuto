@@ -1434,7 +1434,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (make_id && modelFamilyName && modelFamilyName.trim().length >= 2) {
+    // The catalog keeps performance sub-brands as their own models (AMG G 63,
+    // M3, ...), and for those cars the provider's TRIM is the model: a G 63 AMG
+    // arrives as model "G", trim "AMG G63". Try the trim against models and
+    // aliases first — it is more specific than the derived family name and is
+    // only used when it actually matches a catalog row.
+    let modelResolvedFromTrim = false;
+    if (make_id && providerTrim) {
+      const trimKey = normalizeVehicleKey(providerTrim);
+      if (trimKey && trimKey.length >= 2) {
+        const trimAlias = await supabaseAdmin
+          .from("vehicle_aliases")
+          .select("model_id")
+          .eq("entity_type", "model")
+          .eq("make_id", make_id)
+          .eq("normalized_alias", trimKey)
+          .maybeSingle();
+
+        model_id = (trimAlias.data?.model_id as string | null) ?? null;
+
+        if (!model_id) {
+          const { data: trimModel } = await supabaseAdmin
+            .from("models")
+            .select("id,is_active")
+            .eq("make_id", make_id)
+            .eq("normalized_name", trimKey)
+            .maybeSingle();
+          model_id = trimModel && trimModel.is_active !== false ? ((trimModel.id as string | null) ?? null) : null;
+        }
+
+        if (model_id) modelResolvedFromTrim = true;
+      }
+    }
+
+    // Family-name fallback. Length >= 1, not >= 2: Mercedes G and smart #1
+    // are real one-character model keys, and the >= 2 gate silently dropped
+    // them (a decoded G 63 AMG mapped its make but never its model).
+    if (!model_id && make_id && modelFamilyName && modelFamilyName.trim().length >= 1) {
       const modelKey = normalizeVehicleKey(modelFamilyName);
 
       const aliasAttempt = await supabaseAdmin
@@ -1516,7 +1552,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (model_id && canonicalVariantCandidate && !variant_id && !isLikelyJunkVariant(canonicalVariantCandidate)) {
+    // Never auto-create a variant that just repeats the car's own name —
+    // when the model was resolved FROM the trim (AMG G 63), the candidate is
+    // that same trim, and inserting it would put "G 63 AMG" as a variant of
+    // the AMG G 63: a dead dropdown row duplicating the model.
+    let variantCandidateIsModelName = modelResolvedFromTrim;
+    if (model_id && canonicalVariantCandidate && !variant_id && !variantCandidateIsModelName) {
+      const candKey = normalizeVehicleKey(canonicalVariantCandidate);
+      const { data: selfModel } = await supabaseAdmin
+        .from("models")
+        .select("normalized_name")
+        .eq("id", model_id)
+        .maybeSingle();
+      if (selfModel?.normalized_name && selfModel.normalized_name === candKey) {
+        variantCandidateIsModelName = true;
+      }
+    }
+
+    if (model_id && canonicalVariantCandidate && !variant_id && !variantCandidateIsModelName && !isLikelyJunkVariant(canonicalVariantCandidate)) {
       const cleanName = String(canonicalVariantCandidate).trim().replace(/\s+/g, " ");
       const normalized_name = normalizeVehicleKey(cleanName);
       const nowIso = new Date().toISOString();
