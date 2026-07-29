@@ -1,0 +1,10 @@
+{
+  "make": "Koenigsegg",
+  "_note": "Koenigsegg builds its own 5.0 V8 for everything except the Gemera, which was launched with a three-cylinder and later offered with the V8.",
+  "models": [],
+  "groups": [
+    { "models": ["Agera", "One:1", "CC850", "Jesko", "Sadair's Spear"], "variants": ["5.0 V8"] },
+    { "models": ["Regera"], "variants": ["5.0 V8 Hybrid"] },
+    { "models": ["Gemera"], "variants": ["2.0 3-Cylinder Hybrid", "5.0 V8 Hybrid"] }
+  ]
+}

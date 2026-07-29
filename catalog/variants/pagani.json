@@ -1,0 +1,9 @@
+{
+  "make": "Pagani",
+  "_note": "AMG-built V12s throughout: the 7.3 naturally aspirated in the Zonda, the 6.0 twin-turbo in everything since.",
+  "models": [],
+  "groups": [
+    { "models": ["Zonda"], "variants": ["7.3 V12"] },
+    { "models": ["Huayra", "Utopia"], "variants": ["6.0 V12"] }
+  ]
+}

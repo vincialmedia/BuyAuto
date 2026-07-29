@@ -1,0 +1,15 @@
+{
+  "make": "McLaren",
+  "_note": "McLaren's model names are power outputs in metric horsepower (570S is 570 PS), so the name already encodes the tune. The variant is the engine block itself: the 3.8 V8 of the earlier cars, the 4.0 V8 that replaced it, and the V6 hybrid.",
+  "models": [],
+  "groups": [
+    { "models": ["12C", "650S", "675LT", "540C", "570S", "570GT", "600LT", "620R"],
+      "variants": ["3.8 V8"] },
+    { "models": ["720S", "765LT", "750S", "GTS", "GT", "Elva", "Senna"],
+      "variants": ["4.0 V8"] },
+    { "models": ["Speedtail", "W1"], "variants": ["4.0 V8 Hybrid"] },
+    { "models": ["P1"], "variants": ["3.8 V8 Hybrid"] },
+    { "models": ["Artura"], "variants": ["3.0 V6 Hybrid"] },
+    { "models": ["Solus GT"], "variants": ["5.2 V10"] }
+  ]
+}

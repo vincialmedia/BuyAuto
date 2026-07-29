@@ -1,0 +1,17 @@
+{
+  "make": "Lotus",
+  "_note": "The light cars ran Toyota four-cylinder and V6 engines; the current Eletre, Emeya and Evija are electric, so those carry battery sizes.",
+  "models": [],
+  "groups": [
+    { "models": ["Elise"], "variants": ["1.6", "1.8", "1.8 Supercharged"] },
+    { "models": ["Exige"], "variants": ["1.8", "1.8 Supercharged", "3.5 V6 Supercharged"] },
+    { "models": ["Evora"], "variants": ["3.5 V6", "3.5 V6 Supercharged"] },
+    { "models": ["Europa"], "variants": ["2.0 Turbo"] },
+    { "models": ["Emira"], "variants": ["2.0 Turbo", "3.5 V6 Supercharged"] },
+    { "models": ["2-Eleven", "3-Eleven"],
+      "variants": ["1.8 Supercharged", "3.5 V6 Supercharged"] },
+    { "models": ["Evija"], "variants": ["93 kWh"] },
+    { "models": ["Eletre"], "variants": ["112 kWh"] },
+    { "models": ["Emeya"], "variants": ["102 kWh"] }
+  ]
+}
