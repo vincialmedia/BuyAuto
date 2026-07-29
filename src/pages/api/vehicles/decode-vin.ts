@@ -1470,6 +1470,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Family-name fallback. Length >= 1, not >= 2: Mercedes G and smart #1
     // are real one-character model keys, and the >= 2 gate silently dropped
     // them (a decoded G 63 AMG mapped its make but never its model).
+    let modelResolvedFromSuffix = false;
+    let suffixVariantPrefix: string | null = null;
     if (!model_id && make_id && modelFamilyName && modelFamilyName.trim().length >= 1) {
       const modelKey = normalizeVehicleKey(modelFamilyName);
 
@@ -1486,19 +1488,63 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!model_id) {
         const { data: existingModel } = await supabaseAdmin
           .from("models")
-          .select("id")
+          .select("id,is_active")
           .eq("make_id", make_id)
           .eq("normalized_name", modelKey)
           .maybeSingle();
 
-        model_id = (existingModel?.id as string | null) ?? null;
+        model_id = existingModel && existingModel.is_active !== false ? ((existingModel.id as string | null) ?? null) : null;
+      }
+
+      // Some providers put the variant BEFORE the family name: a Mini
+      // Clubman Cooper arrives as model "Cooper Clubman". When the full
+      // string matches nothing, try progressively shorter tail slices and
+      // keep the removed prefix as the variant candidate. Deliberately no
+      // alias for the full string on this path — future decodes must rerun
+      // the same split so the prefix keeps reaching the variant resolver.
+      if (!model_id) {
+        const tokens = modelFamilyName.trim().split(/\s+/).filter(Boolean);
+        for (let k = 1; k < tokens.length && !model_id; k++) {
+          const tail = tokens.slice(k).join(" ");
+          const tailKey = normalizeVehicleKey(tail);
+          if (!tailKey) continue;
+
+          const tailAlias = await supabaseAdmin
+            .from("vehicle_aliases")
+            .select("model_id")
+            .eq("entity_type", "model")
+            .eq("make_id", make_id)
+            .eq("normalized_alias", tailKey)
+            .maybeSingle();
+
+          model_id = (tailAlias.data?.model_id as string | null) ?? null;
+
+          if (!model_id) {
+            const { data: tailModel } = await supabaseAdmin
+              .from("models")
+              .select("id,is_active")
+              .eq("make_id", make_id)
+              .eq("normalized_name", tailKey)
+              .maybeSingle();
+            model_id = tailModel && tailModel.is_active !== false ? ((tailModel.id as string | null) ?? null) : null;
+          }
+
+          if (model_id) {
+            modelResolvedFromSuffix = true;
+            suffixVariantPrefix = tokens.slice(0, k).join(" ");
+            modelFamilyName = tail;
+            if (!variant_text) variant_text = suffixVariantPrefix;
+            catalog_needs_review = true;
+            if (catalog_confidence === "high") catalog_confidence = "medium";
+          }
+        }
       }
 
       if (!model_id) {
         model_id = await createModel({ supabaseAdmin, makeId: make_id, providerModel: modelFamilyName });
       }
 
-      if (model_id) {
+      if (model_id && !modelResolvedFromSuffix) {
         await insertModelAlias({ supabaseAdmin, makeId: make_id, modelId: model_id, alias: modelFamilyName, normalizedAlias: modelKey });
 
         if (modelDerivedFromTrimLike && providerModelForResolve) {
@@ -1523,6 +1569,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const canonicalVariantCandidate = (() => {
       const remainder = variant_text && !isLikelyJunkVariant(variant_text) ? variant_text.trim() : null;
+
+      // Suffix split ("Cooper Clubman" -> model Clubman): the candidate is
+      // the removed prefix ALONE. Composing `${family} ${remainder}` here
+      // would rebuild the junk word order ("Clubman Cooper").
+      if (modelResolvedFromSuffix && suffixVariantPrefix && !isLikelyJunkVariant(suffixVariantPrefix)) {
+        return suffixVariantPrefix.trim().replace(/\s+/g, " ");
+      }
 
       if (modelDerivedFromTrimLike && providerModelForResolve && !isLikelyJunkVariant(providerModelForResolve)) {
         return providerModelForResolve.trim().replace(/\s+/g, " ");
@@ -1555,8 +1608,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Never auto-create a variant that just repeats the car's own name —
     // when the model was resolved FROM the trim (AMG G 63), the candidate is
     // that same trim, and inserting it would put "G 63 AMG" as a variant of
-    // the AMG G 63: a dead dropdown row duplicating the model.
-    let variantCandidateIsModelName = modelResolvedFromTrim;
+    // the AMG G 63: a dead dropdown row duplicating the model. A prefix left
+    // over from a suffix split is a word-order guess, not a confirmed trim,
+    // so it may only match existing variants, never mint new ones.
+    let variantCandidateIsModelName = modelResolvedFromTrim || modelResolvedFromSuffix;
     if (model_id && canonicalVariantCandidate && !variant_id && !variantCandidateIsModelName) {
       const candKey = normalizeVehicleKey(canonicalVariantCandidate);
       const { data: selfModel } = await supabaseAdmin
