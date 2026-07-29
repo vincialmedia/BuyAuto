@@ -1081,7 +1081,7 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("full_name, avatar_url")
+      .select("full_name, avatar_url, show_name_publicly")
       .eq("id", viewerId)
       .maybeSingle();
 
@@ -1089,19 +1089,25 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
       console.error("Error fetching profile for preview listing:", profileError);
     }
 
+    // Preview must match the public display: an anonymous seller sees
+    // "Privatanbieter" on their own listing too.
+    const hideName = profile?.show_name_publicly === false;
+
     const meta = (userData.user.user_metadata ?? {}) as Record<string, unknown>;
     const metaFullName = typeof meta.full_name === "string" ? meta.full_name : null;
     const metaAvatarUrl = typeof meta.avatar_url === "string" ? meta.avatar_url : null;
 
-    const seller_name =
-      (typeof profile?.full_name === "string" && profile.full_name.trim() ? profile.full_name : null) ??
-      (metaFullName && metaFullName.trim() ? metaFullName : null) ??
-      null;
+    const seller_name = hideName
+      ? null
+      : (typeof profile?.full_name === "string" && profile.full_name.trim() ? profile.full_name : null) ??
+        (metaFullName && metaFullName.trim() ? metaFullName : null) ??
+        null;
 
-    const seller_avatar_url =
-      (typeof profile?.avatar_url === "string" && profile.avatar_url.trim() ? profile.avatar_url : null) ??
-      (metaAvatarUrl && metaAvatarUrl.trim() ? metaAvatarUrl : null) ??
-      null;
+    const seller_avatar_url = hideName
+      ? null
+      : (typeof profile?.avatar_url === "string" && profile.avatar_url.trim() ? profile.avatar_url : null) ??
+        (metaAvatarUrl && metaAvatarUrl.trim() ? metaAvatarUrl : null) ??
+        null;
 
     const listingDetail = transformListingsTableRowToListingDetail(data as ListingsTableRow);
 

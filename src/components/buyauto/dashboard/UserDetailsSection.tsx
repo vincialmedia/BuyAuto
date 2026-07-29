@@ -13,7 +13,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Camera, Mail, Pencil } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Camera, EyeOff, Mail, Pencil } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadOptimizedImage } from "@/services/storageService";
@@ -52,6 +53,9 @@ export default function UserDetailsSection() {
     const raw = (profile as any)?.avatar_url;
     return typeof raw === "string" && raw ? raw : null;
   }, [profile]);
+
+  const showNamePublicly = (profile as any)?.show_name_publicly !== false;
+  const hasPublicName = Boolean(safeString((profile as any)?.full_name).trim());
 
   useEffect(() => {
     if (!isOpen) {
@@ -139,6 +143,32 @@ export default function UserDetailsSection() {
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Fehler beim Aktualisieren des Profils.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleToggleAnonymous = async (anonymous: boolean) => {
+    if (!user) return;
+
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ show_name_publicly: !anonymous })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      await refreshProfile();
+      toast.success(
+        anonymous
+          ? "Du wirst auf deinen Inseraten als «Privatanbieter» angezeigt."
+          : "Dein Name wird jetzt auf deinen Inseraten angezeigt."
+      );
+    } catch (err) {
+      console.error("Error updating seller visibility:", err);
+      toast.error("Fehler beim Speichern der Einstellung.");
     } finally {
       setIsUpdating(false);
     }
@@ -291,6 +321,38 @@ export default function UserDetailsSection() {
                 </DialogContent>
               </Dialog>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-6 border-t border-neutral-200/60 pt-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 shrink-0">
+                <EyeOff className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <Label htmlFor="anonymous-seller-toggle" className="text-sm font-semibold text-neutral-900">
+                  Als «Privatanbieter» anzeigen
+                </Label>
+                <p className="mt-1 text-sm text-neutral-600">
+                  Verbirgt deinen Namen und dein Profilbild auf deinen Inseraten. Interessenten sehen
+                  stattdessen «Privatanbieter».
+                </p>
+                {showNamePublicly && !hasPublicName && (
+                  <p className="mt-2 text-xs text-amber-600">
+                    Noch kein Name hinterlegt – deine Inserate zeigen «Privatanbieter», bis du deinen
+                    Namen über «Profil bearbeiten» ergänzt.
+                  </p>
+                )}
+              </div>
+            </div>
+            <Switch
+              id="anonymous-seller-toggle"
+              checked={!showNamePublicly}
+              onCheckedChange={handleToggleAnonymous}
+              disabled={isUpdating}
+              aria-label="Als Privatanbieter anzeigen"
+            />
           </div>
         </div>
       </CardContent>
