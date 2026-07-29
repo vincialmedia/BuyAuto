@@ -80,8 +80,7 @@
         "1.6 VTi",
         "1.6 PureTech",
         "1.6 HDi",
-        "2.0 HDi",
-        "GTi"
+        "2.0 HDi"
       ]
     },
     {
@@ -324,14 +323,6 @@
     },
     {
       "models": [
-        "E-208 GTi"
-      ],
-      "variants": [
-        "54 kWh GTi"
-      ]
-    },
-    {
-      "models": [
         "E-308",
         "E-308 SW",
         "E-408"
@@ -381,6 +372,22 @@
         "70 kWh",
         "110 kWh"
       ]
+    },
+    {
+      "models": [
+        "308"
+      ],
+      "variants": [
+        "GTi"
+      ]
+    },
+    {
+      "models": [
+        "E-208"
+      ],
+      "variants": [
+        "GTi"
+      ]
     }
   ],
   "remap": [
@@ -398,6 +405,11 @@
       "from": "RCZ R",
       "model": "RCZ",
       "variant": "R"
+    },
+    {
+      "from": "E-208 GTi",
+      "model": "E-208",
+      "variant": "GTi"
     }
   ]
 }

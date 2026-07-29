@@ -1,6 +1,6 @@
 {
   "make": "Kia",
-  "_note": "Kia badges petrol as GDi / T-GDi and diesel as CRDi. The EV range is named by number and carries battery sizes; GT is Kia's performance trim and holds its own model row, so it carries the battery it is sold with. Cee'd and Ceed are the same car either side of the 2018 rename - both spellings are live rows here, so both get the engines of their era.",
+  "_note": "Kia dropped the apostrophe when the Ceed was renewed in 2018, so the catalog carries the current spelling and the old cee'd rows alias onto it. GT is a version of the car it is based on, not a separate car, so it is a variant of Ceed and ProCeed.",
   "models": [],
   "groups": [
     {
@@ -51,8 +51,7 @@
     },
     {
       "models": [
-        "Cee'd",
-        "Cee'd SW"
+        "Ceed"
       ],
       "variants": [
         "1.4",
@@ -74,16 +73,8 @@
         "1.4 T-GDi",
         "1.5 T-GDi",
         "1.6 CRDi",
-        "1.6 T-GDi PHEV"
-      ]
-    },
-    {
-      "models": [
-        "Ceed GT",
-        "ProCeed GT"
-      ],
-      "variants": [
-        "1.6 T-GDi"
+        "1.6 T-GDi PHEV",
+        "GT"
       ]
     },
     {
@@ -260,16 +251,8 @@
         "58 kWh",
         "77 kWh",
         "84 kWh",
-        "77 kWh AWD"
-      ]
-    },
-    {
-      "models": [
-        "EV6 GT"
-      ],
-      "variants": [
-        "77 kWh GT",
-        "84 kWh GT"
+        "77 kWh AWD",
+        "GT"
       ]
     },
     {
@@ -279,15 +262,8 @@
       "variants": [
         "76 kWh",
         "99 kWh",
-        "99 kWh AWD"
-      ]
-    },
-    {
-      "models": [
-        "EV9 GT"
-      ],
-      "variants": [
-        "99 kWh GT"
+        "99 kWh AWD",
+        "GT"
       ]
     },
     {
@@ -301,6 +277,48 @@
         "51 kWh",
         "71 kWh"
       ]
+    },
+    {
+      "models": [
+        "Ceed"
+      ],
+      "variants": [
+        "GT"
+      ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "Ceed GT",
+      "model": "Ceed",
+      "variant": "GT"
+    },
+    {
+      "from": "ProCeed GT",
+      "model": "ProCeed",
+      "variant": "GT"
+    },
+    {
+      "from": "EV6 GT",
+      "model": "EV6",
+      "variant": "GT"
+    },
+    {
+      "from": "EV9 GT",
+      "model": "EV9",
+      "variant": "GT"
+    }
+  ],
+  "merge": [
+    {
+      "from": "Cee'd SW",
+      "model": "Ceed Sportswagon"
+    }
+  ],
+  "rename": [
+    {
+      "from": "Cee'd",
+      "to": "Ceed"
     }
   ]
 }

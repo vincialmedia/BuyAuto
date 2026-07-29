@@ -22,13 +22,7 @@
         "2.0 TDI",
         "2.0 TDI 4MOTION",
         "1.4 TGI",
-        "1.5 TGI",
-        "GTI",
-        "GTI Clubsport",
-        "GTI TCR",
-        "R",
-        "GTD",
-        "GTE"
+        "1.5 TGI"
       ]
     },
     {
@@ -83,8 +77,7 @@
         "2.0 TDI",
         "2.0 TDI 4MOTION",
         "2.0 TSI 4MOTION",
-        "1.5 eHybrid",
-        "R"
+        "1.5 eHybrid"
       ]
     },
     {
@@ -99,8 +92,7 @@
         "1.5 eTSI",
         "1.6 TDI",
         "2.0 TDI",
-        "2.0 TSI 4MOTION",
-        "R"
+        "2.0 TSI 4MOTION"
       ]
     },
     {
@@ -497,6 +489,44 @@
       "variants": [
         "Pro",
         "Pro S"
+      ]
+    },
+    {
+      "models": [
+        "Golf"
+      ],
+      "variants": [
+        "GTI",
+        "GTI Clubsport",
+        "GTI TCR",
+        "R",
+        "GTD",
+        "GTE"
+      ]
+    },
+    {
+      "models": [
+        "Golf Variant"
+      ],
+      "variants": [
+        "R",
+        "GTD"
+      ]
+    },
+    {
+      "models": [
+        "Tiguan"
+      ],
+      "variants": [
+        "R"
+      ]
+    },
+    {
+      "models": [
+        "T-Roc"
+      ],
+      "variants": [
+        "R"
       ]
     }
   ],

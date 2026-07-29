@@ -14,8 +14,7 @@
         "One D",
         "Cooper D",
         "Cooper SD",
-        "Cooper SE",
-        "John Cooper Works GP"
+        "Cooper SE"
       ]
     },
     {
@@ -96,6 +95,14 @@
       "variants": [
         "Cooper E",
         "Cooper SE"
+      ]
+    },
+    {
+      "models": [
+        "Hatch"
+      ],
+      "variants": [
+        "John Cooper Works GP"
       ]
     }
   ],

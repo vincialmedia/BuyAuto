@@ -33,7 +33,8 @@
         "1.6 E-Tech Plug-in",
         "RS",
         "RS Trophy",
-        "RS Trophy-R"
+        "RS Trophy-R",
+        "GT"
       ]
     },
     {
@@ -47,17 +48,6 @@
         "1.5 dCi",
         "22 kWh",
         "RS"
-      ]
-    },
-    {
-      "models": [
-        "Megane GT"
-      ],
-      "variants": [
-        "1.6 TCe",
-        "2.0 TCe",
-        "1.6 dCi",
-        "1.5 dCi"
       ]
     },
     {
@@ -390,6 +380,11 @@
       "from": "Megane RS Trophy-R",
       "model": "Mégane",
       "variant": "RS Trophy-R"
+    },
+    {
+      "from": "Megane GT",
+      "model": "Mégane",
+      "variant": "GT"
     }
   ]
 }

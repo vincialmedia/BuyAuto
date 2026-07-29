@@ -443,18 +443,6 @@
     },
     {
       "models": [
-        "Mercedes-AMG GT Coupé"
-      ],
-      "variants": [
-        "GT",
-        "GT S",
-        "GT C",
-        "GT R",
-        "GT Black Series"
-      ]
-    },
-    {
-      "models": [
         "SL 63 AMG"
       ],
       "variants": [
@@ -846,6 +834,18 @@
       ],
       "variants": [
         "SL 600"
+      ]
+    },
+    {
+      "models": [
+        "AMG GT"
+      ],
+      "variants": [
+        "GT",
+        "GT S",
+        "GT C",
+        "GT R",
+        "GT Black Series"
       ]
     }
   ],
@@ -1449,6 +1449,12 @@
       "from": "Mercedes-AMG GT 63 4MATIC+",
       "model": "AMG GT",
       "variant": "GT 63 4MATIC+"
+    }
+  ],
+  "merge": [
+    {
+      "from": "Mercedes-AMG GT Coupé",
+      "model": "AMG GT"
     }
   ]
 }
