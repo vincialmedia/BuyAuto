@@ -15,6 +15,10 @@ function safeInternalPath(raw?: string | string[] | null): string | null {
   }
   if (!decoded.startsWith("/")) return null;
   if (decoded.startsWith("//")) return null;
+  // Backslashes and C0 control chars (tab/newline/CR) are stripped or
+  // normalized by WHATWG URL parsing, so "/%09/evil.com" would resolve to
+  // an external origin ("//evil.com") despite passing the checks above.
+  if (/[\\\u0000-\u001F]/.test(decoded)) return null;
   return decoded;
 }
 
@@ -72,7 +76,9 @@ export default function AuthPage() {
 
     const redirectParam = safeInternalPath(router.query.redirect ?? null);
 
-    const redirectUrl = isAdmin ? "/admin" : redirectParam ?? "/dashboard";
+    // An explicit ?redirect= wins for everyone — an admin re-authenticating
+    // mid-flow should return where they were, not be forced into /admin.
+    const redirectUrl = redirectParam ?? (isAdmin ? "/admin" : "/dashboard");
 
     const currentPath = router.pathname;
     const targetPath = redirectUrl.split("?")[0];
