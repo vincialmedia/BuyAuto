@@ -37,10 +37,16 @@ const sqlStr = (s) => `'${String(s).replace(/'/g, "''")}'`;
 const sqlArr = (xs) => `array[${xs.map(sqlStr).join(',')}]`;
 
 function loadCatalog() {
+  // --only=bmw,mercedes restricts to those files, so an already-applied make is not
+  // re-sent over the wire. The output stays idempotent either way.
+  const only = process.argv.find((a) => a.startsWith('--only='));
+  const wanted = only ? new Set(only.slice(7).split(',')) : null;
   const files = fs
     .readdirSync(CATALOG_DIR)
     .filter((f) => f.endsWith('.json'))
+    .filter((f) => !wanted || wanted.has(f.replace(/\.json$/, '')))
     .sort();
+  if (!files.length) throw new Error(`no catalog files matched ${only ?? '(all)'}`);
 
   const groups = [];
   const remaps = [];
