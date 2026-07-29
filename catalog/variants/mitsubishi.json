@@ -1,0 +1,25 @@
+{
+  "make": "Mitsubishi",
+  "_note": "Mitsubishi badges diesel DI-D and petrol MIVEC. Pajero, Montero and Shogun are the same car under its European, Spanish and British names, and the same goes for Pajero Sport and Montero Sport - the export names merge into the Pajero rows and keep aliases.",
+  "models": [],
+  "groups": [
+    { "models": ["Space Star"], "variants": ["1.0", "1.2"] },
+    { "models": ["Colt"], "variants": ["1.1", "1.3", "1.5 DI-D", "1.0 Hybrid"] },
+    { "models": ["Lancer"], "variants": ["1.5", "1.6", "1.8", "2.0 DI-D"] },
+    { "models": ["Lancer Evolution"], "variants": ["2.0 Turbo"] },
+    { "models": ["ASX"], "variants": ["1.6", "1.8 DI-D", "2.2 DI-D", "1.3 Hybrid"] },
+    { "models": ["Eclipse Cross"], "variants": ["1.5 Turbo", "2.2 DI-D", "2.4 PHEV"] },
+    { "models": ["Outlander"], "variants": ["2.0", "2.2 DI-D", "2.4 MIVEC", "2.4 PHEV"] },
+    { "models": ["Grandis"], "variants": ["2.4", "2.0 DI-D"] },
+    { "models": ["Pajero"], "variants": ["3.2 DI-D", "3.8 V6"] },
+    { "models": ["Pajero Sport"], "variants": ["2.4 DI-D", "2.5 DI-D", "3.0 V6"] },
+    { "models": ["Challenger"], "variants": ["2.5 DI-D", "3.0 V6"] },
+    { "models": ["L200"], "variants": ["2.4 DI-D", "2.5 DI-D"] },
+    { "models": ["i-MiEV"], "variants": ["16 kWh"] }
+  ],
+  "merge": [
+    { "from": "Montero", "model": "Pajero" },
+    { "from": "Shogun", "model": "Pajero" },
+    { "from": "Montero Sport", "model": "Pajero Sport" }
+  ]
+}

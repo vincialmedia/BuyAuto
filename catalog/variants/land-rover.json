@@ -1,0 +1,23 @@
+{
+  "make": "Land Rover",
+  "_note": "Same P/D output badges as Jaguar, since it is the same engine family and the same naming scheme. The plug-in hybrids are badged P300e/P510e, which is the badge on the car rather than a trim.",
+  "models": [],
+  "groups": [
+    { "models": ["Defender"],
+      "variants": ["2.0 P300", "3.0 P400", "2.0 D200", "3.0 D300", "5.0 V8"] },
+    { "models": ["Discovery"],
+      "variants": ["2.0 Si4", "3.0 Si6", "2.0 SD4", "3.0 TD6", "3.0 SDV6", "3.0 D300"] },
+    { "models": ["Discovery Sport"],
+      "variants": ["2.0 P200", "2.0 P250", "2.0 D165", "2.0 D200", "P300e"] },
+    { "models": ["Freelander"], "variants": ["2.0 Si4", "2.2 TD4", "2.2 SD4"] },
+    { "models": ["LR4"], "variants": ["3.0 V6", "5.0 V8"] },
+    { "models": ["Range Rover"],
+      "variants": ["3.0 P400", "4.4 V8", "3.0 D300", "4.4 SDV8", "P510e"] },
+    { "models": ["Range Rover Sport"],
+      "variants": ["3.0 P400", "5.0 V8 SVR", "3.0 D300", "4.4 SDV8", "P510e"] },
+    { "models": ["Range Rover Velar"],
+      "variants": ["2.0 P250", "3.0 P400", "2.0 D200", "3.0 D300"] },
+    { "models": ["Range Rover Evoque"],
+      "variants": ["2.0 P200", "2.0 P250", "2.0 D165", "2.0 D200", "P300e"] }
+  ]
+}
