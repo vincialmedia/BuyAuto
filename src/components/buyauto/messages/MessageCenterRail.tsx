@@ -1,5 +1,5 @@
 import { MessageSquare } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { getMyMessageThreads, type MessageThreadItem } from "@/services/messagingService";
@@ -27,15 +27,20 @@ function formatUnread(count: number): string {
 
 export function MessageCenterRail() {
   const router = useRouter();
-  const { user, loading: authLoading, profileLoading } = useAuth();
+  const { user, loading: authLoading, profileLoading, messageCount } = useAuth();
   const [threads, setThreads] = useState<MessageThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   const activeConversationId = useMemo(() => {
     const raw = router.query.conversationId;
     return typeof raw === "string" ? raw : null;
   }, [router.query.conversationId]);
 
+  // Refetch on navigation (activeConversationId) and whenever the unread total
+  // changes (messageCount) — the latter fires after markConversationRead, by which
+  // point the messaging cache is invalidated, so the list picks up read state and
+  // new messages instead of going stale until a full page reload.
   useEffect(() => {
     let cancelled = false;
 
@@ -43,20 +48,27 @@ export function MessageCenterRail() {
       if (authLoading || profileLoading || !user) {
         setThreads([]);
         setLoading(false);
+        hasLoadedRef.current = false;
         return;
       }
 
-      setLoading(true);
-      const data = await getMyMessageThreads(25);
-      if (!cancelled) setThreads(data);
-      if (!cancelled) setLoading(false);
+      // Only show the skeleton on the first load; later refreshes update in place.
+      if (!hasLoadedRef.current) setLoading(true);
+      // force: skip the short-lived thread cache so a just-read conversation can't
+      // linger as unread here regardless of how the read/refetch calls interleave.
+      const data = await getMyMessageThreads(25, { force: true });
+      if (!cancelled) {
+        setThreads(data);
+        setLoading(false);
+        hasLoadedRef.current = true;
+      }
     }
 
     load();
     return () => {
       cancelled = true;
     };
-  }, [authLoading, profileLoading, user]);
+  }, [authLoading, profileLoading, user, activeConversationId, messageCount]);
 
   return (
     <div className="rounded-3xl border border-neutral-200/60 bg-white p-5 shadow-sm">
