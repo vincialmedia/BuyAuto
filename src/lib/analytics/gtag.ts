@@ -68,10 +68,18 @@ export function readStoredConsent(): ConsentChoice | null {
   }
 }
 
+// True until the visitor answers the banner. While it holds, the `config` call
+// in GoogleAnalytics is told `send_page_view: false`, because a page view sent
+// before the choice goes out cookieless and gtag.js never re-sends it once
+// consent arrives — which is why accepting used to register nothing until the
+// visitor reloaded or navigated. setConsent owns that held-back hit and
+// releases exactly one, so a page load still yields one page_view either way.
+let pageViewHeldForConsent =
+  typeof window !== "undefined" && readStoredConsent() === null;
+
 /**
- * Persists the visitor's choice and tells Google Consent Mode about it. Consent
- * Mode is already defaulted to "denied" in _document, so until this runs GA
- * sends cookieless pings only.
+ * Persists the visitor's choice, tells Google Consent Mode about it, and
+ * releases the page view that was held back while the choice was pending.
  */
 export function setConsent(choice: ConsentChoice) {
   try {
@@ -87,6 +95,22 @@ export function setConsent(choice: ConsentChoice) {
     analytics_storage: choice,
   });
 
+  // Both commands land on the same dataLayer queue and gtag.js drains it in
+  // order, so this hit is built with the state above already applied: cookied
+  // on "granted", a cookieless ping on "denied" — the same hit a returning
+  // visitor with that choice already stored would have sent at load. Sent on
+  // "denied" too on purpose; that path produces one ping today and must keep
+  // producing one.
+  if (pageViewHeldForConsent) {
+    pageViewHeldForConsent = false;
+    // First cookied hit of the session, so GA4 derives acquisition from it.
+    // Without the referrer every consented visit from Google reports as Direct.
+    pageview(
+      window.location.pathname + window.location.search + window.location.hash,
+      document.referrer,
+    );
+  }
+
   window.dispatchEvent(new CustomEvent(CONSENT_CHANGE_EVENT, { detail: choice }));
 }
 
@@ -95,12 +119,19 @@ export function setConsent(choice: ConsentChoice) {
  * client-side navigation has to be sent by hand or the whole site looks like a
  * single-page session.
  */
-export function pageview(url: string) {
+export function pageview(url: string, referrer?: string) {
   if (!isGaEnabled) return;
+  // Navigating before the banner is answered stays silent too, or the visitor
+  // gets a cookieless hit here and a second, cookied one from setConsent.
+  if (pageViewHeldForConsent) return;
   gtag("event", "page_view", {
     page_path: url,
     page_location: typeof window !== "undefined" ? window.location.href : undefined,
     page_title: typeof document !== "undefined" ? document.title : undefined,
+    // Only set by the consent-triggered send. On a route change
+    // document.referrer still points at the external entry page and would
+    // misattribute the source.
+    ...(referrer ? { page_referrer: referrer } : {}),
   });
 }
 

@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import Script from "next/script";
-import { GA_MEASUREMENT_ID, isGaEnabled, pageview } from "@/lib/analytics/gtag";
+import {
+  CONSENT_STORAGE_KEY,
+  GA_MEASUREMENT_ID,
+  isGaEnabled,
+  pageview,
+} from "@/lib/analytics/gtag";
 
 /**
  * Loads gtag.js and reports client-side navigations.
@@ -16,9 +21,9 @@ export function GoogleAnalytics() {
   useEffect(() => {
     if (!isGaEnabled) return;
 
-    // The `config` call below fires the page view for the initial load, so only
-    // subsequent route changes are sent from here — otherwise the landing page
-    // is counted twice.
+    // The `config` call below fires the page view for the initial load — or
+    // holds it for setConsent when the banner has not been answered yet — so
+    // only subsequent route changes are sent from here.
     const handleRouteChange = (url: string) => pageview(url);
 
     router.events.on("routeChangeComplete", handleRouteChange);
@@ -48,7 +53,20 @@ export function GoogleAnalytics() {
           window.gtag = gtag;
           gtag('js', new Date());
           gtag('config', '${GA_MEASUREMENT_ID}', {
-            anonymize_ip: true
+            anonymize_ip: true,
+            // Only let gtag.js fire its automatic page view when the visitor
+            // has already decided. Sent before that, the hit goes out
+            // cookieless and is never re-sent once they accept — setConsent
+            // releases exactly one hit at the moment they choose instead.
+            // Storage is read inline because this runs as a raw script.
+            send_page_view: (function () {
+              try {
+                var c = window.localStorage.getItem('${CONSENT_STORAGE_KEY}');
+                return c === 'granted' || c === 'denied';
+              } catch (e) {
+                return false;
+              }
+            })()
           });
         `}
       </Script>
