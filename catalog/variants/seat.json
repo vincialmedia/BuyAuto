@@ -1,0 +1,21 @@
+{
+  "make": "Seat",
+  "_note": "Seat uses the Volkswagen Group engine names with 4Drive for all-wheel drive. Léon is spelled with the accent here to match the row already in the catalog; Cupra is a separate make since the 2018 split, so the Cupra-badged cars are not listed under Seat.",
+  "models": [],
+  "groups": [
+    { "models": ["Mii"], "variants": ["1.0 MPI", "36.8 kWh"] },
+    { "models": ["Ibiza"],
+      "variants": ["1.0 TSI", "1.2 TSI", "1.4 TSI", "1.4 TDI", "1.6 TDI"] },
+    { "models": ["Toledo"], "variants": ["1.0 TSI", "1.2 TSI", "1.6 TDI"] },
+    { "models": ["Léon"],
+      "variants": ["1.0 TSI", "1.4 TSI", "1.5 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI", "1.4 eHybrid"] },
+    { "models": ["Altea"], "variants": ["1.2 TSI", "1.4 TSI", "1.6 TDI", "2.0 TDI"] },
+    { "models": ["Exeo"], "variants": ["1.8 TSI", "2.0 TSI", "2.0 TDI"] },
+    { "models": ["Arona"], "variants": ["1.0 TSI", "1.5 TSI", "1.6 TDI"] },
+    { "models": ["Ateca"],
+      "variants": ["1.0 TSI", "1.5 TSI", "2.0 TSI 4Drive", "1.6 TDI", "2.0 TDI"] },
+    { "models": ["Tarraco"],
+      "variants": ["1.5 TSI", "2.0 TSI 4Drive", "2.0 TDI", "2.0 TDI 4Drive", "1.4 eHybrid"] },
+    { "models": ["Alhambra"], "variants": ["1.4 TSI", "2.0 TSI", "2.0 TDI"] }
+  ]
+}

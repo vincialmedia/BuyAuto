@@ -1,0 +1,27 @@
+{
+  "make": "Volvo",
+  "_note": "Volvo replaced displacement badges with letter codes: T for petrol, D for diesel, B for the 48V mild hybrids that replaced them in 2019, and Recharge T6/T8 for the plug-in hybrids. Cars sold across that switch carry both eras, which is correct - a 2016 XC60 is a D4 and a 2021 one is a B4. The EX/EC/ES electric range predates none of it and carries battery sizes.",
+  "models": [],
+  "groups": [
+    { "models": ["C30", "C70", "S40", "V50"],
+      "variants": ["1.6", "2.0", "2.4", "1.6D", "2.0D", "D2", "D3", "D4", "T5"] },
+    { "models": ["V40", "V40 Cross Country"],
+      "variants": ["T2", "T3", "T4", "T5", "D2", "D3", "D4"] },
+    { "models": ["S60", "V60", "S60 Cross Country", "V60 Cross Country"],
+      "variants": ["T3", "T4", "T5", "T6", "T8", "D2", "D3", "D4", "B3", "B4", "B5"] },
+    { "models": ["S80", "V70", "XC70"],
+      "variants": ["T4", "T5", "T6", "D3", "D4", "D5"] },
+    { "models": ["S90", "V90", "V90 Cross Country"],
+      "variants": ["T4", "T5", "T6", "T8", "D3", "D4", "D5", "B4", "B5", "B6"] },
+    { "models": ["XC40"], "variants": ["T3", "T4", "T5", "D3", "D4", "B3", "B4"] },
+    { "models": ["XC60"],
+      "variants": ["T5", "T6", "T8", "D3", "D4", "D5", "B4", "B5", "B6"] },
+    { "models": ["XC90"], "variants": ["T5", "T6", "T8", "D5", "B5", "B6"] },
+    { "models": ["C40", "EC40", "EX40"],
+      "variants": ["69 kWh", "78 kWh", "82 kWh Twin Motor"] },
+    { "models": ["EX30", "EX30 Cross Country"],
+      "variants": ["51 kWh", "69 kWh", "69 kWh Twin Motor"] },
+    { "models": ["EX60"], "variants": ["Single Motor", "Twin Motor"] },
+    { "models": ["EX90", "ES90"], "variants": ["111 kWh", "111 kWh Twin Motor"] }
+  ]
+}
