@@ -15,13 +15,6 @@ type PrepareBody = {
   donation_amount_chf?: number;
 };
 
-function getExpiresAt(durationDays: number | null): string | null {
-  if (durationDays === null) return null;
-  const date = new Date();
-  date.setDate(date.getDate() + durationDays);
-  return date.toISOString();
-}
-
 async function getOwnedListing(
   supabase: ReturnType<typeof createPagesServerClient<Database>>,
   listingId: string,
@@ -137,7 +130,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // leaves a stale pricing_plan behind would compute the wrong expiry.
           pricing_plan: plan,
           duration_days: planDetails.duration_days,
-          expires_at: getExpiresAt(planDetails.duration_days),
+          // expires_at is deliberately NOT set here: the listing goes to 'pending'
+          // and the paid window must not start ticking while it waits for review.
+          // set_listing_expires_at anchors it from duration_days at publication.
           // Premium is not touched here either — a free plan simply never grants
           // it, and clearing it from a user session is a write the premium
           // authority trigger rejects.
@@ -221,7 +216,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Dual-write until the legacy column drop (see the free-plan path above).
         pricing_plan: plan,
         duration_days: planDetails.duration_days,
-        expires_at: getExpiresAt(planDetails.duration_days),
+        // No expires_at here either — see the free-plan path above. The clock
+        // starts when the listing is published, not when checkout opens.
         price_paid_chf: totalCHF,
         payment_status: "requires_payment",
         stripe_payment_intent_id: paymentIntent.id,

@@ -547,7 +547,10 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
       .from(PUBLIC_LISTINGS_VIEW)
       .select("*")
       .eq("id", id)
-      .in("status", ["published", "sold"])
+      // The view contains published, unexpired listings only, so filtering for
+      // 'sold' here never matched anything. A sold listing is intentionally not
+      // publicly reachable; the detail page renders its 410 for that case.
+      .eq("status", "published")
       .single();
 
     if (error) {

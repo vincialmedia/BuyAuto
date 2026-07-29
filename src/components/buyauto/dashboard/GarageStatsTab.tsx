@@ -17,7 +17,13 @@ function safeViews(listing: ListingDetail): number {
 }
 
 function isPremiumListing(listing: ListingDetail): boolean {
-  return listing.premium === true;
+  // Must match ListingsSection's isPremium: a lapsed premium_until is not premium,
+  // while a NULL premium_until means premium without an expiry. Reading the raw
+  // flag counted lapsed listings as Premium in the stats while the listing card
+  // beside them said otherwise.
+  if (listing.premium !== true) return false;
+  if (!listing.premium_until) return true;
+  return new Date(listing.premium_until) > new Date();
 }
 
 function formatVehicleName(listing: ListingDetail): string {

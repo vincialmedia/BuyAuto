@@ -268,7 +268,7 @@ async function getDashboardStats(): Promise<DashboardStats> {
 
   const { data, error } = await supabase
     .from("listings")
-    .select("status, view_count")
+    .select("status, view_count, expires_at")
     .or(`created_by.eq.${userId},user_id.eq.${userId}`);
 
   if (error) throw error;
@@ -281,9 +281,20 @@ async function getDashboardStats(): Promise<DashboardStats> {
     totalViews: 0,
   };
 
+  const now = Date.now();
+
   data?.forEach((listing: any) => {
-    if (listing.status === "active" || listing.status === "published") stats.active++;
-    else if (listing.status === "pending") stats.pending++;
+    // A published listing whose window has elapsed is expired, not active. The
+    // hourly maintenance sweep archives these, but a listing can sit here for up
+    // to an hour before it does — and counting it as active meant the dashboard
+    // contradicted the "Abgelaufen" badge the same row was already showing.
+    const lapsed =
+      listing.expires_at != null && Number.isFinite(Date.parse(listing.expires_at)) && Date.parse(listing.expires_at) <= now;
+
+    if (listing.status === "active" || listing.status === "published") {
+      if (lapsed) stats.expired++;
+      else stats.active++;
+    } else if (listing.status === "pending") stats.pending++;
     else if (listing.status === "sold") stats.sold++;
     else if (listing.status === "expired" || listing.status === "archived") stats.expired++;
 
@@ -293,11 +304,11 @@ async function getDashboardStats(): Promise<DashboardStats> {
   return stats;
 }
 
-async function updateListing(id: string, updates: unknown) {
-  const { data, error } = await supabase.from("listings").update(updates as any).eq("id", id).select().single();
-  if (error) throw error;
-  return data;
-}
+// Removed: updateListing(id, updates) — passed caller-supplied columns straight
+// into an unfiltered listings UPDATE. Its only caller was the orphaned
+// components/dashboard/ListingsSection (also removed). Every real dashboard
+// mutation goes through a purpose-built RPC above (pause/unpause/archive/sold),
+// which enforces ownership and legal transitions server-side.
 
 async function deleteListing(id: string) {
   const { error } = await supabase.from("listings").delete().eq("id", id);
@@ -308,29 +319,14 @@ async function deleteListing(id: string) {
   return { success: true };
 }
 
-async function upgradeToPremium(id: string) {
-  console.log("Upgrade to premium requested for", id);
-  return { success: false, message: "Payment integration required" };
-}
-
-async function extendListing(id: string) {
-  const nextMonth = new Date();
-  nextMonth.setDate(nextMonth.getDate() + 30);
-
-  const { error } = await supabase
-    .from("listings")
-    .update({
-      expires_at: nextMonth.toISOString(),
-      status: "active",
-    })
-    .eq("id", id);
-
-  if (error) {
-    console.error("Error extending listing:", error);
-    return { success: false, error };
-  }
-  return { success: true };
-}
+// Removed: upgradeToPremium(id) — an unreachable stub that only logged and
+// returned "Payment integration required". The real upgrade posts to
+// /api/billing/premium-upgrade/prepare from the dashboard listings section.
+//
+// Removed: extendListing(id) — dead, and a free-renewal hole if it had ever been
+// wired up: it pushed expires_at +30 days straight from the browser with no
+// payment, and wrote the legacy status 'active' that no public read path accepts.
+// Listing extension is an admin action (adminService.extendExpiry).
 
 async function getListingInquiryCounts(listingIds: string[]): Promise<ListingInquiryCounts> {
   if (!Array.isArray(listingIds) || listingIds.length === 0) return {};
@@ -471,8 +467,5 @@ export const dashboardService = {
   unpauseListing,
   getDashboardStats,
   getListingInquiryCounts,
-  updateListing,
   deleteListing,
-  upgradeToPremium,
-  extendListing,
 };
