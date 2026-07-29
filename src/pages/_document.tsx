@@ -24,6 +24,10 @@ export default function Document() {
             __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
+              // Exposed on window so the bundle can reach the shim. It must
+              // call *this* function rather than pushing to dataLayer itself:
+              // only a real arguments object counts as a gtag command.
+              window.gtag = gtag;
               gtag('consent', 'default', {
                 ad_storage: 'denied',
                 ad_user_data: 'denied',

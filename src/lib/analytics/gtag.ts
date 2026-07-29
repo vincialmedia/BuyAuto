@@ -3,11 +3,24 @@
 // The measurement ID is inlined at build time, so it must be referenced as a
 // full literal `process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID` — a computed lookup
 // would come back undefined in the browser bundle.
-export const GA_MEASUREMENT_ID = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").trim();
+// Surrounding quotes are stripped: pasting `"G-XXXX"` into a Vercel env var is
+// an easy mistake and would otherwise fail the check below and disable GA with
+// no visible symptom.
+export const GA_MEASUREMENT_ID = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "")
+  .trim()
+  .replace(/^["']|["']$/g, "");
 
 // Everything below no-ops when the ID is unset, so preview/local builds without
 // the env var behave exactly as they did before GA existed.
 export const isGaEnabled = /^G-[A-Z0-9]+$/i.test(GA_MEASUREMENT_ID);
+
+if (typeof window !== "undefined" && GA_MEASUREMENT_ID && !isGaEnabled) {
+  // Set but unusable. Silence here means an hour of staring at an empty GA
+  // dashboard, so say it out loud in the one place someone will look.
+  console.warn(
+    `[analytics] NEXT_PUBLIC_GA_MEASUREMENT_ID is set to "${GA_MEASUREMENT_ID}" but is not a valid GA4 ID (expected G-XXXXXXXXXX). Google Analytics is disabled.`,
+  );
+}
 
 // Bumped from the legacy `buyauto_cookie_consent` key on purpose: that banner
 // had no reject path and gated nothing, so a "true" stored under it is not
@@ -35,11 +48,12 @@ declare global {
 
 function gtag(...args: GtagArgs) {
   if (typeof window === "undefined") return;
-  // Push directly rather than through window.gtag: the queue exists from the
-  // consent bootstrap in _document, while window.gtag is only replaced once
-  // gtag.js has actually downloaded. Pushing works in both states.
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(args);
+  // Must go through the shim rather than pushing onto dataLayer directly:
+  // gtag.js only recognises a pushed `arguments` object, and an Array is NOT
+  // equivalent — it lands on the queue and is silently ignored. Calling the
+  // shim (installed in _document, later replaced by gtag.js itself) is what
+  // constructs a real arguments object.
+  window.gtag?.(...args);
 }
 
 export function readStoredConsent(): ConsentChoice | null {
