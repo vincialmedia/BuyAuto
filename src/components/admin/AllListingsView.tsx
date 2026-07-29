@@ -442,7 +442,129 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile card list */}
+        <div className="md:hidden">
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+              <span className="text-neutral-600">Lade Inserate...</span>
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="p-8 text-center text-neutral-600">Keine Inserate gefunden</div>
+          ) : (
+            <div className="divide-y divide-neutral-100">
+              <label className="flex items-center gap-3 bg-neutral-50 p-4 text-sm font-medium text-neutral-700">
+                <Checkbox
+                  aria-label="Alle auswählen"
+                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                  onCheckedChange={(v) => toggleSelectAll(v === true)}
+                />
+                Alle auswählen
+              </label>
+              {listings.map((listing) => (
+                <div key={listing.id} className={`p-4 ${selectedIds.has(listing.id) ? "bg-emerald-50/40" : ""}`}>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      className="mt-1"
+                      aria-label={`${listing.brand} ${listing.model} auswählen`}
+                      checked={selectedIds.has(listing.id)}
+                      onCheckedChange={(v) => toggleSelectOne(listing.id, v === true)}
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="truncate font-medium text-neutral-900">
+                          {listing.brand} {listing.model}
+                        </div>
+                        {listing.premium && <Star className="h-4 w-4 flex-none text-amber-500" />}
+                      </div>
+                      <div className="mt-0.5 text-sm text-neutral-600">
+                        {listing.year} • {listing.canton_code} • {formatPrice(listing.price_paid_chf || 0)}
+                      </div>
+                      {listing.owner_profile?.email && (
+                        <div className="mt-1 truncate text-xs text-neutral-600">{listing.owner_profile.email}</div>
+                      )}
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-600">
+                        <Badge variant="outline" className="text-xs">{listing.price_plan || "N/A"}</Badge>
+                        <span>Erstellt: {formatDate(listing.created_at, listing.status)}</span>
+                        <span>Läuft ab: {formatDate(listing.expires_at, listing.status)}</span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <Select
+                          value={listing.status}
+                          onValueChange={(value) => handleStatusChange(listing.id, value)}
+                        >
+                          <SelectTrigger className="h-9 w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Wartend</SelectItem>
+                            <SelectItem value="published">Freigegeben</SelectItem>
+                            <SelectItem value="rejected">Abgelehnt</SelectItem>
+                            <SelectItem value="expired">Abgelaufen</SelectItem>
+                            <SelectItem value="archived">Archiviert</SelectItem>
+                            {!["pending", "published", "rejected", "expired", "archived"].includes(listing.status) && (
+                              <SelectItem value={listing.status} disabled>
+                                {listing.status}
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          size="sm"
+                          variant={listing.premium ? "default" : "outline"}
+                          onClick={() => handleTogglePremium(listing.id, listing.premium)}
+                          className={listing.premium ? "bg-amber-500 hover:bg-amber-600" : ""}
+                        >
+                          <Star className="h-4 w-4" />
+                        </Button>
+
+                        <Button size="sm" variant="outline" onClick={() => openDetailsModal(listing)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleExtendExpiry(listing.id, 30)}>
+                              <Plus className="mr-2 h-4 w-4" />
+                              +30 Tage
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExtendExpiry(listing.id, 90)}>
+                              <Plus className="mr-2 h-4 w-4" />
+                              +90 Tage
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openArchiveModal(listing.id)}>
+                              <Calendar className="mr-2 h-4 w-4" />
+                              Archivieren
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openDeleteModal(listing.id)} className="text-red-600">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Löschen
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openDeclineModal(listing.id)}>
+                              <Minus className="mr-2 h-4 w-4" />
+                              Ablehnen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full">
             <thead className="border-b border-neutral-200 bg-neutral-50">
               <tr>
@@ -612,7 +734,7 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="p-4 border-t border-neutral-200 flex justify-between items-center">
+          <div className="p-4 border-t border-neutral-200 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
             <div className="text-sm text-neutral-600">
               Zeige {((filters.page || 1) - 1) * (filters.limit || 25) + 1} bis{' '}
               {Math.min((filters.page || 1) * (filters.limit || 25), pagination.total)} von{' '}
