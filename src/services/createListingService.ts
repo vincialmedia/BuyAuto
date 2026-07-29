@@ -78,11 +78,21 @@ export function vehicleCoreFieldsFromWizard(
 > {
   const anyData = data as any;
   const hp = coerceNumber(anyData?.power_hp);
+
+  // make_id/model_id/variant_id are uuid columns. Step 1's react-hook-form
+  // defaults are "" and its mount effect mirrors raw form values into wizard
+  // state, so "" can sit in `data` until the next Step-1 submit nulls it.
+  // Postgres rejects '' for uuid ("invalid input syntax"), which would fail
+  // the whole listing write — so an empty string is normalized to null here,
+  // at the single choke point every write path shares.
+  const uuidOrNull = (v: unknown): string | null =>
+    typeof v === "string" && v.trim() !== "" ? v : null;
+
   return {
     vin: typeof anyData?.vin === "string" ? anyData.vin : null,
-    make_id: typeof anyData?.make_id === "string" ? anyData.make_id : null,
-    model_id: typeof anyData?.model_id === "string" ? anyData.model_id : null,
-    variant_id: typeof anyData?.variant_id === "string" ? anyData.variant_id : null,
+    make_id: uuidOrNull(anyData?.make_id),
+    model_id: uuidOrNull(anyData?.model_id),
+    variant_id: uuidOrNull(anyData?.variant_id),
     power_hp: typeof hp === "number" ? Math.round(hp) : null,
     drivetrain: typeof anyData?.drivetrain === "string" ? anyData.drivetrain : null,
     first_registration: typeof anyData?.first_registration === "string" ? anyData.first_registration : null,
