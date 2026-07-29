@@ -27,24 +27,30 @@ set full_name = null
 where full_name is not null
   and btrim(full_name) = '';
 
+-- Prefer first/last name over the signup-era full_name metadata: the dashboard
+-- edits first/last but never rewrites metadata full_name, so when first/last
+-- keys exist they carry the user's latest intent (including a deliberately
+-- cleared name, which must NOT be resurrected from the stale full_name).
 update public.profiles p
 set full_name = u.meta_name
 from (
   select
     id,
-    nullif(btrim(coalesce(
-      nullif(btrim(coalesce(raw_user_meta_data->>'full_name', '')), ''),
-      concat_ws(' ',
-        nullif(btrim(coalesce(raw_user_meta_data->>'first_name', '')), ''),
-        nullif(btrim(coalesce(raw_user_meta_data->>'last_name', '')), '')
-      )
-    )), '') as meta_name
+    case
+      when raw_user_meta_data ? 'first_name' or raw_user_meta_data ? 'last_name' then
+        nullif(btrim(concat_ws(' ',
+          nullif(btrim(coalesce(raw_user_meta_data->>'first_name', '')), ''),
+          nullif(btrim(coalesce(raw_user_meta_data->>'last_name', '')), '')
+        )), '')
+      else
+        nullif(btrim(coalesce(raw_user_meta_data->>'full_name', '')), '')
+    end as meta_name
   from auth.users
 ) u
 where p.id = u.id
   and p.full_name is null
   and u.meta_name is not null
-  and u.meta_name <> coalesce(p.email, '');
+  and lower(u.meta_name) <> lower(coalesce(p.email, ''));
 
 create or replace function public.handle_new_user()
 returns trigger
