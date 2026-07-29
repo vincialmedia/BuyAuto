@@ -193,11 +193,14 @@ export async function getExistingConversationForListing(listingId: string): Prom
   const userId = sessionRes.data.session?.user?.id ?? null;
   if (!userId) return null;
 
+  // Participants live in conversation_participants, not on conversations
+  // itself; find the conversation where the current user is the buyer.
   const { data, error } = await supabase
     .from("conversations")
-    .select("id")
+    .select("id, conversation_participants!inner(user_id, role)")
     .eq("listing_id", listingId)
-    .eq("buyer_user_id", userId)
+    .eq("conversation_participants.user_id", userId)
+    .eq("conversation_participants.role", "buyer")
     .limit(1)
     .maybeSingle();
 
