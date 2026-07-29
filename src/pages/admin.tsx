@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
@@ -37,6 +38,12 @@ export default function AdminPage() {
 
   return (
     <AdminLayout>
+      {/* AdminLayout renders no Head, so without this the tab — and every
+          analytics page_title — keeps whatever page the admin arrived from. */}
+      <Head>
+        <title>Admin – BuyAuto</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       <AdminDashboard />
     </AdminLayout>
   );

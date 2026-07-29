@@ -31,6 +31,9 @@ export const CONSENT_STORAGE_KEY = "buyauto_consent_v2";
 // sync without a reload (the `storage` event only fires in *other* tabs).
 export const CONSENT_CHANGE_EVENT = "buyauto:consent-change";
 
+// Raised by reopenConsent() so a footer link can bring the banner back.
+export const CONSENT_REOPEN_EVENT = "buyauto:consent-reopen";
+
 export type ConsentChoice = "granted" | "denied";
 
 type GtagArgs =
@@ -78,16 +81,11 @@ let pageViewHeldForConsent =
   typeof window !== "undefined" && readStoredConsent() === null;
 
 /**
- * Persists the visitor's choice, tells Google Consent Mode about it, and
- * releases the page view that was held back while the choice was pending.
+ * Tells Google Consent Mode the choice and releases the page view that was held
+ * back while it was pending. Storage is deliberately not touched here — the
+ * cross-tab path arrives with storage already written by the other tab.
  */
-export function setConsent(choice: ConsentChoice) {
-  try {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, choice);
-  } catch {
-    // Choice is not persisted, but honour it for this page view regardless.
-  }
-
+function applyConsent(choice: ConsentChoice) {
   gtag("consent", "update", {
     ad_storage: choice,
     ad_user_data: choice,
@@ -110,8 +108,42 @@ export function setConsent(choice: ConsentChoice) {
       document.referrer,
     );
   }
+}
 
+/** Persists the visitor's choice and applies it. */
+export function setConsent(choice: ConsentChoice) {
+  try {
+    window.localStorage.setItem(CONSENT_STORAGE_KEY, choice);
+  } catch {
+    // Honour the choice for this page view anyway, but say something: the
+    // banner will reappear on every load for this visitor and that looks like
+    // a bug rather than a locked-down browser.
+    console.warn(
+      "[analytics] Could not persist the cookie choice — storage is unavailable. It applies to this page view only and the banner will reappear.",
+    );
+  }
+
+  applyConsent(choice);
   window.dispatchEvent(new CustomEvent(CONSENT_CHANGE_EVENT, { detail: choice }));
+}
+
+/**
+ * Adopts a choice another tab just made. Storage already holds it, so this only
+ * catches this tab's tag up — and releases its held page view, so a visitor who
+ * decides in one tab is still counted once in each open tab.
+ */
+export function adoptConsentFromOtherTab(choice: ConsentChoice) {
+  applyConsent(choice);
+}
+
+/**
+ * Reopens the banner so a decision can be changed. Deliberately does NOT clear
+ * CONSENT_STORAGE_KEY: an empty key stops the _document snippet matching
+ * "granted", which would silently downgrade a consenting visitor on their next
+ * load if they close the banner without choosing again.
+ */
+export function reopenConsent() {
+  window.dispatchEvent(new Event(CONSENT_REOPEN_EVENT));
 }
 
 /**
