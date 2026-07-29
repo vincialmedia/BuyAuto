@@ -11,6 +11,8 @@ export interface ListingDraft {
   data: Partial<ListingData>;
   created_at: string;
   updated_at: string;
+  /** Set once the draft has gone 30 days without an edit; deleted 5 days later. */
+  archived_at: string | null;
 }
 
 const coerceDraft = (row: ListingDraftRow): ListingDraft => {
@@ -21,6 +23,7 @@ const coerceDraft = (row: ListingDraftRow): ListingDraft => {
     data,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    archived_at: (row as { archived_at?: string | null }).archived_at ?? null,
   };
 };
 
@@ -65,6 +68,9 @@ export async function updateListingDraft(params: { user: any; draftId: string; d
   const basePatch: Record<string, unknown> = {
     data,
     updated_at: new Date().toISOString(),
+    // Editing an archived draft rescues it: the 30-day clock restarts and it is
+    // no longer queued for deletion.
+    archived_at: null,
   };
 
   const variantText = typeof data?.variant_text === "string" ? data.variant_text : null;

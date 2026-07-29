@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
-import { FileText, Users, ClipboardList } from "lucide-react";
+import { FileText, Users, ClipboardList, PencilRuler } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -32,6 +32,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               onClick={() => router.push('/admin?tab=listings')}
             />
             <NavItem
+              icon={PencilRuler}
+              label="Entwürfe"
+              active={router.query.tab === 'drafts'}
+              onClick={() => router.push('/admin?tab=drafts')}
+            />
+            <NavItem
               icon={Users}
               label="Benutzer"
               active={router.query.tab === 'users'}
@@ -52,6 +58,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               label="Inserate"
               active={router.query.tab === 'listings'}
               onClick={() => router.push('/admin?tab=listings')}
+            />
+            <MobileTab
+              label="Entwürfe"
+              active={router.query.tab === 'drafts'}
+              onClick={() => router.push('/admin?tab=drafts')}
             />
             <MobileTab
               label="Benutzer"
