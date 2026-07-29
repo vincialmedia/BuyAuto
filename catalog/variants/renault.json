@@ -5,15 +5,15 @@
   "groups": [
     {
       "models": ["Clio"],
-      "variants": ["1.0 TCe", "1.2 TCe", "1.3 TCe", "1.5 dCi", "1.6 E-Tech Hybrid"]
+      "variants": ["1.0 SCe", "1.0 TCe", "1.2", "1.2 TCe", "1.3 TCe", "1.5 dCi", "1.6 E-Tech Hybrid"]
     },
     {
       "models": ["Mégane"],
-      "variants": ["1.2 TCe", "1.3 TCe", "1.5 dCi", "1.6 dCi", "1.6 E-Tech Plug-in"]
+      "variants": ["1.2 TCe", "1.3 TCe", "1.6", "1.5 dCi", "1.6 dCi", "2.0 dCi", "1.6 E-Tech Plug-in"]
     },
     {
       "models": ["Twingo"],
-      "variants": ["1.0 SCe", "0.9 TCe", "1.5 dCi"]
+      "variants": ["1.0 SCe", "0.9 TCe", "1.2", "1.5 dCi", "22 kWh"]
     },
     {
       "models": ["Clio RS"],
@@ -23,7 +23,7 @@
       "models": ["Megane RS"],
       "variants": ["1.8 Turbo", "2.0 Turbo", "Trophy", "Trophy-R"]
     },
-    { "models": ["Megane GT"], "variants": ["1.6 TCe", "1.6 dCi"] },
+    { "models": ["Megane GT"], "variants": ["1.6 TCe", "2.0 TCe", "1.6 dCi", "1.5 dCi"] },
     { "models": ["Twingo RS"], "variants": ["1.6 16V"] },
     { "models": ["Captur"],
       "variants": ["1.0 TCe", "1.3 TCe", "1.2 TCe", "1.5 dCi", "1.6 E-Tech Hybrid"] },

@@ -3,19 +3,141 @@
   "_note": "Alfa badges petrol JTS/TBi/MultiAir and diesel JTD/JTDm. Quadrifoglio is the performance trim on Giulia and Stelvio rather than a separate model, so it appears as the 2.9 V6 variant it always is.",
   "models": [],
   "groups": [
-    { "models": ["Mito"], "variants": ["0.9 TwinAir", "1.4 MultiAir", "1.3 JTDm"] },
-    { "models": ["Giulietta"],
-      "variants": ["1.4 TB MultiAir", "1.75 TBi", "1.6 JTDm", "2.0 JTDm"] },
-    { "models": ["147"], "variants": ["1.6 TS", "2.0 TS", "1.9 JTD"] },
-    { "models": ["159"], "variants": ["1.9 JTS", "2.2 JTS", "1.9 JTDm", "2.4 JTDm"] },
-    { "models": ["GT"], "variants": ["2.0 JTS", "3.2 V6", "1.9 JTD"] },
-    { "models": ["Brera", "Spider"], "variants": ["2.2 JTS", "3.2 JTS Q4", "2.4 JTDm"] },
-    { "models": ["Giulia"], "variants": ["2.0 Turbo", "2.2 JTDm", "2.9 V6 Quadrifoglio"] },
-    { "models": ["Stelvio"], "variants": ["2.0 Turbo", "2.2 JTDm", "2.9 V6 Quadrifoglio"] },
-    { "models": ["Tonale"], "variants": ["1.5 Hybrid", "1.6 JTDm", "1.3 PHEV Q4"] },
-    { "models": ["Junior"], "variants": ["1.2 Hybrid", "54 kWh"] },
-    { "models": ["4C", "4C Spider"], "variants": ["1.75 TBi"] },
-    { "models": ["8C Spider"], "variants": ["4.7 V8"] },
-    { "models": ["33 Stradale"], "variants": ["3.0 V6 Twin Turbo", "Elettrica"] }
+    {
+      "models": [
+        "Mito"
+      ],
+      "variants": [
+        "0.9 TwinAir",
+        "1.4 MultiAir",
+        "1.3 JTDm",
+        "1.4 TB",
+        "1.6 JTDm"
+      ]
+    },
+    {
+      "models": [
+        "Giulietta"
+      ],
+      "variants": [
+        "1.4 TB MultiAir",
+        "1.75 TBi",
+        "1.6 JTDm",
+        "2.0 JTDm",
+        "1.4 TB"
+      ]
+    },
+    {
+      "models": [
+        "147"
+      ],
+      "variants": [
+        "1.6 TS",
+        "2.0 TS",
+        "1.9 JTD",
+        "3.2 V6 GTA"
+      ]
+    },
+    {
+      "models": [
+        "159"
+      ],
+      "variants": [
+        "1.9 JTS",
+        "2.2 JTS",
+        "1.9 JTDm",
+        "2.4 JTDm",
+        "1.8 MPI",
+        "3.2 JTS Q4",
+        "2.0 JTDm"
+      ]
+    },
+    {
+      "models": [
+        "GT"
+      ],
+      "variants": [
+        "2.0 JTS",
+        "3.2 V6",
+        "1.9 JTD"
+      ]
+    },
+    {
+      "models": [
+        "Brera",
+        "Spider"
+      ],
+      "variants": [
+        "2.2 JTS",
+        "3.2 JTS Q4",
+        "2.4 JTDm",
+        "2.0 JTDm"
+      ]
+    },
+    {
+      "models": [
+        "Giulia"
+      ],
+      "variants": [
+        "2.0 Turbo",
+        "2.2 JTDm",
+        "2.9 V6 Quadrifoglio"
+      ]
+    },
+    {
+      "models": [
+        "Stelvio"
+      ],
+      "variants": [
+        "2.0 Turbo",
+        "2.2 JTDm",
+        "2.9 V6 Quadrifoglio"
+      ]
+    },
+    {
+      "models": [
+        "Tonale"
+      ],
+      "variants": [
+        "1.5 Hybrid",
+        "1.6 JTDm",
+        "1.3 PHEV Q4"
+      ]
+    },
+    {
+      "models": [
+        "Junior"
+      ],
+      "variants": [
+        "1.2 Hybrid",
+        "54 kWh"
+      ]
+    },
+    {
+      "models": [
+        "4C",
+        "4C Spider"
+      ],
+      "variants": [
+        "1.75 TBi"
+      ]
+    },
+    {
+      "models": [
+        "8C Spider"
+      ],
+      "variants": [
+        "4.7 V8"
+      ]
+    },
+    {
+      "models": [
+        "33 Stradale"
+      ],
+      "variants": [
+        "3.0 V6 Twin Turbo",
+        "Elettrica"
+      ]
+    }
   ]
 }

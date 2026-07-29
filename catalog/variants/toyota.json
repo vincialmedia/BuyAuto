@@ -4,52 +4,317 @@
   "models": [],
   "groups": [
     {
-      "models": ["Prius"],
-      "variants": ["1.8 Hybrid", "2.0 Hybrid", "Plug-in Hybrid"]
+      "models": [
+        "Prius"
+      ],
+      "variants": [
+        "1.8 Hybrid",
+        "2.0 Hybrid",
+        "Plug-in Hybrid"
+      ]
     },
     {
-      "models": ["Yaris"],
-      "variants": ["1.0 VVT-i", "1.5 VVT-i", "1.5 Hybrid"]
+      "models": [
+        "Yaris"
+      ],
+      "variants": [
+        "1.0 VVT-i",
+        "1.5 VVT-i",
+        "1.5 Hybrid",
+        "1.33 Dual VVT-i",
+        "1.4 D-4D"
+      ]
     },
     {
-      "models": ["Corolla"],
-      "variants": ["1.2 Turbo", "1.8 Hybrid", "2.0 Hybrid"]
+      "models": [
+        "Corolla"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "1.8 Hybrid",
+        "2.0 Hybrid",
+        "1.6 Valvematic",
+        "1.4 D-4D"
+      ]
     },
-    { "models": ["Corolla Touring Sports", "Corolla Cross"],
-      "variants": ["1.2 Turbo", "1.8 Hybrid", "2.0 Hybrid"] },
-    { "models": ["Auris", "Auris Touring Sports"],
-      "variants": ["1.33 Dual VVT-i", "1.6 Valvematic", "1.4 D-4D", "1.8 Hybrid"] },
-    { "models": ["Avensis", "Avensis Touring Sports"],
-      "variants": ["1.6 Valvematic", "1.8 Valvematic", "2.0 D-4D", "2.2 D-4D"] },
-    { "models": ["Aygo"], "variants": ["1.0 VVT-i"] },
-    { "models": ["Aygo X"], "variants": ["1.0 VVT-i", "1.5 Hybrid"] },
-    { "models": ["iQ"], "variants": ["1.0 VVT-i", "1.33 Dual VVT-i"] },
-    { "models": ["Verso"], "variants": ["1.6 Valvematic", "1.8 Valvematic", "2.0 D-4D"] },
-    { "models": ["Verso-S"], "variants": ["1.33 Dual VVT-i"] },
-    { "models": ["Urban Cruiser"], "variants": ["1.33 Dual VVT-i", "49 kWh", "61 kWh"] },
-    { "models": ["Yaris Cross"], "variants": ["1.5 Hybrid", "1.5 Hybrid AWD-i"] },
-    { "models": ["Yaris GRMN"], "variants": ["1.8 Supercharged"] },
-    { "models": ["GR Yaris"], "variants": ["1.6 Turbo"] },
-    { "models": ["GR Supra"], "variants": ["2.0 Turbo", "3.0 Turbo"] },
-    { "models": ["GR86", "GT86"], "variants": ["2.0 Boxer", "2.4 Boxer"] },
-    { "models": ["C-HR"],
-      "variants": ["1.2 Turbo", "1.8 Hybrid", "2.0 Hybrid", "2.0 Plug-in Hybrid"] },
-    { "models": ["Camry"], "variants": ["2.5 Hybrid"] },
-    { "models": ["Prius Plus"], "variants": ["1.8 Hybrid"] },
-    { "models": ["Mirai"], "variants": ["Fuel Cell"] },
-    { "models": ["bZ4X", "bZ4X Touring"], "variants": ["57.7 kWh", "71.4 kWh", "71.4 kWh AWD"] },
-    { "models": ["Highlander"], "variants": ["2.5 Hybrid", "3.5 V6"] },
-    { "models": ["Land Cruiser", "Land Cruiser Prado"],
-      "variants": ["2.8 D-4D", "3.0 D-4D", "4.5 V8 D-4D"] },
-    { "models": ["Hilux"], "variants": ["2.4 D-4D", "2.8 D-4D", "4.0 V6"] },
-    { "models": ["Hiace"], "variants": ["2.5 D-4D", "2.8 D-4D"] },
-    { "models": ["Proace", "Proace Verso"], "variants": ["1.5 D-4D", "2.0 D-4D", "50 kWh", "75 kWh"] },
-    { "models": ["Proace City", "Proace City Verso"],
-      "variants": ["1.2 Turbo", "1.5 D-4D", "50 kWh"] },
-    { "models": ["Proace Max"], "variants": ["2.2 D-4D", "110 kWh"] },
-    { "models": ["Succeed"], "variants": ["1.5 VVT-i"] }
+    {
+      "models": [
+        "Corolla Touring Sports",
+        "Corolla Cross"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "1.8 Hybrid",
+        "2.0 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Auris",
+        "Auris Touring Sports"
+      ],
+      "variants": [
+        "1.33 Dual VVT-i",
+        "1.6 Valvematic",
+        "1.4 D-4D",
+        "1.8 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Avensis",
+        "Avensis Touring Sports"
+      ],
+      "variants": [
+        "1.6 Valvematic",
+        "1.8 Valvematic",
+        "2.0 D-4D",
+        "2.2 D-4D"
+      ]
+    },
+    {
+      "models": [
+        "Aygo"
+      ],
+      "variants": [
+        "1.0 VVT-i"
+      ]
+    },
+    {
+      "models": [
+        "Aygo X"
+      ],
+      "variants": [
+        "1.0 VVT-i",
+        "1.5 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "iQ"
+      ],
+      "variants": [
+        "1.0 VVT-i",
+        "1.33 Dual VVT-i"
+      ]
+    },
+    {
+      "models": [
+        "Verso"
+      ],
+      "variants": [
+        "1.6 Valvematic",
+        "1.8 Valvematic",
+        "2.0 D-4D"
+      ]
+    },
+    {
+      "models": [
+        "Verso-S"
+      ],
+      "variants": [
+        "1.33 Dual VVT-i"
+      ]
+    },
+    {
+      "models": [
+        "Urban Cruiser"
+      ],
+      "variants": [
+        "1.33 Dual VVT-i",
+        "49 kWh",
+        "61 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Yaris Cross"
+      ],
+      "variants": [
+        "1.5 Hybrid",
+        "1.5 Hybrid AWD-i"
+      ]
+    },
+    {
+      "models": [
+        "Yaris GRMN"
+      ],
+      "variants": [
+        "1.8 Supercharged"
+      ]
+    },
+    {
+      "models": [
+        "GR Yaris"
+      ],
+      "variants": [
+        "1.6 Turbo"
+      ]
+    },
+    {
+      "models": [
+        "GR Supra"
+      ],
+      "variants": [
+        "2.0 Turbo",
+        "3.0 Turbo"
+      ]
+    },
+    {
+      "models": [
+        "GR86",
+        "GT86"
+      ],
+      "variants": [
+        "2.0 Boxer",
+        "2.4 Boxer"
+      ]
+    },
+    {
+      "models": [
+        "C-HR"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "1.8 Hybrid",
+        "2.0 Hybrid",
+        "2.0 Plug-in Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Camry"
+      ],
+      "variants": [
+        "2.5 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Prius Plus"
+      ],
+      "variants": [
+        "1.8 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Mirai"
+      ],
+      "variants": [
+        "Fuel Cell"
+      ]
+    },
+    {
+      "models": [
+        "bZ4X",
+        "bZ4X Touring"
+      ],
+      "variants": [
+        "57.7 kWh",
+        "71.4 kWh",
+        "71.4 kWh AWD"
+      ]
+    },
+    {
+      "models": [
+        "Highlander"
+      ],
+      "variants": [
+        "2.5 Hybrid",
+        "3.5 V6"
+      ]
+    },
+    {
+      "models": [
+        "Land Cruiser",
+        "Land Cruiser Prado"
+      ],
+      "variants": [
+        "2.8 D-4D",
+        "3.0 D-4D",
+        "4.5 V8 D-4D"
+      ]
+    },
+    {
+      "models": [
+        "Hilux"
+      ],
+      "variants": [
+        "2.4 D-4D",
+        "2.8 D-4D",
+        "4.0 V6"
+      ]
+    },
+    {
+      "models": [
+        "Hiace"
+      ],
+      "variants": [
+        "2.5 D-4D",
+        "2.8 D-4D"
+      ]
+    },
+    {
+      "models": [
+        "Proace",
+        "Proace Verso"
+      ],
+      "variants": [
+        "1.5 D-4D",
+        "2.0 D-4D",
+        "50 kWh",
+        "75 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Proace City",
+        "Proace City Verso"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "1.5 D-4D",
+        "50 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Proace Max"
+      ],
+      "variants": [
+        "2.2 D-4D",
+        "110 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Succeed"
+      ],
+      "variants": [
+        "1.5 VVT-i"
+      ]
+    },
+    {
+      "models": [
+        "RAV4"
+      ],
+      "variants": [
+        "2.0 Valvematic",
+        "2.0 D-4D",
+        "2.2 D-4D",
+        "2.4",
+        "2.5 Hybrid",
+        "2.5 Hybrid AWD-i",
+        "2.5 Plug-in Hybrid"
+      ]
+    }
   ],
   "remap": [
-    { "from": "Prius Plug-In Hybrid", "model": "Prius", "variant": "Plug-in Hybrid" }
+    {
+      "from": "Prius Plug-In Hybrid",
+      "model": "Prius",
+      "variant": "Plug-in Hybrid"
+    }
   ]
 }

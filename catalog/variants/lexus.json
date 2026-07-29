@@ -3,19 +3,160 @@
   "_note": "Lexus names the variant after the car itself - an IS is sold as an IS 300h, not an IS 2.5 Hybrid - so the variant is the numeric suffix with h for hybrid, e for electric and F for the performance versions. That suffix is the engine designation here, which is why it is a variant rather than a model.",
   "models": [],
   "groups": [
-    { "models": ["CT"], "variants": ["200h"] },
-    { "models": ["UX"], "variants": ["200", "250h", "300e"] },
-    { "models": ["IS"], "variants": ["200t", "250", "300h", "350", "F"] },
-    { "models": ["ES"], "variants": ["250", "300h", "350"] },
-    { "models": ["GS"], "variants": ["250", "350", "300h", "450h", "F"] },
-    { "models": ["LS"], "variants": ["460", "500", "500h", "600h"] },
-    { "models": ["RC"], "variants": ["200t", "300h", "350", "F"] },
-    { "models": ["LC"], "variants": ["500", "500h"] },
-    { "models": ["LFA"], "variants": ["4.8 V10"] },
-    { "models": ["NX"], "variants": ["200t", "300", "300h", "350h", "450h+"] },
-    { "models": ["RX"], "variants": ["350", "450h", "350h", "500h", "450h+ (Plug-in)"] },
-    { "models": ["LBX"], "variants": ["1.5 Hybrid"] },
-    { "models": ["LM"], "variants": ["350h", "500h"] },
-    { "models": ["RZ"], "variants": ["300e", "450e", "550e"] }
+    {
+      "models": [
+        "CT"
+      ],
+      "variants": [
+        "200h"
+      ]
+    },
+    {
+      "models": [
+        "UX"
+      ],
+      "variants": [
+        "200",
+        "250h",
+        "300e"
+      ]
+    },
+    {
+      "models": [
+        "IS"
+      ],
+      "variants": [
+        "200t",
+        "250",
+        "300h",
+        "350",
+        "F",
+        "220d"
+      ]
+    },
+    {
+      "models": [
+        "ES"
+      ],
+      "variants": [
+        "250",
+        "300h",
+        "350"
+      ]
+    },
+    {
+      "models": [
+        "GS"
+      ],
+      "variants": [
+        "250",
+        "350",
+        "300h",
+        "450h",
+        "F",
+        "200t"
+      ]
+    },
+    {
+      "models": [
+        "LS"
+      ],
+      "variants": [
+        "460",
+        "500",
+        "500h",
+        "600h"
+      ]
+    },
+    {
+      "models": [
+        "RC"
+      ],
+      "variants": [
+        "200t",
+        "300h",
+        "350",
+        "F"
+      ]
+    },
+    {
+      "models": [
+        "LC"
+      ],
+      "variants": [
+        "500",
+        "500h"
+      ]
+    },
+    {
+      "models": [
+        "LFA"
+      ],
+      "variants": [
+        "4.8 V10"
+      ]
+    },
+    {
+      "models": [
+        "NX"
+      ],
+      "variants": [
+        "200t",
+        "300",
+        "300h",
+        "350h",
+        "450h+",
+        "200"
+      ]
+    },
+    {
+      "models": [
+        "RX"
+      ],
+      "variants": [
+        "350",
+        "450h",
+        "350h",
+        "500h",
+        "450h+ (Plug-in)",
+        "200t",
+        "270"
+      ]
+    },
+    {
+      "models": [
+        "LBX"
+      ],
+      "variants": [
+        "1.5 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "LM"
+      ],
+      "variants": [
+        "350h",
+        "500h"
+      ]
+    },
+    {
+      "models": [
+        "RZ"
+      ],
+      "variants": [
+        "300e",
+        "450e",
+        "550e"
+      ]
+    },
+    {
+      "models": [
+        "IS F"
+      ],
+      "variants": [
+        "5.0 V8"
+      ]
+    }
   ]
 }

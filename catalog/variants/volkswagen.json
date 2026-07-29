@@ -5,7 +5,7 @@
   "groups": [
     {
       "models": ["Golf", "Golf Variant"],
-      "variants": ["1.0 TSI", "1.2 TSI", "1.4 TSI", "1.5 TSI", "1.5 eTSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4MOTION"]
+      "variants": ["1.2", "1.4", "1.6", "1.0 TSI", "1.2 TSI", "1.4 TSI", "1.5 TSI", "1.5 eTSI", "1.8 TSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4MOTION", "1.4 TGI", "1.5 TGI"]
     },
     {
       "models": ["Golf GTI"],
@@ -25,35 +25,35 @@
     },
     {
       "models": ["Polo"],
-      "variants": ["1.0 MPI", "1.0 TSI", "1.2 TSI", "1.4 TDI", "1.6 TDI"]
+      "variants": ["1.0 MPI", "1.2", "1.4", "1.0 TSI", "1.2 TSI", "1.5 TSI", "1.2 TDI", "1.4 TDI", "1.6 TDI", "1.0 TGI"]
     },
     {
       "models": ["Polo GTI"],
-      "variants": ["1.8 TSI", "2.0 TSI"]
+      "variants": ["1.4 TSI", "1.8 TSI", "2.0 TSI"]
     },
     {
       "models": ["Passat", "Passat Variant"],
-      "variants": ["1.4 TSI", "1.5 TSI", "1.5 eTSI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION"]
+      "variants": ["1.4 TSI", "1.5 TSI", "1.5 eTSI", "1.8 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION", "1.4 TGI", "1.5 eHybrid"]
     },
     {
       "models": ["Tiguan", "Tiguan Allspace"],
-      "variants": ["1.4 TSI", "1.5 TSI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION"]
+      "variants": ["1.4 TSI", "1.5 TSI", "1.5 eTSI", "2.0 TSI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION", "1.5 eHybrid"]
     },
     {
       "models": ["T-Roc", "T-Cross", "Taigo"],
-      "variants": ["1.0 TSI", "1.5 TSI", "2.0 TDI", "2.0 TSI 4MOTION"]
+      "variants": ["1.0 TSI", "1.5 TSI", "1.5 eTSI", "1.6 TDI", "2.0 TDI", "2.0 TSI 4MOTION"]
     },
     {
       "models": ["Touareg"],
-      "variants": ["3.0 TDI 4MOTION", "3.0 TSI 4MOTION", "3.0 eHybrid 4MOTION", "4.0 TDI 4MOTION"]
+      "variants": ["3.0 TDI 4MOTION", "3.0 TSI 4MOTION", "3.6 V6 FSI", "3.0 eHybrid 4MOTION", "4.0 TDI 4MOTION", "4.2 V8 TDI"]
     },
     {
       "models": ["Touran", "Sharan"],
-      "variants": ["1.2 TSI", "1.4 TSI", "1.5 TSI", "1.6 TDI", "2.0 TDI"]
+      "variants": ["1.2 TSI", "1.4 TSI", "1.5 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI"]
     },
     {
       "models": ["Up!"],
-      "variants": ["1.0 MPI", "1.0 TSI", "GTI"]
+      "variants": ["1.0 MPI", "1.0 TSI", "1.0 TGI", "GTI"]
     },
     {
       "models": ["Arteon", "Arteon Shooting Brake"],
@@ -65,7 +65,7 @@
     },
     {
       "models": ["Amarok"],
-      "variants": ["2.0 TDI", "3.0 TDI 4MOTION", "3.0 V6 TDI"]
+      "variants": ["2.0 TDI", "2.3 TDI", "3.0 TDI 4MOTION", "3.0 V6 TDI"]
     },
     { "models": ["Arteon R", "Arteon R Shooting Brake", "Tiguan R", "T-Roc R"],
       "variants": ["2.0 TSI 4MOTION"] },
@@ -78,15 +78,16 @@
     { "models": ["Golf GTI Cabriolet"], "variants": ["2.0 TSI"] },
     { "models": ["Golf R Cabriolet"], "variants": ["2.0 TSI 4MOTION"] },
     { "models": ["Golf Alltrack"], "variants": ["1.8 TSI 4MOTION", "2.0 TDI 4MOTION"] },
-    { "models": ["Golf Plus"], "variants": ["1.4 TSI", "1.6 TDI", "2.0 TDI"] },
+    { "models": ["Golf Plus"], "variants": ["1.2 TSI", "1.4 TSI", "1.6", "1.6 TDI", "2.0 TDI"] },
     { "models": ["Golf Sportsvan"],
-      "variants": ["1.0 TSI", "1.4 TSI", "1.6 TDI", "2.0 TDI"] },
+      "variants": ["1.0 TSI", "1.2 TSI", "1.4 TSI", "1.5 TSI", "1.6 TDI", "2.0 TDI"] },
     { "models": ["Passat Alltrack"],
       "variants": ["2.0 TDI 4MOTION", "2.0 TSI 4MOTION"] },
     { "models": ["Passat GTE"], "variants": ["1.4 eHybrid", "1.5 eHybrid"] },
     { "models": ["CC"], "variants": ["1.8 TSI", "2.0 TSI", "2.0 TDI", "3.6 V6 4MOTION"] },
     { "models": ["Eos"], "variants": ["1.4 TSI", "2.0 TSI", "2.0 TDI", "3.2 V6"] },
-    { "models": ["Jetta"], "variants": ["1.2 TSI", "1.4 TSI", "1.6 TDI", "2.0 TDI"] },
+    { "models": ["Jetta"],
+      "variants": ["1.2 TSI", "1.4 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI", "1.4 Hybrid"] },
     { "models": ["Fox"], "variants": ["1.2", "1.4"] },
     { "models": ["The Beetle", "The Beetle Cabriolet"],
       "variants": ["1.2 TSI", "1.4 TSI", "2.0 TSI", "1.6 TDI", "2.0 TDI"] },
@@ -97,12 +98,12 @@
     { "models": ["T-Roc Cabriolet"], "variants": ["1.0 TSI", "1.5 TSI"] },
     { "models": ["XL1"], "variants": ["0.8 TDI Hybrid"] },
     { "models": ["Caddy", "Caddy Cargo", "Caddy California"],
-      "variants": ["1.5 TSI", "2.0 TDI", "2.0 TDI 4MOTION"] },
+      "variants": ["1.2 TSI", "1.4 TSI", "1.5 TSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4MOTION", "1.4 TGI"] },
     { "models": ["Transporter", "Caravelle", "Multivan", "T5 Multivan", "T6 Multivan", "T7 Multivan"],
-      "variants": ["2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI", "1.4 eHybrid"] },
+      "variants": ["2.0 TDI", "2.0 TDI 4MOTION", "2.5 TDI", "2.0 TSI", "1.4 eHybrid"] },
     { "models": ["California", "Grand California"],
       "variants": ["2.0 TDI", "2.0 TDI 4MOTION"] },
-    { "models": ["Crafter"], "variants": ["2.0 TDI", "2.0 TDI 4MOTION"] },
+    { "models": ["Crafter"], "variants": ["2.0 TDI", "2.0 TDI 4MOTION", "2.5 TDI"] },
     { "models": ["e-Crafter"], "variants": ["35.8 kWh"] },
     { "models": ["e-Transporter", "e-Caravelle"], "variants": ["32.3 kWh"] },
     { "models": ["e-Golf"], "variants": ["24.2 kWh", "35.8 kWh"] },

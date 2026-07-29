@@ -3,15 +3,102 @@
   "_note": "Jaguar Land Rover badge by output rather than displacement - P for petrol, D for diesel, the number being metric horsepower - so P250 and D200 are the variant names a seller reads off the car. The older V6/V8 cars predate that scheme and keep their displacement.",
   "models": [],
   "groups": [
-    { "models": ["XE"], "variants": ["2.0 P250", "2.0 P300", "2.0 D180", "2.0 D200", "3.0 V6 S"] },
-    { "models": ["XF"],
-      "variants": ["2.0 P250", "2.0 P300", "2.0 D200", "3.0 V6 S", "3.0 V6 Diesel", "5.0 V8 SVR"] },
-    { "models": ["XJ"], "variants": ["3.0 V6", "5.0 V8", "3.0 V6 Diesel"] },
-    { "models": ["XK"], "variants": ["5.0 V8", "5.0 V8 R"] },
-    { "models": ["F-Type"], "variants": ["2.0 P300", "3.0 V6 S", "5.0 V8 R"] },
-    { "models": ["E-PACE"], "variants": ["2.0 P200", "2.0 P250", "2.0 D165", "2.0 D200"] },
-    { "models": ["F-PACE"],
-      "variants": ["2.0 P250", "3.0 P400", "2.0 D200", "3.0 D300", "5.0 V8 SVR"] },
-    { "models": ["I-PACE"], "variants": ["90 kWh"] }
+    {
+      "models": [
+        "XE"
+      ],
+      "variants": [
+        "2.0 P250",
+        "2.0 P300",
+        "2.0 D180",
+        "2.0 D200",
+        "3.0 V6 S",
+        "2.0 P200"
+      ]
+    },
+    {
+      "models": [
+        "XF"
+      ],
+      "variants": [
+        "2.0 P250",
+        "2.0 P300",
+        "2.0 D200",
+        "3.0 V6 S",
+        "3.0 V6 Diesel",
+        "5.0 V8 SVR",
+        "2.2 D",
+        "2.0 D180",
+        "5.0 V8"
+      ]
+    },
+    {
+      "models": [
+        "XJ"
+      ],
+      "variants": [
+        "3.0 V6",
+        "5.0 V8",
+        "3.0 V6 Diesel",
+        "2.0 P250",
+        "5.0 V8 Supercharged"
+      ]
+    },
+    {
+      "models": [
+        "XK"
+      ],
+      "variants": [
+        "5.0 V8",
+        "5.0 V8 R"
+      ]
+    },
+    {
+      "models": [
+        "F-Type"
+      ],
+      "variants": [
+        "2.0 P300",
+        "3.0 V6 S",
+        "5.0 V8 R",
+        "3.0 V6",
+        "5.0 V8 SVR"
+      ]
+    },
+    {
+      "models": [
+        "E-PACE"
+      ],
+      "variants": [
+        "2.0 P200",
+        "2.0 P250",
+        "2.0 D165",
+        "2.0 D200",
+        "2.0 P300",
+        "P300e"
+      ]
+    },
+    {
+      "models": [
+        "F-PACE"
+      ],
+      "variants": [
+        "2.0 P250",
+        "3.0 P400",
+        "2.0 D200",
+        "3.0 D300",
+        "5.0 V8 SVR",
+        "2.0 D180",
+        "P400e"
+      ]
+    },
+    {
+      "models": [
+        "I-PACE"
+      ],
+      "variants": [
+        "90 kWh"
+      ]
+    }
   ]
 }

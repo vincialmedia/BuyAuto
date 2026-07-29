@@ -1,75 +1,221 @@
 {
   "make": "Mini",
   "_note": "Mini names a car body-then-trim ('Clubman Cooper S'), which the CSV flattened into one model row. The body is the model, the Cooper/One/JCW badge is the variant. The 3-door hatch had been seeded as bare trim rows ('Cooper', 'Cooper S', 'One') with the body implied, so those move under Hatch. John Cooper Works GP stays its own model - it is a numbered limited run, same call as BMW M3 and Porsche GT3.",
-  "models": ["Hatch 5-Türer"],
+  "models": [
+    "Hatch 5-Türer"
+  ],
   "groups": [
     {
-      "models": ["Hatch", "Hatch 5-Türer"],
-      "variants": ["One D", "Cooper D", "Cooper SD"]
+      "models": [
+        "Hatch",
+        "Hatch 5-Türer"
+      ],
+      "variants": [
+        "One D",
+        "Cooper D",
+        "Cooper SD",
+        "Cooper SE"
+      ]
     },
     {
-      "models": ["Cabrio"],
-      "variants": ["One", "Cooper", "Cooper D"]
+      "models": [
+        "Cabrio"
+      ],
+      "variants": [
+        "One",
+        "Cooper",
+        "Cooper D",
+        "One D",
+        "Cooper SD"
+      ]
     },
     {
-      "models": ["Clubman"],
-      "variants": ["One", "One D", "Cooper", "Cooper D", "Cooper SD"]
+      "models": [
+        "Clubman"
+      ],
+      "variants": [
+        "One",
+        "One D",
+        "Cooper",
+        "Cooper D",
+        "Cooper SD",
+        "Cooper S ALL4"
+      ]
     },
     {
-      "models": ["Clubvan"],
-      "variants": ["Cooper", "Cooper D"]
+      "models": [
+        "Clubvan"
+      ],
+      "variants": [
+        "Cooper",
+        "Cooper D"
+      ]
     },
     {
-      "models": ["Countryman"],
-      "variants": ["One", "One D", "Cooper", "Cooper D", "Cooper SD", "Cooper SE ALL4"]
+      "models": [
+        "Countryman"
+      ],
+      "variants": [
+        "One",
+        "One D",
+        "Cooper",
+        "Cooper D",
+        "Cooper SD",
+        "Cooper SE ALL4",
+        "Cooper S ALL4",
+        "Cooper D ALL4",
+        "Cooper SD ALL4"
+      ]
     },
     {
-      "models": ["Coupé", "Roadster"],
-      "variants": ["Cooper", "Cooper SD"]
+      "models": [
+        "Coupé",
+        "Roadster"
+      ],
+      "variants": [
+        "Cooper",
+        "Cooper SD"
+      ]
     },
     {
-      "models": ["Paceman"],
-      "variants": ["Cooper", "Cooper D", "Cooper SD"]
+      "models": [
+        "Paceman"
+      ],
+      "variants": [
+        "Cooper",
+        "Cooper D",
+        "Cooper SD",
+        "Cooper S"
+      ]
     },
     {
-      "models": ["Aceman"],
-      "variants": ["Cooper E", "Cooper SE"]
+      "models": [
+        "Aceman"
+      ],
+      "variants": [
+        "Cooper E",
+        "Cooper SE"
+      ]
     },
     {
-      "models": ["John Cooper Works GP"],
-      "variants": ["2.0 Turbo (GP)"]
+      "models": [
+        "John Cooper Works GP"
+      ],
+      "variants": [
+        "2.0 Turbo (GP)"
+      ]
     }
   ],
   "remap": [
-    { "from": "One", "model": "Hatch", "variant": "One" },
-    { "from": "Cooper", "model": "Hatch", "variant": "Cooper" },
-    { "from": "Cooper S", "model": "Hatch", "variant": "Cooper S" },
-    { "from": "John Cooper Works", "model": "Hatch", "variant": "John Cooper Works" },
-    { "from": "Cooper Electric", "model": "Hatch", "variant": "Cooper E" },
-    { "from": "John Cooper Works Electric", "model": "Hatch", "variant": "John Cooper Works Electric" },
-
-    { "from": "Cooper 5-Türer", "model": "Hatch 5-Türer", "variant": "Cooper" },
-    { "from": "Cooper S 5-Türer", "model": "Hatch 5-Türer", "variant": "Cooper S" },
-
-    { "from": "Cabrio Cooper S", "model": "Cabrio", "variant": "Cooper S" },
-    { "from": "Cabrio John Cooper Works", "model": "Cabrio", "variant": "John Cooper Works" },
-
-    { "from": "Clubman Cooper S", "model": "Clubman", "variant": "Cooper S" },
-    { "from": "Clubman John Cooper Works", "model": "Clubman", "variant": "John Cooper Works" },
-
-    { "from": "Countryman Cooper S", "model": "Countryman", "variant": "Cooper S" },
-    { "from": "Countryman John Cooper Works", "model": "Countryman", "variant": "John Cooper Works" },
-    { "from": "Countryman Electric", "model": "Countryman", "variant": "Countryman E" },
-
-    { "from": "Coupé Cooper S", "model": "Coupé", "variant": "Cooper S" },
-    { "from": "Coupé John Cooper Works", "model": "Coupé", "variant": "John Cooper Works" },
-
-    { "from": "Paceman Cooper S", "model": "Paceman", "variant": "Cooper S" },
-    { "from": "Paceman John Cooper Works", "model": "Paceman", "variant": "John Cooper Works" },
-
-    { "from": "Roadster Cooper S", "model": "Roadster", "variant": "Cooper S" },
-    { "from": "Roadster John Cooper Works", "model": "Roadster", "variant": "John Cooper Works" },
-
-    { "from": "Aceman John Cooper Works", "model": "Aceman", "variant": "John Cooper Works" }
+    {
+      "from": "One",
+      "model": "Hatch",
+      "variant": "One"
+    },
+    {
+      "from": "Cooper",
+      "model": "Hatch",
+      "variant": "Cooper"
+    },
+    {
+      "from": "Cooper S",
+      "model": "Hatch",
+      "variant": "Cooper S"
+    },
+    {
+      "from": "John Cooper Works",
+      "model": "Hatch",
+      "variant": "John Cooper Works"
+    },
+    {
+      "from": "Cooper Electric",
+      "model": "Hatch",
+      "variant": "Cooper E"
+    },
+    {
+      "from": "John Cooper Works Electric",
+      "model": "Hatch",
+      "variant": "John Cooper Works Electric"
+    },
+    {
+      "from": "Cooper 5-Türer",
+      "model": "Hatch 5-Türer",
+      "variant": "Cooper"
+    },
+    {
+      "from": "Cooper S 5-Türer",
+      "model": "Hatch 5-Türer",
+      "variant": "Cooper S"
+    },
+    {
+      "from": "Cabrio Cooper S",
+      "model": "Cabrio",
+      "variant": "Cooper S"
+    },
+    {
+      "from": "Cabrio John Cooper Works",
+      "model": "Cabrio",
+      "variant": "John Cooper Works"
+    },
+    {
+      "from": "Clubman Cooper S",
+      "model": "Clubman",
+      "variant": "Cooper S"
+    },
+    {
+      "from": "Clubman John Cooper Works",
+      "model": "Clubman",
+      "variant": "John Cooper Works"
+    },
+    {
+      "from": "Countryman Cooper S",
+      "model": "Countryman",
+      "variant": "Cooper S"
+    },
+    {
+      "from": "Countryman John Cooper Works",
+      "model": "Countryman",
+      "variant": "John Cooper Works"
+    },
+    {
+      "from": "Countryman Electric",
+      "model": "Countryman",
+      "variant": "Countryman E"
+    },
+    {
+      "from": "Coupé Cooper S",
+      "model": "Coupé",
+      "variant": "Cooper S"
+    },
+    {
+      "from": "Coupé John Cooper Works",
+      "model": "Coupé",
+      "variant": "John Cooper Works"
+    },
+    {
+      "from": "Paceman Cooper S",
+      "model": "Paceman",
+      "variant": "Cooper S"
+    },
+    {
+      "from": "Paceman John Cooper Works",
+      "model": "Paceman",
+      "variant": "John Cooper Works"
+    },
+    {
+      "from": "Roadster Cooper S",
+      "model": "Roadster",
+      "variant": "Cooper S"
+    },
+    {
+      "from": "Roadster John Cooper Works",
+      "model": "Roadster",
+      "variant": "John Cooper Works"
+    },
+    {
+      "from": "Aceman John Cooper Works",
+      "model": "Aceman",
+      "variant": "John Cooper Works"
+    }
   ]
 }

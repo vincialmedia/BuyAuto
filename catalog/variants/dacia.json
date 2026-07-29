@@ -3,14 +3,95 @@
   "_note": "Dacia runs Renault's engines under Renault's badges - TCe petrol, dCi diesel - with the hybrids sold as Hybrid rather than Renault's E-Tech.",
   "models": [],
   "groups": [
-    { "models": ["Sandero"], "variants": ["0.9 TCe", "1.0 TCe", "1.2", "1.5 dCi"] },
-    { "models": ["Logan"], "variants": ["0.9 TCe", "1.0 TCe", "1.2", "1.5 dCi"] },
-    { "models": ["Duster"],
-      "variants": ["1.0 TCe", "1.2 TCe", "1.3 TCe", "1.6", "1.5 dCi", "1.6 Hybrid"] },
-    { "models": ["Bigster"], "variants": ["1.2 TCe", "1.8 Hybrid"] },
-    { "models": ["Jogger"], "variants": ["1.0 TCe", "1.6 Hybrid"] },
-    { "models": ["Lodgy"], "variants": ["1.2 TCe", "1.6", "1.5 dCi"] },
-    { "models": ["Dokker"], "variants": ["1.2 TCe", "1.6", "1.5 dCi"] },
-    { "models": ["Spring Electric"], "variants": ["26.8 kWh"] }
+    {
+      "models": [
+        "Sandero"
+      ],
+      "variants": [
+        "0.9 TCe",
+        "1.0 TCe",
+        "1.2",
+        "1.5 dCi",
+        "1.4",
+        "1.6",
+        "1.0 SCe"
+      ]
+    },
+    {
+      "models": [
+        "Logan"
+      ],
+      "variants": [
+        "0.9 TCe",
+        "1.0 TCe",
+        "1.2",
+        "1.5 dCi",
+        "1.4",
+        "1.6",
+        "1.0 SCe"
+      ]
+    },
+    {
+      "models": [
+        "Duster"
+      ],
+      "variants": [
+        "1.0 TCe",
+        "1.2 TCe",
+        "1.3 TCe",
+        "1.6",
+        "1.5 dCi",
+        "1.6 Hybrid",
+        "1.6 SCe"
+      ]
+    },
+    {
+      "models": [
+        "Bigster"
+      ],
+      "variants": [
+        "1.2 TCe",
+        "1.8 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Jogger"
+      ],
+      "variants": [
+        "1.0 TCe",
+        "1.6 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Lodgy"
+      ],
+      "variants": [
+        "1.2 TCe",
+        "1.6",
+        "1.5 dCi",
+        "1.6 SCe"
+      ]
+    },
+    {
+      "models": [
+        "Dokker"
+      ],
+      "variants": [
+        "1.2 TCe",
+        "1.6",
+        "1.5 dCi",
+        "1.6 SCe"
+      ]
+    },
+    {
+      "models": [
+        "Spring Electric"
+      ],
+      "variants": [
+        "26.8 kWh"
+      ]
+    }
   ]
 }

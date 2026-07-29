@@ -1,12 +1,12 @@
 {
   "make": "Cupra",
-  "_note": "Cupra became a make in its own right in 2018, so these are the Cupra-badged cars only. Terraman and Terramar are both live rows for what is one car - Terramar is the correct spelling - so both carry the same engines until the duplicate is resolved.",
+  "_note": "Cupra became a make in its own right in 2018, so these are the Cupra-badged cars only. Terraman and Terramar are both live rows for what is one car - Terramar is the correct spelling - so both carry the same engines until the duplicate is resolved. The Formentor VZ5's 2.5 TSI is the Audi RS3 five-cylinder and the reason a buyer picks that car, so it is listed even though it was a limited run.",
   "models": [],
   "groups": [
     { "models": ["Ateca"], "variants": ["2.0 TSI 4Drive"] },
-    { "models": ["Léon"], "variants": ["2.0 TSI", "1.4 eHybrid"] },
+    { "models": ["Léon"], "variants": ["1.5 TSI", "2.0 TSI", "1.4 eHybrid"] },
     { "models": ["Formentor"],
-      "variants": ["1.5 TSI", "2.0 TSI", "2.0 TSI 4Drive", "2.0 TDI", "1.4 eHybrid"] },
+      "variants": ["1.5 TSI", "2.0 TSI", "2.0 TSI 4Drive", "2.5 TSI", "2.0 TDI", "1.4 eHybrid"] },
     { "models": ["Terramar", "Terraman"],
       "variants": ["1.5 TSI", "2.0 TSI 4Drive", "1.5 eHybrid"] },
     { "models": ["Born"], "variants": ["58 kWh", "77 kWh"] },

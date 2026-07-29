@@ -15,306 +15,1440 @@
   ],
   "groups": [
     {
-      "models": ["AMG A 35"],
-      "variants": ["A 35 4MATIC"]
+      "models": [
+        "AMG A 35"
+      ],
+      "variants": [
+        "A 35 4MATIC"
+      ]
     },
     {
-      "models": ["AMG A 45"],
-      "variants": ["A 45 4MATIC+", "A 45 S 4MATIC+"]
+      "models": [
+        "AMG A 45"
+      ],
+      "variants": [
+        "A 45 4MATIC+",
+        "A 45 S 4MATIC+"
+      ]
     },
     {
-      "models": ["AMG C 43"],
-      "variants": ["C 43 4MATIC"]
+      "models": [
+        "AMG C 43"
+      ],
+      "variants": [
+        "C 43 4MATIC"
+      ]
     },
     {
-      "models": ["AMG C 63"],
-      "variants": ["C 63 4MATIC+", "C 63 S", "C 63 S E Performance"]
+      "models": [
+        "AMG C 63"
+      ],
+      "variants": [
+        "C 63 4MATIC+",
+        "C 63 S",
+        "C 63 S E Performance"
+      ]
     },
     {
-      "models": ["AMG CLA 35"],
-      "variants": ["CLA 35 4MATIC"]
+      "models": [
+        "AMG CLA 35"
+      ],
+      "variants": [
+        "CLA 35 4MATIC"
+      ]
     },
     {
-      "models": ["AMG CLA 45"],
-      "variants": ["CLA 45 4MATIC+", "CLA 45 S 4MATIC+"]
+      "models": [
+        "AMG CLA 45"
+      ],
+      "variants": [
+        "CLA 45 4MATIC+",
+        "CLA 45 S 4MATIC+"
+      ]
     },
     {
-      "models": ["AMG E 53"],
-      "variants": ["E 53 4MATIC+", "E 53 Hybrid 4MATIC+"]
+      "models": [
+        "AMG E 53"
+      ],
+      "variants": [
+        "E 53 4MATIC+",
+        "E 53 Hybrid 4MATIC+"
+      ]
     },
     {
-      "models": ["AMG E 63"],
-      "variants": ["E 63 4MATIC+", "E 63 S 4MATIC+"]
+      "models": [
+        "AMG E 63"
+      ],
+      "variants": [
+        "E 63 4MATIC+",
+        "E 63 S 4MATIC+"
+      ]
     },
     {
-      "models": ["AMG G 63"],
-      "variants": ["G 63 4MATIC"]
+      "models": [
+        "AMG G 63"
+      ],
+      "variants": [
+        "G 63 4MATIC"
+      ]
     },
     {
-      "models": ["AMG GLC 43"],
-      "variants": ["GLC 43 4MATIC"]
+      "models": [
+        "AMG GLC 43"
+      ],
+      "variants": [
+        "GLC 43 4MATIC"
+      ]
     },
     {
-      "models": ["AMG GLC 63"],
-      "variants": ["GLC 63 4MATIC+", "GLC 63 S 4MATIC+", "GLC 63 S E Performance"]
+      "models": [
+        "AMG GLC 63"
+      ],
+      "variants": [
+        "GLC 63 4MATIC+",
+        "GLC 63 S 4MATIC+",
+        "GLC 63 S E Performance"
+      ]
     },
     {
-      "models": ["AMG GLE 53"],
-      "variants": ["GLE 53 4MATIC+"]
+      "models": [
+        "AMG GLE 53"
+      ],
+      "variants": [
+        "GLE 53 4MATIC+"
+      ]
     },
     {
-      "models": ["AMG GLE 63"],
-      "variants": ["GLE 63 4MATIC+", "GLE 63 S 4MATIC+"]
+      "models": [
+        "AMG GLE 63"
+      ],
+      "variants": [
+        "GLE 63 4MATIC+",
+        "GLE 63 S 4MATIC+"
+      ]
     },
     {
-      "models": ["EQA"],
-      "variants": ["EQA 250", "EQA 250+ (Long Range)", "EQA 300 4MATIC", "EQA 350 4MATIC"]
+      "models": [
+        "EQA"
+      ],
+      "variants": [
+        "EQA 250",
+        "EQA 250+ (Long Range)",
+        "EQA 300 4MATIC",
+        "EQA 350 4MATIC"
+      ]
     },
     {
-      "models": ["EQB"],
-      "variants": ["EQB 250", "EQB 250+ (Long Range)", "EQB 300 4MATIC", "EQB 350 4MATIC"]
+      "models": [
+        "EQB"
+      ],
+      "variants": [
+        "EQB 250",
+        "EQB 250+ (Long Range)",
+        "EQB 300 4MATIC",
+        "EQB 350 4MATIC"
+      ]
     },
     {
-      "models": ["EQC"],
-      "variants": ["EQC 400 4MATIC"]
+      "models": [
+        "EQC"
+      ],
+      "variants": [
+        "EQC 400 4MATIC"
+      ]
     },
     {
-      "models": ["EQE"],
-      "variants": ["EQE 300", "EQE 350", "EQE 350 4MATIC", "EQE 500 4MATIC"]
+      "models": [
+        "EQE"
+      ],
+      "variants": [
+        "EQE 300",
+        "EQE 350",
+        "EQE 350 4MATIC",
+        "EQE 500 4MATIC"
+      ]
     },
     {
-      "models": ["EQE SUV"],
-      "variants": ["EQE 350+", "EQE 350 4MATIC", "EQE 500 4MATIC"]
+      "models": [
+        "EQE SUV"
+      ],
+      "variants": [
+        "EQE 350+",
+        "EQE 350 4MATIC",
+        "EQE 500 4MATIC"
+      ]
     },
     {
-      "models": ["EQS"],
-      "variants": ["EQS 450+", "EQS 450 4MATIC", "EQS 500 4MATIC", "EQS 580 4MATIC"]
+      "models": [
+        "EQS"
+      ],
+      "variants": [
+        "EQS 450+",
+        "EQS 450 4MATIC",
+        "EQS 500 4MATIC",
+        "EQS 580 4MATIC"
+      ]
     },
     {
-      "models": ["EQS SUV"],
-      "variants": ["EQS 450+", "EQS 450 4MATIC", "EQS 580 4MATIC"]
+      "models": [
+        "EQS SUV"
+      ],
+      "variants": [
+        "EQS 450+",
+        "EQS 450 4MATIC",
+        "EQS 580 4MATIC"
+      ]
     },
     {
-      "models": ["EQV"],
-      "variants": ["EQV 250", "EQV 300"]
+      "models": [
+        "EQV"
+      ],
+      "variants": [
+        "EQV 250",
+        "EQV 300"
+      ]
     },
     {
-      "models": ["Vito", "eVito"],
-      "variants": ["110 CDI", "114 CDI", "116 CDI", "119 CDI", "124 CDI"]
+      "models": [
+        "Vito",
+        "eVito"
+      ],
+      "variants": [
+        "110 CDI",
+        "111 CDI",
+        "114 CDI",
+        "115 CDI",
+        "116 CDI",
+        "119 CDI",
+        "124 CDI"
+      ]
     },
     {
-      "models": ["Sprinter", "eSprinter"],
-      "variants": ["211 CDI", "214 CDI", "216 CDI", "311 CDI", "314 CDI", "316 CDI", "319 CDI", "516 CDI"]
+      "models": [
+        "Sprinter",
+        "eSprinter"
+      ],
+      "variants": [
+        "211 CDI",
+        "214 CDI",
+        "216 CDI",
+        "311 CDI",
+        "314 CDI",
+        "316 CDI",
+        "319 CDI",
+        "516 CDI"
+      ]
     },
     {
-      "models": ["Citan", "eCitan"],
-      "variants": ["108 CDI", "109 CDI", "110 CDI", "112", "113"]
+      "models": [
+        "Citan",
+        "eCitan"
+      ],
+      "variants": [
+        "108 CDI",
+        "109 CDI",
+        "110 CDI",
+        "112",
+        "113"
+      ]
     },
     {
-      "models": ["Marco Polo"],
-      "variants": ["220 d", "250 d", "300 d"]
+      "models": [
+        "Marco Polo"
+      ],
+      "variants": [
+        "220 d",
+        "250 d",
+        "300 d"
+      ]
     },
     {
-      "models": ["X-Class"],
-      "variants": ["X 220 d", "X 250 d", "X 350 d 4MATIC"]
+      "models": [
+        "X-Class"
+      ],
+      "variants": [
+        "X 220 d",
+        "X 250 d",
+        "X 350 d 4MATIC"
+      ]
     },
     {
-      "models": ["T-Class"],
-      "variants": ["T 160", "T 180", "T 180 d", "T 200"]
+      "models": [
+        "T-Class"
+      ],
+      "variants": [
+        "T 160",
+        "T 180",
+        "T 180 d",
+        "T 200"
+      ]
     },
-    { "models": ["AMG CLS 53"], "variants": ["CLS 53 4MATIC+"] },
-    { "models": ["AMG CLS 63"], "variants": ["CLS 63 4MATIC", "CLS 63 S 4MATIC+"] },
-    { "models": ["AMG E 43"], "variants": ["E 43 4MATIC"] },
-    { "models": ["AMG EQE 43"], "variants": ["EQE 43 4MATIC"] },
-    { "models": ["AMG EQE 53"], "variants": ["EQE 53 4MATIC+"] },
-    { "models": ["AMG EQS 53"], "variants": ["EQS 53 4MATIC+"] },
-    { "models": ["AMG G 65"], "variants": ["G 65"] },
-    { "models": ["AMG GLA 35"], "variants": ["GLA 35 4MATIC"] },
-    { "models": ["AMG GLA 45"], "variants": ["GLA 45 4MATIC+", "GLA 45 S 4MATIC+"] },
-    { "models": ["AMG GLB 35"], "variants": ["GLB 35 4MATIC"] },
-    { "models": ["AMG GLE 43"], "variants": ["GLE 43 4MATIC"] },
-    { "models": ["AMG GLS 63"], "variants": ["GLS 63 4MATIC+"] },
-    { "models": ["AMG S 63"], "variants": ["S 63 4MATIC+", "S 63 E Performance"] },
-    { "models": ["AMG S 65"], "variants": ["S 65"] },
-    { "models": ["AMG SL 43"], "variants": ["SL 43"] },
-    { "models": ["AMG SL 55"], "variants": ["SL 55 4MATIC+"] },
-    { "models": ["AMG SLC 43"], "variants": ["SLC 43"] },
-    { "models": ["AMG ONE"], "variants": ["1.6 V6 Hybrid"] },
-    { "models": ["AMG GT 4-Door Coupé"],
-      "variants": ["GT 43 4MATIC+", "GT 53 4MATIC+", "GT 63 4MATIC+", "GT 63 S 4MATIC+"] },
-    { "models": ["Mercedes-AMG GT Coupé"],
-      "variants": ["GT", "GT S", "GT C", "GT R", "GT Black Series"] },
-    { "models": ["SL 63 AMG"], "variants": ["SL 63"] },
-    { "models": ["SL 65 AMG"], "variants": ["SL 65"] },
-    { "models": ["SLS AMG"], "variants": ["6.3 V8", "6.3 V8 Black Series"] },
-    { "models": ["C-Klasse T-Modell"],
-      "variants": ["C 180", "C 200", "C 220 d", "C 250", "C 300", "C 300 de", "C 300 e", "C 350 e", "C 400"] },
-    { "models": ["C-Klasse T-Modell All-Terrain"],
-      "variants": ["C 200 4MATIC", "C 220 d 4MATIC"] },
-    { "models": ["E-Klasse T-Modell"],
-      "variants": ["E 200", "E 220 d", "E 250", "E 300", "E 300 de", "E 300 e", "E 350", "E 400", "E 450", "E 500"] },
-    { "models": ["E-Klasse T-Modell All-Terrain"],
-      "variants": ["E 220 d 4MATIC", "E 400 d 4MATIC"] },
-    { "models": ["CLA Shooting Brake"],
-      "variants": ["CLA 180", "CLA 200", "CLA 220", "CLA 250", "CLA 250 e"] },
-    { "models": ["CLS Shooting Brake"],
-      "variants": ["CLS 250 d", "CLS 350", "CLS 400", "CLS 500"] },
-    { "models": ["GLC Coupé"],
-      "variants": ["GLC 200", "GLC 220 d", "GLC 250", "GLC 300", "GLC 300 de", "GLC 300 e", "GLC 400 d"] },
-    { "models": ["GLE Coupé"],
-      "variants": ["GLE 350 d", "GLE 400", "GLE 400 d", "GLE 450", "GLE 500"] },
-    { "models": ["GLK"],
-      "variants": ["GLK 200 CDI", "GLK 220 CDI", "GLK 250", "GLK 300", "GLK 350"] },
-    { "models": ["GL"], "variants": ["GL 350 BlueTEC", "GL 400", "GL 500", "GL 63 AMG"] },
-    { "models": ["ML"],
-      "variants": ["ML 250 CDI", "ML 350", "ML 350 BlueTEC", "ML 500", "ML 63 AMG"] },
-    { "models": ["R-Klasse"], "variants": ["R 280 CDI", "R 300 CDI", "R 350", "R 500"] },
-    { "models": ["CL"], "variants": ["CL 500", "CL 600", "CL 63 AMG", "CL 65 AMG"] },
-    { "models": ["CLC"], "variants": ["CLC 160", "CLC 180", "CLC 200 CDI", "CLC 220 CDI"] },
-    { "models": ["SLK"], "variants": ["SLK 200", "SLK 250", "SLK 350", "SLK 55 AMG"] },
-    { "models": ["Viano"], "variants": ["2.0 CDI", "2.2 CDI", "3.0 CDI", "3.5"] },
-    { "models": ["EQT"], "variants": ["EQT 200", "EQT 300"] },
-    { "models": ["Maybach GLS 600"], "variants": ["GLS 600 4MATIC"] },
-    { "models": ["Maybach EQS 680 SUV"], "variants": ["EQS 680 4MATIC"] }
+    {
+      "models": [
+        "AMG CLS 53"
+      ],
+      "variants": [
+        "CLS 53 4MATIC+"
+      ]
+    },
+    {
+      "models": [
+        "AMG CLS 63"
+      ],
+      "variants": [
+        "CLS 63 4MATIC",
+        "CLS 63 S 4MATIC+"
+      ]
+    },
+    {
+      "models": [
+        "AMG E 43"
+      ],
+      "variants": [
+        "E 43 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "AMG EQE 43"
+      ],
+      "variants": [
+        "EQE 43 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "AMG EQE 53"
+      ],
+      "variants": [
+        "EQE 53 4MATIC+"
+      ]
+    },
+    {
+      "models": [
+        "AMG EQS 53"
+      ],
+      "variants": [
+        "EQS 53 4MATIC+"
+      ]
+    },
+    {
+      "models": [
+        "AMG G 65"
+      ],
+      "variants": [
+        "G 65"
+      ]
+    },
+    {
+      "models": [
+        "AMG GLA 35"
+      ],
+      "variants": [
+        "GLA 35 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "AMG GLA 45"
+      ],
+      "variants": [
+        "GLA 45 4MATIC+",
+        "GLA 45 S 4MATIC+"
+      ]
+    },
+    {
+      "models": [
+        "AMG GLB 35"
+      ],
+      "variants": [
+        "GLB 35 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "AMG GLE 43"
+      ],
+      "variants": [
+        "GLE 43 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "AMG GLS 63"
+      ],
+      "variants": [
+        "GLS 63 4MATIC+"
+      ]
+    },
+    {
+      "models": [
+        "AMG S 63"
+      ],
+      "variants": [
+        "S 63 4MATIC+",
+        "S 63 E Performance"
+      ]
+    },
+    {
+      "models": [
+        "AMG S 65"
+      ],
+      "variants": [
+        "S 65"
+      ]
+    },
+    {
+      "models": [
+        "AMG SL 43"
+      ],
+      "variants": [
+        "SL 43"
+      ]
+    },
+    {
+      "models": [
+        "AMG SL 55"
+      ],
+      "variants": [
+        "SL 55 4MATIC+"
+      ]
+    },
+    {
+      "models": [
+        "AMG SLC 43"
+      ],
+      "variants": [
+        "SLC 43"
+      ]
+    },
+    {
+      "models": [
+        "AMG ONE"
+      ],
+      "variants": [
+        "1.6 V6 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "AMG GT 4-Door Coupé"
+      ],
+      "variants": [
+        "GT 43 4MATIC+",
+        "GT 53 4MATIC+",
+        "GT 63 4MATIC+",
+        "GT 63 S 4MATIC+"
+      ]
+    },
+    {
+      "models": [
+        "Mercedes-AMG GT Coupé"
+      ],
+      "variants": [
+        "GT",
+        "GT S",
+        "GT C",
+        "GT R",
+        "GT Black Series"
+      ]
+    },
+    {
+      "models": [
+        "SL 63 AMG"
+      ],
+      "variants": [
+        "SL 63"
+      ]
+    },
+    {
+      "models": [
+        "SL 65 AMG"
+      ],
+      "variants": [
+        "SL 65"
+      ]
+    },
+    {
+      "models": [
+        "SLS AMG"
+      ],
+      "variants": [
+        "6.3 V8",
+        "6.3 V8 Black Series"
+      ]
+    },
+    {
+      "models": [
+        "C-Klasse T-Modell"
+      ],
+      "variants": [
+        "C 180",
+        "C 200",
+        "C 220 d",
+        "C 250",
+        "C 300",
+        "C 300 de",
+        "C 300 e",
+        "C 350 e",
+        "C 400"
+      ]
+    },
+    {
+      "models": [
+        "C-Klasse T-Modell All-Terrain"
+      ],
+      "variants": [
+        "C 200 4MATIC",
+        "C 220 d 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "E-Klasse T-Modell"
+      ],
+      "variants": [
+        "E 200",
+        "E 220 d",
+        "E 250",
+        "E 300",
+        "E 300 de",
+        "E 300 e",
+        "E 350",
+        "E 400",
+        "E 450",
+        "E 500"
+      ]
+    },
+    {
+      "models": [
+        "E-Klasse T-Modell All-Terrain"
+      ],
+      "variants": [
+        "E 220 d 4MATIC",
+        "E 400 d 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "CLA Shooting Brake"
+      ],
+      "variants": [
+        "CLA 180",
+        "CLA 200",
+        "CLA 220",
+        "CLA 250",
+        "CLA 250 e"
+      ]
+    },
+    {
+      "models": [
+        "CLS Shooting Brake"
+      ],
+      "variants": [
+        "CLS 250 d",
+        "CLS 350",
+        "CLS 400",
+        "CLS 500"
+      ]
+    },
+    {
+      "models": [
+        "GLC Coupé"
+      ],
+      "variants": [
+        "GLC 200",
+        "GLC 220 d",
+        "GLC 250",
+        "GLC 300",
+        "GLC 300 de",
+        "GLC 300 e",
+        "GLC 400 d"
+      ]
+    },
+    {
+      "models": [
+        "GLE Coupé"
+      ],
+      "variants": [
+        "GLE 350 d",
+        "GLE 400",
+        "GLE 400 d",
+        "GLE 450",
+        "GLE 500"
+      ]
+    },
+    {
+      "models": [
+        "GLK"
+      ],
+      "variants": [
+        "GLK 200 CDI",
+        "GLK 220 CDI",
+        "GLK 250",
+        "GLK 250 CDI",
+        "GLK 300",
+        "GLK 320 CDI",
+        "GLK 350"
+      ]
+    },
+    {
+      "models": [
+        "GL"
+      ],
+      "variants": [
+        "GL 350 BlueTEC",
+        "GL 400",
+        "GL 500",
+        "GL 63 AMG"
+      ]
+    },
+    {
+      "models": [
+        "ML"
+      ],
+      "variants": [
+        "ML 250 CDI",
+        "ML 300 CDI",
+        "ML 350",
+        "ML 350 BlueTEC",
+        "ML 500",
+        "ML 63 AMG"
+      ]
+    },
+    {
+      "models": [
+        "R-Klasse"
+      ],
+      "variants": [
+        "R 280 CDI",
+        "R 300 CDI",
+        "R 320 CDI",
+        "R 350",
+        "R 500"
+      ]
+    },
+    {
+      "models": [
+        "CL"
+      ],
+      "variants": [
+        "CL 500",
+        "CL 600",
+        "CL 63 AMG",
+        "CL 65 AMG"
+      ]
+    },
+    {
+      "models": [
+        "CLC"
+      ],
+      "variants": [
+        "CLC 160",
+        "CLC 180",
+        "CLC 200 CDI",
+        "CLC 220 CDI"
+      ]
+    },
+    {
+      "models": [
+        "SLK"
+      ],
+      "variants": [
+        "SLK 200",
+        "SLK 250",
+        "SLK 300",
+        "SLK 350",
+        "SLK 55 AMG"
+      ]
+    },
+    {
+      "models": [
+        "Viano"
+      ],
+      "variants": [
+        "2.0 CDI",
+        "2.2 CDI",
+        "3.0 CDI",
+        "3.5"
+      ]
+    },
+    {
+      "models": [
+        "EQT"
+      ],
+      "variants": [
+        "EQT 200",
+        "EQT 300"
+      ]
+    },
+    {
+      "models": [
+        "Maybach GLS 600"
+      ],
+      "variants": [
+        "GLS 600 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "Maybach EQS 680 SUV"
+      ],
+      "variants": [
+        "EQS 680 4MATIC"
+      ]
+    },
+    {
+      "models": [
+        "A-Class"
+      ],
+      "variants": [
+        "A 160 d",
+        "A 180 d",
+        "A 200 d",
+        "A 220 d"
+      ]
+    },
+    {
+      "models": [
+        "B-Class"
+      ],
+      "variants": [
+        "B 180 d",
+        "B 200 d",
+        "B 220 d"
+      ]
+    },
+    {
+      "models": [
+        "C-Class",
+        "C-Klasse T-Modell"
+      ],
+      "variants": [
+        "C 180 d",
+        "C 200 d",
+        "C 250 d",
+        "C 300 d"
+      ]
+    },
+    {
+      "models": [
+        "CLA",
+        "CLA Shooting Brake"
+      ],
+      "variants": [
+        "CLA 180 d",
+        "CLA 200 d",
+        "CLA 220 d"
+      ]
+    },
+    {
+      "models": [
+        "E-Class",
+        "E-Klasse T-Modell"
+      ],
+      "variants": [
+        "E 200 d",
+        "E 250 d",
+        "E 350 d",
+        "E 400 d"
+      ]
+    },
+    {
+      "models": [
+        "GLA"
+      ],
+      "variants": [
+        "GLA 180 d",
+        "GLA 200 d",
+        "GLA 220 d"
+      ]
+    },
+    {
+      "models": [
+        "GLB"
+      ],
+      "variants": [
+        "GLB 180 d",
+        "GLB 200 d",
+        "GLB 220 d"
+      ]
+    },
+    {
+      "models": [
+        "GLC",
+        "GLC Coupé"
+      ],
+      "variants": [
+        "GLC 200 d",
+        "GLC 250 d",
+        "GLC 300 d",
+        "GLC 350 d"
+      ]
+    },
+    {
+      "models": [
+        "GLE"
+      ],
+      "variants": [
+        "GLE 350 d",
+        "GLE 400 d",
+        "GLE 450 d"
+      ]
+    },
+    {
+      "models": [
+        "GLE Coupé"
+      ],
+      "variants": [
+        "GLE 300 d",
+        "GLE 450 d"
+      ]
+    },
+    {
+      "models": [
+        "GLS"
+      ],
+      "variants": [
+        "GLS 400 d"
+      ]
+    },
+    {
+      "models": [
+        "S-Class"
+      ],
+      "variants": [
+        "S 300 h",
+        "S 400 d"
+      ]
+    },
+    {
+      "models": [
+        "CLS"
+      ],
+      "variants": [
+        "CLS 220 d",
+        "CLS 350 d",
+        "CLS 400 d"
+      ]
+    },
+    {
+      "models": [
+        "G-Class"
+      ],
+      "variants": [
+        "G 350 CDI"
+      ]
+    },
+    {
+      "models": [
+        "SL"
+      ],
+      "variants": [
+        "SL 600"
+      ]
+    }
   ],
   "remap": [
-    { "from": "A 160", "model": "A-Class", "variant": "A 160" },
-    { "from": "A 180", "model": "A-Class", "variant": "A 180" },
-    { "from": "A 200", "model": "A-Class", "variant": "A 200" },
-    { "from": "A 220", "model": "A-Class", "variant": "A 220" },
-    { "from": "A 250", "model": "A-Class", "variant": "A 250" },
-    { "from": "A 250 e", "model": "A-Class", "variant": "A 250 e" },
-
-    { "from": "B 160", "model": "B-Class", "variant": "B 160" },
-    { "from": "B 180", "model": "B-Class", "variant": "B 180" },
-    { "from": "B 200", "model": "B-Class", "variant": "B 200" },
-    { "from": "B 220", "model": "B-Class", "variant": "B 220" },
-    { "from": "B 250", "model": "B-Class", "variant": "B 250" },
-    { "from": "B 250 e", "model": "B-Class", "variant": "B 250 e" },
-
-    { "from": "C 160", "model": "C-Class", "variant": "C 160" },
-    { "from": "C 180", "model": "C-Class", "variant": "C 180" },
-    { "from": "C 200", "model": "C-Class", "variant": "C 200" },
-    { "from": "C 220 d", "model": "C-Class", "variant": "C 220 d" },
-    { "from": "C 250", "model": "C-Class", "variant": "C 250" },
-    { "from": "C 300", "model": "C-Class", "variant": "C 300" },
-    { "from": "C 300 de", "model": "C-Class", "variant": "C 300 de" },
-    { "from": "C 300 e", "model": "C-Class", "variant": "C 300 e" },
-    { "from": "C 350", "model": "C-Class", "variant": "C 350" },
-    { "from": "C 350 e", "model": "C-Class", "variant": "C 350 e" },
-    { "from": "C 400", "model": "C-Class", "variant": "C 400" },
-
-    { "from": "CLA 180", "model": "CLA", "variant": "CLA 180" },
-    { "from": "CLA 200", "model": "CLA", "variant": "CLA 200" },
-    { "from": "CLA 220", "model": "CLA", "variant": "CLA 220" },
-    { "from": "CLA 250", "model": "CLA", "variant": "CLA 250" },
-    { "from": "CLA 250 e", "model": "CLA", "variant": "CLA 250 e" },
-    { "from": "CLA 350", "model": "CLA", "variant": "CLA 350" },
-
-    { "from": "CLE 180", "model": "CLE", "variant": "CLE 180" },
-    { "from": "CLE 200", "model": "CLE", "variant": "CLE 200" },
-    { "from": "CLE 200 4MATIC", "model": "CLE", "variant": "CLE 200 4MATIC" },
-    { "from": "CLE 220 d", "model": "CLE", "variant": "CLE 220 d" },
-    { "from": "CLE 300", "model": "CLE", "variant": "CLE 300" },
-    { "from": "CLE 300 4MATIC", "model": "CLE", "variant": "CLE 300 4MATIC" },
-    { "from": "CLE 300 e (Plug-in Hybrid)", "model": "CLE", "variant": "CLE 300 e" },
-    { "from": "CLE 450 4MATIC", "model": "CLE", "variant": "CLE 450 4MATIC" },
-
-    { "from": "CLS 250 d", "model": "CLS", "variant": "CLS 250 d" },
-    { "from": "CLS 300 d", "model": "CLS", "variant": "CLS 300 d" },
-    { "from": "CLS 350", "model": "CLS", "variant": "CLS 350" },
-    { "from": "CLS 400", "model": "CLS", "variant": "CLS 400" },
-    { "from": "CLS 450", "model": "CLS", "variant": "CLS 450" },
-    { "from": "CLS 500", "model": "CLS", "variant": "CLS 500" },
-
-    { "from": "E 200", "model": "E-Class", "variant": "E 200" },
-    { "from": "E 220 d", "model": "E-Class", "variant": "E 220 d" },
-    { "from": "E 250", "model": "E-Class", "variant": "E 250" },
-    { "from": "E 300", "model": "E-Class", "variant": "E 300" },
-    { "from": "E 300 de", "model": "E-Class", "variant": "E 300 de" },
-    { "from": "E 300 e", "model": "E-Class", "variant": "E 300 e" },
-    { "from": "E 350", "model": "E-Class", "variant": "E 350" },
-    { "from": "E 350 e", "model": "E-Class", "variant": "E 350 e" },
-    { "from": "E 400", "model": "E-Class", "variant": "E 400" },
-    { "from": "E 450", "model": "E-Class", "variant": "E 450" },
-    { "from": "E 500", "model": "E-Class", "variant": "E 500" },
-
-    { "from": "G 350 d", "model": "G-Class", "variant": "G 350 d" },
-    { "from": "G 400 d", "model": "G-Class", "variant": "G 400 d" },
-    { "from": "G 450 d", "model": "G-Class", "variant": "G 450 d" },
-    { "from": "G 500", "model": "G-Class", "variant": "G 500" },
-    { "from": "G 580", "model": "G-Class", "variant": "G 580 mit EQ Technologie" },
-
-    { "from": "GLA 160", "model": "GLA", "variant": "GLA 160" },
-    { "from": "GLA 180", "model": "GLA", "variant": "GLA 180" },
-    { "from": "GLA 200", "model": "GLA", "variant": "GLA 200" },
-    { "from": "GLA 220", "model": "GLA", "variant": "GLA 220" },
-    { "from": "GLA 250", "model": "GLA", "variant": "GLA 250" },
-    { "from": "GLA 250 e", "model": "GLA", "variant": "GLA 250 e" },
-
-    { "from": "GLB 180", "model": "GLB", "variant": "GLB 180" },
-    { "from": "GLB 200", "model": "GLB", "variant": "GLB 200" },
-    { "from": "GLB 220", "model": "GLB", "variant": "GLB 220" },
-    { "from": "GLB 250", "model": "GLB", "variant": "GLB 250" },
-
-    { "from": "GLC 200", "model": "GLC", "variant": "GLC 200" },
-    { "from": "GLC 220 d", "model": "GLC", "variant": "GLC 220 d" },
-    { "from": "GLC 250", "model": "GLC", "variant": "GLC 250" },
-    { "from": "GLC 300", "model": "GLC", "variant": "GLC 300" },
-    { "from": "GLC 300 de", "model": "GLC", "variant": "GLC 300 de" },
-    { "from": "GLC 300 e", "model": "GLC", "variant": "GLC 300 e" },
-    { "from": "GLC 350 e", "model": "GLC", "variant": "GLC 350 e" },
-    { "from": "GLC 400 d", "model": "GLC", "variant": "GLC 400 d" },
-    { "from": "GLC 400 e", "model": "GLC", "variant": "GLC 400 e" },
-
-    { "from": "GLE 250 d", "model": "GLE", "variant": "GLE 250 d" },
-    { "from": "GLE 300 d", "model": "GLE", "variant": "GLE 300 d" },
-    { "from": "GLE 350", "model": "GLE", "variant": "GLE 350" },
-    { "from": "GLE 350 de", "model": "GLE", "variant": "GLE 350 de" },
-    { "from": "GLE 400", "model": "GLE", "variant": "GLE 400" },
-    { "from": "GLE 400 e", "model": "GLE", "variant": "GLE 400 e" },
-    { "from": "GLE 450", "model": "GLE", "variant": "GLE 450" },
-    { "from": "GLE 500", "model": "GLE", "variant": "GLE 500" },
-    { "from": "GLE 500 e", "model": "GLE", "variant": "GLE 500 e" },
-
-    { "from": "GLS 350 d", "model": "GLS", "variant": "GLS 350 d" },
-    { "from": "GLS 400", "model": "GLS", "variant": "GLS 400" },
-    { "from": "GLS 450", "model": "GLS", "variant": "GLS 450" },
-    { "from": "GLS 500", "model": "GLS", "variant": "GLS 500" },
-    { "from": "GLS 580", "model": "GLS", "variant": "GLS 580" },
-
-    { "from": "S 350 d", "model": "S-Class", "variant": "S 350 d" },
-    { "from": "S 400", "model": "S-Class", "variant": "S 400" },
-    { "from": "S 450", "model": "S-Class", "variant": "S 450" },
-    { "from": "S 500", "model": "S-Class", "variant": "S 500" },
-    { "from": "S 500 e", "model": "S-Class", "variant": "S 500 e" },
-    { "from": "S 560", "model": "S-Class", "variant": "S 560" },
-    { "from": "S 560 e", "model": "S-Class", "variant": "S 560 e" },
-    { "from": "S 580", "model": "S-Class", "variant": "S 580" },
-    { "from": "S 580 e", "model": "S-Class", "variant": "S 580 e" },
-    { "from": "S 600", "model": "S-Class", "variant": "S 600" },
-
-    { "from": "SL 350", "model": "SL", "variant": "SL 350" },
-    { "from": "SL 400", "model": "SL", "variant": "SL 400" },
-    { "from": "SL 500", "model": "SL", "variant": "SL 500" },
-
-    { "from": "SLC 180", "model": "SLC", "variant": "SLC 180" },
-    { "from": "SLC 200", "model": "SLC", "variant": "SLC 200" },
-    { "from": "SLC 250 d", "model": "SLC", "variant": "SLC 250 d" },
-    { "from": "SLC 300", "model": "SLC", "variant": "SLC 300" },
-
-    { "from": "V 200", "model": "V-Class", "variant": "V 200" },
-    { "from": "V 220 d", "model": "V-Class", "variant": "V 220 d" },
-    { "from": "V 250 d", "model": "V-Class", "variant": "V 250 d" },
-    { "from": "V 300 d", "model": "V-Class", "variant": "V 300 d" },
-
-    { "from": "Maybach S 560", "model": "Maybach S-Class", "variant": "S 560 4MATIC" },
-    { "from": "Maybach S 580", "model": "Maybach S-Class", "variant": "S 580 4MATIC" },
-    { "from": "Maybach S 600", "model": "Maybach S-Class", "variant": "S 600" },
-    { "from": "Maybach S 650", "model": "Maybach S-Class", "variant": "S 650" },
-    { "from": "Maybach S 680", "model": "Maybach S-Class", "variant": "S 680 4MATIC" },
-
-    { "from": "AMG CLE 53 4MATIC+", "model": "AMG CLE 53", "variant": "CLE 53 4MATIC+" },
-    { "from": "Mercedes-AMG GT 63 4MATIC+", "model": "AMG GT", "variant": "GT 63 4MATIC+" }
+    {
+      "from": "A 160",
+      "model": "A-Class",
+      "variant": "A 160"
+    },
+    {
+      "from": "A 180",
+      "model": "A-Class",
+      "variant": "A 180"
+    },
+    {
+      "from": "A 200",
+      "model": "A-Class",
+      "variant": "A 200"
+    },
+    {
+      "from": "A 220",
+      "model": "A-Class",
+      "variant": "A 220"
+    },
+    {
+      "from": "A 250",
+      "model": "A-Class",
+      "variant": "A 250"
+    },
+    {
+      "from": "A 250 e",
+      "model": "A-Class",
+      "variant": "A 250 e"
+    },
+    {
+      "from": "B 160",
+      "model": "B-Class",
+      "variant": "B 160"
+    },
+    {
+      "from": "B 180",
+      "model": "B-Class",
+      "variant": "B 180"
+    },
+    {
+      "from": "B 200",
+      "model": "B-Class",
+      "variant": "B 200"
+    },
+    {
+      "from": "B 220",
+      "model": "B-Class",
+      "variant": "B 220"
+    },
+    {
+      "from": "B 250",
+      "model": "B-Class",
+      "variant": "B 250"
+    },
+    {
+      "from": "B 250 e",
+      "model": "B-Class",
+      "variant": "B 250 e"
+    },
+    {
+      "from": "C 160",
+      "model": "C-Class",
+      "variant": "C 160"
+    },
+    {
+      "from": "C 180",
+      "model": "C-Class",
+      "variant": "C 180"
+    },
+    {
+      "from": "C 200",
+      "model": "C-Class",
+      "variant": "C 200"
+    },
+    {
+      "from": "C 220 d",
+      "model": "C-Class",
+      "variant": "C 220 d"
+    },
+    {
+      "from": "C 250",
+      "model": "C-Class",
+      "variant": "C 250"
+    },
+    {
+      "from": "C 300",
+      "model": "C-Class",
+      "variant": "C 300"
+    },
+    {
+      "from": "C 300 de",
+      "model": "C-Class",
+      "variant": "C 300 de"
+    },
+    {
+      "from": "C 300 e",
+      "model": "C-Class",
+      "variant": "C 300 e"
+    },
+    {
+      "from": "C 350",
+      "model": "C-Class",
+      "variant": "C 350"
+    },
+    {
+      "from": "C 350 e",
+      "model": "C-Class",
+      "variant": "C 350 e"
+    },
+    {
+      "from": "C 400",
+      "model": "C-Class",
+      "variant": "C 400"
+    },
+    {
+      "from": "CLA 180",
+      "model": "CLA",
+      "variant": "CLA 180"
+    },
+    {
+      "from": "CLA 200",
+      "model": "CLA",
+      "variant": "CLA 200"
+    },
+    {
+      "from": "CLA 220",
+      "model": "CLA",
+      "variant": "CLA 220"
+    },
+    {
+      "from": "CLA 250",
+      "model": "CLA",
+      "variant": "CLA 250"
+    },
+    {
+      "from": "CLA 250 e",
+      "model": "CLA",
+      "variant": "CLA 250 e"
+    },
+    {
+      "from": "CLA 350",
+      "model": "CLA",
+      "variant": "CLA 350"
+    },
+    {
+      "from": "CLE 180",
+      "model": "CLE",
+      "variant": "CLE 180"
+    },
+    {
+      "from": "CLE 200",
+      "model": "CLE",
+      "variant": "CLE 200"
+    },
+    {
+      "from": "CLE 200 4MATIC",
+      "model": "CLE",
+      "variant": "CLE 200 4MATIC"
+    },
+    {
+      "from": "CLE 220 d",
+      "model": "CLE",
+      "variant": "CLE 220 d"
+    },
+    {
+      "from": "CLE 300",
+      "model": "CLE",
+      "variant": "CLE 300"
+    },
+    {
+      "from": "CLE 300 4MATIC",
+      "model": "CLE",
+      "variant": "CLE 300 4MATIC"
+    },
+    {
+      "from": "CLE 300 e (Plug-in Hybrid)",
+      "model": "CLE",
+      "variant": "CLE 300 e"
+    },
+    {
+      "from": "CLE 450 4MATIC",
+      "model": "CLE",
+      "variant": "CLE 450 4MATIC"
+    },
+    {
+      "from": "CLS 250 d",
+      "model": "CLS",
+      "variant": "CLS 250 d"
+    },
+    {
+      "from": "CLS 300 d",
+      "model": "CLS",
+      "variant": "CLS 300 d"
+    },
+    {
+      "from": "CLS 350",
+      "model": "CLS",
+      "variant": "CLS 350"
+    },
+    {
+      "from": "CLS 400",
+      "model": "CLS",
+      "variant": "CLS 400"
+    },
+    {
+      "from": "CLS 450",
+      "model": "CLS",
+      "variant": "CLS 450"
+    },
+    {
+      "from": "CLS 500",
+      "model": "CLS",
+      "variant": "CLS 500"
+    },
+    {
+      "from": "E 200",
+      "model": "E-Class",
+      "variant": "E 200"
+    },
+    {
+      "from": "E 220 d",
+      "model": "E-Class",
+      "variant": "E 220 d"
+    },
+    {
+      "from": "E 250",
+      "model": "E-Class",
+      "variant": "E 250"
+    },
+    {
+      "from": "E 300",
+      "model": "E-Class",
+      "variant": "E 300"
+    },
+    {
+      "from": "E 300 de",
+      "model": "E-Class",
+      "variant": "E 300 de"
+    },
+    {
+      "from": "E 300 e",
+      "model": "E-Class",
+      "variant": "E 300 e"
+    },
+    {
+      "from": "E 350",
+      "model": "E-Class",
+      "variant": "E 350"
+    },
+    {
+      "from": "E 350 e",
+      "model": "E-Class",
+      "variant": "E 350 e"
+    },
+    {
+      "from": "E 400",
+      "model": "E-Class",
+      "variant": "E 400"
+    },
+    {
+      "from": "E 450",
+      "model": "E-Class",
+      "variant": "E 450"
+    },
+    {
+      "from": "E 500",
+      "model": "E-Class",
+      "variant": "E 500"
+    },
+    {
+      "from": "G 350 d",
+      "model": "G-Class",
+      "variant": "G 350 d"
+    },
+    {
+      "from": "G 400 d",
+      "model": "G-Class",
+      "variant": "G 400 d"
+    },
+    {
+      "from": "G 450 d",
+      "model": "G-Class",
+      "variant": "G 450 d"
+    },
+    {
+      "from": "G 500",
+      "model": "G-Class",
+      "variant": "G 500"
+    },
+    {
+      "from": "G 580",
+      "model": "G-Class",
+      "variant": "G 580 mit EQ Technologie"
+    },
+    {
+      "from": "GLA 160",
+      "model": "GLA",
+      "variant": "GLA 160"
+    },
+    {
+      "from": "GLA 180",
+      "model": "GLA",
+      "variant": "GLA 180"
+    },
+    {
+      "from": "GLA 200",
+      "model": "GLA",
+      "variant": "GLA 200"
+    },
+    {
+      "from": "GLA 220",
+      "model": "GLA",
+      "variant": "GLA 220"
+    },
+    {
+      "from": "GLA 250",
+      "model": "GLA",
+      "variant": "GLA 250"
+    },
+    {
+      "from": "GLA 250 e",
+      "model": "GLA",
+      "variant": "GLA 250 e"
+    },
+    {
+      "from": "GLB 180",
+      "model": "GLB",
+      "variant": "GLB 180"
+    },
+    {
+      "from": "GLB 200",
+      "model": "GLB",
+      "variant": "GLB 200"
+    },
+    {
+      "from": "GLB 220",
+      "model": "GLB",
+      "variant": "GLB 220"
+    },
+    {
+      "from": "GLB 250",
+      "model": "GLB",
+      "variant": "GLB 250"
+    },
+    {
+      "from": "GLC 200",
+      "model": "GLC",
+      "variant": "GLC 200"
+    },
+    {
+      "from": "GLC 220 d",
+      "model": "GLC",
+      "variant": "GLC 220 d"
+    },
+    {
+      "from": "GLC 250",
+      "model": "GLC",
+      "variant": "GLC 250"
+    },
+    {
+      "from": "GLC 300",
+      "model": "GLC",
+      "variant": "GLC 300"
+    },
+    {
+      "from": "GLC 300 de",
+      "model": "GLC",
+      "variant": "GLC 300 de"
+    },
+    {
+      "from": "GLC 300 e",
+      "model": "GLC",
+      "variant": "GLC 300 e"
+    },
+    {
+      "from": "GLC 350 e",
+      "model": "GLC",
+      "variant": "GLC 350 e"
+    },
+    {
+      "from": "GLC 400 d",
+      "model": "GLC",
+      "variant": "GLC 400 d"
+    },
+    {
+      "from": "GLC 400 e",
+      "model": "GLC",
+      "variant": "GLC 400 e"
+    },
+    {
+      "from": "GLE 250 d",
+      "model": "GLE",
+      "variant": "GLE 250 d"
+    },
+    {
+      "from": "GLE 300 d",
+      "model": "GLE",
+      "variant": "GLE 300 d"
+    },
+    {
+      "from": "GLE 350",
+      "model": "GLE",
+      "variant": "GLE 350"
+    },
+    {
+      "from": "GLE 350 de",
+      "model": "GLE",
+      "variant": "GLE 350 de"
+    },
+    {
+      "from": "GLE 400",
+      "model": "GLE",
+      "variant": "GLE 400"
+    },
+    {
+      "from": "GLE 400 e",
+      "model": "GLE",
+      "variant": "GLE 400 e"
+    },
+    {
+      "from": "GLE 450",
+      "model": "GLE",
+      "variant": "GLE 450"
+    },
+    {
+      "from": "GLE 500",
+      "model": "GLE",
+      "variant": "GLE 500"
+    },
+    {
+      "from": "GLE 500 e",
+      "model": "GLE",
+      "variant": "GLE 500 e"
+    },
+    {
+      "from": "GLS 350 d",
+      "model": "GLS",
+      "variant": "GLS 350 d"
+    },
+    {
+      "from": "GLS 400",
+      "model": "GLS",
+      "variant": "GLS 400"
+    },
+    {
+      "from": "GLS 450",
+      "model": "GLS",
+      "variant": "GLS 450"
+    },
+    {
+      "from": "GLS 500",
+      "model": "GLS",
+      "variant": "GLS 500"
+    },
+    {
+      "from": "GLS 580",
+      "model": "GLS",
+      "variant": "GLS 580"
+    },
+    {
+      "from": "S 350 d",
+      "model": "S-Class",
+      "variant": "S 350 d"
+    },
+    {
+      "from": "S 400",
+      "model": "S-Class",
+      "variant": "S 400"
+    },
+    {
+      "from": "S 450",
+      "model": "S-Class",
+      "variant": "S 450"
+    },
+    {
+      "from": "S 500",
+      "model": "S-Class",
+      "variant": "S 500"
+    },
+    {
+      "from": "S 500 e",
+      "model": "S-Class",
+      "variant": "S 500 e"
+    },
+    {
+      "from": "S 560",
+      "model": "S-Class",
+      "variant": "S 560"
+    },
+    {
+      "from": "S 560 e",
+      "model": "S-Class",
+      "variant": "S 560 e"
+    },
+    {
+      "from": "S 580",
+      "model": "S-Class",
+      "variant": "S 580"
+    },
+    {
+      "from": "S 580 e",
+      "model": "S-Class",
+      "variant": "S 580 e"
+    },
+    {
+      "from": "S 600",
+      "model": "S-Class",
+      "variant": "S 600"
+    },
+    {
+      "from": "SL 350",
+      "model": "SL",
+      "variant": "SL 350"
+    },
+    {
+      "from": "SL 400",
+      "model": "SL",
+      "variant": "SL 400"
+    },
+    {
+      "from": "SL 500",
+      "model": "SL",
+      "variant": "SL 500"
+    },
+    {
+      "from": "SLC 180",
+      "model": "SLC",
+      "variant": "SLC 180"
+    },
+    {
+      "from": "SLC 200",
+      "model": "SLC",
+      "variant": "SLC 200"
+    },
+    {
+      "from": "SLC 250 d",
+      "model": "SLC",
+      "variant": "SLC 250 d"
+    },
+    {
+      "from": "SLC 300",
+      "model": "SLC",
+      "variant": "SLC 300"
+    },
+    {
+      "from": "V 200",
+      "model": "V-Class",
+      "variant": "V 200"
+    },
+    {
+      "from": "V 220 d",
+      "model": "V-Class",
+      "variant": "V 220 d"
+    },
+    {
+      "from": "V 250 d",
+      "model": "V-Class",
+      "variant": "V 250 d"
+    },
+    {
+      "from": "V 300 d",
+      "model": "V-Class",
+      "variant": "V 300 d"
+    },
+    {
+      "from": "Maybach S 560",
+      "model": "Maybach S-Class",
+      "variant": "S 560 4MATIC"
+    },
+    {
+      "from": "Maybach S 580",
+      "model": "Maybach S-Class",
+      "variant": "S 580 4MATIC"
+    },
+    {
+      "from": "Maybach S 600",
+      "model": "Maybach S-Class",
+      "variant": "S 600"
+    },
+    {
+      "from": "Maybach S 650",
+      "model": "Maybach S-Class",
+      "variant": "S 650"
+    },
+    {
+      "from": "Maybach S 680",
+      "model": "Maybach S-Class",
+      "variant": "S 680 4MATIC"
+    },
+    {
+      "from": "AMG CLE 53 4MATIC+",
+      "model": "AMG CLE 53",
+      "variant": "CLE 53 4MATIC+"
+    },
+    {
+      "from": "Mercedes-AMG GT 63 4MATIC+",
+      "model": "AMG GT",
+      "variant": "GT 63 4MATIC+"
+    }
   ]
 }

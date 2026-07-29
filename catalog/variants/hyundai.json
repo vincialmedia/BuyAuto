@@ -4,54 +4,350 @@
   "models": [],
   "groups": [
     {
-      "models": ["Ioniq 5", "Ioniq 6"],
-      "variants": ["58 kWh", "63 kWh", "77.4 kWh", "84 kWh", "77.4 kWh AWD", "84 kWh AWD"]
+      "models": [
+        "Ioniq 5",
+        "Ioniq 6"
+      ],
+      "variants": [
+        "58 kWh",
+        "63 kWh",
+        "77.4 kWh",
+        "84 kWh",
+        "77.4 kWh AWD",
+        "84 kWh AWD"
+      ]
     },
     {
-      "models": ["Ioniq 9"],
-      "variants": ["110 kWh", "110 kWh AWD"]
+      "models": [
+        "Ioniq 9"
+      ],
+      "variants": [
+        "110 kWh",
+        "110 kWh AWD"
+      ]
     },
     {
-      "models": ["Ioniq"],
-      "variants": ["1.6 GDI Hybrid", "1.6 GDI Plug-in", "38.3 kWh"]
+      "models": [
+        "Ioniq"
+      ],
+      "variants": [
+        "1.6 GDI Hybrid",
+        "1.6 GDI Plug-in",
+        "38.3 kWh"
+      ]
     },
-    { "models": ["Ioniq 5 N", "Ioniq 6 N"], "variants": ["84 kWh N"] },
-    { "models": ["i10"], "variants": ["1.0", "1.2", "1.0 T-GDi"] },
-    { "models": ["i20", "i20 Coupé"], "variants": ["1.0 T-GDi", "1.2 MPi", "1.4", "1.4 CRDi"] },
-    { "models": ["i20 N"], "variants": ["1.6 T-GDi"] },
-    { "models": ["i30", "i30 Fastback"],
-      "variants": ["1.0 T-GDi", "1.4 T-GDi", "1.5 T-GDi", "1.6 GDi", "1.6 CRDi"] },
-    { "models": ["i30 N", "i30 N Fastback"], "variants": ["2.0 T-GDi"] },
-    { "models": ["i40"], "variants": ["1.6 GDi", "2.0 GDi", "1.7 CRDi"] },
-    { "models": ["Accent"], "variants": ["1.4", "1.6", "1.6 CRDi"] },
-    { "models": ["Elantra"], "variants": ["1.6", "2.0", "1.6 CRDi"] },
-    { "models": ["Matrix"], "variants": ["1.6", "1.8", "1.5 CRDi"] },
-    { "models": ["Sonata"], "variants": ["2.0", "2.4", "1.6 T-GDi", "2.0 Hybrid"] },
-    { "models": ["Veloster"], "variants": ["1.6 GDi", "1.6 T-GDi"] },
-    { "models": ["Genesis"], "variants": ["3.8 V6", "5.0 V8"] },
-    { "models": ["Genesis Coupé"], "variants": ["2.0 T", "3.8 V6"] },
-    { "models": ["Equus"], "variants": ["3.8 V6", "4.6 V8"] },
-    { "models": ["Bayon"], "variants": ["1.0 T-GDi", "1.2 MPi"] },
-    { "models": ["Kona"],
-      "variants": ["1.0 T-GDi", "1.6 T-GDi", "1.6 CRDi", "1.6 GDi Hybrid", "39 kWh", "64 kWh", "65 kWh"] },
-    { "models": ["Kona N"], "variants": ["2.0 T-GDi"] },
-    { "models": ["ix20"], "variants": ["1.4", "1.6", "1.4 CRDi", "1.6 CRDi"] },
-    { "models": ["ix25"], "variants": ["1.6", "2.0"] },
-    { "models": ["ix35"], "variants": ["1.6 GDi", "2.0", "1.7 CRDi", "2.0 CRDi"] },
-    { "models": ["ix55"], "variants": ["3.0 V6 CRDi"] },
-    { "models": ["Tucson"],
-      "variants": ["1.6 T-GDi", "1.6 CRDi", "2.0 CRDi", "1.6 T-GDi Hybrid", "1.6 T-GDi PHEV"] },
-    { "models": ["Santa Fe"],
-      "variants": ["2.2 CRDi", "2.4 GDi", "1.6 T-GDi Hybrid", "1.6 T-GDi PHEV"] },
-    { "models": ["Grand Santa Fe"], "variants": ["2.2 CRDi", "3.3 V6"] },
-    { "models": ["Staria"], "variants": ["2.2 CRDi", "3.5 V6"] },
-    { "models": ["H-1 Cargo", "H-1 Travel"], "variants": ["2.5 CRDi"] },
-    { "models": ["H350"], "variants": ["2.5 CRDi"] },
-    { "models": ["Inster"], "variants": ["42 kWh", "49 kWh"] },
-    { "models": ["Nexo"], "variants": ["Fuel Cell"] }
+    {
+      "models": [
+        "Ioniq 5 N",
+        "Ioniq 6 N"
+      ],
+      "variants": [
+        "84 kWh N"
+      ]
+    },
+    {
+      "models": [
+        "i10"
+      ],
+      "variants": [
+        "1.0",
+        "1.2",
+        "1.0 T-GDi",
+        "1.1"
+      ]
+    },
+    {
+      "models": [
+        "i20",
+        "i20 Coupé"
+      ],
+      "variants": [
+        "1.0 T-GDi",
+        "1.2 MPi",
+        "1.4",
+        "1.4 CRDi",
+        "1.25",
+        "1.1 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "i20 N"
+      ],
+      "variants": [
+        "1.6 T-GDi"
+      ]
+    },
+    {
+      "models": [
+        "i30",
+        "i30 Fastback"
+      ],
+      "variants": [
+        "1.0 T-GDi",
+        "1.4 T-GDi",
+        "1.5 T-GDi",
+        "1.6 GDi",
+        "1.6 CRDi",
+        "1.4",
+        "1.6",
+        "1.4 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "i30 N",
+        "i30 N Fastback"
+      ],
+      "variants": [
+        "2.0 T-GDi"
+      ]
+    },
+    {
+      "models": [
+        "i40"
+      ],
+      "variants": [
+        "1.6 GDi",
+        "2.0 GDi",
+        "1.7 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "Accent"
+      ],
+      "variants": [
+        "1.4",
+        "1.6",
+        "1.6 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "Elantra"
+      ],
+      "variants": [
+        "1.6",
+        "2.0",
+        "1.6 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "Matrix"
+      ],
+      "variants": [
+        "1.6",
+        "1.8",
+        "1.5 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "Sonata"
+      ],
+      "variants": [
+        "2.0",
+        "2.4",
+        "1.6 T-GDi",
+        "2.0 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Veloster"
+      ],
+      "variants": [
+        "1.6 GDi",
+        "1.6 T-GDi"
+      ]
+    },
+    {
+      "models": [
+        "Genesis"
+      ],
+      "variants": [
+        "3.8 V6",
+        "5.0 V8"
+      ]
+    },
+    {
+      "models": [
+        "Genesis Coupé"
+      ],
+      "variants": [
+        "2.0 T",
+        "3.8 V6"
+      ]
+    },
+    {
+      "models": [
+        "Equus"
+      ],
+      "variants": [
+        "3.8 V6",
+        "4.6 V8"
+      ]
+    },
+    {
+      "models": [
+        "Bayon"
+      ],
+      "variants": [
+        "1.0 T-GDi",
+        "1.2 MPi"
+      ]
+    },
+    {
+      "models": [
+        "Kona"
+      ],
+      "variants": [
+        "1.0 T-GDi",
+        "1.6 T-GDi",
+        "1.6 CRDi",
+        "1.6 GDi Hybrid",
+        "39 kWh",
+        "64 kWh",
+        "65 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Kona N"
+      ],
+      "variants": [
+        "2.0 T-GDi"
+      ]
+    },
+    {
+      "models": [
+        "ix20"
+      ],
+      "variants": [
+        "1.4",
+        "1.6",
+        "1.4 CRDi",
+        "1.6 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "ix25"
+      ],
+      "variants": [
+        "1.6",
+        "2.0"
+      ]
+    },
+    {
+      "models": [
+        "ix35"
+      ],
+      "variants": [
+        "1.6 GDi",
+        "2.0",
+        "1.7 CRDi",
+        "2.0 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "ix55"
+      ],
+      "variants": [
+        "3.0 V6 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "Tucson"
+      ],
+      "variants": [
+        "1.6 T-GDi",
+        "1.6 CRDi",
+        "2.0 CRDi",
+        "1.6 T-GDi Hybrid",
+        "1.6 T-GDi PHEV",
+        "1.6 GDi",
+        "1.7 CRDi",
+        "2.0"
+      ]
+    },
+    {
+      "models": [
+        "Santa Fe"
+      ],
+      "variants": [
+        "2.2 CRDi",
+        "2.4 GDi",
+        "1.6 T-GDi Hybrid",
+        "1.6 T-GDi PHEV",
+        "2.0 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "Grand Santa Fe"
+      ],
+      "variants": [
+        "2.2 CRDi",
+        "3.3 V6"
+      ]
+    },
+    {
+      "models": [
+        "Staria"
+      ],
+      "variants": [
+        "2.2 CRDi",
+        "3.5 V6"
+      ]
+    },
+    {
+      "models": [
+        "H-1 Cargo",
+        "H-1 Travel"
+      ],
+      "variants": [
+        "2.5 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "H350"
+      ],
+      "variants": [
+        "2.5 CRDi"
+      ]
+    },
+    {
+      "models": [
+        "Inster"
+      ],
+      "variants": [
+        "42 kWh",
+        "49 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Nexo"
+      ],
+      "variants": [
+        "Fuel Cell"
+      ]
+    }
   ],
   "rename": [
-    { "from": "IONIQ 5 N", "to": "Ioniq 5 N" },
-    { "from": "IONIQ 6 N", "to": "Ioniq 6 N" }
+    {
+      "from": "IONIQ 5 N",
+      "to": "Ioniq 5 N"
+    },
+    {
+      "from": "IONIQ 6 N",
+      "to": "Ioniq 6 N"
+    }
   ]
 }

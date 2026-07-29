@@ -18,19 +18,19 @@
     { "models": ["A3 Sportback"], "variants": ["40 TFSI e", "45 TFSI e"] },
 
     { "models": ["A4", "A4 Avant"],
-      "variants": ["1.4 TFSI", "1.8 TFSI", "2.0 TDI", "2.0 TDI quattro", "2.0 TFSI", "2.0 TFSI quattro", "3.0 TDI (V6)", "3.0 TDI quattro", "30 TDI", "35 TDI", "35 TFSI", "40 TDI", "40 TDI quattro", "40 TFSI", "40 TFSI quattro", "45 TFSI quattro"] },
+      "variants": ["1.4 TFSI", "1.8 TFSI", "2.0 TDI", "2.0 TDI quattro", "2.0 TFSI", "2.0 TFSI quattro", "2.7 TDI", "3.0 TDI (V6)", "3.0 TDI quattro", "3.2 FSI quattro", "30 TDI", "35 TDI", "35 TFSI", "40 TDI", "40 TDI quattro", "40 TFSI", "40 TFSI quattro", "45 TFSI quattro"] },
     { "models": ["A4 allroad"],
       "variants": ["2.0 TDI quattro", "2.0 TFSI quattro", "3.0 TDI quattro", "40 TDI quattro", "45 TFSI quattro"] },
 
     { "models": ["A5", "A5 Sportback"],
-      "variants": ["1.8 TFSI", "2.0 TDI", "2.0 TDI quattro", "2.0 TFSI", "2.0 TFSI quattro", "3.0 TDI quattro", "35 TDI", "35 TFSI", "40 TDI quattro", "40 TFSI", "40 TFSI quattro", "45 TFSI quattro"] },
+      "variants": ["1.8 TFSI", "2.0 TDI", "2.0 TDI quattro", "2.0 TFSI", "2.0 TFSI quattro", "2.7 TDI", "3.0 TDI quattro", "3.2 FSI quattro", "35 TDI", "35 TFSI", "40 TDI quattro", "40 TFSI", "40 TFSI quattro", "45 TFSI quattro"] },
     { "models": ["A5 Cabriolet"],
       "variants": ["1.8 TFSI", "2.0 TDI", "2.0 TFSI quattro", "3.0 TDI quattro", "35 TFSI", "40 TFSI", "45 TFSI quattro"] },
     { "models": ["A5 Avant", "A5 Limousine"],
       "variants": ["35 TDI", "35 TFSI", "40 TDI quattro", "40 TFSI", "40 TFSI quattro", "45 TFSI quattro"] },
 
     { "models": ["A6", "A6 Avant"],
-      "variants": ["2.0 TDI", "2.0 TFSI", "3.0 TDI (V6)", "3.0 TDI quattro", "3.0 TFSI quattro", "35 TDI", "40 TDI", "40 TDI quattro", "45 TFSI quattro", "50 TDI quattro", "55 TFSI quattro", "55 TFSI e quattro"] },
+      "variants": ["2.0 TDI", "2.0 TFSI", "2.8 FSI quattro", "3.0 TDI (V6)", "3.0 TDI quattro", "3.0 TFSI quattro", "35 TDI", "40 TDI", "40 TDI quattro", "45 TFSI quattro", "50 TDI quattro", "55 TFSI quattro", "55 TFSI e quattro"] },
     { "models": ["A6 Limousine"],
       "variants": ["35 TDI", "40 TDI", "40 TDI quattro", "45 TFSI quattro", "50 TDI quattro", "55 TFSI quattro"] },
     { "models": ["A6 allroad"],
@@ -45,7 +45,7 @@
     { "models": ["A7"],
       "variants": ["3.0 TDI quattro", "3.0 TFSI quattro", "45 TFSI quattro", "50 TDI quattro", "55 TFSI quattro", "55 TFSI e quattro"] },
     { "models": ["A8"],
-      "variants": ["3.0 TDI quattro", "4.0 TFSI quattro", "50 TDI quattro", "55 TFSI quattro", "60 TFSI e quattro", "L 50 TDI quattro", "L 55 TFSI quattro", "L 60 TFSI e quattro"] },
+      "variants": ["3.0 TDI quattro", "4.0 TFSI quattro", "4.2 TDI quattro", "6.3 W12 quattro", "50 TDI quattro", "55 TFSI quattro", "60 TFSI e quattro", "L 50 TDI quattro", "L 55 TFSI quattro", "L 60 TFSI e quattro"] },
 
     { "models": ["Q2"],
       "variants": ["1.0 TFSI", "1.4 TFSI", "1.6 TDI", "2.0 TDI quattro", "30 TDI", "30 TFSI", "35 TDI quattro", "35 TFSI"] },
@@ -64,7 +64,7 @@
       "variants": ["35 TDI", "40 TDI quattro", "45 TFSI quattro", "50 TDI quattro", "55 TFSI e quattro"] },
 
     { "models": ["Q7"],
-      "variants": ["3.0 TDI quattro", "3.0 TFSI quattro", "45 TDI quattro", "50 TDI quattro", "55 TFSI quattro", "60 TFSI e quattro"] },
+      "variants": ["3.0 TDI quattro", "3.0 TFSI quattro", "4.2 TDI quattro", "6.0 V12 TDI quattro", "45 TDI quattro", "50 TDI quattro", "55 TFSI quattro", "60 TFSI e quattro"] },
     { "models": ["Q8"],
       "variants": ["45 TDI quattro", "50 TDI quattro", "55 TFSI quattro", "60 TFSI e quattro"] },
 
@@ -77,16 +77,16 @@
     { "models": ["RS e-tron GT"], "variants": ["598 PS", "performance"] },
 
     { "models": ["R8"],
-      "variants": ["V10", "V10 plus", "V10 performance quattro", "V10 RWD", "V10 Spyder", "GT RWD"] },
+      "variants": ["V8", "V8 Spyder", "V10", "V10 plus", "V10 performance quattro", "V10 RWD", "V10 Spyder", "GT RWD"] },
     { "models": ["TT"],
-      "variants": ["1.8 TFSI", "2.0 TDI ultra", "2.0 TFSI", "2.0 TFSI quattro", "40 TFSI", "45 TFSI quattro"] },
+      "variants": ["1.8 TFSI", "2.0 TDI ultra", "2.0 TFSI", "2.0 TFSI quattro", "3.2 V6 quattro", "40 TFSI", "45 TFSI quattro"] },
 
     { "models": ["TTS", "S1", "S3", "S3 Sportback", "S3 Limousine", "SQ2", "SQ3"],
       "variants": ["2.0 TFSI quattro"] },
     { "models": ["TT RS", "RS3", "RS 3 Sportback", "RS 3 Limousine", "RSQ3", "RS Q3 Sportback"],
       "variants": ["2.5 TFSI quattro"] },
     { "models": ["S4", "S5", "S5 Avant", "S5 Limousine", "SQ5"],
-      "variants": ["3.0 TDI quattro", "3.0 TFSI quattro"] },
+      "variants": ["3.0 TDI quattro", "3.0 TFSI quattro", "4.2 FSI quattro"] },
     { "models": ["SQ5 Sportback"], "variants": ["3.0 TDI quattro"] },
     { "models": ["S6", "S7"], "variants": ["3.0 TDI quattro", "4.0 TFSI quattro"] },
     { "models": ["S8"], "variants": ["4.0 TFSI quattro"] },
@@ -96,7 +96,7 @@
     { "models": ["RS4", "RS5"], "variants": ["2.9 TFSI quattro", "4.2 FSI quattro"] },
     { "models": ["RS 5 Sportback"], "variants": ["2.9 TFSI quattro"] },
     { "models": ["RS6", "RS7", "RSQ8"],
-      "variants": ["4.0 TFSI quattro", "4.0 TFSI quattro performance"] }
+      "variants": ["4.0 TFSI quattro", "4.0 TFSI quattro performance", "5.0 V10 TFSI quattro"] }
   ],
   "remap": [
     { "from": "A3 allstreet TFSI e", "model": "A3 allstreet", "variant": "40 TFSI e" },

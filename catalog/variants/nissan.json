@@ -3,32 +3,259 @@
   "_note": "Nissan badges petrol as DIG-T (turbo) or plain displacement, diesel as dCi, and the series hybrids as e-POWER. The NV vans are Renault Trafic/Master derivatives and carry the matching dCi engines; Townstar, Primastar and Interstar are the renamed versions of the same vehicles.",
   "models": [],
   "groups": [
-    { "models": ["Micra"], "variants": ["1.0", "1.2", "1.0 IG-T", "1.5 dCi"] },
-    { "models": ["Note"], "variants": ["1.2", "1.6", "1.5 dCi"] },
-    { "models": ["Pixo"], "variants": ["1.0"] },
-    { "models": ["Cube"], "variants": ["1.5", "1.6"] },
-    { "models": ["Tiida"], "variants": ["1.6", "1.8"] },
-    { "models": ["Pulsar"], "variants": ["1.2 DIG-T", "1.6 DIG-T", "1.5 dCi"] },
-    { "models": ["Juke"], "variants": ["1.0 DIG-T", "1.2 DIG-T", "1.6 DIG-T", "1.5 dCi", "1.6 Hybrid"] },
-    { "models": ["Qashqai", "Qashqai+2"],
-      "variants": ["1.2 DIG-T", "1.3 DIG-T", "1.5 dCi", "1.6 dCi", "2.0", "1.5 e-POWER"] },
-    { "models": ["X-Trail"],
-      "variants": ["1.3 DIG-T", "1.6 dCi", "2.0 dCi", "1.5 e-POWER"] },
-    { "models": ["Murano"], "variants": ["2.5 dCi", "3.5 V6"] },
-    { "models": ["Pathfinder"], "variants": ["2.5 dCi", "3.5 V6"] },
-    { "models": ["Patrol"], "variants": ["3.0 dCi", "5.6 V8"] },
-    { "models": ["Teana"], "variants": ["2.5 V6", "3.5 V6"] },
-    { "models": ["Navara", "Frontier"], "variants": ["2.3 dCi", "2.5 dCi", "3.8 V6"] },
-    { "models": ["370Z"], "variants": ["3.7 V6"] },
-    { "models": ["GT-R"], "variants": ["3.8 V6 Twin Turbo"] },
-    { "models": ["Leaf"], "variants": ["24 kWh", "30 kWh", "40 kWh", "62 kWh"] },
-    { "models": ["Ariya"], "variants": ["63 kWh", "87 kWh", "87 kWh e-4ORCE"] },
-    { "models": ["N7"], "variants": ["58 kWh", "73 kWh"] },
-    { "models": ["e-NV200"], "variants": ["24 kWh", "40 kWh"] },
-    { "models": ["NV200"], "variants": ["1.5 dCi", "1.6"] },
-    { "models": ["NV250"], "variants": ["1.5 dCi"] },
-    { "models": ["NV300", "Primastar"], "variants": ["1.6 dCi", "2.0 dCi"] },
-    { "models": ["NV400", "Interstar"], "variants": ["2.3 dCi", "87 kWh"] },
-    { "models": ["Townstar"], "variants": ["1.3 DIG-T", "1.5 dCi", "45 kWh"] }
+    {
+      "models": [
+        "Micra"
+      ],
+      "variants": [
+        "1.0",
+        "1.2",
+        "1.0 IG-T",
+        "1.5 dCi",
+        "1.4",
+        "0.9 IG-T"
+      ]
+    },
+    {
+      "models": [
+        "Note"
+      ],
+      "variants": [
+        "1.2",
+        "1.6",
+        "1.5 dCi",
+        "1.4"
+      ]
+    },
+    {
+      "models": [
+        "Pixo"
+      ],
+      "variants": [
+        "1.0"
+      ]
+    },
+    {
+      "models": [
+        "Cube"
+      ],
+      "variants": [
+        "1.5",
+        "1.6"
+      ]
+    },
+    {
+      "models": [
+        "Tiida"
+      ],
+      "variants": [
+        "1.6",
+        "1.8"
+      ]
+    },
+    {
+      "models": [
+        "Pulsar"
+      ],
+      "variants": [
+        "1.2 DIG-T",
+        "1.6 DIG-T",
+        "1.5 dCi"
+      ]
+    },
+    {
+      "models": [
+        "Juke"
+      ],
+      "variants": [
+        "1.0 DIG-T",
+        "1.2 DIG-T",
+        "1.6 DIG-T",
+        "1.5 dCi",
+        "1.6 Hybrid",
+        "1.6"
+      ]
+    },
+    {
+      "models": [
+        "Qashqai",
+        "Qashqai+2"
+      ],
+      "variants": [
+        "1.2 DIG-T",
+        "1.3 DIG-T",
+        "1.5 dCi",
+        "1.6 dCi",
+        "2.0",
+        "1.5 e-POWER",
+        "1.6",
+        "1.6 DIG-T",
+        "2.0 dCi"
+      ]
+    },
+    {
+      "models": [
+        "X-Trail"
+      ],
+      "variants": [
+        "1.3 DIG-T",
+        "1.6 dCi",
+        "2.0 dCi",
+        "1.5 e-POWER",
+        "1.7 dCi",
+        "2.5"
+      ]
+    },
+    {
+      "models": [
+        "Murano"
+      ],
+      "variants": [
+        "2.5 dCi",
+        "3.5 V6"
+      ]
+    },
+    {
+      "models": [
+        "Pathfinder"
+      ],
+      "variants": [
+        "2.5 dCi",
+        "3.5 V6"
+      ]
+    },
+    {
+      "models": [
+        "Patrol"
+      ],
+      "variants": [
+        "3.0 dCi",
+        "5.6 V8"
+      ]
+    },
+    {
+      "models": [
+        "Teana"
+      ],
+      "variants": [
+        "2.5 V6",
+        "3.5 V6"
+      ]
+    },
+    {
+      "models": [
+        "Navara",
+        "Frontier"
+      ],
+      "variants": [
+        "2.3 dCi",
+        "2.5 dCi",
+        "3.8 V6"
+      ]
+    },
+    {
+      "models": [
+        "370Z"
+      ],
+      "variants": [
+        "3.7 V6",
+        "3.7 V6 Nismo"
+      ]
+    },
+    {
+      "models": [
+        "GT-R"
+      ],
+      "variants": [
+        "3.8 V6 Twin Turbo",
+        "3.8 V6 Twin Turbo Nismo"
+      ]
+    },
+    {
+      "models": [
+        "Leaf"
+      ],
+      "variants": [
+        "24 kWh",
+        "30 kWh",
+        "40 kWh",
+        "62 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Ariya"
+      ],
+      "variants": [
+        "63 kWh",
+        "87 kWh",
+        "87 kWh e-4ORCE"
+      ]
+    },
+    {
+      "models": [
+        "N7"
+      ],
+      "variants": [
+        "58 kWh",
+        "73 kWh"
+      ]
+    },
+    {
+      "models": [
+        "e-NV200"
+      ],
+      "variants": [
+        "24 kWh",
+        "40 kWh"
+      ]
+    },
+    {
+      "models": [
+        "NV200"
+      ],
+      "variants": [
+        "1.5 dCi",
+        "1.6"
+      ]
+    },
+    {
+      "models": [
+        "NV250"
+      ],
+      "variants": [
+        "1.5 dCi"
+      ]
+    },
+    {
+      "models": [
+        "NV300",
+        "Primastar"
+      ],
+      "variants": [
+        "1.6 dCi",
+        "2.0 dCi"
+      ]
+    },
+    {
+      "models": [
+        "NV400",
+        "Interstar"
+      ],
+      "variants": [
+        "2.3 dCi",
+        "87 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Townstar"
+      ],
+      "variants": [
+        "1.3 DIG-T",
+        "1.5 dCi",
+        "45 kWh"
+      ]
+    }
   ]
 }

@@ -3,17 +3,130 @@
   "_note": "The European Chevrolet range was largely Daewoo-derived and sold by displacement; the American cars kept their V6 and V8 badges. Volt is a range extender rather than a pure EV, so its variant is the petrol generator.",
   "models": [],
   "groups": [
-    { "models": ["Matiz", "Spark"], "variants": ["0.8", "1.0", "1.2"] },
-    { "models": ["Aveo"], "variants": ["1.2", "1.4", "1.3 Diesel"] },
-    { "models": ["Lacetti", "Nubira"], "variants": ["1.4", "1.6", "1.8", "2.0 Diesel"] },
-    { "models": ["Cruze"], "variants": ["1.4 Turbo", "1.6", "1.8", "2.0 Diesel"] },
-    { "models": ["Epica"], "variants": ["2.0", "2.5", "2.0 Diesel"] },
-    { "models": ["Malibu"], "variants": ["1.5 Turbo", "2.4", "2.0 Diesel"] },
-    { "models": ["Orlando"], "variants": ["1.4 Turbo", "1.8", "2.0 Diesel"] },
-    { "models": ["Trax"], "variants": ["1.4 Turbo", "1.6", "1.7 Diesel"] },
-    { "models": ["Captiva"], "variants": ["2.0 Diesel", "2.2 Diesel", "2.4", "3.0 V6"] },
-    { "models": ["Camaro"], "variants": ["3.6 V6", "6.2 V8"] },
-    { "models": ["Corvette"], "variants": ["6.2 V8", "7.0 V8", "6.2 V8 Supercharged"] },
-    { "models": ["Volt"], "variants": ["1.4 Range Extender"] }
+    {
+      "models": [
+        "Matiz",
+        "Spark"
+      ],
+      "variants": [
+        "0.8",
+        "1.0",
+        "1.2"
+      ]
+    },
+    {
+      "models": [
+        "Aveo"
+      ],
+      "variants": [
+        "1.2",
+        "1.4",
+        "1.3 Diesel",
+        "1.6"
+      ]
+    },
+    {
+      "models": [
+        "Lacetti",
+        "Nubira"
+      ],
+      "variants": [
+        "1.4",
+        "1.6",
+        "1.8",
+        "2.0 Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Cruze"
+      ],
+      "variants": [
+        "1.4 Turbo",
+        "1.6",
+        "1.8",
+        "2.0 Diesel",
+        "1.7 Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Epica"
+      ],
+      "variants": [
+        "2.0",
+        "2.5",
+        "2.0 Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Malibu"
+      ],
+      "variants": [
+        "1.5 Turbo",
+        "2.4",
+        "2.0 Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Orlando"
+      ],
+      "variants": [
+        "1.4 Turbo",
+        "1.8",
+        "2.0 Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Trax"
+      ],
+      "variants": [
+        "1.4 Turbo",
+        "1.6",
+        "1.7 Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Captiva"
+      ],
+      "variants": [
+        "2.0 Diesel",
+        "2.2 Diesel",
+        "2.4",
+        "3.0 V6"
+      ]
+    },
+    {
+      "models": [
+        "Camaro"
+      ],
+      "variants": [
+        "3.6 V6",
+        "6.2 V8",
+        "2.0 Turbo"
+      ]
+    },
+    {
+      "models": [
+        "Corvette"
+      ],
+      "variants": [
+        "6.2 V8",
+        "7.0 V8",
+        "6.2 V8 Supercharged"
+      ]
+    },
+    {
+      "models": [
+        "Volt"
+      ],
+      "variants": [
+        "1.4 Range Extender"
+      ]
+    }
   ]
 }
