@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { readStoredConsent, setConsent } from "@/lib/analytics/gtag";
+import {
+  CONSENT_REOPEN_EVENT,
+  CONSENT_STORAGE_KEY,
+  adoptConsentFromOtherTab,
+  readStoredConsent,
+  setConsent,
+} from "@/lib/analytics/gtag";
 
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
@@ -12,6 +18,29 @@ export function CookieConsent() {
     if (readStoredConsent() === null) {
       setIsVisible(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleReopen = () => setIsVisible(true);
+    window.addEventListener(CONSENT_REOPEN_EVENT, handleReopen);
+
+    // `storage` fires only in the *other* tabs, which is exactly the case that
+    // needs handling: without this, declining in one tab leaves a second tab's
+    // banner open, and accepting there would overwrite the decline. Close the
+    // banner and catch this tab's tag up on whatever was decided.
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== CONSENT_STORAGE_KEY) return;
+      const choice = readStoredConsent();
+      if (choice === null) return;
+      adoptConsentFromOtherTab(choice);
+      setIsVisible(false);
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(CONSENT_REOPEN_EVENT, handleReopen);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   // Both paths record an explicit decision. Until one of them runs, Consent

@@ -1,6 +1,7 @@
 import { Mail, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useHasMounted } from "@/hooks/use-has-mounted";
+import { reopenConsent } from "@/lib/analytics/gtag";
 import Image from "next/image";
 import { NewsletterSignup } from "./NewsletterSignup";
 
@@ -114,7 +115,7 @@ export function Footer() {
               <ul className="space-y-2.5">
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
-                    <Link 
+                    <Link
                       href={link.href}
                       className="text-neutral-400 hover:text-white text-sm transition-colors duration-200 hover:text-red-400"
                     >
@@ -122,6 +123,20 @@ export function Footer() {
                     </Link>
                   </li>
                 ))}
+                {/* Without this the banner is a one-shot: once a choice is
+                    stored it never shows again, so declining is irreversible
+                    short of clearing site data. */}
+                {section.title === "Rechtliches" && (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={reopenConsent}
+                      className="text-neutral-400 hover:text-white text-sm transition-colors duration-200 hover:text-red-400"
+                    >
+                      Cookie-Einstellungen
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
           ))}

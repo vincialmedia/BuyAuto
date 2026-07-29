@@ -31,6 +31,9 @@ export const CONSENT_STORAGE_KEY = "buyauto_consent_v2";
 // sync without a reload (the `storage` event only fires in *other* tabs).
 export const CONSENT_CHANGE_EVENT = "buyauto:consent-change";
 
+// Raised by reopenConsent() so a footer link can bring the banner back.
+export const CONSENT_REOPEN_EVENT = "buyauto:consent-reopen";
+
 export type ConsentChoice = "granted" | "denied";
 
 type GtagArgs =
@@ -68,18 +71,21 @@ export function readStoredConsent(): ConsentChoice | null {
   }
 }
 
-/**
- * Persists the visitor's choice and tells Google Consent Mode about it. Consent
- * Mode is already defaulted to "denied" in _document, so until this runs GA
- * sends cookieless pings only.
- */
-export function setConsent(choice: ConsentChoice) {
-  try {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, choice);
-  } catch {
-    // Choice is not persisted, but honour it for this page view regardless.
-  }
+// True until the visitor answers the banner. While it holds, the `config` call
+// in GoogleAnalytics is told `send_page_view: false`, because a page view sent
+// before the choice goes out cookieless and gtag.js never re-sends it once
+// consent arrives — which is why accepting used to register nothing until the
+// visitor reloaded or navigated. setConsent owns that held-back hit and
+// releases exactly one, so a page load still yields one page_view either way.
+let pageViewHeldForConsent =
+  typeof window !== "undefined" && readStoredConsent() === null;
 
+/**
+ * Tells Google Consent Mode the choice and releases the page view that was held
+ * back while it was pending. Storage is deliberately not touched here — the
+ * cross-tab path arrives with storage already written by the other tab.
+ */
+function applyConsent(choice: ConsentChoice) {
   gtag("consent", "update", {
     ad_storage: choice,
     ad_user_data: choice,
@@ -87,7 +93,57 @@ export function setConsent(choice: ConsentChoice) {
     analytics_storage: choice,
   });
 
+  // Both commands land on the same dataLayer queue and gtag.js drains it in
+  // order, so this hit is built with the state above already applied: cookied
+  // on "granted", a cookieless ping on "denied" — the same hit a returning
+  // visitor with that choice already stored would have sent at load. Sent on
+  // "denied" too on purpose; that path produces one ping today and must keep
+  // producing one.
+  if (pageViewHeldForConsent) {
+    pageViewHeldForConsent = false;
+    // First cookied hit of the session, so GA4 derives acquisition from it.
+    // Without the referrer every consented visit from Google reports as Direct.
+    pageview(
+      window.location.pathname + window.location.search + window.location.hash,
+      document.referrer,
+    );
+  }
+}
+
+/** Persists the visitor's choice and applies it. */
+export function setConsent(choice: ConsentChoice) {
+  try {
+    window.localStorage.setItem(CONSENT_STORAGE_KEY, choice);
+  } catch {
+    // Honour the choice for this page view anyway, but say something: the
+    // banner will reappear on every load for this visitor and that looks like
+    // a bug rather than a locked-down browser.
+    console.warn(
+      "[analytics] Could not persist the cookie choice — storage is unavailable. It applies to this page view only and the banner will reappear.",
+    );
+  }
+
+  applyConsent(choice);
   window.dispatchEvent(new CustomEvent(CONSENT_CHANGE_EVENT, { detail: choice }));
+}
+
+/**
+ * Adopts a choice another tab just made. Storage already holds it, so this only
+ * catches this tab's tag up — and releases its held page view, so a visitor who
+ * decides in one tab is still counted once in each open tab.
+ */
+export function adoptConsentFromOtherTab(choice: ConsentChoice) {
+  applyConsent(choice);
+}
+
+/**
+ * Reopens the banner so a decision can be changed. Deliberately does NOT clear
+ * CONSENT_STORAGE_KEY: an empty key stops the _document snippet matching
+ * "granted", which would silently downgrade a consenting visitor on their next
+ * load if they close the banner without choosing again.
+ */
+export function reopenConsent() {
+  window.dispatchEvent(new Event(CONSENT_REOPEN_EVENT));
 }
 
 /**
@@ -95,12 +151,19 @@ export function setConsent(choice: ConsentChoice) {
  * client-side navigation has to be sent by hand or the whole site looks like a
  * single-page session.
  */
-export function pageview(url: string) {
+export function pageview(url: string, referrer?: string) {
   if (!isGaEnabled) return;
+  // Navigating before the banner is answered stays silent too, or the visitor
+  // gets a cookieless hit here and a second, cookied one from setConsent.
+  if (pageViewHeldForConsent) return;
   gtag("event", "page_view", {
     page_path: url,
     page_location: typeof window !== "undefined" ? window.location.href : undefined,
     page_title: typeof document !== "undefined" ? document.title : undefined,
+    // Only set by the consent-triggered send. On a route change
+    // document.referrer still points at the external entry page and would
+    // misattribute the source.
+    ...(referrer ? { page_referrer: referrer } : {}),
   });
 }
 
