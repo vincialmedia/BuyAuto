@@ -126,9 +126,11 @@ export interface VehicleBasicsSectionProps {
 
   makes: CanonicalOption[];
   models: CanonicalOption[];
+  variants: CanonicalOption[];
 
   loadingMakes: boolean;
   loadingModels: boolean;
+  loadingVariants: boolean;
 
   disableAllFields?: boolean;
   locationRequired?: boolean;
@@ -143,14 +145,17 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
     errors,
     makes,
     models,
+    variants,
     loadingMakes,
     loadingModels,
+    loadingVariants,
     disableAllFields = false,
     locationRequired = true,
   } = props;
 
   const selectedMakeId = watch("make_id");
   const selectedModelId = watch("model_id");
+  const selectedVariantId = watch("variant_id");
   const descriptionLength = (watch("description") ?? "").length;
 
   const cantonCode = watch("canton_code");
@@ -229,6 +234,37 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   {(models ?? []).map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field
+              icon={Cog}
+              label="Ausführung"
+              hint="Motorisierung bzw. Version – hilft Käufern, dein Fahrzeug genau zu finden."
+              error={errors.variant_id?.message as string | undefined}
+            >
+              <Select
+                value={selectedVariantId || ""}
+                onValueChange={(value) => {
+                  setValue("variant_id", value === "none" ? "" : value, { shouldValidate: false, shouldDirty: true });
+                }}
+                disabled={disableAllFields || !selectedModelId || loadingVariants}
+              >
+                <SelectTrigger className={selectTriggerCls}>
+                  <SelectValue
+                    placeholder={
+                      !selectedModelId ? "Zuerst Modell wählen" : loadingVariants ? "Lädt..." : "Ausführung auswählen (optional)"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Keine Angabe</SelectItem>
+                  {(variants ?? []).map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

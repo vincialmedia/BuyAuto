@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getBrands, getModelsForBrand } from "@/services/listingsService";
+import { getBrands, getModelsForBrand, getVariantsForBrandModel } from "@/services/listingsService";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
@@ -329,6 +329,7 @@ export function SearchBarV2() {
   // Primary filters
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
+  const [variant, setVariant] = useState("");
   const [dealType, setDealType] = useState<DealType>("");
 
   // Price filter state
@@ -346,8 +347,10 @@ export function SearchBarV2() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
+  const [variants, setVariants] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
 
   // Fetch brands on mount
   useEffect(() => {
@@ -377,6 +380,23 @@ export function SearchBarV2() {
     fetchModels();
   }, [brand]);
 
+  // Fetch variants when model changes
+  useEffect(() => {
+    if (!brand || !model) {
+      setVariants([]);
+      setVariant("");
+      return;
+    }
+
+    const fetchVariants = async () => {
+      setLoadingVariants(true);
+      const data = await getVariantsForBrandModel(brand, model);
+      setVariants(data);
+      setLoadingVariants(false);
+    };
+    fetchVariants();
+  }, [brand, model]);
+
   // Count active advanced filters
   const advancedFilterCount = [yearMin, fuel, gearbox, body, dealType].filter(Boolean).length;
 
@@ -392,7 +412,8 @@ export function SearchBarV2() {
 
     if (brand) params.brand = brand;
     if (model) params.model = model;
-    
+    if (variant) params.variant = variant;
+
     // Handle deal type - if monthly mode is on, filter to leasing/lease_takeover
     if (isMonthlyMode) {
       params.dealType = ["lease_takeover"];
@@ -422,6 +443,7 @@ export function SearchBarV2() {
   const clearAllFilters = () => {
     setBrand("");
     setModel("");
+    setVariant("");
     setDealType("");
     setPurchasePrice(PURCHASE_PRICE_CONFIG.max);
     setMonthlyPrice(MONTHLY_PRICE_CONFIG.max);
@@ -432,7 +454,7 @@ export function SearchBarV2() {
     setBody("");
   };
 
-  const hasAnyFilter = brand || model || dealType || isPriceFilterActive || yearMin || fuel || gearbox || body;
+  const hasAnyFilter = brand || model || variant || dealType || isPriceFilterActive || yearMin || fuel || gearbox || body;
 
   const brandOptions = [{ value: "", label: "Marke" }, ...brands.map(b => ({ value: b, label: b }))];
   const modelOptions = [{ value: "", label: "Modell" }, ...models.map(m => ({ value: m, label: m }))];
@@ -453,7 +475,7 @@ export function SearchBarV2() {
           />
           <SelectField
             value={model}
-            onChange={setModel}
+            onChange={(v) => { setModel(v); setVariant(""); }}
             options={modelOptions}
             placeholder="Modell"
             disabled={!brand || loadingModels}
@@ -515,10 +537,18 @@ export function SearchBarV2() {
           />
           <SelectField
             value={model}
-            onChange={setModel}
+            onChange={(v) => { setModel(v); setVariant(""); }}
             options={[{ value: "", label: "Alle Modelle" }, ...models.map(m => ({ value: m, label: m }))]}
             placeholder="Modell"
             disabled={!brand || loadingModels}
+            className="flex-1"
+          />
+          <SelectField
+            value={variant}
+            onChange={setVariant}
+            options={[{ value: "", label: "Alle Ausführungen" }, ...variants.map(v => ({ value: v, label: v }))]}
+            placeholder="Ausführung"
+            disabled={!model || loadingVariants}
             className="flex-1"
           />
           <PriceFilter
@@ -597,7 +627,7 @@ export function SearchBarV2() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {/* Deal Type - Only shown in advanced on mobile */}
+            {/* Deal Type & Ausführung - Only shown in advanced on mobile (inline on desktop) */}
             <div className="lg:hidden">
               <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">Kaufart</label>
               <SelectField
@@ -605,6 +635,17 @@ export function SearchBarV2() {
                 onChange={(v) => setDealType(v as DealType)}
                 options={DEAL_TYPE_OPTIONS}
                 placeholder="Alle"
+                className="bg-neutral-50 rounded-lg"
+              />
+            </div>
+            <div className="lg:hidden">
+              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">Ausführung</label>
+              <SelectField
+                value={variant}
+                onChange={setVariant}
+                options={[{ value: "", label: "Alle" }, ...variants.map(v => ({ value: v, label: v }))]}
+                placeholder="Alle"
+                disabled={!model || loadingVariants}
                 className="bg-neutral-50 rounded-lg"
               />
             </div>

@@ -134,11 +134,14 @@ export function Step1Form() {
 
   const [makes, setMakes] = useState<CanonicalOption[]>([]);
   const [models, setModels] = useState<CanonicalOption[]>([]);
+  const [variants, setVariants] = useState<CanonicalOption[]>([]);
 
   const [loadingMakes, setLoadingMakes] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
 
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
+  const [pendingVariantId, setPendingVariantId] = useState<string | null>(null);
 
   const defaultYear = useMemo(() => {
     return typeof data.year === "number" && Number.isFinite(data.year) ? data.year : new Date().getFullYear();
@@ -242,6 +245,28 @@ export function Step1Form() {
   }, [selectedMakeId, toast]);
 
   useEffect(() => {
+    const loadVariants = async () => {
+      if (!selectedModelId) {
+        setVariants([]);
+        return;
+      }
+
+      try {
+        setLoadingVariants(true);
+        const res = await fetchJson<any>(`/api/vehicles/variants?model_id=${encodeURIComponent(selectedModelId)}`);
+        setVariants(Array.isArray(res) ? res : (res?.variants ?? []));
+      } catch {
+        // Variant is optional — a failed load must not block the form, so no toast.
+        setVariants([]);
+      } finally {
+        setLoadingVariants(false);
+      }
+    };
+
+    void loadVariants();
+  }, [selectedModelId]);
+
+  useEffect(() => {
     if (!pendingModelId) return;
     if (!selectedMakeId) return;
 
@@ -256,6 +281,22 @@ export function Step1Form() {
     setValue("model_id", pendingModelId, { shouldValidate: true });
     setPendingModelId(null);
   }, [models, pendingModelId, selectedMakeId, setValue]);
+
+  useEffect(() => {
+    if (!pendingVariantId) return;
+    if (!selectedModelId) return;
+
+    const exists = variants.some((v) => v.id === pendingVariantId);
+    if (!exists) return;
+
+    if (!shouldAutofill("variant_id")) {
+      setPendingVariantId(null);
+      return;
+    }
+
+    setValue("variant_id", pendingVariantId, { shouldValidate: false });
+    setPendingVariantId(null);
+  }, [variants, pendingVariantId, selectedModelId, setValue]);
 
   const shouldAutofill = (field: keyof VehicleStepFormValues): boolean => {
     const dirty = (dirtyFields as any)?.[field] === true;
@@ -296,6 +337,10 @@ export function Step1Form() {
     } else {
       if (payload.model_id && shouldAutofill("model_id")) setPendingModelId(payload.model_id);
     }
+
+    // Variant lands the same way the model does: staged until its option list has
+    // loaded for the (possibly just-changed) model, then applied if still untouched.
+    if (payload.variant_id) setPendingVariantId(payload.variant_id);
 
     if (typeof payload.year === "number" && Number.isFinite(payload.year) && shouldAutofill("year")) {
       setValue("year", payload.year, { shouldValidate: true });
@@ -437,8 +482,9 @@ export function Step1Form() {
 
       const makeName = makes.find((m) => m.id === values.make_id)?.name ?? "";
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
+      const variantName = values.variant_id ? (variants.find((v) => v.id === values.variant_id)?.name ?? "") : "";
 
-      const title = makeName ? `${makeName} ${modelName}`.trim() : (data as any)?.title;
+      const title = makeName ? [makeName, modelName, variantName].filter(Boolean).join(" ").trim() : (data as any)?.title;
 
       return {
         ...values,
@@ -457,7 +503,7 @@ export function Step1Form() {
     return () => {
       registerDraftSnapshotter(() => ({}));
     };
-  }, [data, getValues, makes, models, registerDraftSnapshotter]);
+  }, [data, getValues, makes, models, variants, registerDraftSnapshotter]);
 
   useEffect(() => {
     const values = getValues();
@@ -548,9 +594,13 @@ export function Step1Form() {
       const modelName = models.find((m) => m.id === values.model_id)?.name || ((data as any)?.model ?? "");
 
       // The model picker deliberately holds the catalog FAMILY ("5 Series") so
-      // search facets group correctly — but the decoded trim ("530i xDrive")
-      // must not get lost, so it's folded into the title. Strip a leading
-      // repeat of the model name ("A4 40 TDI" under model "A4" → "40 TDI").
+      // search facets group correctly — the engine/version goes into the title.
+      // A variant picked from the catalog wins ("320d"); otherwise the decoded
+      // trim ("530i xDrive") is folded in, stripping a leading repeat of the
+      // model name ("A4 40 TDI" under model "A4" → "40 TDI").
+      const selectedVariantName = values.variant_id
+        ? (variants.find((v) => v.id === values.variant_id)?.name ?? "")
+        : "";
       const variantTextRaw =
         typeof (data as any)?.variant_text === "string"
           ? (data as any).variant_text.trim()
@@ -558,11 +608,12 @@ export function Step1Form() {
             ? (data as any).provider_trim.trim()
             : "";
       const variantForTitle =
-        variantTextRaw && modelName && variantTextRaw.toLowerCase() !== modelName.toLowerCase()
+        selectedVariantName ||
+        (variantTextRaw && modelName && variantTextRaw.toLowerCase() !== modelName.toLowerCase()
           ? variantTextRaw.toLowerCase().startsWith(modelName.toLowerCase())
             ? variantTextRaw.slice(modelName.length).trim()
             : variantTextRaw
-          : "";
+          : "");
 
       const generatedTitle =
         [makeName, modelName, variantForTitle].filter(Boolean).join(" ").trim() || ((data as any)?.title ?? "");
@@ -895,8 +946,10 @@ export function Step1Form() {
           errors={errors}
           makes={makes}
           models={models}
+          variants={variants}
           loadingMakes={loadingMakes}
           loadingModels={loadingModels}
+          loadingVariants={loadingVariants}
           disableAllFields={fieldsDisabled}
           locationRequired={locationRequired}
         />

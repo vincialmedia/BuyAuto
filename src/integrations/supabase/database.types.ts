@@ -1452,6 +1452,7 @@ export type Database = {
           ui_version: string | null
           updated_at: string | null
           user_id: string | null
+          variant: string | null
           variant_id: string | null
           view_count: number | null
           vin: string | null
@@ -1507,6 +1508,7 @@ export type Database = {
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
+          variant?: string | null
           variant_id?: string | null
           view_count?: number | null
           vin?: string | null
@@ -1562,6 +1564,7 @@ export type Database = {
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
+          variant?: string | null
           variant_id?: string | null
           view_count?: number | null
           vin?: string | null

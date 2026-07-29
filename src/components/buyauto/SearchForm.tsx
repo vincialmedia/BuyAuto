@@ -10,7 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import { getBrands, getModelsForBrand } from "@/services/listingsService";
+import { getBrands, getModelsForBrand, getVariantsForBrandModel } from "@/services/listingsService";
 
 interface SearchFormProps {
   variant?: "default" | "hero";
@@ -46,6 +46,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
+  const [selectedVariant, setSelectedVariant] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
 
   const [dealMode, setDealMode] = useState<DealTypeMode>("all");
@@ -62,8 +63,10 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
+  const [variants, setVariants] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
 
   const [expandedFilters, setExpandedFilters] = useState(false);
 
@@ -120,6 +123,22 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   }, [selectedBrand]);
 
   useEffect(() => {
+    if (!selectedBrand || !selectedModel) {
+      setVariants([]);
+      return;
+    }
+
+    const fetchVariants = async () => {
+      setLoadingVariants(true);
+      const variantsData = await getVariantsForBrandModel(selectedBrand, selectedModel);
+      setVariants(variantsData);
+      setLoadingVariants(false);
+    };
+
+    fetchVariants();
+  }, [selectedBrand, selectedModel]);
+
+  useEffect(() => {
     if (dealMode !== "lease_takeover_only") {
       setSelectedRestlaufzeit("");
       setNoDeposit(false);
@@ -129,6 +148,12 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const handleBrandChange = (brand: string) => {
     setSelectedBrand(brand);
     setSelectedModel("");
+    setSelectedVariant("");
+  };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    setSelectedVariant("");
   };
 
   const isPriceFilterActive = (activePriceRange[0] ?? sliderConfig.max) < sliderConfig.max;
@@ -159,6 +184,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
     if (selectedBrand) queryParams.brand = selectedBrand;
     if (selectedModel) queryParams.model = selectedModel;
+    if (selectedVariant) queryParams.variant = selectedVariant;
     if (selectedYear) queryParams.yearMin = selectedYear;
 
     if (isPriceFilterActive) {
@@ -215,7 +241,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
   return (
     <Card className={cn("rounded-3xl p-6 md:p-8 max-w-4xl mx-auto border transition-all duration-300", cardStyles)}>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <Select value={selectedBrand} onValueChange={handleBrandChange} disabled={loadingBrands}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
               <SelectValue placeholder="Marke" />
@@ -229,7 +255,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
             </SelectContent>
           </Select>
 
-          <Select value={selectedModel} onValueChange={setSelectedModel} disabled={!selectedBrand || loadingModels}>
+          <Select value={selectedModel} onValueChange={handleModelChange} disabled={!selectedBrand || loadingModels}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
               <SelectValue placeholder="Modell" />
             </SelectTrigger>
@@ -237,6 +263,19 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
               {models.map((model) => (
                 <SelectItem key={model} value={model} className="font-medium">
                   {model}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedVariant} onValueChange={setSelectedVariant} disabled={!selectedModel || loadingVariants}>
+            <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
+              <SelectValue placeholder="Ausführung" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-neutral-200">
+              {variants.map((v) => (
+                <SelectItem key={v} value={v} className="font-medium">
+                  {v}
                 </SelectItem>
               ))}
             </SelectContent>
