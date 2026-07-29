@@ -220,7 +220,23 @@ with g(make, models, variants) as (values
     ('Porsche',array['Cayenne Coupé'],array['3.0 V6','3.0 E-Hybrid','2.9 S','4.0 GTS','4.0 Turbo','4.0 Turbo GT','4.0 Turbo E-Hybrid']),
     ('Porsche',array['Cayenne Electric'],array['Electric']),
     ('Porsche',array['Panamera Sport Turismo'],array['3.0 V6','2.9 4','2.9 4 E-Hybrid','2.9 4S','4.0 GTS','4.0 Turbo','4.0 Turbo S E-Hybrid']),
-    ('Porsche',array['Taycan Cross Turismo','Taycan Sport Turismo'],array['4','4S','GTS','Turbo','Turbo S'])
+    ('Porsche',array['Taycan Cross Turismo','Taycan Sport Turismo'],array['4','4S','GTS','Turbo','Turbo S']),
+    ('Volkswagen',array['Golf','Golf Variant'],array['1.0 TSI','1.2 TSI','1.4 TSI','1.5 TSI','1.5 eTSI','1.6 TDI','2.0 TDI','2.0 TDI 4MOTION']),
+    ('Volkswagen',array['Golf GTI'],array['2.0 TSI','Clubsport','TCR']),
+    ('Volkswagen',array['Golf R','Golf R Variant'],array['2.0 TSI 4MOTION']),
+    ('Volkswagen',array['Golf GTD','Golf GTD Variant'],array['2.0 TDI']),
+    ('Volkswagen',array['Golf GTE'],array['1.4 eHybrid','1.5 eHybrid']),
+    ('Volkswagen',array['Polo'],array['1.0 MPI','1.0 TSI','1.2 TSI','1.4 TDI','1.6 TDI']),
+    ('Volkswagen',array['Polo GTI'],array['1.8 TSI','2.0 TSI']),
+    ('Volkswagen',array['Passat','Passat Variant'],array['1.4 TSI','1.5 TSI','1.5 eTSI','2.0 TDI','2.0 TDI 4MOTION','2.0 TSI 4MOTION']),
+    ('Volkswagen',array['Tiguan','Tiguan Allspace'],array['1.4 TSI','1.5 TSI','2.0 TDI','2.0 TDI 4MOTION','2.0 TSI 4MOTION']),
+    ('Volkswagen',array['T-Roc','T-Cross','Taigo'],array['1.0 TSI','1.5 TSI','2.0 TDI','2.0 TSI 4MOTION']),
+    ('Volkswagen',array['Touareg'],array['3.0 TDI 4MOTION','3.0 TSI 4MOTION','3.0 eHybrid 4MOTION','4.0 TDI 4MOTION']),
+    ('Volkswagen',array['Touran','Sharan'],array['1.2 TSI','1.4 TSI','1.5 TSI','1.6 TDI','2.0 TDI']),
+    ('Volkswagen',array['Up!'],array['1.0 MPI','1.0 TSI','GTI']),
+    ('Volkswagen',array['Arteon','Arteon Shooting Brake'],array['1.5 TSI','2.0 TDI','2.0 TDI 4MOTION','2.0 TSI 4MOTION','1.4 eHybrid']),
+    ('Volkswagen',array['ID.3','ID.4','ID.5','ID.7'],array['Pure','Pro','Pro S','Pro 4MOTION']),
+    ('Volkswagen',array['Amarok'],array['2.0 TDI','3.0 TDI 4MOTION','3.0 V6 TDI'])
 )
 insert into public.variants (model_id, name, source)
 select mo.id, v.name, 'catalog_variants_v1'
@@ -579,7 +595,10 @@ select * from (values
     ('Porsche','Taycan GTS','Taycan','GTS'),
     ('Porsche','Taycan Turbo','Taycan','Turbo'),
     ('Porsche','Taycan Turbo GT','Taycan','Turbo GT'),
-    ('Porsche','Taycan Turbo S','Taycan','Turbo S')
+    ('Porsche','Taycan Turbo S','Taycan','Turbo S'),
+    ('Volkswagen','Golf GTI Clubsport','Golf GTI','Clubsport'),
+    ('Volkswagen','Golf GTI TCR','Golf GTI','TCR'),
+    ('Volkswagen','up! GTI','Up!','GTI')
 ) as t(make, from_name, model, variant);
 
 insert into public.variants (model_id, name, source)
@@ -618,5 +637,43 @@ from _remap r
 join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(r.make)
 where mo.make_id = mk.id
   and mo.normalized_name = public.normalize_vehicle_name(r.from_name);
+
+-- ---------- merge: duplicate, generation and equipment-line rows ----------
+create temp table _merge on commit drop as
+select * from (values
+    ('Audi','Q6 SUV e-tron','Q6 e-tron'),
+    ('Volkswagen','Passat R-Line','Passat'),
+    ('Volkswagen','Tiguan R-Line','Tiguan'),
+    ('Volkswagen','T-Roc R-Line','T-Roc'),
+    ('Volkswagen','Passat V facelift','Passat'),
+    ('Volkswagen','Touran I facelift','Touran')
+) as t(make, from_name, model);
+
+insert into public.vehicle_aliases (entity_type, make_id, model_id, alias, normalized_alias, source)
+select 'model', mk.id, mo.id, m.from_name, public.normalize_vehicle_name(m.from_name), 'catalog_variants_v1'
+from _merge m
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(m.make)
+join public.models mo on mo.make_id = mk.id
+ and mo.normalized_name = public.normalize_vehicle_name(m.model)
+where not exists (
+  select 1 from public.vehicle_aliases va
+  where va.entity_type = 'model' and va.make_id = mk.id
+    and va.normalized_alias = public.normalize_vehicle_name(m.from_name));
+
+update public.listings l
+set model_id = mo.id
+from _merge m
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(m.make)
+join public.models orphan on orphan.make_id = mk.id
+ and orphan.normalized_name = public.normalize_vehicle_name(m.from_name)
+join public.models mo on mo.make_id = mk.id
+ and mo.normalized_name = public.normalize_vehicle_name(m.model)
+where l.model_id = orphan.id;
+
+update public.models mo set is_active = false, updated_at = now()
+from _merge m
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(m.make)
+where mo.make_id = mk.id
+  and mo.normalized_name = public.normalize_vehicle_name(m.from_name);
 
 commit;

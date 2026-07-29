@@ -1,0 +1,83 @@
+{
+  "make": "Volkswagen",
+  "_note": "Volkswagen came through the CSV in better shape than the premium makes, because VW brands by model first. GTI / GTD / GTE / R stay models: they are performance sub-brands, the same call already made for BMW M, Mercedes-AMG and Mini JCW. What is wrong here is a different failure - rows that are not cars at all. 'Passat R-Line' is an equipment line, which the granularity contract keeps out of the catalog, and 'Passat V facelift' is a generation note that leaked out of the source data.",
+  "models": [],
+  "groups": [
+    {
+      "models": ["Golf", "Golf Variant"],
+      "variants": ["1.0 TSI", "1.2 TSI", "1.4 TSI", "1.5 TSI", "1.5 eTSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4MOTION"]
+    },
+    {
+      "models": ["Golf GTI"],
+      "variants": ["2.0 TSI", "Clubsport", "TCR"]
+    },
+    {
+      "models": ["Golf R", "Golf R Variant"],
+      "variants": ["2.0 TSI 4MOTION"]
+    },
+    {
+      "models": ["Golf GTD", "Golf GTD Variant"],
+      "variants": ["2.0 TDI"]
+    },
+    {
+      "models": ["Golf GTE"],
+      "variants": ["1.4 eHybrid", "1.5 eHybrid"]
+    },
+    {
+      "models": ["Polo"],
+      "variants": ["1.0 MPI", "1.0 TSI", "1.2 TSI", "1.4 TDI", "1.6 TDI"]
+    },
+    {
+      "models": ["Polo GTI"],
+      "variants": ["1.8 TSI", "2.0 TSI"]
+    },
+    {
+      "models": ["Passat", "Passat Variant"],
+      "variants": ["1.4 TSI", "1.5 TSI", "1.5 eTSI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION"]
+    },
+    {
+      "models": ["Tiguan", "Tiguan Allspace"],
+      "variants": ["1.4 TSI", "1.5 TSI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION"]
+    },
+    {
+      "models": ["T-Roc", "T-Cross", "Taigo"],
+      "variants": ["1.0 TSI", "1.5 TSI", "2.0 TDI", "2.0 TSI 4MOTION"]
+    },
+    {
+      "models": ["Touareg"],
+      "variants": ["3.0 TDI 4MOTION", "3.0 TSI 4MOTION", "3.0 eHybrid 4MOTION", "4.0 TDI 4MOTION"]
+    },
+    {
+      "models": ["Touran", "Sharan"],
+      "variants": ["1.2 TSI", "1.4 TSI", "1.5 TSI", "1.6 TDI", "2.0 TDI"]
+    },
+    {
+      "models": ["Up!"],
+      "variants": ["1.0 MPI", "1.0 TSI", "GTI"]
+    },
+    {
+      "models": ["Arteon", "Arteon Shooting Brake"],
+      "variants": ["1.5 TSI", "2.0 TDI", "2.0 TDI 4MOTION", "2.0 TSI 4MOTION", "1.4 eHybrid"]
+    },
+    {
+      "models": ["ID.3", "ID.4", "ID.5", "ID.7"],
+      "variants": ["Pure", "Pro", "Pro S", "Pro 4MOTION"]
+    },
+    {
+      "models": ["Amarok"],
+      "variants": ["2.0 TDI", "3.0 TDI 4MOTION", "3.0 V6 TDI"]
+    }
+  ],
+  "remap": [
+    { "from": "Golf GTI Clubsport", "model": "Golf GTI", "variant": "Clubsport" },
+    { "from": "Golf GTI TCR", "model": "Golf GTI", "variant": "TCR" },
+    { "from": "up! GTI", "model": "Up!", "variant": "GTI" }
+  ],
+  "merge": [
+    { "from": "Passat R-Line", "model": "Passat" },
+    { "from": "Tiguan R-Line", "model": "Tiguan" },
+    { "from": "T-Roc R-Line", "model": "T-Roc" },
+    { "from": "Passat V facelift", "model": "Passat" },
+    { "from": "Touran I facelift", "model": "Touran" }
+  ]
+}

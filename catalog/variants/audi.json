@@ -109,5 +109,8 @@
     { "from": "Q3 Sportback e-hybrid", "model": "Q3 Sportback", "variant": "45 TFSI e" },
     { "from": "Q5 e-hybrid", "model": "Q5", "variant": "e-hybrid 299 PS" },
     { "from": "Q5 Sportback e-hybrid", "model": "Q5 Sportback", "variant": "e-hybrid 299 PS" }
+  ],
+  "merge": [
+    { "from": "Q6 SUV e-tron", "model": "Q6 e-tron" }
   ]
 }
