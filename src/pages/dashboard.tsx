@@ -36,7 +36,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const role = profile?.role || "private";
 
-  // Strict Role-Based Redirect
+  // Strict Role-Based Redirect. Admins land on the private dashboard too:
+  // the admin panel is reachable via its own "Admin" menu entry, and admins
+  // need the regular seller view to manage their own (test) listings.
   if (role === "garage") {
     return {
       redirect: {
@@ -44,16 +46,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         permanent: false,
       },
     };
-  } else if (role === "admin") {
-     // Optional: Admin dashboard
-     return {
-      redirect: {
-        destination: "/admin", // Or /dashboard/admin if we create it
-        permanent: false,
-      },
-    };
   } else {
-    // Default to private dashboard
     return {
       redirect: {
         destination: "/dashboard/private",

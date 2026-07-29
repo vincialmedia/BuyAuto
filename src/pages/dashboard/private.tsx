@@ -23,17 +23,30 @@ import type { ListingDraft } from "@/services/listingDraftService";
 import { MessageCenterRail } from "@/components/buyauto/messages/MessageCenterRail";
 import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
 
-export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts: ListingDraft[] }) {
+export default function PrivateDashboardPage({
+  initialDrafts,
+  accountRole,
+}: {
+  initialDrafts: ListingDraft[];
+  accountRole: string;
+}) {
   const router = useRouter();
   const { user, loading: authLoading, refreshProfile, messageCount } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  // Admins use this dashboard too, but must never trigger the garage upgrade:
+  // the upgrade_to_garage RPC overwrites profiles.role, which would silently
+  // and irreversibly strip their admin access.
+  const canUpgradeToGarage = accountRole !== "admin";
+
   // Deep link for upgrade CTAs elsewhere (e.g. the Rechner quota gate):
   // /dashboard/private?upgrade=1 opens the Garage-werden modal directly.
   useEffect(() => {
-    if (router.isReady && router.query.upgrade === "1") setShowUpgradeModal(true);
-  }, [router.isReady, router.query.upgrade]);
+    if (router.isReady && router.query.upgrade === "1" && canUpgradeToGarage) {
+      setShowUpgradeModal(true);
+    }
+  }, [router.isReady, router.query.upgrade, canUpgradeToGarage]);
   const [upgradeForm, setUpgradeForm] = useState({
     garage_name: "",
     city: "",
@@ -55,6 +68,8 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
 
   const handleUpgradeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!canUpgradeToGarage) return;
 
     // The location field uses the autocomplete (no native "required"), so guard here.
     if (!upgradeForm.city.trim()) {
@@ -103,31 +118,41 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
 
       <DashboardLayout hideSidebar leftRail={<MessageCenterRail />}>
         <div className="space-y-8" id="dashboard-content">
-          {/* Upgrade Banner */}
-          <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-neutral-50 flex items-center justify-center shadow-sm text-primary border border-neutral-200/60">
-                <Building2 size={24} />
+          {/* Upgrade Banner (hidden for admins — see canUpgradeToGarage) */}
+          {canUpgradeToGarage ? (
+            <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-neutral-50 flex items-center justify-center shadow-sm text-primary border border-neutral-200/60">
+                  <Building2 size={24} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg text-neutral-900">Sind Sie ein Händler?</h3>
+                  <p className="text-neutral-600 text-sm">Wechseln Sie zum Garage-Profil, um mehrere Fahrzeuge und Ihr Inventar zu verwalten.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-lg text-neutral-900">Sind Sie ein Händler?</h3>
-                <p className="text-neutral-600 text-sm">Wechseln Sie zum Garage-Profil, um mehrere Fahrzeuge und Ihr Inventar zu verwalten.</p>
-              </div>
-            </div>
 
-            <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-3">
-              <div className="sm:hidden">
-                <MessageCenterSheet
-                  count={Math.max(0, messageCount)}
-                  triggerVariant="outline"
-                  triggerClassName="rounded-2xl"
-                />
+              <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-3">
+                <div className="sm:hidden">
+                  <MessageCenterSheet
+                    count={Math.max(0, messageCount)}
+                    triggerVariant="outline"
+                    triggerClassName="rounded-2xl"
+                  />
+                </div>
+                <Button onClick={() => setShowUpgradeModal(true)} className="rounded-2xl">
+                  Zur Garage wechseln
+                </Button>
               </div>
-              <Button onClick={() => setShowUpgradeModal(true)} className="rounded-2xl">
-                Zur Garage wechseln
-              </Button>
             </div>
-          </div>
+          ) : (
+            <div className="sm:hidden">
+              <MessageCenterSheet
+                count={Math.max(0, messageCount)}
+                triggerVariant="outline"
+                triggerClassName="rounded-2xl"
+              />
+            </div>
+          )}
 
           <a id="uebersicht" className="scroll-mt-20"></a>
           <OverviewSection />
@@ -171,7 +196,7 @@ export default function PrivateDashboardPage({ initialDrafts }: { initialDrafts:
         </div>
 
         {/* Upgrade Modal */}
-        <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <Dialog open={showUpgradeModal && canUpgradeToGarage} onOpenChange={setShowUpgradeModal}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Garage Profil erstellen</DialogTitle>
@@ -261,10 +286,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const role = (profile as unknown as { role?: string } | null)?.role ?? "private";
 
-  if (role !== "private") {
+  // Garage accounts have their own dashboard; private and admin accounts use
+  // this one (admins would otherwise ping-pong via /dashboard into /admin and
+  // could never reach their own listings).
+  if (role === "garage") {
     return {
       redirect: {
-        destination: "/dashboard",
+        destination: "/dashboard/garage",
         permanent: false,
       },
     };
@@ -284,5 +312,5 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     updated_at: row.updated_at,
   }));
 
-  return { props: { initialDrafts } };
+  return { props: { initialDrafts, accountRole: role } };
 };
