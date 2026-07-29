@@ -1,0 +1,22 @@
+{
+  "make": "Toyota",
+  "_note": "Toyota's rows survive the audit almost intact. Names that look like trims here are real separate cars - Yaris Cross, Corolla Cross and Auris Touring Sports are their own models, and Yaris GRMN was a numbered limited run. The one row at the wrong level is 'Prius Plug-In Hybrid', which is a Prius with a different powertrain, the same defect as Audi's 'Q5 e-hybrid'. 'Prius Plus' stays a model: it is the seven-seat MPV, a different car rather than a different engine.",
+  "models": [],
+  "groups": [
+    {
+      "models": ["Prius"],
+      "variants": ["1.8 Hybrid", "2.0 Hybrid", "Plug-in Hybrid"]
+    },
+    {
+      "models": ["Yaris"],
+      "variants": ["1.0 VVT-i", "1.5 VVT-i", "1.5 Hybrid"]
+    },
+    {
+      "models": ["Corolla"],
+      "variants": ["1.2 Turbo", "1.8 Hybrid", "2.0 Hybrid"]
+    }
+  ],
+  "remap": [
+    { "from": "Prius Plug-In Hybrid", "model": "Prius", "variant": "Plug-in Hybrid" }
+  ]
+}

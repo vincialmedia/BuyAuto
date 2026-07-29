@@ -33,7 +33,15 @@ with m(make, name) as (values
     ('Mercedes','GLS'),
     ('Mercedes','V-Class'),
     ('Mercedes','Maybach S-Class'),
-    ('Mini','Hatch 5-Türer')
+    ('Mini','Hatch 5-Türer'),
+    ('Opel','Astra'),
+    ('Opel','Corsa'),
+    ('Opel','Insignia'),
+    ('Opel','Zafira Tourer'),
+    ('Vauxhall','Astra'),
+    ('Vauxhall','Corsa'),
+    ('Vauxhall','Insignia'),
+    ('Vauxhall','Zafira')
 )
 insert into public.models (make_id, name, source)
 select mk.id, m.name, 'catalog_variants_v1'
@@ -154,6 +162,9 @@ with g(make, models, variants) as (values
     ('BMW',array['1M Coupé'],array['3.0']),
     ('BMW',array['ActiveHybrid 3','ActiveHybrid 5'],array['3.0']),
     ('BMW',array['ActiveHybrid 7','ActiveHybrid X6'],array['4.4 V8']),
+    ('Hyundai',array['Ioniq 5','Ioniq 6'],array['58 kWh','63 kWh','77.4 kWh','84 kWh','77.4 kWh AWD','84 kWh AWD']),
+    ('Hyundai',array['Ioniq 9'],array['110 kWh','110 kWh AWD']),
+    ('Hyundai',array['Ioniq'],array['1.6 GDI Hybrid','1.6 GDI Plug-in','38.3 kWh']),
     ('Mercedes',array['AMG A 35'],array['A 35 4MATIC']),
     ('Mercedes',array['AMG A 45'],array['A 45 4MATIC+','A 45 S 4MATIC+']),
     ('Mercedes',array['AMG C 43'],array['C 43 4MATIC']),
@@ -171,10 +182,7 @@ with g(make, models, variants) as (values
     ('Mercedes',array['EQB'],array['EQB 250','EQB 250+ (Long Range)','EQB 300 4MATIC','EQB 350 4MATIC']),
     ('Mercedes',array['EQC'],array['EQC 400 4MATIC']),
     ('Mercedes',array['EQE'],array['EQE 300','EQE 350','EQE 350 4MATIC','EQE 500 4MATIC']),
-    ('Mercedes',array['EQE SUV'],array['EQE 350+','EQE 350 4MATIC','EQE 500 4MATIC']),
-    ('Mercedes',array['EQS'],array['EQS 450+','EQS 450 4MATIC','EQS 500 4MATIC','EQS 580 4MATIC']),
-    ('Mercedes',array['EQS SUV'],array['EQS 450+','EQS 450 4MATIC','EQS 580 4MATIC']),
-    ('Mercedes',array['EQV'],array['EQV 250','EQV 300'])
+    ('Mercedes',array['EQE SUV'],array['EQE 350+','EQE 350 4MATIC','EQE 500 4MATIC'])
 )
 insert into public.variants (model_id, name, source)
 select mo.id, v.name, 'catalog_variants_v1'
@@ -187,6 +195,9 @@ join public.models mo on mo.make_id = mk.id and exists (
 on conflict (model_id, normalized_name) do nothing;
 
 with g(make, models, variants) as (values
+    ('Mercedes',array['EQS'],array['EQS 450+','EQS 450 4MATIC','EQS 500 4MATIC','EQS 580 4MATIC']),
+    ('Mercedes',array['EQS SUV'],array['EQS 450+','EQS 450 4MATIC','EQS 580 4MATIC']),
+    ('Mercedes',array['EQV'],array['EQV 250','EQV 300']),
     ('Mercedes',array['Vito','eVito'],array['110 CDI','114 CDI','116 CDI','119 CDI','124 CDI']),
     ('Mercedes',array['Sprinter','eSprinter'],array['211 CDI','214 CDI','216 CDI','311 CDI','314 CDI','316 CDI','319 CDI','516 CDI']),
     ('Mercedes',array['Citan','eCitan'],array['108 CDI','109 CDI','110 CDI','112','113']),
@@ -202,6 +213,10 @@ with g(make, models, variants) as (values
     ('Mini',array['Paceman'],array['Cooper','Cooper D','Cooper SD']),
     ('Mini',array['Aceman'],array['Cooper E','Cooper SE']),
     ('Mini',array['John Cooper Works GP'],array['2.0 Turbo (GP)']),
+    ('Opel',array['Astra'],array['1.2 Turbo','1.4 Turbo','1.6 Turbo','1.5 Diesel','1.6 CDTI','1.7 CDTI']),
+    ('Opel',array['Corsa'],array['1.2','1.2 Turbo','1.4','1.4 Turbo','1.3 CDTI','1.5 Diesel']),
+    ('Opel',array['Insignia'],array['1.5 Turbo','1.6 CDTI','2.0 CDTI','2.0 Turbo 4x4','2.0 CDTI 4x4']),
+    ('Opel',array['Zafira','Zafira Tourer'],array['1.4 Turbo','1.6 CDTI','1.8','2.0 CDTI']),
     ('Porsche',array['911 GT3'],array['4.0 (GT3)','4.0 (GT3 Touring)']),
     ('Porsche',array['911 GT3 RS'],array['4.0 (GT3 RS)']),
     ('Porsche',array['911 GT2 RS'],array['3.8 Turbo (GT2 RS)']),
@@ -221,13 +236,37 @@ with g(make, models, variants) as (values
     ('Porsche',array['Cayenne Electric'],array['Electric']),
     ('Porsche',array['Panamera Sport Turismo'],array['3.0 V6','2.9 4','2.9 4 E-Hybrid','2.9 4S','4.0 GTS','4.0 Turbo','4.0 Turbo S E-Hybrid']),
     ('Porsche',array['Taycan Cross Turismo','Taycan Sport Turismo'],array['4','4S','GTS','Turbo','Turbo S']),
+    ('Renault',array['Clio'],array['1.0 TCe','1.2 TCe','1.3 TCe','1.5 dCi','1.6 E-Tech Hybrid']),
+    ('Renault',array['Mégane'],array['1.2 TCe','1.3 TCe','1.5 dCi','1.6 dCi','1.6 E-Tech Plug-in']),
+    ('Renault',array['Twingo'],array['1.0 SCe','0.9 TCe','1.5 dCi']),
+    ('Renault',array['Clio RS'],array['1.6 Turbo','2.0 16V','Trophy']),
+    ('Renault',array['Megane RS'],array['1.8 Turbo','2.0 Turbo','Trophy','Trophy-R']),
+    ('Toyota',array['Prius'],array['1.8 Hybrid','2.0 Hybrid','Plug-in Hybrid']),
+    ('Toyota',array['Yaris'],array['1.0 VVT-i','1.5 VVT-i','1.5 Hybrid']),
+    ('Toyota',array['Corolla'],array['1.2 Turbo','1.8 Hybrid','2.0 Hybrid']),
+    ('Vauxhall',array['Astra'],array['1.2 Turbo','1.4 Turbo','1.6 Turbo','1.5 Diesel','1.6 CDTI','1.7 CDTI']),
+    ('Vauxhall',array['Corsa'],array['1.2','1.2 Turbo','1.4','1.4 Turbo','1.3 CDTI','1.5 Diesel']),
+    ('Vauxhall',array['Insignia'],array['1.5 Turbo','1.6 CDTI','2.0 CDTI','2.0 Turbo 4x4','2.0 CDTI 4x4']),
+    ('Vauxhall',array['Zafira'],array['1.4 Turbo','1.6 CDTI','1.8','2.0 CDTI']),
     ('Volkswagen',array['Golf','Golf Variant'],array['1.0 TSI','1.2 TSI','1.4 TSI','1.5 TSI','1.5 eTSI','1.6 TDI','2.0 TDI','2.0 TDI 4MOTION']),
     ('Volkswagen',array['Golf GTI'],array['2.0 TSI','Clubsport','TCR']),
     ('Volkswagen',array['Golf R','Golf R Variant'],array['2.0 TSI 4MOTION']),
     ('Volkswagen',array['Golf GTD','Golf GTD Variant'],array['2.0 TDI']),
     ('Volkswagen',array['Golf GTE'],array['1.4 eHybrid','1.5 eHybrid']),
     ('Volkswagen',array['Polo'],array['1.0 MPI','1.0 TSI','1.2 TSI','1.4 TDI','1.6 TDI']),
-    ('Volkswagen',array['Polo GTI'],array['1.8 TSI','2.0 TSI']),
+    ('Volkswagen',array['Polo GTI'],array['1.8 TSI','2.0 TSI'])
+)
+insert into public.variants (model_id, name, source)
+select mo.id, v.name, 'catalog_variants_v1'
+from g
+cross join lateral unnest(g.variants) as v(name)
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(g.make)
+join public.models mo on mo.make_id = mk.id and exists (
+  select 1 from unnest(g.models) m
+  where public.normalize_vehicle_name(m) = mo.normalized_name)
+on conflict (model_id, normalized_name) do nothing;
+
+with g(make, models, variants) as (values
     ('Volkswagen',array['Passat','Passat Variant'],array['1.4 TSI','1.5 TSI','1.5 eTSI','2.0 TDI','2.0 TDI 4MOTION','2.0 TSI 4MOTION']),
     ('Volkswagen',array['Tiguan','Tiguan Allspace'],array['1.4 TSI','1.5 TSI','2.0 TDI','2.0 TDI 4MOTION','2.0 TSI 4MOTION']),
     ('Volkswagen',array['T-Roc','T-Cross','Taigo'],array['1.0 TSI','1.5 TSI','2.0 TDI','2.0 TSI 4MOTION']),
@@ -550,6 +589,12 @@ select * from (values
     ('Mini','Roadster Cooper S','Roadster','Cooper S'),
     ('Mini','Roadster John Cooper Works','Roadster','John Cooper Works'),
     ('Mini','Aceman John Cooper Works','Aceman','John Cooper Works'),
+    ('Opel','Astra H OPC','Astra','OPC'),
+    ('Opel','Astra J OPC','Astra','OPC'),
+    ('Opel','Corsa D OPC','Corsa','OPC'),
+    ('Opel','Corsa E OPC','Corsa','OPC'),
+    ('Opel','Insignia A OPC','Insignia','OPC'),
+    ('Opel','Zafira B OPC','Zafira','OPC'),
     ('Porsche','911 Carrera','911','Carrera'),
     ('Porsche','911 Carrera 4','911','Carrera 4'),
     ('Porsche','911 Carrera 4S','911','Carrera 4S'),
@@ -596,6 +641,18 @@ select * from (values
     ('Porsche','Taycan Turbo','Taycan','Turbo'),
     ('Porsche','Taycan Turbo GT','Taycan','Turbo GT'),
     ('Porsche','Taycan Turbo S','Taycan','Turbo S'),
+    ('Renault','Clio RS Trophy','Clio RS','Trophy'),
+    ('Renault','Megane RS Trophy','Megane RS','Trophy'),
+    ('Renault','Megane RS Trophy-R','Megane RS','Trophy-R'),
+    ('Renault','Clio GT','Clio','GT'),
+    ('Renault','Twingo GT','Twingo','GT'),
+    ('Toyota','Prius Plug-In Hybrid','Prius','Plug-in Hybrid'),
+    ('Vauxhall','Astra H VXR','Astra','VXR'),
+    ('Vauxhall','Astra J VXR','Astra','VXR'),
+    ('Vauxhall','Corsa D VXR','Corsa','VXR'),
+    ('Vauxhall','Corsa E VXR','Corsa','VXR'),
+    ('Vauxhall','Insignia A VXR','Insignia','VXR'),
+    ('Vauxhall','Zafira B VXR','Zafira','VXR'),
     ('Volkswagen','Golf GTI Clubsport','Golf GTI','Clubsport'),
     ('Volkswagen','Golf GTI TCR','Golf GTI','TCR'),
     ('Volkswagen','up! GTI','Up!','GTI')
@@ -638,10 +695,42 @@ join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(r.mak
 where mo.make_id = mk.id
   and mo.normalized_name = public.normalize_vehicle_name(r.from_name);
 
+-- ---------- rename: generation codes and inconsistent spellings ----------
+create temp table _rename on commit drop as
+select * from (values
+    ('Hyundai','IONIQ 5 N','Ioniq 5 N'),
+    ('Hyundai','IONIQ 6 N','Ioniq 6 N'),
+    ('Renault','Megane RS','Mégane RS')
+) as t(make, from_name, to_name);
+
+insert into public.vehicle_aliases (entity_type, make_id, model_id, alias, normalized_alias, source)
+select 'model', mk.id, mo.id, r.from_name, public.normalize_vehicle_name(r.from_name), 'catalog_variants_v1'
+from _rename r
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(r.make)
+join public.models mo on mo.make_id = mk.id
+ and mo.normalized_name = public.normalize_vehicle_name(r.from_name)
+where not exists (
+  select 1 from public.vehicle_aliases va
+  where va.entity_type = 'model' and va.make_id = mk.id
+    and va.normalized_alias = public.normalize_vehicle_name(r.from_name));
+
+update public.models mo set name = r.to_name, updated_at = now()
+from _rename r
+join public.makes mk on mk.normalized_name = public.normalize_vehicle_name(r.make)
+where mo.make_id = mk.id
+  and mo.normalized_name = public.normalize_vehicle_name(r.from_name)
+  and not exists (
+    select 1 from public.models other
+    where other.make_id = mk.id
+      and other.id <> mo.id
+      and other.normalized_name = public.normalize_vehicle_name(r.to_name));
+
 -- ---------- merge: duplicate, generation and equipment-line rows ----------
 create temp table _merge on commit drop as
 select * from (values
     ('Audi','Q6 SUV e-tron','Q6 e-tron'),
+    ('Opel','Zafira B','Zafira'),
+    ('Opel','Zafira Tourer C','Zafira Tourer'),
     ('Volkswagen','Passat R-Line','Passat'),
     ('Volkswagen','Tiguan R-Line','Tiguan'),
     ('Volkswagen','T-Roc R-Line','T-Roc'),

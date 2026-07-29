@@ -27,9 +27,34 @@ One JSON file per make, named after the make slug (`mercedes.json`, `alfa-romeo.
     // `model` as a variant, records a vehicle_alias so existing text still resolves,
     // repoints any listings, then deactivates the orphan model row.
     { "from": "320d", "model": "3 Series", "variant": "320d" }
+  ],
+  "merge": [
+    // remap with nowhere to land: the row is a duplicate spelling, a generation artefact
+    // or an equipment line, none of which may become a variant. Alias + repoint +
+    // deactivate, but no variant row is invented. Naming a variant here is an error.
+    { "from": "Passat R-Line", "model": "Passat" }
+  ],
+  "rename": [
+    // Right car, right level, wrong string. The row keeps its id, listings and variants;
+    // only the label changes, and the old spelling stays resolvable as an alias.
+    { "from": "IONIQ 5 N", "to": "Ioniq 5 N" }
   ]
 }
 ```
+
+### Operation order
+
+The generated SQL runs `models` → `groups` → `remap` → `rename` → `merge`. Two consequences:
+
+- A `remap` target must already exist or be listed in `models`. It cannot be a name that
+  only a `rename` is about to create — Opel's base `Astra` is created via `models` for
+  exactly this reason.
+- A `merge` target *may* come from a `rename`, since renames run first.
+
+`rename` compares raw strings, not normalized ones, because most renames here are cosmetic
+(`IONIQ 5 N`, `Megane RS` → `Mégane RS`) and normalization strips the very casing and
+accents they fix. For the same reason the "is the target name already taken" guard excludes
+the row being renamed, or a cosmetic rename would match itself and silently skip.
 
 ### Granularity contract
 

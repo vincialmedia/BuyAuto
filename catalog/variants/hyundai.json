@@ -1,0 +1,23 @@
+{
+  "make": "Hyundai",
+  "_note": "Hyundai's model rows are sound - N is a performance sub-brand and stays a model, the same call made for BMW M and Renault RS. The only defect is that the make is spelled two ways in one list: 'Ioniq 5' next to 'IONIQ 5 N'. Both spellings normalize to the same string, so this is display only, but a dropdown showing both looks broken.",
+  "models": [],
+  "groups": [
+    {
+      "models": ["Ioniq 5", "Ioniq 6"],
+      "variants": ["58 kWh", "63 kWh", "77.4 kWh", "84 kWh", "77.4 kWh AWD", "84 kWh AWD"]
+    },
+    {
+      "models": ["Ioniq 9"],
+      "variants": ["110 kWh", "110 kWh AWD"]
+    },
+    {
+      "models": ["Ioniq"],
+      "variants": ["1.6 GDI Hybrid", "1.6 GDI Plug-in", "38.3 kWh"]
+    }
+  ],
+  "rename": [
+    { "from": "IONIQ 5 N", "to": "Ioniq 5 N" },
+    { "from": "IONIQ 6 N", "to": "Ioniq 6 N" }
+  ]
+}
