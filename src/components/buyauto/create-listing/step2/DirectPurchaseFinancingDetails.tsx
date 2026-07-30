@@ -236,8 +236,9 @@ export function DirectPurchaseFinancingDetails() {
 
   const existingTakeover = existingOffer?.lease_takeover_offer ?? null;
 
-  // Leasing is now available to every seller (not garage-only), so it re-opens for
-  // any existing leasing listing regardless of role.
+  // A Leasing offer is garage-only. The initial value is still derived purely
+  // from the listing data (the profile may not be resolved when the form
+  // initializes); the effect below strips it once a non-garage role is known.
   const leasingEnabledInitial =
     data.deal_type === "direct_purchase" &&
     data.financing_type === "leasing" &&
@@ -456,6 +457,17 @@ export function DirectPurchaseFinancingDetails() {
     prevLeasingEnabled.current = leasingEnabled;
     prevLeaseTakeoverEnabled.current = leaseTakeoverEnabled;
   }, [leasingEnabled, leaseTakeoverEnabled, setValue]);
+
+  // Leasing offers are garage-only. Private sellers never see the section, but
+  // a draft or listing loaded from before this restriction can still carry
+  // leasing_enabled=true — turn it off so the hidden section can neither block
+  // validation nor publish a leasing offer.
+  useEffect(() => {
+    if (profileLoading || isGarage) return;
+    if (getValues("leasing_enabled")) {
+      setValue("leasing_enabled", false, { shouldValidate: false });
+    }
+  }, [getValues, isGarage, profileLoading, setValue]);
 
   useEffect(() => {
     if (leaseTakeoverEnabled) return;
@@ -772,17 +784,19 @@ export function DirectPurchaseFinancingDetails() {
           errors={errors as any}
         />
 
-        <GarageLeasingOfferSection<GarageLeasingOfferFormValues & DirectPurchaseFinancingForm>
-          register={register as any}
-          setValue={setValue as any}
-          errors={errors as any}
-          hasMounted={hasMounted}
-          leasingEnabled={leasingEnabled}
-          noDownPayment={false}
-          purchasePriceChf={purchasePriceChf}
-          listingInputs={listingInputs}
-          residualAdjustmentPp={residualAdjustmentPp}
-        />
+        {isGarage && (
+          <GarageLeasingOfferSection<GarageLeasingOfferFormValues & DirectPurchaseFinancingForm>
+            register={register as any}
+            setValue={setValue as any}
+            errors={errors as any}
+            hasMounted={hasMounted}
+            leasingEnabled={leasingEnabled}
+            noDownPayment={false}
+            purchasePriceChf={purchasePriceChf}
+            listingInputs={listingInputs}
+            residualAdjustmentPp={residualAdjustmentPp}
+          />
+        )}
 
         <div className="flex items-center justify-between pt-2">
           <Button type="button" variant="outline" onClick={prevStep} className="rounded-2xl">
