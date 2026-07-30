@@ -1,17 +1,12 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Check, Sparkles, X } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import {
-  PREMIUM_BOOST_PRICE,
-  pricingPlans,
-  RELIST_PRICE_CHF,
-  RELIST_PROMO_ACTIVE,
-  type Plan,
-} from "@/lib/buyauto/stripe_config";
+import { PREMIUM_BOOST_PRICE, pricingPlans, type Plan } from "@/lib/buyauto/stripe_config";
 import { privatePlanMarketingFeatures } from "@/components/buyauto/pricing/pricingData";
+import { PrivatePlanExclusions } from "@/components/buyauto/pricing/PrivatePlanExclusions";
 
 export function PrivatePricingSection() {
   return (
@@ -101,32 +96,7 @@ export function PrivatePricingSection() {
                         <span>{feature}</span>
                       </div>
                     ))}
-                    {planKey === "standard" && (
-                      <>
-                        <div className="flex items-start gap-2 text-sm text-neutral-400">
-                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                          <span>Keine Premium-Platzierung</span>
-                        </div>
-                        <div className="flex items-start gap-2 text-sm text-neutral-400">
-                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                          <span>Maximal 5 Fotos</span>
-                        </div>
-                        <div className="flex items-start gap-2 text-sm text-neutral-400">
-                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                          <span>
-                            Nach Ablauf: Wiedereinstellen{" "}
-                            {RELIST_PROMO_ACTIVE ? (
-                              <>
-                                <s>CHF {RELIST_PRICE_CHF}</s>{" "}
-                                <span className="font-semibold text-emerald-700">zurzeit gratis</span>
-                              </>
-                            ) : (
-                              <>für CHF {RELIST_PRICE_CHF}</>
-                            )}
-                          </span>
-                        </div>
-                      </>
-                    )}
+                    <PrivatePlanExclusions plan={planKey} />
                   </div>
 
                   <div className="mt-auto pt-6">

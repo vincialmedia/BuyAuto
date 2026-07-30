@@ -411,8 +411,9 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Für Garagen: vom Ankauf bis zum Verkauf</h2>
             <p className="text-lg text-neutral-300 mb-8 max-w-2xl mx-auto">
-              Im Garagen-Paket suchst du unbegrenzt*, hast den Rechner direkt in deinem Konto,
-              inserierst Occasionen und bekommst eine eigene Garagen-Seite mit deinem ganzen Bestand.
+              Im Garagen-Paket hast du den Rechner direkt in deinem Konto, ein festes
+              Bewertungs-Kontingent pro Monat, inserierst Occasionen und bekommst eine eigene
+              Garagen-Seite mit deinem ganzen Bestand.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 text-left">
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">

@@ -56,7 +56,7 @@ const faqs = [
   {
     id: "faq-10",
     question: "Was kostet ein Inserat auf BuyAuto?",
-    answer: "Die Kosten für ein Inserat hängen von der gewählten Inserat-Art und möglichen Zusatzoptionen ab. Die aktuellen Preise und Möglichkeiten siehst du direkt beim Erstellen deines Inserats auf BuyAuto."
+    answer: "Für Private ist das Standard-Inserat gratis: 60 Tage online, bis 5 Fotos. Wer länger und sichtbarer inserieren will, wählt Verlängert (CHF 50, 90 Tage, Premium-Platzierung und 15 Fotos inklusive) oder Unlimitiert (CHF 190, online bis verkauft). Garagen buchen ein Monatspaket ab CHF 149. Alle Preise stehen offen auf der Preisseite."
   }
 ];
 

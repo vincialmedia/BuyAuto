@@ -19,6 +19,7 @@ import {
   type GuestImagePair,
 } from "@/lib/buyauto/guestImageStore";
 import { Check, Loader2, Save } from "lucide-react";
+import { GARAGE_MAX_PHOTOS } from "@/lib/buyauto/garagePlans";
 
 const StepLoading = () => (
   <div className="flex items-center justify-center py-12">
@@ -301,10 +302,14 @@ export default function ListingWizard() {
   }, []);
 
   const getMaxPhotos = useCallback(() => {
-    if (data.price_plan === "standard") return 5;
+    // Garages skip the plan step entirely, so their drafts keep the default
+    // price_plan "standard" — which used to cap a CHF 599/month dealer at 5
+    // photos, fewer than a private seller on the CHF 50 plan. Their photo
+    // allowance comes from the garage package, not from a per-listing plan.
+    if (isGarage) return GARAGE_MAX_PHOTOS;
     if (data.price_plan === "extended" || data.price_plan === "unlimited") return 15;
     return 5;
-  }, [data.price_plan]);
+  }, [data.price_plan, isGarage]);
 
   useEffect(() => {
     if (isGarage && currentStep === 3) setCurrentStep(4);

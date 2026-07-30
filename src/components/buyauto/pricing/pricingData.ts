@@ -40,7 +40,9 @@ export const privatePlanMarketingFeatures: Record<
     "Premium-Platzierung dauerhaft inklusive",
     "15 statt 5 Fotos",
     "Keine Ablauf- und Verlängerungsgebühren",
-    "Jederzeit pausierbar",
+    // Pausing itself works on every plan — what is unique here is that pausing
+    // costs nothing, because there is no clock running down.
+    "Pausieren ohne Zeitverlust – es läuft keine Frist",
     "Prioritäts-Support",
   ],
 };

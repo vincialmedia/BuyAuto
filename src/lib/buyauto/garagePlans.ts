@@ -117,6 +117,14 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
 /** Above this inventory size we quote individually. */
 export const GARAGE_CUSTOM_THRESHOLD = GARAGE_PLANS.pro.listingLimit;
 
+/**
+ * Photos per listing for a garage. Dealers do not pick a per-listing plan, so
+ * their allowance comes from the package — and has to be at least what the
+ * paid private plans give (15), otherwise a CHF 599/month dealer is worse off
+ * than a CHF 50 private seller.
+ */
+export const GARAGE_MAX_PHOTOS = 20;
+
 export function garagePlanFor(code: string | null | undefined): GaragePlan | null {
   const normalized = typeof code === "string" ? code.trim().toLowerCase() : "";
   if (normalized === "starter" || normalized === "growth" || normalized === "pro") {
@@ -173,7 +181,10 @@ export const GARAGE_CORE_FEATURES: GarageFeature[] = [
     tooltip:
       "Du hast eine öffentliche Garage-Seite, die du wie eine Website anpassen kannst – inklusive Logo, Team, Öffnungszeiten und deinem kompletten Inventar.",
   },
-  { key: "manage_listings", label: "Inserate erstellen & verwalten" },
+  {
+    key: "manage_listings",
+    label: `Inserate erstellen & verwalten – bis ${GARAGE_MAX_PHOTOS} Fotos pro Fahrzeug`,
+  },
   {
     key: "vin_prefill",
     label: "VIN-PreFill (wo verfügbar)",
