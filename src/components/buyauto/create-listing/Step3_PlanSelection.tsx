@@ -54,11 +54,14 @@ export default function Step3_PlanSelection() {
     }
   }, [router.isReady, router.query.plan, (data as any).price_plan]);
 
-  // Preselected CHF 1 donation: a fresh wizard (no stored choice yet) starts
-  // with the donation on at the smallest amount. A saved draft keeps whatever
-  // the user chose — including "off". The line item stays visible in the
-  // summary and the switch turns it off with one tap.
-  const hasStoredDonationChoice = (data as any)?.donation_enabled !== undefined;
+  // Preselected CHF 1 donation: a fresh wizard starts with the donation on at
+  // the smallest amount; a saved choice — including "off" — is kept. A choice
+  // only counts when it carries the donation_choice_v2 marker, which this
+  // component writes when the user proceeds past this step: drafts and guest
+  // autosaves from before the preselect existed have donation_enabled=false
+  // baked in by the old wizard scaffold, and that machine-written "off" must
+  // not suppress the preselect.
+  const hasStoredDonationChoice = (data as any)?.donation_choice_v2 === true;
   const initialDonationEnabled = hasStoredDonationChoice ? Boolean((data as any)?.donation_enabled) : true;
   const initialDonationAmount = clampDonationAmount((data as any)?.donation_amount_chf ?? 1);
 
@@ -86,6 +89,7 @@ export default function Step3_PlanSelection() {
       price_plan: selectedPlan,
       premium: effectivePremium,
       donation_enabled: donationEnabled,
+      donation_choice_v2: true,
       donation_amount_chf: donationAmountEffective > 0 ? donationAmountEffective : 0,
       price_paid_chf: total,
     }) as any);
@@ -116,6 +120,7 @@ export default function Step3_PlanSelection() {
         price_plan: selectedPlan,
         premium: effectivePremium,
         donation_enabled: donationEnabled,
+        donation_choice_v2: true,
         donation_amount_chf: donationAmountEffective > 0 ? donationAmountEffective : 0,
         price_paid_chf: total,
       } as any);
@@ -153,6 +158,7 @@ export default function Step3_PlanSelection() {
         price_plan: selectedPlan,
         premium: effectivePremium,
         donation_enabled: donationEnabled,
+        donation_choice_v2: true,
         donation_amount_chf: donationAmountEffective > 0 ? donationAmountEffective : 0,
         price_paid_chf: total,
       } as any);
