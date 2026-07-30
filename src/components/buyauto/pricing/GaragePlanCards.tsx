@@ -40,7 +40,7 @@ export function GaragePlanCards({
   disabled = false,
 }: GaragePlanCardsProps) {
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+    <div className="flex flex-col gap-5 md:grid md:grid-cols-3">
       {GARAGE_PLAN_ORDER.map((code) => {
         const plan = GARAGE_PLANS[code];
         const isPopular = Boolean(plan.popular);
@@ -48,7 +48,16 @@ export function GaragePlanCards({
         const isLoading = loadingCode === code;
 
         return (
-          <div key={code} className="group relative">
+          <div
+            key={code}
+            className={cn(
+              "group relative",
+              // The centre-stage effect needs an actual centre. Stacked on a
+              // phone there is none, so the recommended tier leads instead of
+              // sitting second where it reads as "the middle one".
+              isPopular && "order-first md:order-none"
+            )}
+          >
             {isPopular && !isActive && (
               <div className="absolute -top-3 left-6 z-10">
                 <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-semibold px-3 py-1 shadow-sm">

@@ -28,12 +28,20 @@ export function PrivatePricingSection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
         {(Object.keys(pricingPlans) as Plan[]).map((planKey) => {
           const isPopular = planKey === "extended";
 
           return (
-            <div key={planKey} className="group relative">
+            <div
+              key={planKey}
+              className={cn(
+                "group relative",
+                // Stacked on a phone there is no centre for the centre-stage
+                // effect to work on, so the recommended plan leads.
+                isPopular && "order-first md:order-none"
+              )}
+            >
               {isPopular && (
                 <div className="absolute -top-3 left-6 z-10">
                   <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-semibold px-3 py-1 shadow-sm">
