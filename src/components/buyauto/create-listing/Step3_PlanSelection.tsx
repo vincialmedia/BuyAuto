@@ -97,10 +97,11 @@ export default function Step3_PlanSelection() {
 
   const planFeatures: Record<Plan, string[]> = {
     standard: ["60 Tage Laufzeit", "Standard-Platzierung"],
-    extended: ["90 Tage Laufzeit", "Gratis Premium Boost", "Verlängerung: CHF 15 statt CHF 30"],
+    extended: ["90 Tage Laufzeit", "Gratis Premium Boost", "15 statt 5 Fotos", "Verlängerung: CHF 15 statt CHF 30"],
     unlimited: [
       "Online bis verkauft – einmal zahlen",
       "Premium dauerhaft inklusive",
+      "15 statt 5 Fotos",
       "Keine Verlängerungsgebühren",
       "Jederzeit pausierbar",
       "Prioritäts-Support",

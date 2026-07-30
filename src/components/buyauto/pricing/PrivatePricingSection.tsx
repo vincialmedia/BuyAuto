@@ -109,6 +109,10 @@ export function PrivatePricingSection() {
                         </div>
                         <div className="flex items-start gap-2 text-sm text-neutral-400">
                           <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          <span>Maximal 5 Fotos</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm text-neutral-400">
+                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
                           <span>
                             Nach Ablauf: Wiedereinstellen{" "}
                             {RELIST_PROMO_ACTIVE ? (
