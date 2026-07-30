@@ -15,7 +15,14 @@ body {
    Radix/react-remove-scroll puts on body while a dropdown/dialog is open
    applied to body itself, turning body into a scroll container and
    un-sticking the header (it jumped to the document top when the account
-   menu was opened on a scrolled page). */
+   menu was opened on a scrolled page).
+
+   This rule alone is not enough: reaching the viewport from body relies on
+   overflow propagation, which WebKit does not perform for `clip`, so iOS
+   Safari stayed horizontally scrollable into empty space. The clip that
+   actually holds everywhere is overflow-x:clip on the app wrapper in
+   _app.tsx — a normal element, so no propagation is involved. This stays as
+   a second line of defence for engines that do propagate. */
 body {
   overflow-x: clip;
 }

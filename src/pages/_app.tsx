@@ -78,14 +78,27 @@ export default function App({ Component, pageProps }: AppProps) {
   const absoluteOgImage = `${base.replace(/\/$/, "")}/share-logo.jpg`;
 
   return (
-    // No overflow-x-hidden on this wrapper: an overflow clip here turns it
-    // into the scroll container and silently breaks position:sticky for the
-    // header. Horizontal overflow is clipped via overflow-x:clip on html/body
-    // in globals.css instead, which keeps sticky working.
-    <div className={`${manrope.variable} ${caveat.variable} font-sans min-h-screen`}>
+    // overflow-x-CLIP, never overflow-x-hidden: `hidden` would make this box a
+    // scroll container and silently break position:sticky for the header, which
+    // is why the clip used to live on body instead. But body's overflow only
+    // reaches the viewport by propagation, and WebKit does not propagate `clip`
+    // — so on iOS the page stayed horizontally scrollable into dead space no
+    // matter what body said. `clip` on a normal element needs no propagation and
+    // creates no scroll container, so it holds in every engine and sticky still
+    // works. Paired with overflow-x:clip on body in globals.css.
+    <div className={`${manrope.variable} ${caveat.variable} font-sans min-h-screen overflow-x-clip`}>
       <AuthProvider>
         <MainLayout>
           <Head>
+            {/*
+              Next.js only ships `width=device-width` by default — with no
+              initial-scale, iOS Safari picks its own "shrink to fit" scale from
+              the widest thing it measures, so pages rendered at ~90% with a
+              dead strip down the right edge. Pinning initial-scale=1 keeps every
+              page 1:1 with the screen. A handful of pages set this themselves;
+              next/head dedupes meta by name, so those still win.
+            */}
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}

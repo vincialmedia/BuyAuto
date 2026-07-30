@@ -64,16 +64,23 @@ export function MessageCenterSheet({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant={triggerVariant} className={triggerClassName} aria-label="Message Center öffnen">
-          <span className="relative inline-flex items-center">
-            <MessageSquare className="h-4 w-4" />
-            {count > 0 ? (
-              <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
-                {formatted}
-              </span>
-            ) : null}
-          </span>
-          <span className="ml-2 hidden sm:inline">Message Center</span>
+        <Button
+          variant={triggerVariant}
+          // The label used to be sm:inline-only, while every caller renders this
+          // button below sm — so on phones it was an unlabelled icon chip. Label
+          // it always, and give it a real (44px+) tap target.
+          className={cn("h-12 px-4 text-base font-semibold [&_svg]:size-5", triggerClassName)}
+          aria-label="Message Center öffnen"
+        >
+          <MessageSquare />
+          <span>Message Center</span>
+          {count > 0 ? (
+            // Trailing pill rather than a badge pinned to the icon — with the
+            // label always rendered, an overlapping badge sat on top of the text.
+            <span className="min-w-[22px] rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold leading-5 text-white">
+              {formatted}
+            </span>
+          ) : null}
         </Button>
       </SheetTrigger>
 

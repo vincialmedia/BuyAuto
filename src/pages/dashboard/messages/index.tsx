@@ -27,12 +27,19 @@ export default function DashboardMessagesIndexPage() {
       </Head>
 
       <DashboardLayout hideSidebar leftRail={<MessageCenterRail />}>
-        <Card className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm">
+        <Card className="hidden lg:block rounded-3xl border border-neutral-200/60 bg-white shadow-sm">
           <CardContent className="p-6 sm:p-8">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">Message Center</h1>
             <p className="mt-2 text-sm text-neutral-600">Wähle links eine Unterhaltung aus, um den Verlauf zu sehen.</p>
           </CardContent>
         </Card>
+
+        {/* The rail lives in the desktop sidebar, so below lg this page was just
+            a card pointing at a conversation list that wasn't on screen. Show
+            the list itself instead. */}
+        <div className="lg:hidden">
+          <MessageCenterRail />
+        </div>
       </DashboardLayout>
     </>
   );

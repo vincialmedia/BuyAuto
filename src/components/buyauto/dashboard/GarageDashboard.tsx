@@ -371,6 +371,16 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {/* Below lg the MessageCenterRail isn't rendered, so this is the only way
+          into the messages — full width and clearly labelled. */}
+      <div className="lg:hidden">
+        <MessageCenterSheet
+          count={Math.max(0, messageCount)}
+          triggerVariant="outline"
+          triggerClassName="w-full h-14 rounded-2xl border-neutral-200/60 bg-white shadow-sm"
+        />
+      </div>
+
       <Card className="rounded-3xl overflow-hidden border-neutral-200/60 shadow-sm">
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80" />
@@ -399,18 +409,13 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                 </div>
               </div>
 
+              {/* Message Center moved out of this row — see the full-width
+                  mobile button above the card. */}
               <div className="flex gap-2 items-center">
-                <div className="lg:hidden">
-                  <MessageCenterSheet
-                    count={Math.max(0, messageCount)}
-                    triggerVariant="outline"
-                    triggerClassName="rounded-2xl bg-white/15 text-white hover:bg-white/20 border border-white/20"
-                  />
-                </div>
                 <Button
                   variant="secondary"
                   onClick={() => router.push("/dashboard")}
-                  className="bg-white/15 text-white hover:bg-white/20 border border-white/20 rounded-2xl"
+                  className="w-full sm:w-auto h-12 bg-white/15 text-white hover:bg-white/20 border border-white/20 rounded-2xl"
                 >
                   Zur Übersicht
                 </Button>
