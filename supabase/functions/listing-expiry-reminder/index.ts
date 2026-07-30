@@ -115,6 +115,10 @@ function buildEmail(params: {
         Ihr Inserat läuft in <strong>${params.daysBefore} Tagen</strong> ab. Öffnen Sie Ihr Dashboard, um Ihr Inserat zu verwalten.
       </p>
 
+      <p style="color: #b45309;">
+        Nach dem Ablauf wird Ihr Inserat offline genommen. Eine erneute Veröffentlichung ist danach für <strong>CHF 30</strong> möglich.
+      </p>
+
       <div style="text-align: center; margin: 22px 0;">
         <a href="${params.dashboardUrl}" class="button">Zum Dashboard</a>
       </div>

@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
 import { stripe } from "@/lib/stripe-server";
-import { calculateTotal, getPlanDetails, type Plan } from "@/lib/buyauto/stripe_config";
+import { calculateTotal, getPlanDetails, planIncludesPremium, type Plan } from "@/lib/buyauto/stripe_config";
 import crypto from "crypto";
 
 type ListingRow = Database["public"]["Tables"]["listings"]["Row"];
@@ -123,9 +123,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .json({ error: "Dieses Inserat wurde bereits bezahlt und kann nicht erneut bezahlt werden." });
     }
 
+    // calculateTotal charges the boost only where it isn't already included in
+    // the plan (Verlängert/Unlimitiert ship with premium placement).
     const totalCHF = calculateTotal(plan, premium) + donation.amount;
     const planDetails = getPlanDetails(plan);
+    const premiumIncluded = planIncludesPremium(plan);
 
+    // listings.premium is never written here: this endpoint runs under the
+    // caller's session and the premium-authority trigger rejects owners. The
+    // premium choice travels in the PaymentIntent metadata and the Stripe
+    // webhook (service role) grants it after payment.
     if (totalCHF === 0) {
       const { error: updateError } = await (supabase as any)
         .from("listings")
@@ -138,8 +145,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           pricing_plan: plan,
           duration_days: planDetails.duration_days,
           expires_at: getExpiresAt(planDetails.duration_days),
-          premium: false,
-          premium_until: null,
           price_paid_chf: 0,
           payment_status: "paid",
           status: "pending",
@@ -170,7 +175,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         listing_id: listingId,
         user_id: session.user.id,
         plan: plan,
-        premium: String(premium),
+        premium: String(premium && !premiumIncluded),
+        premium_included: String(premiumIncluded),
         donation_enabled: String(donation.enabled),
         donation_amount_chf: String(donation.amount),
       },
@@ -214,8 +220,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         pricing_plan: plan,
         duration_days: planDetails.duration_days,
         expires_at: getExpiresAt(planDetails.duration_days),
-        premium: premium,
-        premium_until: premium ? getExpiresAt(30) : null,
         price_paid_chf: totalCHF,
         payment_status: "requires_payment",
         stripe_payment_intent_id: paymentIntent.id,

@@ -1,15 +1,20 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
+// Maintenance sweep, kept in sync with the DB-side run_listing_maintenance():
+//  * published (non-garage) listings past their runtime become 'expired' —
+//    they stay offline until the owner pays the CHF 30 relist fee. This
+//    function must never archive them: 'archived' now means either a manual
+//    archive or an aged-out draft, and draft archives get deleted.
+//  * sold listings past sold_delete_at are tombstoned and removed.
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 type CleanupResult = {
-  archivedUpdatedCount: number;
-  archivedUpdatedIds: string[];
-  legacyExpiredConvertedCount: number;
-  legacyExpiredConvertedIds: string[];
+  expiredCount: number;
+  expiredIds: string[];
   soldDeletedCount: number;
   soldDeletedIds: string[];
 };
@@ -44,36 +49,11 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
 
     const result: CleanupResult = {
-      archivedUpdatedCount: 0,
-      archivedUpdatedIds: [],
-      legacyExpiredConvertedCount: 0,
-      legacyExpiredConvertedIds: [],
+      expiredCount: 0,
+      expiredIds: [],
       soldDeletedCount: 0,
       soldDeletedIds: [],
     };
-
-    const { data: legacyExpired, error: legacyExpiredError } = await supabaseAdmin
-      .from("listings")
-      .select("id")
-      .eq("status", "expired")
-      .neq("seller_type", "garage");
-
-    if (legacyExpiredError) {
-      throw legacyExpiredError;
-    }
-
-    const legacyExpiredIds = Array.isArray(legacyExpired) ? legacyExpired.map((r) => r.id) : [];
-    if (legacyExpiredIds.length > 0) {
-      const { error: convertError } = await supabaseAdmin
-        .from("listings")
-        .update({ status: "archived", archived_at: nowIso })
-        .in("id", legacyExpiredIds);
-
-      if (convertError) throw convertError;
-
-      result.legacyExpiredConvertedCount = legacyExpiredIds.length;
-      result.legacyExpiredConvertedIds = legacyExpiredIds;
-    }
 
     const { data: candidates, error: candidatesError } = await supabaseAdmin
       .from("listings")
@@ -103,15 +83,15 @@ Deno.serve(async (req) => {
     }
 
     if (expiredIds.length > 0) {
-      const { error: archiveError } = await supabaseAdmin
+      const { error: expireError } = await supabaseAdmin
         .from("listings")
-        .update({ status: "archived", archived_at: nowIso })
+        .update({ status: "expired", updated_at: nowIso })
         .in("id", expiredIds);
 
-      if (archiveError) throw archiveError;
+      if (expireError) throw expireError;
 
-      result.archivedUpdatedCount = expiredIds.length;
-      result.archivedUpdatedIds = expiredIds;
+      result.expiredCount = expiredIds.length;
+      result.expiredIds = expiredIds;
     }
 
     const { data: soldCandidates, error: soldCandidatesError } = await supabaseAdmin

@@ -11,11 +11,25 @@ export const pricingPlans = {
 
 export const PREMIUM_BOOST_PRICE = 30;
 
+/** Fee to re-publish a listing after it expired (Standard plan). */
+export const RELIST_PRICE_CHF = 30;
+
 export type Plan = keyof typeof pricingPlans;
+
+/**
+ * Verlängert and Unlimitiert include Premium-Platzierung at no extra charge.
+ * The premium flag itself is granted server-side by the Stripe webhook after
+ * payment — clients must never write listings.premium (the premium-authority
+ * trigger rejects owners).
+ */
+export function planIncludesPremium(plan: Plan | string | null | undefined): boolean {
+  return plan === 'extended' || plan === 'unlimited';
+}
 
 export function calculateTotal(plan: Plan, isPremium: boolean): number {
   const planPrice = pricingPlans[plan]?.price ?? 0;
-  const premiumPrice = isPremium ? PREMIUM_BOOST_PRICE : 0;
+  // The boost is only a paid add-on where it isn't already part of the plan.
+  const premiumPrice = isPremium && !planIncludesPremium(plan) ? PREMIUM_BOOST_PRICE : 0;
   return planPrice + premiumPrice;
 }
 

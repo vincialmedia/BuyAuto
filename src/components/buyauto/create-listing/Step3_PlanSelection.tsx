@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, type Plan } from "@/lib/buyauto/stripe_config";
+import { pricingPlans, PREMIUM_BOOST_PRICE, RELIST_PRICE_CHF, calculateTotal, planIncludesPremium, type Plan } from "@/lib/buyauto/stripe_config";
 import { Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing } from "@/services/createListingService";
@@ -22,7 +22,7 @@ const planMapping: Record<Plan, PricePlanId> = {
 
 function clampDonationAmount(raw: unknown): number {
   const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
-  const normalized = Number.isFinite(n) ? Math.round(n) : 5;
+  const normalized = Number.isFinite(n) ? Math.round(n) : 1;
   return Math.min(200, Math.max(1, normalized));
 }
 
@@ -34,13 +34,22 @@ export default function Step3_PlanSelection() {
   const [selectedPlan, setSelectedPlan] = useState<Plan>(((data as any).price_plan as Plan) || "standard");
   const [isPremium, setIsPremium] = useState<boolean>(Boolean((data as any).premium) || false);
 
-  const initialDonationEnabled = Boolean((data as any)?.donation_enabled);
-  const initialDonationAmount = clampDonationAmount((data as any)?.donation_amount_chf ?? 5);
+  // Preselected CHF 1 donation: a fresh wizard (no stored choice yet) starts
+  // with the donation on at the smallest amount. A saved draft keeps whatever
+  // the user chose — including "off". The line item stays visible in the
+  // summary and the switch turns it off with one tap.
+  const hasStoredDonationChoice = (data as any)?.donation_enabled !== undefined;
+  const initialDonationEnabled = hasStoredDonationChoice ? Boolean((data as any)?.donation_enabled) : true;
+  const initialDonationAmount = clampDonationAmount((data as any)?.donation_amount_chf ?? 1);
 
   const [donationEnabled, setDonationEnabled] = useState<boolean>(initialDonationEnabled);
   const [donationAmountChf, setDonationAmountChf] = useState<number>(initialDonationAmount);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Verlängert/Unlimitiert ship with premium placement — no boost to buy.
+  const premiumIncluded = planIncludesPremium(selectedPlan);
+  const effectivePremium = premiumIncluded || isPremium;
 
   const donationAmountEffective = useMemo(() => {
     if (!donationEnabled) return 0;
@@ -55,7 +64,7 @@ export default function Step3_PlanSelection() {
   useEffect(() => {
     registerDraftSnapshotter(() => ({
       price_plan: selectedPlan,
-      premium: isPremium,
+      premium: effectivePremium,
       donation_enabled: donationEnabled,
       donation_amount_chf: donationAmountEffective > 0 ? donationAmountEffective : 0,
       price_paid_chf: total,
@@ -64,12 +73,16 @@ export default function Step3_PlanSelection() {
     return () => {
       registerDraftSnapshotter(() => ({}));
     };
-  }, [donationAmountEffective, donationEnabled, isPremium, registerDraftSnapshotter, selectedPlan, total]);
+  }, [donationAmountEffective, donationEnabled, effectivePremium, registerDraftSnapshotter, selectedPlan, total]);
 
   const planFeatures: Record<Plan, string[]> = {
-    standard: ["30 Tage Laufzeit", "Standard-Platzierung"],
-    extended: ["90 Tage Laufzeit", "Standard-Platzierung"],
-    unlimited: ["Unlimitierte Laufzeit", "Standard-Platzierung", "Jederzeit pausierbar"],
+    standard: [
+      "60 Tage Laufzeit",
+      "Standard-Platzierung",
+      `Nach Ablauf: Wiedereinstellen für CHF ${RELIST_PRICE_CHF}`,
+    ],
+    extended: ["90 Tage Laufzeit", "Gratis Premium-Platzierung"],
+    unlimited: ["Unlimitierte Laufzeit", "Gratis Premium-Platzierung", "Jederzeit pausierbar"],
   };
 
   const handlePlanSelection = async () => {
@@ -78,7 +91,7 @@ export default function Step3_PlanSelection() {
       // is created after sign-in at Step 5.
       updateData({
         price_plan: selectedPlan,
-        premium: isPremium,
+        premium: effectivePremium,
         donation_enabled: donationEnabled,
         donation_amount_chf: donationAmountEffective > 0 ? donationAmountEffective : 0,
         price_paid_chf: total,
@@ -102,18 +115,20 @@ export default function Step3_PlanSelection() {
     try {
       const mappedPlan = planMapping[selectedPlan];
 
+      // premium is deliberately NOT written to the listing here: the
+      // premium-authority trigger rejects owners setting it, and the Stripe
+      // webhook grants it after payment. The choice lives in wizard state.
       await createOrUpdateListing(
         {
           id: (data as any).id,
           price_plan: mappedPlan,
-          premium: isPremium,
         },
         user
       );
 
       updateData({
         price_plan: selectedPlan,
-        premium: isPremium,
+        premium: effectivePremium,
         donation_enabled: donationEnabled,
         donation_amount_chf: donationAmountEffective > 0 ? donationAmountEffective : 0,
         price_paid_chf: total,
@@ -137,7 +152,7 @@ export default function Step3_PlanSelection() {
     }
   };
 
-  const presets = [5, 10, 20];
+  const presets = [1, 5, 10];
 
   return (
     <div className="space-y-8">
@@ -201,7 +216,7 @@ export default function Step3_PlanSelection() {
         })}
       </div>
 
-      <Card className="p-6 rounded-3xl">
+      <Card className={cn("p-6 rounded-3xl", premiumIncluded && "border-emerald-200 bg-emerald-50/40")}>
         <div className="flex items-center justify-between gap-6">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -212,16 +227,29 @@ export default function Step3_PlanSelection() {
                 Bis zu 3x höhere Verkaufschancen
               </span>
             </div>
-            <p className="text-neutral-600">Dein Inserat wird für 30 Tage hervorgehoben.</p>
+            <p className="text-neutral-600">
+              {premiumIncluded
+                ? "In diesem Plan inklusive – dein Inserat wird während der gesamten Laufzeit hervorgehoben."
+                : "Dein Inserat wird für 30 Tage hervorgehoben."}
+            </p>
           </div>
           <div className="flex items-center space-x-4 shrink-0">
-            <span className="font-bold text-lg">+ CHF {PREMIUM_BOOST_PRICE}</span>
-            <Switch
-              id="premium-boost"
-              checked={isPremium}
-              onCheckedChange={setIsPremium}
-              disabled={isLoading}
-            />
+            {premiumIncluded ? (
+              <span className="inline-flex items-center gap-1.5 font-bold text-lg text-emerald-700">
+                <Check className="h-5 w-5" />
+                Inklusive
+              </span>
+            ) : (
+              <>
+                <span className="font-bold text-lg">+ CHF {PREMIUM_BOOST_PRICE}</span>
+                <Switch
+                  id="premium-boost"
+                  checked={isPremium}
+                  onCheckedChange={setIsPremium}
+                  disabled={isLoading}
+                />
+              </>
+            )}
           </div>
         </div>
       </Card>
@@ -255,7 +283,7 @@ export default function Step3_PlanSelection() {
                     min={1}
                     max={200}
                     step={1}
-                    value={donationEnabled ? donationAmountChf : 5}
+                    value={donationEnabled ? donationAmountChf : 1}
                     onChange={(e) => setDonationAmountChf(clampDonationAmount(e.target.value))}
                     disabled={!donationEnabled || isLoading}
                     className="w-24 rounded-2xl"
@@ -269,7 +297,7 @@ export default function Step3_PlanSelection() {
                 onCheckedChange={(next) => {
                   setDonationEnabled(next);
                   if (next) {
-                    setDonationAmountChf((prev) => clampDonationAmount(prev ?? 5));
+                    setDonationAmountChf((prev) => clampDonationAmount(prev ?? 1));
                   }
                 }}
                 disabled={isLoading}
@@ -314,11 +342,18 @@ export default function Step3_PlanSelection() {
             <span>Plan: {pricingPlans[selectedPlan].name}</span>
             <span>CHF {pricingPlans[selectedPlan].price}</span>
           </div>
-          {isPremium && (
-            <div className="flex justify-between">
-              <span>Premium Boost</span>
-              <span>CHF {PREMIUM_BOOST_PRICE}</span>
+          {premiumIncluded ? (
+            <div className="flex justify-between text-emerald-700">
+              <span>Premium-Platzierung</span>
+              <span>inklusive</span>
             </div>
+          ) : (
+            isPremium && (
+              <div className="flex justify-between">
+                <span>Premium Boost</span>
+                <span>CHF {PREMIUM_BOOST_PRICE}</span>
+              </div>
+            )
           )}
           {donationEnabled && donationAmountEffective > 0 && (
             <div className="flex justify-between">

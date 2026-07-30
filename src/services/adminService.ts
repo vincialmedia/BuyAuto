@@ -332,7 +332,7 @@ export const adminService = {
         .order("updated_at", { ascending: false }),
       supabase
         .from("listings")
-        .select("id,brand,model,year,status,created_at,updated_at,archived_at,archived_reason,created_by,user_id,cover_image_url")
+        .select("id,brand,model,year,status,created_at,updated_at,archived_at,archived_reason,draft_delete_at,created_by,user_id,cover_image_url")
         .or("status.eq.draft,and(status.eq.archived,archived_reason.eq.draft_expired)")
         .order("updated_at", { ascending: false }),
     ]);
@@ -367,6 +367,15 @@ export const adminService = {
       const ownerId = ((row as any).created_by ?? (row as any).user_id) as string | null;
       if (!ownerId) continue;
 
+      // A draft revived from Archiviert has archived_at cleared but keeps its
+      // deletion deadline (draft_delete_at). getDraftLifecycle derives the
+      // delete date as archived_at + 5 days, so feed it the equivalent stamp —
+      // the countdown then correctly reads "Wird in N Tagen gelöscht".
+      const draftDeleteAt = (row as any).draft_delete_at as string | null;
+      const archivedAtEquivalent =
+        ((row as any).archived_at as string | null) ??
+        (draftDeleteAt ? new Date(Date.parse(draftDeleteAt) - 5 * 24 * 60 * 60 * 1000).toISOString() : null);
+
       drafts.push({
         id: row.id,
         source: "listing",
@@ -376,7 +385,7 @@ export const adminService = {
         cover_image_url: (row as any).cover_image_url ?? null,
         created_at: (row as any).created_at,
         updated_at: (row as any).updated_at,
-        archived_at: (row as any).archived_at ?? null,
+        archived_at: archivedAtEquivalent,
         owner_id: ownerId,
         resume_url: `/inserat-erstellen?edit=${row.id}`,
       });

@@ -444,7 +444,7 @@ serve(async (req) => {
   const { data: draftListings, error: listingsError } = await supabase
     .from("listings")
     .select(
-      "id,brand,model,year,status,updated_at,archived_at,archived_reason,created_by,user_id,deal_type,financing_type,purchase_price_chf,price_per_month_chf"
+      "id,brand,model,year,status,updated_at,archived_at,archived_reason,draft_delete_at,created_by,user_id,deal_type,financing_type,purchase_price_chf,price_per_month_chf"
     )
     .or("status.eq.draft,and(status.eq.archived,archived_reason.eq.draft_expired)");
 
@@ -458,14 +458,20 @@ serve(async (req) => {
 
     const isArchived = row.status === "archived";
     const archivedAt = (row.archived_at as string | null) ?? null;
-    const step = isArchived ? ARCHIVED_STEP : stepForIdleDays(daysBetween(row.updated_at, now));
+    // A draft revived from Archiviert keeps its deletion deadline
+    // (draft_delete_at) until it is published, so it stays in the
+    // "wird gelöscht" bucket even though its status is back to 'draft'.
+    const draftDeleteAt = (row.draft_delete_at as string | null) ?? null;
+    const deletionPending = isArchived || Boolean(draftDeleteAt);
+    const step = deletionPending ? ARCHIVED_STEP : stepForIdleDays(daysBetween(row.updated_at, now));
     if (step === null) continue;
 
     const { name, known } = buildVehicleName(row.brand, row.model);
     const dueDateIso =
-      isArchived && archivedAt
+      draftDeleteAt ??
+      (isArchived && archivedAt
         ? addDays(archivedAt, DELETE_AFTER_ARCHIVE_DAYS)
-        : addDays(row.updated_at, ARCHIVE_AFTER_DAYS);
+        : addDays(row.updated_at, ARCHIVE_AFTER_DAYS));
     const price =
       formatChf(row.purchase_price_chf as number | null) ??
       (typeof row.price_per_month_chf === "number" ? `${formatChf(row.price_per_month_chf)}/Mt.` : null);
@@ -481,7 +487,7 @@ serve(async (req) => {
       dealLabel: dealTypeLabel(row.deal_type),
       financingLabel: financingTypeLabel(row.financing_type),
       step,
-      archived: isArchived,
+      archived: deletionPending,
       daysLeft: daysUntil(dueDateIso, now),
       dueDateIso,
     });

@@ -89,7 +89,11 @@ export const privatePlanMarketingFeatures: Record<
   "standard" | "extended" | "unlimited",
   string[]
 > = {
-  standard: ["60 Tage Laufzeit", "Standard-Platzierung"],
-  extended: ["90 Tage Laufzeit", "Standard-Platzierung"],
-  unlimited: ["Unlimitierte Laufzeit", "Standard-Platzierung", "Jederzeit pausierbar"],
+  standard: [
+    "60 Tage Laufzeit",
+    "Standard-Platzierung",
+    "Nach Ablauf: Wiedereinstellen für CHF 30",
+  ],
+  extended: ["90 Tage Laufzeit", "Gratis Premium-Platzierung"],
+  unlimited: ["Unlimitierte Laufzeit", "Gratis Premium-Platzierung", "Jederzeit pausierbar"],
 };

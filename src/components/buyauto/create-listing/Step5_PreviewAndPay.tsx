@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import GuestAuthGate from "./GuestAuthGate";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-import { pricingPlans, PREMIUM_BOOST_PRICE } from "@/lib/buyauto/stripe_config";
+import { pricingPlans, PREMIUM_BOOST_PRICE, planIncludesPremium } from "@/lib/buyauto/stripe_config";
 import type { Plan } from "@/lib/buyauto/stripe_config";
 import { cantons } from "@/lib/buyauto/data";
 import { useToast } from "@/hooks/use-toast";
@@ -146,9 +146,12 @@ export default function Step5_PreviewAndPay() {
     return typeof p === "number" && Number.isFinite(p) ? p : 0;
   }, [planDetails]);
 
+  // Verlängert/Unlimitiert include premium placement — the boost is only a
+  // chargeable add-on on plans that don't already ship with it.
+  const premiumIncluded = planIncludesPremium(selectedPlanId ?? "standard");
   const total = useMemo(() => {
-    return planPrice + (isPremium ? PREMIUM_BOOST_PRICE : 0) + (donationEnabled ? donationAmountChf : 0);
-  }, [donationAmountChf, donationEnabled, isPremium, planPrice]);
+    return planPrice + (isPremium && !premiumIncluded ? PREMIUM_BOOST_PRICE : 0) + (donationEnabled ? donationAmountChf : 0);
+  }, [donationAmountChf, donationEnabled, isPremium, planPrice, premiumIncluded]);
 
   const inferredDealType: "lease_takeover" | "direct_purchase" = (() => {
     const rawDealType = (data as any)?.deal_type;
@@ -427,7 +430,8 @@ export default function Step5_PreviewAndPay() {
       title: anyData?.title ?? undefined,
 
       price_plan: anyData?.price_plan ?? undefined,
-      premium: Boolean(anyData?.premium),
+      // premium is intentionally absent: owners cannot write listings.premium
+      // (premium-authority trigger) — the Stripe webhook grants it after payment.
       // blob: URLs are guest previews (see uploadPendingGuestImages) and must
       // never reach the database.
       images: (Array.isArray(anyData?.images) ? anyData.images : []).filter(
@@ -1127,14 +1131,24 @@ export default function Step5_PreviewAndPay() {
                         </div>
                         <p className="text-sm text-neutral-500 -mt-2">{planDetails.duration_days} Tage</p>
 
-                        {isPremium && (
+                        {premiumIncluded ? (
                           <div className="flex justify-between items-center text-sm pt-2">
-                            <div className="flex items-center text-red-600 font-semibold">
+                            <div className="flex items-center text-emerald-700 font-semibold">
                               <Star className="w-4 h-4 mr-2" />
-                              <span>Premium Boost</span>
+                              <span>Premium-Platzierung</span>
                             </div>
-                            <span className="font-semibold">+ CHF {PREMIUM_BOOST_PRICE.toFixed(2)}</span>
+                            <span className="font-semibold text-emerald-700">inklusive</span>
                           </div>
+                        ) : (
+                          isPremium && (
+                            <div className="flex justify-between items-center text-sm pt-2">
+                              <div className="flex items-center text-red-600 font-semibold">
+                                <Star className="w-4 h-4 mr-2" />
+                                <span>Premium Boost</span>
+                              </div>
+                              <span className="font-semibold">+ CHF {PREMIUM_BOOST_PRICE.toFixed(2)}</span>
+                            </div>
+                          )
                         )}
 
                         {donationEnabled && donationAmountChf > 0 && (

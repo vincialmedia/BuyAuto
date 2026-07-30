@@ -183,6 +183,51 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         break;
       }
 
+      if (kind === "listing_relist") {
+        const listingId = safeString(metadata.listing_id);
+
+        if (!listingId) {
+          console.error("Webhook: Missing listing_id for listing_relist", { sessionId: session.id });
+          break;
+        }
+
+        const { data: listing } = await supabaseAdmin
+          .from("listings")
+          .select("status, duration_days, price_plan")
+          .eq("id", listingId)
+          .single();
+
+        if (!listing) {
+          console.warn(`Webhook: listing ${listingId} not found for listing_relist`);
+          break;
+        }
+
+        // Idempotency: only an expired listing gets republished. A retried
+        // webhook delivery sees 'published' and does nothing.
+        if (listing.status !== "expired") {
+          console.warn(`Webhook: listing ${listingId} is ${listing.status}, not expired; skipping relist`);
+          break;
+        }
+
+        const durationDays = typeof listing.duration_days === "number" ? listing.duration_days : 60;
+        const nowIso = new Date().toISOString();
+
+        const { error: relistError } = await supabaseAdmin
+          .from("listings")
+          .update({
+            status: "published",
+            expires_at: addDaysIso(nowIso, durationDays),
+            updated_at: nowIso,
+          })
+          .eq("id", listingId);
+
+        if (relistError) {
+          console.error("Webhook: Failed to republish listing after relist payment", { listingId, relistError });
+        }
+
+        break;
+      }
+
       if (kind === "listing_premium_upgrade") {
         const listingId = safeString(metadata.listing_id);
 
@@ -358,7 +403,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         // Fetch current listing to validate the intent and check its state.
         const { data: listing } = await supabaseAdmin
           .from("listings")
-          .select("status, payment_status, stripe_payment_intent_id")
+          .select("status, payment_status, stripe_payment_intent_id, expires_at, premium, premium_until")
           .eq("id", listingId)
           .single();
 
@@ -374,6 +419,41 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             `Webhook: payment_intent ${paymentIntent.id} does not match listing ${listingId} current intent ${listing.stripe_payment_intent_id}; skipping`
           );
           break;
+        }
+
+        // Premium is granted here, not by the client: the premium-authority
+        // trigger rejects owners writing listings.premium, so the wizard and
+        // prepare endpoint only carry the choice in payment metadata.
+        //  * paid boost (standard plan): 30 days
+        //  * Verlängert/Unlimitiert: included — runs with the listing
+        // Runs before the terminal-state short-circuit so a verify-payment
+        // race (which marks paid but cannot grant premium) can't starve it.
+        const plan = safeString(paymentIntent.metadata?.plan);
+        const boostPurchased = paymentIntent.metadata?.premium === "true";
+        const premiumIncluded =
+          paymentIntent.metadata?.premium_included === "true" || plan === "extended" || plan === "unlimited";
+
+        const alreadyPremium =
+          listing.premium === true &&
+          (listing.premium_until === null || Date.parse(listing.premium_until) > Date.now());
+
+        if ((boostPurchased || premiumIncluded) && !alreadyPremium && listing.payment_status !== "refunded") {
+          const nowIso = new Date().toISOString();
+          const premiumUntil =
+            plan === "unlimited"
+              ? null
+              : premiumIncluded
+                ? listing.expires_at ?? addDaysIso(nowIso, 90)
+                : addDaysIso(nowIso, 30);
+
+          const { error: premiumError } = await supabaseAdmin
+            .from("listings")
+            .update({ premium: true, is_premium: true, premium_until: premiumUntil })
+            .eq("id", listingId);
+
+          if (premiumError) {
+            console.error(`Webhook: Failed to grant premium to listing ${listingId}`, premiumError);
+          }
         }
 
         // Non-destructive: never overwrite a terminal paid/refunded state.

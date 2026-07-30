@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Eye, Edit, Trash2, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive, ExternalLink } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive, ExternalLink, Undo2, RefreshCw } from "lucide-react";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
@@ -187,6 +187,15 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     loadPremiumCredits();
   }, [router.query.premium_upgrade, loadUserListings, loadPremiumCredits]);
 
+  useEffect(() => {
+    const status = typeof router.query.relist === "string" ? router.query.relist : null;
+    if (!status) return;
+
+    // Back from the relist checkout: the webhook republishes the listing, so a
+    // reload is all the dashboard needs.
+    loadUserListings();
+  }, [router.query.relist, loadUserListings]);
+
   const handleDelete = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
     try {
@@ -311,6 +320,43 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       setActionLoading(null);
     }
   }, [loadUserListings, loadTombstones]);
+
+  const handleRevertToDraft = useCallback(async (listingId: string) => {
+    setActionLoading(listingId);
+    try {
+      await dashboardService.revertListingToDraft(listingId);
+      await loadUserListings();
+    } catch (error) {
+      console.error("Error reverting listing to draft:", error);
+      alert("Fehler beim Zurücksetzen auf Entwurf.");
+    } finally {
+      setActionLoading(null);
+    }
+  }, [loadUserListings]);
+
+  // Expired listings can only go live again through the CHF 30 relist checkout.
+  const handleRelist = useCallback(async (listingId: string) => {
+    setActionLoading(listingId);
+    try {
+      const res = await fetch("/api/billing/relist/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listing_id: listingId }),
+      });
+
+      const json = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !json.url) {
+        const message = typeof json.error === "string" ? json.error : "Zahlung konnte nicht gestartet werden.";
+        throw new Error(message);
+      }
+
+      window.location.href = json.url;
+    } catch (error) {
+      console.error("Error starting relist checkout:", error);
+      alert("Fehler beim Starten der Zahlung. Bitte versuche es erneut.");
+      setActionLoading(null);
+    }
+  }, []);
 
   const formatPrice = (price: number) => formatPriceCHF(price);
 
@@ -498,6 +544,13 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             const premium = isPremium(listing);
             const archived = listing.status === "archived" || listing.status === "expired";
             const soldDaysRemaining = getSoldDaysRemaining(listing);
+            // Aged-out drafts: archived by the sweep, or revived to 'draft' with
+            // the deletion clock still running. Both carry draft_delete_at.
+            const draftDeleteAt = (listing as any).draft_delete_at as string | null | undefined;
+            const deletionDaysRemaining = getDaysUntil(draftDeleteAt);
+            const isDraftArchived =
+              listing.status === "archived" && (listing as any).archived_reason === "draft_expired";
+            const isExpiredListing = listing.status === "expired";
             const views = Number.isFinite(Number(listing.view_count)) ? Number(listing.view_count) : 0;
             const isPublicListing = ["published", "active", "sold"].includes(String(listing.status));
             const listingHref = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
@@ -575,6 +628,18 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 {soldDaysRemaining === 1 ? "Tag" : "Tagen"} gelöscht
                               </span>
                             )}
+                            {typeof deletionDaysRemaining === "number" && (
+                              <span className="text-xs font-medium text-amber-700 flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                Wird in <span className="font-semibold">{deletionDaysRemaining}</span>{" "}
+                                {deletionDaysRemaining === 1 ? "Tag" : "Tagen"} endgültig gelöscht
+                              </span>
+                            )}
+                            {isExpiredListing && (
+                              <span className="text-xs text-neutral-600">
+                                Abgelaufen – Wiederveröffentlichung für CHF 30 möglich
+                              </span>
+                            )}
                             {premium && listing.premium_until && (
                               <span className="text-xs text-amber-700">
                                 Premium bis: {formatDate(listing.premium_until)}
@@ -592,6 +657,18 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                           >
                             <Eye className="w-4 h-4 mr-2" /> Vorschau
                           </Button>
+
+                          {isExpiredListing && (
+                            <Button
+                              size="sm"
+                              className="rounded-2xl bg-red-500 hover:bg-red-600 text-white"
+                              onClick={() => handleRelist(listing.id)}
+                              disabled={actionLoading === listing.id}
+                            >
+                              <RefreshCw className="w-4 h-4 mr-2" />
+                              Wieder veröffentlichen – CHF 30
+                            </Button>
+                          )}
 
                           {!archived && (listing.status as any) !== "sold" && (
                             <Button
@@ -625,7 +702,17 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 </DropdownMenuItem>
                               )}
 
-                              {(listing.status as any) !== "sold" && (
+                              {isDraftArchived && (
+                                <DropdownMenuItem
+                                  onClick={() => handleRevertToDraft(listing.id)}
+                                  disabled={actionLoading === listing.id}
+                                >
+                                  <Undo2 className="w-4 h-4 mr-2 text-neutral-700" />
+                                  Auf Entwurf ändern
+                                </DropdownMenuItem>
+                              )}
+
+                              {!isDraftArchived && (listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => handleMarkSold(listing.id)}
                                   disabled={actionLoading === listing.id}

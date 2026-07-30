@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   calculateTotal,
+  planIncludesPremium,
   PREMIUM_BOOST_PRICE,
   pricingPlans,
   type Plan,
@@ -19,6 +20,7 @@ export function PrivatePricingSection() {
   const [selectedPlan, setSelectedPlan] = useState<Plan>("extended");
   const [isPremium, setIsPremium] = useState<boolean>(true);
 
+  const premiumIncluded = planIncludesPremium(selectedPlan);
   const total = useMemo(
     () => calculateTotal(selectedPlan, isPremium),
     [selectedPlan, isPremium]
@@ -133,22 +135,35 @@ export function PrivatePricingSection() {
                 </span>
               </div>
               <p className="mt-1 text-sm text-neutral-600">
-                Dein Inserat wird für 30 Tage hervorgehoben.
+                {premiumIncluded
+                  ? "In diesem Plan inklusive – dein Inserat wird während der gesamten Laufzeit hervorgehoben."
+                  : "Dein Inserat wird für 30 Tage hervorgehoben."}
               </p>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-sm font-semibold text-neutral-900">
-                  + CHF {PREMIUM_BOOST_PRICE}
+              {premiumIncluded ? (
+                <div className="text-right">
+                  <div className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+                    <Check className="h-4 w-4" />
+                    Gratis inklusive
+                  </div>
                 </div>
-                <div className="text-xs text-neutral-500">optional</div>
-              </div>
-              <Switch
-                id="premium-boost"
-                checked={isPremium}
-                onCheckedChange={setIsPremium}
-              />
+              ) : (
+                <>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-neutral-900">
+                      + CHF {PREMIUM_BOOST_PRICE}
+                    </div>
+                    <div className="text-xs text-neutral-500">optional</div>
+                  </div>
+                  <Switch
+                    id="premium-boost"
+                    checked={isPremium}
+                    onCheckedChange={setIsPremium}
+                  />
+                </>
+              )}
             </div>
           </div>
         </div>
