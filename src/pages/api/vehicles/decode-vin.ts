@@ -1646,16 +1646,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return remainder;
     })();
 
-    if (model_id && canonicalVariantCandidate && !isLikelyJunkVariant(canonicalVariantCandidate)) {
-      const { data: resolvedVariantId, error: vErr } = await supabaseAdmin.rpc("resolve_variant_id", {
-        p_model_id: model_id,
-        p_variant_text: canonicalVariantCandidate,
-      });
+    // Most specific candidate first: a provider trim ("S500 4MATIC") beats a
+    // candidate derived from the model string ("S 500") — resolving the
+    // derived one first silently dropped the drivetrain. When a candidate
+    // ends in a drivetrain badge, it is retried without it, so a catalog
+    // that steps this model's variants by engine only still resolves.
+    const variantCandidates: string[] = [];
+    const pushVariantCandidate = (c: string | null | undefined) => {
+      const clean = typeof c === "string" ? c.trim().replace(/\s+/g, " ") : "";
+      if (!clean || isLikelyJunkVariant(clean)) return;
+      const key = normalizeVehicleKey(clean);
+      if (!key || variantCandidates.some((x) => normalizeVehicleKey(x) === key)) return;
+      variantCandidates.push(clean);
+    };
+    if (!modelResolvedFromTrim) pushVariantCandidate(providerTrim);
+    pushVariantCandidate(canonicalVariantCandidate);
+    const DRIVETRAIN_TAIL = /\s+(4MATIC\+?|xDrive|quattro|4Drive|ALL4|AWD|4WD|4x4|Allrad)$/i;
+    for (const c of [...variantCandidates]) {
+      if (DRIVETRAIN_TAIL.test(c)) pushVariantCandidate(c.replace(DRIVETRAIN_TAIL, ""));
+    }
 
-      if (vErr) {
-        console.error("resolve_variant_id error", { vin: maskVin(vin) });
-      } else {
-        variant_id = (resolvedVariantId as string | null) ?? null;
+    let resolvedVariantName: string | null = null;
+    if (model_id) {
+      for (const cand of variantCandidates) {
+        const { data: resolvedVariantId, error: vErr } = await supabaseAdmin.rpc("resolve_variant_id", {
+          p_model_id: model_id,
+          p_variant_text: cand,
+        });
+        if (vErr) {
+          console.error("resolve_variant_id error", { vin: maskVin(vin) });
+          break;
+        }
+        if (resolvedVariantId) {
+          variant_id = resolvedVariantId as string;
+          resolvedVariantName = cand;
+          break;
+        }
       }
     }
 
@@ -1703,8 +1729,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (variant_id && model_id && canonicalVariantCandidate) {
-      const cleanName = String(canonicalVariantCandidate).trim().replace(/\s+/g, " ");
+    if (variant_id && model_id && (resolvedVariantName || canonicalVariantCandidate)) {
+      const cleanName = String(resolvedVariantName ?? canonicalVariantCandidate).trim().replace(/\s+/g, " ");
       await supabaseAdmin.from("vehicle_aliases").upsert(
         {
           entity_type: "variant",
@@ -1764,12 +1790,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const normalizedUseful = cachedNormalized ? hasUsefulNormalizedData(cachedNormalized) : false;
 
     const cachedDecoded = (cached.decoded_payload as unknown as JsonObject | null) ?? null;
-    const cachedProviderTrim =
-      cachedNormalized && typeof (cachedNormalized as any)?.provider_trim === "string"
-        ? String((cachedNormalized as any).provider_trim).trim()
-        : "";
-
-    if (cachedDecoded && successFresh && !cached?.variant_id && !cachedProviderTrim) {
+    // Only the provider payload is worth caching — it costs a credit. The
+    // catalog mapping is a handful of cheap queries and the catalog moves
+    // under the cache (models demoted, variants added), so a frozen mapping
+    // kept resurfacing the pre-repair hierarchy (stale "S 500" model rows)
+    // and never picked up newly added variants. Always re-derive the mapping
+    // from the stored payload; the stored normalized_payload is only served
+    // when the decoded payload itself is missing.
+    if (cachedDecoded && successFresh) {
       const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
       if (!result.ok) {
         return res.status(result.status).json({

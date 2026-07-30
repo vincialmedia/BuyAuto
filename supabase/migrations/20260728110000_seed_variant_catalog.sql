@@ -746,7 +746,7 @@ with g(make, models, variants) as (values
     ('Mercedes',array['GLE'],array['GLE 350 d','GLE 400 d','GLE 450 d']),
     ('Mercedes',array['GLE Coupé'],array['GLE 300 d','GLE 450 d']),
     ('Mercedes',array['GLS'],array['GLS 400 d']),
-    ('Mercedes',array['S-Class'],array['S 300 h','S 400 d']),
+    ('Mercedes',array['S-Class'],array['S 300 h','S 400 d','S 350 d 4MATIC','S 400 4MATIC','S 400 d 4MATIC','S 450 4MATIC','S 500 4MATIC','S 560 4MATIC','S 580 4MATIC']),
     ('Mercedes',array['CLS'],array['CLS 220 d','CLS 350 d','CLS 400 d']),
     ('Mercedes',array['G-Class'],array['G 350 CDI']),
     ('Mercedes',array['SL'],array['SL 600']),
