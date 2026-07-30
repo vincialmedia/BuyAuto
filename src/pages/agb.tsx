@@ -102,9 +102,9 @@ export default function AGB() {
                 <p>
                   Inserate haben eine planabhängige Laufzeit. Nach Ablauf der Laufzeit wird das Inserat deaktiviert
                   ("Abgelaufen") und ist öffentlich nicht mehr sichtbar. Für die erneute Veröffentlichung eines
-                  abgelaufenen Inserats kann eine Gebühr von CHF 30 erhoben werden; die jeweils geltende Gebühr wird
-                  vor der Zahlung ausgewiesen. Im Rahmen von Aktionen kann der Betreiber diese Gebühr vorübergehend
-                  ganz oder teilweise erlassen.
+                  abgelaufenen Inserats kann eine Gebühr von CHF 30 erhoben werden (für Inserate im Plan
+                  "Verlängert": CHF 15); die jeweils geltende Gebühr wird vor der Zahlung ausgewiesen. Im Rahmen von
+                  Aktionen kann der Betreiber diese Gebühr vorübergehend ganz oder teilweise erlassen.
                 </p>
                 <p>
                   In den Plänen "Verlängert" und "Unlimitiert" ist die Premium-Platzierung ohne Aufpreis enthalten.

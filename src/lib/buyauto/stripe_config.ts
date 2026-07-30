@@ -14,6 +14,13 @@ export const PREMIUM_BOOST_PRICE = 30;
 /** Fee to re-publish a listing after it expired. */
 export const RELIST_PRICE_CHF = 30;
 
+/** Verlängert perk: renewing an expired Verlängert listing costs half. */
+export const RELIST_PRICE_EXTENDED_CHF = 15;
+
+export function relistPriceChf(plan: Plan | string | null | undefined): number {
+  return plan === "extended" ? RELIST_PRICE_EXTENDED_CHF : RELIST_PRICE_CHF;
+}
+
 /**
  * Relist promo switch. While true, the UI shows the regular price struck
  * through ("CHF 30" -> gratis) and the relist endpoint republishes directly

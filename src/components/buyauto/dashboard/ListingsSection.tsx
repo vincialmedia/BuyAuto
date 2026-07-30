@@ -27,7 +27,7 @@ import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
 import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
-import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE } from "@/lib/buyauto/stripe_config";
+import { RELIST_PROMO_ACTIVE, relistPriceChf } from "@/lib/buyauto/stripe_config";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
@@ -568,6 +568,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             // deletion clock still running.
             const isRevivedDraft = listing.status === "draft" && Boolean(draftDeleteAt);
             const isExpiredListing = listing.status === "expired";
+            // Verlängert perk: renewal costs CHF 15 (and re-includes premium),
+            // so those listings get no CHF 50 upgrade button — they're already
+            // on the plan the upsell would sell them.
+            const relistPrice = relistPriceChf(listing.price_plan);
+            const isExtendedListing = listing.price_plan === "extended";
             const views = Number.isFinite(Number(listing.view_count)) ? Number(listing.view_count) : 0;
             const isPublicListing = ["published", "active", "sold"].includes(String(listing.status));
             const listingHref = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
@@ -657,11 +662,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 {RELIST_PROMO_ACTIVE ? (
                                   <>
                                     Abgelaufen – Aktion: Wiederveröffentlichung{" "}
-                                    <s className="text-neutral-400">CHF {RELIST_PRICE_CHF}</s>{" "}
+                                    <s className="text-neutral-400">CHF {relistPrice}</s>{" "}
                                     <span className="font-semibold text-emerald-700">gratis</span>
                                   </>
                                 ) : (
-                                  <>Abgelaufen – Wiederveröffentlichung für CHF {RELIST_PRICE_CHF} möglich</>
+                                  <>Abgelaufen – Wiederveröffentlichung für CHF {relistPrice} möglich</>
                                 )}
                               </span>
                             )}
@@ -695,14 +700,18 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 {RELIST_PROMO_ACTIVE ? (
                                   <>
                                     Wieder veröffentlichen –{" "}
-                                    <s className="opacity-70">CHF {RELIST_PRICE_CHF}</s>
+                                    <s className="opacity-70">CHF {relistPrice}</s>
                                     <span className="ml-1 font-bold">Gratis</span>
                                   </>
+                                ) : isExtendedListing ? (
+                                  <>
+                                    Verlängern – <s className="opacity-70 mx-1">CHF 30</s> CHF {relistPrice}
+                                  </>
                                 ) : (
-                                  <>Wieder veröffentlichen – CHF {RELIST_PRICE_CHF}</>
+                                  <>Wieder veröffentlichen – CHF {relistPrice}</>
                                 )}
                               </Button>
-                              {!RELIST_PROMO_ACTIVE && (
+                              {!RELIST_PROMO_ACTIVE && !isExtendedListing && (
                                 <Button
                                   size="sm"
                                   variant="outline"

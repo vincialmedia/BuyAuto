@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import type { Database } from "@/integrations/supabase/types";
 import { stripe } from "@/lib/stripe-server";
-import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE, pricingPlans } from "@/lib/buyauto/stripe_config";
+import { RELIST_PROMO_ACTIVE, pricingPlans, relistPriceChf } from "@/lib/buyauto/stripe_config";
 
 /**
  * Relists an expired listing.
@@ -23,7 +23,7 @@ import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE, pricingPlans } from "@/lib/buyau
 
 type ListingRow = Pick<
   Database["public"]["Tables"]["listings"]["Row"],
-  "id" | "user_id" | "created_by" | "status" | "brand" | "model" | "duration_days" | "updated_at"
+  "id" | "user_id" | "created_by" | "status" | "brand" | "model" | "duration_days" | "updated_at" | "price_plan"
 >;
 
 type PrepareBody = {
@@ -63,7 +63,7 @@ async function getOwnedListing(
 ): Promise<ListingRow | null> {
   const { data: byUserId, error: byUserIdError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at")
+    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at, price_plan")
     .eq("id", listingId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -75,7 +75,7 @@ async function getOwnedListing(
 
   const { data: byCreatedBy, error: byCreatedByError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at")
+    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at, price_plan")
     .eq("id", listingId)
     .eq("created_by", userId)
     .maybeSingle();
@@ -154,10 +154,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const origin = getRequestOrigin(req);
     const vehicle = [listing.brand, listing.model].filter(Boolean).join(" ") || "Inserat";
 
-    const amountChf = upgrade ? pricingPlans.extended.price : RELIST_PRICE_CHF;
+    // Verlängert perk: renewing an expired Verlängert listing costs CHF 15
+    // instead of 30 (advertised on /preise, so it must be real here).
+    const amountChf = upgrade ? pricingPlans.extended.price : relistPriceChf(listing.price_plan);
     const productName = upgrade
       ? "Wieder veröffentlichen als Verlängert"
-      : "Inserat wieder veröffentlichen";
+      : listing.price_plan === "extended"
+        ? "Verlängerung (Verlängert-Vorteil)"
+        : "Inserat wieder veröffentlichen";
     const productDescription = upgrade
       ? `${vehicle} – 90 Tage Laufzeit, Premium-Platzierung inklusive.`
       : `${vehicle} – erneute Veröffentlichung nach Ablauf.`;

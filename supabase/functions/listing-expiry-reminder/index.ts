@@ -58,6 +58,7 @@ type ListingRow = {
   user_id: string | null;
   deal_type: DealType | null;
   financing_type: FinancingType | null;
+  price_plan: string | null;
 };
 
 type ProfileRow = { id: string; email: string | null; full_name: string | null };
@@ -71,6 +72,7 @@ function buildEmail(params: {
   dashboardUrl: string;
   dealLabel: string | null;
   financingLabel: string | null;
+  pricePlan: string | null;
 }): { subject: string; html: string } {
   const expiresDate = formatDateDeCh(params.expiresAtIso);
   const dealLine = [params.dealLabel, params.financingLabel].filter(Boolean).join(" · ");
@@ -115,11 +117,18 @@ function buildEmail(params: {
         Ihr Inserat läuft in <strong>${params.daysBefore} Tagen</strong> ab. Öffnen Sie Ihr Dashboard, um Ihr Inserat zu verwalten.
       </p>
 
-      <p style="color: #b45309;">
+      ${
+        params.pricePlan === "extended"
+          ? `<p style="color: #b45309;">
+        Nach dem Ablauf wird Ihr Inserat offline genommen. Als Verlängert-Kunde verlängern Sie danach für
+        <strong> CHF 15</strong> statt CHF 30 – erneut 90 Tage Laufzeit, Premium-Platzierung inklusive.
+      </p>`
+          : `<p style="color: #b45309;">
         Nach dem Ablauf wird Ihr Inserat offline genommen. Eine erneute Veröffentlichung kostet danach
         <strong> CHF 30</strong> – oder Sie wechseln beim Wiedereinstellen für CHF 50 auf
         <strong> Verlängert</strong> (90 Tage Laufzeit, Premium-Platzierung inklusive).
-      </p>
+      </p>`
+      }
 
       <div style="text-align: center; margin: 22px 0;">
         <a href="${params.dashboardUrl}" class="button">Zum Dashboard</a>
@@ -188,7 +197,7 @@ serve(async (req) => {
 
     const { data: listings, error: listingsError } = await supabase
       .from("listings")
-      .select("id,brand,model,title,expires_at,created_by,user_id,deal_type,financing_type,status")
+      .select("id,brand,model,title,expires_at,created_by,user_id,deal_type,financing_type,price_plan,status")
       .eq("status", "published")
       .gte("expires_at", start.toISOString())
       .lt("expires_at", end.toISOString());
@@ -275,6 +284,7 @@ serve(async (req) => {
         dashboardUrl,
         dealLabel: dealTypeLabel(listing.deal_type),
         financingLabel: financingTypeLabel(listing.financing_type),
+        pricePlan: listing.price_plan ?? null,
       });
 
       const sendRes = await resend.emails.send({

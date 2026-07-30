@@ -249,14 +249,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         const durationDays = typeof listing.duration_days === "number" ? listing.duration_days : 60;
+        const keepExpiresAt = addDaysIso(nowIso, durationDays);
+
+        // A Verlängert listing renews with its plan perks: premium placement
+        // is included for the whole (new) runtime.
+        const keepUpdate: Record<string, unknown> = {
+          status: "published",
+          expires_at: keepExpiresAt,
+          updated_at: nowIso,
+        };
+        if (listing.price_plan === "extended") {
+          keepUpdate.premium = true;
+          keepUpdate.is_premium = true;
+          keepUpdate.premium_until = keepExpiresAt;
+        }
 
         const { error: relistError } = await supabaseAdmin
           .from("listings")
-          .update({
-            status: "published",
-            expires_at: addDaysIso(nowIso, durationDays),
-            updated_at: nowIso,
-          })
+          .update(keepUpdate)
           .eq("id", listingId);
 
         if (relistError) {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { useWizard } from "./ListingWizard";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -30,6 +31,7 @@ export default function Step3_PlanSelection() {
   const { data, updateData, nextStep, prevStep, registerDraftSnapshotter } = useWizard();
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
 
   // Verlängert is the default: pre-selection is the strongest single
   // conversion lever (default effect), and the /preise page already leads
@@ -41,6 +43,16 @@ export default function Step3_PlanSelection() {
   const [isPremium, setIsPremium] = useState<boolean>(
     Boolean((data as any).premium) && !planIncludesPremium((data as any).price_plan)
   );
+
+  // The /preise plan cards deep-link here with ?plan=<key>. A stored draft
+  // choice always wins; the query only seeds a fresh wizard.
+  useEffect(() => {
+    if (!router.isReady || (data as any).price_plan) return;
+    const q = router.query.plan;
+    if (q === "standard" || q === "extended" || q === "unlimited") {
+      setSelectedPlan(q);
+    }
+  }, [router.isReady, router.query.plan, (data as any).price_plan]);
 
   // Preselected CHF 1 donation: a fresh wizard (no stored choice yet) starts
   // with the donation on at the smallest amount. A saved draft keeps whatever
@@ -85,8 +97,8 @@ export default function Step3_PlanSelection() {
 
   const planFeatures: Record<Plan, string[]> = {
     standard: ["60 Tage Laufzeit", "Standard-Platzierung"],
-    extended: ["90 Tage Laufzeit", "Gratis Premium-Platzierung"],
-    unlimited: ["Unlimitierte Laufzeit", "Gratis Premium-Platzierung", "Jederzeit pausierbar"],
+    extended: ["90 Tage Laufzeit", "Gratis Premium Boost", "Verlängerung: CHF 15 statt CHF 30"],
+    unlimited: ["Unlimitierte Laufzeit", "Gratis Premium Boost", "Jederzeit pausierbar"],
   };
 
   const handlePlanSelection = async () => {
