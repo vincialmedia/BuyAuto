@@ -72,7 +72,7 @@ ersten Erfolgserlebnis zu kommen, gehört ins Einstiegspaket. Was erst Wert hat,
 wenn ein Workflow schon läuft, gehört nach oben.*
 
 → Inserieren, VIN-PreFill, Leasing-Rechner, Deal-Chat, Profilseite = First
-Value, bleiben überall drin. Website-Widget, Inventar-Upload durch uns, grosse
+Value, bleiben überall drin. Website-Widget, personalisiertes Onboarding, grosse
 Bewertungs-Kontingente = Workflow-Features, wandern nach oben.
 
 **Value Metric statt reiner Feature-Liste.** Der stärkste Hebel ist eine
@@ -110,7 +110,7 @@ Verändert wurde, was drin ist.
 | Premium-Boosts/Mt | 1 | **6** (war 5) | **15** (war 10) |
 | Eintauschwert-Bewertungen/Mt | **25** | **100** | **400** |
 | Website-Tools (Widget) | **–** | ✓ | ✓ |
-| Inventar-Upload durch uns | **–** | bis 60 Fahrzeuge | bis 150, priorisiert |
+| Personalisiertes Onboarding & Inventar-Upload | **–** | **–** | bis 150 Fahrzeuge |
 | Support | E-Mail | Priorisiert | Persönlicher Ansprechpartner |
 | Profilseite, VIN-PreFill, Leasing-Rechner, Deal-Chat, Statistiken | ✓ | ✓ | ✓ |
 
@@ -126,14 +126,19 @@ umgekehrte Verteilung von vorher.
 enthält Premium im Wert von CHF 180/Mt bei CHF 349 Paketpreis, Pro CHF 450 bei
 CHF 599. Das ist die Zahl, die den Upgrade rechtfertigt.
 
-**Starter hat jetzt einen sichtbaren Grund zum Upgraden.** Zwei Dinge fehlen
-ihm explizit (Website-Tools, Inventar-Upload) — mit grauem X auf der Karte,
-genau wie beim privaten Standard-Plan. Vorher gab es für eine 12-Auto-Garage
-keinen einzigen Grund, je zu Growth zu wechseln.
+**Jede Stufe hat einen sichtbaren Grund zum Upgraden.** Starter fehlen zwei
+Dinge explizit (Website-Tools, persönliches Onboarding), Growth eines
+(persönliches Onboarding) — mit grauem X auf der Karte, genau wie beim privaten
+Standard-Plan. Vorher gab es für eine 12-Auto-Garage keinen einzigen Grund, je
+zu Growth zu wechseln.
 
-**Pro wird zum Anker.** 150 Inserate, 400 Bewertungen, persönlicher
-Ansprechpartner — und liegt damit immer noch bei einem Drittel dessen, was AS24
-für vergleichbares Volumen verlangt.
+**Pro wird zum Anker — und bekommt eine eigene Fähigkeit.** Das
+personalisierte Onboarding (wir richten die Garage ein und laden den Bestand
+hoch) liegt ausschliesslich in Pro. Vorher unterschied sich Pro von Growth nur
+durch Stückzahlen und Support-Level; jetzt gibt es einen Grund zum Upgrade, der
+nicht "mehr vom Gleichen" heisst. Gleichzeitig ist die Menschenarbeit damit auf
+das eine Paket begrenzt, dessen Preis sie deckt. Pro liegt trotzdem noch bei
+rund einem Drittel dessen, was AS24 für vergleichbares Volumen verlangt.
 
 **Was ich bewusst *nicht* gemacht habe:** keine Statistiken oder Kernfunktionen
 aus Starter herausgenommen. Ein kastriertes Einstiegspaket verkauft schlechter

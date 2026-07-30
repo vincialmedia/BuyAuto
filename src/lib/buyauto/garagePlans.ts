@@ -70,7 +70,7 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     ],
     notIncluded: [
       "Keine Website-Tools (Inventar- & Rechner-Widget)",
-      "Kein Inventar-Upload-Service",
+      "Kein persönliches Onboarding",
     ],
   },
   growth: {
@@ -82,17 +82,16 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     premiumPerMonth: 6,
     valuationsPerMonth: 100,
     websiteTools: true,
-    onboardingVehicles: 60,
+    onboardingVehicles: null,
     supportLevel: "Priorisierter Support",
     popular: true,
     cta: "Growth wählen",
     highlights: [
       "Website-Tools: Inventar- & Eintauschwert-Widget auf deiner eigenen Seite",
-      "Wir laden deinen Bestand hoch (bis 60 Fahrzeuge)",
       "100 Eintauschwert-Bewertungen / Monat",
       "Priorisierter Support",
     ],
-    notIncluded: [],
+    notIncluded: ["Kein persönliches Onboarding"],
   },
   pro: {
     code: "pro",
@@ -107,8 +106,8 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     supportLevel: "Persönlicher Ansprechpartner",
     cta: "Pro wählen",
     highlights: [
+      "Personalisiertes Onboarding: wir richten dich ein und laden deinen Bestand hoch",
       "400 Eintauschwert-Bewertungen / Monat – praktisch unbegrenzt",
-      "Wir laden deinen Bestand hoch (bis 150 Fahrzeuge), priorisiert",
       "Persönlicher Ansprechpartner statt Ticket-Queue",
     ],
     notIncluded: [],
@@ -210,7 +209,7 @@ export const GARAGE_TRUST_POINTS: { title: string; body: string }[] = [
   },
   {
     title: "Keine Setup-Gebühr",
-    body: "Onboarding und Inventar-Upload sind im Paket, nicht als Extra-Rechnung.",
+    body: "Du zahlst den Paketpreis – keine Einrichtungs- oder Freischaltgebühr obendrauf.",
   },
   {
     title: "Fixpreis statt Fahrzeugwert",
@@ -281,13 +280,13 @@ export const GARAGE_COMPARISON_ROWS: GarageComparisonRow[] = [
   },
   {
     key: "onboarding",
-    label: "Inventar-Upload durch uns",
+    label: "Personalisiertes Onboarding & Inventar-Upload",
     tooltip:
-      "Du schickst uns deine Liste oder deinen bestehenden Börsen-Export, wir stellen deinen Bestand ein.",
+      "Wir richten deine Garage gemeinsam mit dir ein: du schickst uns deine Liste oder deinen bestehenden Börsen-Export, wir stellen deinen Bestand ein.",
     values: {
       starter: false,
-      growth: `bis ${GARAGE_PLANS.growth.onboardingVehicles} Fahrzeuge`,
-      pro: `bis ${GARAGE_PLANS.pro.onboardingVehicles}, priorisiert`,
+      growth: false,
+      pro: `bis ${GARAGE_PLANS.pro.onboardingVehicles} Fahrzeuge`,
     },
   },
   {
