@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, planIncludesPremium, type Plan } from "@/lib/buyauto/stripe_config";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing } from "@/services/createListingService";
 import type { PricePlanId } from "@/lib/buyauto/types";
@@ -31,7 +31,10 @@ export default function Step3_PlanSelection() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(((data as any).price_plan as Plan) || "standard");
+  // Verlängert is the default: pre-selection is the strongest single
+  // conversion lever (default effect), and the /preise page already leads
+  // with it. A draft that stored a plan keeps the user's choice.
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(((data as any).price_plan as Plan) || "extended");
   const [isPremium, setIsPremium] = useState<boolean>(Boolean((data as any).premium) || false);
 
   // Preselected CHF 1 donation: a fresh wizard (no stored choice yet) starts
@@ -194,7 +197,14 @@ export default function Step3_PlanSelection() {
               >
                 <CardHeader>
                   <CardTitle>{pricingPlans[planKey].name}</CardTitle>
-                  <CardDescription className="text-2xl font-bold">CHF {pricingPlans[planKey].price}</CardDescription>
+                  <CardDescription className="text-2xl font-bold">
+                    CHF {pricingPlans[planKey].price}
+                    {isExtended && (
+                      <span className="block text-xs font-normal text-neutral-500 mt-1">
+                        Premium im Wert von CHF {PREMIUM_BOOST_PRICE} inklusive · weniger als 60 Rappen pro Tag
+                      </span>
+                    )}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm text-neutral-600">
@@ -204,6 +214,12 @@ export default function Step3_PlanSelection() {
                         {feature}
                       </li>
                     ))}
+                    {planKey === "standard" && (
+                      <li key="no-premium" className="flex items-center text-neutral-400">
+                        <X className="mr-2 h-4 w-4" />
+                        Keine Premium-Platzierung
+                      </li>
+                    )}
                   </ul>
                 </CardContent>
               </Card>
@@ -248,6 +264,28 @@ export default function Step3_PlanSelection() {
             )}
           </div>
         </div>
+
+        {/* Decoy nudge: someone paying CHF 30 for 30 boosted days on Standard
+            is CHF 20 away from 90 days with premium the whole runtime. */}
+        {selectedPlan === "standard" && isPremium && (
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+            <p className="text-sm text-emerald-900">
+              Tipp: Für nur <strong>CHF {pricingPlans.extended.price - calculateTotal("standard", true)} mehr</strong>{" "}
+              erhältst du <strong>Verlängert</strong> – 90 Tage Laufzeit und Premium während der ganzen Laufzeit
+              statt 30 Tage.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-2xl border-emerald-300 text-emerald-800 hover:bg-emerald-100 shrink-0"
+              onClick={() => setSelectedPlan("extended")}
+              disabled={isLoading}
+            >
+              Zu Verlängert wechseln
+            </Button>
+          </div>
+        )}
       </Card>
 
       <Card className="p-6 rounded-3xl bg-neutral-50/60 border border-neutral-200/60">

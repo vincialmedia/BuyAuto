@@ -209,8 +209,37 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           break;
         }
 
-        const durationDays = typeof listing.duration_days === "number" ? listing.duration_days : 60;
         const nowIso = new Date().toISOString();
+        const upgradeToExtended = safeString(metadata.relist_plan) === "extended";
+
+        if (upgradeToExtended) {
+          // Paid relist-upsell: the listing becomes Verlängert — 90 days with
+          // premium for the whole runtime. Service role, so the premium- and
+          // status-authority triggers permit the writes.
+          const expiresAt = addDaysIso(nowIso, 90);
+          const { error: upgradeError } = await supabaseAdmin
+            .from("listings")
+            .update({
+              status: "published",
+              price_plan: "extended",
+              pricing_plan: "extended",
+              duration_days: 90,
+              expires_at: expiresAt,
+              premium: true,
+              is_premium: true,
+              premium_until: expiresAt,
+              updated_at: nowIso,
+            })
+            .eq("id", listingId);
+
+          if (upgradeError) {
+            console.error("Webhook: Failed to relist listing as extended", { listingId, upgradeError });
+          }
+
+          break;
+        }
+
+        const durationDays = typeof listing.duration_days === "number" ? listing.duration_days : 60;
 
         const { error: relistError } = await supabaseAdmin
           .from("listings")

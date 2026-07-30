@@ -335,15 +335,17 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     }
   }, [loadUserListings]);
 
-  // Expired listings go live again through the relist flow: free while the
-  // promo runs (instant republish), otherwise via the CHF 30 checkout.
-  const handleRelist = useCallback(async (listingId: string) => {
+  // Expired listings go live again through the relist flow: the CHF 30
+  // checkout keeps the current plan, the upgrade variant relists as
+  // Verlängert (90 days + premium). During a promo it's a free instant
+  // republish instead.
+  const handleRelist = useCallback(async (listingId: string, upgrade = false) => {
     setActionLoading(listingId);
     try {
       const res = await fetch("/api/billing/relist/prepare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listing_id: listingId }),
+        body: JSON.stringify({ listing_id: listingId, upgrade }),
       });
 
       const json = (await res.json()) as { url?: string; next?: string; error?: string };
@@ -679,23 +681,37 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                           </Button>
 
                           {isExpiredListing && (
-                            <Button
-                              size="sm"
-                              className="rounded-2xl bg-red-500 hover:bg-red-600 text-white"
-                              onClick={() => handleRelist(listing.id)}
-                              disabled={actionLoading === listing.id}
-                            >
-                              <RefreshCw className="w-4 h-4 mr-2" />
-                              {RELIST_PROMO_ACTIVE ? (
-                                <>
-                                  Wieder veröffentlichen –{" "}
-                                  <s className="opacity-70">CHF {RELIST_PRICE_CHF}</s>
-                                  <span className="ml-1 font-bold">Gratis</span>
-                                </>
-                              ) : (
-                                <>Wieder veröffentlichen – CHF {RELIST_PRICE_CHF}</>
+                            <div className="flex flex-col items-stretch gap-2">
+                              <Button
+                                size="sm"
+                                className="rounded-2xl bg-red-500 hover:bg-red-600 text-white"
+                                onClick={() => handleRelist(listing.id)}
+                                disabled={actionLoading === listing.id}
+                              >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                {RELIST_PROMO_ACTIVE ? (
+                                  <>
+                                    Wieder veröffentlichen –{" "}
+                                    <s className="opacity-70">CHF {RELIST_PRICE_CHF}</s>
+                                    <span className="ml-1 font-bold">Gratis</span>
+                                  </>
+                                ) : (
+                                  <>Wieder veröffentlichen – CHF {RELIST_PRICE_CHF}</>
+                                )}
+                              </Button>
+                              {!RELIST_PROMO_ACTIVE && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="rounded-2xl border-emerald-300 text-emerald-800 hover:bg-emerald-50"
+                                  onClick={() => handleRelist(listing.id, true)}
+                                  disabled={actionLoading === listing.id}
+                                >
+                                  <Crown className="w-4 h-4 mr-2 text-amber-500" />
+                                  Verlängert – CHF 50 · 90 Tage + Premium
+                                </Button>
                               )}
-                            </Button>
+                            </div>
                           )}
 
                           {!archived && (listing.status as any) !== "sold" && (

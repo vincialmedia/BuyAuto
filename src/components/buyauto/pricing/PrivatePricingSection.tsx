@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -93,6 +93,12 @@ export function PrivatePricingSection() {
                           ? `${pricingPlans[planKey].duration_days} Tage`
                           : "Unlimitiert"}
                       </p>
+                      {planKey === "extended" && (
+                        <p className="mt-1 text-xs text-neutral-500">
+                          Premium im Wert von CHF {PREMIUM_BOOST_PRICE} inklusive ·
+                          weniger als 60 Rappen pro Tag
+                        </p>
+                      )}
                     </div>
 
                     <div className="text-right">
@@ -114,20 +120,26 @@ export function PrivatePricingSection() {
                       </div>
                     ))}
                     {planKey === "standard" && (
-                      <div className="flex items-start gap-2 text-sm text-neutral-700">
-                        <Check className="mt-0.5 h-4 w-4 text-primary flex-shrink-0" />
-                        <span>
-                          Nach Ablauf: Wiedereinstellen{" "}
-                          {RELIST_PROMO_ACTIVE ? (
-                            <>
-                              <s className="text-neutral-400">CHF {RELIST_PRICE_CHF}</s>{" "}
-                              <span className="font-semibold text-emerald-700">zurzeit gratis</span>
-                            </>
-                          ) : (
-                            <>für CHF {RELIST_PRICE_CHF}</>
-                          )}
-                        </span>
-                      </div>
+                      <>
+                        <div className="flex items-start gap-2 text-sm text-neutral-400">
+                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          <span>Keine Premium-Platzierung</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm text-neutral-400">
+                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          <span>
+                            Nach Ablauf: Wiedereinstellen{" "}
+                            {RELIST_PROMO_ACTIVE ? (
+                              <>
+                                <s>CHF {RELIST_PRICE_CHF}</s>{" "}
+                                <span className="font-semibold text-emerald-700">zurzeit gratis</span>
+                              </>
+                            ) : (
+                              <>für CHF {RELIST_PRICE_CHF}</>
+                            )}
+                          </span>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>

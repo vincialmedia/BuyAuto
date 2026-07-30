@@ -15,12 +15,13 @@ export const PREMIUM_BOOST_PRICE = 30;
 export const RELIST_PRICE_CHF = 30;
 
 /**
- * Launch promo: relisting is free for everyone right now. The UI shows the
- * regular price struck through ("CHF 30" -> gratis) and the relist endpoint
- * republishes directly instead of opening a Stripe checkout. Flip to false to
- * end the promo — the paid flow underneath stays fully wired.
+ * Relist promo switch. While true, the UI shows the regular price struck
+ * through ("CHF 30" -> gratis) and the relist endpoint republishes directly
+ * instead of opening a Stripe checkout. Currently off — relisting costs
+ * RELIST_PRICE_CHF, or sellers can relist as Verlängert for the plan price
+ * (90 days + premium included).
  */
-export const RELIST_PROMO_ACTIVE = true;
+export const RELIST_PROMO_ACTIVE = false;
 
 export type Plan = keyof typeof pricingPlans;
 

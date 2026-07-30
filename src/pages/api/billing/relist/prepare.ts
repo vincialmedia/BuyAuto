@@ -3,16 +3,20 @@ import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { stripe } from "@/lib/stripe-server";
-import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE } from "@/lib/buyauto/stripe_config";
+import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE, pricingPlans } from "@/lib/buyauto/stripe_config";
 
 /**
  * Relists an expired listing.
  *
- * Regular mode: creates the CHF 30 Stripe checkout; the webhook
- * (checkout.session.completed, kind 'listing_relist') republishes after
- * payment. Promo mode (RELIST_PROMO_ACTIVE): republishes directly — ownership
- * and the expired-status guard still apply, and the republish itself runs with
- * the service role because the status-authority trigger blocks owners setting
+ * Two paid variants, fulfilled by the webhook (checkout.session.completed,
+ * kind 'listing_relist'):
+ *  - standard relist: CHF 30, listing keeps its plan and runtime
+ *  - upgrade relist:  CHF 50, listing becomes Verlängert — 90 days + premium
+ *    for the whole runtime (the expired-listing upsell)
+ *
+ * Promo mode (RELIST_PROMO_ACTIVE): republishes directly and free — ownership
+ * and the expired-status guard still apply, and the republish runs with the
+ * service role because the status-authority trigger blocks owners setting
  * 'published' on a private listing themselves.
  */
 
@@ -23,6 +27,8 @@ type ListingRow = Pick<
 
 type PrepareBody = {
   listing_id?: string;
+  /** true = relist as Verlängert (90 days + premium) for the plan price. */
+  upgrade?: boolean;
 };
 
 function safeString(input: unknown): string | null {
@@ -104,6 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const body = (req.body ?? {}) as PrepareBody;
     const listingId = safeString(body.listing_id);
+    const upgrade = body.upgrade === true;
 
     if (!listingId) {
       return res.status(400).json({ error: "Missing required field: listing_id" });
@@ -146,6 +153,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const origin = getRequestOrigin(req);
     const vehicle = [listing.brand, listing.model].filter(Boolean).join(" ") || "Inserat";
 
+    const amountChf = upgrade ? pricingPlans.extended.price : RELIST_PRICE_CHF;
+    const productName = upgrade
+      ? "Wieder veröffentlichen als Verlängert"
+      : "Inserat wieder veröffentlichen";
+    const productDescription = upgrade
+      ? `${vehicle} – 90 Tage Laufzeit, Premium-Platzierung inklusive.`
+      : `${vehicle} – erneute Veröffentlichung nach Ablauf.`;
+
     const sessionCheckout = await stripe.checkout.sessions.create({
       mode: "payment",
       success_url: `${origin}/dashboard?relist=success&listingId=${encodeURIComponent(listingId)}`,
@@ -154,10 +169,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         {
           price_data: {
             currency: "chf",
-            unit_amount: RELIST_PRICE_CHF * 100,
+            unit_amount: amountChf * 100,
             product_data: {
-              name: "Inserat wieder veröffentlichen",
-              description: `${vehicle} – erneute Veröffentlichung nach Ablauf.`,
+              name: productName,
+              description: productDescription,
             },
           },
           quantity: 1,
@@ -167,6 +182,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         kind: "listing_relist",
         listing_id: listingId,
         user_id: session.user.id,
+        relist_plan: upgrade ? "extended" : "keep",
       },
       customer_email: session.user.email ?? undefined,
       allow_promotion_codes: false,
