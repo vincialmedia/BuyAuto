@@ -6,8 +6,17 @@ html,
 body {
   color: rgb(10, 10, 10);
   background: rgb(255, 255, 255);
-  /* clip (not hidden): suppresses horizontal overflow without creating a
-     scroll container, so position:sticky descendants keep working. */
+}
+
+/* clip (not hidden): suppresses horizontal overflow without creating a
+   scroll container, so position:sticky descendants keep working.
+   On body ONLY — html must keep overflow:visible so body's overflow
+   propagates to the viewport. With clip on html, the overflow:hidden that
+   Radix/react-remove-scroll puts on body while a dropdown/dialog is open
+   applied to body itself, turning body into a scroll container and
+   un-sticking the header (it jumped to the document top when the account
+   menu was opened on a scrolled page). */
+body {
   overflow-x: clip;
 }
 
