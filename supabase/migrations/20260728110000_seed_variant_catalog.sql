@@ -307,7 +307,7 @@ with g(make, models, variants) as (values
     ('Citroën',array['Ami'],array['5.5 kWh']),
     ('Cupra',array['Ateca'],array['2.0 TSI 4Drive']),
     ('Cupra',array['Léon'],array['1.5 TSI','2.0 TSI','1.4 eHybrid']),
-    ('Cupra',array['Formentor'],array['1.5 TSI','2.0 TSI','2.0 TSI 4Drive','2.5 TSI','2.0 TDI','1.4 eHybrid']),
+    ('Cupra',array['Formentor'],array['1.5 TSI','2.0 TSI','2.0 TSI 4Drive','VZ5','2.0 TDI','1.4 eHybrid']),
     ('Cupra',array['Terramar','Terraman'],array['1.5 TSI','2.0 TSI 4Drive','1.5 eHybrid']),
     ('Cupra',array['Born'],array['58 kWh','77 kWh']),
     ('Cupra',array['Tavascan'],array['77 kWh','77 kWh 4Drive']),
@@ -1925,4 +1925,3 @@ where mo.make_id = mk.id
   and mo.normalized_name = public.normalize_vehicle_name(m.from_name);
 
 commit;
--- 4579 variant rows from 1052 groups, 51 new models, 417 remaps, 73 merges, 3 renames, 65 make files

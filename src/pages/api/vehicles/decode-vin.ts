@@ -1338,9 +1338,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const first_registration = normalizeFirstRegistration(extracted.rawFirstRegistration);
 
-    const providerMakeRaw = extracted.providerMake;
-    const providerModel = extracted.providerModel;
+    let providerMakeRaw = extracted.providerMake;
+    let providerModel = extracted.providerModel;
     let providerTrim = extracted.providerTrim;
+
+    // The VIN outranks the provider label where the two can disagree. Cupra
+    // models carry Seat's VSS world-manufacturer code, and the provider's
+    // record can be wrong outright — a Formentor VZ5 decodes as "Seat Ateca"
+    // (their own wheelbase/length figures match the Formentor). Positions 7-8
+    // of a Martorell VIN name the platform, and these codes belong to
+    // Cupra-only models, so they are safe to force. Codes shared across both
+    // brands (Leon "KL", Ateca "5F") must stay out of this table.
+    const VSS_CUPRA_TYP: Record<string, string> = { KM: "Formentor", K1: "Born" };
+    let makeModelOverriddenFromVin = false;
+    {
+      const wmi = vin.slice(0, 3).toUpperCase();
+      const typ = vin.slice(6, 8).toUpperCase();
+      const overrideModel = wmi === "VSS" ? VSS_CUPRA_TYP[typ] : undefined;
+      const providerMakeKey = providerMakeRaw ? normalizeVehicleKey(providerMakeRaw) : "";
+      if (overrideModel && (providerMakeKey === "" || providerMakeKey === "seat" || providerMakeKey === "cupra")) {
+        const alreadyRight =
+          providerMakeKey === "cupra" &&
+          normalizeVehicleKey(providerModel ?? "") === normalizeVehicleKey(overrideModel);
+        providerMakeRaw = "Cupra";
+        providerModel = overrideModel;
+        if (!alreadyRight) makeModelOverriddenFromVin = true;
+      }
+    }
 
     const makeCanon = providerMakeRaw ? canonicalizeMakeText(providerMakeRaw) : null;
     const providerMake = makeCanon?.canonicalName ?? providerMakeRaw;
@@ -1358,6 +1382,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let variant_text: string | null = null;
     let catalog_confidence: CatalogConfidence = "high";
     let catalog_needs_review = false;
+
+    if (makeModelOverriddenFromVin) {
+      catalog_confidence = "medium";
+      catalog_needs_review = true;
+    }
 
     let modelFamilyName: string | null =
       typeof providerModelForResolve === "string" && providerModelForResolve.trim().length > 0 ? providerModelForResolve.trim() : null;
@@ -1537,6 +1566,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             catalog_needs_review = true;
             if (catalog_confidence === "high") catalog_confidence = "medium";
           }
+        }
+      }
+
+      // Model-implies-make. Brand splits (Seat/Cupra, Fiat/Abarth,
+      // Dodge/RAM) make providers label a car with the group's legacy make
+      // while the model only exists under the split-off brand. When the
+      // model name matches exactly ONE other make's catalog row, the model
+      // wins over the provider's make label — flagged for review, since the
+      // provider and the catalog disagree.
+      if (!model_id && modelKey.length >= 2) {
+        const { data: crossRows } = await supabaseAdmin
+          .from("models")
+          .select("id,make_id,is_active")
+          .eq("normalized_name", modelKey);
+
+        const candidates = (crossRows ?? []).filter(
+          (m) => m.is_active !== false && typeof m.make_id === "string" && m.make_id !== make_id
+        );
+        const otherMakes = [...new Set(candidates.map((m) => m.make_id as string))];
+
+        if (otherMakes.length === 1) {
+          make_id = otherMakes[0];
+          model_id = candidates[0].id as string;
+          catalog_needs_review = true;
+          if (catalog_confidence === "high") catalog_confidence = "medium";
         }
       }
 
