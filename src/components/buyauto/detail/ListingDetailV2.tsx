@@ -97,7 +97,6 @@ export function ListingDetailV2({
   garage,
   teaserMonthlyLabel,
   purchasePriceChf,
-  onInquiry,
   childrenBelowFold,
   bottomContent,
 }: {
@@ -107,7 +106,6 @@ export function ListingDetailV2({
   garage: GaragePublicInfo | null;
   teaserMonthlyLabel: string | null;
   purchasePriceChf: number | null;
-  onInquiry: () => void;
   childrenBelowFold?: React.ReactNode;
   bottomContent?: React.ReactNode;
 }) {
