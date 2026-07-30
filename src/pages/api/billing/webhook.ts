@@ -243,6 +243,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           if (upgradeError) {
             console.error("Webhook: Failed to relist listing as extended", { listingId, upgradeError });
             fulfillmentError = true;
+          } else {
+            // Reset the expiry-reminder dedupe for the new runtime: the unique
+            // key is (kind, entity, recipient), so last cycle's rows would
+            // suppress every reminder before the next expiry.
+            await supabaseAdmin
+              .from("email_notification_log")
+              .delete()
+              .eq("kind", "listing_expiry_reminder")
+              .eq("entity_id", listingId);
           }
 
           break;
@@ -272,6 +281,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         if (relistError) {
           console.error("Webhook: Failed to republish listing after relist payment", { listingId, relistError });
           fulfillmentError = true;
+        } else {
+          // Same dedupe reset as the upgrade path above.
+          await supabaseAdmin
+            .from("email_notification_log")
+            .delete()
+            .eq("kind", "listing_expiry_reminder")
+            .eq("entity_id", listingId);
         }
 
         break;

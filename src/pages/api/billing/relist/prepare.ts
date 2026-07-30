@@ -136,9 +136,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const nowIso = new Date().toISOString();
       const expiresAt = new Date(Date.parse(nowIso) + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
+      // Verlängert includes premium for the whole runtime — the free promo
+      // relist must restore it exactly like the paid relist path does, or the
+      // promo would silently strip a plan perk the seller already paid for.
+      const promoUpdate: Record<string, unknown> = { status: "published", expires_at: expiresAt, updated_at: nowIso };
+      if (listing.price_plan === "extended") {
+        promoUpdate.premium = true;
+        promoUpdate.is_premium = true;
+        promoUpdate.premium_until = expiresAt;
+      }
+
       const { error: relistError } = await supabaseAdmin
         .from("listings")
-        .update({ status: "published", expires_at: expiresAt, updated_at: nowIso })
+        .update(promoUpdate)
         .eq("id", listingId)
         // Re-checked at write time so a concurrent relist can't double-apply.
         .eq("status", "expired");
@@ -147,6 +157,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error("relist.prepare: promo republish error", relistError);
         return res.status(500).json({ error: "Wiederveröffentlichung fehlgeschlagen. Bitte versuche es erneut." });
       }
+
+      // Reset the expiry-reminder dedupe for the new runtime (see the webhook
+      // relist branch): last cycle's log rows would suppress all reminders
+      // before the next expiry.
+      await supabaseAdmin
+        .from("email_notification_log")
+        .delete()
+        .eq("kind", "listing_expiry_reminder")
+        .eq("entity_id", listingId);
 
       return res.status(200).json({ next: "relisted", listing_id: listingId });
     }

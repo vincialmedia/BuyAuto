@@ -464,10 +464,15 @@ export function DirectPurchaseFinancingDetails() {
   // validation nor publish a leasing offer.
   useEffect(() => {
     if (profileLoading || isGarage) return;
+    // A signed-in user with no resolved profile (fetch failed, still settling)
+    // must not be treated as non-garage: stripping here plus the autosave that
+    // follows would silently destroy a garage listing's leasing offer. Guests
+    // have no garage role in this session, so stripping is safe for them.
+    if (user && !profile) return;
     if (getValues("leasing_enabled")) {
       setValue("leasing_enabled", false, { shouldValidate: false });
     }
-  }, [getValues, isGarage, profileLoading, setValue]);
+  }, [getValues, isGarage, profile, profileLoading, setValue, user]);
 
   useEffect(() => {
     if (leaseTakeoverEnabled) return;

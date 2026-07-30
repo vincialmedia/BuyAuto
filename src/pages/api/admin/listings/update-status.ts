@@ -77,13 +77,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const oldStatus = existing?.status ?? null;
   const archivedAt = status === "archived" ? new Date().toISOString() : null;
 
+  const updatePayload: Record<string, unknown> = {
+    status: status as any,
+    moderation_note: moderationNote,
+    archived_at: archivedAt,
+  };
+
+  // Republishing an expired listing with its old, already-passed expires_at
+  // would silently fail: the public views keep hiding it and the hourly sweep
+  // flips it straight back to 'expired'. Clearing the stamp lets the publish
+  // triggers anchor a fresh window from duration_days.
+  if (status === "published" && oldStatus === "expired") {
+    updatePayload.expires_at = null;
+  }
+
   const { data, error } = await supabaseAdmin
     .from("listings")
-    .update({
-      status: status as any,
-      moderation_note: moderationNote,
-      archived_at: archivedAt,
-    } as any)
+    .update(updatePayload as any)
     .eq("id", listingId)
     .select()
     .single();

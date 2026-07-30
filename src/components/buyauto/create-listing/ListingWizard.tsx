@@ -9,7 +9,7 @@ import Step1_VehicleData from "./Step1_VehicleData";
 import Step2_LeasingDetails from "./Step2_LeasingDetails";
 import type { DealType, ListingData } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
+import { checkOwnedListingExists, getListingByIdForOwner, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, getListingDraftById, getMyListingDrafts, updateListingDraft } from "@/services/listingDraftService";
 import {
   clearGuestImages,
@@ -193,7 +193,14 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     title: listing?.title ?? (prev as any)?.title,
 
     price_plan: (listing?.price_plan ?? prev.price_plan) as any,
-    premium: typeof listing?.premium === "boolean" ? listing.premium : prev.premium,
+    // listings.price_plan is only ever written by Step 3's submit (it has no
+    // DB default), so a non-null value is a genuine user choice — mark it as
+    // such so Step 3 doesn't replace it with the Verlängert default.
+    ...(listing?.price_plan ? { plan_choice_v2: true } : {}),
+    // The row's premium is server state, not the seller's boost choice: the
+    // premium-authority trigger keeps it false until the webhook grants it, so
+    // taking it here would wipe the boost choice saved in the wizard draft.
+    premium: typeof prev.premium === "boolean" ? prev.premium : Boolean(listing?.premium),
 
     images: Array.isArray(listing?.images) ? (listing.images as string[]) : prev.images,
     cover_image_index: toNumberOrNull(listing?.cover_image_index) ?? prev.cover_image_index,
@@ -435,6 +442,15 @@ export default function ListingWizard() {
                   const listing = await getListingByIdForOwner(draftListingId, user);
                   if (listing) {
                     setData((prev) => ({ ...prev, ...toWizardPatchFromListing(listing, prev) }));
+                  } else {
+                    // The linked listing may be gone for good (e.g. hard-deleted
+                    // by the draft sweep). Only when its absence is confirmed —
+                    // not on a failed check — drop the stale id, so the next
+                    // submit creates a fresh row instead of updating a ghost.
+                    const exists = await checkOwnedListingExists(draftListingId, user);
+                    if (exists === false) {
+                      setData((prev) => ({ ...prev, id: undefined }));
+                    }
                   }
                 } catch (e) {
                   console.warn("Could not refresh listing while loading draft:", e);
