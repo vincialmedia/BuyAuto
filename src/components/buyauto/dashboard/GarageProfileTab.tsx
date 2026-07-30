@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Camera, Loader2, Building2, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Camera, Loader2, Building2, ExternalLink, Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { uploadGarageLogo, uploadGarageHeaderImage, uploadGarageTeamMemberPhoto } from "@/services/storageService";
 import { generateSlugFromName, type Garage, type TeamMember } from "@/services/garageService";
 import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
+import { useDealerPlan } from "@/hooks/use-dealer-plan";
+import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
 
 interface GarageProfileTabProps {
   garage: Garage | null;
@@ -181,6 +184,12 @@ export function GarageProfileTab({
   const canSaveProfile =
     (profileDraft.contact_email.trim().length === 0 || profileDraft.contact_email.includes("@")) &&
     isValidWebsiteUrl(profileDraft.website_url);
+
+  // Website-Tools (inventory widget for the garage's own site) are a Growth+
+  // fence. While the plan is still resolving we hide the snippet rather than
+  // flash it and take it away again.
+  const { plan: dealerPlan, resolved: planResolved } = useDealerPlan(garage);
+  const hasWebsiteTools = planResolved && Boolean(dealerPlan?.websiteTools);
 
   const dealerSlug = garage?.slug?.trim() ?? "";
   const publicProfileUrl = dealerSlug ? `${shareOrigin}/${dealerSlug}` : "";
@@ -855,25 +864,48 @@ export function GarageProfileTab({
               <div className="text-sm text-neutral-700 break-all">{publicProfileUrl}</div>
             </div>
 
-            <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-neutral-900">White-Label Embed (auto Höhe)</div>
-                <Button
-                  variant="outline"
-                  className="rounded-2xl"
-                  onClick={() => void handleCopyEmbed()}
-                  disabled={copyingEmbed}
-                >
-                  {copyingEmbed ? "Kopiere…" : "Code kopieren"}
-                </Button>
+            {hasWebsiteTools ? (
+              <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-neutral-900">White-Label Embed (auto Höhe)</div>
+                  <Button
+                    variant="outline"
+                    className="rounded-2xl"
+                    onClick={() => void handleCopyEmbed()}
+                    disabled={copyingEmbed}
+                  >
+                    {copyingEmbed ? "Kopiere…" : "Code kopieren"}
+                  </Button>
+                </div>
+                <div className="text-xs text-neutral-600">
+                  Tipp: Sie können Standard-Filter via URL setzen, z.B. <span className="font-mono">{embedUrl}?saleType=leasing</span>
+                </div>
+                <pre className="max-h-[260px] overflow-auto rounded-2xl border border-neutral-200/60 bg-white p-3 text-xs text-neutral-800 whitespace-pre-wrap break-words">
+                  {embedSnippet}
+                </pre>
               </div>
-              <div className="text-xs text-neutral-600">
-                Tipp: Sie können Standard-Filter via URL setzen, z.B. <span className="font-mono">{embedUrl}?saleType=leasing</span>
+            ) : (
+              <div className="rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4">
+                <div className="flex items-start gap-3">
+                  <Lock className="h-4 w-4 text-amber-700 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-amber-900">
+                      Website-Tools ab {GARAGE_PLANS.growth.name}
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
+                      Mit {GARAGE_PLANS.growth.name} binden Sie Ihr Inventar und den
+                      Eintauschwert-Rechner als Widget direkt auf Ihrer eigenen Website ein –
+                      ein Snippet einfügen, fertig.
+                    </p>
+                    <Button asChild className="mt-3 rounded-2xl" size="sm">
+                      <Link href="/garage-plan?redirect=/dashboard/garage">
+                        Paket ansehen
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <pre className="max-h-[260px] overflow-auto rounded-2xl border border-neutral-200/60 bg-white p-3 text-xs text-neutral-800 whitespace-pre-wrap break-words">
-                {embedSnippet}
-              </pre>
-            </div>
+            )}
           </div>
         ) : (
           <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 text-sm text-neutral-700">
