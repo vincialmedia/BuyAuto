@@ -118,11 +118,25 @@ export default function PrivateDashboardPage({
 
       <DashboardLayout hideSidebar leftRail={<MessageCenterRail />}>
         <div className="space-y-8" id="dashboard-content">
+          {/*
+            Below lg the MessageCenterRail isn't rendered at all, so this button
+            is the only way into the messages — full width and clearly labelled
+            rather than a small icon chip. (It was sm:hidden before, which left
+            tablets between sm and lg with no entry point whatsoever.)
+          */}
+          <div className="lg:hidden">
+            <MessageCenterSheet
+              count={Math.max(0, messageCount)}
+              triggerVariant="outline"
+              triggerClassName="w-full h-14 rounded-2xl border-neutral-200/60 bg-white shadow-sm"
+            />
+          </div>
+
           {/* Upgrade Banner (hidden for admins — see canUpgradeToGarage) */}
           {canUpgradeToGarage ? (
             <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-neutral-50 flex items-center justify-center shadow-sm text-primary border border-neutral-200/60">
+                <div className="h-12 w-12 shrink-0 rounded-2xl bg-neutral-50 flex items-center justify-center shadow-sm text-primary border border-neutral-200/60">
                   <Building2 size={24} />
                 </div>
                 <div>
@@ -131,28 +145,16 @@ export default function PrivateDashboardPage({
                 </div>
               </div>
 
-              <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-3">
-                <div className="sm:hidden">
-                  <MessageCenterSheet
-                    count={Math.max(0, messageCount)}
-                    triggerVariant="outline"
-                    triggerClassName="rounded-2xl"
-                  />
-                </div>
-                <Button onClick={() => setShowUpgradeModal(true)} className="rounded-2xl">
+              <div className="flex w-full sm:w-auto items-center sm:justify-end">
+                <Button
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="w-full sm:w-auto h-12 rounded-2xl"
+                >
                   Zur Garage wechseln
                 </Button>
               </div>
             </div>
-          ) : (
-            <div className="sm:hidden">
-              <MessageCenterSheet
-                count={Math.max(0, messageCount)}
-                triggerVariant="outline"
-                triggerClassName="rounded-2xl"
-              />
-            </div>
-          )}
+          ) : null}
 
           <a id="uebersicht" className="scroll-mt-20"></a>
           <OverviewSection />
