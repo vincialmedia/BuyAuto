@@ -121,11 +121,11 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
             <h3 className="text-lg font-bold tracking-tight text-neutral-900">Aktueller Status</h3>
             <p className="text-sm text-neutral-600 mt-1">
               {entitlementLabel ? (
-                <>Sie nutzen aktuell den <span className="font-semibold">{entitlementLabel}</span>.</>
+                <>Du nutzt aktuell <span className="font-semibold">{entitlementLabel}</span>.</>
               ) : currentPlanId ? (
-                <>Sie nutzen aktuell den <span className="font-semibold capitalize">{currentPlanDetails?.name || currentPlanId}</span> Plan.</>
+                <>Du nutzt aktuell das Paket <span className="font-semibold capitalize">{currentPlanDetails?.name || currentPlanId}</span>.</>
               ) : (
-                "Sie haben noch keinen aktiven Plan ausgewählt."
+                "Du hast noch kein Paket gewählt."
               )}
             </p>
           </div>
@@ -179,9 +179,9 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
           </div>
         ) : (
           <div className="rounded-2xl bg-amber-50 border border-amber-200/60 p-6 text-center">
-            <h4 className="font-semibold text-amber-900 mb-2">Starten Sie jetzt durch</h4>
+            <h4 className="font-semibold text-amber-900 mb-2">Jetzt loslegen</h4>
             <p className="text-sm text-amber-800/80 mb-4 max-w-md mx-auto">
-              Wählen Sie eines unserer Pakete, um Inserate zu schalten und Ihre Garage professionell zu präsentieren.
+              Wähle ein Paket, um Inserate zu schalten und deine Garage professionell zu präsentieren.
             </p>
             <Button 
               className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl"
