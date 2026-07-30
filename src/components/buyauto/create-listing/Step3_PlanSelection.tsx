@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, planIncludesPremium, type Plan } from "@/lib/buyauto/stripe_config";
-import { Check, X } from "lucide-react";
+import { Check, Sparkles, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing } from "@/services/createListingService";
 import type { PricePlanId } from "@/lib/buyauto/types";
@@ -205,7 +205,8 @@ export default function Step3_PlanSelection() {
             <div key={planKey} className="relative">
               {isExtended && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                  <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                  <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                    <Sparkles className="h-3.5 w-3.5" />
                     Beliebt
                   </span>
                 </div>
@@ -213,8 +214,14 @@ export default function Step3_PlanSelection() {
               <Card
                 className={cn(
                   "cursor-pointer transition-all h-full rounded-3xl",
-                  selectedPlan === planKey ? "border-red-500 ring-2 ring-red-500" : "hover:border-neutral-400",
-                  isExtended && "border-red-200"
+                  // Verlängert carries the same golden halo as on /preise; its
+                  // selected state deepens the gold instead of switching to red.
+                  isExtended && "border-amber-300 ring-1 ring-amber-300/70 shadow-[0_0_40px_rgba(251,191,36,0.35)]",
+                  selectedPlan === planKey
+                    ? isExtended
+                      ? "border-amber-400 ring-2 ring-amber-400 shadow-[0_0_55px_rgba(251,191,36,0.5)]"
+                      : "border-red-500 ring-2 ring-red-500"
+                    : "hover:border-neutral-400"
                 )}
                 onClick={() => setSelectedPlan(planKey)}
               >
@@ -225,6 +232,11 @@ export default function Step3_PlanSelection() {
                     {isExtended && (
                       <span className="block text-xs font-normal text-neutral-500 mt-1">
                         Premium im Wert von CHF {PREMIUM_BOOST_PRICE} inklusive · weniger als 60 Rappen pro Tag
+                      </span>
+                    )}
+                    {planKey === "unlimited" && (
+                      <span className="block text-xs font-normal text-neutral-500 mt-1">
+                        Premium-Wert CHF {PREMIUM_BOOST_PRICE}/Monat dauerhaft inklusive
                       </span>
                     )}
                   </CardDescription>
