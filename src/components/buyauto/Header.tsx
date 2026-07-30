@@ -75,22 +75,15 @@ export default function Header() {
     }
   };
 
-  const handleDashboardClick = async (e: React.MouseEvent) => {
-    if (e.metaKey || e.ctrlKey) return;
-    
-    e.preventDefault();
-    if (isNavigating) return;
-
+  // No preventDefault/manual push here: the Link performs the client-side
+  // navigation itself, and a default-prevented click also stops Radix from
+  // closing the dropdown on select — the menu would survive the navigation
+  // and keep the new page scroll-locked and unclickable until dismissed.
+  const handleDashboardClick = (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey) return; // opening in a new tab — no overlay
     setIsMenuOpen(false); // Close mobile menu if open
-    
     if (router.asPath !== "/dashboard") {
       setIsNavigating(true);
-      try {
-        await router.push("/dashboard");
-      } catch (error) {
-        console.error("Navigation error:", error);
-        setIsNavigating(false);
-      }
     }
   };
 
