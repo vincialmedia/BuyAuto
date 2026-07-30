@@ -143,9 +143,10 @@ export default function Step3_PlanSelection() {
     try {
       const mappedPlan = planMapping[selectedPlan];
 
-      // premium is deliberately NOT written to the listing here: the
-      // premium-authority trigger rejects owners setting it, and the Stripe
-      // webhook grants it after payment. The choice lives in wizard state.
+      // Only the plan is persisted to the listing row. The Premium Boost choice
+      // lives in wizard/draft state until Step 5 sends it to /api/billing/prepare
+      // — persisting it here is what let sellers grant themselves premium for
+      // free, since RLS lets an owner write any column on their own listing.
       await createOrUpdateListing(
         {
           id: (data as any).id,

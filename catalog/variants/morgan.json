@@ -1,0 +1,14 @@
+{
+  "make": "Morgan",
+  "_note": "Morgan buys its engines in - Ford V6 for the older Roadster, BMW four- and six-cylinder for the current Plus range, BMW V8 for the Aero and Plus 8 - and the three-wheelers ran an S&S V-twin before switching to a Ford three-cylinder in the Super 3.",
+  "models": [],
+  "groups": [
+    { "models": ["3 wheeler"], "variants": ["2.0 V-Twin"] },
+    { "models": ["Super 3"], "variants": ["1.5 3-Cylinder"] },
+    { "models": ["4", "Plus 4"], "variants": ["2.0", "2.0 Turbo"] },
+    { "models": ["Plus 6", "Supersport", "Midsummer"], "variants": ["3.0 Turbo"] },
+    { "models": ["Plus 8"], "variants": ["4.8 V8"] },
+    { "models": ["Aero 8", "Aero Coupe", "Aero SuperSports"], "variants": ["4.8 V8"] },
+    { "models": ["Roadster"], "variants": ["3.0 V6", "3.7 V6"] }
+  ]
+}

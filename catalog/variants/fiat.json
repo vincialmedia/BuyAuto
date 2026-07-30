@@ -1,0 +1,305 @@
+{
+  "make": "Fiat",
+  "_note": "Fiat names petrol engines by displacement plus family (TwinAir, FireFly, MultiAir) and diesel as MultiJet. The 500 nameplate covers four separate cars in this catalog - 500, 500 Hybrid, New 500e and the 500L/500X - so each carries only what it was actually sold with rather than one merged list.",
+  "models": [],
+  "groups": [
+    {
+      "models": [
+        "500"
+      ],
+      "variants": [
+        "0.9 TwinAir",
+        "1.2",
+        "1.4",
+        "1.3 MultiJet",
+        "1.0 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Pandina"
+      ],
+      "variants": [
+        "1.0 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "New 500e"
+      ],
+      "variants": [
+        "24 kWh",
+        "42 kWh"
+      ]
+    },
+    {
+      "models": [
+        "500L"
+      ],
+      "variants": [
+        "0.9 TwinAir",
+        "1.4",
+        "1.3 MultiJet",
+        "1.6 MultiJet",
+        "1.4 T-Jet",
+        "1.6 E-Torq"
+      ]
+    },
+    {
+      "models": [
+        "500X"
+      ],
+      "variants": [
+        "1.0 FireFly",
+        "1.3 FireFly",
+        "1.4 MultiAir",
+        "1.6 MultiJet",
+        "2.0 MultiJet",
+        "1.6 E-Torq",
+        "1.3 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "600"
+      ],
+      "variants": [
+        "1.2 Hybrid",
+        "54 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Grande Panda"
+      ],
+      "variants": [
+        "1.2 Hybrid",
+        "44 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Panda"
+      ],
+      "variants": [
+        "0.9 TwinAir",
+        "1.2",
+        "1.3 MultiJet",
+        "1.0 Hybrid",
+        "1.1",
+        "1.4",
+        "0.9 Natural Power"
+      ]
+    },
+    {
+      "models": [
+        "Punto",
+        "Grande Punto",
+        "Punto Evo"
+      ],
+      "variants": [
+        "1.2",
+        "1.4",
+        "1.3 MultiJet",
+        "1.6 MultiJet",
+        "1.4 T-Jet",
+        "1.9 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Bravo"
+      ],
+      "variants": [
+        "1.4",
+        "1.6 MultiJet",
+        "2.0 MultiJet",
+        "1.4 T-Jet",
+        "1.9 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Croma"
+      ],
+      "variants": [
+        "1.8",
+        "1.9 MultiJet",
+        "2.4 MultiJet",
+        "2.2"
+      ]
+    },
+    {
+      "models": [
+        "Tipo",
+        "Egea"
+      ],
+      "variants": [
+        "1.0 FireFly",
+        "1.4",
+        "1.3 MultiJet",
+        "1.6 MultiJet",
+        "1.4 T-Jet"
+      ]
+    },
+    {
+      "models": [
+        "Linea"
+      ],
+      "variants": [
+        "1.4",
+        "1.3 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Idea"
+      ],
+      "variants": [
+        "1.4",
+        "1.3 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Multipla"
+      ],
+      "variants": [
+        "1.6",
+        "1.9 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Sedici"
+      ],
+      "variants": [
+        "1.6",
+        "2.0 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Palio Weekend"
+      ],
+      "variants": [
+        "1.4",
+        "1.6"
+      ]
+    },
+    {
+      "models": [
+        "Strada"
+      ],
+      "variants": [
+        "1.4",
+        "1.3 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Freemont"
+      ],
+      "variants": [
+        "2.0 MultiJet",
+        "2.4",
+        "3.6 V6"
+      ]
+    },
+    {
+      "models": [
+        "Fullback"
+      ],
+      "variants": [
+        "2.4 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "124 Spider"
+      ],
+      "variants": [
+        "1.4 MultiAir"
+      ]
+    },
+    {
+      "models": [
+        "Fiorino",
+        "Qubo"
+      ],
+      "variants": [
+        "1.4",
+        "1.3 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Doblò"
+      ],
+      "variants": [
+        "1.4",
+        "1.6 MultiJet",
+        "2.0 MultiJet",
+        "1.5 BlueHDi",
+        "50 kWh",
+        "1.3 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Scudo"
+      ],
+      "variants": [
+        "1.5 MultiJet",
+        "2.0 MultiJet",
+        "50 kWh",
+        "75 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Talento"
+      ],
+      "variants": [
+        "1.6 MultiJet",
+        "2.0 MultiJet"
+      ]
+    },
+    {
+      "models": [
+        "Ulysse"
+      ],
+      "variants": [
+        "2.0",
+        "2.0 MultiJet",
+        "75 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Ducato"
+      ],
+      "variants": [
+        "2.0 MultiJet",
+        "2.3 MultiJet",
+        "3.0 MultiJet",
+        "110 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Topolino"
+      ],
+      "variants": [
+        "5.5 kWh"
+      ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "500 Hybrid",
+      "model": "500",
+      "variant": "1.0 Hybrid"
+    }
+  ]
+}

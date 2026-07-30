@@ -1,0 +1,219 @@
+{
+  "make": "Škoda",
+  "_note": "Škoda uses the Volkswagen Group engine names (TSI/MPI petrol, TDI diesel) with 4x4 rather than 4MOTION for all-wheel drive, and iV for the plug-in hybrids and EVs. The G-TEC natural gas cars are listed under their TGI engine, because that is what the registration document says.",
+  "models": [],
+  "groups": [
+    {
+      "models": [
+        "Citigo"
+      ],
+      "variants": [
+        "1.0 MPI",
+        "36.8 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Fabia"
+      ],
+      "variants": [
+        "1.0 MPI",
+        "1.2",
+        "1.4",
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.5 TSI",
+        "1.2 TDI",
+        "1.4 TDI",
+        "1.6 TDI",
+        "RS"
+      ]
+    },
+    {
+      "models": [
+        "Rapid",
+        "Rapid Spaceback"
+      ],
+      "variants": [
+        "1.2",
+        "1.6",
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.4 TDI",
+        "1.6 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Scala"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.5 TSI",
+        "1.6 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Octavia"
+      ],
+      "variants": [
+        "1.6",
+        "1.0 TSI",
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.8 TSI",
+        "2.0 TSI",
+        "2.0 TSI 4x4",
+        "1.6 TDI",
+        "2.0 TDI",
+        "2.0 TDI 4x4",
+        "1.5 TGI",
+        "1.4 TSI iV",
+        "RS"
+      ]
+    },
+    {
+      "models": [
+        "Superb"
+      ],
+      "variants": [
+        "1.4 TSI",
+        "1.5 TSI",
+        "1.8 TSI",
+        "2.0 TSI",
+        "2.0 TSI 4x4",
+        "3.6 V6 4x4",
+        "1.6 TDI",
+        "2.0 TDI",
+        "2.0 TDI 4x4",
+        "1.4 TSI iV"
+      ]
+    },
+    {
+      "models": [
+        "Roomster",
+        "Praktik"
+      ],
+      "variants": [
+        "1.2",
+        "1.2 TSI",
+        "1.4",
+        "1.6 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Yeti"
+      ],
+      "variants": [
+        "1.2 TSI",
+        "1.4 TSI",
+        "1.8 TSI 4x4",
+        "1.6 TDI",
+        "2.0 TDI",
+        "2.0 TDI 4x4"
+      ]
+    },
+    {
+      "models": [
+        "Kamiq"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.5 TSI",
+        "1.6 TDI"
+      ]
+    },
+    {
+      "models": [
+        "Karoq"
+      ],
+      "variants": [
+        "1.0 TSI",
+        "1.5 TSI",
+        "2.0 TSI 4x4",
+        "1.6 TDI",
+        "2.0 TDI",
+        "2.0 TDI 4x4"
+      ]
+    },
+    {
+      "models": [
+        "Kodiaq"
+      ],
+      "variants": [
+        "1.4 TSI",
+        "1.5 TSI",
+        "2.0 TSI 4x4",
+        "2.0 TDI",
+        "2.0 TDI 4x4",
+        "1.5 TSI iV",
+        "RS"
+      ]
+    },
+    {
+      "models": [
+        "Enyaq",
+        "Enyaq Coupé"
+      ],
+      "variants": [
+        "52 kWh",
+        "62 kWh",
+        "77 kWh",
+        "82 kWh",
+        "82 kWh 4x4",
+        "RS"
+      ]
+    },
+    {
+      "models": [
+        "Elroq"
+      ],
+      "variants": [
+        "55 kWh",
+        "63 kWh",
+        "82 kWh",
+        "RS"
+      ]
+    },
+    {
+      "models": [
+        "Epiq"
+      ],
+      "variants": [
+        "55 kWh",
+        "59 kWh"
+      ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "Octavia RS",
+      "model": "Octavia",
+      "variant": "RS"
+    },
+    {
+      "from": "Fabia RS",
+      "model": "Fabia",
+      "variant": "RS"
+    },
+    {
+      "from": "Kodiaq RS",
+      "model": "Kodiaq",
+      "variant": "RS"
+    },
+    {
+      "from": "Enyaq RS",
+      "model": "Enyaq",
+      "variant": "RS"
+    },
+    {
+      "from": "Elroq RS",
+      "model": "Elroq",
+      "variant": "RS"
+    }
+  ]
+}

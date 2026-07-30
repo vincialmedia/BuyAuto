@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import type { SearchQuery } from "@/lib/buyauto/search";
 import { Filter, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getBrands, getModelsForBrand } from "@/services/listingsService";
+import { getBrands, getModelsForBrand, getVariantsForBrandModel } from "@/services/listingsService";
 
 interface DynamicFilterBarProps {
   searchQuery: SearchQuery;
@@ -22,6 +22,7 @@ type FilterChipKey =
   | "query"
   | "brand"
   | "model"
+  | "variant"
   | "yearMin"
   | "priceMin"
   | "priceMax"
@@ -56,8 +57,10 @@ export default function DynamicFilterBar({
 
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
+  const [variants, setVariants] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
 
   const saleType = useMemo(() => deriveSaleType(searchQuery), [searchQuery.dealType, searchQuery.financingType]);
   const isMixed = saleType === "all";
@@ -106,6 +109,25 @@ export default function DynamicFilterBar({
       setModels([]);
     }
   }, [searchQuery.brand]);
+
+  useEffect(() => {
+    if (searchQuery.brand && searchQuery.model) {
+      const fetchVariants = async () => {
+        setLoadingVariants(true);
+        try {
+          const variantsData = await getVariantsForBrandModel(searchQuery.brand!, searchQuery.model!);
+          setVariants(variantsData);
+        } catch (error) {
+          console.error("Error fetching variants:", error);
+        } finally {
+          setLoadingVariants(false);
+        }
+      };
+      fetchVariants();
+    } else {
+      setVariants([]);
+    }
+  }, [searchQuery.brand, searchQuery.model]);
 
   const handleSaleTypeChange = (value: string | undefined) => {
     const option = (value ?? "all") as SaleTypeOption;
@@ -160,11 +182,15 @@ export default function DynamicFilterBar({
 
   const handleBrandChange = (brand: string | undefined) => {
     const newBrand = brand === "all" ? undefined : brand;
-    onSearchQueryChange({ ...searchQuery, brand: newBrand, model: undefined });
+    onSearchQueryChange({ ...searchQuery, brand: newBrand, model: undefined, variant: undefined });
   };
 
   const handleModelChange = (model: string | undefined) => {
-    onSearchQueryChange({ ...searchQuery, model: model === "all" ? undefined : model });
+    onSearchQueryChange({ ...searchQuery, model: model === "all" ? undefined : model, variant: undefined });
+  };
+
+  const handleVariantChange = (variant: string | undefined) => {
+    onSearchQueryChange({ ...searchQuery, variant: variant === "all" ? undefined : variant });
   };
 
   const handleYearChange = (year: string | undefined) => {
@@ -195,6 +221,7 @@ export default function DynamicFilterBar({
     if (searchQuery.query) chips.push({ key: "query", label: "Suche", value: searchQuery.query });
     if (searchQuery.brand) chips.push({ key: "brand", label: "Marke", value: searchQuery.brand });
     if (searchQuery.model) chips.push({ key: "model", label: "Modell", value: searchQuery.model });
+    if (searchQuery.variant) chips.push({ key: "variant", label: "Ausführung", value: searchQuery.variant });
     if (searchQuery.yearMin) chips.push({ key: "yearMin", label: "Ab Jahr", value: searchQuery.yearMin.toString() });
 
     const minLabel = isDirectPurchase ? "Min. Kaufpreis" : "Min. Rate";
@@ -226,8 +253,12 @@ export default function DynamicFilterBar({
 
     delete newQuery[chipKey as keyof SearchQuery];
 
-    if (chipKey === "brand" && newQuery.model) {
+    if (chipKey === "brand") {
       delete newQuery.model;
+      delete newQuery.variant;
+    }
+    if (chipKey === "model") {
+      delete newQuery.variant;
     }
 
     onSearchQueryChange(newQuery as SearchQuery);
@@ -242,7 +273,7 @@ export default function DynamicFilterBar({
   // body gives them a new identity every render, remounting the whole Radix Select subtree.
   const desktopFilters = (
     <div className="space-y-3">
-      <div className="grid grid-cols-8 items-center gap-4">
+      <div className="grid grid-cols-9 items-center gap-4">
         <div className="col-span-1">
           <Select value={searchQuery.brand || "all"} onValueChange={handleBrandChange} disabled={loadingBrands}>
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Marke" /></SelectTrigger>
@@ -259,6 +290,20 @@ export default function DynamicFilterBar({
             <SelectContent>
               <SelectItem value="all">Alle Modelle</SelectItem>
               {models.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="col-span-1">
+          <Select
+            value={searchQuery.variant || "all"}
+            onValueChange={handleVariantChange}
+            disabled={!searchQuery.model || loadingVariants}
+          >
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={searchQuery.model ? "Ausführung" : "Erst Modell"} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Ausführungen</SelectItem>
+              {variants.map((variant) => <SelectItem key={variant} value={variant}>{variant}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -427,6 +472,23 @@ export default function DynamicFilterBar({
           <SelectContent>
             <SelectItem value="all">Alle Modelle</SelectItem>
             {models.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Ausführung</label>
+        <Select
+          value={searchQuery.variant || "all"}
+          onValueChange={handleVariantChange}
+          disabled={!searchQuery.model || loadingVariants}
+        >
+          <SelectTrigger className="h-11 text-sm">
+            <SelectValue placeholder={searchQuery.model ? "Alle Ausführungen" : "Erst Modell wählen"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Ausführungen</SelectItem>
+            {variants.map((variant) => <SelectItem key={variant} value={variant}>{variant}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

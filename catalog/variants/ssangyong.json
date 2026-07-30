@@ -1,0 +1,19 @@
+{
+  "make": "SsangYong",
+  "_note": "SsangYong badges diesel XDi and e-XDi, petrol GDi, and sells its EVs under the same nameplate with an EV or e- suffix, so those carry battery sizes.",
+  "models": [],
+  "groups": [
+    { "models": ["Actyon", "Actyon Sports"], "variants": ["2.0 XDi", "2.3", "2.0 e-XDi"] },
+    { "models": ["Korando"],
+      "variants": ["1.5 GDi", "1.6 e-XDi", "2.0 e-XDi", "2.2 e-XDi"] },
+    { "models": ["Korando e-Motion"], "variants": ["61.5 kWh"] },
+    { "models": ["Kyron"], "variants": ["2.0 XDi", "2.7 XDi"] },
+    { "models": ["Musso", "Musso Grand"], "variants": ["2.2 e-XDi"] },
+    { "models": ["Musso EV"], "variants": ["80.6 kWh"] },
+    { "models": ["Rexton", "Rexton W"], "variants": ["2.0 e-XDi", "2.2 e-XDi", "2.7 XDi"] },
+    { "models": ["Rodius"], "variants": ["2.0 e-XDi", "2.7 XDi"] },
+    { "models": ["Tivoli", "Tivoli XLV"], "variants": ["1.2 GDi", "1.5 GDi", "1.6 e-XDi"] },
+    { "models": ["Torres"], "variants": ["1.5 GDi"] },
+    { "models": ["Torres EVX"], "variants": ["73.4 kWh"] }
+  ]
+}

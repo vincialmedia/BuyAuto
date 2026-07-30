@@ -547,7 +547,10 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
       .from(PUBLIC_LISTINGS_VIEW)
       .select("*")
       .eq("id", id)
-      .in("status", ["published", "sold"])
+      // The view contains published, unexpired listings only, so filtering for
+      // 'sold' here never matched anything. A sold listing is intentionally not
+      // publicly reachable; the detail page renders its 410 for that case.
+      .eq("status", "published")
       .single();
 
     if (error) {
@@ -640,6 +643,7 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
 
     if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
     if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
+    if (searchQuery.variant) query = query.eq("variant", searchQuery.variant);
     if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
     if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
 
@@ -796,6 +800,7 @@ export async function searchDealerListings(garageId: string, searchQuery: Search
 
     if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
     if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
+    if (searchQuery.variant) query = query.eq("variant", searchQuery.variant);
     if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
     if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
 
@@ -1012,6 +1017,38 @@ export async function getModelsForBrand(brand: string): Promise<string[]> {
     return models;
   } catch (error) {
     console.error("Get models for brand error:", error);
+    return [];
+  }
+}
+
+// Variant options for the search dropdowns. Like getModelsForBrand this reads the
+// live inventory (listings_public), not the catalog: the filter should only offer
+// versions that at least one published listing actually has.
+export async function getVariantsForBrandModel(brand: string, model: string): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from(PUBLIC_LISTINGS_VIEW)
+      .select("variant")
+      .eq("brand", brand)
+      .ilike("model", `%${model}%`)
+      .not("variant", "is", null);
+
+    if (error) {
+      console.error("Error fetching variants for brand/model:", { brand, model, error });
+      return [];
+    }
+
+    const variants = Array.from(
+      new Set(
+        (data ?? [])
+          .map((r) => (r as { variant?: string | null }).variant)
+          .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+      )
+    ).sort((a, b) => a.localeCompare(b, "de-CH"));
+
+    return variants;
+  } catch (error) {
+    console.error("Get variants for brand/model error:", error);
     return [];
   }
 }

@@ -1,0 +1,12 @@
+{
+  "make": "Bentley",
+  "_note": "Bentley's split is V8 against W12, with the old 6.75 V8 in the outgoing Mulsanne-era cars and the V6 plug-in hybrids in the current ones.",
+  "models": [],
+  "groups": [
+    { "models": ["Azure", "Brooklands", "Mulsanne"], "variants": ["6.75 V8"] },
+    { "models": ["Continental GT", "GTC", "Continental Supersports"],
+      "variants": ["4.0 V8", "6.0 W12", "4.0 V8 Hybrid"] },
+    { "models": ["Flying Spur"], "variants": ["4.0 V8", "6.0 W12", "2.9 V6 Hybrid"] },
+    { "models": ["Bentayga"], "variants": ["4.0 V8", "6.0 W12", "3.0 V6 Hybrid", "4.0 V8 Diesel"] }
+  ]
+}

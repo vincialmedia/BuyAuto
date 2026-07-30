@@ -1,0 +1,10 @@
+{
+  "make": "Rolls-Royce",
+  "_note": "Two V12s across the modern range - the 6.75 in the Phantom and Cullinan, the 6.6 in the Ghost-based cars - and a battery in the Spectre.",
+  "models": [],
+  "groups": [
+    { "models": ["Phantom", "Cullinan"], "variants": ["6.75 V12"] },
+    { "models": ["Ghost", "Wraith", "Dawn"], "variants": ["6.6 V12"] },
+    { "models": ["Spectre"], "variants": ["102 kWh"] }
+  ]
+}

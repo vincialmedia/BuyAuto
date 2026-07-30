@@ -1,0 +1,14 @@
+{
+  "make": "XPeng",
+  "_note": "All electric, sold by battery size.",
+  "models": [],
+  "groups": [
+    { "models": ["G3"], "variants": ["66 kWh"] },
+    { "models": ["G6"], "variants": ["66 kWh", "87.5 kWh"] },
+    { "models": ["G7"], "variants": ["68.5 kWh", "80.8 kWh"] },
+    { "models": ["G9"], "variants": ["78 kWh", "98 kWh"] },
+    { "models": ["P5"], "variants": ["55 kWh", "71 kWh"] },
+    { "models": ["P7"], "variants": ["71 kWh", "86 kWh"] },
+    { "models": ["X9"], "variants": ["84.5 kWh", "101.5 kWh"] }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "make": "Dodge",
+  "_note": "Dodge's muscle cars are sold by version name, not displacement - a buyer asks for a Scat Pack or a Hellcat, never a 6.4 V8 - so those carry the name as the variant.",
+  "models": [],
+  "groups": [
+    {
+      "models": [
+        "Avenger"
+      ],
+      "variants": [
+        "2.0",
+        "2.4",
+        "2.0 CRD"
+      ]
+    },
+    {
+      "models": [
+        "Caliber"
+      ],
+      "variants": [
+        "1.8",
+        "2.0",
+        "2.0 CRD"
+      ]
+    },
+    {
+      "models": [
+        "Journey"
+      ],
+      "variants": [
+        "2.0 CRD",
+        "2.4",
+        "3.6 V6"
+      ]
+    },
+    {
+      "models": [
+        "Nitro"
+      ],
+      "variants": [
+        "2.8 CRD",
+        "3.7 V6",
+        "4.0 V6"
+      ]
+    },
+    {
+      "models": [
+        "Challenger",
+        "Charger"
+      ],
+      "variants": [
+        "SXT",
+        "R/T",
+        "Scat Pack",
+        "SRT8",
+        "SRT Hellcat",
+        "SRT Demon"
+      ]
+    },
+    {
+      "models": [
+        "Durango"
+      ],
+      "variants": [
+        "SXT",
+        "R/T",
+        "SRT",
+        "SRT Hellcat"
+      ]
+    }
+  ]
+}

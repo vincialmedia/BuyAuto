@@ -1118,6 +1118,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           make_id: string
           name: string
           normalized_name: string
@@ -1127,6 +1128,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           make_id: string
           name: string
           normalized_name: string
@@ -1136,6 +1138,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           make_id?: string
           name?: string
           normalized_name?: string
@@ -1464,6 +1467,7 @@ export type Database = {
           ui_version: string | null
           updated_at: string | null
           user_id: string | null
+          variant: string | null
           variant_id: string | null
           view_count: number | null
           vin: string | null
@@ -1519,6 +1523,7 @@ export type Database = {
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
+          variant?: string | null
           variant_id?: string | null
           view_count?: number | null
           vin?: string | null
@@ -1574,6 +1579,7 @@ export type Database = {
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
+          variant?: string | null
           variant_id?: string | null
           view_count?: number | null
           vin?: string | null

@@ -430,8 +430,9 @@ export default function Step5_PreviewAndPay() {
       title: anyData?.title ?? undefined,
 
       price_plan: anyData?.price_plan ?? undefined,
-      // premium is intentionally absent: owners cannot write listings.premium
-      // (premium-authority trigger) — the Stripe webhook grants it after payment.
+      // premium is not written from here — see ListingUpdatePayload. The Premium
+      // Boost request travels to /api/billing/prepare as a request-body field and
+      // is granted by the webhook once the payment actually succeeds.
       // blob: URLs are guest previews (see uploadPendingGuestImages) and must
       // never reach the database.
       images: (Array.isArray(anyData?.images) ? anyData.images : []).filter(

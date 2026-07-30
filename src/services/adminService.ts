@@ -155,52 +155,6 @@ export const adminService = {
     });
   },
 
-  async listDealerAdminOverrides(dealerId: string) {
-    const { data, error } = await supabase
-      .from("dealer_admin_overrides")
-      .select("id,dealer_id,plan_id,starts_at,ends_at,notes,created_by,created_at")
-      .eq("dealer_id", dealerId)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return Array.isArray(data) ? data : [];
-  },
-
-  async createDealerAdminOverride(input: {
-    dealerId: string;
-    planId: string;
-    durationMonths: number;
-    notes?: string | null;
-  }) {
-    const duration = input.durationMonths;
-    const endsAt =
-      duration >= 999 ? addMonthsIso(999) : addMonthsIso(Math.max(1, Math.floor(duration)));
-
-    const { data, error } = await supabase
-      .from("dealer_admin_overrides")
-      .insert({
-        dealer_id: input.dealerId,
-        plan_id: input.planId,
-        ends_at: endsAt,
-        notes: input.notes ?? null,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async draftDealerListings(dealerId: string) {
-    const { error } = await supabase
-      .from("listings")
-      .update({ status: "draft" as any })
-      .eq("garage_id", dealerId)
-      .in("status", ["published", "active", "inactive"] as any);
-
-    if (error) throw error;
-  },
-
   /**
    * Get admin statistics
    */
@@ -433,17 +387,6 @@ export const adminService = {
     return drafts;
   },
 
-  async getListingDetails(id: string): Promise<AdminListing> {
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    return data as AdminListing;
-  },
-
   async approveListing(id: string, options: {
     activatePremium?: boolean;
     premiumDays?: number;
@@ -454,42 +397,11 @@ export const adminService = {
       archived_at: null,
     };
 
-    const { data: listing, error: listingError } = await supabase
-      .from("listings")
-      .select("duration_days, expires_at, price_plan")
-      .eq("id", id)
-      .single();
-
-    if (listingError) throw listingError;
-
-    const effectivePlan = (listing?.price_plan ?? "standard") as string;
-
-    const derivedDurationDays: number | null =
-      effectivePlan === "unlimited"
-        ? null
-        : effectivePlan === "extended"
-          ? 90
-          : effectivePlan === "free30" || effectivePlan === "premium30"
-            ? 30
-            : 60;
-
-    const finalDurationDays =
-      typeof listing?.duration_days === "number" && Number.isFinite(listing.duration_days)
-        ? listing.duration_days
-        : derivedDurationDays;
-
-    if (listing?.expires_at) {
-      updates.expires_at = listing.expires_at;
-    } else if (finalDurationDays === null) {
-      updates.duration_days = null;
-      updates.expires_at = null;
-    } else if (typeof finalDurationDays === "number" && Number.isFinite(finalDurationDays)) {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + finalDurationDays);
-      updates.duration_days = finalDurationDays;
-      updates.expires_at = expiresAt.toISOString();
-    }
-
+    // Expiry is owned by the database. set_listing_expires_at anchors expires_at
+    // from duration_days at the moment the listing becomes published, and
+    // ensure_listing_expiry_defaults fills duration_days from the plan when it is
+    // missing. This used to re-derive the 90/30/60 plan durations in TypeScript,
+    // a second copy of the same table that could silently drift from the SQL one.
     if (options.activatePremium) {
       const premiumDays = options.premiumDays || 30;
       const premiumUntil = new Date();
@@ -510,7 +422,46 @@ export const adminService = {
     return data as AdminListing;
   },
 
+  /**
+   * Refund a listing's payment if it has one. Safe to call for any listing: the
+   * endpoint is idempotent and returns 400 for listings that were never paid, so
+   * an unpaid rejection is a no-op. Never throws — a failed refund must not block
+   * the moderation decision itself; it is surfaced in the return value instead.
+   */
+  async refundListingIfPaid(id: string, reason: string): Promise<{ refunded: boolean; error?: string }> {
+    try {
+      const response = await fetch("/api/billing/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listing_id: id, reason }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { ok?: boolean; refund_id?: string; message?: string; error?: string }
+        | null;
+
+      if (!response.ok) {
+        // 400 = "not eligible for a refund", i.e. a free or unpaid listing.
+        if (response.status === 400) return { refunded: false };
+        return { refunded: false, error: payload?.error || `HTTP ${response.status}` };
+      }
+
+      return { refunded: Boolean(payload?.refund_id) };
+    } catch (e) {
+      return { refunded: false, error: e instanceof Error ? e.message : "Refund request failed" };
+    }
+  },
+
   async rejectListing(id: string, reason: string): Promise<AdminListing> {
+    // Refund before flipping status: a rejected listing never goes live, so the
+    // seller must get their money back. Previously the only caller of
+    // /api/billing/refund was the dead bulkReject helper, so rejecting a paid
+    // listing silently kept the payment.
+    const refund = await this.refundListingIfPaid(id, "requested_by_customer");
+    if (refund.error) {
+      console.error(`rejectListing: refund failed for ${id}`, refund.error);
+    }
+
     const listing = await this.adminUpdateListingStatus(id, {
       status: "rejected",
       moderationNote: reason,
@@ -520,18 +471,6 @@ export const adminService = {
     if (listing) return listing;
 
     const { data, error } = await supabase.from("listings").select("*").eq("id", id).single();
-    if (error) throw error;
-    return data as AdminListing;
-  },
-
-  async updateListingDetails(id: string, updates: Partial<AdminListing>): Promise<AdminListing> {
-    const { data, error } = await supabase
-      .from('listings')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
     if (error) throw error;
     return data as AdminListing;
   },
@@ -584,15 +523,22 @@ export const adminService = {
   },
 
   async togglePremium(id: string, isPremium: boolean, days?: number): Promise<AdminListing> {
+    // Keep is_premium in lockstep with premium. The two columns are written
+    // together everywhere else (billing webhook, garage credit RPC), and leaving
+    // is_premium=true behind on deactivation left the pair contradicting itself.
     const updates: any = {
-      premium: isPremium
+      premium: isPremium,
+      is_premium: isPremium,
     };
 
-    if (isPremium && days) {
+    if (isPremium) {
+      // Always refresh the window when enabling, so re-enabling never leaves a
+      // premium_until that is already in the past (premium=true + lapsed date,
+      // which the expiry sweep would immediately clear again).
       const premiumUntil = new Date();
-      premiumUntil.setDate(premiumUntil.getDate() + days);
+      premiumUntil.setDate(premiumUntil.getDate() + (days ?? 30));
       updates.premium_until = premiumUntil.toISOString();
-    } else if (!isPremium) {
+    } else {
       updates.premium_until = null;
     }
 
@@ -614,7 +560,13 @@ export const adminService = {
       .eq('id', id)
       .single();
 
-    const baseDate = listing?.expires_at ? new Date(listing.expires_at) : new Date();
+    // Extend from whichever is later: the current expiry, or now. Anchoring
+    // blindly on a past expires_at meant "extend by 30 days" on a listing that
+    // lapsed 40 days ago produced another past date — the extension silently did
+    // nothing and the maintenance sweep would re-archive it immediately.
+    const existing = listing?.expires_at ? new Date(listing.expires_at) : null;
+    const now = new Date();
+    const baseDate = existing && existing.getTime() > now.getTime() ? existing : now;
     baseDate.setDate(baseDate.getDate() + days);
 
     const { data, error } = await supabase
@@ -637,133 +589,8 @@ export const adminService = {
     if (error) throw error;
   },
 
-  async bulkApprove(ids: string[], options: {
-    activatePremium?: boolean;
-    premiumDays?: number;
-  } = {}): Promise<void> {
-    for (const id of ids) {
-      await this.approveListing(id, options);
-    }
-  },
-
-  async bulkReject(ids: string[], reason: string): Promise<void> {
-    const { error } = await supabase
-      .from('listings')
-      .update({
-        status: 'rejected',
-        moderation_note: reason
-      })
-      .in('id', ids);
-
-    if (error) throw error;
-
-    const refundPromises = ids.map(async (id) => {
-      try {
-        const refundResponse = await fetch('/api/billing/refund', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ listing_id: id })
-        });
-
-        if (!refundResponse.ok) {
-          const refundError = await refundResponse.json();
-          console.error(`Failed to process refund for listing ${id}:`, refundError);
-          console.warn(`Manual refund may be required for listing ${id}. Error: ${refundError.error || 'Unknown error'}`);
-        } else {
-          console.log(`Refund successfully initiated for listing ${id}`);
-        }
-      } catch (refundError) {
-        console.error(`Failed to process refund for listing ${id}:`, refundError);
-        console.warn(`Manual refund may be required for listing ${id}. Please check manually.`);
-      }
-    });
-
-    Promise.allSettled(refundPromises);
-  },
-
-  async archiveListing(id: string, moderationNote?: string): Promise<AdminListing> {
-    const note =
-      typeof moderationNote === "string" && moderationNote.trim().length > 0
-        ? moderationNote.trim()
-        : null;
-
-    const { data, error } = await supabase
-      .from("listings")
-      .update({
-        status: "archived",
-        moderation_note: note,
-      })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data as AdminListing;
-  },
-
-  async restoreArchivedListing(id: string): Promise<AdminListing> {
-    const { data, error } = await supabase
-      .from("listings")
-      .update({
-        status: "pending",
-        moderation_note: null,
-      })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data as AdminListing;
-  },
-
   async declineListing(id: string, reason: string): Promise<AdminListing> {
     return await this.rejectListing(id, reason);
-  },
-
-  async getListingOwnerProfile(userId: string): Promise<{ id: string; email: string | null; full_name: string | null; role?: string | null } | null> {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id,email,full_name,role")
-      .eq("id", userId)
-      .single();
-
-    if (error) throw error;
-    return data as any;
-  },
-
-  async rejectListingAndNotify(id: string, reason: string): Promise<AdminListing> {
-    const listing = await this.adminUpdateListingStatus(id, {
-      status: "rejected",
-      moderationNote: reason,
-      notificationStatus: "rejected",
-    });
-
-    if (listing) return listing;
-
-    const { data, error } = await supabase.from("listings").select("*").eq("id", id).single();
-    if (error) throw error;
-    return data as AdminListing;
-  },
-
-  async archiveListingAndNotify(id: string, moderationNote?: string): Promise<AdminListing> {
-    const note =
-      typeof moderationNote === "string" && moderationNote.trim().length > 0
-        ? moderationNote.trim()
-        : null;
-
-    const listing = await this.adminUpdateListingStatus(id, {
-      status: "archived",
-      moderationNote: note,
-      notificationStatus: "archived",
-    });
-
-    if (listing) return listing;
-
-    const { data, error } = await supabase.from("listings").select("*").eq("id", id).single();
-    if (error) throw error;
-    return data as AdminListing;
   },
 
   async declineToArchiveAndSendRejectionEmail(id: string, reason: string): Promise<AdminListing> {

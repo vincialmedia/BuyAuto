@@ -480,7 +480,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         //  * paid boost (standard plan): 30 days
         //  * Verlängert/Unlimitiert: included — runs with the listing
         // Runs before the terminal-state short-circuit so a verify-payment
-        // race (which marks paid but cannot grant premium) can't starve it.
+        // race (which marks paid but cannot grant premium) can't starve it;
+        // the alreadyPremium guard keeps replayed succeeded events from
+        // extending premium a second time.
         const plan = safeString(paymentIntent.metadata?.plan);
         const boostPurchased = paymentIntent.metadata?.premium === "true";
         const premiumIncluded =

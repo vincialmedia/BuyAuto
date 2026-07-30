@@ -1,0 +1,20 @@
+{
+  "make": "Aston Martin",
+  "_note": "Aston's range splits by engine rather than trim: the AMG-derived 4.0 V8, the in-house 5.2 V12 that replaced the older 5.9, and the hybrids. Cars offered with both a V8 and a V12 carry both.",
+  "models": [],
+  "groups": [
+    { "models": ["DB9", "Virage", "Rapide", "Lagonda Taraf"], "variants": ["5.9 V12"] },
+    { "models": ["DB11"], "variants": ["4.0 V8", "5.2 V12"] },
+    { "models": ["DB12", "DBX", "Vantage"], "variants": ["4.0 V8"] },
+    { "models": ["V8 Vantage"], "variants": ["4.7 V8", "4.0 V8"] },
+    { "models": ["DBS", "Vanquish", "Vanquish Zagato", "DBS Superleggera", "DBS GT Zagato"],
+      "variants": ["5.9 V12", "5.2 V12"] },
+    { "models": ["V12 Vantage", "V12 Zagato", "V12 Speedster", "Valour", "Valiant"],
+      "variants": ["5.9 V12", "5.2 V12"] },
+    { "models": ["One-77", "Victor"], "variants": ["7.3 V12"] },
+    { "models": ["Vulcan"], "variants": ["7.0 V12"] },
+    { "models": ["Valkyrie"], "variants": ["6.5 V12 Hybrid"] },
+    { "models": ["Valhalla"], "variants": ["4.0 V8 Hybrid"] },
+    { "models": ["Cygnet"], "variants": ["1.3", "4.7 V8"] }
+  ]
+}

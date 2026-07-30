@@ -1,0 +1,20 @@
+{
+  "make": "Maxus",
+  "_note": "Maxus sells the same vans in diesel and electric form under paired names - Deliver 9 and eDeliver 9 - so the diesel rows carry displacement and the e- rows carry battery sizes.",
+  "models": [],
+  "groups": [
+    { "models": ["Deliver 7"], "variants": ["2.0 Diesel", "77 kWh"] },
+    { "models": ["Deliver 9"], "variants": ["2.0 Diesel", "72 kWh", "88 kWh"] },
+    { "models": ["eDeliver 3"], "variants": ["35 kWh", "52.5 kWh"] },
+    { "models": ["eDeliver 5"], "variants": ["64 kWh"] },
+    { "models": ["eDeliver 7"], "variants": ["77 kWh", "88 kWh"] },
+    { "models": ["eDeliver 9"], "variants": ["72 kWh", "88 kWh"] },
+    { "models": ["eTerron 9"], "variants": ["102 kWh"] },
+    { "models": ["Euniq 5"], "variants": ["52.5 kWh"] },
+    { "models": ["Euniq 6"], "variants": ["70 kWh"] },
+    { "models": ["Mifa 7"], "variants": ["77 kWh"] },
+    { "models": ["Mifa 9"], "variants": ["90 kWh"] },
+    { "models": ["T60 Max"], "variants": ["2.0 Diesel"] },
+    { "models": ["T90 EV"], "variants": ["88.5 kWh"] }
+  ]
+}

@@ -15,8 +15,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref, buildListingSlugSegment, extractListingIdFromParam } from "@/lib/buyauto/listingUrl";
 
-const InquiryForm = dynamic(() => import("@/components/buyauto/detail/InquiryForm"), { ssr: false });
-
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
   // No extra top margin: the bottomContent wrapper already applies mt-10,
   // matching the real component's position so the chunk swap doesn't shift.
@@ -65,8 +63,6 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const [isLoading, setIsLoading] = useState(!initialListing && !notFound);
   const [clientNotFound, setClientNotFound] = useState(false);
   const [isOwnerPreview, setIsOwnerPreview] = useState(false);
-
-  const [showInquiryForm, setShowInquiryForm] = useState(false);
 
   // Keep the displayed listing in sync when navigating between detail pages.
   // Next.js reuses this component instance across /fahrzeug/[id] route changes,
@@ -421,20 +417,12 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         garage={garage}
         teaserMonthlyLabel={teaserMonthlyLabel}
         purchasePriceChf={purchasePriceChf}
-        onInquiry={() => setShowInquiryForm(true)}
         childrenBelowFold={undefined}
         bottomContent={
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
             <SimilarListings listing={listing} />
           </div>
         }
-      />
-
-      <InquiryForm
-        listingId={listing.id}
-        listingTitle={`${listing.brand} ${listing.model} ${listing.year}`}
-        open={showInquiryForm}
-        onOpenChange={setShowInquiryForm}
       />
     </>
   );
@@ -463,12 +451,15 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
         .from("listings_public")
         .select("*")
         .eq("id", listingId)
-        .in("status", ["published", "active", "sold"])
+        // listings_public exposes published, unexpired rows only — 'active' and
+        // 'sold' could never match here. Anything else falls through to the
+        // 404/410 handling below.
+        .eq("status", "published")
         .single();
 
       if (error) {
         if ((error as any)?.code === "PGRST116") return null;
-        console.error("Error fetching listing by ID (published/sold):", error);
+        console.error("Error fetching listing by ID (published):", error);
         return null;
       }
 

@@ -1,0 +1,154 @@
+[
+  {
+    "make": "Chrysler",
+    "_note": "The European cars ran VM Motori CRD diesels alongside the American V6 and V8s.",
+    "groups": [
+      { "models": ["300C"], "variants": ["3.0 V6 CRD", "3.6 V6", "5.7 V8", "6.1 V8 SRT8"] },
+      { "models": ["Grand Voyager"], "variants": ["2.8 CRD", "3.6 V6", "3.8 V6"] },
+      { "models": ["PT Cruiser"], "variants": ["1.6", "2.4", "2.2 CRD"] },
+      { "models": ["Sebring"], "variants": ["2.0 CRD", "2.4", "2.7 V6"] }
+    ]
+  },
+  {
+    "make": "Saab",
+    "_note": "Saab badged its turbo petrols t and T by output and its diesels TiD.",
+    "groups": [
+      { "models": ["9-3"], "variants": ["1.8t", "2.0T", "1.9 TiD", "2.8 V6 Turbo"] },
+      { "models": ["9-5"], "variants": ["1.6T", "2.0T", "2.0 TiD", "2.8 V6 Turbo"] }
+    ]
+  },
+  {
+    "make": "RAM",
+    "groups": [
+      { "models": ["1500"], "variants": ["3.6 V6", "5.7 V8", "3.0 EcoDiesel"] },
+      { "models": ["2500", "3500"], "variants": ["6.4 V8", "6.7 Cummins Diesel"] }
+    ]
+  },
+  {
+    "make": "Isuzu",
+    "groups": [{ "models": ["D-Max"], "variants": ["1.9 Diesel", "2.5 Diesel", "3.0 Diesel"] }]
+  },
+  {
+    "make": "INEOS",
+    "_note": "BMW-sourced straight sixes in both body styles.",
+    "groups": [
+      { "models": ["Grenadier", "Grenadier Quartermaster"],
+        "variants": ["3.0 Petrol", "3.0 Diesel"] }
+    ]
+  },
+  {
+    "make": "Alpine",
+    "groups": [
+      { "models": ["A110"], "variants": ["1.8 Turbo"] },
+      { "models": ["A290"], "variants": ["52 kWh"] },
+      { "models": ["A390"], "variants": ["89 kWh"] }
+    ]
+  },
+  {
+    "make": "Caterham",
+    "_note": "The Seven is one model sold across a wide engine range rather than several models, which is exactly the case variants exist for.",
+    "groups": [
+      { "models": ["Seven"], "variants": ["0.66 Turbo", "1.6", "2.0", "2.0 Supercharged"] }
+    ]
+  },
+  {
+    "make": "KTM",
+    "groups": [{ "models": ["X-Bow"], "variants": ["2.0 Turbo", "2.5 Turbo"] }]
+  },
+  {
+    "make": "Ginetta",
+    "groups": [
+      { "models": ["G40"], "variants": ["1.8"] },
+      { "models": ["G60"], "variants": ["3.7 V6"] },
+      { "models": ["Akula"], "variants": ["6.2 V8"] }
+    ]
+  },
+  {
+    "make": "Noble",
+    "groups": [
+      { "models": ["M500"], "variants": ["3.5 V6 Twin Turbo"] },
+      { "models": ["M600"], "variants": ["4.4 V8 Twin Turbo"] }
+    ]
+  },
+  {
+    "make": "TVR",
+    "groups": [{ "models": ["Griffith"], "variants": ["5.0 V8"] }]
+  },
+  {
+    "make": "Spyker",
+    "groups": [{ "models": ["C8 Aileron", "C8 Preliator"], "variants": ["4.2 V8"] }]
+  },
+  {
+    "make": "Mazzanti",
+    "groups": [{ "models": ["Evantra"], "variants": ["7.0 V8"] }]
+  },
+  {
+    "make": "Isdera",
+    "groups": [{ "models": ["Commendatore GT"], "variants": ["6.0 V12"] }]
+  },
+  {
+    "make": "Donkervoort",
+    "_note": "Audi five-cylinder turbos throughout the modern cars.",
+    "groups": [
+      { "models": ["D8"], "variants": ["1.8 Turbo", "2.0 Turbo"] },
+      { "models": ["D8 GTO", "F22", "P24 RS"], "variants": ["2.5 Turbo"] }
+    ]
+  },
+  {
+    "make": "Artega",
+    "groups": [
+      { "models": ["GT"], "variants": ["3.6 V6"] },
+      { "models": ["Scalo"], "variants": ["37 kWh"] },
+      { "models": ["Evetta"], "variants": ["14 kWh"] }
+    ]
+  },
+  {
+    "make": "LEVC",
+    "_note": "The taxi and its van derivative are range extenders, so the variant is the petrol generator.",
+    "groups": [
+      { "models": ["TX", "VN5"], "variants": ["1.5 Range Extender"] },
+      { "models": ["L380"], "variants": ["73 kWh", "110 kWh"] }
+    ]
+  },
+  {
+    "make": "LTI",
+    "groups": [{ "models": ["TX4"], "variants": ["2.5 Diesel"] }]
+  },
+  {
+    "make": "Ligier",
+    "_note": "Ligier's light quadricycles were sold with a small diesel and later as EVs; JS RC is the race car.",
+    "groups": [
+      { "models": ["IXO", "JS 50", "JS 50 L", "JS 60", "Myli"],
+        "variants": ["0.5 Diesel", "Electric"] },
+      { "models": ["JS RC"], "variants": ["1.6"] }
+    ]
+  },
+  {
+    "make": "Piaggio",
+    "groups": [
+      { "models": ["Ape", "Quargo"], "variants": ["0.2", "0.42 Diesel"] },
+      { "models": ["Porter"], "variants": ["1.3", "1.4 Diesel"] },
+      { "models": ["Porter NP6"], "variants": ["1.5"] }
+    ]
+  },
+  {
+    "make": "Mahindra",
+    "groups": [
+      { "models": ["Goa", "XUV500"], "variants": ["2.2 Diesel"] },
+      { "models": ["KUV100"], "variants": ["1.2"] },
+      { "models": ["e2o"], "variants": ["15 kWh"] }
+    ]
+  },
+  {
+    "make": "Tata",
+    "groups": [
+      { "models": ["Safari"], "variants": ["2.2 Diesel"] },
+      { "models": ["Vista"], "variants": ["1.2", "1.3 Diesel"] },
+      { "models": ["Xenon"], "variants": ["2.2 Diesel"] }
+    ]
+  },
+  {
+    "make": "Perodua",
+    "groups": [{ "models": ["Myvi"], "variants": ["1.0", "1.3", "1.5"] }]
+  }
+]

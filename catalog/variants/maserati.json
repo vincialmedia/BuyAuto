@@ -1,0 +1,14 @@
+{
+  "make": "Maserati",
+  "_note": "Maserati badges its current V6 Nettuno and its EVs Folgore, and the older cars ran Ferrari-built V6 and V8 petrol plus a VM Motori diesel that was a real seller in Switzerland.",
+  "models": [],
+  "groups": [
+    { "models": ["Ghibli"], "variants": ["3.0 V6", "3.0 V6 Diesel", "2.0 Hybrid", "3.8 V8 Trofeo"] },
+    { "models": ["Quattroporte"], "variants": ["3.0 V6", "3.0 V6 Diesel", "3.8 V8"] },
+    { "models": ["Levante"], "variants": ["3.0 V6", "3.0 V6 Diesel", "3.8 V8 Trofeo"] },
+    { "models": ["Grecale"], "variants": ["2.0 Hybrid", "3.0 V6 Trofeo", "105 kWh Folgore"] },
+    { "models": ["GranTurismo", "GranCabrio"],
+      "variants": ["4.7 V8", "3.0 V6 Nettuno", "92.5 kWh Folgore"] },
+    { "models": ["MC20", "MCPura", "GT2 Stradale"], "variants": ["3.0 V6 Nettuno"] }
+  ]
+}

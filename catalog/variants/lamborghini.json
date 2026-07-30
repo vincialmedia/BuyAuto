@@ -1,0 +1,15 @@
+{
+  "make": "Lamborghini",
+  "_note": "Lamborghini runs three engine families - the V12, the V10 and the Urus V8 - and the limited-run cars are rebodied versions of whichever platform they sit on, so they carry that platform's engine.",
+  "models": [],
+  "groups": [
+    { "models": ["Aventador", "Centenario", "Veneno", "Sián", "Countach LPI 800-4", "Essenza SCV12"],
+      "variants": ["6.5 V12"] },
+    { "models": ["Murciélago"], "variants": ["6.2 V12", "6.5 V12"] },
+    { "models": ["Revuelto", "Fenomeno"], "variants": ["6.5 V12 Hybrid"] },
+    { "models": ["Gallardo"], "variants": ["5.0 V10", "5.2 V10"] },
+    { "models": ["Huracán", "Sesto Elemento"], "variants": ["5.2 V10"] },
+    { "models": ["Urus"], "variants": ["4.0 V8", "4.0 V8 Hybrid"] },
+    { "models": ["Temerario"], "variants": ["4.0 V8 Hybrid"] }
+  ]
+}

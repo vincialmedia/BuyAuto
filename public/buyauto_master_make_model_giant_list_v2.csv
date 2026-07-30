@@ -1,56 +1,113 @@
 Make,Model
+Abarth,124 Spider
+Abarth,500
+Abarth,500e
+Abarth,595
+Abarth,600e
+Abarth,695
+Abarth,Punto Evo
+Aiways,U5
+Aiways,U6
+Alfa Romeo,147
+Alfa Romeo,159
 Alfa Romeo,33 Stradale
 Alfa Romeo,4C
 Alfa Romeo,4C Spider
+Alfa Romeo,8C Spider
+Alfa Romeo,Brera
+Alfa Romeo,GT
 Alfa Romeo,Giulia
 Alfa Romeo,Giulietta
 Alfa Romeo,Junior
 Alfa Romeo,Mito
+Alfa Romeo,Spider
 Alfa Romeo,Stelvio
 Alfa Romeo,Tonale
+Alpina,B3
+Alpina,B4
+Alpina,B5
+Alpina,B6
+Alpina,B7
+Alpina,B8
+Alpina,D3
+Alpina,D4
+Alpina,D5
+Alpina,XB7
+Alpina,XD3
+Alpina,XD4
 Alpine,A110
 Alpine,A290
+Alpine,A390
 Artega,Evetta
+Artega,GT
 Artega,Scalo
+Aston Martin,Cygnet
 Aston Martin,DB11
 Aston Martin,DB12
 Aston Martin,DB9
+Aston Martin,DBS
+Aston Martin,DBS GT Zagato
 Aston Martin,DBS Superleggera
 Aston Martin,DBX
+Aston Martin,Lagonda Taraf
+Aston Martin,One-77
 Aston Martin,Rapide
+Aston Martin,V12 Speedster
 Aston Martin,V12 Vantage
+Aston Martin,V12 Zagato
 Aston Martin,V8 Vantage
 Aston Martin,Valhalla
+Aston Martin,Valiant
 Aston Martin,Valkyrie
+Aston Martin,Valour
 Aston Martin,Vanquish
+Aston Martin,Vanquish Zagato
 Aston Martin,Vantage
 Aston Martin,Victor
+Aston Martin,Virage
+Aston Martin,Vulcan
 Audi,A1
 Audi,A1 Sportback
 Audi,A1 allstreet / citycarver
 Audi,A3
+Audi,A3 Cabriolet
 Audi,A3 Limousine
 Audi,A3 Sportback
+Audi,A3 Sportback TFSI e
 Audi,A3 allstreet
 Audi,A3 allstreet TFSI e
 Audi,A4
+Audi,A4 Avant
+Audi,A4 allroad
 Audi,A5
 Audi,A5 Avant
 Audi,A5 Avant e-hybrid
+Audi,A5 Cabriolet
 Audi,A5 Limousine
+Audi,A5 Limousine e-hybrid
+Audi,A5 Sportback
 Audi,A6
+Audi,A6 Avant
+Audi,A6 Avant e-hybrid
 Audi,A6 Avant e-tron
+Audi,A6 Limousine
+Audi,A6 Limousine e-hybrid
 Audi,A6 Sportback e-tron
+Audi,A6 allroad
 Audi,A6 e-tron
 Audi,A7
 Audi,A8
 Audi,Q2
 Audi,Q3
 Audi,Q3 Sportback
+Audi,Q3 Sportback e-hybrid
+Audi,Q3 e-hybrid
 Audi,Q4 Sportback e-tron
 Audi,Q4 e-tron
 Audi,Q5
 Audi,Q5 Sportback
+Audi,Q5 Sportback e-hybrid
+Audi,Q5 e-hybrid
 Audi,Q6 SUV e-tron
 Audi,Q6 Sportback e-tron
 Audi,Q6 e-tron
@@ -61,6 +118,9 @@ Audi,Q8 e-tron
 Audi,R8
 Audi,RS 3 Limousine
 Audi,RS 3 Sportback
+Audi,RS 5 Sportback
+Audi,RS Q3 Sportback
+Audi,RS e-tron GT
 Audi,RS3
 Audi,RS4
 Audi,RS5
@@ -68,50 +128,83 @@ Audi,RS6
 Audi,RS7
 Audi,RSQ3
 Audi,RSQ8
+Audi,S e-tron GT
 Audi,S1
 Audi,S3
+Audi,S3 Limousine
+Audi,S3 Sportback
 Audi,S4
 Audi,S5
+Audi,S5 Avant
+Audi,S5 Limousine
 Audi,S6
+Audi,S6 Avant e-tron
+Audi,S6 Sportback e-tron
 Audi,S7
 Audi,S8
 Audi,SQ2
 Audi,SQ3
 Audi,SQ5
+Audi,SQ5 Sportback
 Audi,SQ6 SUV e-tron
 Audi,SQ6 Sportback e-tron
 Audi,SQ7
 Audi,SQ8
+Audi,SQ8 Sportback e-tron
+Audi,SQ8 e-tron
 Audi,TT
 Audi,TT RS
 Audi,TTS
 Audi,e-tron
 Audi,e-tron GT
+Audi,e-tron S
+Audi,e-tron S Sportback
 Audi,e-tron Sportback
+BMW,114d
+BMW,114i
+BMW,116
 BMW,116d
 BMW,116i
 BMW,118d
 BMW,118i
+BMW,120
 BMW,120d
 BMW,120i
+BMW,123d
 BMW,125d
 BMW,125i
+BMW,128ti
+BMW,135i
+BMW,1M Coupé
+BMW,20 xDrive
+BMW,214d
+BMW,216d
+BMW,216i
 BMW,218d
 BMW,218i
+BMW,220
 BMW,220d
 BMW,220i
 BMW,220i Active Tourer
+BMW,223d
+BMW,223i
 BMW,225d
+BMW,225e
 BMW,225i
 BMW,225xe
 BMW,228i
+BMW,230e
 BMW,230i
+BMW,316d
 BMW,316i
 BMW,318d
 BMW,318i
 BMW,320d
+BMW,320e
 BMW,320i
 BMW,325d
+BMW,325i
+BMW,328i
 BMW,330d
 BMW,330e
 BMW,330i
@@ -123,6 +216,7 @@ BMW,418i
 BMW,420d
 BMW,420i
 BMW,425d
+BMW,428i
 BMW,430d
 BMW,430i
 BMW,435d
@@ -130,15 +224,22 @@ BMW,435i
 BMW,440i
 BMW,518d
 BMW,520d
+BMW,520e
 BMW,520i
+BMW,523i
+BMW,525d
+BMW,528i
 BMW,530d
 BMW,530e
 BMW,530i
 BMW,535d
+BMW,535i
 BMW,540d
 BMW,540i
 BMW,545e
+BMW,550e
 BMW,550i
+BMW,620d
 BMW,630d
 BMW,630i
 BMW,640d
@@ -146,31 +247,47 @@ BMW,640i
 BMW,650i
 BMW,730d
 BMW,740d
+BMW,740e
 BMW,740i
 BMW,745e
+BMW,750d
 BMW,750i
+BMW,760i
 BMW,840d
 BMW,840i
 BMW,850i
+BMW,ActiveHybrid 3
+BMW,ActiveHybrid 5
+BMW,ActiveHybrid 7
+BMW,ActiveHybrid X6
+BMW,M135
 BMW,M135i
 BMW,M140i
 BMW,M2
+BMW,M235
 BMW,M235i
 BMW,M240i
 BMW,M3
 BMW,M3 Touring
+BMW,M340d
 BMW,M340d xDrive Touring
 BMW,M340i
 BMW,M35i
 BMW,M4
 BMW,M40d
 BMW,M40i
+BMW,M440d
 BMW,M440i
 BMW,M5
 BMW,M5 Touring
+BMW,M50
+BMW,M50d
 BMW,M50i
+BMW,M550d
+BMW,M550i
 BMW,M6
 BMW,M60i
+BMW,M760e
 BMW,M760i
 BMW,M8
 BMW,M850i
@@ -185,6 +302,7 @@ BMW,X5 M
 BMW,X6
 BMW,X6 M
 BMW,X7
+BMW,XM
 BMW,XM 50e
 BMW,XM Label
 BMW,Z4
@@ -199,30 +317,65 @@ BMW,iX
 BMW,iX1
 BMW,iX2
 BMW,iX3
+BMW,sDrive16d
 BMW,sDrive18d
 BMW,sDrive18i
 BMW,sDrive20d
 BMW,sDrive20i
+BMW,sDrive23i
+BMW,sDrive25d
+BMW,sDrive28i
+BMW,sDrive30i
+BMW,sDrive35i
+BMW,xDrive18d
 BMW,xDrive20d
 BMW,xDrive20i
+BMW,xDrive23d
+BMW,xDrive23i
+BMW,xDrive25d
 BMW,xDrive25e
+BMW,xDrive28i
 BMW,xDrive30d
+BMW,xDrive30e
 BMW,xDrive30i
+BMW,xDrive35d
+BMW,xDrive35i
 BMW,xDrive40d
+BMW,xDrive40e
 BMW,xDrive40i
 BMW,xDrive45e
+BMW,xDrive50e
+BMW,xDrive50i
+BYD,Atto 2
+BYD,Atto 3
+BYD,Dolphin
+BYD,Dolphin G
+BYD,Dolphin Surf
+BYD,ETP3
+BYD,Han
+BYD,Seal
+BYD,Seal 6 DM-i
+BYD,Seal U
+BYD,Sealion 7
+BYD,Tang
+BYD,e6
+Bentley,Azure
 Bentley,Bentayga
+Bentley,Brooklands
 Bentley,Continental GT
+Bentley,Continental Supersports
 Bentley,Flying Spur
 Bentley,GTC
 Bentley,Mulsanne
 Bugatti,Bolide
+Bugatti,Brouillard
 Bugatti,Centodieci
 Bugatti,Chiron
 Bugatti,Divo
 Bugatti,EB 16.4 Veyron
 Bugatti,La Voiture Noire
 Bugatti,Mistral
+Bugatti,Tourbillon
 Cadillac,ATS
 Cadillac,ATS-V
 Cadillac,CT4
@@ -230,44 +383,82 @@ Cadillac,CT5
 Cadillac,CT6
 Cadillac,CTS
 Cadillac,CTS-V
+Cadillac,Escalade
 Cadillac,LYRIQ
 Cadillac,LYRIQ-V
 Cadillac,OPTIQ
+Cadillac,SRX
 Cadillac,VISTIQ
 Cadillac,XT4
 Cadillac,XT5
+Caterham,Seven
+Chevrolet,Aveo
+Chevrolet,Camaro
+Chevrolet,Captiva
+Chevrolet,Corvette
+Chevrolet,Cruze
+Chevrolet,Epica
+Chevrolet,Lacetti
 Chevrolet,Malibu
+Chevrolet,Matiz
+Chevrolet,Nubira
 Chevrolet,Orlando
 Chevrolet,Spark
 Chevrolet,Trax
+Chevrolet,Volt
+Chrysler,300C
+Chrysler,Grand Voyager
+Chrysler,PT Cruiser
+Chrysler,Sebring
 Citroën,Ami
 Citroën,Berlingo
+Citroën,C-Crosser
+Citroën,C-Elysée
+Citroën,C-Zero
+Citroën,C1
 Citroën,C3
 Citroën,C3 Aircross
 Citroën,C3 Picasso
+Citroën,C3 Pluriel
 Citroën,C4
+Citroën,C4 Aircross
+Citroën,C4 Cactus
 Citroën,C4 Picasso
 Citroën,C4 SpaceTourer
 Citroën,C4 X
+Citroën,C5
 Citroën,C5 Aircross
 Citroën,C5 X
+Citroën,C6
+Citroën,C8
 Citroën,DS3
+Citroën,DS4
+Citroën,DS5
 Citroën,E-Mehari
+Citroën,Grand C4 Picasso
+Citroën,Grand C4 SpaceTourer
+Citroën,Holidays
 Citroën,Jumper
 Citroën,Jumpy
+Citroën,Nemo
 Citroën,SpaceTourer
+Citroën,Xsara Picasso
 Cupra,Ateca
 Cupra,Born
 Cupra,Formentor
 Cupra,Leon
+Cupra,Raval
 Cupra,Tavascan
 Cupra,Terramar
 DS,3
 DS,3 Crossback
 DS,4
+DS,4 Crossback
 DS,5
+DS,7
 DS,7 Crossback
 DS,9
+DS,N°4
 DS,N°8
 Dacia,Bigster
 Dacia,Dokker
@@ -277,17 +468,41 @@ Dacia,Lodgy
 Dacia,Logan
 Dacia,Sandero
 Dacia,Spring Electric
+Daihatsu,Charade
+Daihatsu,Copen
 Daihatsu,Cuore
+Daihatsu,Materia
+Daihatsu,Sirion
+Daihatsu,Terios
+Daihatsu,Trevis
+Dodge,Avenger
+Dodge,Caliber
+Dodge,Challenger
+Dodge,Charger
+Dodge,Durango
+Dodge,Journey
+Dodge,Nitro
+Donkervoort,D8
 Donkervoort,D8 GTO
 Donkervoort,F22
+Donkervoort,P24 RS
 Ferrari,12Cilindri
 Ferrari,296 GTB
+Ferrari,296 Speciale
 Ferrari,458 Italia
+Ferrari,458 Speciale
 Ferrari,488
+Ferrari,599
+Ferrari,612 Scaglietti
+Ferrari,812 Competizione
 Ferrari,812 Superfast
+Ferrari,849 Testarossa
+Ferrari,Amalfi
+Ferrari,California
 Ferrari,California T
 Ferrari,Daytona SP3
 Ferrari,F12 Berlinetta
+Ferrari,F12tdf
 Ferrari,F8 Tributo
 Ferrari,F80
 Ferrari,FF
@@ -296,35 +511,49 @@ Ferrari,LaFerrari
 Ferrari,Monza SP1
 Ferrari,Monza SP2
 Ferrari,Portofino
+Ferrari,Portofino M
 Ferrari,Purosangue
 Ferrari,Roma
 Ferrari,SF90 Stradale
+Ferrari,SF90 XX Stradale
 Fiat,124 Spider
 Fiat,500
+Fiat,500 Hybrid
 Fiat,500L
 Fiat,500X
 Fiat,600
+Fiat,Bravo
+Fiat,Croma
 Fiat,Doblò
+Fiat,Ducato
 Fiat,Egea
 Fiat,Fiorino
 Fiat,Freemont
 Fiat,Fullback
 Fiat,Grande Panda
+Fiat,Grande Punto
+Fiat,Idea
 Fiat,Linea
+Fiat,Multipla
 Fiat,New 500e
 Fiat,Palio Weekend
 Fiat,Panda
 Fiat,Pandina
 Fiat,Punto
+Fiat,Punto Evo
 Fiat,Qubo
 Fiat,Scudo
+Fiat,Sedici
 Fiat,Strada
 Fiat,Talento
 Fiat,Tipo
 Fiat,Topolino
 Fiat,Ulysse
 Firefly,Firefly
+Fisker,Karma
+Fisker,Ocean
 Ford,B-MAX
+Ford,Bronco
 Ford,C-MAX
 Ford,Capri
 Ford,E-Tourneo Courier
@@ -336,13 +565,17 @@ Ford,EcoSport
 Ford,Edge
 Ford,Edge L
 Ford,Explorer
+Ford,F-150 Lightning
 Ford,Fiesta
 Ford,Fiesta ST
 Ford,Focus
 Ford,Focus RS
 Ford,Focus ST
+Ford,Fusion
 Ford,GT
 Ford,Galaxy
+Ford,Grand C-MAX
+Ford,Grand Tourneo Connect
 Ford,Ka
 Ford,Ka+
 Ford,Kuga
@@ -353,10 +586,12 @@ Ford,Puma
 Ford,Puma Gen-E
 Ford,Puma ST
 Ford,Ranger
+Ford,Ranger Raptor
 Ford,S-MAX
 Ford,Tourneo Connect
 Ford,Tourneo Courier
 Ford,Tourneo Custom
+Ford,Transit
 Ford,Transit Connect
 Ford,Transit Courier
 Ford,Transit Custom
@@ -366,26 +601,37 @@ Genesis,G90
 Genesis,GV60
 Genesis,GV70
 Genesis,GV80
+Ginetta,Akula
+Ginetta,G40
 Ginetta,G60
 HiPhi,X
+HiPhi,Y
 HiPhi,Z
 Honda,Accord
 Honda,CR-V
 Honda,CR-Z
 Honda,Civic
+Honda,Civic Type R
 Honda,HR-V
 Honda,Honda e
 Honda,Insight
 Honda,Jazz
 Honda,Legend
 Honda,NSX
+Honda,Prelude
+Honda,Super-N
 Honda,ZR-V
 Honda,e:Ny1
 Hyundai,Accent
 Hyundai,Bayon
+Hyundai,Elantra
 Hyundai,Equus
+Hyundai,Genesis
 Hyundai,Genesis Coupé
+Hyundai,Grand Santa Fe
+Hyundai,H-1 Cargo
 Hyundai,H-1 Travel
+Hyundai,H350
 Hyundai,IONIQ 5 N
 Hyundai,IONIQ 6 N
 Hyundai,Inster
@@ -395,15 +641,19 @@ Hyundai,Ioniq 6
 Hyundai,Ioniq 9
 Hyundai,Kona
 Hyundai,Kona N
+Hyundai,Matrix
 Hyundai,Nexo
 Hyundai,Santa Fe
+Hyundai,Sonata
 Hyundai,Staria
 Hyundai,Tucson
 Hyundai,Veloster
 Hyundai,i10
 Hyundai,i20
+Hyundai,i20 Coupé
 Hyundai,i20 N
 Hyundai,i30
+Hyundai,i30 Fastback
 Hyundai,i30 N
 Hyundai,i30 N Fastback
 Hyundai,i40
@@ -415,7 +665,10 @@ INEOS,Grenadier
 INEOS,Grenadier Quartermaster
 Infiniti,35
 Infiniti,37
+Infiniti,EX
+Infiniti,FX
 Infiniti,G 20
+Infiniti,M
 Infiniti,Q30
 Infiniti,Q50
 Infiniti,Q60
@@ -425,6 +678,9 @@ Infiniti,QX50
 Infiniti,QX70
 Isdera,Commendatore GT
 Isuzu,D-Max
+Jaecoo,5
+Jaecoo,7
+Jaecoo,8
 Jaguar,E-PACE
 Jaguar,F-PACE
 Jaguar,F-Type
@@ -432,18 +688,25 @@ Jaguar,I-PACE
 Jaguar,XE
 Jaguar,XF
 Jaguar,XJ
+Jaguar,XK
 Jeep,Avenger
 Jeep,Cherokee
+Jeep,Commander
 Jeep,Compass
+Jeep,Gladiator
 Jeep,Grand Cherokee
 Jeep,Patriot
 Jeep,Renegade
 Jeep,Wrangler
+KTM,X-Bow
 Kia,Carens
 Kia,Carnival
 Kia,Cee'd
+Kia,Cee'd SW
 Kia,Ceed
+Kia,Ceed GT
 Kia,Ceed Sportswagon
+Kia,EV2
 Kia,EV3
 Kia,EV4
 Kia,EV4 Fastback
@@ -455,59 +718,91 @@ Kia,EV9
 Kia,EV9 GT
 Kia,Forte
 Kia,K4
+Kia,Magentis
 Kia,Niro
+Kia,Optima
+Kia,Optima Sportswagon
 Kia,PV5
 Kia,PV5 Cargo
 Kia,PV5 Chassis Cab
 Kia,PV5 Passenger
 Kia,Picanto
+Kia,ProCeed
+Kia,ProCeed GT
 Kia,Quoris
+Kia,Rio
 Kia,Sorento
 Kia,Soul
 Kia,Sportage
 Kia,Stinger
 Kia,Stonic
+Kia,Venga
 Kia,XCeed
+Kia,e-Niro
+Kia,e-Soul
 Koenigsegg,Agera
 Koenigsegg,CC850
 Koenigsegg,Gemera
 Koenigsegg,Jesko
+Koenigsegg,One:1
 Koenigsegg,Regera
+Koenigsegg,Sadair's Spear
 LEVC,L380
 LEVC,TX
 LEVC,VN5
 LTI,TX4
 Lada,Aura
+Lada,Granta
 Lada,Iskra
 Lada,Kalina
+Lada,Niva
 Lada,Priora
+Lada,Taiga
 Lada,Urban
 Lada,Vesta
 Lada,XRAY
 Lamborghini,Aventador
 Lamborghini,Centenario
 Lamborghini,Countach LPI 800-4
+Lamborghini,Essenza SCV12
+Lamborghini,Fenomeno
+Lamborghini,Gallardo
 Lamborghini,Huracán
+Lamborghini,Murciélago
 Lamborghini,Revuelto
+Lamborghini,Sesto Elemento
 Lamborghini,Sián
 Lamborghini,Temerario
 Lamborghini,Urus
+Lamborghini,Veneno
+Lancia,Delta
+Lancia,Flavia
+Lancia,Musa
+Lancia,Phedra
+Lancia,Thema
 Lancia,Voyager
 Lancia,Ypsilon
 Land Rover,Defender
 Land Rover,Discovery
 Land Rover,Discovery Sport
+Land Rover,Freelander
 Land Rover,LR4
 Land Rover,Range Rover
 Land Rover,Range Rover Evoque
 Land Rover,Range Rover Sport
 Land Rover,Range Rover Velar
+Leapmotor,B03X
+Leapmotor,B05
+Leapmotor,B10
 Leapmotor,C10
 Leapmotor,T03
 Lexus,CT
 Lexus,ES
+Lexus,GS
+Lexus,IS
 Lexus,LBX
 Lexus,LC
+Lexus,LFA
 Lexus,LM
 Lexus,LS
 Lexus,NX
@@ -515,14 +810,19 @@ Lexus,RC
 Lexus,RX
 Lexus,RZ
 Lexus,UX
+Ligier,IXO
+Ligier,JS 50
+Ligier,JS 50 L
 Ligier,JS 60
 Ligier,JS RC
 Ligier,Myli
+Lotus,2-Eleven
 Lotus,3-Eleven
 Lotus,Eletre
 Lotus,Elise
 Lotus,Emeya
 Lotus,Emira
+Lotus,Europa
 Lotus,Evija
 Lotus,Evora
 Lotus,Exige
@@ -531,112 +831,207 @@ Lucid,Gravity
 Lynk & Co,01
 Lynk & Co,02
 Lynk & Co,08
+MG,Cyberster
+MG,EHS
+MG,GS
+MG,HS
+MG,IM5
+MG,IM6
+MG,MG3
+MG,MG4
+MG,MG5
+MG,MG6
+MG,Marvel R
+MG,S5 EV
+MG,S9
+MG,ZS
 MINI,Aceman
+MINI,Aceman John Cooper Works
 MINI,Cabrio
+MINI,Cabrio Cooper S
+MINI,Cabrio John Cooper Works
 MINI,Clubman
 MINI,Clubman Cooper S
 MINI,Clubman John Cooper Works
+MINI,Clubvan
+MINI,Cooper
 MINI,Cooper 5-Türer
 MINI,Cooper Electric
 MINI,Cooper S
+MINI,Cooper S 5-Türer
 MINI,Countryman
 MINI,Countryman Cooper S
 MINI,Countryman Electric
 MINI,Countryman John Cooper Works
 MINI,Coupé
+MINI,Coupé Cooper S
+MINI,Coupé John Cooper Works
 MINI,Hatch
 MINI,John Cooper Works
+MINI,John Cooper Works Electric
+MINI,John Cooper Works GP
+MINI,One
 MINI,Paceman
+MINI,Paceman Cooper S
+MINI,Paceman John Cooper Works
 MINI,Roadster
+MINI,Roadster Cooper S
+MINI,Roadster John Cooper Works
+Mahindra,Goa
+Mahindra,KUV100
+Mahindra,XUV500
 Mahindra,e2o
+Maserati,GT2 Stradale
 Maserati,Ghibli
 Maserati,GranCabrio
 Maserati,GranTurismo
 Maserati,Grecale
 Maserati,Levante
 Maserati,MC20
+Maserati,MCPura
 Maserati,Quattroporte
+Maxus,Deliver 7
+Maxus,Deliver 9
+Maxus,Euniq 5
+Maxus,Euniq 6
+Maxus,Mifa 7
+Maxus,Mifa 9
+Maxus,T60 Max
+Maxus,T90 EV
+Maxus,eDeliver 3
+Maxus,eDeliver 5
+Maxus,eDeliver 7
+Maxus,eDeliver 9
+Maxus,eTerron 9
 Mazda,2
 Mazda,2 Hybrid
 Mazda,3
 Mazda,5
 Mazda,6
+Mazda,6e
+Mazda,BT-50
 Mazda,CX-3
 Mazda,CX-30
 Mazda,CX-5
 Mazda,CX-60
+Mazda,CX-7
 Mazda,CX-80
 Mazda,EZ-6
 Mazda,EZ-60
 Mazda,MX-30
 Mazda,MX-5
 Mazda,Miata
+Mazda,RX-8
 Mazda,Roadster
 Mazzanti,Evantra
+McLaren,12C
+McLaren,540C
+McLaren,570GT
+McLaren,570S
+McLaren,600LT
+McLaren,620R
+McLaren,650S
+McLaren,675LT
+McLaren,720S
+McLaren,750S
+McLaren,765LT
 McLaren,Artura
 McLaren,Elva
 McLaren,GT
+McLaren,GTS
 McLaren,P1
 McLaren,Senna
 McLaren,Solus GT
 McLaren,Speedtail
+McLaren,W1
 Mercedes,A 160
 Mercedes,A 180
 Mercedes,A 200
 Mercedes,A 220
 Mercedes,A 250
+Mercedes,A 250 e
 Mercedes,AMG A 35
 Mercedes,AMG A 45
 Mercedes,AMG C 43
 Mercedes,AMG C 63
 Mercedes,AMG CLA 35
 Mercedes,AMG CLA 45
+Mercedes,AMG CLE 53
 Mercedes,AMG CLS 53
+Mercedes,AMG CLS 63
 Mercedes,AMG E 43
 Mercedes,AMG E 53
 Mercedes,AMG E 63
+Mercedes,AMG EQE 43
+Mercedes,AMG EQE 53
+Mercedes,AMG EQS 53
 Mercedes,AMG G 63
+Mercedes,AMG G 65
 Mercedes,AMG GLA 35
 Mercedes,AMG GLA 45
 Mercedes,AMG GLB 35
 Mercedes,AMG GLC 43
 Mercedes,AMG GLC 63
+Mercedes,AMG GLE 43
 Mercedes,AMG GLE 53
 Mercedes,AMG GLE 63
 Mercedes,AMG GLS 63
 Mercedes,AMG GT
 Mercedes,AMG GT 4-Door Coupé
+Mercedes,AMG ONE
 Mercedes,AMG S 63
 Mercedes,AMG S 65
+Mercedes,AMG SL 43
+Mercedes,AMG SL 55
+Mercedes,AMG SLC 43
+Mercedes,B 160
 Mercedes,B 180
 Mercedes,B 200
 Mercedes,B 220
 Mercedes,B 250
+Mercedes,B 250 e
+Mercedes,C 160
 Mercedes,C 180
 Mercedes,C 200
 Mercedes,C 220 d
 Mercedes,C 250
 Mercedes,C 300
+Mercedes,C 300 de
 Mercedes,C 300 e
+Mercedes,C 350
 Mercedes,C 350 e
+Mercedes,C 400
 Mercedes,C-Klasse T-Modell
 Mercedes,C-Klasse T-Modell All-Terrain
+Mercedes,CL
 Mercedes,CLA 180
 Mercedes,CLA 200
 Mercedes,CLA 220
 Mercedes,CLA 250
+Mercedes,CLA 250 e
+Mercedes,CLA 350
 Mercedes,CLA Shooting Brake
+Mercedes,CLC
 Mercedes,CLE
+Mercedes,CLS 250 d
 Mercedes,CLS 300 d
 Mercedes,CLS 350
+Mercedes,CLS 400
 Mercedes,CLS 450
+Mercedes,CLS 500
+Mercedes,CLS Shooting Brake
 Mercedes,Citan
 Mercedes,E 200
 Mercedes,E 220 d
+Mercedes,E 250
 Mercedes,E 300
+Mercedes,E 300 de
 Mercedes,E 300 e
 Mercedes,E 350
+Mercedes,E 350 e
 Mercedes,E 400
+Mercedes,E 450
+Mercedes,E 500
 Mercedes,E-Klasse T-Modell
 Mercedes,E-Klasse T-Modell All-Terrain
 Mercedes,EQA
@@ -649,11 +1044,17 @@ Mercedes,EQS SUV
 Mercedes,EQT
 Mercedes,EQV
 Mercedes,G 350 d
+Mercedes,G 400 d
+Mercedes,G 450 d
 Mercedes,G 500
+Mercedes,G 580
+Mercedes,GL
+Mercedes,GLA 160
 Mercedes,GLA 180
 Mercedes,GLA 200
 Mercedes,GLA 220
 Mercedes,GLA 250
+Mercedes,GLA 250 e
 Mercedes,GLB 180
 Mercedes,GLB 200
 Mercedes,GLB 220
@@ -662,28 +1063,51 @@ Mercedes,GLC 200
 Mercedes,GLC 220 d
 Mercedes,GLC 250
 Mercedes,GLC 300
+Mercedes,GLC 300 de
 Mercedes,GLC 300 e
+Mercedes,GLC 350 e
+Mercedes,GLC 400 d
+Mercedes,GLC 400 e
 Mercedes,GLC Coupé
+Mercedes,GLE 250 d
 Mercedes,GLE 300 d
 Mercedes,GLE 350
+Mercedes,GLE 350 de
 Mercedes,GLE 400
+Mercedes,GLE 400 e
 Mercedes,GLE 450
 Mercedes,GLE 500
+Mercedes,GLE 500 e
 Mercedes,GLE Coupé
+Mercedes,GLK
 Mercedes,GLS 350 d
 Mercedes,GLS 400
 Mercedes,GLS 450
 Mercedes,GLS 500
 Mercedes,GLS 580
+Mercedes,ML
+Mercedes,Marco Polo
+Mercedes,Maybach EQS 680 SUV
+Mercedes,Maybach GLS 600
 Mercedes,Maybach S 560
+Mercedes,Maybach S 580
+Mercedes,Maybach S 600
+Mercedes,Maybach S 650
+Mercedes,Maybach S 680
 Mercedes,Mercedes-AMG GT 63 4MATIC+
 Mercedes,Mercedes-AMG GT Coupé
+Mercedes,R-Klasse
 Mercedes,S 350 d
 Mercedes,S 400
 Mercedes,S 450
 Mercedes,S 500
+Mercedes,S 500 e
 Mercedes,S 560
+Mercedes,S 560 e
 Mercedes,S 580
+Mercedes,S 580 e
+Mercedes,S 600
+Mercedes,SL 350
 Mercedes,SL 400
 Mercedes,SL 500
 Mercedes,SL 63 AMG
@@ -691,22 +1115,32 @@ Mercedes,SL 65 AMG
 Mercedes,SLC
 Mercedes,SLC 180
 Mercedes,SLC 200
+Mercedes,SLC 250 d
 Mercedes,SLC 300
 Mercedes,SLK
+Mercedes,SLS AMG
 Mercedes,Sprinter
 Mercedes,T-Class
 Mercedes,V 200
 Mercedes,V 220 d
 Mercedes,V 250 d
 Mercedes,V 300 d
+Mercedes,Viano
+Mercedes,Vito
 Mercedes,X-Class
+Mercedes,eCitan
+Mercedes,eSprinter
+Mercedes,eVito
 Micro,Microlino
+Micro,Microlino Lite
 Mitsubishi,ASX
 Mitsubishi,Challenger
 Mitsubishi,Colt
 Mitsubishi,Eclipse Cross
+Mitsubishi,Grandis
 Mitsubishi,L200
 Mitsubishi,Lancer
+Mitsubishi,Lancer Evolution
 Mitsubishi,Montero
 Mitsubishi,Montero Sport
 Mitsubishi,Outlander
@@ -715,10 +1149,13 @@ Mitsubishi,Pajero Sport
 Mitsubishi,Shogun
 Mitsubishi,Space Star
 Mitsubishi,i-MiEV
+Mobilize,Bento
 Mobilize,Duo
 Morgan,3 wheeler
 Morgan,4
 Morgan,Aero 8
+Morgan,Aero Coupe
+Morgan,Aero SuperSports
 Morgan,Midsummer
 Morgan,Plus 4
 Morgan,Plus 6
@@ -738,33 +1175,56 @@ Nissan,Ariya
 Nissan,Cube
 Nissan,Frontier
 Nissan,GT-R
+Nissan,Interstar
 Nissan,Juke
 Nissan,Leaf
 Nissan,Micra
 Nissan,Murano
 Nissan,N7
+Nissan,NV200
+Nissan,NV250
+Nissan,NV300
+Nissan,NV400
 Nissan,Navara
+Nissan,Note
 Nissan,Pathfinder
 Nissan,Patrol
+Nissan,Pixo
+Nissan,Primastar
+Nissan,Pulsar
 Nissan,Qashqai
+Nissan,Qashqai+2
 Nissan,Teana
 Nissan,Tiida
 Nissan,Townstar
 Nissan,X-Trail
+Nissan,e-NV200
 Noble,M500
 Noble,M600
+Omoda,5
+Omoda,7
+Omoda,9
+Omoda,E5
 Opel,Adam
 Opel,Agila B
 Opel,Ampera
 Opel,Ampera-e
 Opel,Antara
+Opel,Astra H
+Opel,Astra H OPC
 Opel,Astra J
+Opel,Astra J OPC
 Opel,Astra K
 Opel,Astra L
 Opel,Cascada
+Opel,Combo C
 Opel,Combo D
 Opel,Combo E
+Opel,Combo Life
+Opel,Corsa D
+Opel,Corsa D OPC
 Opel,Corsa E
+Opel,Corsa E OPC
 Opel,Corsa F
 Opel,Crossland
 Opel,Crossland X
@@ -772,47 +1232,88 @@ Opel,Frontera
 Opel,Grandland
 Opel,Grandland X
 Opel,Insignia A
+Opel,Insignia A OPC
 Opel,Insignia B
 Opel,Karl
+Opel,Meriva A
 Opel,Meriva B
 Opel,Mokka
+Opel,Mokka GSE
 Opel,Mokka X
+Opel,Movano A
 Opel,Movano B
 Opel,Movano C
 Opel,Rocks-e
+Opel,Vivaro A
 Opel,Vivaro B
 Opel,Vivaro C
+Opel,Zafira
+Opel,Zafira B
+Opel,Zafira B OPC
+Opel,Zafira Life
 Opel,Zafira Tourer C
+Pagani,Huayra
 Pagani,Utopia
+Pagani,Zonda
 Perodua,Myvi
+Peugeot,107
 Peugeot,108
 Peugeot,2008
+Peugeot,206+
+Peugeot,207
+Peugeot,207 CC
+Peugeot,207 SW
 Peugeot,208
 Peugeot,208 GTi
 Peugeot,3008
+Peugeot,301
 Peugeot,308
+Peugeot,308 CC
 Peugeot,308 GTi
 Peugeot,308 SW
+Peugeot,4007
 Peugeot,4008
+Peugeot,407
+Peugeot,407 SW
 Peugeot,408
 Peugeot,5008
 Peugeot,508
+Peugeot,508 PSE
+Peugeot,508 RXH
+Peugeot,508 SW
+Peugeot,607
+Peugeot,807
 Peugeot,Bipper
+Peugeot,Bipper Tepee
 Peugeot,Boxer
+Peugeot,E-2008
 Peugeot,E-208
 Peugeot,E-208 GTi
 Peugeot,E-3008
 Peugeot,E-308
 Peugeot,E-308 SW
+Peugeot,E-408
 Peugeot,E-5008
+Peugeot,E-Boxer
+Peugeot,E-Expert
+Peugeot,E-Partner
+Peugeot,E-Rifter
+Peugeot,E-Traveller
+Peugeot,Expert
 Peugeot,Expert Tepee
+Peugeot,Partner
 Peugeot,Partner Rapid
 Peugeot,Partner Tepee
 Peugeot,RCZ
+Peugeot,RCZ R
 Peugeot,Rifter
 Peugeot,Traveller
 Peugeot,iOn
+Piaggio,Ape
 Piaggio,Porter
+Piaggio,Porter NP6
+Piaggio,Quargo
+Pininfarina,B95
 Pininfarina,Battista
 Polestar,1
 Polestar,2
@@ -822,46 +1323,86 @@ Polestar,5
 Porsche,718 Boxster
 Porsche,718 Boxster GTS
 Porsche,718 Boxster S
+Porsche,718 Boxster T
 Porsche,718 Cayman
 Porsche,718 Cayman GT4
+Porsche,718 Cayman GT4 RS
 Porsche,718 Cayman GTS
 Porsche,718 Cayman S
+Porsche,718 Cayman T
 Porsche,718 Spyder
+Porsche,718 Spyder RS
 Porsche,911
 Porsche,911 Carrera
 Porsche,911 Carrera 4
 Porsche,911 Carrera 4S
 Porsche,911 Carrera S
+Porsche,911 Carrera T
+Porsche,911 Dakar
+Porsche,911 GT2 RS
 Porsche,911 GT3
 Porsche,911 GT3 RS
 Porsche,911 GTS
+Porsche,911 R
+Porsche,911 S/T
+Porsche,911 Speedster
+Porsche,911 Sport Classic
+Porsche,911 Targa
 Porsche,911 Turbo
 Porsche,911 Turbo S
 Porsche,918 Spyder
 Porsche,Boxster
 Porsche,Cayenne
+Porsche,Cayenne Coupé
+Porsche,Cayenne E-Hybrid
+Porsche,Cayenne Electric
 Porsche,Cayenne GTS
 Porsche,Cayenne S
+Porsche,Cayenne S E-Hybrid
 Porsche,Cayenne Turbo
+Porsche,Cayenne Turbo E-Hybrid
+Porsche,Cayenne Turbo Electric
+Porsche,Cayenne Turbo GT
 Porsche,Cayenne Turbo S E-Hybrid
 Porsche,Cayman
 Porsche,Macan
+Porsche,Macan 4
+Porsche,Macan 4S
 Porsche,Macan GTS
 Porsche,Macan S
+Porsche,Macan T
 Porsche,Macan Turbo
 Porsche,Panamera
 Porsche,Panamera 4
+Porsche,Panamera 4 E-Hybrid
 Porsche,Panamera 4S
+Porsche,Panamera 4S E-Hybrid
 Porsche,Panamera GTS
+Porsche,Panamera S
+Porsche,Panamera S E-Hybrid
+Porsche,Panamera Sport Turismo
 Porsche,Panamera Turbo
+Porsche,Panamera Turbo E-Hybrid
+Porsche,Panamera Turbo S
 Porsche,Panamera Turbo S E-Hybrid
 Porsche,Taycan
+Porsche,Taycan 4S
+Porsche,Taycan Cross Turismo
+Porsche,Taycan GTS
+Porsche,Taycan Sport Turismo
+Porsche,Taycan Turbo
+Porsche,Taycan Turbo GT
+Porsche,Taycan Turbo S
 Proton,Ertiga
+Proton,Gen-2
 Proton,Gen-2 Persona
 Proton,Persona
 Proton,Prevé
 Proton,Satria Neo
 Proton,Suprima S
+RAM,1500
+RAM,2500
+RAM,3500
 Renault,4 E-Tech
 Renault,5 E-Tech
 Renault,Alaskan
@@ -869,11 +1410,17 @@ Renault,Arkana
 Renault,Austral
 Renault,Captur
 Renault,Clio
+Renault,Clio GT
 Renault,Clio RS
 Renault,Clio RS Trophy
 Renault,Duster Oroch
 Renault,Espace
 Renault,Express
+Renault,Fluence
+Renault,Grand Espace
+Renault,Grand Kangoo
+Renault,Grand Modus
+Renault,Grand Scenic
 Renault,Kadjar
 Renault,Kangoo
 Renault,Kaptur
@@ -885,11 +1432,14 @@ Renault,Master
 Renault,Megane GT
 Renault,Megane RS
 Renault,Megane RS Trophy
+Renault,Megane RS Trophy-R
+Renault,Modus
 Renault,Mégane
 Renault,Mégane E-Tech Electric
 Renault,Oroch
 Renault,Rafale
 Renault,Scenic
+Renault,Scenic E-Tech Electric
 Renault,Symbioz
 Renault,Symbol
 Renault,Taliant
@@ -898,42 +1448,59 @@ Renault,Trafic
 Renault,Trafic Combi
 Renault,Trafic SpaceClass
 Renault,Twingo
+Renault,Twingo GT
+Renault,Twingo RS
 Renault,Twizy
+Renault,Wind
 Renault,ZOE
 Rimac,C Two
+Rimac,Concept One
 Rimac,Concept S
 Rimac,Nevera
+Rimac,Nevera R
 Rolls-Royce,Cullinan
 Rolls-Royce,Dawn
 Rolls-Royce,Ghost
 Rolls-Royce,Phantom
 Rolls-Royce,Spectre
 Rolls-Royce,Wraith
+Saab,9-3
+Saab,9-5
 Seat,Alhambra
 Seat,Altea
 Seat,Arona
 Seat,Ateca
+Seat,Exeo
 Seat,Ibiza
 Seat,Léon
 Seat,Mii
 Seat,Tarraco
 Seat,Toledo
+Seres,3
+Seres,5
 Seres,A5
 Seres,E3
 Seres,SF5
 Spyker,C8 Aileron
 Spyker,C8 Preliator
+SsangYong,Actyon
 SsangYong,Actyon Sports
 SsangYong,Korando
+SsangYong,Korando e-Motion
+SsangYong,Kyron
 SsangYong,Musso
 SsangYong,Musso EV
+SsangYong,Musso Grand
 SsangYong,Rexton
 SsangYong,Rexton W
+SsangYong,Rodius
 SsangYong,Tivoli
 SsangYong,Tivoli XLV
 SsangYong,Torres
+SsangYong,Torres EVX
 Subaru,BRZ
 Subaru,Crosstrek
+Subaru,E-Outback
 Subaru,Forester
 Subaru,Impreza
 Subaru,Justy
@@ -942,21 +1509,32 @@ Subaru,Levorg
 Subaru,Outback
 Subaru,Solterra
 Subaru,Trezia
+Subaru,Tribeca
+Subaru,Uncharted
 Subaru,WRX
+Subaru,WRX STI
+Subaru,XV
 Subaru,XV Crosstrek
 Suzuki,Across
+Suzuki,Alto
 Suzuki,Baleno
 Suzuki,Celerio
 Suzuki,Grand Vitara
 Suzuki,Ignis
 Suzuki,Jimny
+Suzuki,Kizashi
 Suzuki,S-Cross
 Suzuki,SX4
+Suzuki,Splash
 Suzuki,Swace
 Suzuki,Swift
+Suzuki,Swift Sport
 Suzuki,Vitara
+Suzuki,e Vitara
 TVR,Griffith
 Tata,Safari
+Tata,Vista
+Tata,Xenon
 Tazzari,Zero
 Tesla,Cybertruck
 Tesla,Model 3
@@ -965,7 +1543,9 @@ Tesla,Model X
 Tesla,Model Y
 Tesla,Roadster
 Toyota,Auris
+Toyota,Auris Touring Sports
 Toyota,Avensis
+Toyota,Avensis Touring Sports
 Toyota,Aygo
 Toyota,Aygo X
 Toyota,C-HR
@@ -978,6 +1558,7 @@ Toyota,GR Supra
 Toyota,GR Yaris
 Toyota,GR86
 Toyota,GT86
+Toyota,Hiace
 Toyota,Highlander
 Toyota,Hilux
 Toyota,Land Cruiser
@@ -985,6 +1566,7 @@ Toyota,Land Cruiser Prado
 Toyota,Mirai
 Toyota,Prius
 Toyota,Prius Plug-In Hybrid
+Toyota,Prius Plus
 Toyota,Proace
 Toyota,Proace City
 Toyota,Proace City Verso
@@ -997,6 +1579,7 @@ Toyota,Verso
 Toyota,Verso-S
 Toyota,Yaris
 Toyota,Yaris Cross
+Toyota,Yaris GRMN
 Toyota,bZ4X
 Toyota,bZ4X Touring
 Toyota,iQ
@@ -1005,13 +1588,21 @@ Vauxhall,Agila B
 Vauxhall,Ampera
 Vauxhall,Ampera-e
 Vauxhall,Antara
+Vauxhall,Astra H
+Vauxhall,Astra H VXR
 Vauxhall,Astra J
+Vauxhall,Astra J VXR
 Vauxhall,Astra K
 Vauxhall,Astra L
 Vauxhall,Cascada
+Vauxhall,Combo C
 Vauxhall,Combo D
 Vauxhall,Combo E
+Vauxhall,Combo Life
+Vauxhall,Corsa D
+Vauxhall,Corsa D VXR
 Vauxhall,Corsa E
+Vauxhall,Corsa E VXR
 Vauxhall,Corsa F
 Vauxhall,Crossland
 Vauxhall,Crossland X
@@ -1019,51 +1610,85 @@ Vauxhall,Frontera C
 Vauxhall,Grandland
 Vauxhall,Grandland X
 Vauxhall,Insignia A
+Vauxhall,Insignia A VXR
 Vauxhall,Insignia B
+Vauxhall,Meriva A
 Vauxhall,Meriva B
 Vauxhall,Mokka
+Vauxhall,Mokka GSE
 Vauxhall,Mokka X
+Vauxhall,Movano A
 Vauxhall,Movano B
 Vauxhall,Movano C
+Vauxhall,VXR8
 Vauxhall,Viva
+Vauxhall,Vivaro A
 Vauxhall,Vivaro B
 Vauxhall,Vivaro C
+Vauxhall,Vivaro Life
+Vauxhall,Zafira B
+Vauxhall,Zafira B VXR
 Vauxhall,Zafira Tourer C
 Volkswagen,Amarok
 Volkswagen,Arteon
 Volkswagen,Arteon R
+Volkswagen,Arteon R Shooting Brake
+Volkswagen,Arteon Shooting Brake
 Volkswagen,CC
 Volkswagen,Caddy
+Volkswagen,Caddy California
+Volkswagen,Caddy Cargo
 Volkswagen,California
 Volkswagen,Caravelle
 Volkswagen,Crafter
 Volkswagen,Eos
+Volkswagen,Fox
 Volkswagen,Golf
+Volkswagen,Golf Alltrack
+Volkswagen,Golf Cabriolet
 Volkswagen,Golf GTD
+Volkswagen,Golf GTD Variant
 Volkswagen,Golf GTE
 Volkswagen,Golf GTI
+Volkswagen,Golf GTI Cabriolet
+Volkswagen,Golf GTI Clubsport
+Volkswagen,Golf GTI TCR
+Volkswagen,Golf Plus
 Volkswagen,Golf R
+Volkswagen,Golf R Cabriolet
 Volkswagen,Golf R Variant
+Volkswagen,Golf Sportsvan
 Volkswagen,Golf Variant
 Volkswagen,Grand California
 Volkswagen,ID. Buzz
 Volkswagen,ID. Buzz Cargo
+Volkswagen,ID. Buzz GTX
+Volkswagen,ID. Polo
 Volkswagen,ID.3
+Volkswagen,ID.3 GTX
 Volkswagen,ID.4
+Volkswagen,ID.4 GTX
 Volkswagen,ID.5
+Volkswagen,ID.5 GTX
 Volkswagen,ID.7
+Volkswagen,ID.7 GTX
+Volkswagen,ID.7 GTX Tourer
 Volkswagen,ID.7 Tourer
 Volkswagen,Jetta
 Volkswagen,Multivan
 Volkswagen,Passat
+Volkswagen,Passat Alltrack
 Volkswagen,Passat GTE
 Volkswagen,Passat R-Line
 Volkswagen,Passat V facelift
+Volkswagen,Passat Variant
 Volkswagen,Phaeton
 Volkswagen,Polo
 Volkswagen,Polo GTI
+Volkswagen,Polo R WRC
 Volkswagen,Polo Sedan
 Volkswagen,Scirocco
+Volkswagen,Scirocco R
 Volkswagen,Sharan
 Volkswagen,T-Cross
 Volkswagen,T-Roc
@@ -1077,35 +1702,61 @@ Volkswagen,Taigo
 Volkswagen,Tayron
 Volkswagen,Tharu
 Volkswagen,The Beetle
+Volkswagen,The Beetle Cabriolet
 Volkswagen,Tiguan
+Volkswagen,Tiguan Allspace
 Volkswagen,Tiguan R
 Volkswagen,Tiguan R-Line
 Volkswagen,Touareg
+Volkswagen,Touareg R
 Volkswagen,Touran
 Volkswagen,Touran I facelift
 Volkswagen,Transporter
 Volkswagen,Up!
+Volkswagen,XL1
+Volkswagen,e-Caravelle
+Volkswagen,e-Crafter
+Volkswagen,e-Golf
+Volkswagen,e-Transporter
+Volkswagen,e-up!
+Volkswagen,up! GTI
+Volvo,C30
 Volvo,C40
+Volvo,C70
 Volvo,EC40
 Volvo,ES90
 Volvo,EX30
+Volvo,EX30 Cross Country
 Volvo,EX40
+Volvo,EX60
 Volvo,EX90
+Volvo,S40
 Volvo,S60
+Volvo,S60 Cross Country
 Volvo,S80
 Volvo,S90
 Volvo,V40
+Volvo,V40 Cross Country
+Volvo,V50
 Volvo,V60
+Volvo,V60 Cross Country
 Volvo,V70
 Volvo,V90
+Volvo,V90 Cross Country
 Volvo,XC40
 Volvo,XC60
 Volvo,XC70
 Volvo,XC90
+Voyah,Courage
+Voyah,Dream
 Voyah,Free
+XPeng,G3
 XPeng,G6
+XPeng,G7
 XPeng,G9
+XPeng,P5
 XPeng,P7
+XPeng,X9
 Zeekr,001
 Zeekr,7GT
 Zeekr,7X
@@ -1113,6 +1764,7 @@ Zeekr,X
 e.GO Mobile,Life
 e.GO Mobile,Lux
 e.GO Mobile,Mover
+e.GO Mobile,e.wave X
 smart,#1
 smart,#3
 smart,#5
@@ -1121,6 +1773,8 @@ smart,ForTwo
 Škoda,Citigo
 Škoda,Elroq
 Škoda,Enyaq
+Škoda,Enyaq Coupé
+Škoda,Epiq
 Škoda,Fabia
 Škoda,Kamiq
 Škoda,Karoq
@@ -1128,6 +1782,7 @@ smart,ForTwo
 Škoda,Octavia
 Škoda,Praktik
 Škoda,Rapid
+Škoda,Rapid Spaceback
 Škoda,Roomster
 Škoda,Scala
 Škoda,Superb

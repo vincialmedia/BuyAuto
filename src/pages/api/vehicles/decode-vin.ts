@@ -1338,9 +1338,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const first_registration = normalizeFirstRegistration(extracted.rawFirstRegistration);
 
-    const providerMakeRaw = extracted.providerMake;
-    const providerModel = extracted.providerModel;
+    let providerMakeRaw = extracted.providerMake;
+    let providerModel = extracted.providerModel;
     let providerTrim = extracted.providerTrim;
+
+    // The VIN outranks the provider label where the two can disagree. Cupra
+    // models carry Seat's VSS world-manufacturer code, and the provider's
+    // record can be wrong outright — a Formentor VZ5 decodes as "Seat Ateca"
+    // (their own wheelbase/length figures match the Formentor). Positions 7-8
+    // of a Martorell VIN name the platform, and these codes belong to
+    // Cupra-only models, so they are safe to force. Codes shared across both
+    // brands (Leon "KL", Ateca "5F") must stay out of this table.
+    const VSS_CUPRA_TYP: Record<string, string> = { KM: "Formentor", K1: "Born" };
+    let makeModelOverriddenFromVin = false;
+    {
+      const wmi = vin.slice(0, 3).toUpperCase();
+      const typ = vin.slice(6, 8).toUpperCase();
+      const overrideModel = wmi === "VSS" ? VSS_CUPRA_TYP[typ] : undefined;
+      const providerMakeKey = providerMakeRaw ? normalizeVehicleKey(providerMakeRaw) : "";
+      if (overrideModel && (providerMakeKey === "" || providerMakeKey === "seat" || providerMakeKey === "cupra")) {
+        const alreadyRight =
+          providerMakeKey === "cupra" &&
+          normalizeVehicleKey(providerModel ?? "") === normalizeVehicleKey(overrideModel);
+        providerMakeRaw = "Cupra";
+        providerModel = overrideModel;
+        if (!alreadyRight) makeModelOverriddenFromVin = true;
+      }
+    }
 
     const makeCanon = providerMakeRaw ? canonicalizeMakeText(providerMakeRaw) : null;
     const providerMake = makeCanon?.canonicalName ?? providerMakeRaw;
@@ -1358,6 +1382,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let variant_text: string | null = null;
     let catalog_confidence: CatalogConfidence = "high";
     let catalog_needs_review = false;
+
+    if (makeModelOverriddenFromVin) {
+      catalog_confidence = "medium";
+      catalog_needs_review = true;
+    }
 
     let modelFamilyName: string | null =
       typeof providerModelForResolve === "string" && providerModelForResolve.trim().length > 0 ? providerModelForResolve.trim() : null;
@@ -1434,7 +1463,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (make_id && modelFamilyName && modelFamilyName.trim().length >= 2) {
+    // The catalog keeps performance sub-brands as their own models (AMG G 63,
+    // M3, ...), and for those cars the provider's TRIM is the model: a G 63 AMG
+    // arrives as model "G", trim "AMG G63". Try the trim against models and
+    // aliases first — it is more specific than the derived family name and is
+    // only used when it actually matches a catalog row.
+    let modelResolvedFromTrim = false;
+    if (make_id && providerTrim) {
+      const trimKey = normalizeVehicleKey(providerTrim);
+      if (trimKey && trimKey.length >= 2) {
+        const trimAlias = await supabaseAdmin
+          .from("vehicle_aliases")
+          .select("model_id")
+          .eq("entity_type", "model")
+          .eq("make_id", make_id)
+          .eq("normalized_alias", trimKey)
+          .maybeSingle();
+
+        model_id = (trimAlias.data?.model_id as string | null) ?? null;
+
+        if (!model_id) {
+          const { data: trimModel } = await supabaseAdmin
+            .from("models")
+            .select("id,is_active")
+            .eq("make_id", make_id)
+            .eq("normalized_name", trimKey)
+            .maybeSingle();
+          model_id = trimModel && trimModel.is_active !== false ? ((trimModel.id as string | null) ?? null) : null;
+        }
+
+        if (model_id) modelResolvedFromTrim = true;
+      }
+    }
+
+    // Family-name fallback. Length >= 1, not >= 2: Mercedes G and smart #1
+    // are real one-character model keys, and the >= 2 gate silently dropped
+    // them (a decoded G 63 AMG mapped its make but never its model).
+    let modelResolvedFromSuffix = false;
+    let suffixVariantPrefix: string | null = null;
+    if (!model_id && make_id && modelFamilyName && modelFamilyName.trim().length >= 1) {
       const modelKey = normalizeVehicleKey(modelFamilyName);
 
       const aliasAttempt = await supabaseAdmin
@@ -1450,19 +1517,88 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!model_id) {
         const { data: existingModel } = await supabaseAdmin
           .from("models")
-          .select("id")
+          .select("id,is_active")
           .eq("make_id", make_id)
           .eq("normalized_name", modelKey)
           .maybeSingle();
 
-        model_id = (existingModel?.id as string | null) ?? null;
+        model_id = existingModel && existingModel.is_active !== false ? ((existingModel.id as string | null) ?? null) : null;
+      }
+
+      // Some providers put the variant BEFORE the family name: a Mini
+      // Clubman Cooper arrives as model "Cooper Clubman". When the full
+      // string matches nothing, try progressively shorter tail slices and
+      // keep the removed prefix as the variant candidate. Deliberately no
+      // alias for the full string on this path — future decodes must rerun
+      // the same split so the prefix keeps reaching the variant resolver.
+      if (!model_id) {
+        const tokens = modelFamilyName.trim().split(/\s+/).filter(Boolean);
+        for (let k = 1; k < tokens.length && !model_id; k++) {
+          const tail = tokens.slice(k).join(" ");
+          const tailKey = normalizeVehicleKey(tail);
+          if (!tailKey) continue;
+
+          const tailAlias = await supabaseAdmin
+            .from("vehicle_aliases")
+            .select("model_id")
+            .eq("entity_type", "model")
+            .eq("make_id", make_id)
+            .eq("normalized_alias", tailKey)
+            .maybeSingle();
+
+          model_id = (tailAlias.data?.model_id as string | null) ?? null;
+
+          if (!model_id) {
+            const { data: tailModel } = await supabaseAdmin
+              .from("models")
+              .select("id,is_active")
+              .eq("make_id", make_id)
+              .eq("normalized_name", tailKey)
+              .maybeSingle();
+            model_id = tailModel && tailModel.is_active !== false ? ((tailModel.id as string | null) ?? null) : null;
+          }
+
+          if (model_id) {
+            modelResolvedFromSuffix = true;
+            suffixVariantPrefix = tokens.slice(0, k).join(" ");
+            modelFamilyName = tail;
+            if (!variant_text) variant_text = suffixVariantPrefix;
+            catalog_needs_review = true;
+            if (catalog_confidence === "high") catalog_confidence = "medium";
+          }
+        }
+      }
+
+      // Model-implies-make. Brand splits (Seat/Cupra, Fiat/Abarth,
+      // Dodge/RAM) make providers label a car with the group's legacy make
+      // while the model only exists under the split-off brand. When the
+      // model name matches exactly ONE other make's catalog row, the model
+      // wins over the provider's make label — flagged for review, since the
+      // provider and the catalog disagree.
+      if (!model_id && modelKey.length >= 2) {
+        const { data: crossRows } = await supabaseAdmin
+          .from("models")
+          .select("id,make_id,is_active")
+          .eq("normalized_name", modelKey);
+
+        const candidates = (crossRows ?? []).filter(
+          (m) => m.is_active !== false && typeof m.make_id === "string" && m.make_id !== make_id
+        );
+        const otherMakes = [...new Set(candidates.map((m) => m.make_id as string))];
+
+        if (otherMakes.length === 1) {
+          make_id = otherMakes[0];
+          model_id = candidates[0].id as string;
+          catalog_needs_review = true;
+          if (catalog_confidence === "high") catalog_confidence = "medium";
+        }
       }
 
       if (!model_id) {
         model_id = await createModel({ supabaseAdmin, makeId: make_id, providerModel: modelFamilyName });
       }
 
-      if (model_id) {
+      if (model_id && !modelResolvedFromSuffix) {
         await insertModelAlias({ supabaseAdmin, makeId: make_id, modelId: model_id, alias: modelFamilyName, normalizedAlias: modelKey });
 
         if (modelDerivedFromTrimLike && providerModelForResolve) {
@@ -1488,6 +1624,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const canonicalVariantCandidate = (() => {
       const remainder = variant_text && !isLikelyJunkVariant(variant_text) ? variant_text.trim() : null;
 
+      // Suffix split ("Cooper Clubman" -> model Clubman): the candidate is
+      // the removed prefix ALONE. Composing `${family} ${remainder}` here
+      // would rebuild the junk word order ("Clubman Cooper").
+      if (modelResolvedFromSuffix && suffixVariantPrefix && !isLikelyJunkVariant(suffixVariantPrefix)) {
+        return suffixVariantPrefix.trim().replace(/\s+/g, " ");
+      }
+
       if (modelDerivedFromTrimLike && providerModelForResolve && !isLikelyJunkVariant(providerModelForResolve)) {
         return providerModelForResolve.trim().replace(/\s+/g, " ");
       }
@@ -1503,20 +1646,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return remainder;
     })();
 
-    if (model_id && canonicalVariantCandidate && !isLikelyJunkVariant(canonicalVariantCandidate)) {
-      const { data: resolvedVariantId, error: vErr } = await supabaseAdmin.rpc("resolve_variant_id", {
-        p_model_id: model_id,
-        p_variant_text: canonicalVariantCandidate,
-      });
+    // Most specific candidate first: a provider trim ("S500 4MATIC") beats a
+    // candidate derived from the model string ("S 500") — resolving the
+    // derived one first silently dropped the drivetrain. When a candidate
+    // ends in a drivetrain badge, it is retried without it, so a catalog
+    // that steps this model's variants by engine only still resolves.
+    const variantCandidates: string[] = [];
+    const pushVariantCandidate = (c: string | null | undefined) => {
+      const clean = typeof c === "string" ? c.trim().replace(/\s+/g, " ") : "";
+      if (!clean || isLikelyJunkVariant(clean)) return;
+      const key = normalizeVehicleKey(clean);
+      if (!key || variantCandidates.some((x) => normalizeVehicleKey(x) === key)) return;
+      variantCandidates.push(clean);
+    };
+    if (!modelResolvedFromTrim) pushVariantCandidate(providerTrim);
+    pushVariantCandidate(canonicalVariantCandidate);
+    const DRIVETRAIN_TAIL = /\s+(4MATIC\+?|xDrive|quattro|4Drive|ALL4|AWD|4WD|4x4|Allrad)$/i;
+    for (const c of [...variantCandidates]) {
+      if (DRIVETRAIN_TAIL.test(c)) pushVariantCandidate(c.replace(DRIVETRAIN_TAIL, ""));
+    }
 
-      if (vErr) {
-        console.error("resolve_variant_id error", { vin: maskVin(vin) });
-      } else {
-        variant_id = (resolvedVariantId as string | null) ?? null;
+    let resolvedVariantName: string | null = null;
+    if (model_id) {
+      for (const cand of variantCandidates) {
+        const { data: resolvedVariantId, error: vErr } = await supabaseAdmin.rpc("resolve_variant_id", {
+          p_model_id: model_id,
+          p_variant_text: cand,
+        });
+        if (vErr) {
+          console.error("resolve_variant_id error", { vin: maskVin(vin) });
+          break;
+        }
+        if (resolvedVariantId) {
+          variant_id = resolvedVariantId as string;
+          resolvedVariantName = cand;
+          break;
+        }
       }
     }
 
-    if (model_id && canonicalVariantCandidate && !variant_id && !isLikelyJunkVariant(canonicalVariantCandidate)) {
+    // Never auto-create a variant that just repeats the car's own name —
+    // when the model was resolved FROM the trim (AMG G 63), the candidate is
+    // that same trim, and inserting it would put "G 63 AMG" as a variant of
+    // the AMG G 63: a dead dropdown row duplicating the model. A prefix left
+    // over from a suffix split is a word-order guess, not a confirmed trim,
+    // so it may only match existing variants, never mint new ones.
+    let variantCandidateIsModelName = modelResolvedFromTrim || modelResolvedFromSuffix;
+    if (model_id && canonicalVariantCandidate && !variant_id && !variantCandidateIsModelName) {
+      const candKey = normalizeVehicleKey(canonicalVariantCandidate);
+      const { data: selfModel } = await supabaseAdmin
+        .from("models")
+        .select("normalized_name")
+        .eq("id", model_id)
+        .maybeSingle();
+      if (selfModel?.normalized_name && selfModel.normalized_name === candKey) {
+        variantCandidateIsModelName = true;
+      }
+    }
+
+    if (model_id && canonicalVariantCandidate && !variant_id && !variantCandidateIsModelName && !isLikelyJunkVariant(canonicalVariantCandidate)) {
       const cleanName = String(canonicalVariantCandidate).trim().replace(/\s+/g, " ");
       const normalized_name = normalizeVehicleKey(cleanName);
       const nowIso = new Date().toISOString();
@@ -1541,8 +1729,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (variant_id && model_id && canonicalVariantCandidate) {
-      const cleanName = String(canonicalVariantCandidate).trim().replace(/\s+/g, " ");
+    if (variant_id && model_id && (resolvedVariantName || canonicalVariantCandidate)) {
+      const cleanName = String(resolvedVariantName ?? canonicalVariantCandidate).trim().replace(/\s+/g, " ");
       await supabaseAdmin.from("vehicle_aliases").upsert(
         {
           entity_type: "variant",
@@ -1602,12 +1790,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const normalizedUseful = cachedNormalized ? hasUsefulNormalizedData(cachedNormalized) : false;
 
     const cachedDecoded = (cached.decoded_payload as unknown as JsonObject | null) ?? null;
-    const cachedProviderTrim =
-      cachedNormalized && typeof (cachedNormalized as any)?.provider_trim === "string"
-        ? String((cachedNormalized as any).provider_trim).trim()
-        : "";
-
-    if (cachedDecoded && successFresh && !cached?.variant_id && !cachedProviderTrim) {
+    // Only the provider payload is worth caching — it costs a credit. The
+    // catalog mapping is a handful of cheap queries and the catalog moves
+    // under the cache (models demoted, variants added), so a frozen mapping
+    // kept resurfacing the pre-repair hierarchy (stale "S 500" model rows)
+    // and never picked up newly added variants. Always re-derive the mapping
+    // from the stored payload; the stored normalized_payload is only served
+    // when the decoded payload itself is missing.
+    if (cachedDecoded && successFresh) {
       const result = await normalizeAndPersist(cachedDecoded, { cachedFlag: true });
       if (!result.ok) {
         return res.status(result.status).json({

@@ -1,0 +1,21 @@
+{
+  "make": "Cadillac",
+  "_note": "Cadillac splits by engine - the turbo fours, the V6s and the V8s - with V as the performance badge on both the combustion and electric cars.",
+  "models": [],
+  "groups": [
+    { "models": ["ATS"], "variants": ["2.0 Turbo", "2.5", "3.6 V6"] },
+    { "models": ["ATS-V"], "variants": ["3.6 V6 Twin Turbo"] },
+    { "models": ["CTS"], "variants": ["2.0 Turbo", "3.6 V6"] },
+    { "models": ["CTS-V"], "variants": ["6.2 V8 Supercharged"] },
+    { "models": ["CT4"], "variants": ["2.0 Turbo", "2.7 Turbo"] },
+    { "models": ["CT5"], "variants": ["2.0 Turbo", "3.0 V6 Twin Turbo"] },
+    { "models": ["CT6"], "variants": ["2.0 Turbo", "3.0 V6 Twin Turbo", "3.6 V6"] },
+    { "models": ["SRX"], "variants": ["3.0 V6", "3.6 V6"] },
+    { "models": ["XT4"], "variants": ["2.0 Turbo"] },
+    { "models": ["XT5"], "variants": ["2.0 Turbo", "3.6 V6"] },
+    { "models": ["Escalade"], "variants": ["6.2 V8", "3.0 Diesel"] },
+    { "models": ["LYRIQ", "VISTIQ"], "variants": ["102 kWh"] },
+    { "models": ["LYRIQ-V"], "variants": ["102 kWh V"] },
+    { "models": ["OPTIQ"], "variants": ["85 kWh"] }
+  ]
+}

@@ -43,7 +43,15 @@ export type ListingUpdatePayload = Partial<{
   canton_code?: string;
   title?: string;
   price_plan?: PricePlanId;
-  premium?: boolean;
+  /**
+   * Deliberately absent: premium, is_premium and premium_until. Premium is a paid
+   * entitlement, and the owner_update RLS policy would happily let a seller write
+   * it from the browser — which is exactly how listings ended up premium without
+   * paying. It is granted server-side only (Stripe webhook, garage credit RPC, or
+   * an admin), and stripPremiumFields below drops it from any payload that still
+   * carries it. The wizard keeps the user's Premium Boost *choice* in wizard/draft
+   * state and passes it to /api/billing/prepare, which prices it.
+   */
   images?: string[];
   cover_image_index?: number;
   status?: string;
@@ -52,6 +60,20 @@ export type ListingUpdatePayload = Partial<{
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/**
+ * Drop the paid-entitlement columns from a client write. Callers pass whole
+ * wizard-state objects through here, so a stray `premium` can arrive without
+ * anyone intending it; the database trigger rejects such a write outright, which
+ * would surface to the seller as a failed save. Stripping is the quiet fix.
+ */
+function stripPremiumFields<T extends Record<string, unknown>>(payload: T): T {
+  const clean = { ...payload };
+  delete (clean as Record<string, unknown>).premium;
+  delete (clean as Record<string, unknown>).is_premium;
+  delete (clean as Record<string, unknown>).premium_until;
+  return clean;
 }
 
 function coerceNumber(v: unknown): number | undefined {
@@ -78,11 +100,21 @@ export function vehicleCoreFieldsFromWizard(
 > {
   const anyData = data as any;
   const hp = coerceNumber(anyData?.power_hp);
+
+  // make_id/model_id/variant_id are uuid columns. Step 1's react-hook-form
+  // defaults are "" and its mount effect mirrors raw form values into wizard
+  // state, so "" can sit in `data` until the next Step-1 submit nulls it.
+  // Postgres rejects '' for uuid ("invalid input syntax"), which would fail
+  // the whole listing write — so an empty string is normalized to null here,
+  // at the single choke point every write path shares.
+  const uuidOrNull = (v: unknown): string | null =>
+    typeof v === "string" && v.trim() !== "" ? v : null;
+
   return {
     vin: typeof anyData?.vin === "string" ? anyData.vin : null,
-    make_id: typeof anyData?.make_id === "string" ? anyData.make_id : null,
-    model_id: typeof anyData?.model_id === "string" ? anyData.model_id : null,
-    variant_id: typeof anyData?.variant_id === "string" ? anyData.variant_id : null,
+    make_id: uuidOrNull(anyData?.make_id),
+    model_id: uuidOrNull(anyData?.model_id),
+    variant_id: uuidOrNull(anyData?.variant_id),
     power_hp: typeof hp === "number" ? Math.round(hp) : null,
     drivetrain: typeof anyData?.drivetrain === "string" ? anyData.drivetrain : null,
     first_registration: typeof anyData?.first_registration === "string" ? anyData.first_registration : null,
@@ -337,7 +369,7 @@ export const createOrUpdateListing = async (
 
   if (!listingId) {
     const listingDataForInsert = {
-      ...normalizeDealFieldsForInsert(data),
+      ...stripPremiumFields(normalizeDealFieldsForInsert(data)),
       user_id: user.id,
       created_by: user.id,
       status: "draft",
@@ -367,7 +399,7 @@ export const createOrUpdateListing = async (
 
   const { id, ...updateData } = normalizeDealFieldsForUpdate(data);
 
-  const cleanUpdateData = { ...updateData };
+  const cleanUpdateData = stripPremiumFields(updateData);
   if ("user_id" in cleanUpdateData) {
     delete cleanUpdateData.user_id;
   }

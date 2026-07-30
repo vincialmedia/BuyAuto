@@ -1,0 +1,410 @@
+{
+  "make": "Opel",
+  "_note": "Opel arrived with the generation code still attached: 'Astra H OPC' and 'Corsa D OPC' name a specific platform generation, which is not something a seller picks. Worse, the base cars were missing entirely - there was an 'Astra H OPC' row but no 'Astra', so an ordinary Astra could not be listed at all. Adds the four base models and moves OPC to where it belongs, as a variant. Two generations of the same car collapse onto one OPC variant, which is the point: both keep an alias, the dropdown shows one entry.",
+  "models": [
+    "Astra",
+    "Corsa",
+    "Insignia",
+    "Zafira Tourer",
+    "Agila",
+    "Combo",
+    "Meriva",
+    "Movano",
+    "Vivaro"
+  ],
+  "groups": [
+    {
+      "models": [
+        "Astra"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "1.4 Turbo",
+        "1.6 Turbo",
+        "1.5 Diesel",
+        "1.6 CDTI",
+        "1.7 CDTI",
+        "1.0 Turbo",
+        "1.4",
+        "1.6",
+        "1.8",
+        "2.0 CDTI",
+        "1.6 Hybrid",
+        "54 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Corsa"
+      ],
+      "variants": [
+        "1.2",
+        "1.2 Turbo",
+        "1.4",
+        "1.4 Turbo",
+        "1.3 CDTI",
+        "1.5 Diesel",
+        "1.0 Turbo",
+        "1.7 CDTI",
+        "50 kWh",
+        "51 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Insignia"
+      ],
+      "variants": [
+        "1.5 Turbo",
+        "1.6 CDTI",
+        "2.0 CDTI",
+        "2.0 Turbo 4x4",
+        "2.0 CDTI 4x4",
+        "1.4 Turbo",
+        "1.6 Turbo",
+        "1.8",
+        "2.0 Turbo",
+        "2.8 V6 Turbo 4x4"
+      ]
+    },
+    {
+      "models": [
+        "Zafira",
+        "Zafira Tourer"
+      ],
+      "variants": [
+        "1.4 Turbo",
+        "1.6 CDTI",
+        "1.8",
+        "2.0 CDTI",
+        "1.4",
+        "1.6",
+        "1.6 CNG",
+        "1.7 CDTI"
+      ]
+    },
+    {
+      "models": [
+        "Adam"
+      ],
+      "variants": [
+        "1.0 Turbo",
+        "1.2",
+        "1.4"
+      ]
+    },
+    {
+      "models": [
+        "Agila"
+      ],
+      "variants": [
+        "1.0",
+        "1.2",
+        "1.3 CDTI"
+      ]
+    },
+    {
+      "models": [
+        "Karl"
+      ],
+      "variants": [
+        "1.0"
+      ]
+    },
+    {
+      "models": [
+        "Meriva"
+      ],
+      "variants": [
+        "1.4 Turbo",
+        "1.6 CDTI",
+        "1.7 CDTI",
+        "1.3 CDTI",
+        "1.4",
+        "1.6"
+      ]
+    },
+    {
+      "models": [
+        "Antara"
+      ],
+      "variants": [
+        "2.0 CDTI",
+        "2.2 CDTI",
+        "2.4",
+        "3.2 V6"
+      ]
+    },
+    {
+      "models": [
+        "Cascada"
+      ],
+      "variants": [
+        "1.4 Turbo",
+        "1.6 Turbo",
+        "2.0 CDTI"
+      ]
+    },
+    {
+      "models": [
+        "Mokka"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "1.4 Turbo",
+        "1.6 CDTI",
+        "1.5 Diesel",
+        "50 kWh",
+        "54 kWh",
+        "1.6",
+        "1.7 CDTI",
+        "GSE"
+      ]
+    },
+    {
+      "models": [
+        "Crossland"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "1.5 Diesel",
+        "1.6 CDTI"
+      ]
+    },
+    {
+      "models": [
+        "Grandland"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "1.5 Diesel",
+        "1.6 Turbo Hybrid",
+        "73 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Frontera"
+      ],
+      "variants": [
+        "1.2 Turbo Hybrid",
+        "44 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Combo",
+        "Combo Life"
+      ],
+      "variants": [
+        "1.2 PureTech",
+        "1.4",
+        "1.3 CDTI",
+        "1.5 Diesel",
+        "1.6 CDTI",
+        "50 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Vivaro"
+      ],
+      "variants": [
+        "1.5 Diesel",
+        "2.0 Diesel",
+        "1.6 CDTI",
+        "2.0 CDTI",
+        "50 kWh",
+        "75 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Zafira Life"
+      ],
+      "variants": [
+        "1.5 Diesel",
+        "2.0 Diesel",
+        "50 kWh",
+        "75 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Movano"
+      ],
+      "variants": [
+        "2.3 CDTI",
+        "2.2 Diesel",
+        "110 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Ampera"
+      ],
+      "variants": [
+        "1.4 Range Extender"
+      ]
+    },
+    {
+      "models": [
+        "Ampera-e"
+      ],
+      "variants": [
+        "60 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Rocks-e"
+      ],
+      "variants": [
+        "5.5 kWh"
+      ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "Astra H OPC",
+      "model": "Astra",
+      "variant": "OPC"
+    },
+    {
+      "from": "Astra J OPC",
+      "model": "Astra",
+      "variant": "OPC"
+    },
+    {
+      "from": "Corsa D OPC",
+      "model": "Corsa",
+      "variant": "OPC"
+    },
+    {
+      "from": "Corsa E OPC",
+      "model": "Corsa",
+      "variant": "OPC"
+    },
+    {
+      "from": "Insignia A OPC",
+      "model": "Insignia",
+      "variant": "OPC"
+    },
+    {
+      "from": "Zafira B OPC",
+      "model": "Zafira",
+      "variant": "OPC"
+    },
+    {
+      "from": "Mokka GSE",
+      "model": "Mokka",
+      "variant": "GSE"
+    }
+  ],
+  "merge": [
+    {
+      "from": "Zafira B",
+      "model": "Zafira"
+    },
+    {
+      "from": "Zafira Tourer C",
+      "model": "Zafira Tourer"
+    },
+    {
+      "from": "Astra H",
+      "model": "Astra"
+    },
+    {
+      "from": "Astra J",
+      "model": "Astra"
+    },
+    {
+      "from": "Astra K",
+      "model": "Astra"
+    },
+    {
+      "from": "Astra L",
+      "model": "Astra"
+    },
+    {
+      "from": "Corsa D",
+      "model": "Corsa"
+    },
+    {
+      "from": "Corsa E",
+      "model": "Corsa"
+    },
+    {
+      "from": "Corsa F",
+      "model": "Corsa"
+    },
+    {
+      "from": "Insignia A",
+      "model": "Insignia"
+    },
+    {
+      "from": "Insignia B",
+      "model": "Insignia"
+    },
+    {
+      "from": "Meriva A",
+      "model": "Meriva"
+    },
+    {
+      "from": "Meriva B",
+      "model": "Meriva"
+    },
+    {
+      "from": "Combo C",
+      "model": "Combo"
+    },
+    {
+      "from": "Combo D",
+      "model": "Combo"
+    },
+    {
+      "from": "Combo E",
+      "model": "Combo"
+    },
+    {
+      "from": "Movano A",
+      "model": "Movano"
+    },
+    {
+      "from": "Movano B",
+      "model": "Movano"
+    },
+    {
+      "from": "Movano C",
+      "model": "Movano"
+    },
+    {
+      "from": "Vivaro A",
+      "model": "Vivaro"
+    },
+    {
+      "from": "Vivaro B",
+      "model": "Vivaro"
+    },
+    {
+      "from": "Vivaro C",
+      "model": "Vivaro"
+    },
+    {
+      "from": "Agila B",
+      "model": "Agila"
+    },
+    {
+      "from": "Mokka X",
+      "model": "Mokka"
+    },
+    {
+      "from": "Crossland X",
+      "model": "Crossland"
+    },
+    {
+      "from": "Grandland X",
+      "model": "Grandland"
+    }
+  ]
+}

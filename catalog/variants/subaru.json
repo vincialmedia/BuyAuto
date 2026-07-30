@@ -1,0 +1,154 @@
+{
+  "make": "Subaru",
+  "_note": "Subaru names by displacement and layout - 2.0i, 2.5i, 3.6R for the flat engines, 2.0D for the diesel boxer, e-Boxer for the mild hybrids. XV and Crosstrek are one car either side of the 2023 global rename, and XV Crosstrek was the earlier export name for it, so both merge into Crosstrek and keep aliases.",
+  "models": [],
+  "groups": [
+    {
+      "models": [
+        "Justy"
+      ],
+      "variants": [
+        "1.0",
+        "1.2"
+      ]
+    },
+    {
+      "models": [
+        "Trezia"
+      ],
+      "variants": [
+        "1.3",
+        "1.4 D"
+      ]
+    },
+    {
+      "models": [
+        "Impreza"
+      ],
+      "variants": [
+        "1.6i",
+        "2.0i",
+        "2.0D",
+        "2.0i e-Boxer",
+        "1.5"
+      ]
+    },
+    {
+      "models": [
+        "Crosstrek"
+      ],
+      "variants": [
+        "1.6i",
+        "2.0i",
+        "2.0D",
+        "2.0i e-Boxer"
+      ]
+    },
+    {
+      "models": [
+        "Forester"
+      ],
+      "variants": [
+        "2.0i",
+        "2.5i",
+        "2.0D",
+        "2.0i e-Boxer",
+        "2.0XT"
+      ]
+    },
+    {
+      "models": [
+        "Legacy"
+      ],
+      "variants": [
+        "2.0i",
+        "2.5i",
+        "2.0D"
+      ]
+    },
+    {
+      "models": [
+        "Outback"
+      ],
+      "variants": [
+        "2.0D",
+        "2.5i",
+        "3.6R",
+        "2.5i e-Boxer",
+        "2.0i"
+      ]
+    },
+    {
+      "models": [
+        "Levorg"
+      ],
+      "variants": [
+        "1.6 GT",
+        "2.0 GT"
+      ]
+    },
+    {
+      "models": [
+        "Tribeca"
+      ],
+      "variants": [
+        "3.0",
+        "3.6"
+      ]
+    },
+    {
+      "models": [
+        "BRZ"
+      ],
+      "variants": [
+        "2.0 Boxer",
+        "2.4 Boxer"
+      ]
+    },
+    {
+      "models": [
+        "WRX"
+      ],
+      "variants": [
+        "2.0 Turbo",
+        "2.4 Turbo",
+        "STI"
+      ]
+    },
+    {
+      "models": [
+        "Solterra"
+      ],
+      "variants": [
+        "71.4 kWh"
+      ]
+    },
+    {
+      "models": [
+        "E-Outback",
+        "Uncharted"
+      ],
+      "variants": [
+        "Single Motor",
+        "Dual Motor"
+      ]
+    }
+  ],
+  "merge": [
+    {
+      "from": "XV",
+      "model": "Crosstrek"
+    },
+    {
+      "from": "XV Crosstrek",
+      "model": "Crosstrek"
+    }
+  ],
+  "remap": [
+    {
+      "from": "WRX STI",
+      "model": "WRX",
+      "variant": "STI"
+    }
+  ]
+}

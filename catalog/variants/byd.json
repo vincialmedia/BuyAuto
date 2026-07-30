@@ -1,0 +1,19 @@
+{
+  "make": "BYD",
+  "_note": "BYD sells mostly pure electric cars by battery size, with DM-i marking the plug-in hybrids, which are identified by their petrol engine instead.",
+  "models": [],
+  "groups": [
+    { "models": ["Atto 2"], "variants": ["45 kWh"] },
+    { "models": ["Atto 3"], "variants": ["60 kWh"] },
+    { "models": ["Dolphin", "Dolphin G"], "variants": ["45 kWh", "60 kWh"] },
+    { "models": ["Dolphin Surf"], "variants": ["30 kWh", "43 kWh"] },
+    { "models": ["e6"], "variants": ["71.7 kWh"] },
+    { "models": ["ETP3"], "variants": ["50 kWh"] },
+    { "models": ["Han"], "variants": ["85 kWh"] },
+    { "models": ["Seal"], "variants": ["61 kWh", "82 kWh"] },
+    { "models": ["Seal 6 DM-i"], "variants": ["1.5 DM-i"] },
+    { "models": ["Seal U"], "variants": ["71.8 kWh", "87 kWh", "1.5 DM-i"] },
+    { "models": ["Sealion 7"], "variants": ["82 kWh", "91 kWh"] },
+    { "models": ["Tang"], "variants": ["86 kWh", "108 kWh"] }
+  ]
+}
