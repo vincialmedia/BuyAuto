@@ -51,6 +51,7 @@ export async function fetchModelsForMake(make: string): Promise<string[]> {
     .from("models")
     .select("name")
     .eq("make_id", makeData.id)
+    .eq("is_active", true)
     .order("name", { ascending: true });
 
   if (error) {
@@ -108,6 +109,7 @@ export async function searchModelsForMake(make: string, query: string): Promise<
     .from("models")
     .select("name")
     .eq("make_id", makeData.id)
+    .eq("is_active", true)
     .ilike("name", `%${query}%`)
     .order("name", { ascending: true });
 
