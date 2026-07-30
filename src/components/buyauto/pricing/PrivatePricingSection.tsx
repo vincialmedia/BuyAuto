@@ -1,29 +1,19 @@
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
-  calculateTotal,
   PREMIUM_BOOST_PRICE,
   pricingPlans,
+  RELIST_PRICE_CHF,
+  RELIST_PROMO_ACTIVE,
   type Plan,
 } from "@/lib/buyauto/stripe_config";
 import { privatePlanMarketingFeatures } from "@/components/buyauto/pricing/pricingData";
 
 export function PrivatePricingSection() {
-  const [selectedPlan, setSelectedPlan] = useState<Plan>("extended");
-  const [isPremium, setIsPremium] = useState<boolean>(true);
-
-  const total = useMemo(
-    () => calculateTotal(selectedPlan, isPremium),
-    [selectedPlan, isPremium]
-  );
-
   return (
     <motion.section
       aria-label="Preise für Privatkunden"
@@ -46,22 +36,12 @@ export function PrivatePricingSection() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {(Object.keys(pricingPlans) as Plan[]).map((planKey) => {
           const isPopular = planKey === "extended";
-          const isSelected = selectedPlan === planKey;
 
           return (
-            <button
-              key={planKey}
-              type="button"
-              onClick={() => setSelectedPlan(planKey)}
-              className={cn(
-                "group relative text-left",
-                "rounded-3xl transition-all duration-300",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-              )}
-            >
+            <div key={planKey} className="group relative">
               {isPopular && (
                 <div className="absolute -top-3 left-6 z-10">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-neutral-900 text-white text-xs font-semibold px-3 py-1 shadow-sm">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-semibold px-3 py-1 shadow-sm">
                     <Sparkles className="h-3.5 w-3.5" />
                     Beliebt
                   </span>
@@ -70,15 +50,16 @@ export function PrivatePricingSection() {
 
               <Card
                 className={cn(
-                  "h-full rounded-3xl border bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70",
-                  "shadow-[0_10px_30px_rgba(0,0,0,0.06)]",
+                  "flex h-full flex-col rounded-3xl border bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70",
                   "transition-all duration-300",
-                  isSelected
-                    ? "border-primary/40 ring-1 ring-primary/25 shadow-[0_18px_60px_rgba(0,0,0,0.10)]"
-                    : "border-neutral-200/70 hover:border-neutral-300 hover:shadow-[0_14px_50px_rgba(0,0,0,0.08)]"
+                  isPopular
+                    ? // The brand gold (homepage Premium section amber family)
+                      // as a soft halo around Verlängert.
+                      "border-amber-300 ring-1 ring-amber-300/70 shadow-[0_0_40px_rgba(251,191,36,0.35)] hover:shadow-[0_0_55px_rgba(251,191,36,0.45)]"
+                    : "border-neutral-200/70 shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:border-neutral-300 hover:shadow-[0_14px_50px_rgba(0,0,0,0.08)]"
                 )}
               >
-                <div className="p-6">
+                <div className="flex h-full flex-col p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-bold text-neutral-900">
@@ -87,8 +68,19 @@ export function PrivatePricingSection() {
                       <p className="mt-1 text-sm text-neutral-500">
                         {pricingPlans[planKey].duration_days
                           ? `${pricingPlans[planKey].duration_days} Tage`
-                          : "Unlimitiert"}
+                          : "Online bis verkauft"}
                       </p>
+                      {planKey === "extended" && (
+                        <p className="mt-1 text-xs text-neutral-500">
+                          Premium im Wert von CHF {PREMIUM_BOOST_PRICE} inklusive ·
+                          weniger als 60 Rappen pro Tag
+                        </p>
+                      )}
+                      {planKey === "unlimited" && (
+                        <p className="mt-1 text-xs text-neutral-500">
+                          Premium-Wert CHF {PREMIUM_BOOST_PRICE}/Monat dauerhaft inklusive
+                        </p>
+                      )}
                     </div>
 
                     <div className="text-right">
@@ -109,10 +101,52 @@ export function PrivatePricingSection() {
                         <span>{feature}</span>
                       </div>
                     ))}
+                    {planKey === "standard" && (
+                      <>
+                        <div className="flex items-start gap-2 text-sm text-neutral-400">
+                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          <span>Keine Premium-Platzierung</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm text-neutral-400">
+                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          <span>Maximal 5 Fotos</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm text-neutral-400">
+                          <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          <span>
+                            Nach Ablauf: Wiedereinstellen{" "}
+                            {RELIST_PROMO_ACTIVE ? (
+                              <>
+                                <s>CHF {RELIST_PRICE_CHF}</s>{" "}
+                                <span className="font-semibold text-emerald-700">zurzeit gratis</span>
+                              </>
+                            ) : (
+                              <>für CHF {RELIST_PRICE_CHF}</>
+                            )}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="mt-auto pt-6">
+                    <Button
+                      asChild
+                      size="lg"
+                      className={cn(
+                        "h-11 w-full rounded-full",
+                        isPopular
+                          ? "bg-gradient-to-r from-amber-400 to-amber-500 text-white hover:from-amber-500 hover:to-amber-600"
+                          : ""
+                      )}
+                      variant={isPopular ? "default" : "outline"}
+                    >
+                      <Link href={`/inserat-erstellen?plan=${planKey}`}>Inserat erstellen</Link>
+                    </Button>
                   </div>
                 </div>
               </Card>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -122,65 +156,27 @@ export function PrivatePricingSection() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <Label
-                  htmlFor="premium-boost"
-                  className="text-base font-bold text-neutral-900"
-                >
-                  Premium Boost
-                </Label>
+                <span className="text-base font-bold text-neutral-900">Premium Boost</span>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
                   Bis zu 3x höhere Verkaufschancen
                 </span>
               </div>
               <p className="mt-1 text-sm text-neutral-600">
-                Dein Inserat wird für 30 Tage hervorgehoben.
+                Dein Inserat wird 30 Tage hervorgehoben. In Verlängert und
+                Unlimitiert bereits inklusive – für Standard im Inserat-Flow
+                dazubuchbar.
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-sm font-semibold text-neutral-900">
-                  + CHF {PREMIUM_BOOST_PRICE}
-                </div>
-                <div className="text-xs text-neutral-500">optional</div>
+            <div className="text-right shrink-0">
+              <div className="text-sm font-semibold text-neutral-900">
+                + CHF {PREMIUM_BOOST_PRICE}
               </div>
-              <Switch
-                id="premium-boost"
-                checked={isPremium}
-                onCheckedChange={setIsPremium}
-              />
+              <div className="text-xs text-neutral-500">optional</div>
             </div>
           </div>
         </div>
       </Card>
-
-      <div className="rounded-3xl border border-neutral-200/70 bg-gradient-to-br from-white to-neutral-50 p-6 md:p-7 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-sm text-neutral-600">Total (Vorschau)</div>
-            <div className="text-3xl font-bold tracking-tight text-neutral-900">
-              CHF {total}
-            </div>
-            <div className="mt-1 text-xs text-neutral-500">
-              Bezahlung erfolgt im Inserat-Flow.
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild size="lg" className="h-12 px-6 rounded-full">
-              <Link href="/inserat-erstellen">Inserat erstellen</Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="h-12 px-6 rounded-full"
-            >
-              <Link href="/suche">Fahrzeuge ansehen</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
     </motion.section>
   );
 }

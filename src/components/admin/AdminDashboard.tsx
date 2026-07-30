@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { ModerationView } from "@/components/admin/ModerationView";
 import { AllListingsView } from "@/components/admin/AllListingsView";
 import { UsersView } from "@/components/admin/UsersView";
+import { DraftsView } from "@/components/admin/DraftsView";
 import { adminService } from "@/services/adminService";
 import type { AdminStats } from "@/services/adminService";
 import { Card } from "@/components/ui/card";
@@ -34,6 +35,8 @@ export function AdminDashboard() {
     switch (tab) {
       case 'listings':
         return <AllListingsView onStatsUpdate={loadStats} />;
+      case 'drafts':
+        return <DraftsView />;
       case 'users':
         return <UsersView />;
       case 'inquiries':

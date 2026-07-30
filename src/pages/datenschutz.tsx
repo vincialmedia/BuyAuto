@@ -128,7 +128,15 @@ export default function Datenschutz() {
                   <strong>Supabase:</strong> Für Datenbank-Hosting und Authentifizierung (Serverstandort: Zürich, Schweiz).
                 </li>
                 <li>
-                  <strong>Stripe:</strong> Für die Abwicklung von Zahlungen. Zahlungsdaten werden direkt von Stripe verarbeitet und nicht auf unseren Servern gespeichert.
+                  <strong>Stripe:</strong> Für die Abwicklung von Zahlungen. Dies umfasst Inserats-Gebühren,
+                  Premium-Platzierungen, Gebühren für die Wiederveröffentlichung abgelaufener Inserate sowie
+                  freiwillige Unterstützungsbeiträge (Spenden). Zahlungsdaten werden direkt von Stripe verarbeitet
+                  und nicht auf unseren Servern gespeichert.
+                </li>
+                <li>
+                  <strong>Resend:</strong> Für den Versand von Transaktions- und Erinnerungs-E-Mails, etwa zu neuen
+                  Nachrichten, unvollständigen Inserats-Entwürfen oder ablaufenden Inseraten. Dabei werden Ihre
+                  E-Mail-Adresse, Ihr Name und die für die jeweilige E-Mail nötigen Inseratsangaben verarbeitet.
                 </li>
                 <li>
                   <strong>Vercel:</strong> Für das Hosting der Website und die Auslieferung von Inhalten.

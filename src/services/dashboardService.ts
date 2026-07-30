@@ -252,6 +252,16 @@ async function archiveListing(listingId: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * "Auf Entwurf ändern": pulls an aged-out archived draft back to 'draft' so it
+ * can be finished. The 5-day deletion countdown keeps running — only
+ * publishing clears it (enforced server-side).
+ */
+async function revertListingToDraft(listingId: string): Promise<void> {
+  const { error } = await (supabase.rpc as any)("revert_listing_to_draft", { p_listing_id: listingId });
+  if (error) throw error;
+}
+
 async function pauseListing(listingId: string, pauseDays: number): Promise<void> {
   const { error } = await supabase.rpc("pause_listing", { p_listing_id: listingId, p_pause_days: pauseDays });
   if (error) throw error;
@@ -463,6 +473,7 @@ export const dashboardService = {
   markListingSold,
   markListingAvailable,
   archiveListing,
+  revertListingToDraft,
   pauseListing,
   unpauseListing,
   getDashboardStats,

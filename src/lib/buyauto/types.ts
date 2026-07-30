@@ -177,6 +177,10 @@ export interface ListingDetail extends Listing {
   duration_days: number | null;
   price_plan: PricePlanId | null;
   premium_until: string | null;
+  /** 'draft_expired' marks an archive produced by the stale-draft sweep. */
+  archived_reason?: string | null;
+  /** Hard-delete deadline for aged-out drafts; survives archived -> draft revives. */
+  draft_delete_at?: string | null;
   cover_image_index?: number;
   listing_price?: number;
   description?: string; // ✅ Added description field

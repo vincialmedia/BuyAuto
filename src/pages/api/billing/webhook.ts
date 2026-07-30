@@ -121,6 +121,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const supabaseAdmin = adminService.getSupabaseAdminClient();
 
+  // When a fulfillment write fails after money was taken (relist republish,
+  // premium grant, paid/pending promotion), the handler must NOT acknowledge
+  // the event: Stripe only redelivers on non-2xx, and every fulfillment branch
+  // is idempotent, so failing the delivery is the retry mechanism. Returning
+  // 200 here would mark the event delivered and permanently drop the paid-for
+  // fulfillment.
+  let fulfillmentError = false;
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -183,6 +191,92 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         break;
       }
 
+      if (kind === "listing_relist") {
+        const listingId = safeString(metadata.listing_id);
+
+        if (!listingId) {
+          console.error("Webhook: Missing listing_id for listing_relist", { sessionId: session.id });
+          break;
+        }
+
+        const { data: listing } = await supabaseAdmin
+          .from("listings")
+          .select("status, duration_days, price_plan")
+          .eq("id", listingId)
+          .single();
+
+        if (!listing) {
+          console.warn(`Webhook: listing ${listingId} not found for listing_relist`);
+          break;
+        }
+
+        // Idempotency: only an expired listing gets republished. A retried
+        // webhook delivery sees 'published' and does nothing.
+        if (listing.status !== "expired") {
+          console.warn(`Webhook: listing ${listingId} is ${listing.status}, not expired; skipping relist`);
+          break;
+        }
+
+        const nowIso = new Date().toISOString();
+        const upgradeToExtended = safeString(metadata.relist_plan) === "extended";
+
+        if (upgradeToExtended) {
+          // Paid relist-upsell: the listing becomes Verlängert — 90 days with
+          // premium for the whole runtime. Service role, so the premium- and
+          // status-authority triggers permit the writes.
+          const expiresAt = addDaysIso(nowIso, 90);
+          const { error: upgradeError } = await supabaseAdmin
+            .from("listings")
+            .update({
+              status: "published",
+              price_plan: "extended",
+              pricing_plan: "extended",
+              duration_days: 90,
+              expires_at: expiresAt,
+              premium: true,
+              is_premium: true,
+              premium_until: expiresAt,
+              updated_at: nowIso,
+            })
+            .eq("id", listingId);
+
+          if (upgradeError) {
+            console.error("Webhook: Failed to relist listing as extended", { listingId, upgradeError });
+            fulfillmentError = true;
+          }
+
+          break;
+        }
+
+        const durationDays = typeof listing.duration_days === "number" ? listing.duration_days : 60;
+        const keepExpiresAt = addDaysIso(nowIso, durationDays);
+
+        // A Verlängert listing renews with its plan perks: premium placement
+        // is included for the whole (new) runtime.
+        const keepUpdate: Record<string, unknown> = {
+          status: "published",
+          expires_at: keepExpiresAt,
+          updated_at: nowIso,
+        };
+        if (listing.price_plan === "extended") {
+          keepUpdate.premium = true;
+          keepUpdate.is_premium = true;
+          keepUpdate.premium_until = keepExpiresAt;
+        }
+
+        const { error: relistError } = await supabaseAdmin
+          .from("listings")
+          .update(keepUpdate)
+          .eq("id", listingId);
+
+        if (relistError) {
+          console.error("Webhook: Failed to republish listing after relist payment", { listingId, relistError });
+          fulfillmentError = true;
+        }
+
+        break;
+      }
+
       if (kind === "listing_premium_upgrade") {
         const listingId = safeString(metadata.listing_id);
 
@@ -203,6 +297,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         if (applyError) {
           console.error("Webhook: Failed to apply listing premium purchase", { listingId, sessionId: session.id, applyError });
+          fulfillmentError = true;
         }
 
         break;
@@ -358,7 +453,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         // Fetch current listing to validate the intent and check its state.
         const { data: listing } = await supabaseAdmin
           .from("listings")
-          .select("status, payment_status, stripe_payment_intent_id")
+          .select("status, payment_status, stripe_payment_intent_id, expires_at, premium, premium_until")
           .eq("id", listingId)
           .single();
 
@@ -368,46 +463,67 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         // The intent must be the one currently attached to the listing — never
-        // let a superseded or unrelated succeeded intent promote it.
-        if (listing.stripe_payment_intent_id && listing.stripe_payment_intent_id !== paymentIntent.id) {
+        // let a superseded or unrelated succeeded intent promote it. A NULL
+        // stored intent also skips: the free-plan path clears the column, and
+        // an orphaned intent from an earlier paid attempt must not be able to
+        // promote or premium-grant a listing that finished as CHF 0.
+        if (!listing.stripe_payment_intent_id || listing.stripe_payment_intent_id !== paymentIntent.id) {
           console.warn(
-            `Webhook: payment_intent ${paymentIntent.id} does not match listing ${listingId} current intent ${listing.stripe_payment_intent_id}; skipping`
+            `Webhook: payment_intent ${paymentIntent.id} does not match listing ${listingId} current intent ${listing.stripe_payment_intent_id ?? "NULL"}; skipping`
           );
           break;
         }
 
-        // Non-destructive: never overwrite a terminal paid/refunded state. This
-        // also makes the premium grant below exactly-once — a replayed or
-        // duplicate succeeded event returns here instead of extending premium
-        // a second time.
+        // Premium is granted here, not by the client: the premium-authority
+        // trigger rejects owners writing listings.premium, so the wizard and
+        // prepare endpoint only carry the choice in payment metadata.
+        //  * paid boost (standard plan): 30 days
+        //  * Verlängert/Unlimitiert: included — runs with the listing
+        // Runs before the terminal-state short-circuit so a verify-payment
+        // race (which marks paid but cannot grant premium) can't starve it;
+        // the alreadyPremium guard keeps replayed succeeded events from
+        // extending premium a second time.
+        const plan = safeString(paymentIntent.metadata?.plan);
+        const boostPurchased = paymentIntent.metadata?.premium === "true";
+        const premiumIncluded =
+          paymentIntent.metadata?.premium_included === "true" || plan === "extended" || plan === "unlimited";
+
+        const alreadyPremium =
+          listing.premium === true &&
+          (listing.premium_until === null || Date.parse(listing.premium_until) > Date.now());
+
+        if ((boostPurchased || premiumIncluded) && !alreadyPremium && listing.payment_status !== "refunded") {
+          const nowIso = new Date().toISOString();
+          const premiumUntil =
+            plan === "unlimited"
+              ? null
+              : premiumIncluded
+                ? listing.expires_at ?? addDaysIso(nowIso, 90)
+                : addDaysIso(nowIso, 30);
+
+          const { error: premiumError } = await supabaseAdmin
+            .from("listings")
+            .update({ premium: true, is_premium: true, premium_until: premiumUntil })
+            .eq("id", listingId);
+
+          if (premiumError) {
+            console.error(`Webhook: Failed to grant premium to listing ${listingId}`, premiumError);
+            fulfillmentError = true;
+          }
+        }
+
+        // Non-destructive: never overwrite a terminal paid/refunded state.
         if (listing.payment_status === "refunded" || listing.payment_status === "paid") {
           break;
         }
 
-        const updateData: {
-          payment_status: "paid";
-          status?: "pending";
-          premium?: true;
-          is_premium?: true;
-          premium_until?: string;
-        } = {
+        const updateData: { payment_status: "paid"; status?: "pending" } = {
           payment_status: "paid",
         };
 
         // If the listing is currently a draft (waiting for payment), move it to pending for review
         if (listing.status === "draft") {
           updateData.status = "pending";
-        }
-
-        // The Premium Boost bought as part of the initial listing payment. This is
-        // the only place the wizard's premium request is honoured: /api/billing/
-        // prepare records the intent in metadata but must not grant it, because
-        // that runs before the card is charged. Writing it here from the
-        // service-role client is what the premium authority trigger permits.
-        if (paymentIntent.metadata?.premium === "true") {
-          updateData.premium = true;
-          updateData.is_premium = true;
-          updateData.premium_until = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         }
 
         const { error } = await supabaseAdmin
@@ -417,6 +533,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         if (error) {
           console.error(`Webhook: Failed to update listing ${listingId} to paid/pending`, error);
+          fulfillmentError = true;
         }
       }
       break;
@@ -446,6 +563,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     default:
       console.log(`Unhandled event type ${event.type}`);
+  }
+
+  if (fulfillmentError) {
+    // Non-2xx → Stripe redelivers. All fulfillment branches are idempotent
+    // (status/alreadyPremium/terminal-state guards), so the retry is safe.
+    return res.status(500).json({ received: false, retry: true });
   }
 
   res.status(200).json({ received: true });

@@ -55,6 +55,23 @@ export interface AdminListing {
   owner_profile?: { id: string; email: string | null; full_name: string | null; role?: string | null } | null;
 }
 
+/** An unfinished draft, from either of the two places drafts live. */
+export interface AdminDraft {
+  id: string;
+  /** 'wizard' = listing_drafts row, 'listing' = listings row with status draft. */
+  source: "wizard" | "listing";
+  brand: string | null;
+  model: string | null;
+  year: number | null;
+  cover_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+  owner_id: string;
+  resume_url: string;
+  owner_profile?: { id: string; email: string | null; full_name: string | null; role?: string | null } | null;
+}
+
 export interface AdminStats {
   total: number;
   pending: number;
@@ -250,6 +267,124 @@ export const adminService = {
       page,
       totalPages
     };
+  },
+
+  /**
+   * Every unfinished draft on the platform, regardless of owner.
+   *
+   * Drafts live in two places: listing_drafts holds wizard drafts that never
+   * became a listing, and listings.status='draft' holds ones that did. Both are
+   * shown together here. Admin-only: the RLS policies behind both reads are
+   * gated on get_my_role() = 'admin', so a non-admin session gets its own rows
+   * (or nothing) rather than everyone's.
+   */
+  async getDrafts(): Promise<AdminDraft[]> {
+    const [wizardRes, listingRes] = await Promise.all([
+      supabase
+        .from("listing_drafts")
+        .select("id,user_id,data,created_at,updated_at,archived_at")
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("listings")
+        .select("id,brand,model,year,status,created_at,updated_at,archived_at,archived_reason,draft_delete_at,created_by,user_id,cover_image_url")
+        .or("status.eq.draft,and(status.eq.archived,archived_reason.eq.draft_expired)")
+        .order("updated_at", { ascending: false }),
+    ]);
+
+    if (wizardRes.error) throw wizardRes.error;
+    if (listingRes.error) throw listingRes.error;
+
+    const drafts: AdminDraft[] = [];
+
+    // A wizard draft that points at a listing is only skipped when that
+    // listing actually still exists — it is then represented by the listing
+    // row (draft/archived) or is stale junk next to a live listing. If the
+    // linked listing was deleted, the wizard draft is all that's left and
+    // must not silently vanish from the admin view.
+    const linkedIds = Array.from(
+      new Set(
+        (wizardRes.data ?? [])
+          .map((row) => (((row as any).data ?? {}) as Record<string, unknown>).id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    const existingLinkedIds = new Set<string>();
+    if (linkedIds.length > 0) {
+      const { data: linkedRows, error: linkedError } = await supabase
+        .from("listings")
+        .select("id")
+        .in("id", linkedIds);
+      if (!linkedError) {
+        for (const r of linkedRows ?? []) existingLinkedIds.add((r as { id: string }).id);
+      }
+    }
+
+    for (const row of wizardRes.data ?? []) {
+      const data = ((row as any).data ?? {}) as Record<string, unknown>;
+      if (typeof data.id === "string" && data.id.length > 0 && existingLinkedIds.has(data.id)) continue;
+
+      drafts.push({
+        id: row.id,
+        source: "wizard",
+        brand: typeof data.brand === "string" ? data.brand : null,
+        model: typeof data.model === "string" ? data.model : null,
+        year: typeof data.year === "number" ? data.year : null,
+        cover_image_url: null,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        archived_at: (row as any).archived_at ?? null,
+        owner_id: row.user_id,
+        resume_url: `/inserat-erstellen?draft=${row.id}`,
+      });
+    }
+
+    for (const row of listingRes.data ?? []) {
+      const ownerId = ((row as any).created_by ?? (row as any).user_id) as string | null;
+      if (!ownerId) continue;
+
+      // A draft revived from Archiviert has archived_at cleared but keeps its
+      // deletion deadline (draft_delete_at). getDraftLifecycle derives the
+      // delete date as archived_at + 5 days, so feed it the equivalent stamp —
+      // the countdown then correctly reads "Wird in N Tagen gelöscht".
+      const draftDeleteAt = (row as any).draft_delete_at as string | null;
+      const archivedAtEquivalent =
+        ((row as any).archived_at as string | null) ??
+        (draftDeleteAt ? new Date(Date.parse(draftDeleteAt) - 5 * 24 * 60 * 60 * 1000).toISOString() : null);
+
+      drafts.push({
+        id: row.id,
+        source: "listing",
+        brand: (row as any).brand ?? null,
+        model: (row as any).model ?? null,
+        year: typeof (row as any).year === "number" ? (row as any).year : null,
+        cover_image_url: (row as any).cover_image_url ?? null,
+        created_at: (row as any).created_at,
+        updated_at: (row as any).updated_at,
+        archived_at: archivedAtEquivalent,
+        owner_id: ownerId,
+        resume_url: `/inserat-erstellen?edit=${row.id}`,
+      });
+    }
+
+    drafts.sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+
+    const ownerIds = Array.from(new Set(drafts.map((d) => d.owner_id)));
+    if (ownerIds.length === 0) return drafts;
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id,email,full_name,role")
+      .in("id", ownerIds);
+
+    if (!profilesError && Array.isArray(profiles)) {
+      const map = new Map(profiles.map((p) => [p.id, p]));
+      for (const draft of drafts) {
+        draft.owner_profile = (map.get(draft.owner_id) as any) ?? null;
+      }
+    }
+
+    return drafts;
   },
 
   async approveListing(id: string, options: {

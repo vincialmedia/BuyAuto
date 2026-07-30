@@ -19,11 +19,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Clock, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { deleteListingDraft, getMyListingDrafts, type ListingDraft } from "@/services/listingDraftService";
 import StatusBadge from "./StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DRAFT_ARCHIVE_AFTER_DAYS,
+  describeDraftLifecycle,
+  formatDateDeCh,
+  getDraftLifecycle,
+} from "@/lib/buyauto/draftLifecycle";
 
 const buildDraftTitle = (draft: ListingDraft) => {
   const brand = typeof draft.data.brand === "string" ? draft.data.brand.trim() : "";
@@ -175,18 +181,40 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
       <div className="grid gap-4">
         {drafts.map((draft) => {
           const title = buildDraftTitle(draft);
+          const lifecycle = getDraftLifecycle(draft);
+          const urgent = lifecycle.archived || (lifecycle.daysUntilArchive ?? Infinity) <= 5;
 
           return (
-            <Card key={draft.id} className="border-neutral-200/60">
+            <Card
+              key={draft.id}
+              className={lifecycle.archived ? "border-amber-300 bg-amber-50/40" : "border-neutral-200/60"}
+            >
               <CardContent className="p-6">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-3 mb-2">
                       <h4 className="text-base font-semibold text-neutral-900 truncate">{title}</h4>
-                      <StatusBadge status="draft" />
+                      <StatusBadge status={lifecycle.archived ? "archived" : "draft"} />
                     </div>
-                    <p className="text-sm text-neutral-600">
-                      Speichere den Entwurf, um später weiterzumachen.
+                    <p
+                      className={`text-sm flex items-center gap-1.5 ${
+                        urgent ? "text-amber-700 font-medium" : "text-neutral-600"
+                      }`}
+                    >
+                      {urgent ? (
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <Clock className="w-4 h-4 shrink-0" />
+                      )}
+                      {describeDraftLifecycle(lifecycle)}
+                      <span className="text-neutral-500 font-normal">
+                        ({formatDateDeCh(lifecycle.deleteDueAt ?? lifecycle.archiveDueAt)})
+                      </span>
+                    </p>
+                    <p className="text-sm text-neutral-600 mt-1">
+                      {lifecycle.archived
+                        ? "Bearbeite den Entwurf, um ihn wiederherzustellen."
+                        : `Entwürfe werden nach ${DRAFT_ARCHIVE_AFTER_DAYS} Tagen ohne Bearbeitung archiviert.`}
                     </p>
                   </div>
 

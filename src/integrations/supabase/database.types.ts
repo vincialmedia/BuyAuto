@@ -503,6 +503,7 @@ export type Database = {
       }
       listing_drafts: {
         Row: {
+          archived_at: string | null
           catalog_confidence: string | null
           catalog_needs_review: boolean
           created_at: string
@@ -516,6 +517,7 @@ export type Database = {
           variant_text: string | null
         }
         Insert: {
+          archived_at?: string | null
           catalog_confidence?: string | null
           catalog_needs_review?: boolean
           created_at?: string
@@ -529,6 +531,7 @@ export type Database = {
           variant_text?: string | null
         }
         Update: {
+          archived_at?: string | null
           catalog_confidence?: string | null
           catalog_needs_review?: boolean
           created_at?: string
@@ -790,6 +793,8 @@ export type Database = {
       listings: {
         Row: {
           archived_at: string | null
+          archived_reason: string | null
+          draft_delete_at: string | null
           body: string
           brand: string
           canton_code: string | null
@@ -854,6 +859,8 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          archived_reason?: string | null
+          draft_delete_at?: string | null
           body: string
           brand: string
           canton_code?: string | null
@@ -918,6 +925,8 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          archived_reason?: string | null
+          draft_delete_at?: string | null
           body?: string
           brand?: string
           canton_code?: string | null

@@ -310,6 +310,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     data: (row.data ?? {}) as any,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    archived_at: row.archived_at ?? null,
   }));
 
   return { props: { initialDrafts, accountRole: role } };
