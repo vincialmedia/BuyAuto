@@ -342,11 +342,33 @@ export const adminService = {
 
     const drafts: AdminDraft[] = [];
 
+    // A wizard draft that points at a listing is only skipped when that
+    // listing actually still exists — it is then represented by the listing
+    // row (draft/archived) or is stale junk next to a live listing. If the
+    // linked listing was deleted, the wizard draft is all that's left and
+    // must not silently vanish from the admin view.
+    const linkedIds = Array.from(
+      new Set(
+        (wizardRes.data ?? [])
+          .map((row) => (((row as any).data ?? {}) as Record<string, unknown>).id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    const existingLinkedIds = new Set<string>();
+    if (linkedIds.length > 0) {
+      const { data: linkedRows, error: linkedError } = await supabase
+        .from("listings")
+        .select("id")
+        .in("id", linkedIds);
+      if (!linkedError) {
+        for (const r of linkedRows ?? []) existingLinkedIds.add((r as { id: string }).id);
+      }
+    }
+
     for (const row of wizardRes.data ?? []) {
       const data = ((row as any).data ?? {}) as Record<string, unknown>;
-      // A wizard draft that already spawned a listing is listed via that
-      // listing below — showing both would double-count the same vehicle.
-      if (typeof data.id === "string" && data.id.length > 0) continue;
+      if (typeof data.id === "string" && data.id.length > 0 && existingLinkedIds.has(data.id)) continue;
 
       drafts.push({
         id: row.id,

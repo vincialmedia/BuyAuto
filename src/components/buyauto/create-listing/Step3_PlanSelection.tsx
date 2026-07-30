@@ -35,7 +35,12 @@ export default function Step3_PlanSelection() {
   // conversion lever (default effect), and the /preise page already leads
   // with it. A draft that stored a plan keeps the user's choice.
   const [selectedPlan, setSelectedPlan] = useState<Plan>(((data as any).price_plan as Plan) || "extended");
-  const [isPremium, setIsPremium] = useState<boolean>(Boolean((data as any).premium) || false);
+  // A stored premium=true on an included plan means "included", not "boost
+  // bought" — initializing the toggle from it would silently re-add the
+  // CHF 30 boost if the user later downgrades to Standard.
+  const [isPremium, setIsPremium] = useState<boolean>(
+    Boolean((data as any).premium) && !planIncludesPremium((data as any).price_plan)
+  );
 
   // Preselected CHF 1 donation: a fresh wizard (no stored choice yet) starts
   // with the donation on at the smallest amount. A saved draft keeps whatever

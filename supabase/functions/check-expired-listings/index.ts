@@ -86,7 +86,10 @@ Deno.serve(async (req) => {
       const { error: expireError } = await supabaseAdmin
         .from("listings")
         .update({ status: "expired", updated_at: nowIso })
-        .in("id", expiredIds);
+        .in("id", expiredIds)
+        // Re-checked at write time: a listing sold/paused/archived between the
+        // candidate scan and this update must not be flipped to expired.
+        .in("status", ["published", "active"]);
 
       if (expireError) throw expireError;
 

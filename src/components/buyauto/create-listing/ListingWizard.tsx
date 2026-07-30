@@ -108,8 +108,11 @@ const createEmptyListingData = (): ListingData => ({
   model_id: null,
   variant_id: null,
 
-  donation_enabled: false as any,
-  donation_amount_chf: 5 as any,
+  // The donation fields are deliberately ABSENT from the pristine wizard:
+  // Step 3 preselects the CHF 1 donation only when no stored choice exists
+  // (donation_enabled === undefined). Predefining them here would make every
+  // wizard look like it already carries a "user chose off" decision and the
+  // preselect would never activate.
 });
 
 const hasAnyUserInput = (data: ListingData) => {
@@ -129,8 +132,8 @@ const hasAnyUserInput = (data: ListingData) => {
       (typeof anyData?.purchase_price_chf === "number" && anyData.purchase_price_chf > 0) ||
       (data.price_plan && data.price_plan !== "standard") ||
       data.premium === true ||
-      // donation_amount_chf is deliberately NOT checked: it defaults to 5, so a
-      // pristine wizard would count as "has input" and autosave junk drafts.
+      // donation_amount_chf is deliberately NOT checked: Step 3 preselects a
+      // default amount, so it alone never proves the user typed anything.
       (anyData?.donation_enabled === true) ||
       (Array.isArray(data.images) && data.images.length > 0) ||
       (anyData?.leasing_offer?.enabled === true) ||

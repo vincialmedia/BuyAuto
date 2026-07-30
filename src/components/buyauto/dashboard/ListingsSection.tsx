@@ -564,6 +564,9 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             const deletionDaysRemaining = getDaysUntil(draftDeleteAt);
             const isDraftArchived =
               listing.status === "archived" && (listing as any).archived_reason === "draft_expired";
+            // Revived via "Auf Entwurf ändern": back in 'draft' with the
+            // deletion clock still running.
+            const isRevivedDraft = listing.status === "draft" && Boolean(draftDeleteAt);
             const isExpiredListing = listing.status === "expired";
             const views = Number.isFinite(Number(listing.view_count)) ? Number(listing.view_count) : 0;
             const isPublicListing = ["published", "active", "sold"].includes(String(listing.status));
@@ -756,7 +759,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 </DropdownMenuItem>
                               )}
 
-                              {!isDraftArchived && (listing.status as any) !== "sold" && (
+                              {!isDraftArchived && !isRevivedDraft && (listing.status as any) !== "sold" && (
                                 <DropdownMenuItem
                                   onClick={() => handleMarkSold(listing.id)}
                                   disabled={actionLoading === listing.id}

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 import type { Database } from "@/integrations/supabase/types";
 import { stripe } from "@/lib/stripe-server";
 import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE, pricingPlans } from "@/lib/buyauto/stripe_config";
@@ -22,7 +23,7 @@ import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE, pricingPlans } from "@/lib/buyau
 
 type ListingRow = Pick<
   Database["public"]["Tables"]["listings"]["Row"],
-  "id" | "user_id" | "created_by" | "status" | "brand" | "model" | "duration_days"
+  "id" | "user_id" | "created_by" | "status" | "brand" | "model" | "duration_days" | "updated_at"
 >;
 
 type PrepareBody = {
@@ -62,7 +63,7 @@ async function getOwnedListing(
 ): Promise<ListingRow | null> {
   const { data: byUserId, error: byUserIdError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, status, brand, model, duration_days")
+    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at")
     .eq("id", listingId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -74,7 +75,7 @@ async function getOwnedListing(
 
   const { data: byCreatedBy, error: byCreatedByError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, status, brand, model, duration_days")
+    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at")
     .eq("id", listingId)
     .eq("created_by", userId)
     .maybeSingle();
@@ -161,32 +162,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ? `${vehicle} – 90 Tage Laufzeit, Premium-Platzierung inklusive.`
       : `${vehicle} – erneute Veröffentlichung nach Ablauf.`;
 
-    const sessionCheckout = await stripe.checkout.sessions.create({
-      mode: "payment",
-      success_url: `${origin}/dashboard?relist=success&listingId=${encodeURIComponent(listingId)}`,
-      cancel_url: `${origin}/dashboard?relist=cancel&listingId=${encodeURIComponent(listingId)}`,
-      line_items: [
-        {
-          price_data: {
-            currency: "chf",
-            unit_amount: amountChf * 100,
-            product_data: {
-              name: productName,
-              description: productDescription,
+    // One checkout per (listing, variant, expiry cycle): a double-click or a
+    // second tab replays the same Stripe session instead of minting a new one
+    // that could be paid twice. updated_at changes when the sweep expires the
+    // listing and again when it republishes, so the key naturally rolls over
+    // per cycle. The 30-minute session expiry (Stripe's minimum) keeps stale
+    // tabs from paying long after the fact.
+    const relistIdemKey = crypto
+      .createHash("sha256")
+      .update(`relist-v1-${listingId}-${upgrade ? "extended" : "keep"}-${listing.updated_at}`)
+      .digest("hex");
+
+    const sessionCheckout = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+        // /dashboard is an SSR redirect page that drops query params — the
+        // return must land directly on the private dashboard so the
+        // relist=success refresh effect actually fires.
+        success_url: `${origin}/dashboard/private?relist=success&listingId=${encodeURIComponent(listingId)}`,
+        cancel_url: `${origin}/dashboard/private?relist=cancel&listingId=${encodeURIComponent(listingId)}`,
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+        line_items: [
+          {
+            price_data: {
+              currency: "chf",
+              unit_amount: amountChf * 100,
+              product_data: {
+                name: productName,
+                description: productDescription,
+              },
             },
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        metadata: {
+          kind: "listing_relist",
+          listing_id: listingId,
+          user_id: session.user.id,
+          relist_plan: upgrade ? "extended" : "keep",
         },
-      ],
-      metadata: {
-        kind: "listing_relist",
-        listing_id: listingId,
-        user_id: session.user.id,
-        relist_plan: upgrade ? "extended" : "keep",
+        customer_email: session.user.email ?? undefined,
+        allow_promotion_codes: false,
       },
-      customer_email: session.user.email ?? undefined,
-      allow_promotion_codes: false,
-    });
+      { idempotencyKey: relistIdemKey }
+    );
 
     if (!sessionCheckout.url) {
       console.error("relist.prepare: missing checkout url", { sessionId: sessionCheckout.id });

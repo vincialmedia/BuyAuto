@@ -162,15 +162,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const amountInCents = Math.round(totalCHF * 100);
 
-    const idempotencyKey = crypto
+    // The key includes the computed total and a version marker: Stripe rejects
+    // a reused key whose request parameters changed, so whenever pricing logic
+    // moves (e.g. premium becoming plan-included changed the total for the
+    // same inputs) the key must move with it — otherwise users with an
+    // in-flight pre-deploy intent are hard-blocked for the key's ~24h TTL.
+    // Update and create also get distinct keys: Stripe idempotency keys are
+    // account-global, and replaying an update's key against create errors.
+    const idemBase = crypto
       .createHash("sha256")
-      .update(`${listingId}-${plan}-${premium}-${donation.amount}-${session.user.id}`)
+      .update(`v2-${listingId}-${plan}-${premium}-${donation.amount}-${totalCHF}-${session.user.id}`)
       .digest("hex");
 
-    const paymentIntentParams = {
+    const paymentIntentBaseParams = {
       amount: amountInCents,
       currency: "chf",
-      automatic_payment_methods: { enabled: true },
       metadata: {
         listing_id: listingId,
         user_id: session.user.id,
@@ -192,13 +198,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       if (paymentIntentIdToUpdate) {
         try {
-          paymentIntent = await stripe.paymentIntents.update(paymentIntentIdToUpdate, paymentIntentParams, { idempotencyKey });
+          // automatic_payment_methods is create-only; passing it to update is
+          // rejected by Stripe and used to force every re-preparation through
+          // the create fallback.
+          paymentIntent = await stripe.paymentIntents.update(paymentIntentIdToUpdate, paymentIntentBaseParams, {
+            idempotencyKey: `${idemBase}-u`,
+          });
         } catch (updateError) {
           console.warn("prepare: payment intent update failed, creating new", updateError);
-          paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, { idempotencyKey });
+          paymentIntent = await stripe.paymentIntents.create(
+            { ...paymentIntentBaseParams, automatic_payment_methods: { enabled: true } },
+            { idempotencyKey: `${idemBase}-c` }
+          );
         }
       } else {
-        paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, { idempotencyKey });
+        paymentIntent = await stripe.paymentIntents.create(
+          { ...paymentIntentBaseParams, automatic_payment_methods: { enabled: true } },
+          { idempotencyKey: `${idemBase}-c` }
+        );
       }
     } catch (stripeError: any) {
       console.error("prepare: stripe error", stripeError);
