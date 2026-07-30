@@ -1,0 +1,12 @@
+{
+  "make": "Alpina",
+  "_note": "Alpina's model names track the BMW they are built from - B3 from the 3 Series, XB7 from the X7 - and the letter says petrol (B) or diesel (D). The variant is the engine Alpina fits, which is what separates a B3 from a D3.",
+  "models": [],
+  "groups": [
+    { "models": ["B3", "B4"], "variants": ["3.0 Bi-Turbo"] },
+    { "models": ["D3", "D4"], "variants": ["3.0 Tri-Turbo Diesel"] },
+    { "models": ["B5", "B6", "B7", "B8", "XB7"], "variants": ["4.4 V8 Bi-Turbo"] },
+    { "models": ["D5"], "variants": ["3.0 Tri-Turbo Diesel"] },
+    { "models": ["XD3", "XD4"], "variants": ["3.0 Quad-Turbo Diesel"] }
+  ]
+}

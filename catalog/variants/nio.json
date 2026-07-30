@@ -1,0 +1,9 @@
+{
+  "make": "Nio",
+  "_note": "Nio's cars are battery-swappable and sold with a choice of pack rather than a fixed one, so the pack size is the variant a seller picks.",
+  "models": [],
+  "groups": [
+    { "models": ["EC6", "EL6", "EL7", "EL8", "EL9", "ET5", "ET5 Touring", "ET7"],
+      "variants": ["75 kWh", "100 kWh", "150 kWh"] }
+  ]
+}

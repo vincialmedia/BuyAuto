@@ -1,0 +1,10 @@
+{
+  "make": "Lada",
+  "_note": "Lada runs a small number of engines across the whole range - the 1.6 and 1.8 in the modern cars, the 1.7 in the Niva and its Taiga and Urban rebadges.",
+  "models": [],
+  "groups": [
+    { "models": ["Granta", "Kalina", "Priora"], "variants": ["1.6"] },
+    { "models": ["Vesta", "XRAY", "Aura", "Iskra"], "variants": ["1.6", "1.8"] },
+    { "models": ["Niva", "Taiga", "Urban"], "variants": ["1.7"] }
+  ]
+}

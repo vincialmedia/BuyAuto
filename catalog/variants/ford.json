@@ -1,0 +1,361 @@
+{
+  "make": "Ford",
+  "_note": "Ford badges the engine family (EcoBoost petrol, TDCi/EcoBlue diesel) rather than a displacement code, so the displacement stays part of the variant. ST / RS / Raptor hold their own model rows as performance sub-brands and carry their engine as the variant. Capri and Explorer are the 2024 European electric cars, not the nameplates they revive - the catalog starts at 2010, so the older ones are out of scope.",
+  "models": [],
+  "groups": [
+    {
+      "models": [
+        "B-MAX"
+      ],
+      "variants": [
+        "1.0 EcoBoost",
+        "1.4 Duratec",
+        "1.5 TDCi",
+        "1.6 TDCi",
+        "1.6 Ti-VCT"
+      ]
+    },
+    {
+      "models": [
+        "C-MAX",
+        "Grand C-MAX"
+      ],
+      "variants": [
+        "1.0 EcoBoost",
+        "1.5 EcoBoost",
+        "1.6 TDCi",
+        "1.5 TDCi",
+        "2.0 TDCi",
+        "1.6 EcoBoost",
+        "1.6 Ti-VCT"
+      ]
+    },
+    {
+      "models": [
+        "EcoSport"
+      ],
+      "variants": [
+        "1.0 EcoBoost",
+        "1.5 Ti-VCT",
+        "1.5 TDCi"
+      ]
+    },
+    {
+      "models": [
+        "Edge",
+        "Edge L"
+      ],
+      "variants": [
+        "2.0 TDCi",
+        "2.0 EcoBlue",
+        "2.7 EcoBoost V6"
+      ]
+    },
+    {
+      "models": [
+        "Fiesta"
+      ],
+      "variants": [
+        "1.0 EcoBoost",
+        "1.1 Ti-VCT",
+        "1.25 Duratec",
+        "1.5 TDCi",
+        "1.6 TDCi",
+        "1.4 Duratec",
+        "1.6 Ti-VCT",
+        "1.4 TDCi",
+        "ST"
+      ]
+    },
+    {
+      "models": [
+        "Focus"
+      ],
+      "variants": [
+        "1.0 EcoBoost",
+        "1.5 EcoBoost",
+        "1.6 TDCi",
+        "1.5 EcoBlue",
+        "2.0 EcoBlue",
+        "2.0 TDCi",
+        "1.6 Ti-VCT",
+        "1.6 EcoBoost",
+        "1.8 TDCi",
+        "ST",
+        "RS"
+      ]
+    },
+    {
+      "models": [
+        "Fusion"
+      ],
+      "variants": [
+        "1.4 Duratec",
+        "1.6 Duratec",
+        "1.6 TDCi"
+      ]
+    },
+    {
+      "models": [
+        "Galaxy",
+        "S-MAX"
+      ],
+      "variants": [
+        "1.5 EcoBoost",
+        "2.0 EcoBoost",
+        "2.0 TDCi",
+        "2.0 EcoBlue",
+        "1.6 EcoBoost",
+        "1.6 TDCi",
+        "2.2 TDCi"
+      ]
+    },
+    {
+      "models": [
+        "Ka"
+      ],
+      "variants": [
+        "1.2 Duratec",
+        "1.0 Ti-VCT",
+        "1.5 TDCi",
+        "1.3 TDCi"
+      ]
+    },
+    {
+      "models": [
+        "Kuga"
+      ],
+      "variants": [
+        "1.5 EcoBoost",
+        "2.0 EcoBoost",
+        "2.0 TDCi",
+        "2.0 EcoBlue",
+        "2.5 Duratec PHEV",
+        "1.6 EcoBoost",
+        "1.5 EcoBlue"
+      ]
+    },
+    {
+      "models": [
+        "Mondeo"
+      ],
+      "variants": [
+        "1.5 EcoBoost",
+        "2.0 EcoBoost",
+        "2.0 TDCi",
+        "2.0 EcoBlue",
+        "2.0 Hybrid",
+        "1.6 EcoBoost",
+        "1.6 TDCi",
+        "2.2 TDCi"
+      ]
+    },
+    {
+      "models": [
+        "Mustang"
+      ],
+      "variants": [
+        "EcoBoost",
+        "GT",
+        "Bullitt",
+        "Mach 1",
+        "Shelby GT350",
+        "Shelby GT500",
+        "Dark Horse"
+      ]
+    },
+    {
+      "models": [
+        "Puma"
+      ],
+      "variants": [
+        "1.0 EcoBoost",
+        "1.5 EcoBlue",
+        "ST"
+      ]
+    },
+    {
+      "models": [
+        "Ranger"
+      ],
+      "variants": [
+        "2.0 EcoBlue",
+        "2.2 TDCi",
+        "3.2 TDCi",
+        "3.0 V6 EcoBlue"
+      ]
+    },
+    {
+      "models": [
+        "Ranger Raptor"
+      ],
+      "variants": [
+        "2.0 EcoBlue Bi-Turbo",
+        "3.0 EcoBoost V6"
+      ]
+    },
+    {
+      "models": [
+        "Bronco"
+      ],
+      "variants": [
+        "2.3 EcoBoost",
+        "2.7 EcoBoost V6"
+      ]
+    },
+    {
+      "models": [
+        "GT"
+      ],
+      "variants": [
+        "3.5 EcoBoost V6"
+      ]
+    },
+    {
+      "models": [
+        "Transit",
+        "Transit Connect"
+      ],
+      "variants": [
+        "1.5 EcoBlue",
+        "2.0 EcoBlue",
+        "2.2 TDCi",
+        "1.6 TDCi"
+      ]
+    },
+    {
+      "models": [
+        "Transit Custom",
+        "Tourneo Custom"
+      ],
+      "variants": [
+        "2.0 EcoBlue",
+        "2.2 TDCi",
+        "2.5 Duratec PHEV"
+      ]
+    },
+    {
+      "models": [
+        "Transit Courier",
+        "Tourneo Courier"
+      ],
+      "variants": [
+        "1.0 EcoBoost",
+        "1.5 EcoBlue",
+        "1.5 TDCi"
+      ]
+    },
+    {
+      "models": [
+        "Tourneo Connect",
+        "Grand Tourneo Connect"
+      ],
+      "variants": [
+        "1.5 EcoBoost",
+        "1.5 EcoBlue",
+        "2.0 TDCi"
+      ]
+    },
+    {
+      "models": [
+        "Mustang Mach-E"
+      ],
+      "variants": [
+        "70 kWh",
+        "91 kWh",
+        "70 kWh AWD",
+        "91 kWh AWD",
+        "GT"
+      ]
+    },
+    {
+      "models": [
+        "Capri",
+        "Capri EV"
+      ],
+      "variants": [
+        "52 kWh",
+        "77 kWh",
+        "79 kWh AWD"
+      ]
+    },
+    {
+      "models": [
+        "Explorer"
+      ],
+      "variants": [
+        "3.0 EcoBoost PHEV",
+        "52 kWh",
+        "77 kWh",
+        "79 kWh AWD"
+      ]
+    },
+    {
+      "models": [
+        "Puma Gen-E"
+      ],
+      "variants": [
+        "43 kWh"
+      ]
+    },
+    {
+      "models": [
+        "F-150 Lightning"
+      ],
+      "variants": [
+        "98 kWh",
+        "131 kWh"
+      ]
+    },
+    {
+      "models": [
+        "E-Transit"
+      ],
+      "variants": [
+        "68 kWh",
+        "89 kWh"
+      ]
+    },
+    {
+      "models": [
+        "E-Transit Custom",
+        "E-Tourneo Custom"
+      ],
+      "variants": [
+        "64 kWh",
+        "74 kWh"
+      ]
+    },
+    {
+      "models": [
+        "E-Transit Courier",
+        "E-Tourneo Courier"
+      ],
+      "variants": [
+        "43 kWh"
+      ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "Focus ST",
+      "model": "Focus",
+      "variant": "ST"
+    },
+    {
+      "from": "Focus RS",
+      "model": "Focus",
+      "variant": "RS"
+    },
+    {
+      "from": "Fiesta ST",
+      "model": "Fiesta",
+      "variant": "ST"
+    },
+    {
+      "from": "Puma ST",
+      "model": "Puma",
+      "variant": "ST"
+    }
+  ]
+}

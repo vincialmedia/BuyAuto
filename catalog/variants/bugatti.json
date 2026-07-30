@@ -1,0 +1,10 @@
+{
+  "make": "Bugatti",
+  "_note": "One engine for the whole Veyron and Chiron era - the 8.0 W16 - and the V16 hybrid that replaced it in the Tourbillon.",
+  "models": [],
+  "groups": [
+    { "models": ["EB 16.4 Veyron", "Chiron", "Divo", "Centodieci", "La Voiture Noire", "Mistral", "Bolide"],
+      "variants": ["8.0 W16"] },
+    { "models": ["Tourbillon", "Brouillard"], "variants": ["8.3 V16 Hybrid"] }
+  ]
+}

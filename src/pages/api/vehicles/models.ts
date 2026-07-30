@@ -41,6 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .from("models")
     .select("id,name")
     .eq("make_id", makeId)
+    .eq("is_active", true)
     .order("name", { ascending: true });
 
   if (error) {

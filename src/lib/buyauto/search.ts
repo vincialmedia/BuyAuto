@@ -17,6 +17,7 @@ export interface SearchQuery {
   query?: string;
   brand?: string;
   model?: string;
+  variant?: string;
   yearMin?: number;
   yearMax?: number;
   priceMin?: number;

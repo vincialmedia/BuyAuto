@@ -1,0 +1,474 @@
+{
+  "make": "Porsche",
+  "_note": "Porsche brands trim levels the way other makes brand engines, so the CSV turned nearly every 911 and Cayenne trim into its own model. Carrera / S / GTS / Turbo are demoted to variants of their range. The homologation and limited lines Porsche sells as separate models (GT3, GT2 RS, Dakar, Spyder RS, S/T) stay models, matching how BMW M3 was kept.",
+  "models": [],
+  "groups": [
+    {
+      "models": [
+        "911 GT3"
+      ],
+      "variants": [
+        "4.0 (GT3)",
+        "4.0 (GT3 Touring)"
+      ]
+    },
+    {
+      "models": [
+        "911 GT3 RS"
+      ],
+      "variants": [
+        "4.0 (GT3 RS)"
+      ]
+    },
+    {
+      "models": [
+        "911 GT2 RS"
+      ],
+      "variants": [
+        "3.8 Turbo (GT2 RS)"
+      ]
+    },
+    {
+      "models": [
+        "911 Dakar"
+      ],
+      "variants": [
+        "3.0 Turbo 4GTS"
+      ]
+    },
+    {
+      "models": [
+        "911 S/T"
+      ],
+      "variants": [
+        "4.0 (S/T)"
+      ]
+    },
+    {
+      "models": [
+        "911 Speedster"
+      ],
+      "variants": [
+        "4.0 (Speedster)"
+      ]
+    },
+    {
+      "models": [
+        "911 Sport Classic"
+      ],
+      "variants": [
+        "3.7 Turbo (Sport Classic)"
+      ]
+    },
+    {
+      "models": [
+        "911 R"
+      ],
+      "variants": [
+        "4.0 (911 R)"
+      ]
+    },
+    {
+      "models": [
+        "718 Cayman GT4"
+      ],
+      "variants": [
+        "4.0 (GT4)"
+      ]
+    },
+    {
+      "models": [
+        "718 Cayman GT4 RS"
+      ],
+      "variants": [
+        "4.0 (GT4 RS)"
+      ]
+    },
+    {
+      "models": [
+        "718 Spyder"
+      ],
+      "variants": [
+        "4.0 (Spyder)"
+      ]
+    },
+    {
+      "models": [
+        "718 Spyder RS"
+      ],
+      "variants": [
+        "4.0 (Spyder RS)"
+      ]
+    },
+    {
+      "models": [
+        "Boxster"
+      ],
+      "variants": [
+        "2.7",
+        "2.9",
+        "3.2 S",
+        "3.4 S",
+        "3.4 GTS",
+        "3.8 Spyder"
+      ]
+    },
+    {
+      "models": [
+        "Cayman"
+      ],
+      "variants": [
+        "2.7",
+        "2.9",
+        "3.4 S",
+        "3.4 GTS",
+        "3.4 R",
+        "3.8 GT4"
+      ]
+    },
+    {
+      "models": [
+        "918 Spyder"
+      ],
+      "variants": [
+        "4.6 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Cayenne Coupé"
+      ],
+      "variants": [
+        "3.0 V6",
+        "3.0 E-Hybrid",
+        "2.9 S",
+        "4.0 GTS",
+        "4.0 Turbo",
+        "4.0 Turbo GT",
+        "4.0 Turbo E-Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Cayenne Electric"
+      ],
+      "variants": [
+        "Electric"
+      ]
+    },
+    {
+      "models": [
+        "Panamera Sport Turismo"
+      ],
+      "variants": [
+        "3.0 V6",
+        "2.9 4",
+        "2.9 4 E-Hybrid",
+        "2.9 4S",
+        "4.0 GTS",
+        "4.0 Turbo",
+        "4.0 Turbo S E-Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Taycan Cross Turismo",
+        "Taycan Sport Turismo"
+      ],
+      "variants": [
+        "4",
+        "4S",
+        "GTS",
+        "Turbo",
+        "Turbo S"
+      ]
+    },
+    {
+      "models": [
+        "911"
+      ],
+      "variants": [
+        "Targa 4S",
+        "Targa 4 GTS",
+        "Carrera 4 GTS"
+      ]
+    },
+    {
+      "models": [
+        "718 Boxster",
+        "718 Cayman"
+      ],
+      "variants": [
+        "2.0",
+        "GTS 2.5"
+      ]
+    },
+    {
+      "models": [
+        "Macan"
+      ],
+      "variants": [
+        "2.0",
+        "S Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Cayenne"
+      ],
+      "variants": [
+        "Diesel",
+        "S Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Panamera"
+      ],
+      "variants": [
+        "Diesel",
+        "4S Diesel"
+      ]
+    },
+    {
+      "models": [
+        "Taycan"
+      ],
+      "variants": [
+        "RWD"
+      ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "911 Carrera",
+      "model": "911",
+      "variant": "Carrera"
+    },
+    {
+      "from": "911 Carrera 4",
+      "model": "911",
+      "variant": "Carrera 4"
+    },
+    {
+      "from": "911 Carrera 4S",
+      "model": "911",
+      "variant": "Carrera 4S"
+    },
+    {
+      "from": "911 Carrera S",
+      "model": "911",
+      "variant": "Carrera S"
+    },
+    {
+      "from": "911 Carrera T",
+      "model": "911",
+      "variant": "Carrera T"
+    },
+    {
+      "from": "911 GTS",
+      "model": "911",
+      "variant": "Carrera GTS"
+    },
+    {
+      "from": "911 Targa",
+      "model": "911",
+      "variant": "Targa 4"
+    },
+    {
+      "from": "911 Turbo",
+      "model": "911",
+      "variant": "Turbo"
+    },
+    {
+      "from": "911 Turbo S",
+      "model": "911",
+      "variant": "Turbo S"
+    },
+    {
+      "from": "718 Boxster GTS",
+      "model": "718 Boxster",
+      "variant": "GTS 4.0"
+    },
+    {
+      "from": "718 Boxster S",
+      "model": "718 Boxster",
+      "variant": "S"
+    },
+    {
+      "from": "718 Boxster T",
+      "model": "718 Boxster",
+      "variant": "T"
+    },
+    {
+      "from": "718 Cayman GTS",
+      "model": "718 Cayman",
+      "variant": "GTS 4.0"
+    },
+    {
+      "from": "718 Cayman S",
+      "model": "718 Cayman",
+      "variant": "S"
+    },
+    {
+      "from": "718 Cayman T",
+      "model": "718 Cayman",
+      "variant": "T"
+    },
+    {
+      "from": "Cayenne E-Hybrid",
+      "model": "Cayenne",
+      "variant": "E-Hybrid"
+    },
+    {
+      "from": "Cayenne GTS",
+      "model": "Cayenne",
+      "variant": "GTS"
+    },
+    {
+      "from": "Cayenne S",
+      "model": "Cayenne",
+      "variant": "S"
+    },
+    {
+      "from": "Cayenne S E-Hybrid",
+      "model": "Cayenne",
+      "variant": "S E-Hybrid"
+    },
+    {
+      "from": "Cayenne Turbo",
+      "model": "Cayenne",
+      "variant": "Turbo"
+    },
+    {
+      "from": "Cayenne Turbo E-Hybrid",
+      "model": "Cayenne",
+      "variant": "Turbo E-Hybrid"
+    },
+    {
+      "from": "Cayenne Turbo GT",
+      "model": "Cayenne",
+      "variant": "Turbo GT"
+    },
+    {
+      "from": "Cayenne Turbo S E-Hybrid",
+      "model": "Cayenne",
+      "variant": "Turbo S E-Hybrid"
+    },
+    {
+      "from": "Cayenne Turbo Electric",
+      "model": "Cayenne Electric",
+      "variant": "Turbo Electric"
+    },
+    {
+      "from": "Macan 4",
+      "model": "Macan",
+      "variant": "Macan 4"
+    },
+    {
+      "from": "Macan 4S",
+      "model": "Macan",
+      "variant": "Macan 4S"
+    },
+    {
+      "from": "Macan GTS",
+      "model": "Macan",
+      "variant": "GTS"
+    },
+    {
+      "from": "Macan S",
+      "model": "Macan",
+      "variant": "S"
+    },
+    {
+      "from": "Macan T",
+      "model": "Macan",
+      "variant": "T"
+    },
+    {
+      "from": "Macan Turbo",
+      "model": "Macan",
+      "variant": "Turbo"
+    },
+    {
+      "from": "Panamera 4",
+      "model": "Panamera",
+      "variant": "Panamera 4"
+    },
+    {
+      "from": "Panamera 4 E-Hybrid",
+      "model": "Panamera",
+      "variant": "4 E-Hybrid"
+    },
+    {
+      "from": "Panamera 4S",
+      "model": "Panamera",
+      "variant": "Panamera 4S"
+    },
+    {
+      "from": "Panamera 4S E-Hybrid",
+      "model": "Panamera",
+      "variant": "4S E-Hybrid"
+    },
+    {
+      "from": "Panamera GTS",
+      "model": "Panamera",
+      "variant": "GTS"
+    },
+    {
+      "from": "Panamera S",
+      "model": "Panamera",
+      "variant": "S"
+    },
+    {
+      "from": "Panamera S E-Hybrid",
+      "model": "Panamera",
+      "variant": "S E-Hybrid"
+    },
+    {
+      "from": "Panamera Turbo",
+      "model": "Panamera",
+      "variant": "Turbo"
+    },
+    {
+      "from": "Panamera Turbo E-Hybrid",
+      "model": "Panamera",
+      "variant": "Turbo E-Hybrid"
+    },
+    {
+      "from": "Panamera Turbo S",
+      "model": "Panamera",
+      "variant": "Turbo S"
+    },
+    {
+      "from": "Panamera Turbo S E-Hybrid",
+      "model": "Panamera",
+      "variant": "Turbo S E-Hybrid"
+    },
+    {
+      "from": "Taycan 4S",
+      "model": "Taycan",
+      "variant": "Taycan 4S"
+    },
+    {
+      "from": "Taycan GTS",
+      "model": "Taycan",
+      "variant": "GTS"
+    },
+    {
+      "from": "Taycan Turbo",
+      "model": "Taycan",
+      "variant": "Turbo"
+    },
+    {
+      "from": "Taycan Turbo GT",
+      "model": "Taycan",
+      "variant": "Turbo GT"
+    },
+    {
+      "from": "Taycan Turbo S",
+      "model": "Taycan",
+      "variant": "Turbo S"
+    }
+  ]
+}

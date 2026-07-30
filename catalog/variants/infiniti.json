@@ -1,0 +1,19 @@
+{
+  "make": "Infiniti",
+  "_note": "Infiniti sold Nissan V6 and V8 petrol alongside a Mercedes-sourced 2.2 diesel and Renault's 1.5, which is what the Q30 and QX30 ran in Europe. The rows named 35 and 37 are the G35 and G37 with the letter lost in import; both are V6 coupés, so they carry the V6s.",
+  "models": [],
+  "groups": [
+    { "models": ["35", "37"], "variants": ["3.5 V6", "3.7 V6"] },
+    { "models": ["G 20"], "variants": ["2.0"] },
+    { "models": ["EX"], "variants": ["3.0 V6 Diesel", "3.7 V6"] },
+    { "models": ["FX", "QX70"], "variants": ["3.0 V6 Diesel", "3.7 V6", "5.0 V8"] },
+    { "models": ["M", "Q70"],
+      "variants": ["3.0 V6 Diesel", "3.7 V6", "5.6 V8", "3.5 Hybrid"] },
+    { "models": ["Q30", "QX30"],
+      "variants": ["1.5 Diesel", "1.6 Turbo", "2.0 Turbo", "2.2 Diesel"] },
+    { "models": ["Q50"],
+      "variants": ["2.0 Turbo", "2.2 Diesel", "3.0 V6 Twin Turbo", "3.5 Hybrid"] },
+    { "models": ["Q60"], "variants": ["2.0 Turbo", "3.0 V6 Twin Turbo"] },
+    { "models": ["QX50"], "variants": ["2.0 Turbo", "3.0 V6 Diesel"] }
+  ]
+}

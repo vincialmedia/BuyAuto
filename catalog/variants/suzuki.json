@@ -1,0 +1,160 @@
+{
+  "make": "Suzuki",
+  "_note": "Suzuki badges its turbo petrols Boosterjet, the naturally aspirated ones Dualjet, and diesel DDiS. Across and Swace are rebadged Toyota RAV4 PHEV and Corolla Touring Sports, so they carry the Toyota powertrains they were sold with.",
+  "models": [],
+  "groups": [
+    {
+      "models": [
+        "Alto"
+      ],
+      "variants": [
+        "1.0"
+      ]
+    },
+    {
+      "models": [
+        "Celerio"
+      ],
+      "variants": [
+        "1.0"
+      ]
+    },
+    {
+      "models": [
+        "Splash"
+      ],
+      "variants": [
+        "1.0",
+        "1.2",
+        "1.3 DDiS"
+      ]
+    },
+    {
+      "models": [
+        "Ignis"
+      ],
+      "variants": [
+        "1.2 Dualjet",
+        "1.2 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Swift"
+      ],
+      "variants": [
+        "1.2 Dualjet",
+        "1.0 Boosterjet",
+        "1.3 DDiS",
+        "1.2",
+        "1.3",
+        "1.2 Hybrid",
+        "Sport"
+      ]
+    },
+    {
+      "models": [
+        "Baleno"
+      ],
+      "variants": [
+        "1.0 Boosterjet",
+        "1.2 Dualjet"
+      ]
+    },
+    {
+      "models": [
+        "SX4"
+      ],
+      "variants": [
+        "1.6",
+        "1.6 DDiS",
+        "2.0 DDiS",
+        "1.5",
+        "1.9 DDiS"
+      ]
+    },
+    {
+      "models": [
+        "S-Cross"
+      ],
+      "variants": [
+        "1.4 Boosterjet",
+        "1.6",
+        "1.6 DDiS",
+        "1.5 Hybrid",
+        "1.0 Boosterjet"
+      ]
+    },
+    {
+      "models": [
+        "Vitara"
+      ],
+      "variants": [
+        "1.4 Boosterjet",
+        "1.6",
+        "1.6 DDiS",
+        "1.5 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Grand Vitara"
+      ],
+      "variants": [
+        "1.6",
+        "2.4",
+        "1.9 DDiS",
+        "1.5 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "Jimny"
+      ],
+      "variants": [
+        "1.3",
+        "1.5"
+      ]
+    },
+    {
+      "models": [
+        "Kizashi"
+      ],
+      "variants": [
+        "2.4"
+      ]
+    },
+    {
+      "models": [
+        "Across"
+      ],
+      "variants": [
+        "2.5 PHEV"
+      ]
+    },
+    {
+      "models": [
+        "Swace"
+      ],
+      "variants": [
+        "1.8 Hybrid"
+      ]
+    },
+    {
+      "models": [
+        "e Vitara"
+      ],
+      "variants": [
+        "49 kWh",
+        "61 kWh"
+      ]
+    }
+  ],
+  "remap": [
+    {
+      "from": "Swift Sport",
+      "model": "Swift",
+      "variant": "Sport"
+    }
+  ]
+}

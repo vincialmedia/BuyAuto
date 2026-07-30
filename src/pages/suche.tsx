@@ -30,6 +30,7 @@ function parseSearchQueryFromParams(query: Record<string, string | string[] | un
   if (query.query) newQuery.query = query.query as string;
   if (query.brand) newQuery.brand = query.brand as string;
   if (query.model) newQuery.model = query.model as string;
+  if (query.variant) newQuery.variant = query.variant as string;
   if (query.yearMin) newQuery.yearMin = parseInt(query.yearMin as string, 10);
   if (query.yearMax) newQuery.yearMax = parseInt(query.yearMax as string, 10);
   if (query.priceMin) newQuery.priceMin = parseInt(query.priceMin as string, 10);
@@ -66,7 +67,7 @@ function isDefaultSearchQuery(q: SearchQuery): boolean {
   if (q.page && q.page > 1) return false;
   if (q.sort) return false;
   if (q.query && q.query.trim() !== "") return false;
-  if (q.brand || q.model) return false;
+  if (q.brand || q.model || q.variant) return false;
   if (q.dealType || q.financingType) return false;
   if (q.yearMin || q.yearMax || q.priceMin || q.priceMax || q.kmMax || q.monthsMin || q.monthsMax) return false;
   if (q.monthlyOnly || q.noDeposit || q.premiumOnly) return false;
@@ -84,7 +85,7 @@ function isSingleDealTypeQuery(q: SearchQuery): boolean {
   if (q.page && q.page > 1) return false;
   if (q.sort) return false;
   if (q.query && q.query.trim() !== "") return false;
-  if (q.brand || q.model) return false;
+  if (q.brand || q.model || q.variant) return false;
   if (q.yearMin || q.yearMax || q.priceMin || q.priceMax || q.kmMax || q.monthsMin || q.monthsMax) return false;
   if (q.monthlyOnly || q.noDeposit || q.premiumOnly) return false;
   if ((q.canton && q.canton.length) || (q.fuel && q.fuel.length) || (q.gearbox && q.gearbox.length) || (q.body && q.body.length)) return false;

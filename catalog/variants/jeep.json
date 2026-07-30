@@ -1,0 +1,112 @@
+{
+  "make": "Jeep",
+  "_note": "Jeep runs Stellantis engines in Europe - MultiJet diesel, the small turbo petrols - alongside the American V6 and V8s. 4xe is Jeep's plug-in hybrid badge and SRT its performance one; both are badges on the car, so they are variants.",
+  "models": [],
+  "groups": [
+    {
+      "models": [
+        "Avenger"
+      ],
+      "variants": [
+        "1.2 Turbo",
+        "54 kWh"
+      ]
+    },
+    {
+      "models": [
+        "Renegade"
+      ],
+      "variants": [
+        "1.0 Turbo",
+        "1.3 Turbo",
+        "1.6 MultiJet",
+        "2.0 MultiJet",
+        "1.3 4xe",
+        "1.4 MultiAir",
+        "1.6 E-Torq"
+      ]
+    },
+    {
+      "models": [
+        "Compass"
+      ],
+      "variants": [
+        "1.3 Turbo",
+        "1.4 MultiAir",
+        "1.6 MultiJet",
+        "2.0 MultiJet",
+        "1.3 4xe",
+        "2.0",
+        "2.4",
+        "2.2 CRD"
+      ]
+    },
+    {
+      "models": [
+        "Patriot"
+      ],
+      "variants": [
+        "2.0",
+        "2.4",
+        "2.2 CRD"
+      ]
+    },
+    {
+      "models": [
+        "Cherokee"
+      ],
+      "variants": [
+        "2.0 MultiJet",
+        "2.2 MultiJet",
+        "3.2 V6",
+        "2.4"
+      ]
+    },
+    {
+      "models": [
+        "Grand Cherokee"
+      ],
+      "variants": [
+        "3.0 CRD",
+        "3.6 V6",
+        "5.7 V8",
+        "2.0 4xe",
+        "SRT8",
+        "SRT",
+        "Trackhawk"
+      ]
+    },
+    {
+      "models": [
+        "Commander"
+      ],
+      "variants": [
+        "3.0 CRD",
+        "4.7 V8",
+        "5.7 V8"
+      ]
+    },
+    {
+      "models": [
+        "Wrangler"
+      ],
+      "variants": [
+        "2.0 Turbo",
+        "3.6 V6",
+        "2.2 MultiJet",
+        "2.0 4xe",
+        "2.8 CRD",
+        "3.8 V6"
+      ]
+    },
+    {
+      "models": [
+        "Gladiator"
+      ],
+      "variants": [
+        "3.0 V6 Diesel",
+        "3.6 V6"
+      ]
+    }
+  ]
+}

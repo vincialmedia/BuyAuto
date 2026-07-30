@@ -1,0 +1,21 @@
+{
+  "make": "Ferrari",
+  "_note": "Ferrari sells one powertrain per model, so the variant is the engine itself - which is exactly what identifies the car. The number in the name is usually displacement or cylinder count, not a trim, so it stays in the model name.",
+  "models": [],
+  "groups": [
+    { "models": ["12Cilindri", "812 Superfast", "812 Competizione", "Daytona SP3", "Monza SP1", "Monza SP2", "Purosangue"],
+      "variants": ["6.5 V12"] },
+    { "models": ["F12 Berlinetta", "F12tdf", "FF"], "variants": ["6.3 V12"] },
+    { "models": ["GTC4Lusso"], "variants": ["6.3 V12", "3.9 V8 T"] },
+    { "models": ["599"], "variants": ["6.0 V12"] },
+    { "models": ["612 Scaglietti"], "variants": ["5.7 V12"] },
+    { "models": ["LaFerrari"], "variants": ["6.3 V12 Hybrid"] },
+    { "models": ["458 Italia", "458 Speciale"], "variants": ["4.5 V8"] },
+    { "models": ["488", "F8 Tributo", "California T", "Portofino", "Portofino M", "Roma", "Amalfi"],
+      "variants": ["3.9 V8"] },
+    { "models": ["California"], "variants": ["4.3 V8"] },
+    { "models": ["SF90 Stradale", "SF90 XX Stradale", "849 Testarossa"],
+      "variants": ["4.0 V8 Hybrid"] },
+    { "models": ["296 GTB", "296 Speciale", "F80"], "variants": ["3.0 V6 Hybrid"] }
+  ]
+}
