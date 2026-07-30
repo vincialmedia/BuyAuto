@@ -115,8 +115,10 @@ function buildEmail(params: {
         Ihr Inserat läuft in <strong>${params.daysBefore} Tagen</strong> ab. Öffnen Sie Ihr Dashboard, um Ihr Inserat zu verwalten.
       </p>
 
-      <p style="color: #b45309;">
-        Nach dem Ablauf wird Ihr Inserat offline genommen. Eine erneute Veröffentlichung ist danach für <strong>CHF 30</strong> möglich.
+      <p style="color: #047857;">
+        Nach dem Ablauf wird Ihr Inserat offline genommen. Aktion: Die Wiederveröffentlichung ist zurzeit
+        <span style="text-decoration: line-through; color: #6b7280;"> CHF 30 </span>
+        <strong>kostenlos</strong>.
       </p>
 
       <div style="text-align: center; margin: 22px 0;">

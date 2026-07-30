@@ -1,18 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { stripe } from "@/lib/stripe-server";
-import { RELIST_PRICE_CHF } from "@/lib/buyauto/stripe_config";
+import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE } from "@/lib/buyauto/stripe_config";
 
 /**
- * Starts the CHF 30 relist checkout for an expired listing. The Stripe webhook
- * (checkout.session.completed, kind 'listing_relist') republishes the listing
- * with a fresh runtime after payment; this endpoint only creates the session.
+ * Relists an expired listing.
+ *
+ * Regular mode: creates the CHF 30 Stripe checkout; the webhook
+ * (checkout.session.completed, kind 'listing_relist') republishes after
+ * payment. Promo mode (RELIST_PROMO_ACTIVE): republishes directly — ownership
+ * and the expired-status guard still apply, and the republish itself runs with
+ * the service role because the status-authority trigger blocks owners setting
+ * 'published' on a private listing themselves.
  */
 
 type ListingRow = Pick<
   Database["public"]["Tables"]["listings"]["Row"],
-  "id" | "user_id" | "created_by" | "status" | "brand" | "model"
+  "id" | "user_id" | "created_by" | "status" | "brand" | "model" | "duration_days"
 >;
 
 type PrepareBody = {
@@ -50,7 +56,7 @@ async function getOwnedListing(
 ): Promise<ListingRow | null> {
   const { data: byUserId, error: byUserIdError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, status, brand, model")
+    .select("id, user_id, created_by, status, brand, model, duration_days")
     .eq("id", listingId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -62,7 +68,7 @@ async function getOwnedListing(
 
   const { data: byCreatedBy, error: byCreatedByError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, status, brand, model")
+    .select("id, user_id, created_by, status, brand, model, duration_days")
     .eq("id", listingId)
     .eq("created_by", userId)
     .maybeSingle();
@@ -110,6 +116,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (listing.status !== "expired") {
       return res.status(400).json({ error: "Nur abgelaufene Inserate können wieder veröffentlicht werden." });
+    }
+
+    if (RELIST_PROMO_ACTIVE) {
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
+      const durationDays = typeof listing.duration_days === "number" ? listing.duration_days : 60;
+      const nowIso = new Date().toISOString();
+      const expiresAt = new Date(Date.parse(nowIso) + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+      const { error: relistError } = await supabaseAdmin
+        .from("listings")
+        .update({ status: "published", expires_at: expiresAt, updated_at: nowIso })
+        .eq("id", listingId)
+        // Re-checked at write time so a concurrent relist can't double-apply.
+        .eq("status", "expired");
+
+      if (relistError) {
+        console.error("relist.prepare: promo republish error", relistError);
+        return res.status(500).json({ error: "Wiederveröffentlichung fehlgeschlagen. Bitte versuche es erneut." });
+      }
+
+      return res.status(200).json({ next: "relisted", listing_id: listingId });
     }
 
     const origin = getRequestOrigin(req);

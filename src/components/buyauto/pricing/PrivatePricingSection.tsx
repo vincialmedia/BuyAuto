@@ -12,6 +12,8 @@ import {
   planIncludesPremium,
   PREMIUM_BOOST_PRICE,
   pricingPlans,
+  RELIST_PRICE_CHF,
+  RELIST_PROMO_ACTIVE,
   type Plan,
 } from "@/lib/buyauto/stripe_config";
 import { privatePlanMarketingFeatures } from "@/components/buyauto/pricing/pricingData";
@@ -111,6 +113,22 @@ export function PrivatePricingSection() {
                         <span>{feature}</span>
                       </div>
                     ))}
+                    {planKey === "standard" && (
+                      <div className="flex items-start gap-2 text-sm text-neutral-700">
+                        <Check className="mt-0.5 h-4 w-4 text-primary flex-shrink-0" />
+                        <span>
+                          Nach Ablauf: Wiedereinstellen{" "}
+                          {RELIST_PROMO_ACTIVE ? (
+                            <>
+                              <s className="text-neutral-400">CHF {RELIST_PRICE_CHF}</s>{" "}
+                              <span className="font-semibold text-emerald-700">zurzeit gratis</span>
+                            </>
+                          ) : (
+                            <>für CHF {RELIST_PRICE_CHF}</>
+                          )}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>

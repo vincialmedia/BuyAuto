@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { pricingPlans, PREMIUM_BOOST_PRICE, RELIST_PRICE_CHF, calculateTotal, planIncludesPremium, type Plan } from "@/lib/buyauto/stripe_config";
+import { pricingPlans, PREMIUM_BOOST_PRICE, RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE, calculateTotal, planIncludesPremium, type Plan } from "@/lib/buyauto/stripe_config";
 import { Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing } from "@/services/createListingService";
@@ -76,11 +76,7 @@ export default function Step3_PlanSelection() {
   }, [donationAmountEffective, donationEnabled, effectivePremium, registerDraftSnapshotter, selectedPlan, total]);
 
   const planFeatures: Record<Plan, string[]> = {
-    standard: [
-      "60 Tage Laufzeit",
-      "Standard-Platzierung",
-      `Nach Ablauf: Wiedereinstellen für CHF ${RELIST_PRICE_CHF}`,
-    ],
+    standard: ["60 Tage Laufzeit", "Standard-Platzierung"],
     extended: ["90 Tage Laufzeit", "Gratis Premium-Platzierung"],
     unlimited: ["Unlimitierte Laufzeit", "Gratis Premium-Platzierung", "Jederzeit pausierbar"],
   };
@@ -208,6 +204,22 @@ export default function Step3_PlanSelection() {
                         {feature}
                       </li>
                     ))}
+                    {planKey === "standard" && (
+                      <li key="relist-fee" className="flex items-center">
+                        <Check className="mr-2 h-4 w-4 text-green-600" />
+                        <span>
+                          Nach Ablauf: Wiedereinstellen{" "}
+                          {RELIST_PROMO_ACTIVE ? (
+                            <>
+                              <s className="text-neutral-400">CHF {RELIST_PRICE_CHF}</s>{" "}
+                              <span className="font-semibold text-emerald-700">zurzeit gratis</span>
+                            </>
+                          ) : (
+                            <>für CHF {RELIST_PRICE_CHF}</>
+                          )}
+                        </span>
+                      </li>
+                    )}
                   </ul>
                 </CardContent>
               </Card>

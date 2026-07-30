@@ -11,8 +11,16 @@ export const pricingPlans = {
 
 export const PREMIUM_BOOST_PRICE = 30;
 
-/** Fee to re-publish a listing after it expired (Standard plan). */
+/** Fee to re-publish a listing after it expired. */
 export const RELIST_PRICE_CHF = 30;
+
+/**
+ * Launch promo: relisting is free for everyone right now. The UI shows the
+ * regular price struck through ("CHF 30" -> gratis) and the relist endpoint
+ * republishes directly instead of opening a Stripe checkout. Flip to false to
+ * end the promo — the paid flow underneath stays fully wired.
+ */
+export const RELIST_PROMO_ACTIVE = true;
 
 export type Plan = keyof typeof pricingPlans;
 

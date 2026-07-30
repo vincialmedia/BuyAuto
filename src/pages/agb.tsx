@@ -99,6 +99,27 @@ export default function AGB() {
                 <p>
                   Die Nutzung der Plattform als Interessent ist grundsätzlich kostenlos. Für das Inserieren von Fahrzeugen können Gebühren anfallen, die vor Abschluss des Inseriervorgangs deutlich ausgewiesen werden.
                 </p>
+                <p>
+                  Inserate haben eine planabhängige Laufzeit. Nach Ablauf der Laufzeit wird das Inserat deaktiviert
+                  ("Abgelaufen") und ist öffentlich nicht mehr sichtbar. Für die erneute Veröffentlichung eines
+                  abgelaufenen Inserats kann eine Gebühr von CHF 30 erhoben werden; die jeweils geltende Gebühr wird
+                  vor der Zahlung ausgewiesen. Im Rahmen von Aktionen kann der Betreiber diese Gebühr vorübergehend
+                  ganz oder teilweise erlassen.
+                </p>
+                <p>
+                  In den Plänen "Verlängert" und "Unlimitiert" ist die Premium-Platzierung ohne Aufpreis enthalten.
+                  Für andere Pläne kann die Premium-Platzierung als kostenpflichtige Zusatzleistung erworben werden.
+                </p>
+                <p>
+                  Unvollständige Inserats-Entwürfe, die während 30 Tagen nicht bearbeitet werden, werden automatisch
+                  archiviert und 5 Tage nach der Archivierung endgültig gelöscht. Betroffene Nutzer werden vorgängig
+                  per E-Mail informiert; durch Bearbeiten bzw. Veröffentlichen des Entwurfs wird die Löschung abgewendet.
+                </p>
+                <p>
+                  Beim Bezahlvorgang kann eine freiwillige Unterstützung (Spende) an den Betreiber vorausgewählt sein.
+                  Sie wird vor Abschluss der Zahlung als separater Posten ausgewiesen und kann jederzeit mit einem
+                  Klick entfernt werden; ein Anspruch auf Gegenleistung entsteht daraus nicht.
+                </p>
               </div>
             </section>
 

@@ -27,6 +27,7 @@ import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
 import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
+import { RELIST_PRICE_CHF, RELIST_PROMO_ACTIVE } from "@/lib/buyauto/stripe_config";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
@@ -334,7 +335,8 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     }
   }, [loadUserListings]);
 
-  // Expired listings can only go live again through the CHF 30 relist checkout.
+  // Expired listings go live again through the relist flow: free while the
+  // promo runs (instant republish), otherwise via the CHF 30 checkout.
   const handleRelist = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
     try {
@@ -344,19 +346,29 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
         body: JSON.stringify({ listing_id: listingId }),
       });
 
-      const json = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !json.url) {
-        const message = typeof json.error === "string" ? json.error : "Zahlung konnte nicht gestartet werden.";
+      const json = (await res.json()) as { url?: string; next?: string; error?: string };
+      if (!res.ok) {
+        const message = typeof json.error === "string" ? json.error : "Wiederveröffentlichung konnte nicht gestartet werden.";
         throw new Error(message);
+      }
+
+      if (json.next === "relisted") {
+        await loadUserListings();
+        setActionLoading(null);
+        return;
+      }
+
+      if (!json.url) {
+        throw new Error("Zahlung konnte nicht gestartet werden.");
       }
 
       window.location.href = json.url;
     } catch (error) {
-      console.error("Error starting relist checkout:", error);
-      alert("Fehler beim Starten der Zahlung. Bitte versuche es erneut.");
+      console.error("Error starting relist:", error);
+      alert("Fehler bei der Wiederveröffentlichung. Bitte versuche es erneut.");
       setActionLoading(null);
     }
-  }, []);
+  }, [loadUserListings]);
 
   const formatPrice = (price: number) => formatPriceCHF(price);
 
@@ -637,7 +649,15 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                             )}
                             {isExpiredListing && (
                               <span className="text-xs text-neutral-600">
-                                Abgelaufen – Wiederveröffentlichung für CHF 30 möglich
+                                {RELIST_PROMO_ACTIVE ? (
+                                  <>
+                                    Abgelaufen – Aktion: Wiederveröffentlichung{" "}
+                                    <s className="text-neutral-400">CHF {RELIST_PRICE_CHF}</s>{" "}
+                                    <span className="font-semibold text-emerald-700">gratis</span>
+                                  </>
+                                ) : (
+                                  <>Abgelaufen – Wiederveröffentlichung für CHF {RELIST_PRICE_CHF} möglich</>
+                                )}
                               </span>
                             )}
                             {premium && listing.premium_until && (
@@ -666,7 +686,15 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               disabled={actionLoading === listing.id}
                             >
                               <RefreshCw className="w-4 h-4 mr-2" />
-                              Wieder veröffentlichen – CHF 30
+                              {RELIST_PROMO_ACTIVE ? (
+                                <>
+                                  Wieder veröffentlichen –{" "}
+                                  <s className="opacity-70">CHF {RELIST_PRICE_CHF}</s>
+                                  <span className="ml-1 font-bold">Gratis</span>
+                                </>
+                              ) : (
+                                <>Wieder veröffentlichen – CHF {RELIST_PRICE_CHF}</>
+                              )}
                             </Button>
                           )}
 
