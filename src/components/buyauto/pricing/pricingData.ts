@@ -91,5 +91,11 @@ export const privatePlanMarketingFeatures: Record<
 > = {
   standard: ["60 Tage Laufzeit", "Standard-Platzierung"],
   extended: ["90 Tage Laufzeit", "Gratis Premium Boost", "Verlängerung: CHF 15 statt CHF 30"],
-  unlimited: ["Unlimitierte Laufzeit", "Gratis Premium Boost", "Jederzeit pausierbar"],
+  unlimited: [
+    "Online bis verkauft – einmal zahlen",
+    "Premium-Platzierung dauerhaft inklusive",
+    "Keine Ablauf- und Verlängerungsgebühren",
+    "Jederzeit pausierbar",
+    "Prioritäts-Support",
+  ],
 };

@@ -68,12 +68,17 @@ export function PrivatePricingSection() {
                       <p className="mt-1 text-sm text-neutral-500">
                         {pricingPlans[planKey].duration_days
                           ? `${pricingPlans[planKey].duration_days} Tage`
-                          : "Unlimitiert"}
+                          : "Online bis verkauft"}
                       </p>
                       {planKey === "extended" && (
                         <p className="mt-1 text-xs text-neutral-500">
                           Premium im Wert von CHF {PREMIUM_BOOST_PRICE} inklusive ·
                           weniger als 60 Rappen pro Tag
+                        </p>
+                      )}
+                      {planKey === "unlimited" && (
+                        <p className="mt-1 text-xs text-neutral-500">
+                          Premium-Wert CHF {PREMIUM_BOOST_PRICE}/Monat dauerhaft inklusive
                         </p>
                       )}
                     </div>

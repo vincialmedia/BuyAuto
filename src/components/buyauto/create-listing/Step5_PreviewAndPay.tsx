@@ -1129,7 +1129,9 @@ export default function Step5_PreviewAndPay() {
                           <span>{planDetails.name}</span>
                           <span>CHF {planPrice.toFixed(2)}</span>
                         </div>
-                        <p className="text-sm text-neutral-500 -mt-2">{planDetails.duration_days} Tage</p>
+                        <p className="text-sm text-neutral-500 -mt-2">
+                          {planDetails.duration_days ? `${planDetails.duration_days} Tage` : "Online bis verkauft"}
+                        </p>
 
                         {premiumIncluded ? (
                           <div className="flex justify-between items-center text-sm pt-2">
