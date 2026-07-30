@@ -3,7 +3,10 @@ import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
 import { stripe } from "@/lib/stripe-server";
 
-type ListingRow = Pick<Database["public"]["Tables"]["listings"]["Row"], "id" | "user_id" | "created_by" | "premium_until">;
+type ListingRow = Pick<
+  Database["public"]["Tables"]["listings"]["Row"],
+  "id" | "user_id" | "created_by" | "premium" | "premium_until"
+>;
 
 type PrepareBody = {
   listing_id?: string;
@@ -40,7 +43,7 @@ async function getOwnedListing(
 ): Promise<ListingRow | null> {
   const { data: byUserId, error: byUserIdError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, premium_until")
+    .select("id, user_id, created_by, premium, premium_until")
     .eq("id", listingId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -52,7 +55,7 @@ async function getOwnedListing(
 
   const { data: byCreatedBy, error: byCreatedByError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, premium_until")
+    .select("id, user_id, created_by, premium, premium_until")
     .eq("id", listingId)
     .eq("created_by", userId)
     .maybeSingle();
@@ -98,9 +101,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: "Listing not found or you do not have permission to access it." });
     }
 
+    // A premium listing with premium_until = NULL is premium indefinitely (that is
+    // how admin-granted/seeded premium is represented). Checking only the date
+    // treated those as "not premium", so the owner could pay CHF 30 and be
+    // downgraded from permanent premium to a 30-day window.
     const now = Date.now();
     const premiumUntilMs = listing.premium_until ? Date.parse(listing.premium_until) : NaN;
-    if (Number.isFinite(premiumUntilMs) && premiumUntilMs > now) {
+    const hasLivePremium = listing.premium === true && (!listing.premium_until || premiumUntilMs > now);
+    if (hasLivePremium || (Number.isFinite(premiumUntilMs) && premiumUntilMs > now)) {
       return res.status(400).json({ error: "Listing is already premium." });
     }
 

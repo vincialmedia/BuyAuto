@@ -327,7 +327,8 @@ export function LeaseTakeoverFinancingDetails() {
         canton_code: data.canton_code,
         title: data.title,
         price_plan: data.price_plan,
-        premium: data.premium,
+        // premium is a paid entitlement and is never written from the client —
+        // see ListingUpdatePayload in createListingService.
         images: data.images,
         cover_image_index: data.cover_image_index,
 

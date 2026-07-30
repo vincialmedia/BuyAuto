@@ -95,12 +95,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Promote: mark paid, and move a draft into review. Do not touch listings
     // that are already past draft (the webhook owns richer transitions).
-    const update: { payment_status: "paid"; price_paid_chf: number; status?: "pending" } = {
+    const update: {
+      payment_status: "paid";
+      price_paid_chf: number;
+      status?: "pending";
+      premium?: true;
+      is_premium?: true;
+      premium_until?: string;
+    } = {
       payment_status: "paid",
       price_paid_chf: Math.round(paymentIntent.amount / 100),
     };
     if (listing.status === "draft") {
       update.status = "pending";
+    }
+
+    // Grant the Premium Boost the buyer actually paid for. Safe to do here even
+    // though the webhook does the same: both are gated on the terminal-state
+    // check above, so whichever arrives first grants it and the other returns
+    // early — the buyer never gets 60 days for one payment. Writing it through
+    // supabaseAdmin (service role) is what the premium authority trigger allows;
+    // the same write from the caller's own session would be rejected.
+    if (paymentIntent.metadata?.premium === "true") {
+      update.premium = true;
+      update.is_premium = true;
+      update.premium_until = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     }
 
     const { error: updateError } = await supabaseAdmin

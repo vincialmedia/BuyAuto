@@ -463,12 +463,15 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
         .from("listings_public")
         .select("*")
         .eq("id", listingId)
-        .in("status", ["published", "active", "sold"])
+        // listings_public exposes published, unexpired rows only — 'active' and
+        // 'sold' could never match here. Anything else falls through to the
+        // 404/410 handling below.
+        .eq("status", "published")
         .single();
 
       if (error) {
         if ((error as any)?.code === "PGRST116") return null;
-        console.error("Error fetching listing by ID (published/sold):", error);
+        console.error("Error fetching listing by ID (published):", error);
         return null;
       }
 
