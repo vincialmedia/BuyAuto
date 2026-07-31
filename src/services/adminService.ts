@@ -474,7 +474,12 @@ export const adminService = {
 
   async adminUpdateListingStatus(
     listingId: string,
-    input: { status: "pending" | "published" | "rejected" | "archived" | "expired"; moderationNote?: string | null; notificationStatus?: "published" | "rejected" | "archived" | null }
+    input: {
+      status: "pending" | "published" | "rejected" | "archived" | "expired";
+      moderationNote?: string | null;
+      notificationStatus?: "published" | "rejected" | "archived" | null;
+      archivedReason?: "moderation_declined" | null;
+    }
   ): Promise<AdminListing | null> {
     const response = await fetch("/api/admin/listings/update-status", {
       method: "POST",
@@ -484,6 +489,7 @@ export const adminService = {
         status: input.status,
         moderation_note: input.moderationNote ?? null,
         notification_status: input.notificationStatus ?? null,
+        archived_reason: input.archivedReason ?? null,
       }),
     });
 
@@ -596,10 +602,22 @@ export const adminService = {
       throw new Error("Decline reason is required");
     }
 
+    // Refund before flipping status — same rule as rejectListing: a declined
+    // listing never goes live, so the seller must get their money back. This
+    // path (the moderation queue's decline) previously skipped the refund
+    // entirely while still sending the rejection email.
+    const refund = await this.refundListingIfPaid(id, "requested_by_customer");
+    if (refund.error) {
+      console.error(`declineToArchiveAndSendRejectionEmail: refund failed for ${id}`, refund.error);
+    }
+
     const listing = await this.adminUpdateListingStatus(id, {
       status: "archived",
       moderationNote: trimmed,
       notificationStatus: "rejected",
+      // Distinguishes a decline from a plain admin archive, so the seller's
+      // dashboard can show "Abgelehnt" instead of "Archiviert".
+      archivedReason: "moderation_declined",
     });
 
     if (listing) return listing;

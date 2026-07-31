@@ -8,6 +8,13 @@ type Body = {
   status?: "pending" | "published" | "rejected" | "archived" | "expired";
   moderation_note?: string | null;
   notification_status?: "published" | "rejected" | "archived" | null;
+  /**
+   * Why the listing was archived. 'moderation_declined' marks a decline that
+   * parks the listing in 'archived' (the moderation queue's decline action),
+   * so the seller's dashboard can label it "Abgelehnt" rather than the
+   * indistinguishable "Archiviert".
+   */
+  archived_reason?: "moderation_declined" | null;
 };
 
 type ProfileRoleRow = { role: string | null };
@@ -82,6 +89,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     moderation_note: moderationNote,
     archived_at: archivedAt,
   };
+
+  // Only 'moderation_declined' is settable from here — 'draft_expired' belongs
+  // to the sweeps and must never be forged by an admin action, since it is what
+  // makes a listing eligible for automatic deletion.
+  if (status === "archived" && body.archived_reason === "moderation_declined") {
+    updatePayload.archived_reason = "moderation_declined";
+  }
 
   // Republishing an expired listing with its old, already-passed expires_at
   // would silently fail: the public views keep hiding it and the hourly sweep

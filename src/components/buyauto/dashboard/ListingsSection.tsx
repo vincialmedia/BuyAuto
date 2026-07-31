@@ -571,6 +571,19 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             // Admin outcomes (declined / archived) can be pulled back to draft
             // to be fixed and resubmitted.
             const canRevertToDraft = listing.status === "archived" || listing.status === "rejected";
+            // A decline parks the listing in 'archived' (moderation queue) or
+            // 'rejected' (all-listings view). Both are the same outcome for the
+            // seller, so both read "Abgelehnt" rather than the ambiguous
+            // "Archiviert".
+            const isDeclined =
+              listing.status === "rejected" ||
+              (listing.status === "archived" &&
+                (listing as any).archived_reason === "moderation_declined");
+            // A listing that is not publicly reachable cannot benefit from a
+            // premium boost and has no runtime to pause.
+            const isLiveListing = ["published", "active"].includes(String(listing.status));
+            const canBuyPremium = !premium && (isLiveListing || listing.status === "pending");
+            const canPause = isLiveListing && !isPaused(listing);
             // A draft that has not yet aged out shows how long it has left
             // before it is archived; once archived it shows the deletion date.
             const draftUpdatedAt = (listing as any).updated_at as string | undefined;
@@ -652,7 +665,10 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-3">
-                            <StatusBadge status={listing.status} expiresAt={listing.expires_at} />
+                            <StatusBadge
+                              status={isDeclined ? "rejected" : listing.status}
+                              expiresAt={listing.expires_at}
+                            />
                             <Badge variant="secondary" className="rounded-full">
                               {getDealTypeLabel({ deal_type: (listing as any).deal_type, financing_type: (listing as any).financing_type })}
                             </Badge>
@@ -833,7 +849,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 </DropdownMenuItem>
                               )}
 
-                              {!premium && !archived && (listing.status as any) !== "sold" && (
+                              {canBuyPremium && (
                                 <DropdownMenuItem
                                   onClick={() => handleUpgrade(listing.id)}
                                   disabled={actionLoading === listing.id}
@@ -843,7 +859,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 </DropdownMenuItem>
                               )}
 
-                              {!archived && !isPaused(listing) && (listing.status as any) !== "sold" && (
+                              {canPause && (
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setListingToPause(listing.id);
