@@ -215,7 +215,7 @@ sind die Zahlen aus Abschnitt 2 dagegen das stärkste Argument, das du hast.
 | `src/hooks/use-dealer-plan.ts` | **neu** — löst das effektive Paket auf |
 | `src/lib/buyauto/valuationQuota.ts` | Bewertungs-Kontingent pro Stufe statt pauschal 100 |
 | `src/components/buyauto/calculator/EintauschwertRechner.tsx`, `src/pages/eintauschwert-rechner.tsx` | "unbegrenzt" durch die echten Kontingente ersetzt |
-| `supabase/migrations/20260730120000_repackage_dealer_plans.sql` | neue Spalten + neue Werte in `dealer_plans` (angewendet) |
+| `supabase/migrations/20260730200541_repackage_dealer_plans.sql` | neue Spalten + neue Werte in `dealer_plans` (angewendet) |
 
 Drei Stellen führten vorher je eine eigene, auseinandergelaufene Paketliste
 (`/preise`, `/garage-plan`, Dashboard). Jetzt gibt es genau eine.
