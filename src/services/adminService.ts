@@ -67,6 +67,8 @@ export interface AdminDraft {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  /** The sweep's deletion deadline (listing-source drafts only). */
+  draft_delete_at?: string | null;
   owner_id: string;
   resume_url: string;
   owner_profile?: { id: string; email: string | null; full_name: string | null; role?: string | null } | null;
@@ -343,15 +345,6 @@ export const adminService = {
       const ownerId = ((row as any).created_by ?? (row as any).user_id) as string | null;
       if (!ownerId) continue;
 
-      // A draft revived from Archiviert has archived_at cleared but keeps its
-      // deletion deadline (draft_delete_at). getDraftLifecycle derives the
-      // delete date as archived_at + 5 days, so feed it the equivalent stamp —
-      // the countdown then correctly reads "Wird in N Tagen gelöscht".
-      const draftDeleteAt = (row as any).draft_delete_at as string | null;
-      const archivedAtEquivalent =
-        ((row as any).archived_at as string | null) ??
-        (draftDeleteAt ? new Date(Date.parse(draftDeleteAt) - 5 * 24 * 60 * 60 * 1000).toISOString() : null);
-
       drafts.push({
         id: row.id,
         source: "listing",
@@ -361,7 +354,11 @@ export const adminService = {
         cover_image_url: (row as any).cover_image_url ?? null,
         created_at: (row as any).created_at,
         updated_at: (row as any).updated_at,
-        archived_at: archivedAtEquivalent,
+        archived_at: (row as any).archived_at ?? null,
+        // The sweep's real deadline: getDraftLifecycle treats it as
+        // authoritative, which also covers revived drafts (deadline kept,
+        // archived_at cleared) without a synthetic archived_at stamp.
+        draft_delete_at: ((row as any).draft_delete_at as string | null) ?? null,
         owner_id: ownerId,
         resume_url: `/inserat-erstellen?edit=${row.id}`,
       });

@@ -245,6 +245,11 @@ export function Step1Form() {
   }, [toast]);
 
   useEffect(() => {
+    // The cancelled flag drops out-of-order responses: without it, a slow
+    // response for the previous make could land after the current one and
+    // leave the wrong option list selectable.
+    let cancelled = false;
+
     const loadModels = async () => {
       if (!selectedMakeId) {
         setModels([]);
@@ -254,22 +259,29 @@ export function Step1Form() {
       try {
         setLoadingModels(true);
         const res = await fetchJson<any>(`/api/vehicles/models?make_id=${encodeURIComponent(selectedMakeId)}`);
+        if (cancelled) return;
         setModels(Array.isArray(res) ? res : (res?.models ?? []));
       } catch {
+        if (cancelled) return;
         toast({
           title: "Fehler",
           description: "Fehler beim Laden der Fahrzeugmodelle.",
           variant: "destructive",
         });
       } finally {
-        setLoadingModels(false);
+        if (!cancelled) setLoadingModels(false);
       }
     };
 
     void loadModels();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedMakeId, toast]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadVariants = async () => {
       if (!selectedModelId) {
         setVariants([]);
@@ -279,16 +291,21 @@ export function Step1Form() {
       try {
         setLoadingVariants(true);
         const res = await fetchJson<any>(`/api/vehicles/variants?model_id=${encodeURIComponent(selectedModelId)}`);
+        if (cancelled) return;
         setVariants(Array.isArray(res) ? res : (res?.variants ?? []));
       } catch {
+        if (cancelled) return;
         // Variant is optional — a failed load must not block the form, so no toast.
         setVariants([]);
       } finally {
-        setLoadingVariants(false);
+        if (!cancelled) setLoadingVariants(false);
       }
     };
 
     void loadVariants();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedModelId]);
 
   useEffect(() => {
@@ -303,7 +320,13 @@ export function Step1Form() {
       return;
     }
 
-    setValue("model_id", pendingModelId, { shouldValidate: true });
+    // Applying a different model invalidates the selected variant, exactly like
+    // the manual model picker does — otherwise a variant_id from the previous
+    // model would silently survive and be saved with the new car.
+    if (pendingModelId !== getValues("model_id")) {
+      applyDecodedValue("variant_id", "", { shouldValidate: false });
+    }
+    applyDecodedValue("model_id", pendingModelId, { shouldValidate: true });
     setPendingModelId(null);
   }, [models, pendingModelId, selectedMakeId, setValue]);
 
@@ -319,7 +342,7 @@ export function Step1Form() {
       return;
     }
 
-    setValue("variant_id", pendingVariantId, { shouldValidate: false });
+    applyDecodedValue("variant_id", pendingVariantId, { shouldValidate: false });
     setPendingVariantId(null);
   }, [variants, pendingVariantId, selectedModelId, setValue]);
 
@@ -349,15 +372,38 @@ export function Step1Form() {
     return current === initial;
   };
 
+  // Values applied from a VIN decode become the new autofill baseline: they are
+  // machine input, not user input, so a later decode of a different VIN may
+  // overwrite them — while anything the user typed stays protected by the
+  // dirty/baseline checks in shouldAutofill.
+  const applyDecodedValue = (
+    field: keyof VehicleStepFormValues,
+    value: any,
+    options?: { shouldValidate?: boolean; shouldDirty?: boolean; shouldTouch?: boolean }
+  ) => {
+    setValue(field, value, options);
+    if (initialValuesRef.current) {
+      (initialValuesRef.current as any)[field] = value;
+    }
+  };
+
   const applyVinAutofill = (payload: VinDecodeResponse, vin: string) => {
     if (shouldAutofill("vin")) {
       setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
+      if (initialValuesRef.current) {
+        (initialValuesRef.current as any).vin = vin;
+      }
     }
 
     if (payload.make_id && shouldAutofill("make_id")) {
-      setValue("make_id", payload.make_id, { shouldValidate: true });
-      setValue("model_id", "", { shouldValidate: false });
-
+      if (payload.make_id !== getValues("make_id")) {
+        applyDecodedValue("make_id", payload.make_id, { shouldValidate: true });
+        applyDecodedValue("model_id", "", { shouldValidate: false });
+        // A make change invalidates the selected variant exactly like the
+        // manual picker does — a variant_id from another model must never
+        // silently survive into the saved listing.
+        applyDecodedValue("variant_id", "", { shouldValidate: false });
+      }
       setPendingModelId(payload.model_id ?? null);
     } else {
       if (payload.model_id && shouldAutofill("model_id")) setPendingModelId(payload.model_id);
@@ -368,31 +414,31 @@ export function Step1Form() {
     if (payload.variant_id) setPendingVariantId(payload.variant_id);
 
     if (typeof payload.year === "number" && Number.isFinite(payload.year) && shouldAutofill("year")) {
-      setValue("year", payload.year, { shouldValidate: true });
+      applyDecodedValue("year", payload.year, { shouldValidate: true });
     }
 
     if (typeof payload.power_hp === "number" && Number.isFinite(payload.power_hp) && shouldAutofill("power_hp")) {
-      setValue("power_hp", Math.round(payload.power_hp), { shouldValidate: true });
+      applyDecodedValue("power_hp", Math.round(payload.power_hp), { shouldValidate: true });
     }
 
     if (payload.fuel && shouldAutofill("fuel")) {
-      setValue("fuel", payload.fuel, { shouldValidate: true });
+      applyDecodedValue("fuel", payload.fuel, { shouldValidate: true });
     }
 
     if (payload.transmission && shouldAutofill("gearbox")) {
-      setValue("gearbox", payload.transmission, { shouldValidate: true });
+      applyDecodedValue("gearbox", payload.transmission, { shouldValidate: true });
     }
 
     if (payload.body_type && shouldAutofill("body")) {
-      setValue("body", payload.body_type, { shouldValidate: true });
+      applyDecodedValue("body", payload.body_type, { shouldValidate: true });
     }
 
     if (payload.drivetrain && shouldAutofill("drivetrain")) {
-      setValue("drivetrain", payload.drivetrain, { shouldValidate: true });
+      applyDecodedValue("drivetrain", payload.drivetrain, { shouldValidate: true });
     }
 
     if (payload.first_registration && shouldAutofill("first_registration")) {
-      setValue("first_registration", payload.first_registration, { shouldValidate: true });
+      applyDecodedValue("first_registration", payload.first_registration, { shouldValidate: true });
     }
   };
 
@@ -448,6 +494,11 @@ export function Step1Form() {
         provider_make: json?.provider_make ?? null,
         provider_model: json?.provider_model ?? null,
         provider_trim: json?.provider_trim ?? null,
+        // The catalog model this decode mapped to. The generated title only
+        // falls back to variant_text/provider_trim while the form still points
+        // at this model — after a manual make/model correction the old engine
+        // badge must not leak into the new car's title.
+        provider_model_id: json?.model_id ?? null,
         variant_text: json?.variant_text ?? null,
         catalog_confidence: json?.catalog_confidence ?? null,
         catalog_needs_review: json?.catalog_needs_review ?? null,
@@ -518,6 +569,7 @@ export function Step1Form() {
         provider_make: (data as any)?.provider_make ?? null,
         provider_model: (data as any)?.provider_model ?? null,
         provider_trim: (data as any)?.provider_trim ?? null,
+        provider_model_id: (data as any)?.provider_model_id ?? null,
         variant_text: (data as any)?.variant_text ?? null,
         catalog_confidence: (data as any)?.catalog_confidence ?? null,
         catalog_needs_review: (data as any)?.catalog_needs_review ?? null,
@@ -628,8 +680,16 @@ export function Step1Form() {
       const selectedVariantName = values.variant_id
         ? (variants.find((v) => v.id === values.variant_id)?.name ?? "")
         : "";
-      const variantTextRaw =
-        typeof (data as any)?.variant_text === "string"
+      // The decoded trim belongs to the model the decode mapped to. If the user
+      // has since corrected make/model, that text describes a different car and
+      // must not end up in this title. (Drafts from before provider_model_id
+      // existed have null here and simply get the plain model title.)
+      const decodedModelId =
+        typeof (data as any)?.provider_model_id === "string" ? (data as any).provider_model_id : null;
+      const decodedTrimApplies = decodedModelId !== null && decodedModelId === values.model_id;
+      const variantTextRaw = !decodedTrimApplies
+        ? ""
+        : typeof (data as any)?.variant_text === "string"
           ? (data as any).variant_text.trim()
           : typeof (data as any)?.provider_trim === "string"
             ? (data as any).provider_trim.trim()

@@ -140,13 +140,16 @@ export const getListingDraftById = async (params: {
   user: User;
   draftId: string;
 }): Promise<ListingDraft | null> => {
-  const { user, draftId } = params;
+  const { draftId } = params;
 
+  // Deliberately no user_id filter: RLS already scopes this read — owners get
+  // their own rows, admins get every row (admin SELECT policy). Filtering by
+  // the caller's id here made the admin Entwürfe tab's "Öffnen" links dead,
+  // since an admin opening another user's draft matched zero rows.
   const { data, error } = await supabase
     .from("listing_drafts")
     .select("*")
     .eq("id", draftId)
-    .eq("user_id", user.id)
     .maybeSingle();
 
   if (error) {

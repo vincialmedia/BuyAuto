@@ -35,8 +35,15 @@ export default function Step3_PlanSelection() {
 
   // Verlängert is the default: pre-selection is the strongest single
   // conversion lever (default effect), and the /preise page already leads
-  // with it. A draft that stored a plan keeps the user's choice.
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(((data as any).price_plan as Plan) || "extended");
+  // with it. A draft that stored a plan keeps the user's choice — but only a
+  // real one: the wizard scaffold pre-fills price_plan with "standard", so the
+  // bare value cannot distinguish a choice from the machine default. Like the
+  // donation preselect, a choice only counts with the plan_choice_v2 marker,
+  // which this component writes when the user reaches this step.
+  const hasStoredPlanChoice = (data as any)?.plan_choice_v2 === true;
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(
+    hasStoredPlanChoice ? (((data as any).price_plan as Plan) || "extended") : "extended"
+  );
   // A stored premium=true on an included plan means "included", not "boost
   // bought" — initializing the toggle from it would silently re-add the
   // CHF 30 boost if the user later downgrades to Standard.
@@ -47,12 +54,12 @@ export default function Step3_PlanSelection() {
   // The /preise plan cards deep-link here with ?plan=<key>. A stored draft
   // choice always wins; the query only seeds a fresh wizard.
   useEffect(() => {
-    if (!router.isReady || (data as any).price_plan) return;
+    if (!router.isReady || hasStoredPlanChoice) return;
     const q = router.query.plan;
     if (q === "standard" || q === "extended" || q === "unlimited") {
       setSelectedPlan(q);
     }
-  }, [router.isReady, router.query.plan, (data as any).price_plan]);
+  }, [router.isReady, router.query.plan, hasStoredPlanChoice]);
 
   // Preselected CHF 1 donation: a fresh wizard starts with the donation on at
   // the smallest amount; a saved choice — including "off" — is kept. A choice
@@ -87,6 +94,7 @@ export default function Step3_PlanSelection() {
   useEffect(() => {
     registerDraftSnapshotter(() => ({
       price_plan: selectedPlan,
+      plan_choice_v2: true,
       premium: effectivePremium,
       donation_enabled: donationEnabled,
       donation_choice_v2: true,
@@ -118,6 +126,7 @@ export default function Step3_PlanSelection() {
       // is created after sign-in at Step 5.
       updateData({
         price_plan: selectedPlan,
+        plan_choice_v2: true,
         premium: effectivePremium,
         donation_enabled: donationEnabled,
         donation_choice_v2: true,
@@ -157,6 +166,7 @@ export default function Step3_PlanSelection() {
 
       updateData({
         price_plan: selectedPlan,
+        plan_choice_v2: true,
         premium: effectivePremium,
         donation_enabled: donationEnabled,
         donation_choice_v2: true,

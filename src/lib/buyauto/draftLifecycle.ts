@@ -16,6 +16,13 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export interface DraftLifecycleInput {
   updated_at: string;
   archived_at?: string | null;
+  /**
+   * The sweep's actual deletion deadline (listings.draft_delete_at). When
+   * present it is authoritative — deriving archived_at + 5 days drifts from
+   * the real clock for drafts that were revived and re-archived, and a revived
+   * draft has a running deadline with no archived_at at all.
+   */
+  draft_delete_at?: string | null;
 }
 
 export interface DraftLifecycle {
@@ -37,12 +44,18 @@ const wholeDaysFromNow = (target: Date, now: Date) =>
 
 export function getDraftLifecycle(draft: DraftLifecycleInput, now: Date = new Date()): DraftLifecycle {
   const archivedAt = draft.archived_at ?? null;
+  const deleteAt = draft.draft_delete_at ?? null;
 
-  if (archivedAt) {
-    const deleteDueAt = addDays(archivedAt, DRAFT_DELETE_AFTER_ARCHIVE_DAYS);
+  if (archivedAt || deleteAt) {
+    const deleteDueAt = deleteAt
+      ? new Date(Date.parse(deleteAt))
+      : addDays(archivedAt as string, DRAFT_DELETE_AFTER_ARCHIVE_DAYS);
+    const archiveDueAt = archivedAt
+      ? new Date(Date.parse(archivedAt))
+      : new Date(deleteDueAt.getTime() - DRAFT_DELETE_AFTER_ARCHIVE_DAYS * MS_PER_DAY);
     return {
       archived: true,
-      archiveDueAt: new Date(Date.parse(archivedAt)),
+      archiveDueAt,
       deleteDueAt,
       daysUntilArchive: null,
       daysUntilDelete: wholeDaysFromNow(deleteDueAt, now),

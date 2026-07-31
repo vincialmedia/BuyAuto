@@ -69,7 +69,7 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
       if (listingIds.length > 0) {
         const { data: listings, error } = await supabase
           .from("listings")
-          .select("id, status")
+          .select("id, status, archived_reason")
           .in("id", listingIds);
 
         if (error) {
@@ -86,7 +86,10 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
               l?.status === "pending" ||
               l?.status === "sold" ||
               l?.status === "expired" ||
-              l?.status === "archived"
+              // A draft swept into Archiviert (draft_expired) is inside its
+              // 5-day restore window — its wizard draft is not stale junk and
+              // must survive until the listing is truly gone or re-published.
+              (l?.status === "archived" && (l as any)?.archived_reason !== "draft_expired")
             )
             .map((l) => l.id)
         );

@@ -406,6 +406,10 @@ export const createOrUpdateListing = async (
   if ("status" in cleanUpdateData) {
     delete (cleanUpdateData as unknown as { status?: unknown }).status;
   }
+  // No trigger bumps listings.updated_at, and the draft sweeps measure the
+  // 30-day idle window from it — an edit that doesn't refresh it lets a draft
+  // the seller is actively working on age into Archiviert under their feet.
+  (cleanUpdateData as Record<string, unknown>).updated_at = new Date().toISOString();
 
   const { data: updatedListing, error } = await supabase
     .from("listings")
@@ -491,4 +495,24 @@ export async function getListingByIdForOwner(listingId: string, user: User) {
 
   console.log(`✅ Successfully fetched listing ${listingId} for owner.`);
   return data;
+}
+
+/**
+ * Distinguishes "the listing is definitively gone" (false) from "could not
+ * check" (null). getListingByIdForOwner collapses both into null, but the
+ * wizard must only drop a draft's linked listing id when the row is confirmed
+ * absent — dropping it on a transient error would fork a duplicate listing.
+ */
+export async function checkOwnedListingExists(listingId: string, user: User): Promise<boolean | null> {
+  if (!user || !listingId) return null;
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("id")
+    .eq("id", listingId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error) return null;
+  return data ? true : false;
 }
