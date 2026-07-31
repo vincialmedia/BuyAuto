@@ -22,6 +22,16 @@ den ersten vier Themen aufgebraucht. Was das für die Belastbarkeit heisst:
 | C2C-Psychologie, Trust, KI, DMS-Integration | **nur Modellwissen**, keine Quellen abrufbar | mittel |
 | Alles über den eigenen Code | **selbst im Repo geprüft** | hoch |
 
+**Nachtrag 31.7.: die vier ungedeckten Themen sind nachrecherchiert** — siehe
+Abschnitt 8. Das Websuche-Kontingent setzt pro Sitzung zurück; der Ausfall war
+also hausgemacht (8 parallele Agenten à 10–20 Suchen haben die 200 Aufrufe
+verbraucht, bevor die zweite Hälfte startete), nicht ein Limit der Umgebung.
+WebFetch, curl und Firecrawl sind dagegen dauerhaft gesperrt — die Egress-Policy
+blockt jeden Host ausser GitHub/Supabase, auch Wikipedia. **WebSearch ist der
+einzige Kanal.** Konsequenz für künftige Recherchen: Suchen direkt und in kleinen
+Blöcken ausführen statt an parallele Agenten delegieren, die das Budget
+unsichtbar aufbrauchen.
+
 Die Verifikations-Agenten konnten aus demselben Grund nichts extern gegenprüfen.
 Ein Befund war veraltet: ein Agent meldete, die DB gewähre Growth noch das
 Onboarding, das die Preisseite Pro vorbehält — das war zwei Stunden vorher
@@ -242,8 +252,10 @@ AGB, Rechner-Landingpage.
 5. **Gratis-Wiedereinstellen einschalten + Boost bei Tag 10–14 verkaufen.**
 6. **MFK / Typenschein / Garantie / Direktimport als Felder**, dann `canton_code`
    endlich benutzen.
-7. **Bei comparis anfragen** — ein Mail, potenziell die Lösung des
-   Reichweitenproblems.
+7. **Bei comparis anfragen** — ein Mail. ⚠️ **Erwartung nach unten korrigiert**
+   (siehe 8.5): der Carfinder aggregiert AutoScout24, AutoClick und Car4you, und
+   der Inserierungspfad läuft über AS24. Das ist eine SMG-Partnerschaft, kein
+   offener Feed. Trotzdem fragen — aber nicht darauf planen.
 8. **KKG/PBV anwaltlich prüfen**, bevor mehr Leasing gebaut wird.
 9. **Jahresabo + risikofreie Eintrittsvariante** (beide brauchen neue
    Stripe-Preise).
@@ -251,6 +263,90 @@ AGB, Rechner-Landingpage.
     ausgerechnet, wie viele Garagen auf welcher Stufe ein tragfähiges Geschäft
     ergeben. Bei ~4'000 AGVS-Garagen ist gut möglich, dass eine Handvoll
     Concierge-Abschlüsse pro Monat die ganze Abo-Roadmap schlägt.
+
+---
+
+## 8. Nachtrag (31.7.): die vier ungedeckten Themen, jetzt mit Quellen
+
+### 8.1 AutoScout24 gibt Privatverkäufern eine Geld-zurück-Garantie
+
+**Der wichtigste neue Befund für die Privat-Seite.** AS24 erstattet den
+Inseratspreis, wenn ein Fahrzeug nach **120 Tagen** nicht verkauft ist —
+gebunden an Inserate mit unbegrenzter Laufzeit. Bedingungen: der geforderte
+Preis muss **marktgerecht** sein und es müssen **Originalbilder** verwendet
+werden. AS24 vermarktet das als „wir stehen für den Verkaufserfolg ein".
+
+Direkter Benchmark für Unlimitiert (CHF 190), das keine Garantie hat.
+
+**Und der eigentliche Punkt — das hängt mit Empfehlung 3 zusammen:** die
+Preisbewertung ist nicht bloss ein Tabellenstakes-Feature, sie ist die
+*Voraussetzung* für eine solche Garantie. Nur wenn du „marktgerechter Preis"
+maschinell prüfen kannst, kannst du „verkauft oder Geld zurück" ohne
+Negativauslese anbieten. Badge und Garantie sind ein Projekt, nicht zwei — und
+zusammen ergeben sie das stärkste Angebot, das die Privat-Seite haben könnte.
+
+### 8.2 AS24 ist für Private deutlich teurer als du — und du sagst es nicht
+
+Inseratspakete Basic / Plus / Premium / Unlimited, **ab CHF 34**; Basic
+**CHF 59** und Plus **CHF 99** jeweils für **14 Tage**; Laufzeiten 14/30/60 Tage
+oder unbegrenzt; **maximal 6 Fotos**. Das Inserat erscheint auf AS24 und
+anibis.ch.
+
+Gegenüberstellung, die auf deiner Preisseite fehlt: **CHF 50 für 90 Tage**, mit
+Premium-Platzierung inklusive und 15 Fotos — gegen CHF 59 für 14 Tage und 6
+Fotos. Das ist ein Faktor 6 bei der Laufzeit.
+
+### 8.3 Dein Gratis-Tarif ist grosszügiger als der der Konkurrenz
+
+* **tutti.ch**: die ersten zwei Fahrzeuginserate gratis — **nur unter CHF 3'000**
+  Verkaufspreis. Laufzeit 60 Tage, Verlängerung kostenpflichtig.
+* **anibis.ch**: die ersten zwei gratis — **nur unter CHF 5'000** (seit 13.11.2024).
+
+**BuyAuto Standard ist gratis ohne Preisobergrenze.** Das ist eine ownable
+Aussage, die heute nirgends steht: „Gratis inserieren — egal, was dein Auto
+kostet."
+
+### 8.4 Vertrauen: die Bausteine existieren in der Schweiz
+
+* **carVertical bedient die Schweiz** (carvertical.com/ch): VIN-Abfrage aus über
+  900 Datenquellen inkl. Kilometerstand-Historie und Unfalldaten. Eine
+  lizenzierbare Historie-Schicht ist also verfügbar — das war vorher nur eine
+  Vermutung.
+* **anibis betreibt seit März 2022 einen Treuhandservice** über den Anbieter
+  Tripartie: Geld bleibt auf einem Treuhandkonto, bis der Käufer den Erhalt
+  bestätigt. Zahlungs-Vertrauen ist auf Schweizer Kleinanzeigen also etabliert
+  und akzeptiert.
+
+### 8.5 Händler-Integration: konkreter als gedacht — comparis dagegen enger
+
+* **AutoScout24 hat eine dokumentierte DMS API** für automatische, laufende
+  Synchronisation des Fahrzeugbestands, plus die HCI-JSON-Schnittstelle in die
+  eigene Website des Händlers.
+* Namentlich belegte Schweizer DMS: **bme ag** (Maienfeld, modular: Verkauf,
+  Werkstatt, Finanzen, Personal) und **Swivex** (cloud-native DMS/CRM für
+  Schweizer Autohäuser). Es existiert sogar ein Vergleichsportal
+  (garagensoftwarevergleich.ch) — eine fertige Zielliste.
+* **comparis Carfinder aggregiert AutoScout24, AutoClick und Car4you**, und der
+  Weg „bei comparis inserieren" führt über AS24: wer bei AS24 inseriert,
+  erscheint ohne Zusatzkosten auf comparis und anibis. Das ist eine
+  Partnerschaft innerhalb der SMG-Familie, kein offener Feed. **Empfehlung 7
+  entsprechend abgestuft** — die Anfrage kostet ein Mail, aber plane nicht damit.
+
+### 8.6 KI: der Branchenstandard ist Geschwindigkeit, nicht Kreativität
+
+Der Massstab bei fortgeschrittenen Händlern ist der „3-day frontline standard":
+ein zugekauftes Fahrzeug ist innert 72 Stunden auf allen angebundenen Kanälen
+live, mit automatisierter Foto-Pipeline (Hintergrund, Zuschnitt, Hero-Shot,
+plattformspezifische Formate). Dazu KI-Beschreibungen und Preisprognose.
+Relevanter Datenpunkt für die Maschinenlesbarkeit: **rund 30% der Käufer nutzen
+bereits generative KI für die Fahrzeugrecherche.**
+
+### Was ich trotzdem nicht bekommen habe
+
+Die **vollständige AS24-Preistabelle für Private** (14/30/60/unbegrenzt ×
+Basic/Plus/Premium/Unlimited). Die Suche liefert Eckwerte (ab 34, Basic 59, Plus
+99), nicht das ganze Raster; die Seite selbst ist aus dieser Umgebung nicht
+abrufbar. Dafür braucht es einen Blick von einem Rechner mit offenem Netz.
 
 ---
 
@@ -276,6 +372,14 @@ AGB, Rechner-Landingpage.
 **Global**
 - [CarGurus IMV](https://cargurus.helpscoutdocs.com/article/10-what-is-imv) · [carsales Price Indicator](https://help.carsales.com.au/hc/en-gb/articles/360015482932-carsales-Price-Indicators-FAQs) · [carsales Instant Offer](https://help.carsales.com.au/hc/en-gb/articles/360020475032-Instant-Offer-FAQs)
 - [Cars.com / Accu-Trade](https://www.cars.com/articles/cars-to-acquire-the-accu-trade-group-adds-digital-vehicle-acquisition-to-the-cars-platform-446778/) · [Goo Inspection](https://www.gooinspection.com/en/) · [Vroom-Abwicklung](https://wolfstreet.com/2024/01/23/another-online-used-car-dealer-bites-the-dust-vroom-3-5-years-after-red-hot-ipo-shuts-down-as-ally-suspends-credit-line/)
+
+**Nachtrag 31.7.**
+- [AS24 Produkte und Preise (privat)](https://www.autoscout24.ch/de/produkte-und-preise) · [Geld-zurück-Garantie, AUTO&Wirtschaft](https://auto-wirtschaft.ch/news/5491-auto-verkauft-oder-inseratepreis-zuruck-bei-autoscout24) · [Ringier-Mitteilung](https://www.ringier.com/de/autoscout24-lanciert-fuer-private-ein-neues-angebot-mit-geld-zurueck-garantie/) · [motortipps: nach 4 Monaten Geld zurück](https://motortipps.ch/autoscout24-nach-4-monaten-geld-zurueck/)
+- [tutti: Fahrzeuginserate — gratis und kostenpflichtig](https://www.tutti.help/hc/de/articles/22848726798098-Fahrzeuginserate-%C3%9Cbersicht-von-kostenlosen-und-geb%C3%BChrenpflichtigen-Inserats-Optionen) · [anibis: dasselbe](https://www.anibis.help/hc/de/articles/22621870923282-Fahrzeuginserate-%C3%9Cbersicht-von-kostenlosen-und-geb%C3%BChrenpflichtigen-Inserats-Optionen)
+- [carVertical Schweiz](https://www.carvertical.com/ch/dekodieren-der-fahrgestellnummer-vin) · [anibis Treuhandservice (Tripartie)](https://swissmarketplace.group/de/media-release/anibis-ch-lanciert-treuhandservice-fuer-mehr-sicherheit-beim-kaufen-und-verkaufen/)
+- [AS24: Was ist die DMS API](https://help.autoscout24.ch/hc/de/articles/34448520065170-Was-ist-die-DMS-API) · [AS24 HCI-JSON-Schnittstelle](https://www.garagen-website.ch/angebot/autoscout24-schnittstelle/) · [Garagensoftware-Vergleich Schweiz](https://garagensoftwarevergleich.ch/software)
+- [comparis: Insertion via AutoScout24](https://en.comparis.ch/carfinder/autokaufen/autoscout24) · [AS24: Insertion auf comparis](https://b2b.autoscout24.ch/aboss/insertion-auf-comparis/) · [comparis Carfinder Lancierung als Metasuchmaschine](https://www.presseportal.ch/de/pm/100003671/100489526)
+- [Spyne: KI-Foto-Pipelines und der 3-Tage-Frontline-Standard](https://www.spyne.ai/blogs/best-car-photo-editing-tools-for-dealerships)
 
 **Preispsychologie**
 - [HBR: Good-Better-Best](https://hbr.org/2018/09/the-good-better-best-approach-to-pricing) · [Centre-Stage-Effekt](https://www.coglode.com/research/centre-stage-effect) · [Decoy-Effekt repliziert nicht](https://journals.sagepub.com/doi/abs/10.1509/jmr.12.0061) · [Usage Caps](https://stripe.com/resources/more/usage-caps-how-to-protect-performance-and-turn-usage-into-revenue) · [Marktplatz-Dynamik (Andrew Chen)](https://stripe.com/guides/atlas/andrew-chen-marketplaces) · [SMB-Churn-Benchmarks](https://optif.ai/learn/questions/b2b-saas-churn-rate-benchmark/) · [Preistransparenz B2B](https://www.pacepricing.com/blog/hidden-prices-lost-buyers-why-b2b-saas-companies-should-embrace-transparency)
