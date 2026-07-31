@@ -152,7 +152,10 @@ export function AllListingsView({ onStatsUpdate }: AllListingsViewProps) {
       toast({
         variant: "destructive",
         title: "Fehler",
-        description: "Status konnte nicht geändert werden."
+        // Surfaces the reason rather than a flat failure — a rejection whose
+        // refund Stripe could not take is refused here, and the admin needs to
+        // know that is why the status did not move.
+        description: error instanceof Error ? error.message : "Status konnte nicht geändert werden."
       });
     }
   };
