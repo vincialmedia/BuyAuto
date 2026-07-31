@@ -97,6 +97,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     updatePayload.archived_reason = "moderation_declined";
   }
 
+  // Putting a listing back on the live track clears the lifecycle clock. A
+  // declined listing carries draft_delete_at once it is within 5 days of
+  // deletion, and leaving it set would make the delete sweep destroy the
+  // listing the moment it was ever archived again.
+  if (status === "published" || status === "pending") {
+    updatePayload.draft_delete_at = null;
+    updatePayload.archived_reason = null;
+  }
+
   // Republishing an expired listing with its old, already-passed expires_at
   // would silently fail: the public views keep hiding it and the hourly sweep
   // flips it straight back to 'expired'. Clearing the stamp lets the publish

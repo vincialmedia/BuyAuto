@@ -460,7 +460,16 @@ export const finalizeListing = async (listingId: string, user: User) => {
 
   const { data, error } = await supabase
     .from("listings")
-    .update({ status: "pending" })
+    .update({
+      status: "pending",
+      // Submitting clears the lifecycle clock. A listing reverted to draft in
+      // the last 5 days before deletion keeps its draft_delete_at, and leaving
+      // it set would make the delete sweep destroy the listing the moment it
+      // was ever archived again — long after the seller fixed and resubmitted.
+      draft_delete_at: null,
+      archived_at: null,
+      archived_reason: null,
+    } as any)
     .eq("id", listingId)
     .eq("user_id", user.id)
     .select()

@@ -392,6 +392,12 @@ export const adminService = {
       status: "published",
       moderation_note: null,
       archived_at: null,
+      // Approving clears the lifecycle clock. A previously declined listing
+      // carries draft_delete_at once it is within 5 days of deletion, and
+      // leaving it set would make the delete sweep destroy the listing the
+      // moment it was ever archived again.
+      draft_delete_at: null,
+      archived_reason: null,
     };
 
     // Expiry is owned by the database. set_listing_expires_at anchors expires_at

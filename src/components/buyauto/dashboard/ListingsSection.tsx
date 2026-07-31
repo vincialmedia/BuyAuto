@@ -28,7 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
 import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
 import { RELIST_PROMO_ACTIVE, relistPriceChf } from "@/lib/buyauto/stripe_config";
-import { DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyauto/draftLifecycle";
+import { DECLINE_DELETE_AFTER_DAYS, DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyauto/draftLifecycle";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
@@ -595,6 +595,20 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                     ).toISOString()
                   )
                 : null;
+            // A decline gets the same 30-day limit a draft gets, counted from
+            // the decline. The sweep only writes draft_delete_at in the final 5
+            // days (so an early revert hands back a clean draft), so until then
+            // the countdown is derived from the same date the sweep will use.
+            const declinedAt =
+              ((listing as any).archived_at as string | null | undefined) ?? draftUpdatedAt;
+            const declineDaysRemaining =
+              isDeclined && !draftDeleteAt && declinedAt
+                ? getDaysUntil(
+                    new Date(
+                      Date.parse(declinedAt) + DECLINE_DELETE_AFTER_DAYS * 24 * 60 * 60 * 1000
+                    ).toISOString()
+                  )
+                : null;
             const moderationNote = (listing as any).moderation_note as string | null | undefined;
             // Verlängert perk: renewal costs CHF 15 (and re-includes premium),
             // so those listings get no CHF 50 upgrade button — they're already
@@ -693,6 +707,13 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 <Clock className="w-3.5 h-3.5" />
                                 Wird in <span className="font-semibold text-neutral-900">{archiveDaysRemaining}</span>{" "}
                                 {archiveDaysRemaining === 1 ? "Tag" : "Tagen"} archiviert
+                              </span>
+                            )}
+                            {typeof declineDaysRemaining === "number" && (
+                              <span className="text-xs text-neutral-600 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                Wird in <span className="font-semibold text-neutral-900">{declineDaysRemaining}</span>{" "}
+                                {declineDaysRemaining === 1 ? "Tag" : "Tagen"} gelöscht
                               </span>
                             )}
                             {isExpiredListing && (
