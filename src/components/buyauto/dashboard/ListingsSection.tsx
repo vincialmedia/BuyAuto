@@ -22,12 +22,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Eye, Edit, Trash2, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive, ExternalLink, Undo2, RefreshCw } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, MoreHorizontal, Crown, DollarSign, MapPin, AlertTriangle, Pause, Play, Archive, ExternalLink, Undo2, RefreshCw, Clock, Info } from "lucide-react";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
 import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
 import { RELIST_PROMO_ACTIVE, relistPriceChf } from "@/lib/buyauto/stripe_config";
+import { DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyauto/draftLifecycle";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
@@ -562,12 +563,26 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             // the deletion clock still running. Both carry draft_delete_at.
             const draftDeleteAt = (listing as any).draft_delete_at as string | null | undefined;
             const deletionDaysRemaining = getDaysUntil(draftDeleteAt);
-            const isDraftArchived =
-              listing.status === "archived" && (listing as any).archived_reason === "draft_expired";
-            // Revived via "Auf Entwurf ändern": back in 'draft' with the
-            // deletion clock still running.
-            const isRevivedDraft = listing.status === "draft" && Boolean(draftDeleteAt);
             const isExpiredListing = listing.status === "expired";
+            // "Sold" only means something for a listing buyers could actually
+            // reach. Declined, archived, expired, draft and pending listings
+            // are not sellable (mark_listing_sold enforces the same rule).
+            const canMarkSold = ["published", "active", "paused"].includes(String(listing.status));
+            // Admin outcomes (declined / archived) can be pulled back to draft
+            // to be fixed and resubmitted.
+            const canRevertToDraft = listing.status === "archived" || listing.status === "rejected";
+            // A draft that has not yet aged out shows how long it has left
+            // before it is archived; once archived it shows the deletion date.
+            const draftUpdatedAt = (listing as any).updated_at as string | undefined;
+            const archiveDaysRemaining =
+              listing.status === "draft" && !draftDeleteAt && draftUpdatedAt
+                ? getDaysUntil(
+                    new Date(
+                      Date.parse(draftUpdatedAt) + DRAFT_ARCHIVE_AFTER_DAYS * 24 * 60 * 60 * 1000
+                    ).toISOString()
+                  )
+                : null;
+            const moderationNote = (listing as any).moderation_note as string | null | undefined;
             // Verlängert perk: renewal costs CHF 15 (and re-includes premium),
             // so those listings get no CHF 50 upgrade button — they're already
             // on the plan the upsell would sell them.
@@ -657,6 +672,13 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 {deletionDaysRemaining === 1 ? "Tag" : "Tagen"} endgültig gelöscht
                               </span>
                             )}
+                            {typeof archiveDaysRemaining === "number" && (
+                              <span className="text-xs text-neutral-600 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                Wird in <span className="font-semibold text-neutral-900">{archiveDaysRemaining}</span>{" "}
+                                {archiveDaysRemaining === 1 ? "Tag" : "Tagen"} archiviert
+                              </span>
+                            )}
                             {isExpiredListing && (
                               <span className="text-xs text-neutral-600">
                                 {RELIST_PROMO_ACTIVE ? (
@@ -676,6 +698,17 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               </span>
                             )}
                           </div>
+
+                          {/* A declined or admin-archived listing is only
+                              actionable if the owner can see why. */}
+                          {moderationNote && canRevertToDraft && (
+                            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50/60 px-3 py-2">
+                              <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                              <p className="text-xs text-amber-900">
+                                <span className="font-semibold">Rückmeldung der Prüfung:</span> {moderationNote}
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
@@ -758,7 +791,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 </DropdownMenuItem>
                               )}
 
-                              {isDraftArchived && (
+                              {canRevertToDraft && (
                                 <DropdownMenuItem
                                   onClick={() => handleRevertToDraft(listing.id)}
                                   disabled={actionLoading === listing.id}
@@ -768,7 +801,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 </DropdownMenuItem>
                               )}
 
-                              {!isDraftArchived && !isRevivedDraft && (listing.status as any) !== "sold" && (
+                              {canMarkSold && (
                                 <DropdownMenuItem
                                   onClick={() => handleMarkSold(listing.id)}
                                   disabled={actionLoading === listing.id}
