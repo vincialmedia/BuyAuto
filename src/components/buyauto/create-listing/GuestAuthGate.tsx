@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ADS_CONVERSIONS, trackAdsConversion } from "@/lib/analytics/gtag";
 import authService from "@/services/authService";
 
 /**
@@ -63,6 +64,15 @@ export default function GuestAuthGate() {
           accountType: "private",
           emailRedirectTo: `${window.location.origin}/inserat-erstellen`,
         });
+        // The Google Ads lead conversion. Reported here rather than in either
+        // branch below because the lead is complete either way — the seller has
+        // handed over their name and e-mail; whether Supabase hands back a
+        // session or posts a confirmation link is an auth detail, and the
+        // confirmation branch never returns to this component to fire it later.
+        // The `mode === "login"` path deliberately does not report: that is an
+        // existing account, not a new lead.
+        trackAdsConversion(ADS_CONVERSIONS.submitLeadForm);
+
         if (res.session) {
           toast({ title: "Konto erstellt!", description: "Dein Inserat wird jetzt veröffentlicht." });
         } else {
