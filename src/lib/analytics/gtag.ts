@@ -205,17 +205,31 @@ export function trackEvent(name: string, params: Record<string, unknown> = {}) {
 }
 
 /**
- * Reports a Google Ads conversion. `sendTo` is the full `AW-XXXXXXXXX/LabelHere`
- * string from the conversion action's tag setup in Google Ads — the label is
- * per-action, so it is passed in rather than derived from GOOGLE_ADS_ID.
+ * Conversion action labels, copied from Google Ads → Ziele → Conversions →
+ * (action) → *Tag einrichten*. The label is the part after the slash in
+ * `AW-XXXXXXXXX/LabelHere`; the account half comes from GOOGLE_ADS_ID.
+ *
+ * Google Ads reports a conversion action as "not detected" until something on
+ * the site actually fires it — the base tag alone is never enough.
+ */
+export const ADS_CONVERSIONS = {
+  /** "Submit lead form" — a stranger hands over their contact details. */
+  submitLeadForm: "2cMYCM6u8tgcEMvG1J5E",
+} as const;
+
+/**
+ * Reports a Google Ads conversion. Pass a label from ADS_CONVERSIONS.
  *
  * Fires regardless of consent state: Consent Mode keeps the hit cookieless while
  * `ad_storage` is denied, which is what conversion modelling expects to see.
  */
 export function trackAdsConversion(
-  sendTo: string,
+  label: string,
   params: Record<string, unknown> = {},
 ) {
   if (!isAdsEnabled) return;
-  gtag("event", "conversion", { send_to: sendTo, ...params });
+  gtag("event", "conversion", {
+    send_to: `${GOOGLE_ADS_ID}/${label}`,
+    ...params,
+  });
 }

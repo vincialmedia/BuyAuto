@@ -80,14 +80,33 @@ Differences from the GA4 config, both deliberate:
 - Client-side navigations are reported to GA4 only (`send_to`), so the Ads tag
   counts the landing hit and nothing else — same as the stock snippet.
 
-To report a conversion action, take the full `AW-XXXXXXXXX/LabelHere` string
-from the conversion's tag setup in Google Ads:
+### Conversion actions
+
+A conversion action reads as **"not detected"** in Google Ads until something on
+the site actually fires it — the base tag alone is never enough, which is the
+usual reason the troubleshooter comes back red on a freshly installed tag.
+
+Labels live in `ADS_CONVERSIONS` in `src/lib/analytics/gtag.ts`; each is the part
+after the slash in the `AW-XXXXXXXXX/LabelHere` string shown under the
+conversion's *Tag einrichten* in Google Ads.
+
+| Conversion action | Fires on | Where |
+| --- | --- | --- |
+| Submit lead form | A guest seller creates an account to publish their listing (registration only — signing in with an existing account does not count) | `src/components/buyauto/create-listing/GuestAuthGate.tsx` |
+
+To add another, put its label in `ADS_CONVERSIONS` and call it from the success
+path:
 
 ```ts
-import { trackAdsConversion } from "@/lib/analytics/gtag";
+import { ADS_CONVERSIONS, trackAdsConversion } from "@/lib/analytics/gtag";
 
-trackAdsConversion("AW-18317910859/AbCdEfGhIjKlMnOp", { value: 49, currency: "CHF" });
+trackAdsConversion(ADS_CONVERSIONS.submitLeadForm, { value: 49, currency: "CHF" });
 ```
+
+Other candidates, deliberately **not** wired up: the first message to a seller on
+a listing (`MessagingPanel`), garage registration (`AuthForm`), and the footer
+newsletter signup. Newsletter in particular is high-volume and cheap to obtain,
+so counting it as a lead pulls Smart Bidding away from real inquiries.
 
 ### Verifying the Ads tag
 
