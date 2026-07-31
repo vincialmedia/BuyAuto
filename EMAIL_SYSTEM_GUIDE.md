@@ -16,7 +16,29 @@ Using root `@buyauto.ch` or other domains will result in delivery failures (DMAR
 | User Welcome | `welcome@email.buyauto.ch` | BuyAuto |
 | Admin Alerts | `notifications@email.buyauto.ch` | BuyAuto |
 
-## 3. Specific Email Patterns
+## 3. Reply-To (CRITICAL)
+Every email must set a `reply_to` that a human actually reads. The sender stays on the
+verified subdomain for deliverability, but nobody monitors `noreply@` — several templates
+tell the recipient *"antworten Sie einfach auf diese E-Mail"*, so a reply landing in a black
+hole is a broken promise.
+
+**Default:** `reply_to: "hello@buyauto.ch"` on every send.
+
+**Exception:** `service-inquiry-email` keeps `reply_to: inquiryEmail` so the admin replies
+straight to the customer who submitted the concierge request.
+
+## 4. Branding / Logo
+All email templates use `/buyauto-logo-email.png` — the same wordmark the website header
+renders (`/buyauto-logo-header.png`), cropped to its bounding box and flattened onto white.
+
+- Do **not** point emails at `/buyauto-logo.png`: that asset is a dark, glowing 1536×1024
+  render (and is actually a JPEG despite the `.png` extension), which looked broken in inboxes.
+- Do **not** point emails at `/buyauto-logo-header.png` directly either: roughly 60% of that
+  file is transparent padding, so at `height="40"` the wordmark shrinks to ~12px.
+- Keep the explicit `width`/`height` attributes — Outlook needs them, and the asset is served
+  at ~2× its display size so it stays sharp on retina screens.
+
+## 5. Specific Email Patterns
 
 ### A. Inquiry Emails (`send-inquiry-email`)
 This function handles messages from interested buyers to listing owners.
@@ -41,7 +63,7 @@ Triggered when a new user confirms their email.
 2.  **Recipient:** The new user.
 3.  **Admin Notification:** Sends a separate alert to `ADMIN_EMAIL_ADDRESS` from `notifications@email.buyauto.ch`.
 
-## 4. Required Environment Variables (Secrets)
+## 6. Required Environment Variables (Secrets)
 These must be set in the Supabase Dashboard (Edge Functions > Secrets).
 
 - `RESEND_API_KEY`: API key for the mailing service.
@@ -49,8 +71,12 @@ These must be set in the Supabase Dashboard (Edge Functions > Secrets).
 - `SUPABASE_SERVICE_ROLE_KEY`: Admin key for DB lookups (needed to find owner emails).
 - `ADMIN_EMAIL_ADDRESS`: Recipient for system alerts.
 
-## 5. Troubleshooting History
+## 7. Troubleshooting History
 *   **Issue:** Emails not arriving or going to spam.
     *   **Solution:** We switched to the verified subdomain `@email.buyauto.ch` exclusively.
 *   **Issue:** Owners replying to the system instead of the buyer.
     *   **Solution:** Implemented `reply_to: [inquiryEmail]` header in the Resend API call.
+*   **Issue:** Templates invited users to reply, but the reply went to the unmonitored `noreply@` address.
+    *   **Solution:** Added `reply_to: "hello@buyauto.ch"` to every send (see section 3).
+*   **Issue:** The logo in emails rendered as a dark, blurry block.
+    *   **Solution:** Switched every template to `/buyauto-logo-email.png` (see section 4).
