@@ -776,7 +776,11 @@ export default function ListingWizard() {
 
   return (
     <WizardContext.Provider value={contextValue}>
-      <div className="min-h-[100svh] bg-gradient-to-b from-white to-neutral-50">
+      {/* No min-height or background here: the page shell (MainLayout's focused
+          flow branch) owns the full-height gradient and centres this block
+          under the header. A 100svh floor here would defeat that centring and
+          make the page scrollable on every step. */}
+      <div className="w-full">
         <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
           <Card className="bg-white border border-neutral-200/60 shadow-[0_24px_70px_-40px_rgba(0,0,0,0.45)] rounded-3xl overflow-hidden">
             <div className="px-5 sm:px-8 py-5 sm:py-7 border-b border-neutral-200/60">
