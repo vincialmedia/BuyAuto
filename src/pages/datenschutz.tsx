@@ -104,6 +104,22 @@ export default function Datenschutz() {
                 </a>{" "}
                 unterbinden.
               </p>
+              <h3 className="text-lg font-medium mb-2">Google Ads (Conversion-Tracking und Remarketing)</h3>
+              <p className="mb-4">
+                Wir bewerben unser Angebot über Google Ads und setzen dazu das Google-Ads-Tag der Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland) ein. Damit können wir messen, welche Anzeige zu einer Aktion auf unserer Website geführt hat (Conversion-Tracking), und Ihnen unsere Anzeigen im Google-Werbenetzwerk erneut anzeigen (Remarketing). Gelangen Sie über eine unserer Anzeigen auf diese Website, wird dabei eine Klick-Kennung (Google Click Identifier) verarbeitet.
+              </p>
+              <p className="mb-4">
+                Werbe-Cookies werden – wie die Analyse-Cookies – erst nach Ihrer Zustimmung im Cookie-Banner gesetzt. Solange Sie nicht zugestimmt oder «Ablehnen» gewählt haben, übermittelt der Google-Consent-Modus ausschliesslich cookielose Signale ohne Zugriff auf Ihr Endgerät. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 DSG); Sie können sie jederzeit über den Link «Cookie-Einstellungen» im Footer oder durch Löschen der gespeicherten Website-Daten widerrufen. Personalisierte Werbung können Sie zusätzlich in den{" "}
+                <a
+                  href="https://myadcenter.google.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-red-600 hover:underline"
+                >
+                  Google-Werbeeinstellungen
+                </a>{" "}
+                deaktivieren.
+              </p>
               <h3 className="text-lg font-medium mb-2">Vercel Analytics</h3>
               <p className="mb-4">
                 Zur Messung der Seitenaufrufe und der Ladeperformance setzen wir zusätzlich Vercel Analytics (Vercel Inc.) ein. Dieser Dienst arbeitet cookielos und erhebt keine personenbezogenen Profile.
