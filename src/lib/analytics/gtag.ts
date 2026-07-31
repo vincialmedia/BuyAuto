@@ -1,4 +1,4 @@
-// Google Analytics 4 (gtag.js) wiring.
+// Google tag (gtag.js) wiring — GA4 and Google Ads share one tag.
 //
 // The measurement ID is inlined at build time, so it must be referenced as a
 // full literal `process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID` — a computed lookup
@@ -21,6 +21,28 @@ if (typeof window !== "undefined" && GA_MEASUREMENT_ID && !isGaEnabled) {
     `[analytics] NEXT_PUBLIC_GA_MEASUREMENT_ID is set to "${GA_MEASUREMENT_ID}" but is not a valid GA4 ID (expected G-XXXXXXXXXX). Google Analytics is disabled.`,
   );
 }
+
+// Google Ads conversion/remarketing tag. Unlike the GA4 ID this one ships with a
+// default: the account it belongs to is fixed for buyauto.ch and the campaigns
+// depend on it being live in production, so it must not silently vanish when an
+// env var is missing from a deployment. The override exists so a fork or a test
+// account can point somewhere else — set it to an empty string to switch Ads off.
+const RAW_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
+export const GOOGLE_ADS_ID = (RAW_ADS_ID === undefined ? "AW-18317910859" : RAW_ADS_ID)
+  .trim()
+  .replace(/^["']|["']$/g, "");
+
+export const isAdsEnabled = /^AW-[0-9]+$/i.test(GOOGLE_ADS_ID);
+
+if (typeof window !== "undefined" && GOOGLE_ADS_ID && !isAdsEnabled) {
+  console.warn(
+    `[analytics] NEXT_PUBLIC_GOOGLE_ADS_ID is set to "${GOOGLE_ADS_ID}" but is not a valid Google Ads ID (expected AW-XXXXXXXXX). Google Ads tracking is disabled.`,
+  );
+}
+
+// gtag.js is loaded once and configured per destination, so the script itself is
+// needed as soon as either product is switched on.
+export const isTagEnabled = isGaEnabled || isAdsEnabled;
 
 // Bumped from the legacy `buyauto_cookie_consent` key on purpose: that banner
 // had no reject path and gated nothing, so a "true" stored under it is not
@@ -157,6 +179,11 @@ export function pageview(url: string, referrer?: string) {
   // gets a cookieless hit here and a second, cookied one from setConsent.
   if (pageViewHeldForConsent) return;
   gtag("event", "page_view", {
+    // Addressed at the GA4 property only. An untargeted event reaches *every*
+    // configured destination, which would send each client-side navigation to
+    // Google Ads as well — the Ads tag counts the landing hit from its own
+    // `config` call and nothing else, exactly as the stock snippet does.
+    send_to: GA_MEASUREMENT_ID,
     page_path: url,
     page_location: typeof window !== "undefined" ? window.location.href : undefined,
     page_title: typeof document !== "undefined" ? document.title : undefined,
@@ -167,8 +194,28 @@ export function pageview(url: string, referrer?: string) {
   });
 }
 
-/** Custom event helper, for funnel tracking (`trackEvent("listing_published")`). */
+/**
+ * Custom event helper, for funnel tracking (`trackEvent("listing_published")`).
+ * Reaches every configured destination, so an event named as a Google Ads
+ * conversion action is picked up there as well as in GA4.
+ */
 export function trackEvent(name: string, params: Record<string, unknown> = {}) {
-  if (!isGaEnabled) return;
+  if (!isTagEnabled) return;
   gtag("event", name, params);
+}
+
+/**
+ * Reports a Google Ads conversion. `sendTo` is the full `AW-XXXXXXXXX/LabelHere`
+ * string from the conversion action's tag setup in Google Ads — the label is
+ * per-action, so it is passed in rather than derived from GOOGLE_ADS_ID.
+ *
+ * Fires regardless of consent state: Consent Mode keeps the hit cookieless while
+ * `ad_storage` is denied, which is what conversion modelling expects to see.
+ */
+export function trackAdsConversion(
+  sendTo: string,
+  params: Record<string, unknown> = {},
+) {
+  if (!isAdsEnabled) return;
+  gtag("event", "conversion", { send_to: sendTo, ...params });
 }

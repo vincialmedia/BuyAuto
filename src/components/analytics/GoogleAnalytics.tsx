@@ -4,12 +4,20 @@ import Script from "next/script";
 import {
   CONSENT_STORAGE_KEY,
   GA_MEASUREMENT_ID,
+  GOOGLE_ADS_ID,
+  isAdsEnabled,
   isGaEnabled,
+  isTagEnabled,
   pageview,
 } from "@/lib/analytics/gtag";
 
 /**
  * Loads gtag.js and reports client-side navigations.
+ *
+ * One script serves both destinations: the GA4 property and the Google Ads
+ * conversion/remarketing tag are `config`d separately on the same gtag.js, which
+ * is how Google's own multi-product snippet works. Either can be switched off
+ * without affecting the other.
  *
  * Consent Mode defaults are NOT set here — they live in `_document.tsx` so they
  * are in the server HTML and provably run before this tag loads. Setting them
@@ -23,7 +31,7 @@ export function GoogleAnalytics() {
   // load the tag at all rather than load it and stay permanently silent.
   const isEmbed =
     router.pathname === "/embed" || router.pathname.startsWith("/embed/");
-  const enabled = isGaEnabled && !isEmbed;
+  const enabled = isTagEnabled && !isEmbed;
 
   const pendingNavigationIsShallow = useRef(false);
   const initialPageViewHandled = useRef(false);
@@ -76,11 +84,16 @@ export function GoogleAnalytics() {
 
   if (!enabled) return null;
 
+  // gtag.js is the same file whichever ID requests it; the `id` only decides
+  // which destination's settings ride along in the response. Ask for whichever
+  // product is on, preferring GA4 when both are.
+  const scriptId = isGaEnabled ? GA_MEASUREMENT_ID : GOOGLE_ADS_ID;
+
   return (
     <>
       <Script
         id="ga-lib"
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${scriptId}`}
         strategy="afterInteractive"
       />
       <Script id="ga-config" strategy="afterInteractive">
@@ -89,7 +102,9 @@ export function GoogleAnalytics() {
           function gtag(){dataLayer.push(arguments);}
           window.gtag = gtag;
           gtag('js', new Date());
-          gtag('config', '${GA_MEASUREMENT_ID}', {
+          ${
+            isGaEnabled
+              ? `gtag('config', '${GA_MEASUREMENT_ID}', {
             anonymize_ip: true,
             // Only let gtag.js fire its automatic page view when the visitor
             // has already decided. Sent before that, the hit goes out
@@ -104,7 +119,20 @@ export function GoogleAnalytics() {
                 return false;
               }
             })()
-          });
+          });`
+              : ""
+          }
+          ${
+            isAdsEnabled
+              ? `// Google Ads. Left to fire its hit immediately, unlike the GA4
+          // config above: this is the hit that captures the gclid of an ad
+          // click, and holding it until the banner is answered would lose the
+          // click-to-conversion link for anyone who navigates away first.
+          // Consent Mode keeps it cookieless until ad_storage is granted, and
+          // gtag.js writes the linker cookie itself once that update lands.
+          gtag('config', '${GOOGLE_ADS_ID}');`
+              : ""
+          }
         `}
       </Script>
     </>

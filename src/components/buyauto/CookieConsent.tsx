@@ -45,7 +45,7 @@ export function CookieConsent() {
 
   // Both paths record an explicit decision. Until one of them runs, Consent
   // Mode stays at the "denied" defaults set in _document, so Google Analytics
-  // sends cookieless pings only.
+  // and the Google Ads tag send cookieless pings only.
   const handleAccept = () => {
     setConsent("granted");
     setIsVisible(false);
@@ -67,8 +67,9 @@ export function CookieConsent() {
           {/* Message */}
           <div className="flex-1 text-sm text-gray-700">
             <p>
-              Diese Website verwendet Cookies und Google Analytics, um Ihnen das beste
-              Nutzererlebnis zu bieten. Details finden Sie in unserer{" "}
+              Diese Website verwendet Cookies für Analyse (Google Analytics) und
+              Werbung (Google Ads), um Ihnen das beste Nutzererlebnis zu bieten.
+              Details finden Sie in unserer{" "}
               <Link href="/datenschutz" className="text-red-600 underline hover:no-underline">
                 Datenschutzerklärung
               </Link>
