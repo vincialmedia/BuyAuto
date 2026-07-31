@@ -67,13 +67,14 @@ schlagen in dieser Phase jede Feature-Roadmap.
 | Carmarket (Emil Frey) | Jahresabo, 30 Dauerplätze | 1'850.–/Jahr | 5.14 |
 | autolina | Abo, unbegrenzt | 199.– | → 0 |
 | automo.ch | Abo, unbegrenzt | 55.– | → 0 |
-| **CAR FOR YOU** | **erfolgsbasiert**: 200.– Basis + 200.–/verkauftes Auto, Deckel 1'000.– | max. 1'000.– | nur bei Verkauf |
+| ~~CAR FOR YOU~~ | erfolgsbasiert: 200.– Basis + 200.–/verkauftes Auto, Deckel 1'000.– | **2024 eingestellt** | — |
 | **BuyAuto** | Abo, 15/60/150 | 149 / 349 / 599 | 9.93 / 5.82 / 3.99 |
 
-**CAR FOR YOU ist der wichtigste einzelne Wettbewerbsbefund**: ~30% der Händler
-sind auf das Erfolgsmodell gewechselt, ~8 pro Tag. Das ist die direkte Antwort
-auf den Einwand in jedem Verkaufsgespräch („warum monatlich zahlen, wenn du noch
-keine Reichweite hast?").
+> ⚠️ **Korrigiert am 31.7. — siehe Abschnitt 9.** Ich hatte CAR FOR YOU als „den
+> wichtigsten einzelnen Wettbewerbsbefund" bezeichnet. **CAR FOR YOU wurde 2024
+> von SMG abgeschaltet.** Das Erfolgsmodell war der letzte Versuch einer
+> sterbenden Plattform, nicht ein lebendes Konkurrenzangebot. Die Lehre daraus
+> ist eine andere — und wichtiger.
 
 Weitere relevante Anbieter:
 * **gowago.ch** — 9'000+ Autos, **gratis für Händler**, Alles-inklusive-Monatspreis,
@@ -101,8 +102,9 @@ Weitere relevante Anbieter:
 ### Die offene Frage: Erfolgsmodell?
 
 Ein reines Abo ist für einen Marktplatz ohne nachgewiesene Reichweite der
-schwerste Verkauf. CAR FOR YOU beweist, dass Schweizer Händler erfolgsbasiert
-annehmen. Aber du kannst Verkäufe nicht verifizieren.
+schwerste Verkauf — das bleibt richtig. Aber die Begründung „CAR FOR YOU beweist,
+dass Schweizer Händler erfolgsbasiert annehmen" trägt nicht mehr: CFY ist
+abgeschaltet (Abschnitt 9). Verkäufe kannst du ausserdem nicht verifizieren.
 
 **Empfehlung statt Erfolgsgebühr:** eine risikofreie Eintrittsvariante, die ohne
 Verifikation funktioniert — „erste 3 Monate CHF 49, danach regulär, monatlich
@@ -350,11 +352,82 @@ abrufbar. Dafür braucht es einen Blick von einem Rechner mit offenem Netz.
 
 ---
 
+## 9. Korrektur (31.7.): CAR FOR YOU ist tot — und das ist die wichtigere Lehre
+
+Vince hat den Fehler gefunden: ich habe CAR FOR YOU als lebenden Wettbewerber
+behandelt. **SMG hat die Plattform 2024 abgeschaltet**; im Automotive-Portfolio
+ist nur noch AutoScout24. Grund laut SMG: die Nutzerzahlen waren in den zwei
+Jahren davor deutlich zurückgegangen.
+
+Das erfolgsbasierte Preismodell (CHF 200 + 200 pro verkauftem Auto, Deckel
+1'000) war damit der **letzte Versuch einer sterbenden Plattform**, nicht ein
+funktionierendes Konkurrenzangebot.
+
+### Was daraus wirklich folgt — und es ist unbequemer
+
+**CAR FOR YOU ist die Warnung, nicht die Vorlage.** Die Plattform war günstiger
+als AutoScout24, hatte ein händlerfreundliches Erfolgsmodell, gehörte erst der
+TX Group und dann SMG — also Geld, Marketing und Reichweite im Rücken. Sie ist
+trotzdem gestorben, weil die **Käufer** nicht kamen.
+
+Das ist exakt BuyAutos strategische Position, nur mit weniger Kapital. Die
+Schlussfolgerung ist unangenehm klar:
+
+> **Der Preis ist nicht dein Engpass. Die Nachfrage ist es.**
+> Ein besseres Preismodell hat CAR FOR YOU nicht gerettet, und es wird BuyAuto
+> nicht retten. Wenn Garagen kommen und keine Anfragen bekommen, kündigen sie
+> innert Monaten — genau die 3–5% monatliche SMB-Churn aus Abschnitt 2.
+
+Damit bestätigt sich der eine Kritikpunkt, den ich selbst zu tief gewichtet
+hatte: **niemand hat untersucht, woher die Käufer kommen.** Die 27
+SEO-Landingpages im Repo sind faktisch die Go-to-Market-Strategie, und keine
+einzige Recherche-Perspektive hat sie bewertet. Das gehört vor jede weitere
+Preisdiskussion.
+
+### Drei weitere Korrekturen aus derselben Recherche
+
+**a) „Garagen wechseln gerade" war zu stark formuliert.** Die Realität laut
+Branchenpresse: viele Garagisten sind unzufrieden, aber **die wenigsten
+kündigen tatsächlich**. AutoScout24 liefert weiterhin die beste Lead-Qualität,
+und genau deshalb bleiben sie. Das Fenster existiert — aber es ist ein Fenster
+für Gespräche und Zweitplatzierungen, nicht für Massenwechsel.
+
+**b) Der Preisüberwacher hat sich mit SMG geeinigt.** Inserenten erhalten
+günstigere Konditionen. Das heisst: **der Preisabstand, auf dem meine Argumentation
+teilweise ruht, kann sich verkleinern.** Baue die Positionierung nicht allein auf
+„AS24 ist teuer" — das kann dir wegregulieren.
+
+**c) Der AGVS empfiehlt seinen Mitgliedern bereits konkrete Alternativen:
+Autolina und Carmarket.** Carmarket wächst dadurch spürbar. Das ist die
+wichtigste praktische Konsequenz dieser Korrektur:
+
+> **Der Branchenverband macht Distribution — gratis — und BuyAuto steht nicht
+> auf der Liste.** Auf diese Empfehlungsliste zu kommen ist wahrscheinlich mehr
+> wert als jede Änderung an den Paketen. Das ist der Ersatz für die
+> comparis-Empfehlung, die ich in Abschnitt 8.5 abstufen musste.
+
+### Und die Marktkonzentration ist grösser als meine Tabelle zeigt
+
+SMG besitzt **AutoScout24, MotoScout24, tutti, anibis, Ricardo, Homegate und
+ImmoScout24** — und hat zusätzlich das C2B-Geschäft von CARAUKTION in AS24
+integriert. Von den „Wettbewerbern" in der Tabelle in Abschnitt 1 sind AS24,
+tutti, anibis und Ricardo **ein einziges Unternehmen**.
+
+Wirklich unabhängig sind: **autolina, automo.ch, Carmarket** (händlereigen, Emil
+Frey) — und BuyAuto.
+
+Das ist ein besseres Verkaufsargument als der Preis: nicht „wir sind günstiger",
+sondern **„wir gehören nicht denen, die dir jedes Jahr die Rechnung erhöhen"**.
+Der Preisüberwacher und die WEKO-Untersuchung stützen das, und es lässt sich
+nicht wegregulieren.
+
+---
+
 ## Quellen (live recherchiert)
 
 **Schweiz**
 - [AutoScout24 B2B — Abos](https://b2b.autoscout24.ch/abos-v3/) · [Premium-Pakete](https://b2b.autoscout24.ch/premium-pakete/) · [Completeness Score](https://b2b.autoscout24.ch/completeness-score/) · [Bilderpaket](https://b2b.autoscout24.ch/aboss/bilderpaket/) · [HCI JSON](https://b2b.autoscout24.ch/neue-hci-json-schnittstelle-flexibler-schneller-zukunftssicher/) · [Cockpit](https://b2b.autoscout24.ch/cockpit-handlungsempfehlungen-ihre-neue-schaltzentrale-fuer-erfolgreiche-inserate/)
-- [CAR FOR YOU: erfolgsbasiertes Preismodell](https://www.carforyou.ch/de/content/garagen/posts/car-for-you-fuehrt-erfolgsbasiertes-preismodell-ein)
+- ~~CAR FOR YOU: erfolgsbasiertes Preismodell~~ — Plattform 2024 abgeschaltet, siehe Abschnitt 9
 - [Carmarket (Emil Frey), auto-wirtschaft.ch](https://www.auto-wirtschaft.ch/news/carmarket-die-auto-verkaufsplattform-von-profis-fur-profis-wird-2-jahre-alt)
 - [anibis AutoPRO](https://www.anibis.help/hc/de/articles/14606795418258-Neues-anibis-ch-Abonnement-AutoPRO) · [tutti Fahrzeug-Abos](https://www.tutti.ch/de/subscription/vehicle)
 - [autolina Händler](https://www.autolina.ch/en/haendler_info) · [automo.ch Preise](https://automo.ch/en/prices-automo-ch-offer/)
@@ -380,6 +453,12 @@ abrufbar. Dafür braucht es einen Blick von einem Rechner mit offenem Netz.
 - [AS24: Was ist die DMS API](https://help.autoscout24.ch/hc/de/articles/34448520065170-Was-ist-die-DMS-API) · [AS24 HCI-JSON-Schnittstelle](https://www.garagen-website.ch/angebot/autoscout24-schnittstelle/) · [Garagensoftware-Vergleich Schweiz](https://garagensoftwarevergleich.ch/software)
 - [comparis: Insertion via AutoScout24](https://en.comparis.ch/carfinder/autokaufen/autoscout24) · [AS24: Insertion auf comparis](https://b2b.autoscout24.ch/aboss/insertion-auf-comparis/) · [comparis Carfinder Lancierung als Metasuchmaschine](https://www.presseportal.ch/de/pm/100003671/100489526)
 - [Spyne: KI-Foto-Pipelines und der 3-Tage-Frontline-Standard](https://www.spyne.ai/blogs/best-car-photo-editing-tools-for-dealerships)
+
+**Korrektur 31.7. (Abschnitt 9)**
+- [Inside Paradeplatz: SMG bündelt Kräfte bei Auto-Annoncen — Car For You deaktiviert](https://insideparadeplatz.ch/2024/03/09/onine-herrscherin-der-verlage-buendelt-kraefte-bei-auto-annoncen/) · [AGVS: «Autoscout24 und Car For You bleiben erhalten» (frühere Zusage)](https://www.senseseegaragist.ch/de/news/news-archiv/autoscout24-und-car-you-bleiben-erhalten)
+- [Swiss Marketplace Group (Wikipedia)](https://de.wikipedia.org/wiki/Swiss_Marketplace_Group) · [Scout24 Schweiz (Wikipedia)](https://de.wikipedia.org/wiki/Scout24_Schweiz)
+- [NZZ: SMG einigt sich mit dem Preisüberwacher — günstigere Konditionen für Inserenten](https://www.nzz.ch/wirtschaft/inserenten-erhalten-guenstigere-konditionen-auf-online-marktplaetzen-wie-ricardo-und-homegate-ld.1918966) · [NZZ: Gibt es genügend Wettbewerb bei den Online-Marktplätzen?](https://www.nzz.ch/wirtschaft/ricardo-tutti-homegate-autoscout24-schroepft-die-swiss-marketplace-group-ihre-kunden-ld.1774737)
+- [SMG: AutoScout24 integriert C2B-Geschäft von CARAUKTION](https://swissmarketplace.group/de/media-release/autoscout24-integriert-c2b-geschaeftsmodell-carauktion-konzentriert-sich-auf-b2b-kerngeschaeft/)
 
 **Preispsychologie**
 - [HBR: Good-Better-Best](https://hbr.org/2018/09/the-good-better-best-approach-to-pricing) · [Centre-Stage-Effekt](https://www.coglode.com/research/centre-stage-effect) · [Decoy-Effekt repliziert nicht](https://journals.sagepub.com/doi/abs/10.1509/jmr.12.0061) · [Usage Caps](https://stripe.com/resources/more/usage-caps-how-to-protect-performance-and-turn-usage-into-revenue) · [Marktplatz-Dynamik (Andrew Chen)](https://stripe.com/guides/atlas/andrew-chen-marketplaces) · [SMB-Churn-Benchmarks](https://optif.ai/learn/questions/b2b-saas-churn-rate-benchmark/) · [Preistransparenz B2B](https://www.pacepricing.com/blog/hidden-prices-lost-buyers-why-b2b-saas-companies-should-embrace-transparency)
