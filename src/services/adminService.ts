@@ -110,8 +110,14 @@ export interface AdminBusinessEditableListingUpdate {
 
   premium?: boolean;
   premium_until?: string | null;
-  status?: "pending" | "published" | "rejected" | "expired" | "archived" | "active";
   moderation_note?: string | null;
+  /**
+   * `status` is deliberately absent: this update writes columns straight from
+   * the browser, which would let a status change slip past the refund and the
+   * lifecycle bookkeeping in /api/admin/listings/update-status while the
+   * database trigger still emailed the seller. Every status change goes through
+   * adminUpdateListingStatus.
+   */
 
   images?: any[];
   cover_image_index?: number;
@@ -392,6 +398,12 @@ export const adminService = {
       status: "published",
       moderation_note: null,
       archived_at: null,
+      // Approving clears the lifecycle clock. A previously declined listing
+      // carries draft_delete_at once it is within 5 days of deletion, and
+      // leaving it set would make the delete sweep destroy the listing the
+      // moment it was ever archived again.
+      draft_delete_at: null,
+      archived_reason: null,
     };
 
     // Expiry is owned by the database. set_listing_expires_at anchors expires_at
@@ -419,46 +431,11 @@ export const adminService = {
     return data as AdminListing;
   },
 
-  /**
-   * Refund a listing's payment if it has one. Safe to call for any listing: the
-   * endpoint is idempotent and returns 400 for listings that were never paid, so
-   * an unpaid rejection is a no-op. Never throws — a failed refund must not block
-   * the moderation decision itself; it is surfaced in the return value instead.
-   */
-  async refundListingIfPaid(id: string, reason: string): Promise<{ refunded: boolean; error?: string }> {
-    try {
-      const response = await fetch("/api/billing/refund", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listing_id: id, reason }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as
-        | { ok?: boolean; refund_id?: string; message?: string; error?: string }
-        | null;
-
-      if (!response.ok) {
-        // 400 = "not eligible for a refund", i.e. a free or unpaid listing.
-        if (response.status === 400) return { refunded: false };
-        return { refunded: false, error: payload?.error || `HTTP ${response.status}` };
-      }
-
-      return { refunded: Boolean(payload?.refund_id) };
-    } catch (e) {
-      return { refunded: false, error: e instanceof Error ? e.message : "Refund request failed" };
-    }
-  },
-
   async rejectListing(id: string, reason: string): Promise<AdminListing> {
-    // Refund before flipping status: a rejected listing never goes live, so the
-    // seller must get their money back. Previously the only caller of
-    // /api/billing/refund was the dead bulkReject helper, so rejecting a paid
-    // listing silently kept the payment.
-    const refund = await this.refundListingIfPaid(id, "requested_by_customer");
-    if (refund.error) {
-      console.error(`rejectListing: refund failed for ${id}`, refund.error);
-    }
-
+    // The refund happens server-side inside /api/admin/listings/update-status,
+    // which refuses the status change if the money could not be given back — so
+    // a rejection that resolves here is always a refunded one. Doing it there
+    // rather than here is what covers the status dropdowns too.
     const listing = await this.adminUpdateListingStatus(id, {
       status: "rejected",
       moderationNote: reason,
@@ -474,7 +451,12 @@ export const adminService = {
 
   async adminUpdateListingStatus(
     listingId: string,
-    input: { status: "pending" | "published" | "rejected" | "archived" | "expired"; moderationNote?: string | null; notificationStatus?: "published" | "rejected" | "archived" | null }
+    input: {
+      status: "pending" | "published" | "rejected" | "archived" | "expired";
+      moderationNote?: string | null;
+      notificationStatus?: "published" | "rejected" | "archived" | null;
+      archivedReason?: "moderation_declined" | null;
+    }
   ): Promise<AdminListing | null> {
     const response = await fetch("/api/admin/listings/update-status", {
       method: "POST",
@@ -484,6 +466,7 @@ export const adminService = {
         status: input.status,
         moderation_note: input.moderationNote ?? null,
         notification_status: input.notificationStatus ?? null,
+        archived_reason: input.archivedReason ?? null,
       }),
     });
 
@@ -596,10 +579,15 @@ export const adminService = {
       throw new Error("Decline reason is required");
     }
 
+    // Refunded server-side by update-status, keyed off the archived_reason
+    // below — same rule as rejectListing.
     const listing = await this.adminUpdateListingStatus(id, {
       status: "archived",
       moderationNote: trimmed,
       notificationStatus: "rejected",
+      // Distinguishes a decline from a plain admin archive, so the seller's
+      // dashboard can show "Abgelehnt" instead of "Archiviert".
+      archivedReason: "moderation_declined",
     });
 
     if (listing) return listing;

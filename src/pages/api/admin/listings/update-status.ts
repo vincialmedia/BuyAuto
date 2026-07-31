@@ -2,12 +2,20 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
 import { adminService } from "@/services/adminService";
+import { refundListingIfPaid } from "@/lib/billing/refund-listing";
 
 type Body = {
   listing_id?: string;
   status?: "pending" | "published" | "rejected" | "archived" | "expired";
   moderation_note?: string | null;
   notification_status?: "published" | "rejected" | "archived" | null;
+  /**
+   * Why the listing was archived. 'moderation_declined' marks a decline that
+   * parks the listing in 'archived' (the moderation queue's decline action),
+   * so the seller's dashboard can label it "Abgelehnt" rather than the
+   * indistinguishable "Archiviert".
+   */
+  archived_reason?: "moderation_declined" | null;
 };
 
 type ProfileRoleRow = { role: string | null };
@@ -75,6 +83,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const oldStatus = existing?.status ?? null;
+
+  // A rejected listing never goes live, so the seller must get their money
+  // back. Both shapes a decline can take count: the all-listings action parks
+  // it in 'rejected', the moderation queue parks it in 'archived' with
+  // archived_reason='moderation_declined'.
+  //
+  // The refund is enforced here rather than at each call site because this
+  // route is the only way the admin UI can change a listing's status — the
+  // status dropdowns in the all-listings table and the details modal reach a
+  // rejection without ever touching the dedicated reject/decline helpers, and
+  // used to keep the payment while the trigger still emailed the seller.
+  const isDecline =
+    status === "rejected" || (status === "archived" && body.archived_reason === "moderation_declined");
+
+  let refundSummary: { outcome: string; refund_id?: string } | undefined;
+
+  if (isDecline) {
+    // Refund before the status write, never after: the status change fires
+    // handle_listing_status_change, which emails the seller their rejection.
+    // The money has to be on its way back before that mail goes out.
+    const refund = await refundListingIfPaid(supabaseAdmin, listingId, "requested_by_customer");
+
+    if (refund.outcome === "failed") {
+      // Leave the listing as it is. A rejection we could not refund is not a
+      // finished rejection, and letting it through would send the seller a
+      // rejection email while we keep the charge. The admin sees the reason and
+      // can retry once Stripe is reachable.
+      console.error(`update-status: refund failed for ${listingId}`, refund.error);
+      return res.status(502).json({
+        ok: false,
+        error: `Refund failed, listing left unchanged: ${refund.error}`,
+      });
+    }
+
+    refundSummary =
+      refund.outcome === "refunded"
+        ? { outcome: refund.outcome, refund_id: refund.refundId }
+        : { outcome: refund.outcome };
+  }
+
   const archivedAt = status === "archived" ? new Date().toISOString() : null;
 
   const updatePayload: Record<string, unknown> = {
@@ -82,6 +130,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     moderation_note: moderationNote,
     archived_at: archivedAt,
   };
+
+  // Only 'moderation_declined' is settable from here — 'draft_expired' belongs
+  // to the sweeps and must never be forged by an admin action, since it is what
+  // makes a listing eligible for automatic deletion.
+  if (status === "archived" && body.archived_reason === "moderation_declined") {
+    updatePayload.archived_reason = "moderation_declined";
+  }
+
+  // Putting a listing back on the live track clears the lifecycle clock. A
+  // declined listing carries draft_delete_at once it is within 5 days of
+  // deletion, and leaving it set would make the delete sweep destroy the
+  // listing the moment it was ever archived again.
+  if (status === "published" || status === "pending") {
+    updatePayload.draft_delete_at = null;
+    updatePayload.archived_reason = null;
+  }
 
   // Republishing an expired listing with its old, already-passed expires_at
   // would silently fail: the public views keep hiding it and the hourly sweep
@@ -100,5 +164,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (error) return res.status(500).json({ ok: false, error: "Failed to update listing status" });
 
-  return res.status(200).json({ ok: true, listing: data });
+  return res.status(200).json({ ok: true, listing: data, refund: refundSummary });
 }

@@ -24,6 +24,14 @@ interface ListingDetailsModalProps {
 
 type ListingStatus = "pending" | "published" | "rejected" | "expired" | "archived" | "active";
 
+/** The statuses an admin can move a listing to from here — 'active' is a read-only legacy value. */
+const MODERATABLE_STATUSES = ["pending", "published", "rejected", "archived", "expired"] as const;
+type ModeratableStatus = (typeof MODERATABLE_STATUSES)[number];
+
+function isModeratableStatus(status: ListingStatus): status is ModeratableStatus {
+  return (MODERATABLE_STATUSES as readonly string[]).includes(status);
+}
+
 function safeNumber(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -94,7 +102,9 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [editData, setEditData] = useState<AdminBusinessEditableListingUpdate>({
+  // `status` is form state only — it is applied through adminUpdateListingStatus
+  // on save, not written as a column alongside the other fields.
+  const [editData, setEditData] = useState<AdminBusinessEditableListingUpdate & { status?: ListingStatus }>({
     brand: listing.brand,
     model: listing.model,
   });
@@ -196,7 +206,6 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
         first_registration: safeString(String(editData.first_registration ?? "")),
         vin: safeString(String(editData.vin ?? "")),
 
-        status: (editData.status as ListingStatus) ?? listing.status,
         premium: !!editData.premium,
         moderation_note: safeString(String(editData.moderation_note ?? "")),
         premium_until: safeString(String(editData.premium_until ?? "")),
@@ -213,6 +222,23 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
         cover_image_url: safeString(String(editData.cover_image_url ?? "")),
       };
 
+      // A status change never rides along with the column write. It goes
+      // through adminUpdateListingStatus, which refunds a rejection before the
+      // status flips and keeps the lifecycle stamps consistent — writing
+      // `status` straight to the row skipped both while the database trigger
+      // still emailed the seller their rejection.
+      //
+      // Applied before the field save so a refused change (a refund Stripe
+      // could not take, say) leaves the listing untouched rather than half
+      // saved.
+      const nextStatus = (editData.status as ListingStatus) ?? listing.status;
+      if (nextStatus !== listing.status && isModeratableStatus(nextStatus)) {
+        await adminService.adminUpdateListingStatus(listing.id, {
+          status: nextStatus,
+          moderationNote: sanitized.moderation_note ?? null,
+        });
+      }
+
       await adminService.updateListingBusinessEditableFields(listing.id, sanitized);
 
       toast({ title: "Gespeichert", description: "Inserat wurde erfolgreich aktualisiert." });
@@ -220,7 +246,11 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
       onUpdate();
     } catch (error) {
       console.error("Error updating listing:", error);
-      toast({ variant: "destructive", title: "Fehler", description: "Inserat konnte nicht aktualisiert werden." });
+      toast({
+        variant: "destructive",
+        title: "Fehler",
+        description: error instanceof Error ? error.message : "Inserat konnte nicht aktualisiert werden.",
+      });
     } finally {
       setSaving(false);
     }

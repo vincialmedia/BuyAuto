@@ -11,6 +11,14 @@
 export const DRAFT_ARCHIVE_AFTER_DAYS = 30;
 export const DRAFT_DELETE_AFTER_ARCHIVE_DAYS = 5;
 
+/**
+ * A listing declined by an admin gets the same 30-day limit a draft gets,
+ * counted from the decline. Mirrors public.sweep_expire_declined_listings,
+ * which stamps the real deadline (listings.draft_delete_at) in the final 5 days
+ * — both name the same date, so the countdown runs 30 -> 0 without a jump.
+ */
+export const DECLINE_DELETE_AFTER_DAYS = 30;
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface DraftLifecycleInput {
