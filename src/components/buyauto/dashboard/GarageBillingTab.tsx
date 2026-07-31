@@ -1,67 +1,23 @@
 import { useMemo } from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Crown, Check, Zap, AlertTriangle } from "lucide-react";
+import { Crown, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { type Garage } from "@/services/garageService";
 import { formatDateTimeDeCH, getDealerEntitlement } from "@/services/dealerEntitlementService";
+import { GaragePlanCards } from "@/components/buyauto/pricing/GaragePlanCards";
+import { GarageFeatureMatrix } from "@/components/buyauto/pricing/GarageFeatureMatrix";
+import { GarageTrustRow } from "@/components/buyauto/pricing/GarageTrustRow";
+import {
+  GARAGE_CUSTOM_THRESHOLD,
+  garagePlanFor,
+  type GaragePlanCode,
+} from "@/lib/buyauto/garagePlans";
 
 interface GarageBillingTabProps {
   garage: Garage | null;
 }
-
-// Updated plans based on src/pages/preise.tsx
-const PLANS = [
-  {
-    id: "starter",
-    name: "Starter",
-    price: "CHF 149",
-    period: "/ Monat",
-    limit: "bis zu 15 Inserate",
-    premiumIncluded: "1 Premium Inserat / Monat inklusive",
-    features: [
-      "Garage-Profilseite + Inventar",
-      "VIN-PreFill (wo verfügbar)",
-      "Leasing-Rechner im Inserat",
-      "Deal-Chat pro Fahrzeug",
-      "Basis-Statistiken"
-    ],
-    popular: false,
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    price: "CHF 349",
-    period: "/ Monat",
-    limit: "bis zu 50 Inserate",
-    premiumIncluded: "5 Premium Inserate / Monat inklusive",
-    features: [
-      "Alles aus Starter",
-      "Kompletter Bestand hochladen*",
-      "Inventar-Import Service",
-      "Priorisierter Support"
-    ],
-    popular: true,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "CHF 599",
-    period: "/ Monat",
-    limit: "bis zu 100 Inserate",
-    premiumIncluded: "10 Premium Inserate / Monat inklusive",
-    features: [
-      "Alles aus Growth",
-      "Priorisiertes Onboarding",
-      "Dedizierter Ansprechpartner",
-      "Erweiterte Statistiken"
-    ],
-    popular: false,
-  },
-];
 
 export function GarageBillingTab({ garage }: GarageBillingTabProps) {
   const router = useRouter();
@@ -150,12 +106,9 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
     };
   }, [garage?.id]);
 
-  const currentPlanDetails = useMemo(() => {
-    if (!effectivePlanId) return null;
-    return PLANS.find((p) => p.id === effectivePlanId);
-  }, [effectivePlanId]);
+  const currentPlanDetails = useMemo(() => garagePlanFor(effectivePlanId), [effectivePlanId]);
 
-  function handleUpgrade(planId: string) {
+  function handleUpgrade(planId: GaragePlanCode) {
     router.push(`/garage-plan?plan=${planId}`);
   }
 
@@ -168,11 +121,11 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
             <h3 className="text-lg font-bold tracking-tight text-neutral-900">Aktueller Status</h3>
             <p className="text-sm text-neutral-600 mt-1">
               {entitlementLabel ? (
-                <>Sie nutzen aktuell den <span className="font-semibold">{entitlementLabel}</span>.</>
+                <>Du nutzt aktuell <span className="font-semibold">{entitlementLabel}</span>.</>
               ) : currentPlanId ? (
-                <>Sie nutzen aktuell den <span className="font-semibold capitalize">{currentPlanDetails?.name || currentPlanId}</span> Plan.</>
+                <>Du nutzt aktuell das Paket <span className="font-semibold capitalize">{currentPlanDetails?.name || currentPlanId}</span>.</>
               ) : (
-                "Sie haben noch keinen aktiven Plan ausgewählt."
+                "Du hast noch kein Paket gewählt."
               )}
             </p>
           </div>
@@ -192,16 +145,32 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
 
         {currentPlanId ? (
           <div className="rounded-2xl bg-neutral-50 border border-neutral-200/60 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold text-neutral-900">Inserate-Limit</div>
-                <div className="text-xs text-neutral-600 mt-1">
-                  {garage?.listing_limit ?? 0} aktive Inserate erlaubt
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* What the plan actually buys, so "Plan ändern" has context. */}
+              <div className="grid grid-cols-3 gap-3 flex-1">
+                <div>
+                  <div className="text-sm font-semibold text-neutral-900">
+                    {garage?.listing_limit ?? currentPlanDetails?.listingLimit ?? 0}
+                  </div>
+                  <div className="text-xs text-neutral-600 mt-0.5">aktive Inserate</div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-neutral-900">
+                    {currentPlanDetails?.premiumPerMonth ?? "–"}
+                  </div>
+                  <div className="text-xs text-neutral-600 mt-0.5">Premium / Monat</div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-neutral-900">
+                    {currentPlanDetails?.valuationsPerMonth ?? "–"}
+                  </div>
+                  <div className="text-xs text-neutral-600 mt-0.5">Bewertungen / Monat</div>
                 </div>
               </div>
+
               <Button
                 variant="outline"
-                className="rounded-xl"
+                className="rounded-xl shrink-0"
                 onClick={() => document.getElementById('available-plans')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 Plan ändern
@@ -210,9 +179,9 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
           </div>
         ) : (
           <div className="rounded-2xl bg-amber-50 border border-amber-200/60 p-6 text-center">
-            <h4 className="font-semibold text-amber-900 mb-2">Starten Sie jetzt durch</h4>
+            <h4 className="font-semibold text-amber-900 mb-2">Jetzt loslegen</h4>
             <p className="text-sm text-amber-800/80 mb-4 max-w-md mx-auto">
-              Wählen Sie eines unserer Pakete, um Inserate zu schalten und Ihre Garage professionell zu präsentieren.
+              Wähle ein Paket, um Inserate zu schalten und deine Garage professionell zu präsentieren.
             </p>
             <Button 
               className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl"
@@ -224,83 +193,18 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
         )}
       </div>
 
-      {/* Available Plans Section */}
-      <div id="available-plans" className="scroll-mt-24">
-        <h3 className="text-xl font-bold tracking-tight text-neutral-900 mb-6">Verfügbare Pakete</h3>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {PLANS.map((plan) => {
-            const isCurrent = plan.id === effectivePlanId;
-            return (
-              <Card
-                key={plan.id}
-                className={cn(
-                  "rounded-3xl overflow-hidden transition-all flex flex-col h-full border-neutral-200",
-                  plan.popular && "border-primary/50 shadow-lg ring-1 ring-primary/20",
-                  isCurrent && "border-emerald-500 bg-emerald-50/10 ring-1 ring-emerald-500/20"
-                )}
-              >
-                {plan.popular && (
-                  <div className="bg-primary text-white text-xs font-bold uppercase tracking-wider text-center py-1.5">
-                    Meist gewählt
-                  </div>
-                )}
-                <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold">{plan.name}</CardTitle>
-                    {isCurrent && <Check className="h-5 w-5 text-emerald-600" />}
-                  </div>
-                  <CardDescription className="flex items-baseline gap-1 mt-2">
-                    <span className="text-3xl font-bold text-neutral-900">{plan.price}</span>
-                    <span className="text-sm text-neutral-600">{plan.period}</span>
-                  </CardDescription>
-                  <div className="text-sm font-medium text-neutral-700 mt-3 bg-neutral-100 rounded-lg px-3 py-2 inline-block">
-                    {plan.limit}
-                  </div>
-                  <div className="text-xs text-primary font-medium mt-2">
-                    {plan.premiumIncluded}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6 flex-1 flex flex-col">
-                  <ul className="space-y-3 flex-1">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-2.5 text-sm">
-                        <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                        <span className="text-neutral-600 leading-snug">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button
-                    className={cn(
-                      "w-full rounded-xl h-12 font-semibold text-base",
-                      isCurrent 
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white" 
-                        : plan.popular 
-                          ? "bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
-                          : "bg-white border-2 border-neutral-200 hover:border-neutral-300 text-neutral-900"
-                    )}
-                    onClick={() => handleUpgrade(plan.id)}
-                    disabled={isCurrent}
-                  >
-                    {isCurrent ? (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Aktives Paket
-                      </>
-                    ) : (
-                      <>
-                        {plan.id} wählen
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-        <p className="mt-4 text-xs text-neutral-500">
-          * Wir bringen dich komplett an den Start und übernehmen den Upload deines Inventars für dich.
-        </p>
+      {/* Available Plans Section — same cards as /preise and /garage-plan. */}
+      <div id="available-plans" className="scroll-mt-24 space-y-6">
+        <h3 className="text-xl font-bold tracking-tight text-neutral-900">Verfügbare Pakete</h3>
+
+        <GaragePlanCards
+          onSelect={handleUpgrade}
+          activeCode={(currentPlanDetails?.code as GaragePlanCode | undefined) ?? null}
+        />
+
+        <GarageTrustRow />
+
+        <GarageFeatureMatrix />
       </div>
 
       {/* Enterprise / Contact Section */}
@@ -308,11 +212,12 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
         <div>
           <h4 className="text-lg font-bold text-neutral-900">Grösseres Inventar?</h4>
           <p className="text-sm text-neutral-600 mt-1 max-w-xl">
-            Für Garagen mit mehr als 100 Fahrzeugen oder speziellen Anforderungen bieten wir individuelle Enterprise-Lösungen an.
+            Für Garagen mit mehr als {GARAGE_CUSTOM_THRESHOLD} Fahrzeugen oder mehreren
+            Standorten machen wir ein individuelles Angebot.
           </p>
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="mt-4 sm:mt-0 rounded-xl px-6 h-11 border-neutral-300 hover:bg-white"
           onClick={() => { window.location.href = "mailto:kontakt@buyauto.ch"; }}
         >

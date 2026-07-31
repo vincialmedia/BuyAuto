@@ -229,9 +229,14 @@ export type Database = {
           name: string
           onboarding_included: boolean
           onboarding_note: string | null
+          onboarding_vehicle_cap: number | null
           premium_included_per_month: number | null
           stripe_price_id: string | null
+          support_level: string | null
+          tagline: string | null
           updated_at: string
+          valuation_limit_per_month: number | null
+          website_tools_included: boolean
         }
         Insert: {
           active?: boolean
@@ -243,9 +248,14 @@ export type Database = {
           name: string
           onboarding_included?: boolean
           onboarding_note?: string | null
+          onboarding_vehicle_cap?: number | null
           premium_included_per_month?: number | null
           stripe_price_id?: string | null
+          support_level?: string | null
+          tagline?: string | null
           updated_at?: string
+          valuation_limit_per_month?: number | null
+          website_tools_included?: boolean
         }
         Update: {
           active?: boolean
@@ -257,9 +267,14 @@ export type Database = {
           name?: string
           onboarding_included?: boolean
           onboarding_note?: string | null
+          onboarding_vehicle_cap?: number | null
           premium_included_per_month?: number | null
           stripe_price_id?: string | null
+          support_level?: string | null
+          tagline?: string | null
           updated_at?: string
+          valuation_limit_per_month?: number | null
+          website_tools_included?: boolean
         }
         Relationships: []
       }

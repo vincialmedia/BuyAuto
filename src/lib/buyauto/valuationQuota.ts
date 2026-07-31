@@ -1,9 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { GARAGE_PLANS, garagePlanFor } from "@/lib/buyauto/garagePlans";
 
 // Monthly automatic-search limits. Only the portal search (which spends Firecrawl
 // credits) is metered — manual comp entry and "Neuberechnung" never call the API.
 export const FREE_MONTHLY_LIMIT = 3;
-export const PAID_MONTHLY_LIMIT = 100;
+
+/**
+ * Fallback for a paid garage whose tier we can't resolve (legacy `garages.plan`
+ * value, custom/enterprise deal, or an admin override pointing at a plan code
+ * that isn't one of the three public tiers). Matches the middle tier so nobody
+ * ends up worse off than Growth by accident.
+ */
+export const PAID_MONTHLY_LIMIT = GARAGE_PLANS.growth.valuationsPerMonth;
+
+/** Per-tier quota — this is one of the fences that separates the packages. */
+export function valuationLimitForPlanCode(code: string | null | undefined): number {
+  return garagePlanFor(code)?.valuationsPerMonth ?? PAID_MONTHLY_LIMIT;
+}
 
 export type QuotaPlan = "free" | "paid";
 
@@ -18,8 +31,10 @@ export interface QuotaResult {
 
 /**
  * Resolve the caller's monthly limit from their dealer plan. A garage with any
- * real plan / active subscription / active admin override is "paid" (100);
- * everyone else logged-in is "free" (5).
+ * real plan / active subscription / active admin override is "paid", and the
+ * limit then depends on which tier they are on (Starter 25 / Growth 100 /
+ * Pro 400) — the automatic search spends Firecrawl credits, so it is priced
+ * like the metered resource it is. Everyone else logged-in is "free".
  *
  * Fails OPEN: if plan detection throws, we treat the user as paid rather than
  * throttle a paying dealer because of a transient DB error. A private user with
@@ -41,31 +56,39 @@ export async function resolveLimit(
     if (error) throw error;
     if (!garage) return { limit: FREE_MONTHLY_LIMIT, plan: "free" };
 
-    const planField = (garage.plan ?? "").toString().trim().toLowerCase();
-    if (planField && planField !== "no_plan") {
-      return { limit: PAID_MONTHLY_LIMIT, plan: "paid" };
-    }
-
     const nowIso = new Date().toISOString();
 
+    // Subscription first: it carries the tier the garage actually pays for,
+    // while garages.plan is a denormalised copy that can lag behind a change.
     const { data: sub } = await supabase
       .from("dealer_subscriptions")
-      .select("id")
+      .select("id, dealer_plans(code)")
       .eq("dealer_id", garage.id)
       .eq("status", "active")
       .gt("current_period_end", nowIso)
       .limit(1)
       .maybeSingle();
-    if (sub) return { limit: PAID_MONTHLY_LIMIT, plan: "paid" };
+    if (sub) {
+      const code = (sub as any)?.dealer_plans?.code ?? null;
+      return { limit: valuationLimitForPlanCode(code), plan: "paid" };
+    }
 
     const { data: override } = await supabase
       .from("dealer_admin_overrides")
-      .select("id")
+      .select("id, dealer_plans(code)")
       .eq("dealer_id", garage.id)
       .gt("ends_at", nowIso)
       .limit(1)
       .maybeSingle();
-    if (override) return { limit: PAID_MONTHLY_LIMIT, plan: "paid" };
+    if (override) {
+      const code = (override as any)?.dealer_plans?.code ?? null;
+      return { limit: valuationLimitForPlanCode(code), plan: "paid" };
+    }
+
+    const planField = (garage.plan ?? "").toString().trim().toLowerCase();
+    if (planField && planField !== "no_plan") {
+      return { limit: valuationLimitForPlanCode(planField), plan: "paid" };
+    }
 
     return { limit: FREE_MONTHLY_LIMIT, plan: "free" };
   } catch (e) {

@@ -41,6 +41,10 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { FREE_MONTHLY_LIMIT, PAID_MONTHLY_LIMIT } from "@/lib/buyauto/valuationQuota";
+import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
+
+/** Biggest per-month valuation quota any public package includes. */
+const MAX_PLAN_VALUATIONS = GARAGE_PLANS.pro.valuationsPerMonth;
 
 // --- Types ---
 
@@ -141,9 +145,9 @@ const MAX_COMPS = 6;
 
 // Anonymous users get a taste before signing up: 5 free automatic searches,
 // counted in localStorage. This is a lead magnet, not DRM — a cleared cache just
-// grants another 5. Logged-in users are metered server-side (5/mo free, 100/mo
-// paid) via /api/valuation/*. Only automatic searches count; manual entry and
-// "Neuberechnung" are always free.
+// grants another 5. Logged-in users are metered server-side via /api/valuation/*
+// (3/mo free, then the quota of their garage package). Only automatic searches
+// count; manual entry and "Neuberechnung" are always free.
 const ANON_FREE_SEARCHES = 3;
 const ANON_SEARCH_KEY = "buyauto_eintausch_anon_searches";
 
@@ -1391,7 +1395,8 @@ export function EintauschwertRechner() {
                 <ul className="text-sm text-neutral-300 space-y-2 text-left max-w-sm mx-auto">
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    {FREE_MONTHLY_LIMIT} Suchen pro Monat gratis – mit einem Garagen-Paket unbegrenzt*
+                    {FREE_MONTHLY_LIMIT} Suchen pro Monat gratis – mit einem Garagen-Paket bis zu{" "}
+                    {MAX_PLAN_VALUATIONS} pro Monat
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -1415,7 +1420,9 @@ export function EintauschwertRechner() {
                   </Button>
                 </div>
                 <p className="text-xs text-neutral-500">
-                  *Faire Nutzung: {PAID_MONTHLY_LIMIT} automatische Suchen pro Monat.
+                  Automatische Suchen je nach Paket: Starter {GARAGE_PLANS.starter.valuationsPerMonth},
+                  Growth {GARAGE_PLANS.growth.valuationsPerMonth}, Pro {GARAGE_PLANS.pro.valuationsPerMonth} pro Monat.
+                  Manuelle Berechnungen immer unbegrenzt.
                 </p>
               </>
             )}
@@ -1426,9 +1433,9 @@ export function EintauschwertRechner() {
                 <p className="text-neutral-300 leading-relaxed">
                   Du hast diesen Monat alle <strong className="text-white">{FREE_MONTHLY_LIMIT} Gratis-Suchen</strong>{" "}
                   genutzt. Weitere automatische Suchen sind nicht gratis – mit einem{" "}
-                  <strong className="text-white">Garagen-Paket suchst du unbegrenzt*</strong>. Dazu
-                  inserierst du deine Fahrzeuge, bekommst eine eigene Garagen-Seite mit deinem
-                  ganzen Bestand und Kaufanfragen direkt per E-Mail.
+                  <strong className="text-white">Garagen-Paket sind bis zu {MAX_PLAN_VALUATIONS} Suchen pro Monat</strong>{" "}
+                  inklusive. Dazu inserierst du deine Fahrzeuge, bekommst eine eigene Garagen-Seite
+                  mit deinem ganzen Bestand und Kaufanfragen direkt per E-Mail.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                   {/* /garage-plan ejects non-garage accounts, so private users go
@@ -1447,8 +1454,9 @@ export function EintauschwertRechner() {
                   </Button>
                 </div>
                 <p className="text-xs text-neutral-500">
-                  Manuelle Berechnungen bleiben unbegrenzt gratis. *Faire Nutzung:{" "}
-                  {PAID_MONTHLY_LIMIT} automatische Suchen pro Monat.
+                  Manuelle Berechnungen bleiben unbegrenzt gratis. Automatische Suchen je nach
+                  Paket: Starter {GARAGE_PLANS.starter.valuationsPerMonth}, Growth{" "}
+                  {GARAGE_PLANS.growth.valuationsPerMonth}, Pro {GARAGE_PLANS.pro.valuationsPerMonth} pro Monat.
                 </p>
               </>
             )}
@@ -1457,12 +1465,25 @@ export function EintauschwertRechner() {
               <>
                 <h3 className="text-2xl md:text-3xl font-bold">Monatskontingent erreicht</h3>
                 <p className="text-neutral-300 leading-relaxed">
-                  Du hast diesen Monat {PAID_MONTHLY_LIMIT} automatische Suchen genutzt – das
-                  faire Nutzungslimit deines Pakets. Brauchst du mehr? Melde dich, wir finden
-                  eine Lösung. Manuelle Berechnungen bleiben unbegrenzt.
+                  Du hast diesen Monat {quota?.limit ?? PAID_MONTHLY_LIMIT} automatische Suchen
+                  genutzt – das Kontingent deines Pakets. Ein grösseres Paket bringt mehr
+                  Bewertungen; melde dich, wir schalten dir auch einzelne Kontingente frei.
+                  Manuelle Berechnungen bleiben unbegrenzt.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                  <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
+                  {isGarage && (
+                    <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
+                      <Link href={`/garage-plan?redirect=${encodeURIComponent(gateReturnPath)}`}>
+                        Paket vergrössern
+                      </Link>
+                    </Button>
+                  )}
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white"
+                  >
                     <Link href="/#kontakt">Kontakt aufnehmen</Link>
                   </Button>
                 </div>

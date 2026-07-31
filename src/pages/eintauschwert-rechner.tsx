@@ -69,7 +69,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Ist die Eintauschwert-Berechnung kostenlos?",
-    a: "Die ersten 3 automatischen Suchen pro Monat sind gratis. Danach brauchst du ein Garagen-Paket – damit suchst du unbegrenzt (faire Nutzung: 100 automatische Suchen pro Monat). Manuelle Berechnungen (eigene Vergleichspreise eintragen) sind immer unbegrenzt gratis.",
+    a: "Die ersten 3 automatischen Suchen pro Monat sind gratis. Danach brauchst du ein Garagen-Paket: Starter 25, Growth 100 und Pro 400 automatische Suchen pro Monat. Manuelle Berechnungen (eigene Vergleichspreise eintragen) sind in jedem Paket unbegrenzt gratis.",
   },
   {
     q: "Woher kommen die Vergleichspreise bei der automatischen Suche?",
@@ -411,8 +411,9 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Für Garagen: vom Ankauf bis zum Verkauf</h2>
             <p className="text-lg text-neutral-300 mb-8 max-w-2xl mx-auto">
-              Im Garagen-Paket suchst du unbegrenzt*, hast den Rechner direkt in deinem Konto,
-              inserierst Occasionen und bekommst eine eigene Garagen-Seite mit deinem ganzen Bestand.
+              Im Garagen-Paket hast du den Rechner direkt in deinem Konto, ein festes
+              Bewertungs-Kontingent pro Monat, inserierst Occasionen und bekommst eine eigene
+              Garagen-Seite mit deinem ganzen Bestand.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 text-left">
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
@@ -422,8 +423,8 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
               </div>
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
                 <ShieldCheck className="w-8 h-8 text-red-400 mb-4" />
-                <h3 className="font-bold text-lg mb-2">Unbegrenzt suchen*</h3>
-                <p className="text-sm text-neutral-400">Unbegrenzte Suchen im Garagen-Paket (faire Nutzung: 100 pro Monat) – manuelle Berechnungen ohne Limit.</p>
+                <h3 className="font-bold text-lg mb-2">Bewertungen im Paket</h3>
+                <p className="text-sm text-neutral-400">25 bis 400 automatische Suchen pro Monat, je nach Garagen-Paket – manuelle Berechnungen immer ohne Limit.</p>
               </div>
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
                 <Building2 className="w-8 h-8 text-red-400 mb-4" />

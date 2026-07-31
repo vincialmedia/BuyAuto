@@ -10,9 +10,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { pricingPlans, PREMIUM_BOOST_PRICE, calculateTotal, planIncludesPremium, type Plan } from "@/lib/buyauto/stripe_config";
-import { Check, Sparkles, X } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing } from "@/services/createListingService";
+import { privatePlanMarketingFeatures } from "@/components/buyauto/pricing/pricingData";
+import { PrivatePlanExclusions } from "@/components/buyauto/pricing/PrivatePlanExclusions";
 import type { PricePlanId } from "@/lib/buyauto/types";
 
 const planMapping: Record<Plan, PricePlanId> = {
@@ -107,18 +109,9 @@ export default function Step3_PlanSelection() {
     };
   }, [donationAmountEffective, donationEnabled, effectivePremium, registerDraftSnapshotter, selectedPlan, total]);
 
-  const planFeatures: Record<Plan, string[]> = {
-    standard: ["60 Tage Laufzeit", "Standard-Platzierung"],
-    extended: ["90 Tage Laufzeit", "Gratis Premium Boost", "15 statt 5 Fotos", "Verlängerung: CHF 15 statt CHF 30"],
-    unlimited: [
-      "Online bis verkauft – einmal zahlen",
-      "Premium dauerhaft inklusive",
-      "15 statt 5 Fotos",
-      "Keine Verlängerungsgebühren",
-      "Jederzeit pausierbar",
-      "Prioritäts-Support",
-    ],
-  };
+  // Same list /preise shows — this step used to keep its own copy and the two
+  // had drifted apart.
+  const planFeatures = privatePlanMarketingFeatures;
 
   const handlePlanSelection = async () => {
     if (!user) {
@@ -267,13 +260,11 @@ export default function Step3_PlanSelection() {
                         {feature}
                       </li>
                     ))}
-                    {planKey === "standard" && (
-                      <li key="no-premium" className="flex items-center text-neutral-400">
-                        <X className="mr-2 h-4 w-4" />
-                        Keine Premium-Platzierung
-                      </li>
-                    )}
                   </ul>
+                  <PrivatePlanExclusions
+                    plan={planKey}
+                    className="mt-2 space-y-2 text-sm text-neutral-600"
+                  />
                 </CardContent>
               </Card>
             </div>

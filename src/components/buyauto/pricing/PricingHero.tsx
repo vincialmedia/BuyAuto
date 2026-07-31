@@ -6,6 +6,37 @@ export interface PricingHeroProps {
   onPersonaChange: (value: PricingPersona) => void;
 }
 
+// The three objections each audience arrives with, answered above the fold.
+const GARAGE_USPS = [
+  {
+    title: "Fixpreis, kein Fahrzeugwert",
+    body: "Dein Preis hängt am Paket – nicht am Wert der Autos in deinem Hof.",
+  },
+  {
+    title: "Monatlich kündbar",
+    body: "Kein Jahresvertrag, keine Setup-Gebühr, kein Kleingedrucktes.",
+  },
+  {
+    title: "Alles am Fahrzeug",
+    body: "Inserat, Leasing-Rechner, Anfragen und Deal-Chat hängen am selben Auto.",
+  },
+];
+
+const PRIVATE_USPS = [
+  {
+    title: "Einmal zahlen, kein Abo",
+    body: "Du buchst eine Laufzeit – danach passiert nichts automatisch.",
+  },
+  {
+    title: "Premium wenn du willst",
+    body: "In Verlängert und Unlimitiert ist die Premium-Platzierung schon drin.",
+  },
+  {
+    title: "Anfragen direkt im Chat",
+    body: "Interessenten schreiben dir am Inserat – ohne Telefonnummer im Netz.",
+  },
+];
+
 export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
   return (
     <section className="relative overflow-hidden pt-24 pb-16 sm:pt-28 sm:pb-20">
@@ -56,8 +87,9 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-white/80">
-            Wähle deinen Kundentyp und finde das passende Paket – mit allen
-            Kaufarten unter einem Dach und Kommunikation immer rund ums Fahrzeug.
+            {persona === "garage"
+              ? "Ein Fixpreis pro Monat für deine Garage – Profilseite, Inserate, Leasing-Rechner und Deal-Chat inklusive. Monatlich kündbar."
+              : "Ein Inserat, ein Preis, keine Abo-Falle. Wähle Laufzeit und Sichtbarkeit – Premium kannst du jederzeit dazunehmen."}
           </p>
 
           <div className="mt-8 flex justify-center">
@@ -72,20 +104,7 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
           </div>
 
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                title: "Garage-Profilseite + Inventar Seite + SEO",
-                body: "Anfragen & Deal-Chat sind immer ans Inserat gekoppelt.",
-              },
-              {
-                title: "Voll Viele Funktionen",
-                body: "ALLES um den Kauf und Verkauf so schnell wie möglich zu machen.",
-              },
-              {
-                title: "Transparente Preise",
-                body: "Keine Setup-Fallen. Klarer Leistungsumfang.",
-              },
-            ].map((item) => (
+            {(persona === "garage" ? GARAGE_USPS : PRIVATE_USPS).map((item) => (
               <div
                 key={item.title}
                 className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur px-4 py-4 text-left"
