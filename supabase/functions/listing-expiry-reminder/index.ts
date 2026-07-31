@@ -101,7 +101,7 @@ function buildEmail(params: {
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://buyauto.ch/buyauto-logo.png" alt="BuyAuto Logo" height="40">
+      <img src="https://buyauto.ch/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
     </div>
 
     <div class="content">
@@ -289,6 +289,7 @@ serve(async (req) => {
 
       const sendRes = await resend.emails.send({
         from: "BuyAuto <noreply@email.buyauto.ch>",
+        reply_to: "hello@buyauto.ch",
         to: email,
         subject: emailPayload.subject,
         html: emailPayload.html,
