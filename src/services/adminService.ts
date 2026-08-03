@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { planIncludesPremium } from "@/lib/buyauto/stripe_config";
 
 export interface AdminListingFilters {
   status?: 'pending' | 'published' | 'rejected' | 'expired' | 'archived' | 'all';
@@ -418,6 +419,34 @@ export const adminService = {
 
       updates.premium = true;
       updates.premium_until = premiumUntil.toISOString();
+    }
+
+    // Verlängert/Unlimitiert include premium placement; normally the Stripe
+    // webhook (or the verify-payment fallback) grants it when the payment
+    // lands. If a paid listing reaches approval without it — a missed webhook
+    // delivery — approving would publish it without the placement the seller
+    // paid for, so it is healed here. The premium-authority trigger permits
+    // the write because the approver is an admin, and
+    // align_included_premium_on_publish anchors premium_until to the freshly
+    // stamped expires_at inside the same update.
+    if (!updates.premium) {
+      const { data: current } = await supabase
+        .from("listings")
+        .select("premium, payment_status, price_plan, pricing_plan, garage_id")
+        .eq("id", id)
+        .maybeSingle();
+
+      const plan = current?.pricing_plan ?? current?.price_plan ?? null;
+      if (
+        current &&
+        !current.garage_id &&
+        current.payment_status === "paid" &&
+        current.premium !== true &&
+        planIncludesPremium(plan)
+      ) {
+        updates.premium = true;
+        updates.is_premium = true;
+      }
     }
 
     const { data, error } = await supabase
