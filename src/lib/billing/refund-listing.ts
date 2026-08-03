@@ -59,12 +59,34 @@ export async function refundListingIfPaid(
       reason,
     });
 
+    // The paid placement goes back with the money — but only the premium this
+    // payment granted: the plan-included placement (Verlängert/Unlimitiert) or
+    // a boost bought in the same checkout, both readable from the intent's
+    // metadata. Premium from other sources — a standalone premium purchase, a
+    // garage credit — was not part of this charge and survives the refund. If
+    // the metadata cannot be read, premium is left untouched rather than
+    // clobbering a grant that may have been paid for separately.
+    let revokePremium = false;
+    try {
+      const intent = await stripe.paymentIntents.retrieve(listing.stripe_payment_intent_id);
+      const plan = typeof intent.metadata?.plan === "string" ? intent.metadata.plan : null;
+      revokePremium =
+        intent.metadata?.premium === "true" ||
+        intent.metadata?.premium_included === "true" ||
+        plan === "extended" ||
+        plan === "unlimited";
+    } catch (metadataError) {
+      console.warn(`refundListingIfPaid: could not read intent metadata for ${listingId}; premium left as-is`, metadataError);
+    }
+
+    // Service role, so the premium-authority trigger permits the revocation.
     const { error: updateError } = await supabaseAdmin
       .from("listings")
       .update({
         stripe_refund_id: refund.id,
         refunded_at: new Date().toISOString(),
         payment_status: "refunded",
+        ...(revokePremium ? { premium: false, is_premium: false, premium_until: null } : {}),
       })
       .eq("id", listingId);
 

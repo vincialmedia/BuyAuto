@@ -201,8 +201,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         mode: "payment",
         // /dashboard is an SSR redirect page that drops query params — the
         // return must land directly on the private dashboard so the
-        // relist=success refresh effect actually fires.
-        success_url: `${origin}/dashboard/private?relist=success&listingId=${encodeURIComponent(listingId)}`,
+        // relist=success refresh effect actually fires. Stripe substitutes
+        // {CHECKOUT_SESSION_ID}, which the dashboard passes to
+        // /api/billing/relist/verify to reconcile the payment without
+        // depending on the webhook.
+        success_url: `${origin}/dashboard/private?relist=success&listingId=${encodeURIComponent(listingId)}&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/dashboard/private?relist=cancel&listingId=${encodeURIComponent(listingId)}`,
         expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
         line_items: [

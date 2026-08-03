@@ -65,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: listing, error: fetchError } = await supabaseAdmin
       .from("listings")
-      .select("status, payment_status, user_id, created_by, stripe_payment_intent_id")
+      .select("status, payment_status, user_id, created_by, stripe_payment_intent_id, expires_at, premium, premium_until")
       .eq("id", listingId)
       .single();
 
@@ -79,9 +79,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    // The PaymentIntent must be the one currently attached to this listing.
-    // Prevents replaying an unrelated (or superseded) succeeded intent.
-    if (listing.stripe_payment_intent_id && listing.stripe_payment_intent_id !== paymentIntentId) {
+    // The PaymentIntent must be the one currently attached to this listing —
+    // never a superseded or unrelated succeeded intent. A NULL stored intent
+    // also refuses (mirroring the webhook): the free-plan path clears the
+    // column, and a refunded cycle's revert clears it too, so an orphaned
+    // intent from an earlier attempt must not be able to promote or
+    // premium-grant a listing whose current cycle never paid it.
+    if (!listing.stripe_payment_intent_id || listing.stripe_payment_intent_id !== paymentIntentId) {
       return res.status(409).json({ error: "PaymentIntent does not match this listing." });
     }
 
@@ -101,7 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       status?: "pending";
       premium?: true;
       is_premium?: true;
-      premium_until?: string;
+      premium_until?: string | null;
     } = {
       payment_status: "paid",
       price_paid_chf: Math.round(paymentIntent.amount / 100),
@@ -110,16 +114,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       update.status = "pending";
     }
 
-    // Grant the Premium Boost the buyer actually paid for. Safe to do here even
-    // though the webhook does the same: both are gated on the terminal-state
-    // check above, so whichever arrives first grants it and the other returns
-    // early — the buyer never gets 60 days for one payment. Writing it through
-    // supabaseAdmin (service role) is what the premium authority trigger allows;
-    // the same write from the caller's own session would be rejected.
-    if (paymentIntent.metadata?.premium === "true") {
+    // Grant the premium the buyer actually paid for — the 30-day Premium Boost
+    // on the standard plan, or the placement included in Verlängert/Unlimitiert
+    // (same resolution as the webhook, so both paths agree on every intent).
+    // Safe to do here even though the webhook does the same: both are gated on
+    // the terminal-state check above, so whichever arrives first grants it and
+    // the other returns early — the buyer never gets 60 days for one payment.
+    // Writing it through supabaseAdmin (service role) is what the premium
+    // authority trigger allows; the same write from the caller's own session
+    // would be rejected.
+    const plan = typeof paymentIntent.metadata?.plan === "string" ? paymentIntent.metadata.plan : null;
+    const boostPurchased = paymentIntent.metadata?.premium === "true";
+    const premiumIncluded =
+      paymentIntent.metadata?.premium_included === "true" || plan === "extended" || plan === "unlimited";
+
+    // Same replay guard as the webhook: if premium is already live (granted by
+    // the webhook arriving first), don't restart the window from now.
+    const alreadyPremium =
+      listing.premium === true &&
+      (listing.premium_until === null || Date.parse(listing.premium_until) > Date.now());
+
+    if ((boostPurchased || premiumIncluded) && !alreadyPremium) {
       update.premium = true;
       update.is_premium = true;
-      update.premium_until = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      // Included premium runs with the listing runtime. While the listing waits
+      // in review expires_at is not anchored yet, so start a provisional 90-day
+      // window — align_included_premium_on_publish re-anchors premium_until to
+      // the real runtime when the listing goes live. A stale expires_at from an
+      // earlier cycle (already in the past) must not become the anchor, or the
+      // premium would be granted pre-lapsed. Unlimited never lapses.
+      const expiresAt = typeof listing.expires_at === "string" ? listing.expires_at : null;
+      const expiresAtIsFuture = expiresAt !== null && Date.parse(expiresAt) > Date.now();
+      update.premium_until =
+        plan === "unlimited"
+          ? null
+          : premiumIncluded
+            ? (expiresAtIsFuture ? expiresAt : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString())
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     }
 
     const { error: updateError } = await supabaseAdmin

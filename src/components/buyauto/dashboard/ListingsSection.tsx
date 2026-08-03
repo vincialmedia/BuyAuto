@@ -193,10 +193,28 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     const status = typeof router.query.relist === "string" ? router.query.relist : null;
     if (!status) return;
 
-    // Back from the relist checkout: the webhook republishes the listing, so a
-    // reload is all the dashboard needs.
-    loadUserListings();
-  }, [router.query.relist, loadUserListings]);
+    // Back from the relist checkout. The webhook is the authoritative
+    // fulfiller, but it can lag (or not be delivered at all), so a successful
+    // return first reconciles the checkout server-side — the endpoint is
+    // idempotent, so whichever path runs first republishes and the other is a
+    // no-op — and then reloads the list.
+    const sessionId = typeof router.query.session_id === "string" ? router.query.session_id : null;
+    const run = async () => {
+      if (status === "success" && sessionId) {
+        try {
+          await fetch("/api/billing/relist/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId }),
+          });
+        } catch (error) {
+          console.error("Error verifying relist payment:", error);
+        }
+      }
+      loadUserListings();
+    };
+    void run();
+  }, [router.query.relist, router.query.session_id, loadUserListings]);
 
   const handleDelete = useCallback(async (listingId: string) => {
     setActionLoading(listingId);

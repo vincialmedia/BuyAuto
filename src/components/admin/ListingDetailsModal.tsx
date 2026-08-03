@@ -87,12 +87,14 @@ function getStatusBadge(status: ListingStatus) {
   }
 }
 
-function guessPrivateListingType(durationDays: number | null, expiresAt: string | null): PrivateListingType {
-  if (!durationDays || !expiresAt) return "unlimited";
+function guessPrivateListingType(durationDays: number | null): PrivateListingType {
+  // expires_at says nothing about the plan here: a paid listing waiting in
+  // review deliberately has no expiry yet (the runtime only starts at
+  // publication), so the type is derived from duration_days alone — which is
+  // also what the dropdown writes back.
+  if (durationDays === null) return "unlimited";
   const freeDays = pricingPlans.standard.duration_days;
-  const extDays = pricingPlans.extended.duration_days;
   if (durationDays === freeDays) return "free";
-  if (durationDays === extDays) return "extended";
   return "extended";
 }
 
@@ -275,8 +277,8 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
   };
 
   const privateTypeValue = useMemo(
-    () => guessPrivateListingType(listing.duration_days ?? null, listing.expires_at ?? null),
-    [listing.duration_days, listing.expires_at]
+    () => guessPrivateListingType(listing.duration_days ?? null),
+    [listing.duration_days]
   );
 
   return (
