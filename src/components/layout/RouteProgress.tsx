@@ -36,10 +36,19 @@ export default function RouteProgress() {
       timersRef.current = {};
     };
 
+    const reset = () => {
+      clearTimers();
+      shownRef.current = false;
+      setBar({ visible: false, progress: 0 });
+    };
+
     const start = (_url: string, opts?: { shallow?: boolean }) => {
       // Shallow transitions swap the URL without fetching anything.
       if (opts?.shallow) return;
-      clearTimers();
+      // Unmount any leftover bar (a finished or cancelled navigation moments
+      // ago) so the fresh one mounts at its start width instead of visibly
+      // animating backwards from the old width.
+      reset();
       timersRef.current.show = setTimeout(() => {
         shownRef.current = true;
         setBar({ visible: true, progress: 10 });
@@ -64,14 +73,25 @@ export default function RouteProgress() {
       }, HIDE_AFTER_DONE_MS);
     };
 
+    const error = (err: unknown) => {
+      // A cancelled navigation means another one is taking over (its
+      // routeChangeStart follows immediately) — vanish instead of flashing
+      // the done state.
+      if ((err as { cancelled?: boolean } | null)?.cancelled) {
+        reset();
+        return;
+      }
+      stop();
+    };
+
     Router.events.on("routeChangeStart", start);
     Router.events.on("routeChangeComplete", stop);
-    Router.events.on("routeChangeError", stop);
+    Router.events.on("routeChangeError", error);
 
     return () => {
       Router.events.off("routeChangeStart", start);
       Router.events.off("routeChangeComplete", stop);
-      Router.events.off("routeChangeError", stop);
+      Router.events.off("routeChangeError", error);
       clearTimers();
     };
   }, []);

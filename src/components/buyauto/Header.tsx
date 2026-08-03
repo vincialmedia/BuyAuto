@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
-import { User, LogOut, Settings, BarChart3, Plus, Loader2, ChevronDown, Car, Coins } from "lucide-react";
+import { User, LogOut, Settings, BarChart3, Plus, ChevronDown, Car, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -89,13 +89,9 @@ export default function Header() {
 
   return (
     <>
-      {/* Full Screen Loading Overlay */}
-      {isNavigating && (
-        <div className="fixed inset-0 z-[100] bg-white/60 backdrop-blur-sm flex items-center justify-center">
-          <Loader2 className="w-12 h-12 text-red-500 animate-spin" />
-        </div>
-      )}
-
+      {/* Navigation feedback lives in the global RouteProgress bar now —
+          isNavigating stays only as a double-click guard. A second overlay
+          here would stack a full-screen spinner on top of it. */}
       <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 md:h-20 gap-2">

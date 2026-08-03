@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Loader2, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,14 +22,21 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  // Indexes whose image finished loading, per surface. The lightbox requests
-  // a larger candidate than the main surface on desktop, so the two are
-  // tracked separately.
-  const [loadedMain, setLoadedMain] = useState<Set<number>>(() => new Set());
-  const [loadedLightbox, setLoadedLightbox] = useState<Set<number>>(() => new Set());
+  // Source URLs whose image finished loading, per surface. The lightbox
+  // requests a larger candidate than the main surface on desktop, so the two
+  // are tracked separately. Keyed by src (read back from the DOM in the load
+  // handler), not by index: an index captured in the onLoad closure can be
+  // stale by the time the browser finishes decoding.
+  const [loadedMain, setLoadedMain] = useState<Set<string>>(() => new Set());
+  const [loadedLightbox, setLoadedLightbox] = useState<Set<string>>(() => new Set());
   // Only preload carousel neighbours once the visitor actually navigates —
   // never on plain page load, where it would compete with the LCP image.
   const [hasNavigated, setHasNavigated] = useState(false);
+  // The spinner must not exist in the server HTML: the SSR'd hero image often
+  // finishes loading before hydration, and a pre-hydration spinner would sit
+  // on top of the finished photo (forever, with JS disabled).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const validImages = images.filter(Boolean);
   const alt = `${brand} ${model}`;
@@ -45,14 +52,21 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
     );
   }
 
-  const markLoaded = (setter: typeof setLoadedMain, index: number) => {
+  // Reads the source URL back off the <img> that fired the event — by the
+  // time load/decode completes, render-time index variables may point at a
+  // different photo.
+  const markLoaded = (setter: typeof setLoadedMain) => (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const src = e.currentTarget.getAttribute("data-gallery-src");
+    if (!src) return;
     setter((prev) => {
-      if (prev.has(index)) return prev;
+      if (prev.has(src)) return prev;
       const next = new Set(prev);
-      next.add(index);
+      next.add(src);
       return next;
     });
   };
+  const markMainLoaded = markLoaded(setLoadedMain);
+  const markLightboxLoaded = markLoaded(setLoadedLightbox);
 
   const goToImage = (index: number) => {
     setHasNavigated(true);
@@ -99,8 +113,8 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
     }
   }
 
-  const mainLoaded = loadedMain.has(currentIndex);
-  const lightboxLoaded = loadedLightbox.has(lightboxIndex);
+  const mainLoaded = loadedMain.has(validImages[currentIndex]);
+  const lightboxLoaded = loadedLightbox.has(validImages[lightboxIndex]);
 
   return (
     <>
@@ -117,13 +131,14 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
               priority
               quality={IMAGE_QUALITY}
               onClick={() => openLightbox(currentIndex)}
-              onLoad={() => markLoaded(setLoadedMain, currentIndex)}
-              onError={() => markLoaded(setLoadedMain, currentIndex)}
+              data-gallery-src={validImages[currentIndex]}
+              onLoad={markMainLoaded}
+              onError={markMainLoaded}
             />
           )}
 
           {/* Loading spinner while the current image is still in flight */}
-          {!mainLoaded && (
+          {mounted && !mainLoaded && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in-delayed">
               <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 shadow-lg">
                 <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
@@ -253,18 +268,24 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
 
             {/* Image Container */}
             <div className="relative w-full h-full max-w-5xl max-h-[85vh] flex items-center justify-center">
-              {/* Instant underlay: the main surface already fetched this exact
-                  URL, so it paints from cache while the larger candidate
-                  above it finishes loading. */}
-              <Image
-                src={validImages[lightboxIndex]}
-                alt=""
-                fill
-                aria-hidden
-                className="object-contain"
-                sizes={MAIN_SIZES}
-                quality={IMAGE_QUALITY}
-              />
+              {/* Instant underlay — only when the main surface already
+                  fetched this exact URL, so it paints straight from cache
+                  while the larger candidate above it finishes loading. For
+                  images never shown on the main surface it would be a second
+                  full network fetch for nothing, so it stays out. Stays
+                  mounted after the overlay loads — unmounting mid-fade would
+                  flash the black backdrop through the fading overlay. */}
+              {loadedMain.has(validImages[lightboxIndex]) && (
+                <Image
+                  src={validImages[lightboxIndex]}
+                  alt=""
+                  fill
+                  aria-hidden
+                  className="object-contain"
+                  sizes={MAIN_SIZES}
+                  quality={IMAGE_QUALITY}
+                />
+              )}
               <Image
                 src={validImages[lightboxIndex]}
                 alt={`${alt} - Bild ${lightboxIndex + 1}`}
@@ -272,8 +293,9 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                 className={`object-contain transition-opacity duration-200 ${lightboxLoaded ? "opacity-100" : "opacity-0"}`}
                 sizes={LIGHTBOX_SIZES}
                 quality={IMAGE_QUALITY}
-                onLoad={() => markLoaded(setLoadedLightbox, lightboxIndex)}
-                onError={() => markLoaded(setLoadedLightbox, lightboxIndex)}
+                data-gallery-src={validImages[lightboxIndex]}
+                onLoad={markLightboxLoaded}
+                onError={markLightboxLoaded}
               />
 
               {/* Loading spinner while the full-size image is in flight */}
