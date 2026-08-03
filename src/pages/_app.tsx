@@ -3,6 +3,7 @@ import { Manrope, Caveat } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import MainLayout from "@/components/layout/MainLayout";
+import RouteProgress from "@/components/layout/RouteProgress";
 import AuthProvider from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 // Second toast system: 11 files (the whole create-listing wizard among them)
@@ -118,6 +119,9 @@ export default function App({ Component, pageProps }: AppProps) {
             </Head>
           ) : null}
         </MainLayout>
+        {/* Same carve-out as MainLayout: embeds are iframed on third-party
+            sites and must stay free of BuyAuto chrome. */}
+        {router.pathname === "/embed" || router.pathname.startsWith("/embed/") ? null : <RouteProgress />}
         <Toaster />
         <RadixToaster />
         <Analytics />
