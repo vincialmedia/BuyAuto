@@ -65,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: listing, error: fetchError } = await supabaseAdmin
       .from("listings")
-      .select("status, payment_status, user_id, created_by, stripe_payment_intent_id, expires_at")
+      .select("status, payment_status, user_id, created_by, stripe_payment_intent_id, expires_at, premium, premium_until")
       .eq("id", listingId)
       .single();
 
@@ -79,9 +79,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    // The PaymentIntent must be the one currently attached to this listing.
-    // Prevents replaying an unrelated (or superseded) succeeded intent.
-    if (listing.stripe_payment_intent_id && listing.stripe_payment_intent_id !== paymentIntentId) {
+    // The PaymentIntent must be the one currently attached to this listing —
+    // never a superseded or unrelated succeeded intent. A NULL stored intent
+    // also refuses (mirroring the webhook): the free-plan path clears the
+    // column, and a refunded cycle's revert clears it too, so an orphaned
+    // intent from an earlier attempt must not be able to promote or
+    // premium-grant a listing whose current cycle never paid it.
+    if (!listing.stripe_payment_intent_id || listing.stripe_payment_intent_id !== paymentIntentId) {
       return res.status(409).json({ error: "PaymentIntent does not match this listing." });
     }
 
@@ -123,18 +127,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const boostPurchased = paymentIntent.metadata?.premium === "true";
     const premiumIncluded =
       paymentIntent.metadata?.premium_included === "true" || plan === "extended" || plan === "unlimited";
-    if (boostPurchased || premiumIncluded) {
+
+    // Same replay guard as the webhook: if premium is already live (granted by
+    // the webhook arriving first), don't restart the window from now.
+    const alreadyPremium =
+      listing.premium === true &&
+      (listing.premium_until === null || Date.parse(listing.premium_until) > Date.now());
+
+    if ((boostPurchased || premiumIncluded) && !alreadyPremium) {
       update.premium = true;
       update.is_premium = true;
       // Included premium runs with the listing runtime. While the listing waits
       // in review expires_at is not anchored yet, so start a provisional 90-day
       // window — align_included_premium_on_publish re-anchors premium_until to
-      // the real runtime when the listing goes live. Unlimited never lapses.
+      // the real runtime when the listing goes live. A stale expires_at from an
+      // earlier cycle (already in the past) must not become the anchor, or the
+      // premium would be granted pre-lapsed. Unlimited never lapses.
+      const expiresAt = typeof listing.expires_at === "string" ? listing.expires_at : null;
+      const expiresAtIsFuture = expiresAt !== null && Date.parse(expiresAt) > Date.now();
       update.premium_until =
         plan === "unlimited"
           ? null
           : premiumIncluded
-            ? (listing.expires_at as string | null) ?? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+            ? (expiresAtIsFuture ? expiresAt : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString())
             : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     }
 

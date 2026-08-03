@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe-server";
 import Stripe from "stripe";
 import { buffer } from "micro";
 import { adminService } from "@/services/adminService";
+import { fulfillListingRelist } from "@/lib/billing/relist-fulfillment";
 
 export const config = {
   api: {
@@ -199,95 +200,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           break;
         }
 
-        const { data: listing } = await supabaseAdmin
-          .from("listings")
-          .select("status, duration_days, price_plan")
-          .eq("id", listingId)
-          .single();
+        // Shared with /api/billing/relist/verify (the client-return
+        // reconciliation), so both paths apply the identical republish write.
+        // Service role, so the premium- and status-authority triggers permit
+        // the writes.
+        const result = await fulfillListingRelist(supabaseAdmin, listingId, safeString(metadata.relist_plan));
 
-        if (!listing) {
-          console.warn(`Webhook: listing ${listingId} not found for listing_relist`);
-          break;
-        }
-
-        // Idempotency: only an expired listing gets republished. A retried
-        // webhook delivery sees 'published' and does nothing.
-        if (listing.status !== "expired") {
-          console.warn(`Webhook: listing ${listingId} is ${listing.status}, not expired; skipping relist`);
-          break;
-        }
-
-        const nowIso = new Date().toISOString();
-        const upgradeToExtended = safeString(metadata.relist_plan) === "extended";
-
-        if (upgradeToExtended) {
-          // Paid relist-upsell: the listing becomes Verlängert — 90 days with
-          // premium for the whole runtime. Service role, so the premium- and
-          // status-authority triggers permit the writes.
-          const expiresAt = addDaysIso(nowIso, 90);
-          const { error: upgradeError } = await supabaseAdmin
-            .from("listings")
-            .update({
-              status: "published",
-              price_plan: "extended",
-              pricing_plan: "extended",
-              duration_days: 90,
-              expires_at: expiresAt,
-              premium: true,
-              is_premium: true,
-              premium_until: expiresAt,
-              updated_at: nowIso,
-            })
-            .eq("id", listingId);
-
-          if (upgradeError) {
-            console.error("Webhook: Failed to relist listing as extended", { listingId, upgradeError });
-            fulfillmentError = true;
-          } else {
-            // Reset the expiry-reminder dedupe for the new runtime: the unique
-            // key is (kind, entity, recipient), so last cycle's rows would
-            // suppress every reminder before the next expiry.
-            await supabaseAdmin
-              .from("email_notification_log")
-              .delete()
-              .eq("kind", "listing_expiry_reminder")
-              .eq("entity_id", listingId);
-          }
-
-          break;
-        }
-
-        const durationDays = typeof listing.duration_days === "number" ? listing.duration_days : 60;
-        const keepExpiresAt = addDaysIso(nowIso, durationDays);
-
-        // A Verlängert listing renews with its plan perks: premium placement
-        // is included for the whole (new) runtime.
-        const keepUpdate: Record<string, unknown> = {
-          status: "published",
-          expires_at: keepExpiresAt,
-          updated_at: nowIso,
-        };
-        if (listing.price_plan === "extended") {
-          keepUpdate.premium = true;
-          keepUpdate.is_premium = true;
-          keepUpdate.premium_until = keepExpiresAt;
-        }
-
-        const { error: relistError } = await supabaseAdmin
-          .from("listings")
-          .update(keepUpdate)
-          .eq("id", listingId);
-
-        if (relistError) {
-          console.error("Webhook: Failed to republish listing after relist payment", { listingId, relistError });
+        if (result.outcome === "failed") {
+          console.error("Webhook: Failed to republish listing after relist payment", { listingId, error: result.error });
           fulfillmentError = true;
-        } else {
-          // Same dedupe reset as the upgrade path above.
-          await supabaseAdmin
-            .from("email_notification_log")
-            .delete()
-            .eq("kind", "listing_expiry_reminder")
-            .eq("entity_id", listingId);
+        } else if (result.outcome === "skipped") {
+          console.warn(`Webhook: skipping relist for listing ${listingId}: ${result.reason}`);
         }
 
         break;
@@ -510,11 +433,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         if ((boostPurchased || premiumIncluded) && !alreadyPremium && listing.payment_status !== "refunded") {
           const nowIso = new Date().toISOString();
+          // A stale expires_at from an earlier cycle (already in the past) must
+          // not become the anchor, or the premium would be granted pre-lapsed —
+          // align_included_premium_on_publish re-anchors at publication anyway.
+          const expiresAtIsFuture =
+            typeof listing.expires_at === "string" && Date.parse(listing.expires_at) > Date.now();
           const premiumUntil =
             plan === "unlimited"
               ? null
               : premiumIncluded
-                ? listing.expires_at ?? addDaysIso(nowIso, 90)
+                ? (expiresAtIsFuture ? listing.expires_at : addDaysIso(nowIso, 90))
                 : addDaysIso(nowIso, 30);
 
           const { error: premiumError } = await supabaseAdmin
