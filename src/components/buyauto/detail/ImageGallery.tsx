@@ -156,9 +156,12 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
             </div>
           </div>
 
-          {/* Navigation for mobile carousel */}
+          {/* Navigation for mobile carousel. pointer-events-none on the
+              container: it spans the whole photo, and as a hit target it
+              swallowed every tap that wasn't on an arrow — making the
+              lightbox unreachable on mobile. Only the arrows take taps. */}
           {validImages.length > 1 && (
-            <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 md:hidden">
+            <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 md:hidden">
               <Button
                 variant="ghost"
                 size="sm"
@@ -166,7 +169,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                   e.stopPropagation();
                   goToImage((currentIndex - 1 + validImages.length) % validImages.length);
                 }}
-                className="bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full w-10 h-10 p-0 shadow-lg"
+                className="pointer-events-auto bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full w-10 h-10 p-0 shadow-lg"
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -177,7 +180,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                   e.stopPropagation();
                   goToImage((currentIndex + 1) % validImages.length);
                 }}
-                className="bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full w-10 h-10 p-0 shadow-lg"
+                className="pointer-events-auto bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full w-10 h-10 p-0 shadow-lg"
               >
                 <ChevronRight className="w-5 h-5" />
               </Button>
