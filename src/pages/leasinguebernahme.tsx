@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/accordion";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 // Dynamically import heavy interactive components that are below the fold
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -225,6 +226,14 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme" />
       </Head>
+
+      {/* Schema-only: hero layout has no room for a visible crumb bar. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Leasingübernahme", href: "/leasinguebernahme" },
+        ]}
+      />
 
       <main className={`bg-white min-h-screen ${showStickyCTA ? "pb-24 md:pb-0" : ""}`}>
         

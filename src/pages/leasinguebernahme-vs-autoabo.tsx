@@ -28,6 +28,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Image from "next/image";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 // Dynamically import heavy interactive components
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -151,6 +152,15 @@ export default function LeasingubernahmeVsAutoAboPage() {
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
       </Head>
+
+      {/* Schema-only: hero layout has no room for a visible crumb bar. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Leasingübernahme", href: "/leasinguebernahme" },
+          { name: "Übernahme vs. Auto-Abo", href: "/leasinguebernahme-vs-autoabo" },
+        ]}
+      />
 
       <main className="bg-neutral-50 min-h-screen">
         

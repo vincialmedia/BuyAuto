@@ -14,6 +14,7 @@ import type { GaragePublicInfo } from "@/services/garageService";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref, buildListingSlugSegment, extractListingIdFromParam } from "@/lib/buyauto/listingUrl";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
   // No extra top margin: the bottomContent wrapper already applies mt-10,
@@ -396,6 +397,15 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
           dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleJsonLd) }}
         />
       </Head>
+
+      {/* Schema-only: the detail layout has no room for a visible crumb bar. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Fahrzeugsuche", href: "/suche" },
+          { name: seoName, href: buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model }) },
+        ]}
+      />
 
       {/* Stacks below the global sticky header (h-16 md:h-20), not under it. */}
       <div className="bg-white border-b border-neutral-200 sticky top-16 md:top-20 z-20">

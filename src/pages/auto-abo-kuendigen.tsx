@@ -26,6 +26,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Image from "next/image";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 // Dynamically import heavy interactive components
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -78,6 +79,15 @@ export default function AutoAboKuendigenPage() {
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/auto-abo-kuendigen" />
       </Head>
+
+      {/* Schema-only: hero layout has no room for a visible crumb bar. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Auto-Abos im Vergleich", href: "/auto-abos-im-vergleich" },
+          { name: "Auto-Abo kündigen", href: "/auto-abo-kuendigen" },
+        ]}
+      />
 
       <main className="bg-neutral-50 min-h-screen">
         

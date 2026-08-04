@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/accordion";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 // Mirrors CalculatorSkeleton in AutoAboVsLeasingCalculator.tsx (duplicated here so the
 // calculator chunk stays code-split); the calculator renders the same skeleton until its
@@ -175,6 +176,15 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       </Head>
+
+      {/* Schema-only: hero layout has no room for a visible crumb bar. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Auto-Abos im Vergleich", href: "/auto-abos-im-vergleich" },
+          { name: "Auto-Abo vs. Leasing Kosten", href: "/auto-abo-vs-leasing-kosten" },
+        ]}
+      />
 
       <main className="bg-neutral-50 min-h-screen">
         

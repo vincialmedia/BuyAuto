@@ -298,12 +298,6 @@ export default function AutoAbosImVergleichPage() {
           {
             "@type": "ListItem",
             position: 2,
-            name: "Auto-Abo",
-            item: "https://www.buyauto.ch/leasinguebernahme",
-          },
-          {
-            "@type": "ListItem",
-            position: 3,
             name: "Auto-Abos im Vergleich",
             item: "https://www.buyauto.ch/auto-abos-im-vergleich",
           },

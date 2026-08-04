@@ -9,12 +9,11 @@ export interface Crumb {
 }
 
 /**
- * Visible breadcrumb nav + BreadcrumbList JSON-LD in one component. Renders the structured
- * data inline (Google reads JSON-LD anywhere in the DOM), so pages just drop this near the
- * top of their <main>. Declares the page's place in the cluster hierarchy and is eligible
- * for breadcrumb rich results.
+ * BreadcrumbList JSON-LD without the visible nav, for pages whose hero layout leaves no
+ * room for a crumb bar. Same data shape as Breadcrumbs, so the cluster hierarchy stays
+ * consistent whichever variant a page uses.
  */
-export function Breadcrumbs({ items, className = "" }: { items: Crumb[]; className?: string }) {
+export function BreadcrumbJsonLd({ items }: { items: Crumb[] }) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -26,6 +25,16 @@ export function Breadcrumbs({ items, className = "" }: { items: Crumb[]; classNa
     })),
   };
 
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
+}
+
+/**
+ * Visible breadcrumb nav + BreadcrumbList JSON-LD in one component. Renders the structured
+ * data inline (Google reads JSON-LD anywhere in the DOM), so pages just drop this near the
+ * top of their <main>. Declares the page's place in the cluster hierarchy and is eligible
+ * for breadcrumb rich results.
+ */
+export function Breadcrumbs({ items, className = "" }: { items: Crumb[]; className?: string }) {
   return (
     <nav aria-label="Breadcrumb" className={`flex flex-wrap items-center gap-1.5 text-sm text-neutral-500 ${className}`}>
       {items.map((c, i) => {
@@ -43,7 +52,7 @@ export function Breadcrumbs({ items, className = "" }: { items: Crumb[]; classNa
           </span>
         );
       })}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <BreadcrumbJsonLd items={items} />
     </nav>
   );
 }
