@@ -178,7 +178,7 @@ export function LeaseTakeoverFinancingDetailsForm({
             )}
 
             <p className="text-xs text-neutral-500 font-light">
-              Wählen Sie das Enddatum Ihres Leasingvertrags. Die Restlaufzeit wird automatisch berechnet.
+              Wähle das Enddatum deines Leasingvertrags. Die Restlaufzeit wird automatisch berechnet.
             </p>
           </div>
 

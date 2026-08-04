@@ -186,11 +186,11 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
 
   const description = isGarage
     ? isPublished
-      ? "Ihr Inserat ist jetzt live."
-      : "Ihr Inserat wurde erfolgreich übermittelt und wird in Kürze veröffentlicht."
+      ? "Dein Inserat ist jetzt live."
+      : "Dein Inserat wurde erfolgreich übermittelt und wird in Kürze veröffentlicht."
     : isPublished
-      ? "Hier ist die Zusammenfassung Ihres Inserats."
-      : "Ihr Inserat wurde zur Überprüfung eingereicht. Sie werden benachrichtigt, sobald es veröffentlicht wird. Dies dauert in der Regel 2-4 Stunden.";
+      ? "Hier ist die Zusammenfassung deines Inserats."
+      : "Dein Inserat wurde zur Überprüfung eingereicht. Du wirst benachrichtigt, sobald es veröffentlicht wird. Dies dauert in der Regel 2-4 Stunden.";
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">

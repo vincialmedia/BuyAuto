@@ -124,7 +124,7 @@ export default function LeasingvertragUebertragenPage() {
                   name: "Muss ich das Fahrzeug vor der Übergabe prüfen lassen?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeiden Sie spätere Streitigkeiten.",
+                    text: "Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeidest du spätere Streitigkeiten.",
                   },
                 },
                 {
@@ -192,10 +192,10 @@ export default function LeasingvertragUebertragenPage() {
                   Leasingvertrag übertragen in der Schweiz
                 </h1>
                 <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Ihr Leitfaden zur erfolgreichen Vertragsübertragung
+                  Dein Leitfaden zur erfolgreichen Vertragsübertragung
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Alles Wichtige zur Übertragung Ihres Leasingvertrags: Ablauf, Voraussetzungen, Kosten und rechtliche Hinweise.
+                  Alles Wichtige zur Übertragung deines Leasingvertrags: Ablauf, Voraussetzungen, Kosten und rechtliche Hinweise.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -237,7 +237,7 @@ export default function LeasingvertragUebertragenPage() {
             
             <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Die Übertragung eines <strong>Leasingvertrags</strong> bedeutet, dass Sie Ihre laufende Leasing-Verpflichtung an eine andere Person weitergeben. Der neue Vertragspartner übernimmt alle Rechte und Pflichten aus dem bestehenden Vertrag.
+                Die Übertragung eines <strong>Leasingvertrags</strong> bedeutet, dass du deine laufende Leasing-Verpflichtung an eine andere Person weitergibst. Der neue Vertragspartner übernimmt alle Rechte und Pflichten aus dem bestehenden Vertrag.
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
                 Dieser Prozess wird auch als <strong>Leasingübernahme</strong> oder <strong>Leasing Transfer</strong> bezeichnet.
@@ -306,7 +306,7 @@ export default function LeasingvertragUebertragenPage() {
                 <Card className="border-2 border-primary/20 mb-8">
                   <CardContent className="p-8">
                     <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                      Wenn Sie Ihren <strong>Leasingvertrag übertragen</strong>, geben Sie alle Rechte und Pflichten aus dem Vertrag an eine andere Person weiter. Diese übernimmt:
+                      Wenn du deinen <strong>Leasingvertrag übertragen</strong> willst, gibst du alle Rechte und Pflichten aus dem Vertrag an eine andere Person weiter. Diese übernimmt:
                     </p>
                     <ul className="space-y-3 ml-4">
                       {[
@@ -415,7 +415,7 @@ export default function LeasingvertragUebertragenPage() {
               <div className="flex items-center justify-center gap-3 mb-4">
                 <ChevronRight className="w-8 h-8 text-primary" />
                 <h2 className="text-3xl font-bold text-neutral-900">
-                  Ablauf: So übertragen Sie Ihren Leasingvertrag
+                  Ablauf: So überträgst du deinen Leasingvertrag
                 </h2>
               </div>
               <p className="text-lg text-neutral-600">
@@ -433,7 +433,7 @@ export default function LeasingvertragUebertragenPage() {
                   {
                     step: 1,
                     title: "Vertragsprüfung",
-                    desc: "Prüfen Sie zunächst die Details Ihres Leasingvertrags:",
+                    desc: "Prüfe zunächst die Details deines Leasingvertrags:",
                     items: [
                       "Restlaufzeit",
                       "Monatliche Rate",
@@ -446,14 +446,14 @@ export default function LeasingvertragUebertragenPage() {
                   {
                     step: 2,
                     title: "Neuen Vertragspartner finden",
-                    desc: "Erstellen Sie ein Inserat oder kontaktieren Sie Interessenten. Je transparenter Ihre Angaben, desto schneller die Übertragung.",
+                    desc: "Erstelle ein Inserat oder kontaktiere Interessenten. Je transparenter deine Angaben, desto schneller die Übertragung.",
                     items: [],
                     icon: Search
                   },
                   {
                     step: 3,
                     title: "Kontakt zur Leasingbank",
-                    desc: "Informieren Sie Ihre Leasingbank über die geplante Übertragung. Die Bank wird:",
+                    desc: "Informiere deine Leasingbank über die geplante Übertragung. Die Bank wird:",
                     items: [
                       "Die Bonität des neuen Vertragspartners prüfen",
                       "Erforderliche Dokumente anfordern",
@@ -527,7 +527,7 @@ export default function LeasingvertragUebertragenPage() {
             </div>
             
             <p className="text-lg text-neutral-600 mb-8">
-              Die Kosten variieren je nach Leasingbank und Vereinbarung – in unserem Ratgeber finden Sie{" "}
+              Die Kosten variieren je nach Leasingbank und Vereinbarung – in unserem Ratgeber findest du{" "}
               <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">
                 alle Kosten der Leasingübernahme im Detail
               </Link>
@@ -645,7 +645,7 @@ export default function LeasingvertragUebertragenPage() {
                   ))}
                 </ul>
                 <p className="mt-6 text-neutral-700">
-                  Wie Sie als Abgeber Schritt für Schritt vorgehen, zeigt unser Ratgeber{" "}
+                  Wie du als Abgeber Schritt für Schritt vorgehst, zeigt unser Ratgeber{" "}
                   <Link href="/leasing-abgeben-schweiz" className="text-primary font-semibold hover:underline">
                     Leasing abgeben in der Schweiz
                   </Link>
@@ -731,22 +731,22 @@ export default function LeasingvertragUebertragenPage() {
               {[
                 {
                   title: "Transparente Kommunikation",
-                  desc: "Seien Sie ehrlich über Zustand und Konditionen",
+                  desc: "Sei ehrlich über Zustand und Konditionen",
                   icon: Users
                 },
                 {
                   title: "Dokumentation",
-                  desc: "Erstellen Sie ein detailliertes Übergabeprotokoll",
+                  desc: "Erstelle ein detailliertes Übergabeprotokoll",
                   icon: FileCheck
                 },
                 {
                   title: "Zeitplanung",
-                  desc: "Rechnen Sie mit 1-2 Wochen Bearbeitungszeit",
+                  desc: "Rechne mit 1-2 Wochen Bearbeitungszeit",
                   icon: Clock
                 },
                 {
                   title: "Vertragscheck",
-                  desc: "Prüfen Sie alle Vertragsbedingungen genau",
+                  desc: "Prüfe alle Vertragsbedingungen genau",
                   icon: ShieldCheck
                 }
               ].map((item, i) => {
@@ -838,7 +838,7 @@ export default function LeasingvertragUebertragenPage() {
                   Muss ich das Fahrzeug vor der Übergabe prüfen lassen?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeiden Sie spätere Streitigkeiten.
+                  Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeidest du spätere Streitigkeiten.
                 </AccordionContent>
               </AccordionItem>
 
@@ -864,7 +864,7 @@ export default function LeasingvertragUebertragenPage() {
               Bereit für die Vertragsübertragung?
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Erstellen Sie jetzt ein kostenloses Inserat – oder Sie können direkt alle{" "}
+              Erstelle jetzt ein kostenloses Inserat – oder du kannst direkt alle{" "}
               <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">
                 verfügbaren Leasingübernahmen durchsuchen
               </Link>
