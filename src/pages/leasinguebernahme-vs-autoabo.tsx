@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import React from "react";
@@ -38,6 +39,9 @@ const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
 const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
   loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
 });
+
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-vs-autoabo"];
 
 export default function LeasingubernahmeVsAutoAboPage() {
   const [showStickyCTA, setShowStickyCTA] = React.useState(false);
@@ -81,7 +85,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme-vs-autoabo",
             }),
           }}
@@ -235,16 +239,19 @@ export default function LeasingubernahmeVsAutoAboPage() {
               <div className="max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <FileCheck className="w-4 h-4" />
-                  Detaillierter Vergleich
+                  Detaillierter Vergleich · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
                   Leasingübernahme vs. Auto-Abo
                 </h1>
                 <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Welches Modell passt zu Ihnen?
+                  Welches Modell passt zu dir?
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Umfassender Vergleich von Leasingübernahme und Auto-Abo: Kosten, Flexibilität und Vorteile für Ihre perfekte Mobilitätslösung.
+                  Die Leasingübernahme ist meist günstiger: Du übernimmst einen laufenden Vertrag für dessen
+                  Restlaufzeit und zahlst Versicherung und Service separat – auf 12 Monate rund 6'000–12'000 CHF
+                  Gesamtkosten. Das Auto-Abo kostet mit 7'200–14'400 CHF mehr, weil alles im Fixpreis steckt,
+                  ist dafür monatlich kündbar. Faustregel: Übernahme fürs Budget, Abo für maximale Flexibilität.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">

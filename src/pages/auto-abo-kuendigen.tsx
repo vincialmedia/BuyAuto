@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -37,6 +38,9 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
   loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
 });
 
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/auto-abo-kuendigen"];
+
 export default function AutoAboKuendigenPage() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -67,7 +71,7 @@ export default function AutoAboKuendigenPage() {
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/auto-abo-kuendigen",
             }),
           }}
@@ -119,7 +123,7 @@ export default function AutoAboKuendigenPage() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <FileCheck className="w-4 h-4" />
-                  Kündigungsratgeber
+                  Kündigungsratgeber · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
                   Auto-Abo kündigen
@@ -128,7 +132,10 @@ export default function AutoAboKuendigenPage() {
                   Fristen, Kosten & Alternativen
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Ihr umfassender Ratgeber zur Kündigung Ihres Auto-Abos in der Schweiz. Erfahren Sie alles über Kündigungsfristen, Kosten und welche Alternativen Sie haben.
+                  Die Kündigungsfrist bei Auto-Abos in der Schweiz beträgt üblicherweise 1–3 Monate; kündigen
+                  musst du schriftlich, meist per E-Mail oder direkt im Kundenkonto. Prüfe vorher dein
+                  Vertragsende und allfällige Mindestlaufzeiten, sonst drohen Zusatzkosten. Danach lohnt sich
+                  der Vergleich: Eine Leasingübernahme ist oft die günstigere Alternative.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">

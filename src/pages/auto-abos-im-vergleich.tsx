@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -38,6 +39,9 @@ const PremiumListings = dynamic(
     loading: () => <div className="w-full min-h-[600px] bg-neutral-100 animate-pulse" />,
   }
 );
+
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/auto-abos-im-vergleich"];
 
 export default function AutoAbosImVergleichPage() {
   const providers = [
@@ -328,7 +332,7 @@ export default function AutoAbosImVergleichPage() {
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/auto-abos-im-vergleich",
             }),
           }}
@@ -376,9 +380,13 @@ export default function AutoAbosImVergleichPage() {
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
               Auto-Abos im Vergleich: Anbieter & Alternativen in der Schweiz
             </h1>
-            <p className="text-lg md:text-xl text-neutral-200 mb-8 max-w-3xl mx-auto">
-              Auto-Abo ist das Sorglos-Paket: Fixpreis, wenig Aufwand, schnell. Aber: All-inclusive ist bequem — und genau deshalb oft nicht die günstigste Option. Hier ist der faire Vergleich.
+            <p className="text-lg md:text-xl text-neutral-200 mb-4 max-w-3xl mx-auto">
+              Die wichtigsten Auto-Abo-Anbieter in der Schweiz sind Carify, Carvolution, Clyde, FlatDrive und
+              SIXT+ — dazu kommt die Leasingübernahme als flexible Alternative. Auto-Abo ist das Sorglos-Paket:
+              Fixpreis, wenig Aufwand, schnell. Aber: All-inclusive ist bequem — und genau deshalb oft nicht die
+              günstigste Option. Hier ist der faire Vergleich.
             </p>
+            <p className="text-sm text-neutral-400 mb-8">Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}</p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button

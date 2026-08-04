@@ -44,6 +44,7 @@ import {
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 
 // Dynamically import heavy interactive components that are below the fold
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -61,6 +62,9 @@ type LeasingUebernahmePageProps = {
   // linked from the brand section — empty brand pages are noindex and must stay unlinked.
   availableBrands: { slug: string; name: string }[];
 };
+
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme"];
 
 export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal, availableBrands }: LeasingUebernahmePageProps) {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
@@ -106,7 +110,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme",
             }),
           }}
@@ -305,7 +309,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               <div className="max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-white px-5 py-2 rounded-full text-sm font-semibold mb-6 backdrop-blur-sm border border-primary/20">
                   <Sparkles className="w-4 h-4" />
-                  Kompletter Leitfaden
+                  Kompletter Leitfaden · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
                 </div>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-6">
                   Leasingübernahme & Leasing Transfer in der Schweiz
@@ -314,7 +318,11 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                   Der komplette Leitfaden zur Vertragsübertragung
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8">
-                  Erfahre, wie du einen bestehenden Leasingvertrag übernehmen oder übertragen kannst – inklusive Ablauf, Voraussetzungen, Kosten und praxisnahen Tipps für Käufer und Abgeber.
+                  Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag samt Monatsrate und
+                  Restlaufzeit von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer. Die
+                  Leasinggesellschaft prüft deine Bonität und stimmt der Übernahme zu – eine hohe Anzahlung wie
+                  beim Neuleasing entfällt. Einmalig fallen je nach Leasinggeber rund 200–650 CHF für Transfer
+                  und Umschreibung an.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">

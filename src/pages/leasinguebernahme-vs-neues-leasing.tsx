@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -38,6 +39,9 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
   loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
 });
 
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-vs-neues-leasing"];
+
 export default function LeasingubernahmeVsNeuesLeasingPage() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -68,7 +72,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme-vs-neues-leasing",
             }),
           }}
@@ -120,16 +124,20 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <FileCheck className="w-4 h-4" />
-                  Detaillierter Vergleich
+                  Detaillierter Vergleich · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
                   Leasingübernahme vs. Neues Leasing
                 </h1>
                 <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Welche Option lohnt sich für Sie?
+                  Welche Option lohnt sich?
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Umfassender Vergleich der Kosten, Vorteile und Nachteile beider Leasing-Optionen – damit Sie die richtige Entscheidung treffen.
+                  Bei einer Leasingübernahme steigst du in einen laufenden Vertrag ein: keine hohe Anzahlung
+                  (0–2'000 CHF statt 5'000–15'000 CHF), kürzere Restlaufzeit, dafür sind Auto und Konditionen
+                  fix. Ein neues Leasing gibt dir freie Wahl bei Fahrzeug und Ausstattung, bindet dich aber
+                  36–48 Monate. Kurz: Übernahme für tiefe Einstiegskosten und Flexibilität, Neuleasing für das
+                  Wunschauto.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">

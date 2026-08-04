@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -47,6 +48,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/carify-alternativen"];
 
 export default function CarifyAlternativen() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
@@ -190,7 +194,7 @@ export default function CarifyAlternativen() {
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/carify-alternativen",
             }),
           }}
@@ -283,14 +287,17 @@ export default function CarifyAlternativen() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/20 backdrop-blur-sm">
                   <Sparkles className="w-4 h-4" />
-                  Auto-Abo Vergleich Schweiz (2025)
+                  Auto-Abo Vergleich Schweiz (2026) · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-neutral-900 tracking-tight leading-[1.1] mb-6">
                   Carify Alternativen:<br />
                   <span className="text-primary">Anbieter im Vergleich.</span>
                 </h1>
                 <p className="text-xl md:text-2xl text-neutral-600 font-medium mb-8 leading-relaxed">
-                  Carify ist ein starkes Sorglos-Paket. Aber wenn du Preise, Laufzeiten und Bedingungen vergleichst, merkst du schnell: All-inclusive ist bequem – und genau deshalb nicht immer die günstigste Wahl.
+                  Die wichtigsten Carify-Alternativen in der Schweiz sind Carvolution, Clyde, FlatDrive und
+                  SIXT+ – plus die Leasingübernahme, wenn du günstiger fahren willst. Carify ist ein starkes
+                  Sorglos-Paket; wer aber Preise, Laufzeiten und Bedingungen vergleicht, findet oft ein
+                  besseres Angebot. Der Vergleich unten zeigt die Unterschiede.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
