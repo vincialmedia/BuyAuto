@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { searchListings } from "@/services/listingsService";
 import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
+import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { debounce } from "@/lib/utils";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
 
@@ -292,18 +293,23 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
               }
           : undefined;
 
+        const itemUrl = `https://www.buyauto.ch${buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}`;
+
         return {
           "@type": "ListItem",
           "position": (currentPage - 1) * 12 + index + 1,
           "item": {
             "@type": "Car",
             "name": `${listing.brand} ${listing.model}`,
+            "url": itemUrl,
             "brand": { "@type": "Brand", "name": listing.brand },
             "model": listing.model,
             "vehicleModelDate": listing.year,
-            "mileageFromOdometer": { "@type": "QuantitativeValue", "value": listing.mileageKm, "unitCode": "KMT" },
-            "fuelType": listing.fuel,
-            "vehicleTransmission": listing.gearbox,
+            ...(listing.mileageKm
+              ? { "mileageFromOdometer": { "@type": "QuantitativeValue", "value": listing.mileageKm, "unitCode": "KMT" } }
+              : {}),
+            ...(listing.fuel ? { "fuelType": listing.fuel } : {}),
+            ...(listing.gearbox ? { "vehicleTransmission": listing.gearbox } : {}),
             ...(offer ? { "offers": offer } : {}),
           },
         };
