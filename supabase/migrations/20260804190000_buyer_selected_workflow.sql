@@ -202,6 +202,8 @@ AS $function$
 $function$;
 
 REVOKE ALL ON FUNCTION public.get_listing_conversations_for_seller(uuid) FROM PUBLIC;
+-- Default privileges also hand EXECUTE to anon; this RPC is authed-only.
+REVOKE ALL ON FUNCTION public.get_listing_conversations_for_seller(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_listing_conversations_for_seller(uuid) TO authenticated;
 
 COMMIT;
