@@ -15,6 +15,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref, buildListingSlugSegment, extractListingIdFromParam } from "@/lib/buyauto/listingUrl";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
+import {
+  buildVehicleDescription,
+  driveWheelConfigurationFor,
+  firstRegistrationIso,
+  leaseLengthIso,
+  parseListingPlace,
+} from "@/lib/buyauto/vehicleSchema";
 
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
   // No extra top margin: the bottomContent wrapper already applies mt-10,
@@ -314,6 +321,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
       ? listing.pricePerMonthCHF
       : null;
 
+  // remaining_months on direct-purchase rows is a wizard default (12), not lease data —
+  // leaseLength is a lease-takeover-only fact.
+  const leaseLength = isDirectPurchase ? null : leaseLengthIso(listing.remainingMonths);
+  const availableAtOrFrom = parseListingPlace(listing.location, listing.canton_code);
+
   const vehicleOffer =
     typeof offerPrice === "number" && offerPrice > 0
       ? {
@@ -323,6 +335,15 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
           availability: "https://schema.org/InStock",
           itemCondition: "https://schema.org/UsedCondition",
           url: listingUrl,
+          ...(leaseLength ? { leaseLength } : {}),
+          ...(availableAtOrFrom
+            ? {
+                availableAtOrFrom: {
+                  "@type": "Place",
+                  address: { "@type": "PostalAddress", ...availableAtOrFrom },
+                },
+              }
+            : {}),
           ...(isDirectPurchase
             ? {}
             : {
@@ -337,6 +358,20 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         }
       : undefined;
 
+  const dateVehicleFirstRegistered = firstRegistrationIso(listing.firstRegistration);
+  const driveWheelConfiguration = driveWheelConfigurationFor(listing.drivetrain);
+  const schemaDescription = buildVehicleDescription({
+    dealType,
+    brand: listing.brand,
+    model: listing.model,
+    year: listing.year,
+    pricePerMonthCHF: listing.pricePerMonthCHF ?? null,
+    remainingMonths: listing.remainingMonths ?? null,
+    purchasePriceCHF: purchasePriceChf,
+    mileageKm: listing.mileageKm ?? null,
+    depositCHF: isDirectPurchase ? null : listing.depositCHF ?? null,
+  });
+
   const vehicleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Car",
@@ -346,6 +381,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
     vehicleModelDate: listing.year,
     url: listingUrl,
     image: images.length > 0 ? images : undefined,
+    ...(schemaDescription ? { description: schemaDescription } : {}),
+    ...(dateVehicleFirstRegistered ? { dateVehicleFirstRegistered } : {}),
+    ...(driveWheelConfiguration ? { driveWheelConfiguration } : {}),
     ...(listing.mileageKm
       ? { mileageFromOdometer: { "@type": "QuantitativeValue", value: listing.mileageKm, unitCode: "KMT" } }
       : {}),
