@@ -136,7 +136,7 @@ export function PrivatePricingSection() {
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold text-neutral-900">Premium Boost</span>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-                  Bis zu 3x höhere Verkaufschancen
+                  Zuoberst in der Suche
                 </span>
               </div>
               <p className="mt-1 text-sm text-neutral-600">
