@@ -10,6 +10,7 @@ import {
   isTagEnabled,
   pageview,
 } from "@/lib/analytics/gtag";
+import { rememberAiReferral } from "@/lib/analytics/aiReferral";
 
 /**
  * Loads gtag.js and reports client-side navigations.
@@ -35,6 +36,13 @@ export function GoogleAnalytics() {
 
   const pendingNavigationIsShallow = useRef(false);
   const initialPageViewHandled = useRef(false);
+
+  // First load only — document.referrer loses the external origin after the first
+  // client-side navigation. Runs even when the tag is off so the session still keeps
+  // its ai_source marker (the event itself no-ops without a tag).
+  useEffect(() => {
+    rememberAiReferral();
+  }, []);
 
   useEffect(() => {
     if (!enabled) return;
