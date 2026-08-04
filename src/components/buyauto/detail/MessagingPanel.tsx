@@ -35,7 +35,9 @@ type UiAttachment = {
 
 type UiMessage = {
   id: string;
-  sender_user_id: string;
+  // Null for automatic system messages (e.g. the Leasingübernahme checklist
+  // posted when the seller picks a buyer).
+  sender_user_id: string | null;
   body: string;
   created_at: string;
   attachments: UiAttachment[];
@@ -361,6 +363,19 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
               <div className="text-sm text-neutral-600">Noch keine Nachrichten. Starte die Unterhaltung.</div>
             ) : (
               messages.map((m) => {
+                const isSystem = m.sender_user_id === null;
+                if (isSystem) {
+                  return (
+                    <div key={m.id} className="flex justify-center">
+                      <div className="max-w-[95%] w-full rounded-2xl px-4 py-3 border border-amber-200 bg-amber-50 shadow-sm">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">BuyAuto</p>
+                        <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap text-amber-950">{m.body}</p>
+                        <p className="text-[11px] mt-2 text-amber-700/80">{formatTime(m.created_at)}</p>
+                      </div>
+                    </div>
+                  );
+                }
+
                 const isMe = m.sender_user_id === user?.id;
                 return (
                   <div key={m.id} className={cn("flex", isMe ? "justify-end" : "justify-start")}>

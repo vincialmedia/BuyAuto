@@ -40,7 +40,9 @@ type UiAttachment = {
 
 type UiMessage = {
   id: string;
-  sender_user_id: string;
+  // Null for automatic system messages (e.g. the Leasingübernahme checklist
+  // posted when the seller picks a buyer).
+  sender_user_id: string | null;
   body: string;
   created_at: string;
   attachments: UiAttachment[];
@@ -382,7 +384,7 @@ export default function DashboardConversationPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Käufer auswählen und Fahrzeug als verkauft markieren?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Wenn Du diesen Nutzer als Käufer auswählst, wird das Fahrzeug als verkauft markiert. Alle anderen Chats zu diesem Fahrzeug werden automatisch archiviert und können nicht mehr reaktiviert werden. Archivierte Chats bleiben noch 30 Tage lang lesbar und werden danach dauerhaft gelöscht. Weitere neue Nachrichten von anderen Interessenten sind nicht mehr möglich.
+                            Wenn Du diesen Nutzer als Käufer auswählst, wird das Fahrzeug als verkauft markiert und der Käufer per E-Mail informiert. Dieser Chat bleibt für euch beide offen. Alle anderen Chats zu diesem Fahrzeug werden automatisch archiviert und können nicht mehr reaktiviert werden. Archivierte Chats bleiben noch 30 Tage lang lesbar und werden danach dauerhaft gelöscht. Weitere neue Nachrichten von anderen Interessenten sind nicht mehr möglich.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -482,6 +484,19 @@ export default function DashboardConversationPage() {
                     <div className="text-sm text-neutral-600">Noch keine Nachrichten.</div>
                   ) : (
                     messages.map((m) => {
+                      const isSystem = m.sender_user_id === null;
+                      if (isSystem) {
+                        return (
+                          <div key={m.id} className="flex justify-center">
+                            <div className="max-w-[95%] w-full rounded-2xl px-4 py-3 border border-amber-200 bg-amber-50 shadow-sm">
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">BuyAuto</p>
+                              <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap text-amber-950">{m.body}</p>
+                              <p className="text-[11px] mt-2 text-amber-700/80">{formatTimeCH(m.created_at)}</p>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       const isMe = m.sender_user_id === user?.id;
                       return (
                         <div key={m.id} className={cn("flex", isMe ? "justify-end" : "justify-start")}>
