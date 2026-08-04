@@ -23,6 +23,7 @@ import { deleteListingDraft, deleteListingDraftsForListingId } from "@/services/
 import { uploadListingImages } from "@/services/storageService";
 import { clearGuestImages } from "@/lib/buyauto/guestImageStore";
 import type { ListingUpdatePayload } from "@/services/createListingService";
+import { ADS_CONVERSIONS, trackAdsConversion, trackEvent } from "@/lib/analytics/gtag";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -542,8 +543,14 @@ export default function Step5_PreviewAndPay() {
             console.error('Payment verification API failed:', e);
           }
 
-          toast({ title: "Zahlung erfolgreich!", description: "Ihr Inserat wird bearbeitet." });
-          
+          toast({ title: "Zahlung erfolgreich!", description: "Dein Inserat wird bearbeitet." });
+
+          // Redirect-based checkout (TWINT, 3DS) completed — same funnel
+          // events as the embedded path. Wizard state may be freshly restored
+          // here, so the premium check also consults the fetched listing.
+          const paidChf = paymentIntent.amount / 100;
+          trackEvent("listing_published", { deal_type: dealType, value: paidChf, currency: "CHF" });
+
           const listingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
           if (listingId && user) {
             const freshListingData = await getListingByIdForOwner(listingId, user);
@@ -559,20 +566,34 @@ export default function Step5_PreviewAndPay() {
                 sessionStorage.setItem('completedListingData', JSON.stringify(completedData));
               }
               updateData(freshListingData);
+
+              const paidPremium =
+                Boolean(freshListingData.premium) ||
+                planIncludesPremium(freshListingData.price_plan as any) ||
+                isPremium ||
+                premiumIncluded;
+              if (paidPremium) {
+                trackEvent("premium_purchased", {
+                  plan: freshListingData.price_plan ?? undefined,
+                  value: paidChf,
+                  currency: "CHF",
+                });
+                trackAdsConversion(ADS_CONVERSIONS.premiumPurchase, { value: paidChf, currency: "CHF" });
+              }
             }
           }
           await cleanupDraftAfterPublish();
           setIsComplete(true);
           break;
         case 'processing':
-          toast({ title: "Zahlung wird verarbeitet.", description: "Wir informieren Sie, sobald die Zahlung eingegangen ist." });
+          toast({ title: "Zahlung wird verarbeitet.", description: "Wir informieren dich, sobald die Zahlung eingegangen ist." });
           break;
         case 'requires_payment_method':
-          toast({ title: "Zahlung fehlgeschlagen.", description: "Bitte versuchen Sie eine andere Zahlungsmethode.", variant: 'destructive' });
+          toast({ title: "Zahlung fehlgeschlagen.", description: "Bitte versuche eine andere Zahlungsmethode.", variant: 'destructive' });
           setClientSecret(paymentIntentClientSecret);
           break;
         default:
-          toast({ title: "Ein Fehler ist aufgetreten.", description: "Bitte versuchen Sie es erneut.", variant: 'destructive' });
+          toast({ title: "Ein Fehler ist aufgetreten.", description: "Bitte versuche es erneut.", variant: 'destructive' });
           break;
       }
     } catch (error) {
@@ -583,7 +604,7 @@ export default function Step5_PreviewAndPay() {
         variant: 'destructive' 
       });
     }
-  }, [user, toast, updateData, setIsComplete, cleanupDraftAfterPublish]);
+  }, [user, toast, updateData, setIsComplete, cleanupDraftAfterPublish, dealType, isPremium, premiumIncluded]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -602,7 +623,7 @@ export default function Step5_PreviewAndPay() {
     if (!mounted || !user) {
       toast({
         title: "Fehler",
-        description: "Sie müssen angemeldet sein.",
+        description: "Du musst angemeldet sein.",
         variant: "destructive",
       });
       return;
@@ -611,7 +632,7 @@ export default function Step5_PreviewAndPay() {
     if (!selectedPlanId) {
       toast({
         title: "Fehler",
-        description: "Bitte wählen Sie einen Plan aus.",
+        description: "Bitte wähle einen Plan aus.",
         variant: "destructive",
       });
       return;
@@ -707,7 +728,14 @@ export default function Step5_PreviewAndPay() {
         }
 
         await cleanupDraftAfterPublish(listingIdToUse);
-        toast({ title: "Erfolgreich", description: "Ihr kostenloses Inserat wird geprüft." });
+        // Funnel event: a free listing was submitted for review. GA4 only —
+        // the Google Ads lead conversion already fired at guest signup.
+        trackEvent("listing_published", {
+          plan: selectedPlanId ?? "standard",
+          premium: false,
+          deal_type: dealType,
+        });
+        toast({ title: "Erfolgreich", description: "Dein kostenloses Inserat wird geprüft." });
         setIsComplete(true);
         return;
       }
@@ -855,9 +883,11 @@ export default function Step5_PreviewAndPay() {
         updateData({ status: "published", seller_type: "garage" } as any);
       }
 
+      // Garage listings publish instantly — no payment, but still a funnel event.
+      trackEvent("listing_published", { seller: "garage", deal_type: dealType });
       toast({
         title: "Inserat veröffentlicht!",
-        description: "Ihr Inserat ist jetzt live.",
+        description: "Dein Inserat ist jetzt live.",
       });
       await cleanupDraftAfterPublish(listingIdToUse);
       setIsComplete(true);
@@ -868,7 +898,7 @@ export default function Step5_PreviewAndPay() {
       const message =
         typeof error?.message === "string"
           ? error.message
-          : "Bitte versuchen Sie es später erneut.";
+          : "Bitte versuche es später erneut.";
 
       const extra = [error?.code ? `Code: ${String(error.code)}` : null, error?.details ? `Details: ${String(error.details)}` : null, error?.hint ? `Hint: ${String(error.hint)}` : null]
         .filter(Boolean)
@@ -910,9 +940,28 @@ export default function Step5_PreviewAndPay() {
       }
     }
 
-    toast({ 
-      title: "Zahlung erfolgreich!", 
-      description: "Ihr Inserat wird bearbeitet." 
+    // Paid checkout completed in the embedded widget. Report the GA4 funnel
+    // events and — once its label exists in Google Ads — the Premium purchase
+    // conversion (trackAdsConversion no-ops while the label is empty).
+    trackEvent("listing_published", {
+      plan: selectedPlanId ?? "standard",
+      premium: isPremium || premiumIncluded,
+      deal_type: dealType,
+      value: total,
+      currency: "CHF",
+    });
+    if (isPremium || premiumIncluded) {
+      trackEvent("premium_purchased", {
+        plan: selectedPlanId ?? "standard",
+        value: total,
+        currency: "CHF",
+      });
+      trackAdsConversion(ADS_CONVERSIONS.premiumPurchase, { value: total, currency: "CHF" });
+    }
+
+    toast({
+      title: "Zahlung erfolgreich!",
+      description: "Dein Inserat wird bearbeitet."
     });
     await cleanupDraftAfterPublish();
     setIsComplete(true);
@@ -943,11 +992,11 @@ export default function Step5_PreviewAndPay() {
           {paymentInitiated ? 'Bezahlung abschliessen' : (isGarage ? 'Überprüfen & Veröffentlichen' : 'Vorschau & Bezahlung')}
         </h2>
         <p className="text-neutral-600 font-light leading-relaxed">
-          {paymentInitiated 
-            ? 'Schliessen Sie die Bezahlung ab, um Ihr Inserat zu veröffentlichen.' 
-            : (isGarage 
-                ? 'Ihr Inserat wird direkt veröffentlicht (sofern Ihr Limit nicht erreicht ist).' 
-                : 'Überprüfen Sie Ihre Angaben und schliessen Sie die Bezahlung ab.')
+          {paymentInitiated
+            ? 'Schliesse die Bezahlung ab, um dein Inserat zu veröffentlichen.'
+            : (isGarage
+                ? 'Dein Inserat wird direkt veröffentlicht (sofern dein Limit nicht erreicht ist).'
+                : 'Überprüfe deine Angaben und schliesse die Bezahlung ab.')
           }
         </p>
       </div>
@@ -1188,9 +1237,9 @@ export default function Step5_PreviewAndPay() {
                         Garage Upload
                       </h3>
                       <ul className="space-y-2 text-sm text-neutral-600 list-disc list-inside">
-                        <li>Das Inserat wird Ihrem Garagen-Kontingent angerechnet.</li>
+                        <li>Das Inserat wird deinem Garagen-Kontingent angerechnet.</li>
                         <li>Veröffentlichung erfolgt sofort.</li>
-                        <li>Sie können das Inserat jederzeit im Dashboard verwalten.</li>
+                        <li>Du kannst das Inserat jederzeit im Dashboard verwalten.</li>
                       </ul>
                     </>
                   ) : (
@@ -1201,7 +1250,7 @@ export default function Step5_PreviewAndPay() {
                       </h3>
                       <ul className="space-y-2 text-sm text-neutral-600 list-disc list-inside">
                         <li>Alle Angaben werden von unserem Team überprüft.</li>
-                        <li>Sie erhalten eine Benachrichtigung sobald Ihr Inserat live ist.</li>
+                        <li>Du erhältst eine Benachrichtigung, sobald dein Inserat live ist.</li>
                         <li>Dies dauert in der Regel 2-4 Stunden.</li>
                       </ul>
                     </>

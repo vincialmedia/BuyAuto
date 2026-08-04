@@ -56,6 +56,8 @@ export type ListingUpdatePayload = Partial<{
   cover_image_index?: number;
   status?: string;
   user_id?: string;
+  /** Attribution: the seller's answer to "Wie hast du uns gefunden?" (optional). */
+  source?: string | null;
 }>;
 
 function clampNumber(value: number, min: number, max: number): number {

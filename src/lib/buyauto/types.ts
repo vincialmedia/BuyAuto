@@ -117,6 +117,9 @@ export interface ListingData {
   seller_type?: "private" | "garage" | null;
   garage_id?: string | null;
 
+  /** Attribution: the seller's answer to "Wie hast du uns gefunden?" (optional). */
+  source?: string | null;
+
   donation_enabled?: boolean;
   donation_amount_chf?: number;
   

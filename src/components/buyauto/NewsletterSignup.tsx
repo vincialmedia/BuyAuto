@@ -17,12 +17,12 @@ export function NewsletterSignup() {
     setSuccess(false);
 
     if (!email) {
-      setError("Bitte geben Sie Ihre E-Mail-Adresse ein");
+      setError("Bitte gib deine E-Mail-Adresse ein");
       return;
     }
 
     if (!consent) {
-      setError("Bitte bestätigen Sie, dass Sie E-Mails erhalten möchten");
+      setError("Bitte bestätige, dass du E-Mails erhalten möchtest");
       return;
     }
 
@@ -48,7 +48,7 @@ export function NewsletterSignup() {
         setError(data.error || "Ein Fehler ist aufgetreten");
       }
     } catch (err) {
-      setError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
+      setError("Ein Fehler ist aufgetreten. Bitte versuche es später erneut.");
     } finally {
       setLoading(false);
     }
@@ -62,14 +62,14 @@ export function NewsletterSignup() {
       </div>
       
       <p className="text-sm text-gray-600 mb-4">
-        Bleiben Sie informiert über neue Leasingübernahmen und exklusive Angebote.
+        Bleib informiert über neue Leasingübernahmen und exklusive Angebote.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
             type="email"
-            placeholder="Ihre E-Mail-Adresse"
+            placeholder="Deine E-Mail-Adresse"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading || success}
@@ -121,7 +121,7 @@ export function NewsletterSignup() {
 
         {success && (
           <div className="text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3">
-            Erfolgreich angemeldet! Vielen Dank für Ihre Anmeldung.
+            Erfolgreich angemeldet! Vielen Dank für deine Anmeldung.
           </div>
         )}
       </form>

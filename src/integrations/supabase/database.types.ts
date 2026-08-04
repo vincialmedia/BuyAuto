@@ -850,6 +850,7 @@ export type Database = {
           price_per_month_chf: number | null
           price_plan: string | null
           pricing_plan: string | null
+          published_at: string | null
           purchase_price_chf: number | null
           refunded_at: string | null
           remaining_km: number | null
@@ -857,6 +858,7 @@ export type Database = {
           seller_type: string | null
           sold_at: string | null
           sold_delete_at: string | null
+          source: string | null
           status: Database["public"]["Enums"]["listing_status"] | null
           status_before_sold:
             | Database["public"]["Enums"]["listing_status"]
@@ -916,6 +918,7 @@ export type Database = {
           price_per_month_chf?: number | null
           price_plan?: string | null
           pricing_plan?: string | null
+          published_at?: string | null
           purchase_price_chf?: number | null
           refunded_at?: string | null
           remaining_km?: number | null
@@ -923,6 +926,7 @@ export type Database = {
           seller_type?: string | null
           sold_at?: string | null
           sold_delete_at?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           status_before_sold?:
             | Database["public"]["Enums"]["listing_status"]
@@ -982,6 +986,7 @@ export type Database = {
           price_per_month_chf?: number | null
           price_plan?: string | null
           pricing_plan?: string | null
+          published_at?: string | null
           purchase_price_chf?: number | null
           refunded_at?: string | null
           remaining_km?: number | null
@@ -989,6 +994,7 @@ export type Database = {
           seller_type?: string | null
           sold_at?: string | null
           sold_delete_at?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           status_before_sold?:
             | Database["public"]["Enums"]["listing_status"]

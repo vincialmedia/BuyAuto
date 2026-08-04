@@ -699,7 +699,7 @@ export function DirectPurchaseFinancingDetails() {
         title: "Fehler beim Speichern",
         description: details
           ? `Finanzierungsdetails konnten nicht gespeichert werden: ${details}`
-          : "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfen Sie die Angaben und versuchen Sie es erneut.",
+          : "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfe die Angaben und versuche es erneut.",
         variant: "destructive",
       });
     } finally {

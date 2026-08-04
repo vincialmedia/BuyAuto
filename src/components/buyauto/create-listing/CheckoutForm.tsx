@@ -49,10 +49,10 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       onSuccess();
     } else if (paymentIntent?.status === "processing") {
       setMessage(
-        "Ihre Zahlung wird verarbeitet. Sobald sie bestätigt ist, wird Ihr Inserat automatisch veröffentlicht."
+        "Deine Zahlung wird verarbeitet. Sobald sie bestätigt ist, wird dein Inserat automatisch veröffentlicht."
       );
     } else {
-      setMessage("Die Zahlung ist noch nicht abgeschlossen. Bitte versuchen Sie es erneut.");
+      setMessage("Die Zahlung ist noch nicht abgeschlossen. Bitte versuche es erneut.");
     }
     setIsLoading(false);
   };

@@ -215,6 +215,13 @@ export function trackEvent(name: string, params: Record<string, unknown> = {}) {
 export const ADS_CONVERSIONS = {
   /** "Submit lead form" — a stranger hands over their contact details. */
   submitLeadForm: "2cMYCM6u8tgcEMvG1J5E",
+  /**
+   * "Premium purchase" — a seller pays for Premium placement (the boost, or a
+   * plan that includes it). The conversion action does not exist in Google Ads
+   * yet: create it, then paste its label here. While the label is empty,
+   * trackAdsConversion no-ops, so the call sites can already ship.
+   */
+  premiumPurchase: "",
 } as const;
 
 /**
@@ -227,7 +234,9 @@ export function trackAdsConversion(
   label: string,
   params: Record<string, unknown> = {},
 ) {
-  if (!isAdsEnabled) return;
+  // An empty label is a conversion action that has not been created in Google
+  // Ads yet (see ADS_CONVERSIONS) — sending `AW-XXX/` would be malformed.
+  if (!isAdsEnabled || !label) return;
   gtag("event", "conversion", {
     send_to: `${GOOGLE_ADS_ID}/${label}`,
     ...params,

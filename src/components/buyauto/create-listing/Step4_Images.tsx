@@ -42,7 +42,7 @@ export function Step4_Images() {
     if ((imageItems.length + acceptedFiles.length) > maxPhotos) {
       toast({
         title: "Limit erreicht",
-        description: `Sie können maximal ${maxPhotos} Bilder hochladen.`,
+        description: `Du kannst maximal ${maxPhotos} Bilder hochladen.`,
         variant: "destructive",
       });
       return;
@@ -96,7 +96,7 @@ export function Step4_Images() {
       console.error("Upload failed:", error);
       toast({
         title: "Upload Fehler",
-        description: "Fehler beim Hochladen der Bilder. Bitte versuchen Sie es erneut.",
+        description: "Fehler beim Hochladen der Bilder. Bitte versuche es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -157,7 +157,7 @@ export function Step4_Images() {
     if (!data.images || data.images.length === 0) {
       toast({ 
         title: "Keine Bilder", 
-        description: "Bitte laden Sie mindestens ein Bild hoch.", 
+        description: "Bitte lade mindestens ein Bild hoch.",
         variant: "destructive" 
       });
       return;
@@ -207,7 +207,7 @@ export function Step4_Images() {
 
       toast({
         title: "Bilder gespeichert",
-        description: "Ihre Bilder wurden dem Inserat hinzugefügt.",
+        description: "Deine Bilder wurden dem Inserat hinzugefügt.",
       });
       nextStep();
     } catch (error) {
@@ -271,7 +271,7 @@ export function Step4_Images() {
           Bilder hochladen
         </h2>
         <p className="text-neutral-600 font-light leading-relaxed">
-          Laden Sie bis zu {maxPhotos} Bilder Ihres Fahrzeugs hoch
+          Lade bis zu {maxPhotos} Bilder deines Fahrzeugs hoch
         </p>
       </div>
 
@@ -296,7 +296,7 @@ export function Step4_Images() {
                 <>
                   <UploadCloud className="h-12 w-12 text-neutral-400" />
                   <div className="space-y-1">
-                    <p className="font-medium text-neutral-900">Klicken oder ziehen Sie Bilder hierher</p>
+                    <p className="font-medium text-neutral-900">Klicke oder ziehe Bilder hierher</p>
                     <p className="text-sm font-light">PNG, JPG, WEBP bis zu 10MB pro Bild</p>
                     <p className="text-xs text-neutral-500">
                       Maximal {maxPhotos} Bilder · {imageItems.length} von {maxPhotos} hochgeladen
@@ -310,9 +310,9 @@ export function Step4_Images() {
           {imageItems.length > 0 && (
             <div className="mt-8">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-neutral-900">Ihre Bilder ({imageItems.length})</h3>
+                <h3 className="font-medium text-neutral-900">Deine Bilder ({imageItems.length})</h3>
                 <p className="text-xs text-neutral-500 font-light">
-                  Ziehen Sie die Bilder, um die Reihenfolge zu ändern
+                  Ziehe die Bilder, um die Reihenfolge zu ändern
                 </p>
               </div>
               

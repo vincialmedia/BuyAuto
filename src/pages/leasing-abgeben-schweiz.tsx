@@ -1,7 +1,7 @@
+import type { GetStaticProps } from "next";
 import Head from "next/head";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { 
@@ -30,13 +30,10 @@ import {
   X
 } from "lucide-react";
 
-// Dynamic import for below-the-fold content
-const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
-  loading: () => <div className="w-full h-96 bg-neutral-100 animate-pulse rounded-xl" />,
-  ssr: false
-});
-
 import { Button } from "@/components/ui/button";
+import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
+import { searchListings } from "@/services/listingsService";
+import type { Listing } from "@/lib/buyauto/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -46,18 +43,23 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export default function LeasingAbgebenSchweiz() {
-  const [months, setMonths] = useState(24);
-  const [showStickyCTA, setShowStickyCTA] = useState(false);
-  
-  // Calculate costs based on months remaining
-  const calculateCosts = (remainingMonths: number) => {
-    const cancellationCost = remainingMonths * 450 + 1500; // Monthly rate + penalty
-    const transferCost = 350;
-    return { cancellationCost, transferCost };
-  };
+type LeasingAbgebenPageProps = {
+  takeoverListings: Listing[];
+};
 
-  const costs = calculateCosts(months);
+// Typical re-registration/transfer fee charged by Swiss leasing banks — a guide
+// value, not a quote; the disclaimer under the calculator says so.
+const TRANSFER_FEE_CHF = 350;
+
+export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgebenPageProps) {
+  const [months, setMonths] = useState(24);
+  const [monthlyRate, setMonthlyRate] = useState(450);
+  const [showStickyCTA, setShowStickyCTA] = useState(false);
+
+  // The one number the calculator can state honestly: a takeover moves exactly
+  // these rates to the successor. Cancellation costs vary by bank and contract,
+  // so they are itemised qualitatively instead of invented as a precise figure.
+  const remainingObligation = months * monthlyRate;
 
   // Handle sticky CTA visibility
   useEffect(() => {
@@ -143,7 +145,7 @@ export default function LeasingAbgebenSchweiz() {
                     className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl px-8 py-6 rounded-xl"
                   >
                     <Link href="/inserat-erstellen">
-                      Jetzt Inserat erstellen
+                      Gratis Inserat erstellen
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
@@ -211,7 +213,7 @@ export default function LeasingAbgebenSchweiz() {
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl group"
                   >
                     <Link href="/inserat-erstellen">
-                      Jetzt Inserat erstellen
+                      Gratis Inserat erstellen
                       <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </Button>
@@ -228,8 +230,8 @@ export default function LeasingAbgebenSchweiz() {
                 {/* Quick Stats */}
                 <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-4">
                   {[
-                    { value: "< 1 Woche", label: "Durchschnittliche Dauer" },
-                    { value: "CHF 350", label: "Typische Kosten" },
+                    { value: "Wenige Tage", label: "Bankseitige Abwicklung" },
+                    { value: "~ CHF 350", label: "Typische Umschreibegebühr" },
                     { value: "100%", label: "Legal & sicher" }
                   ].map((stat, i) => (
                     <div key={i} className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-neutral-200/50 shadow-lg">
@@ -255,30 +257,63 @@ export default function LeasingAbgebenSchweiz() {
                 Was kostet dein Ausstieg?
               </h2>
               <p className="text-neutral-300 text-lg max-w-2xl mx-auto">
-                Schiebe den Regler und sieh sofort, wie viel du mit einer Leasingübernahme sparst.
+                Stell Restlaufzeit und Monatsrate ein und vergleiche deine Optionen – transparent,
+                ohne Schönrechnen.
               </p>
             </div>
 
             <div className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
-              {/* Slider */}
-              <div className="mb-12">
-                <label className="text-neutral-900 font-bold text-xl mb-6 block">
-                  Wie lange läuft dein Leasing noch?
-                </label>
-                <div className="space-y-4">
-                  <Slider
-                    value={[months]}
-                    onValueChange={(value) => setMonths(value[0])}
-                    min={6}
-                    max={48}
-                    step={6}
-                    className="w-full"
-                  />
-                  <div className="text-center">
-                    <span className="text-5xl font-black text-primary">{months}</span>
-                    <span className="text-2xl text-neutral-600 font-bold ml-2">Monate</span>
+              {/* Sliders */}
+              <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
+                <div>
+                  <label className="text-neutral-900 font-bold text-xl mb-6 block">
+                    Wie lange läuft dein Leasing noch?
+                  </label>
+                  <div className="space-y-4">
+                    <Slider
+                      value={[months]}
+                      onValueChange={(value) => setMonths(value[0])}
+                      min={6}
+                      max={48}
+                      step={6}
+                      className="w-full"
+                    />
+                    <div className="text-center">
+                      <span className="text-5xl font-black text-primary">{months}</span>
+                      <span className="text-2xl text-neutral-600 font-bold ml-2">Monate</span>
+                    </div>
                   </div>
                 </div>
+                <div>
+                  <label className="text-neutral-900 font-bold text-xl mb-6 block">
+                    Wie hoch ist deine Monatsrate?
+                  </label>
+                  <div className="space-y-4">
+                    <Slider
+                      value={[monthlyRate]}
+                      onValueChange={(value) => setMonthlyRate(value[0])}
+                      min={150}
+                      max={1500}
+                      step={50}
+                      className="w-full"
+                    />
+                    <div className="text-center">
+                      <span className="text-5xl font-black text-primary">CHF {monthlyRate}</span>
+                      <span className="text-2xl text-neutral-600 font-bold ml-2">/ Mt.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* The honest anchor both options are measured against */}
+              <div className="mb-12 rounded-2xl bg-neutral-50 border border-neutral-200 p-6 text-center">
+                <p className="text-sm font-semibold uppercase tracking-wide text-neutral-500 mb-1">
+                  Deine verbleibenden Leasingraten
+                </p>
+                <p className="text-3xl md:text-4xl font-black text-neutral-900">
+                  {months} × CHF {monthlyRate.toLocaleString("de-CH")} ={" "}
+                  <span className="text-primary">CHF {remainingObligation.toLocaleString("de-CH")}</span>
+                </p>
               </div>
 
               {/* Cost Comparison */}
@@ -291,14 +326,22 @@ export default function LeasingAbgebenSchweiz() {
                       <XCircle className="w-6 h-6 text-red-600" />
                       <h3 className="font-black text-xl text-neutral-900">Vorzeitige Kündigung</h3>
                     </div>
-                    <div className="mb-2">
-                      <span className="text-5xl font-black text-red-600">
-                        CHF {costs.cancellationCost.toLocaleString("de-CH")}
-                      </span>
-                    </div>
-                    <p className="text-neutral-700 font-medium">
-                      Restschuld + Vorfälligkeitsgebühr + Rücknahmekosten
-                    </p>
+                    <ul className="space-y-2 text-neutral-700 font-medium mb-4">
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
+                        Nachzahlung aus der Neuberechnung der Raten
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
+                        Vorfälligkeitsentschädigung der Bank
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
+                        Rücknahmekosten & allfälliger Minderwert
+                      </li>
+                    </ul>
+                    <p className="text-3xl font-black text-red-600">Oft mehrere tausend Franken</p>
+                    <p className="text-neutral-600 font-medium mt-1">je nach Bank und Vertrag</p>
                   </div>
                 </div>
 
@@ -315,24 +358,41 @@ export default function LeasingAbgebenSchweiz() {
                     </div>
                     <div className="mb-2">
                       <span className="text-5xl font-black text-green-600">
-                        CHF {costs.transferCost.toLocaleString("de-CH")}
+                        ~ CHF {TRANSFER_FEE_CHF.toLocaleString("de-CH")}
                       </span>
                     </div>
                     <p className="text-neutral-700 font-medium">
-                      Nur Ummeldegebühren – keine versteckten Kosten
+                      Typische Umschreibegebühr. Die verbleibenden Raten von CHF{" "}
+                      {remainingObligation.toLocaleString("de-CH")} übernimmt dein Nachfolger.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Savings Badge */}
+              {/* Result + CTA */}
               <div className="mt-8 text-center">
                 <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-2xl shadow-lg">
                   <Zap className="w-6 h-6" />
                   <span className="text-2xl font-black">
-                    Du sparst CHF {(costs.cancellationCost - costs.transferCost).toLocaleString("de-CH")}!
+                    CHF {remainingObligation.toLocaleString("de-CH")} an Restraten gibst du ab
                   </span>
                 </div>
+                <div className="mt-6">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-primary hover:bg-primary/90 text-white font-black px-10 py-7 text-lg rounded-2xl shadow-xl shadow-primary/30 group"
+                  >
+                    <Link href="/inserat-erstellen">
+                      Gratis Inserat erstellen
+                      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </Button>
+                </div>
+                <p className="mt-6 text-sm text-neutral-500 max-w-xl mx-auto">
+                  Richtwerte zur Orientierung. Massgebend sind dein Leasingvertrag und die
+                  Konditionen deiner Leasingbank.
+                </p>
               </div>
             </div>
           </div>
@@ -600,7 +660,7 @@ export default function LeasingAbgebenSchweiz() {
                 className="bg-primary hover:bg-primary/90 text-white font-bold px-10 py-7 text-lg rounded-2xl shadow-xl shadow-primary/30"
               >
                 <Link href="/inserat-erstellen">
-                  Jetzt starten
+                  Gratis Inserat erstellen
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -662,6 +722,47 @@ export default function LeasingAbgebenSchweiz() {
           </div>
         </section>
 
+        {/* LIVE TAKEOVER LISTINGS — social proof for sellers. Deliberately no
+            link to /suche here: this page's job is to produce inserate, and the
+            cards themselves show a takeover from the buyer's perspective. */}
+        {takeoverListings.length > 0 && (
+          <section className="py-20 px-4 bg-neutral-50">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                  <Users className="w-4 h-4" />
+                  Live auf BuyAuto
+                </div>
+                <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
+                  Diese Fahrer geben gerade ihr Leasing ab
+                </h2>
+                <p className="text-neutral-600 text-lg max-w-2xl mx-auto">
+                  Echte, aktuelle Inserate – so präsentiert sich dein Leasing möglichen Übernehmern.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {takeoverListings.map((listing) => (
+                  <ModernListingCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+
+              <div className="mt-10 text-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-white font-black px-10 py-7 text-lg rounded-2xl shadow-xl shadow-primary/30 group"
+                >
+                  <Link href="/inserat-erstellen">
+                    Gratis Inserat erstellen
+                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* FINAL CTA - Premium Dark Section */}
         <section className="py-24 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 px-4 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
@@ -679,7 +780,7 @@ export default function LeasingAbgebenSchweiz() {
               <span className="text-primary">legal, schnell & günstig</span>
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-xl leading-relaxed">
-              Die Leasingübernahme ist die beste Lösung für 95% aller Fahrer. Keine versteckten Kosten, keine Komplikationen.
+              Die Leasingübernahme ist für die meisten Fahrer die beste Lösung. Keine versteckten Kosten, keine Komplikationen.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Button 
@@ -688,7 +789,7 @@ export default function LeasingAbgebenSchweiz() {
                 className="w-full sm:w-auto h-16 px-10 text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/40 transition-all group"
               >
                 <Link href="/inserat-erstellen">
-                  Jetzt Inserat erstellen
+                  Gratis Inserat erstellen
                   <ArrowRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
@@ -722,10 +823,19 @@ export default function LeasingAbgebenSchweiz() {
           </div>
         </section>
 
-        {/* PREMIUM LISTINGS */}
-        <PremiumListings />
-        
       </main>
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps<LeasingAbgebenPageProps> = async () => {
+  try {
+    const results = await searchListings({ dealType: "lease_takeover", sort: "dateDesc" });
+    // Newest three takeovers; strip undefined fields so Next can serialize.
+    const takeoverListings = JSON.parse(JSON.stringify(results.items.slice(0, 3))) as Listing[];
+    return { props: { takeoverListings }, revalidate: 3600 };
+  } catch (error) {
+    console.error("Leasing abgeben landing: takeover fetch failed:", error);
+    return { props: { takeoverListings: [] }, revalidate: 3600 };
+  }
+};
