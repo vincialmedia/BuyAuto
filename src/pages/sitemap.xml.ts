@@ -1,7 +1,7 @@
 import type { GetServerSideProps } from "next";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
-import { LEASING_BRANDS } from "@/lib/buyauto/leasingBrands";
+import { brandPagesForInventory } from "@/lib/buyauto/leasingBrands";
 
 type ListingSitemapRow = {
   id: string;
@@ -113,13 +113,13 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
 
   // Programmatic brand landing pages — only the brands that actually have at least one
   // live lease_takeover listing (others render noindex, so we keep them out of the map).
-  const takeoverBrandSet = new Set(
-    ((listings as ListingSitemapRow[] | null) || [])
-      .filter((l) => l.deal_type === "lease_takeover" && typeof l.brand === "string" && l.brand.trim() !== "")
-      .map((l) => l.brand)
+  // brandPagesForInventory is alias-aware (Mercedes rows → mercedes-benz page) and adds
+  // auto-generated pages for live brands without a curated entry.
+  const takeoverRows = ((listings as ListingSitemapRow[] | null) || []).filter(
+    (l) => l.deal_type === "lease_takeover"
   );
 
-  const brandUrls = LEASING_BRANDS.filter((b) => takeoverBrandSet.has(b.name))
+  const brandUrls = brandPagesForInventory(takeoverRows.map((l) => ({ brand: l.brand, model: null, deal_type: l.deal_type })))
     .map((b) => {
       return `
       <url>

@@ -34,7 +34,7 @@ import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard
 import { searchListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import { supabase } from "@/integrations/supabase/client";
-import { LEASING_BRANDS } from "@/lib/buyauto/leasingBrands";
+import { brandPagesForInventory, type BrandInventoryRow } from "@/lib/buyauto/leasingBrands";
 import {
   Accordion,
   AccordionContent,
@@ -1364,15 +1364,11 @@ export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async 
       searchListings({ dealType: "lease_takeover", sort: "dateDesc" }),
       // listings_public already filters to published + not expired; we only need the
       // distinct brands that currently have a live takeover listing.
-      supabase.from("listings_public").select("brand").eq("deal_type", "lease_takeover"),
+      supabase.from("listings_public").select("brand, model, deal_type").eq("deal_type", "lease_takeover"),
     ]);
 
-    const liveBrandNames = new Set(
-      (brandRows.data ?? [])
-        .map((r) => (typeof r.brand === "string" ? r.brand : ""))
-        .filter((b) => b.trim() !== "")
-    );
-    const availableBrands = LEASING_BRANDS.filter((b) => liveBrandNames.has(b.name)).map((b) => ({
+    // Curated pages (alias-aware) plus auto-generated pages for uncovered DB brands.
+    const availableBrands = brandPagesForInventory(((brandRows.data ?? []) as BrandInventoryRow[])).map((b) => ({
       slug: b.slug,
       name: b.name,
     }));
