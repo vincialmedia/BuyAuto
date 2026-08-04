@@ -3,14 +3,6 @@ import dynamic from "next/dynamic";
 import { useWizard } from "./ListingWizard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Check, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import GuestAuthGate from "./GuestAuthGate";
@@ -32,18 +24,6 @@ import { uploadListingImages } from "@/services/storageService";
 import { clearGuestImages } from "@/lib/buyauto/guestImageStore";
 import type { ListingUpdatePayload } from "@/services/createListingService";
 import { ADS_CONVERSIONS, trackAdsConversion, trackEvent } from "@/lib/analytics/gtag";
-
-// Answer options for the optional "Wie hast du uns gefunden?" question, stored
-// verbatim in listings.source. Channels GA cannot attribute on its own
-// (Facebook groups, word of mouth, other marketplaces) are the point here.
-const ATTRIBUTION_SOURCES = [
-  "Google-Suche",
-  "Google Ads",
-  "Facebook-Gruppe",
-  "Freunde/Bekannte",
-  "tutti/anibis",
-  "Andere",
-] as const;
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -449,10 +429,6 @@ export default function Step5_PreviewAndPay() {
       location: anyData?.location ?? "",
       canton_code: anyData?.canton_code ?? undefined,
       title: anyData?.title ?? undefined,
-      source:
-        typeof anyData?.source === "string" && anyData.source.trim() !== ""
-          ? anyData.source
-          : null,
 
       price_plan: anyData?.price_plan ?? undefined,
       // premium is not written from here — see ListingUpdatePayload. The Premium
@@ -1279,33 +1255,6 @@ export default function Step5_PreviewAndPay() {
                       </ul>
                     </>
                   )}
-                </CardContent>
-              </Card>
-
-              {/* Attribution — optional, feeds listings.source */}
-              <Card>
-                <CardContent className="p-6">
-                  <Label htmlFor="attribution-source" className="font-bold text-lg">
-                    Wie hast du uns gefunden?
-                  </Label>
-                  <p className="text-sm text-neutral-500 mt-1 mb-3">
-                    Optional – hilft uns zu verstehen, wo Verkäufer BuyAuto entdecken.
-                  </p>
-                  <Select
-                    value={typeof (data as any)?.source === "string" ? (data as any).source : undefined}
-                    onValueChange={(value) => updateData({ source: value } as any)}
-                  >
-                    <SelectTrigger id="attribution-source" className="rounded-xl">
-                      <SelectValue placeholder="Bitte wählen (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ATTRIBUTION_SOURCES.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </CardContent>
               </Card>
             </div>
