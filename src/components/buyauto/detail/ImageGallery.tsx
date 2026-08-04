@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
@@ -11,14 +11,36 @@ interface ImageGalleryProps {
   premium?: boolean;
 }
 
+// Shared between the main surface and the lightbox underlay so the lightbox
+// can reuse the exact bytes the main image already fetched (same src + sizes
+// + quality → same optimizer URL → served from browser cache).
+const MAIN_SIZES = "(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px";
+const LIGHTBOX_SIZES = "(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 85vw";
+const IMAGE_QUALITY = 85;
+
 export default function ImageGallery({ images, brand = "", model = "", premium = false }: ImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  // Source URLs whose image finished loading, per surface. The lightbox
+  // requests a larger candidate than the main surface on desktop, so the two
+  // are tracked separately. Keyed by src (read back from the DOM in the load
+  // handler), not by index: an index captured in the onLoad closure can be
+  // stale by the time the browser finishes decoding.
+  const [loadedMain, setLoadedMain] = useState<Set<string>>(() => new Set());
+  const [loadedLightbox, setLoadedLightbox] = useState<Set<string>>(() => new Set());
+  // Only preload carousel neighbours once the visitor actually navigates —
+  // never on plain page load, where it would compete with the LCP image.
+  const [hasNavigated, setHasNavigated] = useState(false);
+  // The spinner must not exist in the server HTML: the SSR'd hero image often
+  // finishes loading before hydration, and a pre-hydration spinner would sit
+  // on top of the finished photo (forever, with JS disabled).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const validImages = images.filter(Boolean);
   const alt = `${brand} ${model}`;
-  
+
   if (validImages.length === 0) {
     return (
       <div className="aspect-video bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-3xl flex items-center justify-center">
@@ -29,6 +51,27 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
       </div>
     );
   }
+
+  // Reads the source URL back off the <img> that fired the event — by the
+  // time load/decode completes, render-time index variables may point at a
+  // different photo.
+  const markLoaded = (setter: typeof setLoadedMain) => (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const src = e.currentTarget.getAttribute("data-gallery-src");
+    if (!src) return;
+    setter((prev) => {
+      if (prev.has(src)) return prev;
+      const next = new Set(prev);
+      next.add(src);
+      return next;
+    });
+  };
+  const markMainLoaded = markLoaded(setLoadedMain);
+  const markLightboxLoaded = markLoaded(setLoadedLightbox);
+
+  const goToImage = (index: number) => {
+    setHasNavigated(true);
+    setCurrentIndex(index);
+  };
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -47,6 +90,32 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
     setLightboxIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
   };
 
+  const neighbourIndexes = (index: number): number[] => {
+    if (validImages.length < 2) return [];
+    const next = (index + 1) % validImages.length;
+    const prev = (index - 1 + validImages.length) % validImages.length;
+    return Array.from(new Set([next, prev])).filter((i) => i !== index);
+  };
+
+  // Warm the browser cache for the images a click away, so stepping through
+  // the carousel or lightbox doesn't wait on the network each time. Rendered
+  // as real next/image elements (in an invisible 1px box) so the fetched URL
+  // is exactly the one the visible surface will request.
+  const preloads: { key: string; src: string; sizes: string }[] = [];
+  if (hasNavigated) {
+    for (const i of neighbourIndexes(currentIndex)) {
+      preloads.push({ key: `main-${i}`, src: validImages[i], sizes: MAIN_SIZES });
+    }
+  }
+  if (showLightbox) {
+    for (const i of neighbourIndexes(lightboxIndex)) {
+      preloads.push({ key: `lightbox-${i}`, src: validImages[i], sizes: LIGHTBOX_SIZES });
+    }
+  }
+
+  const mainLoaded = loadedMain.has(validImages[currentIndex]);
+  const lightboxLoaded = loadedLightbox.has(validImages[lightboxIndex]);
+
   return (
     <>
       <div className="space-y-4">
@@ -58,13 +127,25 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
               alt={alt}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
+              sizes={MAIN_SIZES}
               priority
-              quality={85}
+              quality={IMAGE_QUALITY}
               onClick={() => openLightbox(currentIndex)}
+              data-gallery-src={validImages[currentIndex]}
+              onLoad={markMainLoaded}
+              onError={markMainLoaded}
             />
           )}
-          
+
+          {/* Loading spinner while the current image is still in flight */}
+          {mounted && !mainLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in-delayed">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 shadow-lg">
+                <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
+              </div>
+            </div>
+          )}
+
           {/* Zoom Overlay */}
           <div
             className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
@@ -75,17 +156,20 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
             </div>
           </div>
 
-          {/* Navigation for mobile carousel */}
+          {/* Navigation for mobile carousel. pointer-events-none on the
+              container: it spans the whole photo, and as a hit target it
+              swallowed every tap that wasn't on an arrow — making the
+              lightbox unreachable on mobile. Only the arrows take taps. */}
           {validImages.length > 1 && (
-            <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 md:hidden">
+            <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 md:hidden">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCurrentIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+                  goToImage((currentIndex - 1 + validImages.length) % validImages.length);
                 }}
-                className="bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full w-10 h-10 p-0 shadow-lg"
+                className="pointer-events-auto bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full w-10 h-10 p-0 shadow-lg"
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -94,9 +178,9 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCurrentIndex((prev) => (prev + 1) % validImages.length);
+                  goToImage((currentIndex + 1) % validImages.length);
                 }}
-                className="bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full w-10 h-10 p-0 shadow-lg"
+                className="pointer-events-auto bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full w-10 h-10 p-0 shadow-lg"
               >
                 <ChevronRight className="w-5 h-5" />
               </Button>
@@ -111,7 +195,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                   key={index}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setCurrentIndex(index);
+                    goToImage(index);
                   }}
                   className={`w-2 h-2 rounded-full transition-all duration-200 ${
                     index === currentIndex
@@ -131,7 +215,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
             {validImages.slice(0, 12).map((image, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
+                onClick={() => goToImage(index)}
                 className={`relative aspect-video rounded-xl overflow-hidden border-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
                   index === currentIndex
                     ? "border-red-500 shadow-lg shadow-red-500/20 scale-105"
@@ -160,7 +244,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
 
       {/* Lightbox Modal */}
       {showLightbox && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
           onClick={closeLightbox}
         >
@@ -187,14 +271,44 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
 
             {/* Image Container */}
             <div className="relative w-full h-full max-w-5xl max-h-[85vh] flex items-center justify-center">
+              {/* Instant underlay — only when the main surface already
+                  fetched this exact URL, so it paints straight from cache
+                  while the larger candidate above it finishes loading. For
+                  images never shown on the main surface it would be a second
+                  full network fetch for nothing, so it stays out. Stays
+                  mounted after the overlay loads — unmounting mid-fade would
+                  flash the black backdrop through the fading overlay. */}
+              {loadedMain.has(validImages[lightboxIndex]) && (
+                <Image
+                  src={validImages[lightboxIndex]}
+                  alt=""
+                  fill
+                  aria-hidden
+                  className="object-contain"
+                  sizes={MAIN_SIZES}
+                  quality={IMAGE_QUALITY}
+                />
+              )}
               <Image
                 src={validImages[lightboxIndex]}
                 alt={`${alt} - Bild ${lightboxIndex + 1}`}
                 fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 85vw"
-                quality={90}
+                className={`object-contain transition-opacity duration-200 ${lightboxLoaded ? "opacity-100" : "opacity-0"}`}
+                sizes={LIGHTBOX_SIZES}
+                quality={IMAGE_QUALITY}
+                data-gallery-src={validImages[lightboxIndex]}
+                onLoad={markLightboxLoaded}
+                onError={markLightboxLoaded}
               />
+
+              {/* Loading spinner while the full-size image is in flight */}
+              {!lightboxLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in-delayed">
+                  <div className="bg-black/60 backdrop-blur-sm rounded-full p-3">
+                    <Loader2 className="w-7 h-7 text-white animate-spin" />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Next Button */}
@@ -213,6 +327,15 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
               {lightboxIndex + 1} / {validImages.length}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Invisible preload box (1px, offscreen for all intents) — see `preloads` above */}
+      {preloads.length > 0 && (
+        <div aria-hidden className="pointer-events-none fixed left-0 top-0 h-px w-px overflow-hidden opacity-0">
+          {preloads.map((p) => (
+            <Image key={p.key} src={p.src} alt="" fill sizes={p.sizes} quality={IMAGE_QUALITY} />
+          ))}
         </div>
       )}
     </>

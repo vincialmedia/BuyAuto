@@ -88,11 +88,22 @@ const config: Config = {
           to: {
             height: '0'
           }
+        },
+        'fade-in': {
+          from: {
+            opacity: '0'
+          },
+          to: {
+            opacity: '1'
+          }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out'
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        // The 0.15s delay keeps loading spinners invisible for images that
+        // resolve instantly from cache — no flash on fast loads.
+        'fade-in-delayed': 'fade-in 0.2s ease-out 0.15s both'
       }
     }
   },

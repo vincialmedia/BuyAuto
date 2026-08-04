@@ -245,7 +245,10 @@ export function ListingDetailV2({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           <div className="lg:col-span-7 space-y-6">
             <div className="bg-white rounded-3xl shadow-sm border border-neutral-200/60 overflow-hidden">
-              <ImageGallery images={images} brand={listing.brand} model={listing.model} premium={listing.premium} />
+              {/* Keyed by listing id: Next reuses the page component across
+                  /fahrzeug/[id] navigations, and without a remount the gallery
+                  keeps the previous listing's photo index and loading state. */}
+              <ImageGallery key={listing.id} images={images} brand={listing.brand} model={listing.model} premium={listing.premium} />
             </div>
 
             <div className="bg-white rounded-3xl border border-neutral-200/60 shadow-sm p-6 sm:p-8">

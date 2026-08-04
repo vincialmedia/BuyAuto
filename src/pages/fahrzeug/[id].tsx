@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ListingDetail } from "@/lib/buyauto/types";
-import { getPublishedListingById, getUserListingById } from "@/services/listingsService";
+import { getPublishedListingById, getUserListingById, transformPublicRowToListingDetail } from "@/services/listingsService";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
@@ -446,51 +446,56 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       return { props: { listing: null } };
     }
 
-    const listing = await (async () => {
-      const { data, error } = await (await import("@/integrations/supabase/client")).supabase
-        .from("listings_public")
-        .select("*")
-        .eq("id", listingId)
-        // listings_public exposes published, unexpired rows only — 'active' and
-        // 'sold' could never match here. Anything else falls through to the
-        // 404/410 handling below.
-        .eq("status", "published")
-        .single();
+    const { data, error } = await supabase
+      .from("listings_public")
+      .select("*")
+      .eq("id", listingId)
+      // listings_public exposes published, unexpired rows only — 'active' and
+      // 'sold' could never match here. Anything else falls through to the
+      // 404/410 handling below.
+      .eq("status", "published")
+      .single();
 
-      if (error) {
-        if ((error as any)?.code === "PGRST116") return null;
-        console.error("Error fetching listing by ID (published):", error);
-        return null;
+    if (error && (error as any)?.code !== "PGRST116") {
+      console.error("Error fetching listing by ID (published):", error);
+    }
+
+    let listing = !error && data ? transformPublicRowToListingDetail(data as any) : null;
+
+    if (listing) {
+      // Redirect legacy/malformed slugs to the canonical URL before any further
+      // fetches — everything below would be thrown away with the response.
+      const canonicalSegment = buildListingSlugSegment({ id: listing.id, brand: listing.brand, model: listing.model });
+      if (id !== canonicalSegment) {
+        return {
+          redirect: {
+            destination: `/fahrzeug/${canonicalSegment}`,
+            permanent: true,
+          },
+        };
       }
-
-      const { transformPublicRowToListingDetail } = await import("@/services/listingsService");
-      const baseListing = transformPublicRowToListingDetail(data as any);
 
       const sellerType = (data as any)?.seller_type ?? null;
       const ownerId = (data as any)?.user_id ?? (data as any)?.created_by ?? null;
 
       if (sellerType !== "garage" && ownerId) {
-        const { supabase } = await import("@/integrations/supabase/client");
         const { data: profileRows, error: profError } = await supabase.rpc("get_public_profiles", { p_user_ids: [ownerId] });
 
         if (profError) {
           console.error("Error fetching public profile for listing owner:", profError);
-          return baseListing;
+        } else {
+          const row = Array.isArray(profileRows) ? (profileRows[0] as any) : null;
+          const fullName = typeof row?.full_name === "string" ? row.full_name : null;
+          const avatarUrl = typeof row?.avatar_url === "string" ? row.avatar_url : null;
+
+          listing = {
+            ...listing,
+            seller_name: fullName ?? listing.seller_name ?? null,
+            seller_avatar_url: avatarUrl ?? listing.seller_avatar_url ?? null,
+          };
         }
-
-        const row = Array.isArray(profileRows) ? (profileRows[0] as any) : null;
-        const fullName = typeof row?.full_name === "string" ? row.full_name : null;
-        const avatarUrl = typeof row?.avatar_url === "string" ? row.avatar_url : null;
-
-        return {
-          ...baseListing,
-          seller_name: fullName ?? baseListing.seller_name ?? null,
-          seller_avatar_url: avatarUrl ?? baseListing.seller_avatar_url ?? null,
-        };
       }
-
-      return baseListing;
-    })();
+    }
 
     if (!listing) {
       // Not a live listing in listings_public (expired / sold / draft / rejected / test /
@@ -512,17 +517,6 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     }
 
     const serializedListing = serializeListing(listing);
-
-    const canonicalSegment = buildListingSlugSegment({ id: listing.id, brand: listing.brand, model: listing.model });
-
-    if (id !== canonicalSegment) {
-      return {
-        redirect: {
-          destination: `/fahrzeug/${canonicalSegment}`,
-          permanent: true,
-        },
-      };
-    }
 
     if (context.res) {
       context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
