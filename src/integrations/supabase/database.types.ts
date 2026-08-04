@@ -1899,6 +1899,7 @@ export type Database = {
         Args: never
         Returns: {
           slug: string
+          updated_at: string | null
         }[]
       }
       get_public_garages: {
