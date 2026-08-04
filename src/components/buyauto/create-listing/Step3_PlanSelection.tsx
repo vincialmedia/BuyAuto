@@ -280,7 +280,7 @@ export default function Step3_PlanSelection() {
                 Premium Boost
               </Label>
               <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200/60">
-                Bis zu 3x höhere Verkaufschancen
+                Zuoberst in der Suche
               </span>
             </div>
             <p className="text-neutral-600">
