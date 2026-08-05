@@ -137,6 +137,7 @@ type ListingRow = {
   title: string | null;
   year: number | null;
   deal_type: string | null;
+  leasing_offer: Record<string, unknown> | null;
   price_per_month_chf: number | null;
   purchase_price_chf: number | null;
   garage_id: string | null;
@@ -205,7 +206,7 @@ serve(async (req) => {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id,brand,model,title,year,deal_type,price_per_month_chf,purchase_price_chf,garage_id,created_by,user_id")
+    .select("id,brand,model,title,year,deal_type,leasing_offer,price_per_month_chf,purchase_price_chf,garage_id,created_by,user_id")
     .eq("id", convo.listing_id)
     .single<ListingRow>();
 
@@ -273,7 +274,12 @@ serve(async (req) => {
     sellerDisplayName = garage?.garage_name?.trim() || sellerDisplayName;
   }
 
-  const isLeaseTakeover = listing.deal_type === "lease_takeover";
+  // Pure lease-takeover listings AND "Direktkauf + Leasingübernahme" hybrids,
+  // where the takeover sits in leasing_offer.lease_takeover_offer while
+  // deal_type stays direct_purchase (same flag the listing wizard checks).
+  const takeoverOffer = (listing.leasing_offer as { lease_takeover_offer?: { enabled?: unknown } } | null)
+    ?.lease_takeover_offer;
+  const isLeaseTakeover = listing.deal_type === "lease_takeover" || takeoverOffer?.enabled === true;
   const listingTitle = formatListingTitle(listing);
   const monthly = formatChf(listing.price_per_month_chf);
   const purchase = formatChf(listing.purchase_price_chf);
