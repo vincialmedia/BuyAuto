@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
 import { searchListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
-import { getLeasingBrandBySlug, LEASING_BRANDS, type LeasingBrand } from "@/lib/buyauto/leasingBrands";
+import {
+  dbBrandsFor,
+  LEASING_BRANDS,
+  resolveBrandSlug,
+  type BrandInventoryRow,
+  type LeasingBrand,
+} from "@/lib/buyauto/leasingBrands";
+import { supabase } from "@/integrations/supabase/client";
 
 const SITE_URL = "https://www.buyauto.ch";
 
@@ -40,7 +47,9 @@ function buildFaq(brand: LeasingBrand): FaqItem[] {
 
 export default function LeasingBrandPage({ brand, listings, total }: BrandPageProps) {
   const canonical = `${SITE_URL}/leasinguebernahme/${brand.slug}`;
-  const searchHref = `/suche?dealType=lease_takeover&brand=${encodeURIComponent(brand.name)}`;
+  // /suche filters on the exact stored brand string, which can differ from the display
+  // name (Mercedes-Benz page ↔ "Mercedes" rows) — link with the primary DB spelling.
+  const searchHref = `/suche?dealType=lease_takeover&brand=${encodeURIComponent(dbBrandsFor(brand)[0])}`;
   const hasListings = total > 0;
   const faq = buildFaq(brand);
 
@@ -264,6 +273,8 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  // Curated slugs are prerendered; brands that only exist in the DB (e.g. Fiat, Škoda)
+  // reach getStaticProps through fallback:"blocking" and are resolved there.
   return {
     paths: LEASING_BRANDS.map((b) => ({ params: { marke: b.slug } })),
     fallback: "blocking",
@@ -272,14 +283,34 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) => {
   const slug = String(context.params?.marke ?? "");
-  const brand = getLeasingBrandBySlug(slug);
 
-  if (!brand) {
-    return { notFound: true };
+  let inventoryRows: BrandInventoryRow[] = [];
+  try {
+    const { data, error } = await supabase.from("listings_public").select("brand, model, deal_type");
+    if (error) console.error("Brand page inventory query failed:", { slug, error });
+    else inventoryRows = (data ?? []) as BrandInventoryRow[];
+  } catch (error) {
+    console.error("Brand page inventory query failed:", { slug, error });
   }
 
+  const resolved = resolveBrandSlug(slug, inventoryRows);
+
+  if (!resolved) {
+    return { notFound: true, revalidate: 300 };
+  }
+
+  if ("redirectTo" in resolved) {
+    // A DB spelling already covered by a curated page (e.g. /mercedes → /mercedes-benz).
+    return {
+      redirect: { destination: `/leasinguebernahme/${resolved.redirectTo}`, permanent: true },
+      revalidate: 300,
+    };
+  }
+
+  const brand = resolved.brand;
+
   try {
-    const results = await searchListings({ dealType: "lease_takeover", brand: brand.name, sort: "dateDesc" });
+    const results = await searchListings({ dealType: "lease_takeover", brands: dbBrandsFor(brand), sort: "dateDesc" });
     // Strip undefined fields so Next can serialize the props.
     const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
     return { props: { brand, listings, total: results.total }, revalidate: 300 };

@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import Link from "next/link";
 import {
   Check,
@@ -52,9 +53,8 @@ interface PageProps {
   updatedDate: string;
 }
 
-// Honest last-edit date. Bump this when the content actually changes; keep in sync
-// with the Article schema dateModified below.
-const LAST_UPDATED = "22.07.2026";
+// Honest last-edit date. Maintained in contentDates.ts, shared with the sitemap
+// lastmod and the Article schema dateModified below.
 
 // Single source of truth for the FAQ: feeds BOTH the visible accordion and the FAQPage
 // JSON-LD, so the schema can never drift from what the user (and Google) actually sees.
@@ -105,11 +105,14 @@ const FACTORS = [
 export async function getStaticProps() {
   return {
     props: {
-      updatedDate: LAST_UPDATED,
+      updatedDate: formatSwissDate(CONTENT_LAST_UPDATED["/eintauschwert-rechner"]),
     },
     revalidate: 86400,
   };
 }
+
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/eintauschwert-rechner"];
 
 export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
   const canonical = "https://www.buyauto.ch/eintauschwert-rechner";
@@ -169,7 +172,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-07-22",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: canonical,
             }),
           }}
@@ -209,9 +212,11 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
               Eintauschwert berechnen
             </h1>
             <p className="text-lg md:text-xl text-neutral-300 leading-relaxed mb-6 max-w-2xl mx-auto">
-              Was ist das Fahrzeug im Eintausch wert? Marke, Modell, Jahrgang und Kilometerstand
-              eingeben – der Rechner findet echte Vergleichsinserate und zieht deine Kosten und
-              Marge ab. In 2 Minuten zum Ankaufspreis, mit Rechenweg fürs Kundengespräch.
+              Der Eintauschwert ist der Preis, den die Garage beim Eintausch zahlt: Marktwert minus
+              Aufbereitung, Garantie-Rückstellung, Standzeit und Marge – als Faustregel 80–90% des
+              Marktwerts. Gib Marke, Modell, Jahrgang und Kilometerstand ein; der Rechner zieht echte
+              Vergleichsinserate bei und liefert in 2 Minuten den Ankaufspreis samt Rechenweg fürs
+              Kundengespräch.
             </p>
 
             {/* Trust row */}

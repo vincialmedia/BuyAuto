@@ -1,0 +1,30 @@
+# BuyAuto
+
+> BuyAuto ist die Schweizer Plattform für Leasingübernahme – «Raus aus dem Leasing. Ohne Verlust.» Wer sein Leasing vorzeitig abgeben will, findet hier eine Nachfolgerin oder einen Nachfolger; wer ein Auto sucht, übernimmt einen laufenden Leasingvertrag ohne hohe Anzahlung und mit kurzer Restlaufzeit. Besonders stark für E-Autos und Leasingverträge mit hohem Restwert. Alle Preise in CHF, bei Leasingübernahmen als Monatsrate mit Restlaufzeit (z.B. CHF 557/Monat bei 30 Monaten Restlaufzeit); daneben gibt es Direktkauf-Inserate mit Kaufpreis.
+
+## Fahrzeuge
+
+- [Fahrzeugsuche](https://www.buyauto.ch/suche): Alle aktuellen Inserate mit Preis, Restlaufzeit und Kilometerstand
+- [Leasingübernahmen](https://www.buyauto.ch/suche?dealType=lease_takeover): Laufende Leasingverträge zur Übernahme (Monatsrate + Restlaufzeit)
+- [Autos zum Direktkauf](https://www.buyauto.ch/suche?dealType=direct_purchase): Occasionen mit Kaufpreis in CHF
+- [Leasingübernahme nach Marke](https://www.buyauto.ch/leasinguebernahme): Markenübersicht mit aktuellen Übernahme-Angeboten
+
+## Ratgeber
+
+- [Leasingübernahme – kompletter Leitfaden](https://www.buyauto.ch/leasinguebernahme): Ablauf, Voraussetzungen und Kosten der Vertragsübertragung in der Schweiz
+- [Was kostet eine Leasingübernahme?](https://www.buyauto.ch/leasinguebernahme-kosten): Alle Gebühren im Überblick
+- [Leasingvertrag übertragen](https://www.buyauto.ch/leasingvertrag-uebertragen): Schritt-für-Schritt zur Übertragung
+- [Leasing abgeben in der Schweiz](https://www.buyauto.ch/leasing-abgeben-schweiz): Legal aus dem Leasing aussteigen
+- [Leasingübernahme vs. neues Leasing](https://www.buyauto.ch/leasinguebernahme-vs-neues-leasing): Kostenvergleich der beiden Optionen
+- [Leasingübernahme vs. Auto-Abo](https://www.buyauto.ch/leasinguebernahme-vs-autoabo): Welches Modell passt zu wem
+- [Auto-Abo kündigen](https://www.buyauto.ch/auto-abo-kuendigen): Fristen, Kosten und Alternativen
+- [Auto-Abo vs. Leasing – Kostenrechner](https://www.buyauto.ch/auto-abo-vs-leasing-kosten): Vollkosten beider Modelle vergleichen
+- [Auto-Abos im Vergleich](https://www.buyauto.ch/auto-abos-im-vergleich): Anbieter und Alternativen in der Schweiz
+- [AutoScout24-Alternative für Leasingübernahmen](https://www.buyauto.ch/autoscout24-alternative-leasinguebernahme): Warum ein Leasing-Marktplatz anders funktioniert
+- [Carify-Alternativen](https://www.buyauto.ch/carify-alternativen): Auto-Abo-Anbieter im Vergleich
+- [Eintauschwert-Rechner](https://www.buyauto.ch/eintauschwert-rechner): Ankaufspreis für den Eintausch berechnen
+
+## Preise
+
+- [Preise für Inserate](https://www.buyauto.ch/preise): Was ein Inserat auf BuyAuto kostet (einmalig, kein Abo)
+- [Leasing Concierge](https://www.buyauto.ch/leasing-concierge): Begleiteter Leasing-Ausstieg als Service

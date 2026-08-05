@@ -641,7 +641,8 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
       if (term) query = query.or(`brand.ilike.%${term}%,model.ilike.%${term}%`);
     }
 
-    if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
+    if (searchQuery.brands?.length) query = query.in("brand", searchQuery.brands);
+    else if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
     if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
     if (searchQuery.variant) query = query.eq("variant", searchQuery.variant);
     if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);

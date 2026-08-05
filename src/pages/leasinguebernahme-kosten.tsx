@@ -1,5 +1,6 @@
 import Head from "next/head";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -42,6 +43,9 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
   loading: () => <div className="h-96 bg-neutral-50 animate-pulse" />
 });
 
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-kosten"];
+
 export default function LeasinguebernahmeKostenPage() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -72,7 +76,7 @@ export default function LeasinguebernahmeKostenPage() {
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme-kosten",
             }),
           }}
@@ -183,7 +187,7 @@ export default function LeasinguebernahmeKostenPage() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <DollarSign className="w-4 h-4" />
-                  Kostenübersicht
+                  Kostenübersicht · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
                   Leasingübernahme Kosten in der Schweiz
@@ -192,7 +196,10 @@ export default function LeasinguebernahmeKostenPage() {
                   Der komplette Gebühren-Überblick
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail – transparent und verständlich erklärt.
+                  Eine Leasingübernahme kostet dich in der Schweiz einmalig rund 200–650 CHF – je nach
+                  Leasinggeber für Umschreibung, Bonitätsprüfung und Administration. Danach zahlst du einfach
+                  die bestehende Monatsrate weiter; eine Anzahlung wie beim Neuleasing entfällt. Alle Gebühren,
+                  versteckte Kosten und Spartipps findest du im Detail weiter unten.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -234,7 +241,7 @@ export default function LeasinguebernahmeKostenPage() {
             
             <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Eine <strong>Leasingübernahme kostet in der Schweiz typischerweise zwischen 200–600 CHF</strong>, abhängig von der Bank, dem Fahrzeugtyp und eventuellen Zusatzleistungen.
+                Eine <strong>Leasingübernahme kostet in der Schweiz typischerweise zwischen 200–650 CHF</strong>, abhängig von der Bank, dem Fahrzeugtyp und eventuellen Zusatzleistungen.
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
                 Viele Abgeber übernehmen diese Kosten freiwillig, um den Transfer attraktiver zu gestalten.
