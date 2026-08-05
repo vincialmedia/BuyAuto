@@ -114,8 +114,8 @@ the CTA's position.**
 
 | Left (the offer) | Right (the interaction) |
 |---|---|
-| Live-proof eyebrow (real listing count) | Compact exit-cost calculator |
-| H1 with the ad keyword + the differentiator | Two sliders (Restlaufzeit, Monatsrate) |
+| H1 with the ad keyword + the differentiator | Compact exit-cost calculator |
+| **One** sentence subhead carrying the price anchor | Two sliders (Restlaufzeit, Monatsrate) |
 | **One** sentence subhead carrying the price anchor | The number: "Restraten, die dein Nachfolger übernimmt" |
 | Primary CTA | Übernahme ~CHF 350 vs. Kündigung "mehrere tausend" |
 | Friction-killing microcopy | Second CTA |
@@ -155,7 +155,7 @@ On mobile the headline, subhead, CTA, microcopy and all three trust points fit i
 | H1 "Leasing abgeben **ohne Stress.**" | "Leasing abgeben – **ohne teure Kündigung.**" | Keyword match kept; vague benefit replaced with the concrete differentiator |
 | 62-word, 3-option paragraph | 1 sentence, 28 words, carrying the CHF 350 anchor | 5-second value prop; the explainer moved to the comparison section |
 | — | "Gratis · 60 Tage online · Login erst beim Veröffentlichen" | Kills the three biggest hesitations. All three verifiable: `standard` plan is CHF 0 / 60 days, and the wizard genuinely defers login to publish |
-| "Der ultimative Guide 2026 · Aktualisiert am …" | Live listing count (≥5) or a neutral fallback | The guide badge sells an article; the count sells a marketplace. Falls back gracefully on low inventory so it never reads as weak |
+| "Der ultimative Guide 2026 · Aktualisiert am …" badge | *(removed)* | The badge sells an article, not an offer. The hero now opens directly on the headline; the updated date moved to the foot of the FAQ, where it still serves E-E-A-T without costing fold space |
 
 ### Technical / measurement changes
 
@@ -184,8 +184,10 @@ The layout is now instrumented; these are the experiments it enables, in rough e
 2. **Attention ratio.** Test a stripped header for `gclid`-bearing sessions — logo only, no nav
    dropdowns. Research points at 16–28% for high-intent traffic; we are currently at ~12 competing
    links.
-3. **Eyebrow proof.** Live count vs. a cumulative "X Leasings bereits übergeben" figure, once we can
-   substantiate one from `listings.published_at` / sold transitions.
+3. **Above-the-fold proof.** The hero currently carries no social proof — a live-count eyebrow was
+   built and cut as visual noise. If proof returns here it should be qualitatively stronger than a
+   number: a testimonial line, or a cumulative "X Leasings bereits übergeben" figure once one can be
+   substantiated from `listings.published_at` / sold transitions.
 4. **Calculator defaults.** Currently 24 months × CHF 450 = CHF 10'800. Test whether a higher default
    anchor produces more starts.
 5. **Real social proof.** The single largest missing lever. One verifiable testimonial from a
