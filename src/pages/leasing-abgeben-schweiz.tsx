@@ -41,16 +41,11 @@ import {
 
 type LeasingAbgebenPageProps = {
   takeoverListings: Listing[];
-  takeoverCount: number;
 };
 
 // Typical re-registration/transfer fee charged by Swiss leasing banks — a guide
 // value, not a quote; the disclaimer under the calculator says so.
 const TRANSFER_FEE_CHF = 350;
-
-// Below this the live-listing count is not persuasive social proof, so the
-// eyebrow falls back to a claim that is true regardless of inventory.
-const MIN_COUNT_FOR_PROOF = 5;
 
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasing-abgeben-schweiz"];
@@ -125,7 +120,7 @@ function CtaButton({
   );
 }
 
-export default function LeasingAbgebenSchweiz({ takeoverListings, takeoverCount }: LeasingAbgebenPageProps) {
+export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgebenPageProps) {
   const [months, setMonths] = useState(24);
   const [monthlyRate, setMonthlyRate] = useState(450);
   const [showStickyCTA, setShowStickyCTA] = useState(false);
@@ -253,21 +248,6 @@ export default function LeasingAbgebenSchweiz({ takeoverListings, takeoverCount 
             <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-12 items-center">
               {/* Left: offer */}
               <div>
-                <p className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 mb-4">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                  </span>
-                  {takeoverCount >= MIN_COUNT_FOR_PROOF ? (
-                    <>
-                      <strong className="text-neutral-900">{takeoverCount} Leasingübernahmen</strong> aktuell live auf
-                      BuyAuto
-                    </>
-                  ) : (
-                    <>Leasingübernahmen aus der ganzen Schweiz</>
-                  )}
-                </p>
-
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-neutral-900 tracking-tight leading-[1.05] mb-5">
                   Leasing abgeben –<br />
                   <span className="text-primary">ohne teure Kündigung.</span>
@@ -746,9 +726,9 @@ export const getStaticProps: GetStaticProps<LeasingAbgebenPageProps> = async () 
     const results = await searchListings({ dealType: "lease_takeover", sort: "dateDesc" });
     // Newest three takeovers; strip undefined fields so Next can serialize.
     const takeoverListings = JSON.parse(JSON.stringify(results.items.slice(0, 3))) as Listing[];
-    return { props: { takeoverListings, takeoverCount: results.total ?? 0 }, revalidate: 3600 };
+    return { props: { takeoverListings }, revalidate: 3600 };
   } catch (error) {
     console.error("Leasing abgeben landing: takeover fetch failed:", error);
-    return { props: { takeoverListings: [], takeoverCount: 0 }, revalidate: 3600 };
+    return { props: { takeoverListings: [] }, revalidate: 3600 };
   }
 };
