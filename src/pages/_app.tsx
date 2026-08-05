@@ -88,6 +88,17 @@ export default function App({ Component, pageProps }: AppProps) {
     // creates no scroll container, so it holds in every engine and sticky still
     // works. Paired with overflow-x:clip on body in globals.css.
     <div className={`${manrope.variable} ${caveat.variable} font-sans min-h-screen overflow-x-clip`}>
+      {/* Radix portals (dialogs, dropdowns, …) render into document.body —
+          OUTSIDE this wrapper — so they don't see the font variables above and
+          fell back to the browser serif. On iOS Safari that unstyled portal
+          text additionally got font-boosted and could push the document wider
+          than the viewport. Declaring the resolved font on <html> covers
+          every portal. */}
+      <style jsx global>{`
+        html {
+          font-family: ${manrope.style.fontFamily}, sans-serif;
+        }
+      `}</style>
       <AuthProvider>
         <MainLayout>
           <Head>

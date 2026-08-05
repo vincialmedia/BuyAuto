@@ -322,9 +322,14 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
   // "Als verkauft markieren" from the overview goes through the buyer
   // chooser first: the seller says which chat belongs to the buyer, so that
   // chat stays open (and the buyer is notified) while the rest is archived.
+  // Deferred a tick: opening a modal in the same event that closes the
+  // dropdown races Radix's focus/scroll cleanup and strands
+  // `pointer-events: none` on <body> — a frozen page on touch devices.
   const handleOpenMarkSold = useCallback((listing: ListingDetail) => {
-    setListingToMarkSold(listing);
-    setMarkSoldDialogOpen(true);
+    setTimeout(() => {
+      setListingToMarkSold(listing);
+      setMarkSoldDialogOpen(true);
+    }, 0);
   }, []);
 
   const handleMarkSoldWithBuyer = useCallback(async (conversationId: string) => {

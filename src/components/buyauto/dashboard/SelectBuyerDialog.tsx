@@ -96,7 +96,7 @@ export default function SelectBuyerDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!busy) onOpenChange(next); }}>
-      <DialogContent className="rounded-3xl w-[calc(100vw-2rem)] max-w-lg max-h-[85vh] overflow-y-auto p-5 sm:p-6">
+      <DialogContent className="rounded-3xl w-[calc(100vw-2rem)] max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden break-words p-5 sm:p-6">
         <DialogHeader>
           <DialogTitle>Als verkauft markieren</DialogTitle>
           <DialogDescription>
