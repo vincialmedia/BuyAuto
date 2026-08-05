@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import type { LeasingOffer } from "@/lib/buyauto/types";
 
 export interface AdminListingFilters {
   status?: 'pending' | 'published' | 'rejected' | 'expired' | 'archived' | 'all';
@@ -32,6 +33,8 @@ export interface AdminListing {
   body: string | null;
   deal_type: string | null;
   financing_type: string | null;
+  /** Present in the fetched row (select *) — carries the Leasingübernahme add-on offer. */
+  leasing_offer: LeasingOffer | null;
   purchase_price_chf: number | null;
   price_per_month_chf: number | null;
   deposit_chf: number | null;
@@ -98,6 +101,13 @@ export interface AdminBusinessEditableListingUpdate {
   body?: string | null;
   deal_type?: string | null;
   financing_type?: string | null;
+  /**
+   * Written only when an enabled lease_takeover_offer exists on the row: the
+   * public site reads the takeover terms from this JSON, so an admin edit of
+   * the mirrored columns updates the offer alongside — otherwise the change
+   * would be invisible to buyers and undone by the seller's next save.
+   */
+  leasing_offer?: LeasingOffer | null;
   purchase_price_chf?: number | null;
   price_per_month_chf?: number | null;
   deposit_chf?: number | null;

@@ -87,6 +87,26 @@ function getStatusBadge(status: ListingStatus) {
   }
 }
 
+/**
+ * Same product rule as the public site (ModernListingCard): a listing is
+ * presented as Leasingübernahme when its deal_type says so OR when its
+ * direct-purchase row carries an enabled lease_takeover_offer in the
+ * leasing_offer JSON. The admin panel must state the same thing the buyer
+ * sees, not the raw enum alone.
+ */
+function getEnabledTakeoverOffer(listing: AdminListing) {
+  if (listing.deal_type !== "direct_purchase") return null;
+  const takeover = listing.leasing_offer?.lease_takeover_offer;
+  return takeover?.enabled === true ? takeover : null;
+}
+
+function getEffectiveDealLabel(listing: AdminListing): string {
+  if (listing.deal_type === "lease_takeover") return "Leasingübernahme";
+  if (getEnabledTakeoverOffer(listing)) return "Direktkauf + Leasingübernahme";
+  if (listing.financing_type === "leasing" || listing.leasing_offer?.enabled === true) return "Direktkauf + Leasing";
+  return "Direktkauf";
+}
+
 function guessPrivateListingType(durationDays: number | null): PrivateListingType {
   // expires_at says nothing about the plan here: a paid listing waiting in
   // review deliberately has no expiry yet (the runtime only starts at
@@ -118,6 +138,12 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
     if (!open) return;
     setEditing(false);
     setActiveTab("vehicle");
+    // On a row with an enabled takeover offer the JSON is the buyer-visible
+    // source of truth and the flat columns merely mirror it. Seeding the form
+    // from the JSON keeps an admin save from writing possibly-diverged column
+    // values (stale wizard leftovers on not-yet-backfilled rows) back into the
+    // offer.
+    const seededTakeover = getEnabledTakeoverOffer(listing);
     setEditData({
       brand: listing.brand,
       model: listing.model,
@@ -133,8 +159,10 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
       deal_type: listing.deal_type,
       financing_type: listing.financing_type,
       purchase_price_chf: listing.purchase_price_chf,
-      price_per_month_chf: listing.price_per_month_chf,
-      deposit_chf: listing.deposit_chf,
+      price_per_month_chf: seededTakeover
+        ? Math.round(Number(seededTakeover.price_per_month_chf))
+        : listing.price_per_month_chf,
+      deposit_chf: seededTakeover ? Math.round(Number(seededTakeover.deposit_chf)) : listing.deposit_chf,
       power_hp: listing.power_hp,
       drivetrain: listing.drivetrain,
       first_registration: listing.first_registration,
@@ -145,8 +173,14 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
       premium_until: listing.premium_until,
       expires_at: listing.expires_at,
       duration_days: listing.duration_days,
-      remaining_months: listing.remaining_months,
-      remaining_km: listing.remaining_km,
+      remaining_months: seededTakeover
+        ? Math.floor(Number(seededTakeover.remaining_months))
+        : listing.remaining_months,
+      remaining_km: seededTakeover
+        ? typeof seededTakeover.remaining_km === "number"
+          ? Math.round(seededTakeover.remaining_km)
+          : null
+        : listing.remaining_km,
       price_plan: listing.price_plan,
       cover_image_index: listing.cover_image_index,
       cover_image_url: listing.cover_image_url,
@@ -202,7 +236,12 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
         price_per_month_chf: typeof editData.price_per_month_chf === "number" ? editData.price_per_month_chf : safeInt(String(editData.price_per_month_chf ?? "")),
         deposit_chf: typeof editData.deposit_chf === "number" ? editData.deposit_chf : safeInt(String(editData.deposit_chf ?? "")),
         remaining_months: typeof editData.remaining_months === "number" ? editData.remaining_months : safeInt(String(editData.remaining_months ?? "")),
-        remaining_km: typeof editData.remaining_km === "number" ? editData.remaining_km : safeInt(String(editData.remaining_km ?? "")),
+        // remaining_km has no DB check constraint, so a negative typo would be
+        // stored verbatim — treat it as cleared instead.
+        remaining_km: (() => {
+          const v = typeof editData.remaining_km === "number" ? editData.remaining_km : safeInt(String(editData.remaining_km ?? ""));
+          return typeof v === "number" && v >= 0 ? Math.round(v) : null;
+        })(),
         power_hp: typeof editData.power_hp === "number" ? editData.power_hp : safeInt(String(editData.power_hp ?? "")),
         drivetrain: safeString(String(editData.drivetrain ?? "")),
         first_registration: safeString(String(editData.first_registration ?? "")),
@@ -223,6 +262,51 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
         cover_image_index: typeof editData.cover_image_index === "number" ? editData.cover_image_index : safeInt(String(editData.cover_image_index ?? "")) ?? listing.cover_image_index,
         cover_image_url: safeString(String(editData.cover_image_url ?? "")),
       };
+
+      // The buyer-visible source of the takeover terms is the leasing_offer
+      // JSON — the flat columns only mirror it. An admin edit of the monthly
+      // price / Restlaufzeit / Kaution / Rest-km therefore writes both, with
+      // invalid inputs falling back to the stored offer so the row keeps
+      // satisfying the DB's leasing_offer consistency check (rate/months > 0).
+      const storedTakeover = getEnabledTakeoverOffer(listing);
+      if (storedTakeover) {
+        const monthly =
+          typeof sanitized.price_per_month_chf === "number" && sanitized.price_per_month_chf > 0
+            ? Math.round(sanitized.price_per_month_chf)
+            : Math.max(1, Math.round(Number(storedTakeover.price_per_month_chf)));
+        const months =
+          typeof sanitized.remaining_months === "number" && sanitized.remaining_months > 0
+            ? Math.floor(sanitized.remaining_months)
+            : Math.max(1, Math.floor(Number(storedTakeover.remaining_months)));
+        const deposit =
+          typeof sanitized.deposit_chf === "number" && sanitized.deposit_chf >= 0
+            ? Math.round(sanitized.deposit_chf)
+            : Math.max(0, Math.round(Number(storedTakeover.deposit_chf)));
+        // Blank deliberately clears the optional Rest-km; an invalid value
+        // (negative) keeps the stored one, like the other three fields. Read
+        // the raw input — the sanitized value has already collapsed negatives
+        // to null and can't tell the two apart.
+        const storedKm =
+          typeof storedTakeover.remaining_km === "number" ? Math.round(storedTakeover.remaining_km) : null;
+        const rawKmInput =
+          typeof editData.remaining_km === "number" ? editData.remaining_km : safeInt(String(editData.remaining_km ?? ""));
+        const remainingKm = rawKmInput === null ? null : rawKmInput >= 0 ? Math.round(rawKmInput) : storedKm;
+
+        sanitized.price_per_month_chf = monthly;
+        sanitized.remaining_months = months;
+        sanitized.deposit_chf = deposit;
+        sanitized.remaining_km = remainingKm;
+        sanitized.leasing_offer = {
+          ...(listing.leasing_offer as NonNullable<AdminListing["leasing_offer"]>),
+          lease_takeover_offer: {
+            ...storedTakeover,
+            price_per_month_chf: monthly,
+            remaining_months: months,
+            deposit_chf: deposit,
+            ...(remainingKm !== null ? { remaining_km: remainingKm } : { remaining_km: undefined }),
+          },
+        };
+      }
 
       // A status change never rides along with the column write. It goes
       // through adminUpdateListingStatus, which refunds a rejection before the
@@ -280,6 +364,26 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
     () => guessPrivateListingType(listing.duration_days ?? null),
     [listing.duration_days]
   );
+
+  const takeoverOffer = useMemo(() => getEnabledTakeoverOffer(listing), [listing]);
+  const effectiveDealLabel = useMemo(() => getEffectiveDealLabel(listing), [listing]);
+
+  // Read-only display prefers the takeover JSON over the mirrored columns, so
+  // the modal stays truthful even for rows the backfill has not reached.
+  const shownMonthly = takeoverOffer ? Math.round(Number(takeoverOffer.price_per_month_chf)) : listing.price_per_month_chf;
+  const shownMonths = takeoverOffer ? Math.floor(Number(takeoverOffer.remaining_months)) : listing.remaining_months;
+  const shownDeposit = takeoverOffer ? Math.round(Number(takeoverOffer.deposit_chf)) : listing.deposit_chf;
+  const shownRemainingKm = takeoverOffer
+    ? typeof takeoverOffer.remaining_km === "number"
+      ? Math.round(takeoverOffer.remaining_km)
+      : null
+    : listing.remaining_km;
+
+  const pickupCantonLabel = useMemo(() => {
+    const code = String(takeoverOffer?.pickup_canton_code ?? "").trim().toUpperCase();
+    if (!code || code === "XX") return null;
+    return cantons.find((c) => c.value === code)?.label ?? code;
+  }, [takeoverOffer]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -493,6 +597,19 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
               <div className="space-y-4 rounded-2xl border border-neutral-200 p-4">
                 <h3 className="font-medium text-neutral-900">Preis / Leasing</h3>
 
+                <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 space-y-1">
+                  <div className="text-xs text-neutral-600">Kaufart (wie im Inserat angezeigt)</div>
+                  <div className="font-medium text-neutral-900">{effectiveDealLabel}</div>
+                  {takeoverOffer && (
+                    <p className="text-xs text-neutral-500">
+                      Preis/Monat, Verbleibende Monate, Deposit und Rest-km stammen aus dem
+                      Leasingübernahme-Angebot des Inserats und werden beim Speichern mit dem
+                      Angebot synchron gehalten.
+                      {pickupCantonLabel ? <> Übergabe-Kanton: {pickupCantonLabel}.</> : null}
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-sm text-neutral-600">Kaufpreis (CHF)</label>
@@ -516,7 +633,7 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
                         onChange={(e) => setEditData((p) => ({ ...p, price_per_month_chf: safeInt(e.target.value) }))}
                       />
                     ) : (
-                      <p className="font-medium">{(listing as any).price_per_month_chf ?? <span className="text-neutral-400">—</span>}</p>
+                      <p className="font-medium">{shownMonthly ?? <span className="text-neutral-400">—</span>}</p>
                     )}
                   </div>
 
@@ -529,7 +646,7 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
                         onChange={(e) => setEditData((p) => ({ ...p, deposit_chf: safeInt(e.target.value) }))}
                       />
                     ) : (
-                      <p className="font-medium">{(listing as any).deposit_chf ?? <span className="text-neutral-400">—</span>}</p>
+                      <p className="font-medium">{shownDeposit ?? <span className="text-neutral-400">—</span>}</p>
                     )}
                   </div>
 
@@ -542,7 +659,20 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
                         onChange={(e) => setEditData((p) => ({ ...p, remaining_months: safeInt(e.target.value) }))}
                       />
                     ) : (
-                      <p className="font-medium">{listing.remaining_months ?? <span className="text-neutral-400">—</span>}</p>
+                      <p className="font-medium">{shownMonths ?? <span className="text-neutral-400">—</span>}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm text-neutral-600">Rest-km</label>
+                    {editing ? (
+                      <Input
+                        type="number"
+                        value={String(editData.remaining_km ?? "")}
+                        onChange={(e) => setEditData((p) => ({ ...p, remaining_km: safeInt(e.target.value) }))}
+                      />
+                    ) : (
+                      <p className="font-medium">{shownRemainingKm ?? <span className="text-neutral-400">—</span>}</p>
                     )}
                   </div>
 

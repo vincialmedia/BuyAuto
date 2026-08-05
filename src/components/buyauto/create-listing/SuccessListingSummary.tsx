@@ -222,8 +222,11 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
 
   const purchasePriceRaw = getNumber(listing.purchase_price_chf);
   const legacyPricePerMonthChf = getNumber(listing.price_per_month_chf);
+  // Legacy fallback only: with an enabled takeover offer, price_per_month_chf
+  // mirrors the offer's monthly rate and must not be shown as a Kaufpreis.
   const purchasePriceChf =
-    purchasePriceRaw ?? (dealType === "direct_purchase" ? legacyPricePerMonthChf : null);
+    purchasePriceRaw ??
+    (dealType === "direct_purchase" && !takeoverOfferEnabled ? legacyPricePerMonthChf : null);
 
   const pricePerMonthChf = getNumber(listing.price_per_month_chf);
 
@@ -377,6 +380,15 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
                       {formatChf(pricePerMonthChf)}
                     </p>
                     <p className="text-sm text-neutral-500 mt-1">{capabilityLabel}</p>
+                  </>
+                ) : purchasePriceChf === null && takeoverOfferEnabled ? (
+                  // No Kaufpreis on a takeover-offer listing: lead with the
+                  // offer's monthly rate, matching the public cards.
+                  <>
+                    <p className="text-2xl font-bold tracking-tight text-neutral-900">
+                      {formatChf(getNumber(leasingOffer?.lease_takeover_offer?.price_per_month_chf))}
+                    </p>
+                    <p className="text-sm text-neutral-500 mt-1">pro Monat (Leasingübernahme)</p>
                   </>
                 ) : (
                   <>

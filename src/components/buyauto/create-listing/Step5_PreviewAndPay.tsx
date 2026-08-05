@@ -208,7 +208,9 @@ export default function Step5_PreviewAndPay() {
     const purchase = getNumber((data as any)?.purchase_price_chf);
     if (typeof purchase === "number") return purchase;
 
-    if (dealType === "direct_purchase") {
+    // Legacy fallback only — with an enabled takeover offer the monthly field
+    // mirrors the offer's rate, which must not be previewed as a Kaufpreis.
+    if (dealType === "direct_purchase" && !takeoverOfferEnabled) {
       const fallback = getNumber((data as any)?.price_per_month_chf);
       if (typeof fallback === "number") return fallback;
     }
@@ -454,7 +456,13 @@ export default function Step5_PreviewAndPay() {
       payload.remaining_months = typeof remainingMonths === "number" ? Math.max(1, Math.floor(remainingMonths)) : undefined;
       payload.deposit_chf = typeof depositChf === "number" ? Math.round(depositChf) : null;
     } else {
-      const purchase = getNumber(anyData?.purchase_price_chf) ?? monthlyRateChf;
+      // With an enabled takeover offer, wizard state's price_per_month_chf is
+      // the offer's mirrored monthly rate (hydrated from the row) — falling
+      // back to it would persist the rate as the Kaufpreis on listings that
+      // deliberately have none. The fallback exists only for legacy rows whose
+      // purchase price was mis-slotted into the monthly field.
+      const hasEnabledTakeover = anyData?.leasing_offer?.lease_takeover_offer?.enabled === true;
+      const purchase = getNumber(anyData?.purchase_price_chf) ?? (hasEnabledTakeover ? undefined : monthlyRateChf);
       payload.purchase_price_chf = typeof purchase === "number" ? Math.round(purchase) : null;
       payload.price_per_month_chf = null;
       payload.remaining_months = typeof remainingMonths === "number" ? Math.max(0, Math.floor(remainingMonths)) : undefined;
