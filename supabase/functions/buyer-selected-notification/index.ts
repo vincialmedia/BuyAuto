@@ -62,6 +62,7 @@ function templateShell(params: { heading: string; bodyHtml: string }): string {
     .checklist h3 { margin: 0 0 8px 0; font-size: 15px; color: #92400e; }
     .checklist ol { margin: 0 0 0 18px; padding: 0; }
     .checklist li { margin: 6px 0; font-size: 14px; }
+    .callout { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 12px 14px; margin-top: 14px; font-size: 14px; color: #7f1d1d; }
     .button { display: inline-block; background-color: #dc2626; color: white; padding: 12px 18px; text-decoration: none; border-radius: 10px; font-weight: 800; }
     .muted { color: #6b7280; font-size: 13px; }
     .footer { border-top: 1px solid #e5e7eb; padding-top: 16px; text-align: center; color: #6b7280; font-size: 12px; }
@@ -109,9 +110,19 @@ function buyerLeasingChecklistHtml(): string {
       <li>Reichen Sie die verlangten Unterlagen ein: Kopie von <strong>ID/Pass bzw. Ausländerausweis (B/C)</strong>, die letzten <strong>3 Lohnabrechnungen</strong>, je nach Bank auch einen Betreibungsauszug.</li>
       <li>Schliessen Sie eine <strong>Vollkaskoversicherung</strong> ab – sie ist während der ganzen Leasingdauer obligatorisch.</li>
       <li>Besichtigen Sie das Fahrzeug gemeinsam und halten Sie den Zustand schriftlich fest – Vorschäden gehen auf Sie über.</li>
-      <li>Unterschreiben Sie nach der Genehmigung durch die Bank den übernommenen Leasingvertrag. Die Umschreibung beim Strassenverkehrsamt veranlasst in der Regel die Leasingbank.</li>
+      <li>Unterschreiben Sie nach der Genehmigung durch die Bank den übernommenen Leasingvertrag.</li>
     </ol>
+    ${svamtCalloutHtml()}
     <p class="muted" style="margin: 10px 0 0 0;">Ablauf und Gebühren unterscheiden sich je nach Leasingbank (z.&nbsp;B. Cembra Money Bank, BANK-now, MultiLease, AMAG Leasing). Massgebend sind immer die Angaben der Bank. Die vollständige Checkliste steht auch in Ihrem Chat.</p>
+  </div>`;
+}
+
+// The bank only releases ("Freigabe") the car for transfer — it does NOT
+// re-register it. Buyer or seller handle the Fahrzeugausweis themselves.
+function svamtCalloutHtml(): string {
+  return `<div class="callout">
+    <strong>❗ Wichtig – Umschreibung:</strong> Die Leasingbank gibt die Übernahme nur <strong>frei</strong>, die Umschreibung macht sie nicht.
+    Sobald die Freigabe der Bank da ist, geht der Käufer oder der Verkäufer selbst zum <strong>Strassenverkehrsamt</strong> und lässt den Fahrzeugausweis auf den Käufer umschreiben.
   </div>`;
 }
 
@@ -125,6 +136,7 @@ function sellerLeasingChecklistHtml(): string {
       <li>Klären Sie die <strong>Übernahmegebühr</strong> der Bank (je nach Anbieter ca. CHF 100–600) und wer sie übernimmt.</li>
       <li>Übergeben Sie das Fahrzeug erst, wenn die Bank die Übernahme <strong>schriftlich genehmigt</strong> hat – bis dahin haften Sie weiter.</li>
     </ol>
+    ${svamtCalloutHtml()}
     <p class="muted" style="margin: 10px 0 0 0;">Ablauf und Gebühren unterscheiden sich je nach Leasingbank (z.&nbsp;B. Cembra Money Bank, BANK-now, MultiLease, AMAG Leasing). Massgebend sind immer die Angaben der Bank. Die vollständige Checkliste steht auch in Ihrem Chat.</p>
   </div>`;
 }
