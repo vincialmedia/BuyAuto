@@ -321,8 +321,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
       ? listing.pricePerMonthCHF
       : null;
 
-  // remaining_months on direct-purchase rows is a wizard default (12), not lease data —
-  // leaseLength is a lease-takeover-only fact.
+  // remaining_months on direct-purchase rows mirrors the optional Leasingübernahme
+  // add-on offer (or is null) — the Offer here models the sale itself, so
+  // leaseLength stays a lease-takeover-only fact.
   const leaseLength = isDirectPurchase ? null : leaseLengthIso(listing.remainingMonths);
   const availableAtOrFrom = parseListingPlace(listing.location, listing.canton_code);
 

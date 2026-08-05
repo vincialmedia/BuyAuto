@@ -208,8 +208,11 @@ export function ListingDetailV2({
       items.push({ key: "power", label: "Leistung", value: `${formatNumber(powerHp)} PS`, Icon: Zap });
     }
 
+    // Lease-takeover only: on a Direktkauf with takeover offer the column
+    // mirrors the offer's remaining km, which the takeover box below already
+    // shows — repeating it here would duplicate the figure.
     const remainingKm = (listing as unknown as { remaining_km?: number | null }).remaining_km ?? null;
-    if (typeof remainingKm === "number" && remainingKm > 0) {
+    if (dealType === "lease_takeover" && typeof remainingKm === "number" && remainingKm > 0) {
       items.push({
         key: "remaining-km",
         label: "Restkilometer",
@@ -219,7 +222,7 @@ export function ListingDetailV2({
     }
 
     return items;
-  }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing]);
+  }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing, dealType]);
 
   return (
     <div className={cn("min-h-screen bg-neutral-50 pb-24", isSold ? "grayscale-[0.2]" : "")}>

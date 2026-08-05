@@ -277,9 +277,13 @@ export function DirectPurchaseFinancingDetails() {
   } = useForm<DirectPurchaseFinancingForm>({
     resolver: zodResolver(directPurchaseFinancingSchema),
     defaultValues: {
+      // The monthly-price fallback covers legacy rows where the purchase price
+      // was mis-slotted into price_per_month_chf. With an enabled takeover
+      // offer that column mirrors the offer's monthly rate instead — never a
+      // Kaufpreis — so the fallback must not apply.
       purchase_price_chf:
         toNumberOrUndefined((data as unknown as { purchase_price_chf?: unknown }).purchase_price_chf) ??
-        toNumberOrUndefined(data.price_per_month_chf) ??
+        (existingTakeover?.enabled === true ? undefined : toNumberOrUndefined(data.price_per_month_chf)) ??
         0,
 
       lease_takeover_enabled: existingTakeover?.enabled === true,

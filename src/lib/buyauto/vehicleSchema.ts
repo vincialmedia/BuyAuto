@@ -104,8 +104,9 @@ export interface VehicleDescriptionInput {
 /**
  * Deterministic JSON-LD description from real fields only. Wording differs per Kaufart:
  * for a Leasingübernahme the monthly rate + Restlaufzeit + Kaution are the story; for a
- * Direktkauf the one-time price is. remaining_months/deposit_chf on direct-purchase rows
- * are wizard defaults (12/0), so they are deliberately never used there.
+ * Direktkauf the one-time price is. On direct-purchase rows the monthly columns either
+ * mirror an optional Leasingübernahme add-on offer or are null — the description models
+ * the sale itself, so they are deliberately never used there.
  */
 export function buildVehicleDescription(input: VehicleDescriptionInput): string | null {
   const name = [input.brand, input.model].filter(Boolean).join(" ").trim();

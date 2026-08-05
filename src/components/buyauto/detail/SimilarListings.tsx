@@ -64,9 +64,6 @@ export default function SimilarListings({ listing }: SimilarListingsProps) {
     return null;
   }
 
-  const formatPrice = (price: number) => `CHF ${price.toLocaleString("de-CH")}`;
-  const formatMileage = (km: number) => `${km.toLocaleString("de-CH")} km`;
-
   return (
     <section className="space-y-8">
       <div className="flex items-center justify-between">
@@ -126,9 +123,47 @@ function SimilarListingCardSkeleton({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Same product rule as ModernListingCard: a row is a Leasingübernahme when its
+ * deal_type says so or its takeover add-on offer is enabled — those lead with
+ * the monthly rate and Restlaufzeit. Everything else is a Direktkauf and shows
+ * the purchase price (never the mirrored monthly columns as "pro Monat").
+ */
+function cardPriceInfo(listing: Listing): { price: string; priceSub: string; months: number | null } {
+  const chf = (v: number) => `CHF ${v.toLocaleString("de-CH")}`;
+  const dealType = listing.deal_type ?? "lease_takeover";
+
+  const takeover = dealType === "direct_purchase" ? listing.leasing_offer?.lease_takeover_offer ?? null : null;
+  const takeoverEnabled = takeover?.enabled === true;
+
+  const monthly =
+    dealType === "lease_takeover"
+      ? listing.pricePerMonthCHF > 0
+        ? listing.pricePerMonthCHF
+        : null
+      : takeoverEnabled && typeof takeover?.price_per_month_chf === "number"
+        ? takeover.price_per_month_chf
+        : null;
+
+  if ((dealType === "lease_takeover" || takeoverEnabled) && monthly) {
+    const months =
+      dealType === "lease_takeover"
+        ? listing.remainingMonths > 0
+          ? listing.remainingMonths
+          : null
+        : typeof takeover?.remaining_months === "number" && takeover.remaining_months > 0
+          ? takeover.remaining_months
+          : null;
+    return { price: chf(Math.round(monthly)), priceSub: "pro Monat", months };
+  }
+
+  const purchase = typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0 ? listing.purchasePriceCHF : null;
+  return { price: purchase ? chf(Math.round(purchase)) : "Preis auf Anfrage", priceSub: purchase ? "Kaufpreis" : "", months: null };
+}
+
 function SimilarListingCard({ listing }: { listing: Listing }) {
-  const formatPrice = (price: number) => `CHF ${price.toLocaleString("de-CH")}`;
   const formatMileage = (km: number) => `${km.toLocaleString("de-CH")} km`;
+  const { price, priceSub, months } = cardPriceInfo(listing);
 
   return (
     <Card className="group border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -172,12 +207,12 @@ function SimilarListingCard({ listing }: { listing: Listing }) {
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <div className="font-bold text-red-600">
-                {formatPrice(listing.pricePerMonthCHF)}
+                {price}
               </div>
-              <div className="text-xs text-neutral-500">pro Monat</div>
+              {priceSub && <div className="text-xs text-neutral-500">{priceSub}</div>}
             </div>
             <div className="text-right text-sm text-neutral-600">
-              <div>{listing.remainingMonths} Mon.</div>
+              {months !== null && <div>{months} Mon.</div>}
               <div className="flex items-center gap-1 text-xs">
                 <MapPin className="w-3 h-3" />
                 {listing.location}
@@ -191,8 +226,8 @@ function SimilarListingCard({ listing }: { listing: Listing }) {
 }
 
 function SimilarListingCardMobile({ listing }: { listing: Listing }) {
-  const formatPrice = (price: number) => `CHF ${price.toLocaleString("de-CH")}`;
   const formatMileage = (km: number) => `${km.toLocaleString("de-CH")} km`;
+  const { price, priceSub, months } = cardPriceInfo(listing);
 
   return (
     <Card className="group flex-shrink-0 w-72 border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden snap-start">
@@ -236,12 +271,12 @@ function SimilarListingCardMobile({ listing }: { listing: Listing }) {
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <div className="font-bold text-red-600">
-                {formatPrice(listing.pricePerMonthCHF)}
+                {price}
               </div>
-              <div className="text-xs text-neutral-500">pro Monat</div>
+              {priceSub && <div className="text-xs text-neutral-500">{priceSub}</div>}
             </div>
             <div className="text-right text-sm text-neutral-600">
-              <div>{listing.remainingMonths} Mon.</div>
+              {months !== null && <div>{months} Mon.</div>}
               <div className="flex items-center gap-1 text-xs">
                 <MapPin className="w-3 h-3" />
                 {listing.location}

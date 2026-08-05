@@ -36,7 +36,7 @@ export type ListingUpdatePayload = Partial<{
   description?: string;
   price_per_month_chf?: number | null;
   purchase_price_chf?: number | null;
-  remaining_months?: number;
+  remaining_months?: number | null;
   deposit_chf?: number | null;
   contract_end_date?: string | null;
   location?: string;
@@ -123,6 +123,43 @@ export function vehicleCoreFieldsFromWizard(
   };
 }
 
+/**
+ * Mirror the lease-takeover offer into the flat pricing columns. The public UI
+ * presents a direct-purchase listing with an enabled lease_takeover_offer as a
+ * Leasingübernahme and reads the monthly rate, remaining months, deposit and
+ * remaining km from the JSON — so every other reader of the row (admin panel,
+ * search filters, tombstones, notification emails) must find the same numbers
+ * in the columns, not wizard leftovers. Without a takeover offer the columns
+ * are cleared: on a plain Direktkauf they otherwise keep the wizard defaults
+ * (12 months / 0 deposit), which is exactly the stale data this prevents.
+ * deal_type='lease_takeover' rows never pass through here — their columns are
+ * the seller-entered source of truth.
+ */
+function mirrorTakeoverOfferIntoColumns(payload: ListingUpdatePayload): ListingUpdatePayload {
+  const takeover = (payload.leasing_offer as LeasingOfferPayload | null | undefined)?.lease_takeover_offer;
+
+  if (takeover?.enabled === true) {
+    return {
+      ...payload,
+      price_per_month_chf: Math.max(1, Math.round(Number(takeover.price_per_month_chf))),
+      remaining_months: Math.max(1, Math.floor(Number(takeover.remaining_months))),
+      deposit_chf: Math.max(0, Math.round(Number(takeover.deposit_chf))),
+      remaining_km:
+        typeof takeover.remaining_km === "number" && Number.isFinite(takeover.remaining_km)
+          ? Math.max(0, Math.round(takeover.remaining_km))
+          : null,
+    };
+  }
+
+  return {
+    ...payload,
+    price_per_month_chf: null,
+    remaining_months: null,
+    deposit_chf: null,
+    remaining_km: null,
+  };
+}
+
 function normalizeLeasingOfferForDirectPurchaseInsert(
   payload: ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType }
 ): ListingUpdatePayload {
@@ -133,7 +170,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
       const pickupCanton =
         (String(takeover.pickup_canton_code ?? "").trim() || "XX").toUpperCase();
 
-      return {
+      return mirrorTakeoverOfferIntoColumns({
         ...payload,
         leasing_offer: {
           enabled: false,
@@ -154,10 +191,10 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
             pickup_canton_code: pickupCanton,
           },
         } as LeasingOfferPayload,
-      };
+      });
     }
 
-    return { ...payload, leasing_offer: null };
+    return mirrorTakeoverOfferIntoColumns({ ...payload, leasing_offer: null });
   }
 
   const offer = payload.leasing_offer;
@@ -224,7 +261,7 @@ function normalizeLeasingOfferForDirectPurchaseInsert(
     throw new Error("leasing_offer.down_payment_pct must be 0 when no_down_payment is true");
   }
 
-  return { ...payload, leasing_offer: normalizedOffer };
+  return mirrorTakeoverOfferIntoColumns({ ...payload, leasing_offer: normalizedOffer });
 }
 
 function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpdatePayload {
@@ -245,7 +282,13 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
   const deal_type: DealType = "direct_purchase";
   const financing_type: FinancingType = payload.financing_type === "leasing" ? "leasing" : "cash";
 
-  const hasLegacyPricePerMonth = typeof payload.price_per_month_chf === "number" && Number.isFinite(payload.price_per_month_chf);
+  // A monthly price alongside an enabled takeover offer is the offer's own
+  // mirrored rate, not a legacy mis-slotted purchase price — the shim below
+  // must never promote it to purchase_price_chf.
+  const hasEnabledTakeover =
+    (payload.leasing_offer as LeasingOfferPayload | null | undefined)?.lease_takeover_offer?.enabled === true;
+  const hasLegacyPricePerMonth =
+    !hasEnabledTakeover && typeof payload.price_per_month_chf === "number" && Number.isFinite(payload.price_per_month_chf);
   const hasPurchasePrice =
     typeof payload.purchase_price_chf === "number" && Number.isFinite(payload.purchase_price_chf) && payload.purchase_price_chf > 0;
 
@@ -262,7 +305,9 @@ function normalizeDealFieldsForInsert(payload: ListingUpdatePayload): ListingUpd
   const leasingOfferProvided = hasLeasingOfferField && (payload as any).leasing_offer !== undefined;
 
   if (!leasingOfferProvided) {
-    return base;
+    // No offer on a fresh insert means no takeover — clear the wizard's
+    // remaining_months/deposit defaults instead of persisting them.
+    return mirrorTakeoverOfferIntoColumns({ ...base, leasing_offer: null });
   }
 
   return normalizeLeasingOfferForDirectPurchaseInsert({
@@ -279,7 +324,15 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
   const hasLeasingOfferField = Object.prototype.hasOwnProperty.call(payload, "leasing_offer");
   const leasingOfferProvided = hasLeasingOfferField && (payload as any).leasing_offer !== undefined;
 
-  const hasLegacyPricePerMonth = typeof payload.price_per_month_chf === "number" && Number.isFinite(payload.price_per_month_chf);
+  // See the insert-path twin: a monthly rate travelling with an enabled
+  // takeover offer belongs to that offer and must not be promoted to a
+  // purchase price by the legacy shim.
+  const hasEnabledTakeoverInPayload =
+    (payload.leasing_offer as LeasingOfferPayload | null | undefined)?.lease_takeover_offer?.enabled === true;
+  const hasLegacyPricePerMonth =
+    !hasEnabledTakeoverInPayload &&
+    typeof payload.price_per_month_chf === "number" &&
+    Number.isFinite(payload.price_per_month_chf);
   const hasPurchasePrice =
     typeof payload.purchase_price_chf === "number" && Number.isFinite(payload.purchase_price_chf) && payload.purchase_price_chf > 0;
 
@@ -311,7 +364,7 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
 
       if (nextFinancing === "cash") {
         if (!leasingOfferProvided) {
-          return { ...payload, financing_type: "cash", leasing_offer: null };
+          return mirrorTakeoverOfferIntoColumns({ ...payload, financing_type: "cash", leasing_offer: null });
         }
 
         const offer = payload.leasing_offer as LeasingOfferPayload | null | undefined;
@@ -324,7 +377,7 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
           } as ListingUpdatePayload & { deal_type: "direct_purchase"; financing_type: FinancingType });
         }
 
-        return { ...payload, financing_type: "cash", leasing_offer: null };
+        return mirrorTakeoverOfferIntoColumns({ ...payload, financing_type: "cash", leasing_offer: null });
       }
 
       return normalizeLeasingOfferForDirectPurchaseInsert({
@@ -337,7 +390,9 @@ function normalizeDealFieldsForUpdate(payload: ListingUpdatePayload): ListingUpd
 
     if (hasLeasingOfferField) {
       const currentOffer = payload.leasing_offer;
-      if (currentOffer === null) return payload;
+      // Writing leasing_offer = null removes any takeover offer, so the
+      // mirrored columns are cleared along with it.
+      if (currentOffer === null) return mirrorTakeoverOfferIntoColumns(payload);
       if (!currentOffer || typeof currentOffer !== "object") {
         throw new Error("leasing_offer must be an object or null");
       }
