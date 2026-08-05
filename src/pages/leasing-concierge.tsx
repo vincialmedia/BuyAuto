@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowRight, Mail, Clock, Shield, X } from "lucide-react";
 import Link from "next/link";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 function buildMailtoHref(params: { subject: string; body?: string }) {
   const subject = encodeURIComponent(params.subject);
@@ -53,6 +54,14 @@ export default function LeasingConcierge() {
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${baseUrl}/leasing-concierge`} />
       </Head>
+
+      {/* Schema-only: hero layout has no room for a visible crumb bar. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Leasing Concierge", href: "/leasing-concierge" },
+        ]}
+      />
 
       {/* pb-24 compensates the fixed mobile CTA bar so it never covers the final content/footer */}
       <div className={showMobileCta ? "pb-24 md:pb-0" : ""}>

@@ -9,6 +9,7 @@ import {
 } from "@/components/buyauto/pricing/PricingToggle";
 import { PrivatePricingSection } from "@/components/buyauto/pricing/PrivatePricingSection";
 import { GaragePricingSection } from "@/components/buyauto/pricing/GaragePricingSection";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 export default function GaragePreisePage() {
   const router = useRouter();
@@ -41,6 +42,14 @@ export default function GaragePreisePage() {
         <meta property="og:url" content="https://www.buyauto.ch/preise" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
+
+      {/* Schema-only: hero layout has no room for a visible crumb bar. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Preise", href: "/preise" },
+        ]}
+      />
 
       <div className="min-h-screen bg-white">
         <PricingHero persona={persona} onPersonaChange={setPersona} />

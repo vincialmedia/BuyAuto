@@ -16,6 +16,8 @@ export interface SearchQuery {
   page?: number;
   query?: string;
   brand?: string;
+  /** Exact-match set for pages that span several stored brand spellings (see leasingBrands.dbBrands). */
+  brands?: string[];
   model?: string;
   variant?: string;
   yearMin?: number;

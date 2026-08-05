@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import Link from "next/link";
 import { 
   Check, 
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/accordion";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 // Mirrors CalculatorSkeleton in AutoAboVsLeasingCalculator.tsx (duplicated here so the
 // calculator chunk stays code-split); the calculator renders the same skeleton until its
@@ -77,9 +79,8 @@ interface PageProps {
 }
 
 // Honest last-edit date (was a fake daily-refreshing new Date() — a freshness-spoofing
-// signal). Bump this when the content actually changes; keep in sync with the Article
-// schema dateModified below.
-const LAST_UPDATED = "08.06.2026";
+// signal). Maintained in contentDates.ts, shared with the sitemap lastmod and the
+// Article schema dateModified below.
 
 // Single source of truth for the FAQ: feeds BOTH the visible accordion and the FAQPage
 // JSON-LD, so the schema can never drift from what the user (and Google) actually sees.
@@ -109,11 +110,14 @@ const FAQ_ITEMS = [
 export async function getStaticProps() {
   return {
     props: {
-      updatedDate: LAST_UPDATED,
+      updatedDate: formatSwissDate(CONTENT_LAST_UPDATED["/auto-abo-vs-leasing-kosten"]),
     },
     revalidate: 86400,
   };
 }
+
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/auto-abo-vs-leasing-kosten"];
 
 export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
   // FAQ schema generated from the same array the accordion renders.
@@ -156,7 +160,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/auto-abo-vs-leasing-kosten",
             }),
           }}
@@ -175,6 +179,15 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       </Head>
+
+      {/* Schema-only: hero layout has no room for a visible crumb bar. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Auto-Abos im Vergleich", href: "/auto-abos-im-vergleich" },
+          { name: "Auto-Abo vs. Leasing Kosten", href: "/auto-abo-vs-leasing-kosten" },
+        ]}
+      />
 
       <main className="bg-neutral-50 min-h-screen">
         
@@ -215,7 +228,10 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                   Rate ist nicht alles. Vergleiche die echten Gesamtkosten.
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Leasing lockt mit tiefen Raten, das Abo mit &quot;Alles Inklusive&quot;. Doch was lohnt sich wirklich? Unser Rechner zeigt dir gnadenlose Wahrheit – inklusive Versicherung, Steuern und versteckten Gebühren.
+                  Kurz gesagt: Ein Auto-Abo lohnt sich meist bei Laufzeiten unter 2–3 Jahren, weil Versicherung,
+                  Steuern und Service im Fixpreis enthalten sind. Ab etwa 3 Jahren fährst du mit Leasing plus
+                  Eigenregie in der Regel günstiger – trotz Anzahlung und Nebenkosten. Der Rechner unten
+                  vergleicht beide Modelle mit deinen echten Zahlen, inklusive versteckter Gebühren.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -409,7 +425,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                   </li>
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700"><strong>Selbstbehalt:</strong> Prüfe den Selbstbehalt bei der Versicherung (oft 1000 CHF).</span>
+                    <span className="text-neutral-700"><strong>Selbstbehalt:</strong> Prüfe den Selbstbehalt bei der Versicherung (oft 1'000 CHF).</span>
                   </li>
                 </ul>
               </div>
@@ -430,7 +446,7 @@ export default function AutoAboVsLeasingKostenPage({ updatedDate }: PageProps) {
                   </li>
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700"><strong>Anzahlung:</strong> Die &quot;tiefe Rate&quot; ist oft mit 3000-5000 CHF Anzahlung erkauft.</span>
+                    <span className="text-neutral-700"><strong>Anzahlung:</strong> Die &quot;tiefe Rate&quot; ist oft mit 3'000–5'000 CHF Anzahlung erkauft.</span>
                   </li>
                 </ul>
               </div>

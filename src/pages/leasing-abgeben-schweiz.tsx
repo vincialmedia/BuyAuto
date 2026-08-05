@@ -1,5 +1,6 @@
 import type { GetStaticProps } from "next";
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import Image from "next/image";
@@ -51,6 +52,9 @@ type LeasingAbgebenPageProps = {
 // value, not a quote; the disclaimer under the calculator says so.
 const TRANSFER_FEE_CHF = 350;
 
+// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasing-abgeben-schweiz"];
+
 export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgebenPageProps) {
   const [months, setMonths] = useState(24);
   const [monthlyRate, setMonthlyRate] = useState(450);
@@ -101,7 +105,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
-              dateModified: "2026-06-08",
+              dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: "https://www.buyauto.ch/leasing-abgeben-schweiz",
             }),
           }}
@@ -196,14 +200,18 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/20 backdrop-blur-sm">
                   <Sparkles className="w-4 h-4" />
-                  Der ultimative Guide 2026
+                  Der ultimative Guide 2026 · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-neutral-900 tracking-tight leading-[1.1] mb-6">
                   Leasing abgeben<br />
                   <span className="text-primary">ohne Stress.</span>
                 </h1>
                 <p className="text-xl md:text-2xl text-neutral-600 font-medium mb-8 leading-relaxed">
-                  Legal aussteigen, Kosten minimieren & schnell einen Nachfolger finden – so funktioniert's.
+                  Du hast drei Wege aus dem Leasing: die Übernahme durch eine Nachfolgerin oder einen
+                  Nachfolger, die vorzeitige Kündigung (teuer) oder den Verkauf mit Ablösung. Am günstigsten
+                  ist meist die Leasingübernahme – die Restraten übernimmt dein Nachfolger, du zahlst nur die
+                  Umschreibegebühr von typischerweise rund CHF 350. Inserieren, Interessenten finden,
+                  Bonitätsprüfung, Umschreibung: oft in wenigen Tagen erledigt.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-12">
