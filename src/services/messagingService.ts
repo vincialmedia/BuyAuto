@@ -12,6 +12,7 @@ export interface MessageThreadItem {
   conversationId: string;
   listingId: string;
   title: string;
+  counterpartyName: string;
   listingMakeModel: string;
   coverImageUrl: string | null;
   lastMessageAt: string | null;
@@ -258,6 +259,39 @@ export async function selectBuyerAndMarkListingSold(conversationId: string): Pro
   return true;
 }
 
+export interface ListingConversationItem {
+  conversationId: string;
+  buyerName: string;
+  conversationStatus: string;
+  lastMessageAt: string | null;
+  lastMessagePreview: string;
+}
+
+/**
+ * Chats the seller has for one of their listings — the choice list for
+ * "Als verkauft markieren" from the listing overview. Server-side the RPC
+ * only answers for the listing's seller.
+ */
+export async function getListingConversationsForSeller(listingId: string): Promise<ListingConversationItem[]> {
+  const { data, error } = await (supabase.rpc as any)("get_listing_conversations_for_seller", {
+    p_listing_id: listingId,
+  });
+
+  if (error) {
+    console.error("getListingConversationsForSeller error:", error);
+    return [];
+  }
+
+  const rows = Array.isArray(data) ? (data as Array<Record<string, unknown>>) : [];
+  return rows.map((r) => ({
+    conversationId: safeString(r.conversation_id),
+    buyerName: safeString(r.buyer_display_name) || "Interessent",
+    conversationStatus: safeString(r.conversation_status) || "active",
+    lastMessageAt: safeString(r.last_message_at) || null,
+    lastMessagePreview: getPreview(safeString(r.last_message_body)),
+  }));
+}
+
 export async function getMyMessageCounts(opts?: { force?: boolean }): Promise<MessageCounts> {
   const now = Date.now();
   if (!opts?.force && countsCache && now - countsCache.at < COUNTS_TTL_MS) {
@@ -318,6 +352,7 @@ export async function getMyMessageThreads(limit = 25, opts?: { force?: boolean }
         conversationId: safeString(r.conversation_id),
         listingId: safeString(r.listing_id),
         title,
+        counterpartyName: nameForTitle,
         listingMakeModel,
         coverImageUrl: normalizePublicStorageUrl(safeString(r.listing_cover_image_url) || "") ?? null,
         lastMessageAt: safeString(r.last_message_at) || null,

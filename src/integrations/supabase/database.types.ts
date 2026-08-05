@@ -1109,7 +1109,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
-          sender_user_id: string
+          sender_user_id: string | null
         }
         Insert: {
           body: string

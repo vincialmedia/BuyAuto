@@ -26,7 +26,9 @@ import { Plus, Eye, Edit, Trash2, MoreHorizontal, Crown, DollarSign, MapPin, Ale
 import { ListingDetail } from "@/lib/buyauto/types";
 import { useAuth } from "@/contexts/AuthContext";
 import StatusBadge from "./StatusBadge";
+import SelectBuyerDialog from "./SelectBuyerDialog";
 import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
+import { selectBuyerAndMarkListingSold } from "@/services/messagingService";
 import { RELIST_PROMO_ACTIVE, relistPriceChf } from "@/lib/buyauto/stripe_config";
 import { DECLINE_DELETE_AFTER_DAYS, DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyauto/draftLifecycle";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
@@ -104,6 +106,8 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
   const [listingToArchive, setListingToArchive] = useState<string | null>(null);
   const [listingToPause, setListingToPause] = useState<string | null>(null);
   const [listingToUnpause, setListingToUnpause] = useState<string | null>(null);
+  const [markSoldDialogOpen, setMarkSoldDialogOpen] = useState(false);
+  const [listingToMarkSold, setListingToMarkSold] = useState<ListingDetail | null>(null);
 
   const [premiumCredits, setPremiumCredits] = useState<PremiumCreditsState | null>(null);
   const [premiumCreditsLoading, setPremiumCreditsLoading] = useState(false);
@@ -315,10 +319,47 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     }
   }, [loadUserListings]);
 
-  const handleMarkSold = useCallback(async (listingId: string) => {
+  // "Als verkauft markieren" from the overview goes through the buyer
+  // chooser first: the seller says which chat belongs to the buyer, so that
+  // chat stays open (and the buyer is notified) while the rest is archived.
+  // Deferred a tick: opening a modal in the same event that closes the
+  // dropdown races Radix's focus/scroll cleanup and strands
+  // `pointer-events: none` on <body> — a frozen page on touch devices.
+  const handleOpenMarkSold = useCallback((listing: ListingDetail) => {
+    setTimeout(() => {
+      setListingToMarkSold(listing);
+      setMarkSoldDialogOpen(true);
+    }, 0);
+  }, []);
+
+  const handleMarkSoldWithBuyer = useCallback(async (conversationId: string) => {
+    const listingId = listingToMarkSold?.id;
+    if (!listingId) return;
+
+    setActionLoading(listingId);
+    try {
+      const ok = await selectBuyerAndMarkListingSold(conversationId);
+      if (!ok) throw new Error("select_buyer_and_mark_listing_sold failed");
+      setMarkSoldDialogOpen(false);
+      setListingToMarkSold(null);
+      await Promise.all([loadUserListings(), loadTombstones()]);
+    } catch (error) {
+      console.error("Error marking listing sold (buyer selected):", error);
+      alert("Fehler beim Markieren als verkauft.");
+    } finally {
+      setActionLoading(null);
+    }
+  }, [listingToMarkSold?.id, loadUserListings, loadTombstones]);
+
+  const handleMarkSoldWithoutBuyer = useCallback(async () => {
+    const listingId = listingToMarkSold?.id;
+    if (!listingId) return;
+
     setActionLoading(listingId);
     try {
       await dashboardService.markListingSold(listingId);
+      setMarkSoldDialogOpen(false);
+      setListingToMarkSold(null);
       await Promise.all([loadUserListings(), loadTombstones()]);
     } catch (error) {
       console.error("Error marking listing sold:", error);
@@ -326,7 +367,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     } finally {
       setActionLoading(null);
     }
-  }, [loadUserListings, loadTombstones]);
+  }, [listingToMarkSold?.id, loadUserListings, loadTombstones]);
 
   const handleMarkAvailable = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
@@ -858,7 +899,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
 
                               {canMarkSold && (
                                 <DropdownMenuItem
-                                  onClick={() => handleMarkSold(listing.id)}
+                                  onClick={() => handleOpenMarkSold(listing)}
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Badge variant="secondary" className="mr-2">Verkauft</Badge>
@@ -1028,6 +1069,23 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SelectBuyerDialog
+        open={markSoldDialogOpen}
+        listingId={listingToMarkSold?.id ?? null}
+        listingLabel={
+          listingToMarkSold
+            ? `${listingToMarkSold.brand} ${listingToMarkSold.model} (${listingToMarkSold.year})`
+            : ""
+        }
+        onOpenChange={(open) => {
+          setMarkSoldDialogOpen(open);
+          if (!open) setListingToMarkSold(null);
+        }}
+        onConfirmBuyer={handleMarkSoldWithBuyer}
+        onConfirmWithoutBuyer={handleMarkSoldWithoutBuyer}
+        busy={Boolean(listingToMarkSold && actionLoading === listingToMarkSold.id)}
+      />
 
       <AlertDialog open={Boolean(listingToUnpause)} onOpenChange={(open) => { if (!open) setListingToUnpause(null); }}>
         <AlertDialogContent>
