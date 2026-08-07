@@ -31,5 +31,40 @@
     "SEO": null,
     "StructuredData": null
   },
-  "readmeHeader": ".design-sync/conventions.md"
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "AlertDialog": {
+      "cardMode": "single",
+      "primaryStory": "DestructiveConfirm"
+    },
+    "DropdownMenu": {
+      "cardMode": "single",
+      "primaryStory": "AccountMenu"
+    },
+    "DropdownMenuLabel": {
+      "cardMode": "single",
+      "primaryStory": "InAccountMenu"
+    },
+    "HoverCard": {
+      "cardMode": "single",
+      "primaryStory": "GarageProfile"
+    },
+    "Popover": {
+      "cardMode": "single",
+      "primaryStory": "Open"
+    },
+    "Tooltip": {
+      "cardMode": "single",
+      "primaryStory": "Open"
+    },
+    "CardFooter": {
+      "cardMode": "column"
+    },
+    "NavigationMenuItem": {
+      "cardMode": "column"
+    },
+    "Pagination": {
+      "cardMode": "column"
+    }
+  }
 }

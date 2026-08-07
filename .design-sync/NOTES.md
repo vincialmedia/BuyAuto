@@ -321,3 +321,25 @@ Re-syncs should compare validate's warn lines against this list:
   returns `null` when empty. Its card explains that rather than faking data.
 - **Only partially verified:** the ~240 primitives that still ship the floor
   card were verified by the render check only, not by an authored preview.
+
+## Card-mode overrides (`cfg.overrides`) — grid presentation, not correctness
+
+Validate's `[GRID_OVERFLOW]` check flagged nine components whose stories render
+fine standalone but present badly in the product's grid view. All nine are in
+`cfg.overrides`:
+
+- **`cardMode: "single"`** — `AlertDialog`, `DropdownMenu`, `DropdownMenuLabel`,
+  `HoverCard`, `Popover`, `Tooltip`. These mount portalled/`fixed` content that
+  positions itself outside its grid cell; no grid layout can present them, so
+  the card shows one story at full size.
+- **`cardMode: "column"`** — `CardFooter`, `NavigationMenuItem`, `Pagination`.
+  Wider than a grid cell; column mode keeps every story at full card width, one
+  per row.
+
+`Dialog` and `Sheet` were **not** flagged: `Dialog`'s preview already neutralises
+the `fixed` centring (`relative left-auto top-auto translate-x-0 translate-y-0`
+— without it the panel's `translate-y-[-50%]` pushed the title above the cell
+and it was clipped), and `Sheet` is edge-anchored within the cell.
+
+These are presentation-only edits — grades carry forward and a single/column
+card cannot re-flag by construction, so no confirming re-validate is needed.
