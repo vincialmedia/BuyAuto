@@ -1,0 +1,37 @@
+// Emits a .d.ts tree for the design-system export. NOT used to build the app.
+//
+// WHY: the converter extracts each component's prop contract from a shipped
+// .d.ts tree. This repo is an app with `noEmit: true`, so there is none — the
+// first build logged `[DTS] parsed 0 .d.ts files` and emitted
+// `{ [key: string]: unknown }` as the props body for all 326 components. The
+// design agent reads <Name>.d.ts as the API contract, so that stub means it
+// sees no props at all and has to guess every prop name.
+//
+// Output goes to <repo>/types, which is one of the directory names
+// findTypesRoot() probes (`build/ts`, `dist/types`, `types`, `lib`, `dist`) —
+// so the tree is picked up WITHOUT adding a `types` field to the app's
+// package.json. `types/` deliberately rather than `dist/types` so nothing can
+// mistake it for a built bundle entry.
+//
+// Generated output; gitignored and rebuilt by .design-sync/build.sh.
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "outDir": "../types",
+    "rootDir": "../src",
+    // The app uses "preserve" (Next compiles JSX itself). Declaration emit
+    // needs a real JSX transform to resolve element types.
+    "jsx": "react-jsx",
+    // Declaration emit must see across module boundaries to name inferred
+    // types; isolatedModules forbids exactly that.
+    "isolatedModules": false,
+    "skipLibCheck": true,
+    "incremental": false
+  },
+  "include": ["../src/**/*.ts", "../src/**/*.tsx"],
+  "exclude": ["../node_modules", "../src/pages/api/**"]
+}

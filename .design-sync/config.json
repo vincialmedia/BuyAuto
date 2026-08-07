@@ -1,0 +1,35 @@
+{
+  "pkg": "buyauto",
+  "globalName": "BuyAuto",
+  "shape": "package",
+  "srcDir": "src/components",
+  "tsconfig": ".design-sync/tsconfig.sync.json",
+  "buildCmd": "npx tsc -p .design-sync/tsconfig.types.json && node .design-sync/gen-default-exports.mjs && npx tailwindcss -c .design-sync/tailwind.sync.ts -i .design-sync/css/entry.css -o .design-sync/css/ds-styles.css",
+  "cssEntry": ".design-sync/css/ds-styles.css",
+  "extraEntries": [
+    "./.design-sync/shims/process-env.ts",
+    "./.design-sync/shims/default-exports.ts"
+  ],
+  "extraFonts": [
+    ".design-sync/fonts/fonts.css"
+  ],
+  "guidelinesGlob": [],
+  "componentSrcMap": {
+    "SEOElements": null,
+    "BreadcrumbJsonLd": null,
+    "Toaster": null,
+    "AdminDashboard": null,
+    "AdminLayout": null,
+    "AllListingsView": null,
+    "DraftsView": null,
+    "ListingDetailsModal": null,
+    "MobileUserCard": null,
+    "ModerationView": null,
+    "UserDetailsModal": null,
+    "UsersView": null,
+    "GoogleAnalytics": null,
+    "SEO": null,
+    "StructuredData": null
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
