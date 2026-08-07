@@ -8,6 +8,7 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/": "2026-06-11",
   "/suche": "2026-08-04",
   "/preise": "2026-08-04",
+  "/updates": "2026-08-07",
   "/leasing-concierge": "2026-08-04",
   "/leasinguebernahme": "2026-08-04",
   "/leasinguebernahme-kosten": "2026-08-04",
