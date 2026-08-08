@@ -1,0 +1,33 @@
+// tsconfig used ONLY by the design-sync converter. The app keeps the root
+// tsconfig.json untouched.
+//
+// The converter's esbuild pass resolves imports through compilerOptions.paths
+// (lib/bundle.mjs tsconfigPathsPlugin), which makes this the alias seam for the
+// export. Two jobs:
+//
+//   1. "@" - the app's own source alias, needed for any component to resolve.
+//   2. the "next/..." entries - swap the Next.js runtime modules for the shims
+//      in ./shims/. Without this, next-router drags
+//      next/dist/shared/lib/router/router.js into the bundle, which requires
+//      fs, stream and zlib and fails the browser build outright.
+//
+// baseUrl is ".." so every target resolves from the repo root.
+//
+// NOTE: comments here must be line comments only, and must not contain a
+// slash-star sequence. package-build.mjs strips comments with a pair of
+// regexes before JSON.parse; a mangled parse silently yields NO paths at all,
+// and the failure surfaces far away as an unresolved-import error.
+{
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./src/*"],
+      "next/link": ["./.design-sync/shims/next-link.tsx"],
+      "next/image": ["./.design-sync/shims/next-image.tsx"],
+      "next/router": ["./.design-sync/shims/next-router.tsx"],
+      "next/head": ["./.design-sync/shims/next-head.tsx"],
+      "next/script": ["./.design-sync/shims/next-script.tsx"],
+      "next/dynamic": ["./.design-sync/shims/next-dynamic.tsx"]
+    }
+  }
+}

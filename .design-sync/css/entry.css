@@ -1,0 +1,54 @@
+/* Tailwind entry for the design-system export.
+ *
+ * The app's real stylesheet, inlined by postcss-import — never a copy, so this
+ * cannot drift from what the app actually ships.
+ */
+@import '../../src/styles/globals.css';
+
+/* The app gets Manrope/Caveat from next/font/google, which injects these two
+ * variables at runtime. Nothing injects them inside a claude.ai/design render,
+ * so tailwind.config's `fontFamily.sans: var(--font-manrope)` would fall back
+ * to the browser default and every exported component would render in the
+ * wrong face.
+ *
+ * The @font-face rules and the .woff2 files themselves are NOT here — they go
+ * through cfg.extraFonts (.design-sync/fonts/fonts.css), which is the seam the
+ * converter parses to copy real font files into the bundle's fonts/ directory.
+ */
+:root {
+  --font-manrope: 'Manrope';
+  --font-caveat: 'Caveat';
+}
+
+/* --------------------------------------------------------------------------
+ * Sidebar tokens — WORKAROUND FOR A BUG IN THE APP, not a design decision.
+ *
+ * tailwind.config.ts maps a whole `sidebar` colour family to
+ * hsl(var(--sidebar-background)), hsl(var(--sidebar-accent)) and friends, but
+ * NOTHING in the repo ever defines those variables — not globals.css, not any
+ * component. `grep -rn -- '--sidebar-background' src/` returns nothing.
+ *
+ * So every one of the 24 components in ui/sidebar.tsx resolves its colours to
+ * `hsl()` with an empty argument, which is invalid CSS and simply drops. That
+ * affects 50 class usages (bg-sidebar, text-sidebar-foreground,
+ * ring-sidebar-ring, …). It is broken in the running app exactly as it is
+ * here; the design export just made it visible.
+ *
+ * These are shadcn/ui's standard values for the zinc base colour this project
+ * uses, with --sidebar-ring taking the app's brand red so focus rings match
+ * the rest of the system rather than shadcn's default blue.
+ *
+ * THIS IS EXPORT-ONLY. Fixing the app means adding the same block to
+ * src/styles/globals.css — see NOTES.md. Delete this block once that lands, or
+ * the two will drift.
+ * -------------------------------------------------------------------------- */
+:root {
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 240 5.3% 26.1%;
+  --sidebar-primary: 240 5.9% 10%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 240 4.8% 95.9%;
+  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 0 84% 60%;
+}
