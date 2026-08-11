@@ -3,6 +3,7 @@ import { Manrope, Caveat } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import MainLayout from "@/components/layout/MainLayout";
+import { isChromeFreeRoute, isOtherBrandRoute } from "@/lib/routes";
 import RouteProgress from "@/components/layout/RouteProgress";
 import AuthProvider from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
@@ -64,6 +65,11 @@ export default function App({ Component, pageProps }: AppProps) {
 
   const isListingDetailPage = router.pathname === "/fahrzeug/[id]";
 
+  // Padkos is a different company. Emitting BuyAuto's Organization/WebSite
+  // schema or share image on its pages would tell crawlers and social unfurls
+  // that a South African grocer in Vienna is buyauto.ch.
+  const isOtherBrand = isOtherBrandRoute(router.pathname);
+
   // Never let og:image point at a Vercel preview domain (buyauto-*.vercel.app): if
   // NEXT_PUBLIC_SITE_URL is unset OR misconfigured to a preview host, fall back to the
   // canonical production host. A cross-host og:image breaks social unfurls and muddies
@@ -111,18 +117,22 @@ export default function App({ Component, pageProps }: AppProps) {
               next/head dedupes meta by name, so those still win.
             */}
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-            />
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-            />
+            {!isOtherBrand ? (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+              />
+            ) : null}
+            {!isOtherBrand ? (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+              />
+            ) : null}
           </Head>
           <Component {...pageProps} />
 
-          {!isListingDetailPage ? (
+          {!isListingDetailPage && !isOtherBrand ? (
             <Head>
               <meta key="og:image" property="og:image" content={absoluteOgImage} />
               <meta key="tw:card" name="twitter:card" content="summary_large_image" />
@@ -130,12 +140,13 @@ export default function App({ Component, pageProps }: AppProps) {
             </Head>
           ) : null}
         </MainLayout>
-        {/* Same carve-out as MainLayout: embeds are iframed on third-party
-            sites and must stay free of BuyAuto chrome. */}
-        {router.pathname === "/embed" || router.pathname.startsWith("/embed/") ? null : <RouteProgress />}
+        {/* Same carve-out as MainLayout: embeds and other-brand pages must stay
+            free of BuyAuto chrome, and the progress bar is chrome. */}
+        {isChromeFreeRoute(router.pathname) ? null : <RouteProgress />}
         <Toaster />
         <RadixToaster />
-        <Analytics />
+        {/* Padkos pageviews would otherwise land in BuyAuto's traffic numbers. */}
+        {isOtherBrand ? null : <Analytics />}
         <GoogleAnalytics />
       </AuthProvider>
     </div>
