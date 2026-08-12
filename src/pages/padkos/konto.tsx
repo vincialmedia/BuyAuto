@@ -83,7 +83,7 @@ export default function PadkosKontoPage() {
               <div className={shop.orderCardHead}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <span className={shop.orderNr}>PK-73412</span>
-                  <span className={shop.orderDate}>8. August 2026</span>
+                  <span className={shop.orderDate}>10. August 2026</span>
                 </div>
                 <span className={shop.orderStatus}>UNTERWEGS</span>
               </div>
@@ -120,7 +120,7 @@ export default function PadkosKontoPage() {
                   className={`${ui.btn} ${ui.btnGreen} ${ui.shadowSm}`}
                   style={{ minHeight: 42, padding: "0 18px", fontSize: 13, borderRadius: 8 }}
                 >
-                  {reordered ? "✓ Im Warenkorb" : "Nochmal bestellen"}
+                  <span aria-live="polite">{reordered ? "✓ Im Warenkorb" : "Nochmal bestellen"}</span>
                 </button>
               </div>
             </article>

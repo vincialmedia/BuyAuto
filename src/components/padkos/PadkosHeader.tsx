@@ -147,6 +147,7 @@ export function PadkosHeader({ variant = "shop", lang = "de" }: PadkosHeaderProp
   const nav = variant === "landing" ? copy.landingNav : copy.shopNav;
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const menuCloseRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // The overlay menu must never survive a navigation.
   useEffect(() => {
@@ -156,14 +157,35 @@ export function PadkosHeader({ variant = "shop", lang = "de" }: PadkosHeaderProp
   }, [router.events]);
 
   // Overlay menu focus management: focus moves in on open, Escape closes,
-  // focus returns to the hamburger on close (but never on initial mount).
+  // Tab is trapped inside the dialog, and focus returns to the hamburger on
+  // close (but never on initial mount).
   const menuWasOpen = useRef(false);
   useEffect(() => {
     if (menuOpen) {
       menuWasOpen.current = true;
       menuCloseRef.current?.focus();
       const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") setMenuOpen(false);
+        if (e.key === "Escape") {
+          setMenuOpen(false);
+          return;
+        }
+        if (e.key !== "Tab" || !menuRef.current) return;
+        // aria-modal alone doesn't stop Tab from walking into the page
+        // hidden behind the opaque overlay — wrap focus at both ends.
+        const focusables = menuRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || !menuRef.current.contains(active))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (active === last || !menuRef.current.contains(active))) {
+          e.preventDefault();
+          first.focus();
+        }
       };
       window.addEventListener("keydown", onKey);
       return () => window.removeEventListener("keydown", onKey);
@@ -282,6 +304,7 @@ export function PadkosHeader({ variant = "shop", lang = "de" }: PadkosHeaderProp
 
       {menuOpen ? (
         <div
+          ref={menuRef}
           className={styles.menu}
           role="dialog"
           aria-modal="true"

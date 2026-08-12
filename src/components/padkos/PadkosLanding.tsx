@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from "react";
 
 import {
   BESTSELLER_SKUS,
@@ -18,6 +25,14 @@ import { PadkosLoader } from "./PadkosLoader";
 /** Overlay starts cross-fading out at this point, and unmounts .5s later. */
 const LOADER_FADE_AT_MS = 2700;
 const LOADER_HIDE_AT_MS = 3200;
+
+/**
+ * useLayoutEffect on the client so the loader-skip decision commits BEFORE
+ * first paint (a plain effect would flash the overlay for one frame on every
+ * return visit); aliased to useEffect during SSR to avoid the React warning.
+ */
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 /** How long an add-to-cart button shows its "✓ Dazugelegt" state. */
 const ADDED_FEEDBACK_MS = 1400;
 const ADDED_FEEDBACK_HERO_MS = 2600;
@@ -57,7 +72,7 @@ export function PadkosLanding({
   const fadeTimer = useRef<ReturnType<typeof setTimeout>>();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!taxiLoader) {
       setLoading(false);
       return;

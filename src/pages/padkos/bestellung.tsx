@@ -12,9 +12,11 @@ import { usePadkosLastOrder, type PadkosOrder } from "@/lib/padkos/store";
  * The design ships a demo order so the screen never renders empty — shown when
  * no real order is in localStorage (e.g. direct visits to this URL).
  */
+// Its story matches the other demo screens: PK-73412 was placed 10. August
+// ("gestern" on the dashboard) and is on its way (UNTERWEGS on the Konto).
 const DEMO_ORDER: PadkosOrder = {
   nr: "PK-73412",
-  date: "11. August 2026",
+  date: "10. August 2026",
   name: "Anje van der Merwe",
   email: "anje@example.at",
   adresse: "Neubaugasse 12, 1070 Wien",
@@ -35,6 +37,9 @@ export default function PadkosBestellungPage() {
   const lastOrder = usePadkosLastOrder();
   const order = lastOrder ?? DEMO_ORDER;
   const firstName = order.name.split(" ")[0] || "Freund";
+  // A just-placed order is being packed (step 2); the demo order PK-73412 is
+  // already on its way (step 3), matching its UNTERWEGS badge on the Konto.
+  const activeStep = lastOrder ? 2 : 3;
 
   return (
     <PadkosShell>
@@ -120,14 +125,22 @@ export default function PadkosBestellungPage() {
                   </p>
                 </li>
                 <li>
-                  <span className={`${shop.stepDot} ${shop.stepDotActive}`}>2</span>
+                  <span
+                    className={`${shop.stepDot} ${activeStep === 2 ? shop.stepDotActive : shop.stepDotDone}`}
+                  >
+                    2
+                  </span>
                   <p>
                     <strong>Verpackt</strong> – Retha packt dein Packerl mit Stroh &amp;
                     Kraftpapier.
                   </p>
                 </li>
                 <li>
-                  <span className={`${shop.stepDot} ${shop.stepDotNext}`}>3</span>
+                  <span
+                    className={`${shop.stepDot} ${activeStep === 3 ? shop.stepDotActive : shop.stepDotNext}`}
+                  >
+                    3
+                  </span>
                   <p>
                     <strong>Unterwegs</strong> – Sendungsverfolgung per E-Mail, Lieferung in 1–3
                     Werktagen.

@@ -70,7 +70,7 @@ export default function PadkosProduktPage({ sku }: ProduktPageProps) {
   // ≤155 chars: prefix + truncated-at-word-boundary description + fixed tail.
   const tail = " Versand aus Wien, ab 59 € gratis.";
   const prefix = `${product.name} online kaufen: `;
-  const budget = 155 - tail.length - prefix.length;
+  const budget = 155 - tail.length - prefix.length - " …".length;
   let descPart = product.desc;
   if (descPart.length > budget) {
     descPart = descPart.slice(0, budget).replace(/\s+\S*$/, "") + " …";

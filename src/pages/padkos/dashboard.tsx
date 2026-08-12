@@ -25,7 +25,7 @@ const INITIAL_ORDERS: DashOrder[] = [
   { nr: "PK-73415", kunde: "Lena Hofer", ort: "Salzburg", zeit: "09:41", artikel: "1× Heimweh-Paket, 1× Rooibos", total: 57.8, status: "Neu", cooled: false },
   { nr: "PK-73414", kunde: "Johan Pretorius", ort: "Wien", zeit: "08:57", artikel: "2× Boerewors, 1× Braai-Gewürz", total: 32.3, status: "Neu", cooled: true },
   { nr: "PK-73413", kunde: "Sarah Gruber", ort: "Graz", zeit: "08:12", artikel: "1× Biltong Chili, 2× Fizzers", total: 15.0, status: "Neu", cooled: false },
-  { nr: "PK-73412", kunde: "Anje van der Merwe", ort: "Wien", zeit: "gestern", artikel: "1× Heimweh-Paket, 2× Biltong", total: 67.7, status: "Verpackt", cooled: false },
+  { nr: "PK-73412", kunde: "Anje van der Merwe", ort: "Wien", zeit: "gestern", artikel: "1× Heimweh-Paket, 2× Biltong", total: 67.7, status: "Unterwegs", cooled: false },
   { nr: "PK-73411", kunde: "Markus Steiner", ort: "Linz", zeit: "gestern", artikel: "1× Boerewors, 1× Mrs Ball’s", total: 20.4, status: "Verpackt", cooled: true },
   { nr: "PK-73410", kunde: "Thabo Nkosi", ort: "Innsbruck", zeit: "gestern", artikel: "3× Chappies, 2× NikNaks", total: 24.7, status: "Unterwegs", cooled: false },
   { nr: "PK-73409", kunde: "Julia Berger", ort: "Wien", zeit: "So., 9.8.", artikel: "1× Amarula, 1× Ouma Rusks", total: 26.8, status: "Geliefert", cooled: false },
@@ -249,7 +249,7 @@ export default function PadkosDashboardPage() {
               <span>heute</span>
             </div>
             <p className={shop.chartNote}>
-              Bester Tag: <strong>Sa, 9. August (€ 486)</strong> – Heimweh-Pakete nach dem
+              Bester Tag: <strong>So, 9. August (€ 486)</strong> – Heimweh-Pakete nach dem
               Newsletter.
             </p>
           </section>

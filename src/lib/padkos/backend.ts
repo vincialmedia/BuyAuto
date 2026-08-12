@@ -95,12 +95,11 @@ export async function submitOrder({ order, raw }: OrderSubmission): Promise<void
 
     let insert = await supabase.from("padkos_orders").insert(row(order.nr)).select("id").single();
     if (insert.error?.code === "23505") {
-      // order_nr collided with an earlier order — retry once with a suffix.
-      insert = await supabase
-        .from("padkos_orders")
-        .insert(row(`${order.nr}-${Math.floor(10 + Math.random() * 89)}`))
-        .select("id")
-        .single();
+      // order_nr collided with an earlier order — retry once with a suffix,
+      // and sync the local copy so the customer sees the number that exists.
+      const retryNr = `${order.nr}-${Math.floor(10 + Math.random() * 89)}`;
+      insert = await supabase.from("padkos_orders").insert(row(retryNr)).select("id").single();
+      if (!insert.error && insert.data) padkosStore.saveOrder({ ...order, nr: retryNr });
     }
     if (insert.error || !insert.data) throw insert.error ?? new Error("no order id returned");
 

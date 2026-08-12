@@ -999,7 +999,14 @@
   color: #c43a26;
   font-size: 15px;
   line-height: 1;
-  padding: 0 2px;
+  /* 28×28 hit area (WCAG 2.5.8 wants ≥24×24), centred on the small glyph. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+  margin: -6px 0;
 }
 
 .discountValue {
@@ -2031,7 +2038,7 @@
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: var(--photo-label);
+  color: var(--ink-muted);
   border-top: none;
 }
 

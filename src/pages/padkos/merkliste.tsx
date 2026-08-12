@@ -110,7 +110,7 @@ export default function PadkosMerklistePage() {
                 onClick={addAll}
                 className={`${ui.btn} ${ui.btnGreen} ${ui.shadowMd} ${shop.wishActionButton}`}
               >
-                {allAdded ? "✓ Alles im Warenkorb" : "Alles in den Warenkorb"}
+                <span aria-live="polite">{allAdded ? "✓ Alles im Warenkorb" : "Alles in den Warenkorb"}</span>
               </button>
               <Link
                 href={PADKOS.shop}
