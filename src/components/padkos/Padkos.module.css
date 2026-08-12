@@ -1,21 +1,16 @@
 /*
- * Padkos — "Padstal Heritage" desktop landing page.
+ * Padkos — brand tokens, buttons, the landing page and the taxi loader.
  *
- * Port of `Padkos 3 - Padstal Heritage Desktop.dc.html`. The design file styles
- * everything inline; those declarations are collected here so hover states,
- * keyframes and the reduced-motion rule can be expressed properly.
+ * Port of `Padkos 3 - Padstal Heritage Desktop.dc.html` (desktop) and
+ * `Padkos 3 - Padstal Heritage v2.dc.html` (mobile, below 760px). The shared
+ * header/footer live in PadkosChrome.module.css, the shop screens in
+ * PadkosShop.module.css — both inherit the custom properties defined on .root
+ * here, which wraps every Padkos page.
  *
  * Padkos is a different brand from BuyAuto, so this file deliberately shares
- * nothing with the Tailwind theme: the palette below is the page's own, and
- * every rule is scoped under .page (or .loader, which is a fixed-position
- * sibling) so it cannot leak into the rest of the app.
+ * nothing with the Tailwind theme, and every rule is scoped under .root.
  */
 
-/*
- * The palette and type live on .root, which wraps both the page and the
- * fixed-position loading overlay, so the overlay inherits them rather than
- * re-declaring its own copy.
- */
 .root {
   --ink: #382a1c;
   --ink-soft: #5c4c36;
@@ -53,17 +48,9 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.page {
-  background: var(--paper);
-  min-height: 100vh;
-}
-
 /*
- * Default link colours, wrapped in :where() so they carry zero specificity.
- * The design file sets these on `a` and then overrides them with inline styles
- * on every button and nav link; without :where() the `.root a` selector would
- * outrank those single-class overrides and paint cream button labels green —
- * i.e. green-on-green.
+ * Default link colours, wrapped in :where() so they carry zero specificity —
+ * single-class overrides on buttons and nav links must win.
  */
 :where(.root a) {
   color: var(--green);
@@ -82,8 +69,8 @@
   display: none;
 }
 
-/* Ultra is the display face; it only ships a 400 weight, so headings never ask
-   for bold (the browser would synthesise a smeared faux-bold). */
+/* Ultra is the display face; it only ships a 400 weight, so headings never
+   ask for bold (the browser would synthesise a smeared faux-bold). */
 .display {
   font-family: var(--font-ultra), serif;
   font-weight: 400;
@@ -92,131 +79,6 @@
 .flagRule {
   height: 6px;
   background: var(--flag);
-}
-
-/* ---------------------------------------------------------------- header -- */
-
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  background: rgba(247, 238, 219, 0.96);
-  backdrop-filter: blur(8px);
-  border-bottom: 2px dashed var(--dashed);
-}
-
-.headerInner {
-  max-width: 1160px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 10px 24px;
-}
-
-.wordmarkLink {
-  text-decoration: none;
-  flex-shrink: 0;
-}
-
-.wordmark {
-  display: block;
-  font-size: 26px;
-  color: var(--green);
-  letter-spacing: 0.02em;
-  line-height: 1;
-}
-
-.wordmarkSub {
-  display: block;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.32em;
-  color: var(--ink-muted);
-  margin-top: 3px;
-}
-
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 26px;
-}
-
-.navLink {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.navLink:hover {
-  color: var(--green);
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.langLink {
-  min-width: 38px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--ink-muted);
-  text-decoration: none;
-}
-
-.langLink:hover {
-  color: var(--green);
-}
-
-.cartButton {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.cartBadge {
-  position: absolute;
-  top: 1px;
-  right: 0;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: var(--green);
-  color: var(--paper);
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
-}
-
-.announcement {
-  margin: 0;
-  background: var(--green);
-  color: var(--paper);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-align: center;
-  padding: 7px 12px;
-  line-height: 1.5;
 }
 
 /* --------------------------------------------------------------- buttons -- */
@@ -270,13 +132,6 @@
 .shadowMd:hover {
   transform: translate(1px, 1px);
   box-shadow: 2px 2px 0 var(--ink);
-}
-
-.btnHeader {
-  min-height: 42px;
-  padding: 0 18px;
-  font-size: 13.5px;
-  margin-left: 8px;
 }
 
 .btnHero {
@@ -364,14 +219,14 @@
 }
 
 /*
- * Photography is not shot yet. Until it is, each slot renders as a labelled
- * kraft-paper rectangle carrying the alt text it will eventually need, so the
- * layout is honest about its final proportions.
+ * Photography is not shot yet — labelled kraft-paper rectangles carry the
+ * final proportions and alt text. The design file wrote `background:` and
+ * `background-image:` into the same rule (the second silently killing the
+ * first), so the grain is layered over the tint here instead.
  */
 .photo {
   border: 2px solid var(--ink);
   border-radius: 10px;
-  background-image: var(--grain);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -383,16 +238,9 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   color: var(--photo-label);
+  padding: 0 8px;
 }
 
-/*
- * The design file writes `background: linear-gradient(...)` and then
- * `background-image: repeating-linear-gradient(...)` in the same rule, so the
- * second declaration silently replaces the first and the paper tint never
- * renders. Six deliberately different tints were authored for the product
- * cards, so that override reads as a slip rather than an intent: the grain is
- * layered over the tint here instead of replacing it.
- */
 .heroPhoto {
   aspect-ratio: 4 / 3;
   background-image: var(--grain), linear-gradient(#ebdcb8, #e4d1a6);
@@ -450,6 +298,13 @@
   margin-bottom: 24px;
 }
 
+.sectionHeading h2 {
+  margin: 0;
+  font-size: 32px;
+  color: var(--ink);
+  text-align: center;
+}
+
 /* Bestseller and FAQ carry a subtitle underneath, so their rule sits tighter. */
 .sectionHeadingTight {
   margin-bottom: 6px;
@@ -457,13 +312,6 @@
 
 .sectionHeadingFaq {
   margin-bottom: 8px;
-}
-
-.sectionHeading h2 {
-  margin: 0;
-  font-size: 32px;
-  color: var(--ink);
-  text-align: center;
 }
 
 /* Dashed rules running out to both edges, like a padstal price board. */
@@ -520,7 +368,12 @@
   border-radius: 3px;
 }
 
-/* --photo-from / --photo-to are set per card; see the note on .heroPhoto. */
+.productPhotoLink {
+  display: block;
+  text-decoration: none;
+}
+
+/* --photo-from / --photo-to are set per card. */
 .productPhoto {
   aspect-ratio: 4 / 5;
   border: 1.5px solid var(--ink);
@@ -547,6 +400,15 @@
   text-align: center;
 }
 
+.productName a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.productName a:hover {
+  color: var(--green);
+}
+
 .productSub {
   margin: 0;
   font-size: 12.5px;
@@ -565,6 +427,14 @@
   width: fit-content;
 }
 
+/* Unit price, Preisauszeichnungsgesetz. */
+.productGrundpreis {
+  margin: 0;
+  font-size: 9.5px;
+  color: var(--photo-label);
+  text-align: center;
+}
+
 /* margin-top:auto pins the button to the card floor, so cards with a longer
    product name still line their buttons up across the row. */
 .productButton {
@@ -572,6 +442,20 @@
   min-height: 46px;
   border-radius: 6px;
   font-size: 13.5px;
+}
+
+.productButtonAdded {
+  margin-top: auto;
+  min-height: 46px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--font-karla), Arial, sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: default;
+  box-shadow: 2px 2px 0 var(--ink);
 }
 
 /* --------------------------------------------------------------- shelves -- */
@@ -598,6 +482,8 @@
 
 .categoryName {
   display: block;
+  font-family: var(--font-ultra), serif;
+  font-weight: 400;
   font-size: 16px;
   color: var(--green);
 }
@@ -677,13 +563,9 @@
 }
 
 .storyPhoto {
-  border: 2px solid var(--ink);
   border-radius: 12px;
   background-image: var(--grain), linear-gradient(#ebdcb8, #e4d1a6);
   box-shadow: 4px 4px 0 rgba(56, 42, 28, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   min-height: 260px;
 }
 
@@ -739,11 +621,32 @@
   box-shadow: 5px 5px 0 rgba(56, 42, 28, 0.25);
 }
 
+/*
+ * Named areas so desktop and mobile can reorder without duplicate DOM:
+ * desktop puts the photo beside the text, the v2 mobile design slots it
+ * between the text and the price row.
+ */
 .heimwehGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 44px;
+  grid-template-areas:
+    "head  photo"
+    "buy   photo";
+  column-gap: 44px;
   align-items: center;
+}
+
+.heimwehHead {
+  grid-area: head;
+}
+
+.heimwehBuy {
+  grid-area: buy;
+  align-self: start;
+}
+
+.heimwehMedia {
+  grid-area: photo;
 }
 
 .heimwehBadge {
@@ -787,6 +690,25 @@
   font-size: 15px;
   color: #eabba5;
   text-decoration: line-through;
+}
+
+.heimwehActions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.heimwehInside {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f4dcc9;
+  text-decoration: none;
+}
+
+.heimwehInside:hover {
+  color: var(--cream);
+  text-decoration: underline;
 }
 
 .heimwehPhoto {
@@ -840,7 +762,7 @@
   transition: transform 0.18s ease;
 }
 
-/* The "+" becomes a "−" by rotating one arm out of sight. */
+/* The "+" becomes a "×"-ish close by rotating 45°. */
 .faqItem[open] .faqMarker {
   transform: rotate(45deg);
 }
@@ -896,6 +818,11 @@
   font-size: 16px;
   padding: 0 16px;
   box-sizing: border-box;
+  min-width: 0;
+}
+
+.newsletterInput::placeholder {
+  color: #a8987c;
 }
 
 .newsletterButton {
@@ -922,103 +849,54 @@
   color: #4a3a22;
 }
 
-/* ---------------------------------------------------------------- footer -- */
-
-.footerRule {
-  margin-top: 64px;
+/* Space below the last section before the shared footer's flag rule. */
+.landingEnd {
+  height: 64px;
 }
 
-.footer {
-  background: var(--green-dark);
-  color: #d7e2d3;
-  padding: 48px 24px 44px;
+/* --------------------------------------------------- mobile sticky CTA -- */
+
+.stickyBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: rgba(247, 238, 219, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 2px dashed var(--dashed);
+  display: none;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px 14px;
 }
 
-.footerInner {
-  max-width: 1160px;
-  margin: 0 auto;
+.stickyFree {
+  flex-shrink: 0;
 }
 
-.footerGrid {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 48px;
-  align-items: start;
-}
-
-.footerWordmark {
+.stickyFree p:first-child {
   margin: 0;
-  font-size: 26px;
-  color: var(--paper);
-}
-
-.footerBlurb {
-  margin: 10px 0 0;
-  font-size: 14px;
-  line-height: 1.65;
-  color: #a9c2ab;
-  max-width: 44ch;
-}
-
-.payments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 22px 0 0;
-}
-
-.payment {
-  border: 1px solid rgba(215, 226, 211, 0.35);
-  border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
+  color: var(--green);
 }
 
-.footerShipping {
-  margin: 18px 0 0;
-  font-size: 12.5px;
-  color: #a9c2ab;
+.stickyFree p:last-child {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--ink-muted);
 }
 
-.footerNav {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 24px;
-  align-content: start;
-}
-
-.footerNav a {
-  color: #d7e2d3;
-  font-size: 13.5px;
-  text-decoration: none;
-  padding: 5px 0;
-}
-
-.footerNav a:hover {
-  color: var(--paper);
-}
-
-.footerSeo {
-  margin: 36px 0 0;
-  font-size: 11.5px;
-  line-height: 1.7;
-  color: #8ca98f;
-  max-width: 100ch;
-}
-
-.footerCopyright {
-  margin: 14px 0 0;
-  font-size: 11.5px;
-  color: #8ca98f;
+.stickyButton {
+  flex: 1;
+  min-height: 48px;
+  font-size: 15px;
+  border-radius: 8px;
 }
 
 /* ---------------------------------------------------------------- loader -- */
 
-/*
- * Brand moment: a green road, dashed lane markings, and a fleet of Cape Town
- * minibus taxis crossing the screen while the shop opens.
- */
 .loader {
   position: fixed;
   inset: 0;
@@ -1287,53 +1165,315 @@
 
 /* ------------------------------------------------------------ responsive -- */
 
-/*
- * This is the desktop screen; Padkos has a separate mobile design that is not
- * implemented here. These two breakpoints exist only so narrower viewports
- * degrade gracefully instead of overflowing — they are a fallback, not the
- * mobile design.
- */
+/* Between desktop (1160 canvas) and mobile: let the rigid grids breathe. */
 @media (max-width: 1080px) {
-  .heroGrid,
-  .heimwehGrid,
+  .heroGrid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 32px 28px;
+  }
+
   .storyGrid,
-  .footerGrid {
+  .heimwehGrid {
     grid-template-columns: 1fr;
   }
 
+  .heimwehGrid {
+    grid-template-areas:
+      "head"
+      "photo"
+      "buy";
+    row-gap: 16px;
+  }
+
   .productGrid,
-  .categoryGrid,
   .testimonialGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .nav {
-    display: none;
+  .categoryGrid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 }
 
-@media (max-width: 620px) {
+/*
+ * The real mobile design (`Padstal Heritage v2`): centred hero with a single
+ * CTA, 2-column bestseller and shelf grids, story panel without photo,
+ * stacked guestbook, the gift box with its photo between text and price, and
+ * the sticky bottom CTA bar.
+ */
+@media (max-width: 759px) {
+  .section {
+    padding: 34px 16px 0;
+  }
+
+  .heroSection {
+    padding: 20px 16px 8px;
+  }
+
   .heroGrid {
-    padding: 28px 20px;
-    gap: 28px;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 24px 18px;
   }
 
   .heroTitle {
-    font-size: 34px;
+    font-size: 31px;
+    line-height: 1.15;
+    text-align: center;
   }
 
-  .productGrid,
-  .categoryGrid,
+  .heroLead {
+    margin-top: 14px;
+    font-size: 14.5px;
+    line-height: 1.6;
+    text-align: center;
+    max-width: none;
+  }
+
+  .heroActions {
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .btnHero {
+    min-height: 50px;
+    padding: 0 28px;
+    font-size: 15px;
+  }
+
+  /* v2 shows a single CTA. */
+  .btnHeroSecondary {
+    display: none;
+  }
+
+  .lekkerSticker {
+    bottom: auto;
+    top: -10px;
+    left: -6px;
+    font-size: 11px;
+    padding: 5px 12px;
+  }
+
+  .proudlyStamp {
+    top: -16px;
+    right: 12px;
+    width: 86px;
+    height: 86px;
+    font-size: 8.5px;
+  }
+
+  .sectionHeading {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .sectionHeading h2 {
+    font-size: 24px;
+  }
+
+  .sectionHeadingTight {
+    margin-bottom: 6px;
+  }
+
+  .sectionSub {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .productCard {
+    padding: 5px;
+  }
+
+  .productTicket {
+    padding: 7px;
+    gap: 6px;
+  }
+
+  .productStamp {
+    font-size: 7.5px;
+    padding: 3px 4px;
+  }
+
+  .productName {
+    font-size: 12.5px;
+  }
+
+  .productSub {
+    font-size: 10.5px;
+  }
+
+  .productPrice {
+    font-size: 12.5px;
+    padding: 3px 12px;
+  }
+
+  .productButton {
+    min-height: 44px;
+    font-size: 12px;
+  }
+
+  .productButtonAdded {
+    min-height: 44px;
+    font-size: 12px;
+  }
+
+  .categoryGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .categoryTile {
+    padding: 16px 12px;
+  }
+
+  .categoryName {
+    font-size: 15px;
+  }
+
+  .categorySub {
+    font-size: 10.5px;
+    margin-top: 4px;
+  }
+
+  /* v2 makes the last shelf (Braai) span the row. */
+  .categoryTile:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .storyPanel {
+    padding: 26px 20px 28px;
+  }
+
+  .storyTitle {
+    font-size: 23px;
+  }
+
+  .storyText {
+    margin-top: 14px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .storyText + .storyText {
+    margin-top: 12px;
+  }
+
+  .storySignature {
+    margin-top: 16px;
+    font-size: 14px;
+  }
+
+  .importStamp {
+    right: 12px;
+    font-size: 9px;
+    padding: 6px 10px;
+  }
+
+  /* v2 has no shop photo next to the story. */
+  .storyPhoto {
+    display: none;
+  }
+
   .testimonialGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .testimonial {
+    padding: 16px 18px;
   }
 
   .heimwehCard {
-    padding: 28px 22px;
+    padding: 24px 20px 26px;
+  }
+
+  .heimwehTitle {
+    font-size: 26px;
+    margin-top: 12px;
+  }
+
+  .heimwehText {
+    font-size: 14px;
+    margin-top: 10px;
+  }
+
+  .heimwehMedia {
+    margin-top: 16px;
+  }
+
+  .heimwehPhoto {
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+  }
+
+  .heimwehPricing {
+    margin: 14px 0 16px;
+  }
+
+  .heimwehPrice {
+    font-size: 24px;
+  }
+
+  .heimwehActions {
+    gap: 12px;
+  }
+
+  .heimwehActions .btnHero {
+    width: 100%;
+  }
+
+  .faqSummary {
+    padding: 16px 0;
+  }
+
+  .faqQuestion {
+    font-size: 15px;
+  }
+
+  .faqAnswer {
+    font-size: 14px;
+    padding-bottom: 16px;
+  }
+
+  .newsletterCard {
+    padding: 24px 20px 26px;
+  }
+
+  .newsletterTitle {
+    font-size: 23px;
+  }
+
+  .newsletterText {
+    font-size: 13.5px;
+    margin: 10px 0 16px;
   }
 
   .newsletterForm {
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .newsletterButton {
+    min-height: 50px;
+  }
+
+  .landingEnd {
+    height: 40px;
+  }
+
+  .stickyBar {
+    display: flex;
+  }
+
+  /* Clearance so the footer's last line isn't hidden behind the sticky bar. */
+  .landingMain {
+    padding-bottom: 78px;
   }
 }
 
