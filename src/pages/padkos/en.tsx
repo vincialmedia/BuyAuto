@@ -9,8 +9,8 @@ export default function PadkosEnglishPage() {
   return (
     <PadkosShell header="landing" lang="en" mainClassName={ui.landingMain}>
       <PadkosSeo
-        title="Padkos – South African Shop Vienna | Biltong, Chutney & Gift Boxes in Austria"
-        description="The padstal for Austria: biltong, Mrs Ball's chutney, Ouma rusks, Chappies & homesick-cure gift boxes. South African groceries imported directly – shipped across Austria from Vienna."
+        title="South African Shop Vienna – Biltong & More | Padkos"
+        description="The padstal for Austria: biltong, Mrs Ball's chutney, Ouma rusks, Chappies & homesick-cure gift boxes. Shipped across Austria from Vienna."
         path={PADKOS.en}
         lang="en"
         hreflang={[

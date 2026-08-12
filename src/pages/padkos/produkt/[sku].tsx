@@ -1,5 +1,6 @@
 import type { GetStaticPaths, GetStaticProps } from "next";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 
 import { PadkosPhoto } from "@/components/padkos/PadkosPhoto";
@@ -32,6 +33,7 @@ export const getStaticProps: GetStaticProps<ProduktPageProps> = ({ params }) => 
 /** Product detail — `Padkos Produkt.dc.html`. */
 export default function PadkosProduktPage({ sku }: ProduktPageProps) {
   const product = findProduct(sku)!;
+  const router = useRouter();
   const wishlist = usePadkosWishlist();
   const wished = wishlist.includes(product.sku);
 
@@ -48,7 +50,13 @@ export default function PadkosProduktPage({ sku }: ProduktPageProps) {
 
   useEffect(() => () => clearTimeout(addedTimer.current), []);
 
-  const addToCart = () => {
+  // One persistent button for both states: swapping elements would drop
+  // keyboard focus and screen readers would never hear the confirmation.
+  const handleBuyClick = () => {
+    if (added) {
+      void router.push(PADKOS.kasse);
+      return;
+    }
     padkosStore.add(product.sku, qty);
     setAdded(true);
     clearTimeout(addedTimer.current);
@@ -59,7 +67,15 @@ export default function PadkosProduktPage({ sku }: ProduktPageProps) {
   const related = PRODUCTS.filter((p) => p.sku !== product.sku && !p.cooled).slice(0, 3);
 
   const title = `${product.name} kaufen – ${product.cat} | Padkos`;
-  const description = `${product.name} (${product.sub}) online kaufen: ${product.desc.slice(0, 80)}… Versand in 1–3 Werktagen in ganz Österreich, ab 59 € versandkostenfrei.`;
+  // ≤155 chars: prefix + truncated-at-word-boundary description + fixed tail.
+  const tail = " Versand aus Wien, ab 59 € gratis.";
+  const prefix = `${product.name} online kaufen: `;
+  const budget = 155 - tail.length - prefix.length;
+  let descPart = product.desc;
+  if (descPart.length > budget) {
+    descPart = descPart.slice(0, budget).replace(/\s+\S*$/, "") + " …";
+  }
+  const description = prefix + descPart + tail;
 
   return (
     <PadkosShell>
@@ -170,22 +186,15 @@ export default function PadkosProduktPage({ sku }: ProduktPageProps) {
                 </button>
               </div>
 
-              {added ? (
-                <Link
-                  href={PADKOS.kasse}
-                  className={`${ui.btn} ${ui.btnGold} ${ui.shadowMd} ${shop.pdpAddedLink}`}
-                >
-                  ✓ Im Warenkorb – zur Kasse
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={addToCart}
-                  className={`${ui.btn} ${ui.btnGreen} ${ui.shadowMd} ${shop.pdpAdd}`}
-                >
-                  In den Warenkorb
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleBuyClick}
+                className={`${ui.btn} ${added ? ui.btnGold : ui.btnGreen} ${ui.shadowMd} ${shop.pdpAdd}`}
+              >
+                <span aria-live="polite">
+                  {added ? "✓ Im Warenkorb – zur Kasse" : "In den Warenkorb"}
+                </span>
+              </button>
             </div>
 
             <button
@@ -235,8 +244,9 @@ export default function PadkosProduktPage({ sku }: ProduktPageProps) {
                   </span>
                 </summary>
                 <p>
-                  Lieferung österreichweit in 1–3 Werktagen, ab € 59 kostenlos. 14 Tage Widerruf
-                  auf ungeöffnete Ware – Details unter{" "}
+                  Lieferung österreichweit in 1–3 Werktagen, ab € 59 kostenlos. 14 Tage
+                  Widerrufsrecht; ausgenommen sind verderbliche und entsiegelte Lebensmittel
+                  (§ 18 FAGG) – Details unter{" "}
                   <Link href={PADKOS.versand}>Versand &amp; Retouren</Link>.
                 </p>
               </details>

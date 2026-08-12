@@ -41,6 +41,8 @@ export interface PadkosOrder {
   cooled: boolean;
   items: PadkosOrderItem[];
   subtotalF: string;
+  /** Discount line ("−€ 3,28"), present when a voucher was redeemed. */
+  rabattF?: string;
   shipF: string;
   totalF: string;
 }
@@ -166,10 +168,16 @@ export function useCartCount(): number {
   return Object.values(cart).reduce((sum, n) => sum + n, 0);
 }
 
+/** The one voucher the shop hands out (newsletter welcome discount). */
+export const WELKOM_CODE = "WELKOM10";
+export const WELKOM_RATE = 0.1;
+
 export interface CartTotals {
   /** Cart lines resolved against the catalogue (unknown SKUs dropped). */
   skus: string[];
   subtotal: number;
+  /** Voucher discount (already rounded to cents). */
+  discount: number;
   hasCooled: boolean;
   hasAgeRestricted: boolean;
   freeShip: boolean;
@@ -185,10 +193,19 @@ export interface CartTotals {
 /**
  * One shared implementation of the money math, used by cart page, summary and
  * order submission — so no two screens can ever disagree on a total.
+ *
+ * The free-shipping threshold is measured against the pre-discount subtotal
+ * on purpose: "Ab € 59" stays true to what the customer put in the cart, and
+ * a voucher never takes free shipping away again.
  */
-export function computeTotals(cart: PadkosCart, method: "post" | "abholung"): CartTotals {
+export function computeTotals(
+  cart: PadkosCart,
+  method: "post" | "abholung",
+  opts?: { welkom?: boolean }
+): CartTotals {
   const skus = Object.keys(cart).filter((sku) => findProduct(sku));
   const subtotal = skus.reduce((sum, sku) => sum + findProduct(sku)!.price * cart[sku], 0);
+  const discount = opts?.welkom ? Math.round(subtotal * WELKOM_RATE * 100) / 100 : 0;
   const hasCooled = skus.some((sku) => findProduct(sku)!.cooled);
   const hasAgeRestricted = skus.some((sku) => findProduct(sku)!.ageRestricted);
   const freeShip = subtotal >= SHIP_FREE;
@@ -199,13 +216,14 @@ export function computeTotals(cart: PadkosCart, method: "post" | "abholung"): Ca
   return {
     skus,
     subtotal,
+    discount,
     hasCooled,
     hasAgeRestricted,
     freeShip,
     baseShip,
     cooledShip,
     ship,
-    total: subtotal + ship,
+    total: subtotal - discount + ship,
     missingToFree: Math.max(0, SHIP_FREE - subtotal),
   };
 }

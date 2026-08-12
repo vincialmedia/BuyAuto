@@ -33,8 +33,15 @@ export function isSupabaseConfigured(): boolean {
 async function getSupabase() {
   const env = supabaseEnv();
   if (!env) return null;
-  const { createClient } = await import("@supabase/supabase-js");
-  return createClient(env.url, env.anonKey);
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    return createClient(env.url, env.anonKey);
+  } catch (err) {
+    // A failed chunk load must never break a submit — the flows all complete
+    // locally without Supabase.
+    console.error("Padkos: could not load Supabase client", err);
+    return null;
+  }
 }
 
 export interface OrderSubmission {
@@ -51,6 +58,7 @@ export interface OrderSubmission {
     versandart: "post" | "abholung";
     zahlung: string;
     subtotal: number;
+    discount: number;
     ship: number;
     total: number;
     items: Array<{ sku: string; qty: number; price: number }>;
@@ -64,33 +72,41 @@ export interface OrderSubmission {
  */
 export async function submitOrder({ order, raw }: OrderSubmission): Promise<void> {
   padkosStore.saveOrder(order);
-  const supabase = await getSupabase();
-  if (!supabase) return;
   try {
-    const { data, error } = await supabase
-      .from("padkos_orders")
-      .insert({
-        order_nr: order.nr,
-        first_name: raw.vorname,
-        last_name: raw.nachname,
-        email: raw.email,
-        street: raw.strasse,
-        postal_code: raw.plz,
-        city: raw.ort,
-        country: raw.land,
-        shipping_method: raw.versandart,
-        payment_method: raw.zahlung,
-        subtotal_eur: raw.subtotal,
-        shipping_eur: raw.ship,
-        total_eur: raw.total,
-        has_cooled: order.cooled,
-      })
-      .select("id")
-      .single();
-    if (error || !data) throw error ?? new Error("no order id returned");
+    const supabase = await getSupabase();
+    if (!supabase) return;
+    const row = (nr: string) => ({
+      order_nr: nr,
+      first_name: raw.vorname,
+      last_name: raw.nachname,
+      email: raw.email,
+      street: raw.strasse,
+      postal_code: raw.plz,
+      city: raw.ort,
+      country: raw.land,
+      shipping_method: raw.versandart,
+      payment_method: raw.zahlung,
+      subtotal_eur: raw.subtotal,
+      discount_eur: raw.discount,
+      shipping_eur: raw.ship,
+      total_eur: raw.total,
+      has_cooled: order.cooled,
+    });
+
+    let insert = await supabase.from("padkos_orders").insert(row(order.nr)).select("id").single();
+    if (insert.error?.code === "23505") {
+      // order_nr collided with an earlier order — retry once with a suffix.
+      insert = await supabase
+        .from("padkos_orders")
+        .insert(row(`${order.nr}-${Math.floor(10 + Math.random() * 89)}`))
+        .select("id")
+        .single();
+    }
+    if (insert.error || !insert.data) throw insert.error ?? new Error("no order id returned");
+
     const { error: itemsError } = await supabase.from("padkos_order_items").insert(
       raw.items.map((item) => ({
-        order_id: data.id,
+        order_id: insert.data.id,
         sku: item.sku,
         qty: item.qty,
         unit_price_eur: item.price,
@@ -104,9 +120,9 @@ export async function submitOrder({ order, raw }: OrderSubmission): Promise<void
 
 /** Newsletter signup. Local no-op record now, `padkos_newsletter` later. */
 export async function subscribeNewsletter(email: string): Promise<void> {
-  const supabase = await getSupabase();
-  if (!supabase) return;
   try {
+    const supabase = await getSupabase();
+    if (!supabase) return;
     // Idempotent: the table has a unique index on lower(email).
     const { error } = await supabase
       .from("padkos_newsletter")
@@ -126,9 +142,9 @@ export interface ContactMessage {
 
 /** Contact form. Completes locally now, writes `padkos_contact` later. */
 export async function sendContactMessage(msg: ContactMessage): Promise<void> {
-  const supabase = await getSupabase();
-  if (!supabase) return;
   try {
+    const supabase = await getSupabase();
+    if (!supabase) return;
     const { error } = await supabase.from("padkos_contact").insert(msg);
     if (error) throw error;
   } catch (err) {

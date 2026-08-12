@@ -74,6 +74,12 @@ export default function PadkosBestellungPage() {
                 <dt>Zwischensumme</dt>
                 <dd>{order.subtotalF}</dd>
               </div>
+              {order.rabattF ? (
+                <div className={shop.summaryRow}>
+                  <dt>Rabatt · WELKOM10</dt>
+                  <dd className={shop.discountValue}>{order.rabattF}</dd>
+                </div>
+              ) : null}
               <div className={shop.summaryRow}>
                 <dt>Versand · {order.versand}</dt>
                 <dd>{order.shipF}</dd>

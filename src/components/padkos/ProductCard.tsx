@@ -50,7 +50,7 @@ export function ProductCard({
           <button
             type="button"
             onClick={onToggleWish}
-            aria-label={wishLabel}
+            aria-label={`${product.name}: ${wishLabel}`}
             aria-pressed={wished}
             className={styles.heartButton}
           >
@@ -78,19 +78,22 @@ export function ProductCard({
         {product.grundpreis ? (
           <p className={styles.cardGrundpreis}>{product.grundpreis}</p>
         ) : null}
-        {justAdded ? (
-          <button type="button" className={styles.cardButtonAdded} disabled>
-            ✓ Dazugelegt
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onAdd}
-            className={`${ui.btn} ${ui.btnGreen} ${ui.shadowSm} ${styles.cardButton}`}
-          >
-            In den Warenkorb
-          </button>
-        )}
+        {/* One persistent, always-enabled element: a disabled swap would drop
+            keyboard focus and screen readers would miss the confirmation. */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!justAdded) onAdd();
+          }}
+          aria-label={`${product.name}: In den Warenkorb`}
+          className={
+            justAdded
+              ? styles.cardButtonAdded
+              : `${ui.btn} ${ui.btnGreen} ${ui.shadowSm} ${styles.cardButton}`
+          }
+        >
+          <span aria-live="polite">{justAdded ? "✓ Dazugelegt" : "In den Warenkorb"}</span>
+        </button>
       </div>
     </article>
   );

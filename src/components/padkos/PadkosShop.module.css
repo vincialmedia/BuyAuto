@@ -141,7 +141,7 @@
 .cardGrundpreis {
   margin: 0;
   font-size: 9.5px;
-  color: var(--photo-label);
+  color: var(--ink-muted);
   text-align: center;
 }
 
@@ -172,7 +172,16 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--photo-label);
+  color: var(--ink-muted);
+}
+
+/* The v2 mobile design language is strictly 2-up product cards; the desktop
+   auto-fill formula would collapse to one giant card per row at 390px. */
+@media (max-width: 759px) {
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
 }
 
 /* Shop search field (best practice addition; styled to the design system). */
@@ -733,7 +742,8 @@
   border: none;
   cursor: pointer;
   font-size: 19px;
-  color: #a8987c;
+  /* #a8987c was 2.45:1 on the card — below the 3:1 UI-control minimum. */
+  color: var(--ink-muted);
 }
 
 .cartRemove:hover {
@@ -952,6 +962,48 @@
   margin: 6px 0 0;
   font-size: 11px;
   color: var(--ink-muted);
+}
+
+/* Voucher input in the summary. */
+.voucherRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.voucherRow .input,
+.voucherRow input {
+  flex: 1;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.voucherButton {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 13px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.voucherError {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: #c43a26;
+}
+
+.voucherRemove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c43a26;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.discountValue {
+  color: var(--green);
 }
 
 .orderButton {
@@ -1206,7 +1258,7 @@
   margin: 12px 0 0;
   font-size: 12.5px;
   line-height: 1.7;
-  color: var(--photo-label);
+  color: var(--ink-muted);
 }
 
 .priceTable {
@@ -1243,6 +1295,8 @@
   font-size: 14.5px;
   font-weight: 700;
   color: var(--green);
+  margin-left: auto;
+  text-align: right;
 }
 
 .coolSection {

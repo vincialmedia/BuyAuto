@@ -431,7 +431,7 @@
 .productGrundpreis {
   margin: 0;
   font-size: 9.5px;
-  color: var(--photo-label);
+  color: var(--ink-muted);
   text-align: center;
 }
 
@@ -908,6 +908,8 @@
 
 .loaderFading {
   opacity: 0;
+  /* The fade lasts 450ms — clicks pass through to the page underneath. */
+  pointer-events: none;
 }
 
 .lane {
@@ -1255,12 +1257,25 @@
     padding: 5px 12px;
   }
 
+  /* v2 eyebrow spec; the side padding keeps the centred text clear of the
+     stamp even with the longer English line. */
+  .heroEyebrow {
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    padding: 6px 44px;
+  }
+
+  /* The design pins the stamp over the eyebrow, but at 390px it genuinely
+     covers the end of the line (and the EN headline). Move it to the card's
+     bottom-right corner — same flourish, nothing underneath to hide. */
   .proudlyStamp {
-    top: -16px;
+    top: auto;
+    bottom: -18px;
     right: 12px;
     width: 86px;
     height: 86px;
     font-size: 8.5px;
+    opacity: 1;
   }
 
   .sectionHeading {

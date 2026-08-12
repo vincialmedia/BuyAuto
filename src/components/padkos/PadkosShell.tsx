@@ -55,7 +55,13 @@ export function PadkosShell({
           background: ${bodyBackground};
         }
       `}</style>
-      <div className={`${ultra.variable} ${karla.variable} ${ui.root}`}>
+      {/* BuyAuto's _document declares de-CH for its own pages; Padkos content
+          is Austrian German or English — lang here is inherited by everything
+          in the shell and corrects screen-reader pronunciation + SEO signal. */}
+      <div
+        lang={lang === "en" ? "en" : "de-AT"}
+        className={`${ultra.variable} ${karla.variable} ${ui.root}`}
+      >
         <main className={`${chrome.pageMain}${mainClassName ? ` ${mainClassName}` : ""}`}>
           <div aria-hidden="true" className={ui.flagRule} />
           {header !== "none" ? <PadkosHeader variant={header} lang={lang} /> : null}

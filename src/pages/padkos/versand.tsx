@@ -79,9 +79,9 @@ export default function PadkosVersandPage() {
           <h2 className={shop.infoTitle}>Retouren &amp; Widerruf</h2>
           <p className={shop.infoText}>
             Du kannst deine Bestellung innerhalb von <strong>14 Tagen</strong> ohne Angabe von
-            Gründen widerrufen – bei ungeöffneter, originalverpackter Ware. Ausgenommen sind
-            gekühlte und leicht verderbliche Produkte (z. B. Boerewors) sowie geöffnete
-            Lebensmittel.
+            Gründen widerrufen. Ausgenommen sind schnell verderbliche Waren (§ 18 FAGG, z. B.
+            gekühlte Boerewors) sowie versiegelte Lebensmittel, sobald die Versiegelung
+            entfernt wurde.
           </p>
           <p className={shop.infoText} style={{ marginTop: 10 }}>
             So geht&apos;s: kurze E-Mail an{" "}

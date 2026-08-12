@@ -113,7 +113,7 @@ export default function PadkosKontoPage() {
                 1× Boerewors · 1× Mrs Ball&apos;s Chutney · 1× Ouma Rusks · 2× Creme Soda
               </p>
               <div className={shop.orderCardFoot}>
-                <span className={shop.orderTotal}>€ 32,70 · Versand € 4,90</span>
+                <span className={shop.orderTotal}>€ 32,30 · Versand € 8,80</span>
                 <button
                   type="button"
                   onClick={reorder}

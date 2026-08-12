@@ -68,6 +68,18 @@ export function PadkosLanding({
       setLoading(false);
       return;
     }
+    // Brand moment, not a toll booth: play once per browser session. Without
+    // this flag the 3.2s overlay would replay on every wordmark click and
+    // every DE↔EN switch, blocking all input each time.
+    try {
+      if (window.sessionStorage.getItem("padkos-loader-seen")) {
+        setLoading(false);
+        return;
+      }
+      window.sessionStorage.setItem("padkos-loader-seen", "1");
+    } catch {
+      // Storage blocked: fall through and show the loader once per mount.
+    }
     setLoading(true);
     setFading(false);
     fadeTimer.current = setTimeout(() => setFading(true), LOADER_FADE_AT_MS);
@@ -81,6 +93,10 @@ export function PadkosLanding({
   useEffect(() => () => clearTimeout(addedTimer.current), []);
 
   const addToCart = (sku: string, feedbackMs = ADDED_FEEDBACK_MS) => {
+    // Ignore clicks while the "✓" confirmation shows — the button stays the
+    // same enabled element so keyboard focus and screen-reader announcements
+    // (aria-live on the label) survive the state flip.
+    if (justAdded === sku) return;
     padkosStore.add(sku, 1);
     setJustAdded(sku);
     clearTimeout(addedTimer.current);
@@ -193,19 +209,20 @@ export function PadkosLanding({
                   {product.grundpreis ? (
                     <p className={styles.productGrundpreis}>{product.grundpreis}</p>
                   ) : null}
-                  {justAdded === product.sku ? (
-                    <button type="button" className={styles.productButtonAdded} disabled>
-                      {copy.justAdded}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => addToCart(product.sku)}
-                      className={`${styles.btn} ${styles.btnGreen} ${styles.shadowSm} ${styles.productButton}`}
-                    >
-                      {copy.addToCart}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => addToCart(product.sku)}
+                    aria-label={`${product.name}: ${copy.addToCart}`}
+                    className={
+                      justAdded === product.sku
+                        ? styles.productButtonAdded
+                        : `${styles.btn} ${styles.btnGreen} ${styles.shadowSm} ${styles.productButton}`
+                    }
+                  >
+                    <span aria-live="polite">
+                      {justAdded === product.sku ? copy.justAdded : copy.addToCart}
+                    </span>
+                  </button>
                 </div>
               </article>
             ))}
@@ -327,7 +344,9 @@ export function PadkosLanding({
                   onClick={() => addToCart("heimweh", ADDED_FEEDBACK_HERO_MS)}
                   className={`${styles.btn} ${styles.btnGold} ${styles.shadowMd} ${styles.btnHero}`}
                 >
-                  {justAdded === "heimweh" ? copy.justAdded : copy.heimwehCta}
+                  <span aria-live="polite">
+                    {justAdded === "heimweh" ? copy.justAdded : copy.heimwehCta}
+                  </span>
                 </button>
                 {copy.heimwehInsideLink ? (
                   <Link href={PADKOS.produkt("heimweh")} className={styles.heimwehInside}>

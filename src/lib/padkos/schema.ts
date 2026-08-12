@@ -6,7 +6,7 @@
  */
 
 import type { PadkosProduct } from "./catalog";
-import { COOLED_SURCHARGE, SHIP_COST, SHIP_FREE } from "./catalog";
+import { COOLED_SURCHARGE, SHIP_COST } from "./catalog";
 import { PADKOS, padkosCanonical } from "./routes";
 
 export function onlineStoreSchema() {
@@ -71,13 +71,10 @@ export function productSchema(product: PadkosProduct) {
         shippingRate: {
           "@type": "MonetaryAmount",
           // Cooled products always carry the chilled surcharge on top of the
-          // base rate (the threshold below waives only the base rate).
+          // base rate. (schema.org has no valid per-offer free-shipping
+          // threshold property — freeShippingThreshold belongs to feed-level
+          // ShippingRateSettings — so the €59 rule lives in page copy only.)
           value: product.cooled ? SHIP_COST + COOLED_SURCHARGE : SHIP_COST,
-          currency: "EUR",
-        },
-        freeShippingThreshold: {
-          "@type": "MonetaryAmount",
-          value: SHIP_FREE,
           currency: "EUR",
         },
       },

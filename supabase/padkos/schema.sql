@@ -55,6 +55,7 @@ create table if not exists public.padkos_orders (
   shipping_method text not null check (shipping_method in ('post', 'abholung')),
   payment_method  text not null,
   subtotal_eur    numeric(10, 2) not null,
+  discount_eur    numeric(10, 2) not null default 0,
   shipping_eur    numeric(10, 2) not null,
   total_eur       numeric(10, 2) not null,
   has_cooled      boolean not null default false,

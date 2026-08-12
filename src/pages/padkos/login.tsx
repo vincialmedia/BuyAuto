@@ -36,7 +36,7 @@ export default function PadkosLoginPage() {
 
       <div className={`${chrome.pageBody} ${chrome.pageBodyForm}`}>
         <div className={shop.authCard}>
-          <p className={shop.authRibbon}>WELKOM TERUG · WILLKOMMEN</p>
+          <h1 className={shop.authRibbon}>WELKOM TERUG · WILLKOMMEN</h1>
           <div className={shop.authBody}>
             <div className={shop.authTabs}>
               <button

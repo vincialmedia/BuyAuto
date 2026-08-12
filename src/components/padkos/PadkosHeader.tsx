@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { CATEGORIES } from "@/lib/padkos/catalog";
+import { LANDING_COPY } from "@/lib/padkos/landing-content";
 import { PADKOS } from "@/lib/padkos/routes";
 import { useCartCount } from "@/lib/padkos/store";
 
@@ -113,6 +114,7 @@ const COPY = {
       { label: "The Shelves", href: "#kategorien" },
       { label: "Heimweh Box", href: "#heimweh" },
       { label: "Our Story", href: "#story" },
+      { label: "FAQ", href: "#faq" },
     ],
     menuPrimaryShop: [
       { label: "Shop", href: PADKOS.shop },
@@ -143,6 +145,8 @@ export function PadkosHeader({ variant = "shop", lang = "de" }: PadkosHeaderProp
   const copy = COPY[lang];
   const homeHref = lang === "en" ? PADKOS.en : PADKOS.home;
   const nav = variant === "landing" ? copy.landingNav : copy.shopNav;
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
 
   // The overlay menu must never survive a navigation.
   useEffect(() => {
@@ -151,11 +155,34 @@ export function PadkosHeader({ variant = "shop", lang = "de" }: PadkosHeaderProp
     return () => router.events.off("routeChangeStart", close);
   }, [router.events]);
 
+  // Overlay menu focus management: focus moves in on open, Escape closes,
+  // focus returns to the hamburger on close (but never on initial mount).
+  const menuWasOpen = useRef(false);
+  useEffect(() => {
+    if (menuOpen) {
+      menuWasOpen.current = true;
+      menuCloseRef.current?.focus();
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setMenuOpen(false);
+      };
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }
+    if (menuWasOpen.current) {
+      menuWasOpen.current = false;
+      hamburgerRef.current?.focus({ preventScroll: true });
+    }
+  }, [menuOpen]);
+
   // The landing menu's category links (design v2): each shelf deep-links into
-  // the shop with its filter chip preselected.
+  // the shop with its filter chip preselected — labelled in the page's own
+  // language (the catalogue itself carries the German names).
   const menuPrimary =
     variant === "landing"
-      ? CATEGORIES.map((c) => ({ label: c.name, href: PADKOS.shopCategory(c.key) }))
+      ? CATEGORIES.map((c) => ({
+          label: LANDING_COPY[lang].categoryNames[c.key]?.name ?? c.name,
+          href: PADKOS.shopCategory(c.key),
+        }))
       : copy.menuPrimaryShop;
   const menuSecondary =
     variant === "landing" ? copy.menuSecondaryLanding : copy.menuSecondaryShop;
@@ -214,6 +241,7 @@ export function PadkosHeader({ variant = "shop", lang = "de" }: PadkosHeaderProp
         {/* Mobile bar */}
         <div className={styles.mobileBar}>
           <button
+            ref={hamburgerRef}
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label={copy.menuOpen}
@@ -253,10 +281,16 @@ export function PadkosHeader({ variant = "shop", lang = "de" }: PadkosHeaderProp
       </header>
 
       {menuOpen ? (
-        <div className={styles.menu}>
+        <div
+          className={styles.menu}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lang === "de" ? "Menü" : "Menu"}
+        >
           <div className={styles.menuTop}>
             <span className={styles.menuWordmark}>PADKOS</span>
             <button
+              ref={menuCloseRef}
               type="button"
               onClick={() => setMenuOpen(false)}
               aria-label={copy.menuClose}
