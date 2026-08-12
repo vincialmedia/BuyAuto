@@ -740,6 +740,47 @@
   color: #c43a26;
 }
 
+/*
+ * Below ~520px one flex row can't hold photo, name, stepper, total and
+ * remove — the name column collapses to a sliver. Re-lay the line as a grid:
+ * name row on top, stepper and line total underneath.
+ */
+@media (max-width: 520px) {
+  .cartLine {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    grid-template-areas:
+      "media info  remove"
+      "media qty   total";
+    row-gap: 10px;
+    align-items: start;
+  }
+
+  .cartLineMedia {
+    grid-area: media;
+  }
+
+  .cartLineInfo {
+    grid-area: info;
+  }
+
+  .cartRemove {
+    grid-area: remove;
+    justify-self: end;
+  }
+
+  .cartQty {
+    grid-area: qty;
+    justify-self: start;
+    align-self: center;
+  }
+
+  .cartLineTotal {
+    grid-area: total;
+    align-self: center;
+  }
+}
+
 .formGrid2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
