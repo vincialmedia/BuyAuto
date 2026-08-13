@@ -18,6 +18,7 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/auto-abo-vs-leasing-kosten": "2026-08-04",
   "/eintauschwert-rechner": "2026-08-04",
   "/leasing-abgeben-schweiz": "2026-08-04",
+  "/fuer-garagen": "2026-08-13",
   "/autoscout24-alternative-leasinguebernahme": "2026-08-04",
   "/carify-alternativen": "2026-08-04",
   "/auto-abos-im-vergleich": "2026-08-04",

@@ -32,7 +32,9 @@ const footerSections = [
     links: [
       { label: "Inserat erstellen", href: "/inserat-erstellen" },
       { label: "Preise", href: "/preise" },
-      { label: "Für Garagen", href: "/garage-plan" },
+      // Public garage landing page — /garage-plan is noindex and auth-gated,
+      // so the footer sends garages to the pitch first.
+      { label: "Für Garagen", href: "/fuer-garagen" },
       { label: "Eintauschwert-Rechner", href: "/eintauschwert-rechner" }
     ]
   },

@@ -26,5 +26,9 @@
 
 ## Preise
 
-- [Preise für Inserate](https://www.buyauto.ch/preise): Was ein Inserat auf BuyAuto kostet (einmalig, kein Abo)
+- [Preise für Inserate](https://www.buyauto.ch/preise): Was ein Inserat auf BuyAuto kostet (Private einmalig, Garagen im Monatspaket)
 - [Leasing Concierge](https://www.buyauto.ch/leasing-concierge): Begleiteter Leasing-Ausstieg als Service
+
+## Für Garagen
+
+- [BuyAuto für Garagen](https://www.buyauto.ch/fuer-garagen): Leasingübernahme als Verkaufschance – blockierte Eintausch-Deals abschlussfähig machen
