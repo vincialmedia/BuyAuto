@@ -123,7 +123,7 @@ export function WhyBuyAutoSection() {
 
           {/* Supporting Text */}
           <p className="text-neutral-500 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            BuyAuto verbindet Menschen, die aus ihrem laufenden Leasingvertrag raus wollen, mit Menschen, die genau so einen Vertrag übernehmen möchten – ohne hohe Anzahlung, ohne Neuwagen-Wartezeit.
+            BuyAuto verbindet Menschen, die aus ihrem laufenden Leasingvertrag rauswollen, mit Menschen, die genau so einen Vertrag übernehmen möchten – ohne hohe Anzahlung, ohne Neuwagen-Wartezeit.
             <span className="text-neutral-700 font-medium"> Einfach, transparent und für die Schweiz gebaut.</span>
           </p>
         </div>

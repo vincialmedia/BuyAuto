@@ -23,8 +23,11 @@ export interface LeasingCompanyFacts {
 export interface LeasingCompany {
   /** Flat page slug, e.g. "cembra-leasing-uebernehmen" → /cembra-leasing-uebernehmen */
   slug: string;
-  /** Short display name used in headings and prose. */
+  /** Full display name for standalone mentions («Zustimmung von AMAG Leasing»). */
   name: string;
+  /** Name used in hyphen compounds («AMAG-Leasingvertrag») — avoids
+   *  «AMAG Leasing-Leasing» when the full name already contains «Leasing». */
+  compoundName: string;
   /** Official company website (root URL only — no deep-link claims). */
   officialSite: string;
   facts: LeasingCompanyFacts;
@@ -45,12 +48,14 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
   {
     slug: "cembra-leasing-uebernehmen",
     name: "Cembra",
+    compoundName: "Cembra",
     officialSite: "https://www.cembra.ch",
     facts: { ...NO_FACTS },
   },
   {
     slug: "amag-leasing-uebernehmen",
     name: "AMAG Leasing",
+    compoundName: "AMAG",
     officialSite: "https://www.amag-leasing.ch",
     // TODO-VINCE: finanzierte Marken von AMAG Leasing mit Quelle von der
     // eigenen Website (dann Brand-Page-Links VW/Audi/Porsche/… ergänzen)
@@ -59,12 +64,14 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
   {
     slug: "multilease-leasing-uebernehmen",
     name: "Multilease",
+    compoundName: "Multilease",
     officialSite: "https://www.multilease.ch",
     facts: { ...NO_FACTS },
   },
   {
     slug: "bank-now-leasing-uebernehmen",
     name: "BANK-now",
+    compoundName: "BANK-now",
     officialSite: "https://www.bank-now.ch",
     facts: { ...NO_FACTS },
   },

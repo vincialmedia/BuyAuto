@@ -22,6 +22,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
+import { pricingPlans } from "@/lib/buyauto/stripe_config";
 
 // Single source for the visible «Aktualisiert am» hint and the sitemap lastmod.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/fuer-garagen"];
@@ -57,9 +58,9 @@ const FAQS: Faq[] = [
     q: "Wie lange läuft ein Inserat?",
     // Real behaviour from the product config: garage listings hang off the
     // monthly package (garagePlans.ts caps active listings, no per-listing
-    // expiry); private one-time plans are 60 / 90 days / unlimited
-    // (stripe_config.ts duration_days).
-    a: "Garagen-Inserate sind an dein Monatspaket gebunden: Sie bleiben online, solange dein Paket aktiv ist – das Paket begrenzt nur die Anzahl gleichzeitig aktiver Inserate. Private Inserate laufen je nach Plan 60 Tage, 90 Tage oder unlimitiert bis zum Verkauf. Details auf der Preisseite.",
+    // expiry); private one-time plan durations are interpolated from
+    // stripe_config.ts so this answer can never drift from /preise.
+    a: `Garagen-Inserate sind an dein Monatspaket gebunden: Sie bleiben online, solange dein Paket aktiv ist – das Paket begrenzt nur die Anzahl gleichzeitig aktiver Inserate. Private Inserate laufen je nach Plan ${pricingPlans.standard.duration_days} Tage, ${pricingPlans.extended.duration_days} Tage oder unlimitiert bis zum Verkauf. Details auf der Preisseite.`,
     href: "/preise",
     linkText: "Preisseite",
   },
@@ -115,18 +116,20 @@ const BENEFITS = [
   },
 ];
 
+// Interleaves a link between every occurrence of linkText so a phrase that
+// appears twice never silently drops the trailing text.
 function withInlineLink(text: string, href?: string, linkText?: string) {
   if (!href || !linkText || !text.includes(linkText)) return text;
-  const [before, after] = text.split(linkText);
-  return (
-    <>
-      {before}
-      <Link href={href} className="text-red-600 font-semibold hover:underline">
-        {linkText}
-      </Link>
-      {after}
-    </>
-  );
+  return text.split(linkText).map((part, i, parts) => (
+    <span key={i}>
+      {part}
+      {i < parts.length - 1 && (
+        <Link href={href} className="text-red-600 font-semibold hover:underline">
+          {linkText}
+        </Link>
+      )}
+    </span>
+  ));
 }
 
 export default function FuerGaragen() {

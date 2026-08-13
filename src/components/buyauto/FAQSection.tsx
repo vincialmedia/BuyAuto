@@ -21,7 +21,7 @@ const faqs = [
   {
     id: "faq-3",
     question: "Warum ein bestehendes Leasing übernehmen statt neu zu leasen?",
-    answer: "Du übernimmst nur die Restlaufzeit, statt einen neuen Vertrag über die volle Laufzeit zu unterschreiben – und eine hohe Anzahlung wie beim Neuleasing entfällt. Zudem ist das Fahrzeug sofort verfügbar, ohne Neuwagen-Wartezeit."
+    answer: "Du übernimmst nur die Restlaufzeit, statt einen neuen Vertrag über die volle Laufzeit zu unterschreiben – und eine hohe Anzahlung entfällt in der Regel. Zudem ist das Fahrzeug nach der Bewilligung schnell verfügbar, ohne Neuwagen-Wartezeit."
   },
   {
     id: "faq-4",

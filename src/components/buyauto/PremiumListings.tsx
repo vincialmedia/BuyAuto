@@ -285,8 +285,8 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
               </h2>
               <p className="text-neutral-500 text-base max-w-xl mx-auto mb-6">
                 {typeof takeoverCount === "number" && takeoverCount > 0
-                  ? `Aktuell ${takeoverCount} Fahrzeuge zur Übernahme – hier siehst du handverlesene Top-Angebote mit erhöhter Sichtbarkeit.`
-                  : "Handverlesene Top-Angebote mit erhöhter Sichtbarkeit."}
+                  ? `Aktuell ${takeoverCount} ${takeoverCount === 1 ? "Fahrzeug" : "Fahrzeuge"} zur Übernahme – hier siehst du Premium-Angebote mit erhöhter Sichtbarkeit.`
+                  : "Premium-Angebote mit erhöhter Sichtbarkeit."}
               </p>
               
               {/* Category Filter Tabs */}

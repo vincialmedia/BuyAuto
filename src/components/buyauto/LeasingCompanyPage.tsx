@@ -38,11 +38,27 @@ import { otherLeasingCompanies, type LeasingCompany } from "@/lib/buyauto/leasin
 
 type Faq = { q: string; a: string; href?: string; linkText?: string };
 
+// Interleaves a link between every occurrence of linkText so a phrase that
+// appears twice never silently drops the trailing text.
+function withInlineLink(text: string, href?: string, linkText?: string) {
+  if (!href || !linkText || !text.includes(linkText)) return text;
+  return text.split(linkText).map((part, i, parts) => (
+    <span key={i}>
+      {part}
+      {i < parts.length - 1 && (
+        <Link href={href} className="text-red-600 font-semibold hover:underline">
+          {linkText}
+        </Link>
+      )}
+    </span>
+  ));
+}
+
 function buildFaqs(company: LeasingCompany): Faq[] {
-  const { name } = company;
+  const { name, compoundName } = company;
   return [
     {
-      q: `Kann ich meinen ${name}-Leasingvertrag auf eine andere Person übertragen?`,
+      q: `Kann ich meinen ${compoundName}-Leasingvertrag auf eine andere Person übertragen?`,
       a: `Eine Übertragung ist grundsätzlich nur mit Zustimmung von ${name} möglich. Die Übernehmerin oder der Übernehmer durchläuft die gleiche Bonitätsprüfung wie bei einem Neuvertrag – erst nach der Bewilligung wird der Vertrag umgeschrieben.`,
     },
     {
@@ -58,7 +74,7 @@ function buildFaqs(company: LeasingCompany): Faq[] {
       linkText: "Leasingübernahme-Kosten",
     },
     {
-      q: `Wie inseriere ich meinen ${name}-Vertrag auf BuyAuto?`,
+      q: `Wie inseriere ich meinen ${compoundName}-Vertrag auf BuyAuto?`,
       a: "Erstelle in wenigen Minuten ein Inserat mit Monatsrate, Restlaufzeit und Kilometerstand. Interessenten melden sich direkt bei dir – und wenn du den Prozess nicht allein durchziehen willst, übernimmt unser Concierge die Abwicklung.",
       href: "/leasing-concierge",
       linkText: "Concierge",
@@ -67,13 +83,13 @@ function buildFaqs(company: LeasingCompany): Faq[] {
 }
 
 export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
-  const { name, slug, facts } = company;
+  const { name, compoundName, slug, facts } = company;
   const path = `/${slug}`;
   const url = `https://www.buyauto.ch${path}`;
   const lastUpdatedIso = CONTENT_LAST_UPDATED[path];
 
-  const title = `${name}-Leasing übernehmen oder abgeben | BuyAuto`;
-  const description = `So überträgst du einen ${name}-Leasingvertrag: Ablauf der Übertragung, Bonitätsprüfung und was Abgeber wie Übernehmer wissen müssen – mit aktuellen Angeboten auf BuyAuto.`;
+  const title = `${compoundName}-Leasing übernehmen oder abgeben | BuyAuto`;
+  const description = `So überträgst du einen ${compoundName}-Leasingvertrag: Ablauf der Übertragung, Bonitätsprüfung und was Abgeber wie Übernehmer wissen müssen.`;
 
   const faqs = buildFaqs(company);
 
@@ -81,7 +97,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
     {
       icon: ClipboardList,
       title: "Inserat erstellen oder Angebot finden",
-      text: `Als Abgeber inserierst du deinen ${name}-Vertrag mit Monatsrate, Restlaufzeit und Kilometerstand auf BuyAuto. Als Übernehmer durchsuchst du die aktuellen Angebote.`,
+      text: `Als Abgeber inserierst du deinen ${compoundName}-Vertrag mit Monatsrate, Restlaufzeit und Kilometerstand auf BuyAuto. Als Übernehmer durchsuchst du die aktuellen Angebote.`,
     },
     {
       icon: Handshake,
@@ -121,7 +137,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: `${name}-Leasing übernehmen oder abgeben`,
+              headline: `${compoundName}-Leasing übernehmen oder abgeben`,
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -149,7 +165,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
         />
 
         {/* Open Graph */}
-        <meta property="og:title" content={`${name}-Leasing übernehmen oder abgeben`} />
+        <meta property="og:title" content={`${compoundName}-Leasing übernehmen oder abgeben`} />
         <meta property="og:description" content={description} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={url} />
@@ -176,16 +192,17 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               {lastUpdatedIso ? ` · Aktualisiert am ${formatSwissDate(lastUpdatedIso)}` : null}
             </span>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-neutral-900 tracking-tight leading-[1.05] mb-6">
-              {name}-Leasing <span className="text-red-500">übernehmen oder abgeben</span>
+              {compoundName}-Leasing <span className="text-red-500">übernehmen oder abgeben</span>
             </h1>
             {/* Answer-first: the first sentences answer «wie funktioniert die
                 Übertragung eines Vertrags bei dieser Gesellschaft». */}
             <p className="text-lg sm:text-xl text-neutral-600 leading-relaxed max-w-3xl">
-              Einen laufenden {name}-Leasingvertrag kannst du übernehmen oder an eine Nachfolgerin oder einen
-              Nachfolger übertragen – immer mit Zustimmung von {name}. Die Übernehmerin oder der Übernehmer
-              durchläuft die gleiche Bonitätsprüfung wie bei einem Neuvertrag; erst nach der Bewilligung wird
-              der Vertrag umgeschrieben. Auf BuyAuto findest du beide Seiten: aktuelle Übernahme-Angebote und
-              den einfachsten Weg, deinen eigenen Vertrag zur Übernahme auszuschreiben.
+              Einen laufenden {compoundName}-Leasingvertrag kannst du übernehmen oder an eine Nachfolgerin
+              oder einen Nachfolger übertragen – grundsätzlich nur mit Zustimmung von {name}. Die Übernehmerin
+              oder der Übernehmer durchläuft die gleiche Bonitätsprüfung wie bei einem Neuvertrag; erst nach
+              der Bewilligung wird der Vertrag umgeschrieben. Auf BuyAuto findest du beide Seiten: aktuelle
+              Leasingübernahmen aller Gesellschaften und einen einfachen Weg, deinen eigenen Vertrag zur
+              Übernahme auszuschreiben.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
@@ -271,7 +288,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                     Website oder schriftliche Auskunft) — dann hier beziffern. */}
                 <p className="text-neutral-600 leading-relaxed">
                   {facts.transferFee ??
-                    `Die Umschreibegebühr legt ${name} fest – sie steht in deinem Leasingvertrag. Alle generellen Kostenblöcke zeigt unser Kosten-Ratgeber.`}
+                    `Die Umschreibegebühr legt ${name} fest – sie steht in deinem Leasingvertrag oder du erfragst sie direkt bei der Gesellschaft. Alle generellen Kostenblöcke zeigt unser Kosten-Ratgeber.`}
                 </p>
               </div>
               <div className="bg-neutral-50 rounded-2xl p-6 border border-neutral-200">
@@ -330,8 +347,8 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               Aktuelle Leasingübernahmen auf BuyAuto
             </h2>
             <p className="text-neutral-600 mb-8 max-w-2xl mx-auto">
-              Alle Übernahme-Angebote zeigen Monatsrate und Restlaufzeit transparent – filtere nach Marke,
-              Monatsrate oder Restlaufzeit.
+              Durchsuche alle Übernahme-Angebote – jedes Inserat zeigt Monatsrate und Restlaufzeit
+              transparent aus.
             </p>
             <Button
               asChild
@@ -363,17 +380,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                     {faq.q}
                   </AccordionTrigger>
                   <AccordionContent className="text-neutral-600 leading-relaxed pb-5 text-base">
-                    {faq.href && faq.linkText && faq.a.includes(faq.linkText) ? (
-                      <>
-                        {faq.a.split(faq.linkText)[0]}
-                        <Link href={faq.href} className="text-red-600 font-semibold hover:underline">
-                          {faq.linkText}
-                        </Link>
-                        {faq.a.split(faq.linkText)[1]}
-                      </>
-                    ) : (
-                      faq.a
-                    )}
+                    {withInlineLink(faq.a, faq.href, faq.linkText)}
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -386,7 +393,9 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-neutral-800 rounded-3xl p-8 border border-neutral-700">
-                <h3 className="text-2xl font-bold text-white mb-3">Du willst deinen {name}-Vertrag abgeben?</h3>
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Du willst deinen {compoundName}-Vertrag abgeben?
+                </h3>
                 <p className="text-neutral-300 mb-6">
                   Erstelle dein Inserat in wenigen Minuten – oder lass den{" "}
                   <Link href="/leasing-concierge" className="text-neutral-200 underline hover:text-white">
@@ -406,10 +415,12 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                 </Button>
               </div>
               <div className="bg-neutral-800 rounded-3xl p-8 border border-neutral-700">
-                <h3 className="text-2xl font-bold text-white mb-3">Du willst ein {name}-Leasing übernehmen?</h3>
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Du willst ein {compoundName}-Leasing übernehmen?
+                </h3>
                 <p className="text-neutral-300 mb-6">
-                  Durchsuche die aktuellen Übernahme-Angebote – ohne hohe Anzahlung und mit kurzer
-                  Restlaufzeit.
+                  Durchsuche die aktuellen Übernahme-Angebote – oft ohne hohe Anzahlung und mit kürzerer
+                  Laufzeit als bei einem Neuvertrag.
                 </p>
                 <Button
                   asChild

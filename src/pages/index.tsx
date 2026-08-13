@@ -197,7 +197,7 @@ export default function HomePage({ premiumListings, takeoverCount }: HomePagePro
                 {
                   step: "02",
                   title: "Angebote vergleichen",
-                  desc: "Filtere nach Marke, Modell, Monatsrate und Restlaufzeit – jedes Inserat zeigt beides transparent.",
+                  desc: "Filtere nach Marke, Modell, Monatsrate und Restlaufzeit – jedes Übernahme-Inserat zeigt die Vertragsdaten transparent.",
                   icon: Search,
                 },
                 {
@@ -335,14 +335,14 @@ export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
     const [leaseTakeoverResult, directPurchaseResult, takeoverCountResult] = await Promise.all([
       searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
       searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
-      // Head-only count of everything the UI presents as Übernahme: pure
-      // lease_takeover plus Direktkauf with enabled Übernahme-Angebot (same
-      // precedence as getDealTypeLabel / the search cards).
+      // Head-only count of pure lease takeovers — deliberately the same
+      // filter as /suche?dealType=lease_takeover, which the section's CTAs
+      // link to, so the number always matches what a click-through shows.
       supabase
         .from("listings_public")
         .select("id", { count: "exact", head: true })
         .eq("status", "published")
-        .or("deal_type.eq.lease_takeover,leasing_offer->lease_takeover_offer->>enabled.eq.true"),
+        .eq("deal_type", "lease_takeover"),
     ]);
 
     const ordered = [...leaseTakeoverResult.items, ...directPurchaseResult.items];

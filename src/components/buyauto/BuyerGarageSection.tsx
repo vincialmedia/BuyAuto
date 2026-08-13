@@ -25,7 +25,7 @@ export function BuyerGarageSection() {
             Fahrzeuge von Garagen und Privatpersonen
           </h2>
           <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto">
-            Jedes Inserat weist Monatsrate und Restlaufzeit transparent aus – und die Übertragung läuft immer über die Leasinggesellschaft.
+            Jedes Übernahme-Inserat weist Monatsrate und Restlaufzeit transparent aus – und die Übertragung läuft immer über die Leasinggesellschaft.
           </p>
         </div>
 
