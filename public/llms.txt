@@ -29,6 +29,13 @@
 - [Preise für Inserate](https://www.buyauto.ch/preise): Was ein Inserat auf BuyAuto kostet (Private einmalig, Garagen im Monatspaket)
 - [Leasing Concierge](https://www.buyauto.ch/leasing-concierge): Begleiteter Leasing-Ausstieg als Service
 
+## Leasinggesellschaften
+
+- [Cembra-Leasing übernehmen oder abgeben](https://www.buyauto.ch/cembra-leasing-uebernehmen): Übertragung eines Cembra-Leasingvertrags – Ablauf, Bonitätsprüfung und Umschreibung
+- [AMAG-Leasing übernehmen oder abgeben](https://www.buyauto.ch/amag-leasing-uebernehmen): Übertragung eines AMAG-Leasing-Vertrags – Ablauf, Bonitätsprüfung und Umschreibung
+- [Multilease-Leasing übernehmen oder abgeben](https://www.buyauto.ch/multilease-leasing-uebernehmen): Übertragung eines Multilease-Vertrags – Ablauf, Bonitätsprüfung und Umschreibung
+- [BANK-now-Leasing übernehmen oder abgeben](https://www.buyauto.ch/bank-now-leasing-uebernehmen): Übertragung eines BANK-now-Vertrags – Ablauf, Bonitätsprüfung und Umschreibung
+
 ## Für Garagen
 
 - [BuyAuto für Garagen](https://www.buyauto.ch/fuer-garagen): Leasingübernahme als Verkaufschance – blockierte Eintausch-Deals abschlussfähig machen
