@@ -131,7 +131,7 @@ export default function GaragePlanPage() {
             <p className="text-xs text-neutral-400">
               Mehr als {GARAGE_CUSTOM_THRESHOLD} Fahrzeuge?{" "}
               <a
-                href="mailto:kontakt@buyauto.ch"
+                href="mailto:hello@buyauto.ch"
                 className="text-neutral-600 underline hover:text-neutral-900"
               >
                 Kontaktiere uns
