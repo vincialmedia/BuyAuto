@@ -23,12 +23,17 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
-import { otherLeasingCompanies, type LeasingCompany } from "@/lib/buyauto/leasingCompanies";
+import {
+  otherLeasingCompanies,
+  type LeasingCompany,
+  type SourcedFact,
+} from "@/lib/buyauto/leasingCompanies";
 
 // Template for the per-Leasinggesellschaft pages. Everything company-specific
 // (Gebühren, Dauer, Dokumente, Übertragungsweg) comes from the registry in
-// leasingCompanies.ts and is null until Vince supplies verified terms — the
-// sections below then render honest generic copy instead of invented numbers.
+// leasingCompanies.ts as SourcedFacts with visible attribution; fields without
+// a verifiable source stay null (ERFAHRUNGSWERT-VINCE) and the sections below
+// render honest generic copy instead of invented numbers.
 //
 // TODO: matching live listings per Gesellschaft cannot be rendered yet — the
 // Supabase listings schema has no Leasinggesellschaft field (checked
@@ -54,6 +59,34 @@ function withInlineLink(text: string, href?: string, linkText?: string) {
   ));
 }
 
+// Renders a SourcedFact: the visible attribution phrase inside the text
+// becomes an external source link (Quellenangabe — exempt from the
+// no-external-contacts rule for body copy).
+function SourcedText({ fact }: { fact: SourcedFact }) {
+  if (!fact.sourceUrl || !fact.sourceLinkText || !fact.text.includes(fact.sourceLinkText)) {
+    return <>{fact.text}</>;
+  }
+  return (
+    <>
+      {fact.text.split(fact.sourceLinkText).map((part, i, parts) => (
+        <span key={i}>
+          {part}
+          {i < parts.length - 1 && (
+            <a
+              href={fact.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
+            >
+              {fact.sourceLinkText}
+            </a>
+          )}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function buildFaqs(company: LeasingCompany): Faq[] {
   const { name, compoundName } = company;
   return [
@@ -68,7 +101,7 @@ function buildFaqs(company: LeasingCompany): Faq[] {
     {
       q: `Was kostet die Übertragung bei ${name}?`,
       a: company.facts.transferFee
-        ? `${company.facts.transferFee} Welche Kostenblöcke bei einer Leasingübernahme generell anfallen, zeigt unser Ratgeber zu den Leasingübernahme-Kosten.`
+        ? `${company.facts.transferFee.text} Welche Kostenblöcke bei einer Leasingübernahme generell anfallen, zeigt unser Ratgeber zu den Leasingübernahme-Kosten.`
         : `Die Umschreibegebühr legt ${name} fest – sie steht in deinem Leasingvertrag oder du erfragst sie direkt bei der Gesellschaft. Welche Kostenblöcke bei einer Leasingübernahme generell anfallen, zeigt unser Ratgeber zu den Leasingübernahme-Kosten.`,
       href: "/leasinguebernahme-kosten",
       linkText: "Leasingübernahme-Kosten",
@@ -107,11 +140,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
     {
       icon: FileText,
       title: `Übertragung bei ${name} beantragen`,
-      // TODO-VINCE: gesellschaftsspezifischer Übertragungsweg (Online-Portal,
-      // Formular oder Hotline?) — bis dahin bewusst generisch formuliert.
-      text:
-        facts.processNotes ??
-        `Beide Seiten melden die geplante Übernahme bei ${name} an. Die Gesellschaft nennt euch die nötigen Angaben und Unterlagen für den Antrag.`,
+      text: `Beide Seiten melden die geplante Übernahme bei ${name} an. Die Gesellschaft nennt euch die nötigen Angaben und Unterlagen für den Antrag.`,
     },
     {
       icon: ShieldCheck,
@@ -205,6 +234,40 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               Übernahme auszuschreiben.
             </p>
 
+            {company.introNote && (
+              <p className="mt-4 text-base text-neutral-500 leading-relaxed max-w-3xl">
+                <SourcedText fact={company.introNote} />
+              </p>
+            )}
+
+            {company.financedBrands && (
+              <p className="mt-3 text-base text-neutral-500 leading-relaxed max-w-3xl">
+                {company.financedBrands.lead}{" "}
+                {company.financedBrands.brands.map((brand, i, arr) => (
+                  <span key={brand.name}>
+                    {brand.href ? (
+                      <Link href={brand.href} className="text-red-600 font-semibold hover:underline">
+                        {brand.name}
+                      </Link>
+                    ) : (
+                      brand.name
+                    )}
+                    {i < arr.length - 2 ? ", " : i === arr.length - 2 ? " und " : ""}
+                  </span>
+                ))}{" "}
+                (
+                <a
+                  href={company.financedBrands.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
+                >
+                  {company.financedBrands.sourceLabel}
+                </a>
+                ).
+              </p>
+            )}
+
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <Button
                 asChild
@@ -258,6 +321,14 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                 </li>
               ))}
             </ol>
+            {facts.transferProcess && (
+              <div className="mt-8 bg-red-500/5 border-l-4 border-red-500 p-6 rounded-r-xl">
+                <h3 className="text-lg font-bold text-neutral-900 mb-2">So regelt es {name}</h3>
+                <p className="text-neutral-600 leading-relaxed">
+                  <SourcedText fact={facts.transferProcess} />
+                </p>
+              </div>
+            )}
             <p className="mt-8 text-neutral-600">
               Den allgemeinen Ablauf mit allen Details findest du im Ratgeber{" "}
               <Link href="/leasingvertrag-uebertragen" className="text-red-600 font-semibold hover:underline">
@@ -284,11 +355,12 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                   <Wallet className="w-6 h-6 text-red-600" />
                 </div>
                 <h3 className="text-lg font-bold text-neutral-900 mb-2">Gebühren</h3>
-                {/* TODO-VINCE: Umschreibegebühr von {name} mit Quelle (Vertrag,
-                    Website oder schriftliche Auskunft) — dann hier beziffern. */}
                 <p className="text-neutral-600 leading-relaxed">
-                  {facts.transferFee ??
-                    `Die Umschreibegebühr legt ${name} fest – sie steht in deinem Leasingvertrag oder du erfragst sie direkt bei der Gesellschaft. Alle generellen Kostenblöcke zeigt unser Kosten-Ratgeber.`}
+                  {facts.transferFee ? (
+                    <SourcedText fact={facts.transferFee} />
+                  ) : (
+                    `Die Umschreibegebühr legt ${name} fest – sie steht in deinem Leasingvertrag oder du erfragst sie direkt bei der Gesellschaft. Alle generellen Kostenblöcke zeigt unser Kosten-Ratgeber.`
+                  )}
                 </p>
               </div>
               <div className="bg-neutral-50 rounded-2xl p-6 border border-neutral-200">
@@ -296,11 +368,14 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                   <CalendarClock className="w-6 h-6 text-red-600" />
                 </div>
                 <h3 className="text-lg font-bold text-neutral-900 mb-2">Typische Dauer</h3>
-                {/* TODO-VINCE: typische Übertragungsdauer bei {name} (belegter
-                    Erfahrungswert) — dann hier beziffern. */}
+                {/* ERFAHRUNGSWERT-VINCE: typische Übertragungsdauer — bleibt
+                    beim generischen Fallback, bis ein belegter Wert vorliegt. */}
                 <p className="text-neutral-600 leading-relaxed">
-                  {facts.typicalDuration ??
-                    `Die Dauer hängt vor allem von der Bonitätsprüfung und der Rückmeldung von ${name} ab. Plane die Fahrzeugübergabe erst nach der Bewilligung.`}
+                  {facts.typicalDuration ? (
+                    <SourcedText fact={facts.typicalDuration} />
+                  ) : (
+                    `Die Dauer hängt vor allem von der Bonitätsprüfung und der Rückmeldung von ${name} ab. Plane die Fahrzeugübergabe erst nach der Bewilligung.`
+                  )}
                 </p>
               </div>
               <div className="bg-neutral-50 rounded-2xl p-6 border border-neutral-200">
@@ -308,33 +383,24 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                   <FileText className="w-6 h-6 text-red-600" />
                 </div>
                 <h3 className="text-lg font-bold text-neutral-900 mb-2">Benötigte Dokumente</h3>
-                {/* TODO-VINCE: verbindliche Dokumentenliste von {name} für die
-                    Bonitätsprüfung — dann hier auflisten. */}
-                {facts.requiredDocuments ? (
-                  <ul className="text-neutral-600 leading-relaxed list-disc pl-5 space-y-1">
-                    {facts.requiredDocuments.map((doc) => (
-                      <li key={doc}>{doc}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-neutral-600 leading-relaxed">
-                    Für die Bonitätsprüfung verlangt {name} in der Regel Angaben zu Identität, Einkommen und
-                    Wohnsitz. Die verbindliche Liste bekommst du direkt von {name}.
-                  </p>
-                )}
+                <p className="text-neutral-600 leading-relaxed">
+                  {facts.documents ? (
+                    <SourcedText fact={facts.documents} />
+                  ) : (
+                    `Für die Bonitätsprüfung verlangt ${name} in der Regel Angaben zu Identität, Einkommen und Wohnsitz. Die verbindliche Liste bekommst du direkt von ${name}.`
+                  )}
+                </p>
               </div>
             </div>
+            {/* Fixed disclaimer per Vince: keeps every figure above honest even
+                if the Gesellschaft changes its terms between our updates. */}
             <p className="mt-8 text-sm text-neutral-500">
-              Verbindliche Konditionen:{" "}
-              <a
-                href={company.officialSite}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="text-neutral-600 underline hover:text-neutral-900 inline-flex items-center gap-1"
-              >
-                offizielle Website von {name}
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              Massgeblich sind die aktuellen Bedingungen der Leasinggesellschaft. Stand der Angaben: August
+              2026. Die kantonalen Gebühren des Strassenverkehrsamts kommen hinzu – Details im Ratgeber{" "}
+              <Link href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline">
+                Leasingübernahme-Kosten
+              </Link>
+              .
             </p>
           </div>
         </section>
@@ -436,8 +502,22 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               </div>
             </div>
 
-            {/* Interlinks: Ratgeber + andere Gesellschaften */}
+            {/* Interlinks: Ratgeber + andere Gesellschaften. Der Link zur
+                Gesellschaft steht bewusst NACH den BuyAuto-CTAs (Funnel-Regel:
+                erst Inserat/Concierge, dann externe Nachfrage). */}
             <div className="mt-10 text-center text-sm text-neutral-400 space-y-3">
+              <p>
+                Direkt bei der Gesellschaft nachfragen:{" "}
+                <a
+                  href={company.infoUrl ?? company.officialSite}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="text-neutral-300 underline hover:text-white inline-flex items-center gap-1"
+                >
+                  offizielle Website von {name}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </p>
               <p>
                 Mehr zum Thema:{" "}
                 <Link href="/leasingvertrag-uebertragen" className="text-neutral-300 underline hover:text-white">
