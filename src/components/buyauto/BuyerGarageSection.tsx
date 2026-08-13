@@ -25,7 +25,7 @@ export function BuyerGarageSection() {
             Fahrzeuge von Garagen und Privatpersonen
           </h2>
           <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto">
-            Mehr Auswahl für Käufer. Mehr Sichtbarkeit für Anbieter.
+            Jedes Inserat weist Monatsrate und Restlaufzeit transparent aus – und die Übertragung läuft immer über die Leasinggesellschaft.
           </p>
         </div>
 
@@ -48,17 +48,17 @@ export function BuyerGarageSection() {
 
               {/* Title */}
               <h3 className="text-2xl font-bold text-neutral-900 mb-4">
-                Für Käufer
+                Für Übernehmer
               </h3>
 
               {/* Description */}
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                Entdecke Angebote von Schweizer Garagen und privaten Anbietern – einfach an einem Ort.
+                Entdecke Leasingübernahmen von Schweizer Garagen und privaten Anbietern – jedes Angebot mit klarer Monatsrate und Restlaufzeit.
               </p>
 
               {/* Bullet Points */}
               <ul className="space-y-3 mb-8">
-                {["Mehr Auswahl", "Mehr Preisvielfalt", "Direkter Kontakt zum Anbieter"].map((item, index) => (
+                {["Monatsrate und Restlaufzeit in jedem Inserat", "Übertragung über die Leasinggesellschaft", "Direkter Kontakt zum Anbieter"].map((item, index) => (
                   <li key={index} className="flex items-center gap-3 group/item">
                     <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center group-hover/item:bg-red-500/20 transition-colors duration-300">
                       <Check className="w-3.5 h-3.5 text-red-500" />
@@ -96,12 +96,12 @@ export function BuyerGarageSection() {
 
               {/* Title */}
               <h3 className="text-2xl font-bold text-white mb-4">
-                Für Verkäufer
+                Für Abgeber
               </h3>
 
               {/* Description */}
               <p className="text-neutral-400 mb-6 leading-relaxed">
-                Präsentiere deine Fahrzeuge dort, wo Käufer nach Occasionen, Neuwagen, Leasing und Leasingübernahmen suchen.
+                Präsentiere dein Leasing oder deine Fahrzeuge dort, wo Menschen gezielt nach Leasingübernahmen suchen.
               </p>
 
               {/* Bullet Points */}
@@ -118,7 +118,7 @@ export function BuyerGarageSection() {
                     <Check className="w-3.5 h-3.5 text-red-400" />
                   </span>
                   <span className="text-neutral-300 font-medium flex items-center gap-1.5">
-                    eingebauter chat
+                    Eingebauter Chat
                     <HoverTooltip
                       side="top"
                       content={<p>Chat Daten in CH gespeichert</p>}
@@ -126,7 +126,7 @@ export function BuyerGarageSection() {
                     >
                       <button
                         type="button"
-                        aria-label="Info: eingebauter chat"
+                        aria-label="Info: Eingebauter Chat"
                         className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-help"
                       >
                         <span className="text-[10px] text-neutral-400">*</span>
@@ -156,6 +156,14 @@ export function BuyerGarageSection() {
           </div>
 
         </div>
+
+        {/* Quiet B2B pointer */}
+        <p className="mt-10 text-center text-sm text-neutral-500">
+          Du bist eine Garage?{" "}
+          <Link href="/fuer-garagen" className="text-red-600 font-semibold hover:underline">
+            So nutzt du BuyAuto für deine Kunden
+          </Link>
+        </p>
       </div>
     </section>
   );

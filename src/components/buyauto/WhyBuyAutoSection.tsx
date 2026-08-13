@@ -115,16 +115,16 @@ export function WhyBuyAutoSection() {
           
           {/* Main Headline */}
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 mb-6 tracking-tight max-w-4xl mx-auto leading-tight">
-            Alles, was du für dein nächstes Auto brauchst –{" "}
+            Leasing übernehmen oder Leasing abgeben –{" "}
             <span className="text-red-500">
-              an einem Ort
+              ein Marktplatz für beide Seiten
             </span>
           </h2>
-          
+
           {/* Supporting Text */}
           <p className="text-neutral-500 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            BuyAuto bringt Kauf, Leasing und Leasingübernahme auf einer Plattform zusammen –
-            <span className="text-neutral-700 font-medium"> einfach, modern und für die Schweiz gebaut.</span>
+            BuyAuto verbindet Menschen, die aus ihrem laufenden Leasingvertrag raus wollen, mit Menschen, die genau so einen Vertrag übernehmen möchten – ohne hohe Anzahlung, ohne Neuwagen-Wartezeit.
+            <span className="text-neutral-700 font-medium"> Einfach, transparent und für die Schweiz gebaut.</span>
           </p>
         </div>
 

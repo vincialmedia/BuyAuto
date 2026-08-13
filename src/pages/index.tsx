@@ -11,6 +11,7 @@ import PremiumListings from "@/components/buyauto/PremiumListings";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
 
@@ -25,9 +26,10 @@ type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
 
 interface HomePageProps {
   premiumListings: Listing[];
+  takeoverCount: number | null;
 }
 
-export default function HomePage({ premiumListings }: HomePageProps) {
+export default function HomePage({ premiumListings, takeoverCount }: HomePageProps) {
   const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");
 
   return (
@@ -150,7 +152,12 @@ export default function HomePage({ premiumListings }: HomePageProps) {
       </div>
 
       <div className="scroll-mt-4">
-        <PremiumListings initialListings={premiumListings} externalFilter={premiumFilter} onFilterChange={setPremiumFilter} />
+        <PremiumListings
+          initialListings={premiumListings}
+          takeoverCount={takeoverCount}
+          externalFilter={premiumFilter}
+          onFilterChange={setPremiumFilter}
+        />
       </div>
 
       <WhyBuyAutoSection />
@@ -183,20 +190,20 @@ export default function HomePage({ premiumListings }: HomePageProps) {
               {[
                 {
                   step: "01",
-                  title: "Weg wählen",
-                  desc: "Entscheide, ob du kaufen, leasen oder eine Leasingübernahme suchst.",
+                  title: "Seite wählen",
+                  desc: "Entscheide, ob du ein laufendes Leasing übernehmen oder dein eigenes abgeben willst.",
                   icon: Car,
                 },
                 {
                   step: "02",
                   title: "Angebote vergleichen",
-                  desc: "Filtere nach Marke, Modell, Preis, Laufzeit und Anbieter.",
+                  desc: "Filtere nach Marke, Modell, Monatsrate und Restlaufzeit – jedes Inserat zeigt beides transparent.",
                   icon: Search,
                 },
                 {
                   step: "03",
                   title: "Kontakt aufnehmen",
-                  desc: "Tritt direkt mit dem Anbieter oder der Garage in Kontakt und bring den Deal ins Rollen.",
+                  desc: "Tritt direkt mit dem Anbieter in Kontakt – die Übertragung läuft immer über die Leasinggesellschaft.",
                   icon: MessageCircle,
                 },
               ].map((item, i) => (
@@ -257,7 +264,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
               <div className="text-center md:text-left">
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3">Bereit loszufahren?</h2>
                 <p className="text-white/80 text-lg md:text-xl max-w-lg">
-                  Erstelle jetzt dein Inserat oder finde dein nächstes passendes Auto.
+                  Gib dein Leasing zur Übernahme frei oder steig in einen laufenden Vertrag ein.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -291,27 +298,27 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-neutral-900">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Bereit für dein nächstes Auto?</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Bereit, dein Leasing abzugeben?</h2>
           <p className="text-lg md:text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
-            Finde passende Fahrzeuge aus der ganzen Schweiz oder erstelle dein Inserat in wenigen Schritten.
+            Erstelle dein Inserat in wenigen Minuten – oder übernimm einen laufenden Vertrag aus den aktuellen Angeboten.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/suche">
+            <Link href="/inserat-erstellen">
               <Button
                 size="lg"
                 className="bg-red-500 text-white hover:bg-red-600 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 shadow-lg shadow-red-500/25"
               >
-                Fahrzeuge suchen
+                Inserat erstellen
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
-            <Link href="/inserat-erstellen">
+            <Link href="/suche?dealType=lease_takeover">
               <Button
                 size="lg"
                 variant="outline"
                 className="border-2 border-neutral-600 bg-white text-neutral-900 hover:bg-neutral-100 hover:text-neutral-900 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300"
               >
-                Inserat erstellen
+                Fahrzeuge ansehen
               </Button>
             </Link>
           </div>
@@ -325,21 +332,31 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 // layout shift) and refresh in the background every 5 minutes.
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
   try {
-    const [directPurchaseResult, leaseTakeoverResult] = await Promise.all([
-      searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
+    const [leaseTakeoverResult, directPurchaseResult, takeoverCountResult] = await Promise.all([
       searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
+      searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
+      // Head-only count of everything the UI presents as Übernahme: pure
+      // lease_takeover plus Direktkauf with enabled Übernahme-Angebot (same
+      // precedence as getDealTypeLabel / the search cards).
+      supabase
+        .from("listings_public")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "published")
+        .or("deal_type.eq.lease_takeover,leasing_offer->lease_takeover_offer->>enabled.eq.true"),
     ]);
 
-    const ordered = [...directPurchaseResult.items, ...leaseTakeoverResult.items];
+    const ordered = [...leaseTakeoverResult.items, ...directPurchaseResult.items];
     const uniqueById = new Map<string, Listing>();
     for (const l of ordered) uniqueById.set(l.id, l);
 
     // Strip undefined fields so Next can serialize.
     const premiumListings = JSON.parse(JSON.stringify(Array.from(uniqueById.values()))) as Listing[];
 
-    return { props: { premiumListings }, revalidate: 300 };
+    const takeoverCount = takeoverCountResult.error ? null : takeoverCountResult.count ?? null;
+
+    return { props: { premiumListings, takeoverCount }, revalidate: 300 };
   } catch (error) {
     console.error("Homepage premium listings fetch failed:", error);
-    return { props: { premiumListings: [] }, revalidate: 60 };
+    return { props: { premiumListings: [], takeoverCount: null }, revalidate: 60 };
   }
 };

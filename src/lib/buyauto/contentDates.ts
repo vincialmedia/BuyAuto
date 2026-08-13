@@ -5,7 +5,7 @@
 // honest). Seeded from each page's last real edit in git history.
 
 export const CONTENT_LAST_UPDATED: Record<string, string> = {
-  "/": "2026-06-11",
+  "/": "2026-08-13",
   "/suche": "2026-08-04",
   "/preise": "2026-08-04",
   "/leasing-concierge": "2026-08-04",

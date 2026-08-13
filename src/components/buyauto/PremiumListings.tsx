@@ -38,9 +38,13 @@ interface PremiumListingsProps {
   /** Listings fetched at build/request time. When provided, no client fetch
    *  happens and the cards are part of the first paint (no layout shift). */
   initialListings?: Listing[];
+  /** Live count of vehicles currently offered for lease takeover (pure
+   *  lease_takeover plus Direktkauf with enabled Übernahme-Angebot). Rendered
+   *  only when a positive number arrives — never hardcoded. */
+  takeoverCount?: number | null;
 }
 
-export default function PremiumListings({ externalFilter, onFilterChange, initialListings }: PremiumListingsProps) {
+export default function PremiumListings({ externalFilter, onFilterChange, initialListings, takeoverCount }: PremiumListingsProps) {
   const [listings, setListings] = useState<Listing[]>(initialListings ?? []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(initialListings === undefined);
@@ -67,14 +71,14 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     const loadPremiumListings = async () => {
       setIsLoading(true);
       try {
-        const [directPurchaseResult, leaseTakeoverResult] = await Promise.all([
-          searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
+        const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
           searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
+          searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
         ]);
 
         if (cancelled) return;
 
-        const ordered = [...directPurchaseResult.items, ...leaseTakeoverResult.items];
+        const ordered = [...leaseTakeoverResult.items, ...directPurchaseResult.items];
         const uniqueById = new Map<string, Listing>();
         for (const l of ordered) uniqueById.set(l.id, l);
 
@@ -277,10 +281,12 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                 <span className="text-amber-700 font-semibold text-sm">Premium Inserate</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 mb-3">
-                Premium Fahrzeuge aus allen Kategorien
+                Aktuelle Leasingübernahmen
               </h2>
               <p className="text-neutral-500 text-base max-w-xl mx-auto mb-6">
-                Handverlesene Top-Angebote mit erhöhter Sichtbarkeit.
+                {typeof takeoverCount === "number" && takeoverCount > 0
+                  ? `Aktuell ${takeoverCount} Fahrzeuge zur Übernahme – hier siehst du handverlesene Top-Angebote mit erhöhter Sichtbarkeit.`
+                  : "Handverlesene Top-Angebote mit erhöhter Sichtbarkeit."}
               </p>
               
               {/* Category Filter Tabs */}
@@ -450,7 +456,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                 size="lg"
                 className="bg-red-500 hover:bg-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all rounded-xl px-8"
               >
-                <Link href="/suche?premiumOnly=true">Alle Premium-Angebote ansehen</Link>
+                <Link href="/suche?dealType=lease_takeover">Alle Leasingübernahmen ansehen</Link>
               </Button>
             </div>
           </div>
