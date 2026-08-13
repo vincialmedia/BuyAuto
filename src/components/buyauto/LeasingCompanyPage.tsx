@@ -41,6 +41,10 @@ import {
 // leasing_offer.lease_takeover_offer). Once the field exists, add a
 // searchListings filter + ISR listings grid here, like the brand pages.
 
+// All four Gesellschaft pages went live together — real publish date for the
+// Article schema; dateModified keeps moving via CONTENT_LAST_UPDATED.
+const PAGES_PUBLISHED_ISO = "2026-08-13";
+
 type Faq = { q: string; a: string; href?: string; linkText?: string };
 
 // Interleaves a link between every occurrence of linkText so a phrase that
@@ -96,7 +100,11 @@ function buildFaqs(company: LeasingCompany): Faq[] {
     },
     {
       q: "Wer prüft die Bonität des Übernehmers?",
-      a: `${name} selbst – wie bei jedem neuen Leasingvertrag. BuyAuto ersetzt diese Prüfung nicht.`,
+      // Company-specific where sourced facts exist — keeps the FAQ schema of
+      // the four pages from being name-swapped duplicates of each other.
+      a: company.facts.documents
+        ? `${name} selbst – wie bei jedem neuen Leasingvertrag. ${company.facts.documents.text} BuyAuto ersetzt diese Prüfung nicht.`
+        : `${name} selbst – wie bei jedem neuen Leasingvertrag. BuyAuto ersetzt diese Prüfung nicht.`,
     },
     {
       q: `Was kostet die Übertragung bei ${name}?`,
@@ -122,7 +130,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
   const lastUpdatedIso = CONTENT_LAST_UPDATED[path];
 
   const title = `${compoundName}-Leasing übernehmen oder abgeben | BuyAuto`;
-  const description = `So überträgst du einen ${compoundName}-Leasingvertrag: Ablauf der Übertragung, Bonitätsprüfung und was Abgeber wie Übernehmer wissen müssen.`;
+  const description = `So überträgst du einen ${compoundName}-Leasingvertrag: ${company.descriptionDetail} – was Abgeber wie Übernehmer wissen müssen.`;
 
   const faqs = buildFaqs(company);
 
@@ -167,12 +175,14 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               "@context": "https://schema.org",
               "@type": "Article",
               headline: `${compoundName}-Leasing übernehmen oder abgeben`,
+              description,
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
                 name: "BuyAuto",
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
+              datePublished: PAGES_PUBLISHED_ISO,
               dateModified: lastUpdatedIso,
               mainEntityOfPage: url,
             }),
@@ -232,6 +242,12 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               der Bewilligung wird der Vertrag umgeschrieben. Auf BuyAuto findest du beide Seiten: aktuelle
               Leasingübernahmen aller Gesellschaften und einen einfachen Weg, deinen eigenen Vertrag zur
               Übernahme auszuschreiben.
+            </p>
+
+            {/* Per-company differentiator — derived from the sourced facts so
+                the answer-first block isn't identical across the four pages. */}
+            <p className="mt-4 text-lg text-neutral-700 font-medium leading-relaxed max-w-3xl">
+              {company.heroNote}
             </p>
 
             {company.introNote && (
@@ -393,10 +409,13 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               </div>
             </div>
             {/* Fixed disclaimer per Vince: keeps every figure above honest even
-                if the Gesellschaft changes its terms between our updates. */}
+                if the Gesellschaft changes its terms between our updates. The
+                Stand derives from CONTENT_LAST_UPDATED so it can never
+                contradict the «Aktualisiert am» badge or the Article schema. */}
             <p className="mt-8 text-sm text-neutral-500">
-              Massgeblich sind die aktuellen Bedingungen der Leasinggesellschaft. Stand der Angaben: August
-              2026. Die kantonalen Gebühren des Strassenverkehrsamts kommen hinzu – Details im Ratgeber{" "}
+              Massgeblich sind die aktuellen Bedingungen der Leasinggesellschaft.
+              {lastUpdatedIso ? ` Stand der Angaben: ${formatSwissDate(lastUpdatedIso)}.` : null} Die
+              kantonalen Gebühren des Strassenverkehrsamts kommen hinzu – Details im Ratgeber{" "}
               <Link href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline">
                 Leasingübernahme-Kosten
               </Link>
@@ -413,7 +432,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               Aktuelle Leasingübernahmen auf BuyAuto
             </h2>
             <p className="text-neutral-600 mb-8 max-w-2xl mx-auto">
-              Durchsuche alle Übernahme-Angebote – jedes Inserat zeigt Monatsrate und Restlaufzeit
+              Durchsuche alle Übernahme-Angebote – jedes Inserat weist Monatsrate und Restlaufzeit
               transparent aus.
             </p>
             <Button

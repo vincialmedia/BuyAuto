@@ -41,12 +41,20 @@ export interface LeasingCompany {
   /** Name used in hyphen compounds («AMAG-Leasingvertrag») — avoids
    *  «AMAG Leasing-Leasing» when the full name already contains «Leasing». */
   compoundName: string;
-  /** Official company website (root URL only — no deep-link claims). */
+  /** Official company website entry point (may carry a language path like
+   *  /de when the bare domain redirects to the wrong language). */
   officialSite: string;
   /** Official info/FAQ page for the after-CTA «Direkt bei der Gesellschaft
    *  nachfragen» link. Falls back to officialSite. Per the funnel rule this
    *  link renders only AFTER the BuyAuto CTAs. */
   infoUrl?: string;
+  /** One-sentence company differentiator rendered inside the hero block —
+   *  derived ONLY from the sourced facts below (keeps the four pages from
+   *  sharing an identical answer-first paragraph). */
+  heroNote: string;
+  /** Company-specific middle segment of the meta description — keeps the four
+   *  descriptions unique instead of name-swapped duplicates. */
+  descriptionDetail: string;
   /** Sourced company status/size fact rendered under the hero intro. */
   introNote?: SourcedFact;
   /** Brands the company finances (AMAG only for now), with links to the
@@ -67,6 +75,9 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
     compoundName: "Cembra",
     officialSite: "https://www.cembra.ch",
     infoUrl: "https://www.cembra.ch/de/kundencenter/leasing/privatpersonen/",
+    heroNote:
+      "Besonderheit bei Cembra: Die Gebühren für den Halterwechsel stehen in einer offiziellen Gebührenübersicht – die Zahlen findest du weiter unten.",
+    descriptionDetail: "Ablauf, Bonitätsprüfung und der publizierte Halterwechsel-Tarif",
     facts: {
       transferFee: {
         text:
@@ -100,6 +111,9 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
     compoundName: "AMAG",
     officialSite: "https://www.amag-leasing.ch",
     infoUrl: "https://www.amag-leasing.ch/de/ablauf-leasing.html",
+    heroNote:
+      "Besonderheit bei AMAG Leasing: Beim indirekten Leasing ist deine Liefergarage eng eingebunden – kläre die Übernahme deshalb mit beiden.",
+    descriptionDetail: "indirektes Leasing, Bonitätsprüfung und die Rolle der Liefergarage",
     introNote: {
       text:
         "AMAG Leasing zählt nach eigenen Angaben über 160'000 Privat- und Firmenkunden (Quelle: AMAG Group, Stand August 2026).",
@@ -116,8 +130,8 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
         { name: "VW", href: "/leasinguebernahme/volkswagen" },
         { name: "VW Nutzfahrzeuge" },
         { name: "Audi", href: "/leasinguebernahme/audi" },
-        { name: "Seat" },
-        { name: "Cupra" },
+        { name: "SEAT" },
+        { name: "CUPRA" },
         { name: "Škoda", href: "/leasinguebernahme/skoda" },
       ],
       sourceLabel: "gemäss ALB 01/25, Ziff. 9.1.1",
@@ -128,7 +142,7 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
       transferFee: {
         // ERFAHRUNGSWERT-VINCE: real verrechnete Übernahmegebühr bei AMAG Leasing
         text:
-          "AMAG Leasing publiziert keinen Tarif für die Vertragsübernahme – die Konditionen werden auf Anfrage festgelegt. Zum Vergleich: Die vorzeitige Vertragsauflösung kostet gemäss den Allgemeinen Leasingbestimmungen (Ausgabe 01/25, Ziff. 14.1 und 18) pauschal CHF 800.– exkl. MWST, zusätzlich werden die Leasingraten rückwirkend auf die effektive Laufzeit neu berechnet – die Übernahme ist deshalb in der Regel der deutlich günstigere Ausstieg.",
+          "AMAG Leasing publiziert keinen Tarif für die Vertragsübernahme – die Konditionen werden auf Anfrage festgelegt. Zum Vergleich: Die vorzeitige Vertragsauflösung kostet gemäss den Allgemeinen Leasingbestimmungen (Ausgabe 01/25, Ziff. 14.1 und 18) pauschal CHF 800.– exkl. MWST, zusätzlich werden die Leasingraten rückwirkend auf die effektive Laufzeit neu berechnet – die Übernahme kann deshalb deutlich günstiger sein.",
         sourceLinkText: "Allgemeinen Leasingbestimmungen",
         sourceUrl:
           "https://www.amag-leasing.ch/content/dam/amag-leasingportal/documents/allgemeine-leasingbestimmungen/deutsch/ALB_Autos_0125_DE_fin.pdf",
@@ -144,7 +158,7 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
       },
       transferProcess: {
         text:
-          "AMAG Leasing arbeitet mit indirektem Leasing: Neben dir und der Leasinggeberin ist die Liefergarage Vertragspartei mit Rücknahmepflicht zum Restwert (gemäss AMAG-Leasing-Ablauf). Kläre eine Übernahme deshalb gemeinsam mit AMAG Leasing und der Liefergarage. Leasingfahrzeuge tragen Code 178 im Fahrzeugausweis (ALB Ziff. 16.9) – ohne Freigabe der AMAG läuft beim Strassenverkehrsamt nichts.",
+          "AMAG Leasing arbeitet mit indirektem Leasing: Deine Liefergarage ist eng eingebunden und gegenüber AMAG Leasing zur Rücknahme zum Restwert verpflichtet (gemäss AMAG-Leasing-Ablauf). Kläre eine Übernahme deshalb gemeinsam mit AMAG Leasing und der Liefergarage. Leasingfahrzeuge tragen Code 178 im Fahrzeugausweis (ALB Ziff. 16.9) – ohne Freigabe der AMAG läuft beim Strassenverkehrsamt nichts.",
         sourceLinkText: "AMAG-Leasing-Ablauf",
         sourceUrl: "https://www.amag-leasing.ch/de/ablauf-leasing.html",
       },
@@ -156,6 +170,9 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
     compoundName: "Multilease",
     officialSite: "https://www.multilease.ch",
     infoUrl: "https://www.multilease.ch/de/faq",
+    heroNote:
+      "Besonderheit bei Multilease: Vieles läuft über den Markenvertreter deiner Liefergarage – binde deine Garage deshalb früh ein.",
+    descriptionDetail: "Ablauf über den Markenvertreter und die Bonitätsprüfung",
     facts: {
       transferFee: {
         // ERFAHRUNGSWERT-VINCE: real verrechnete Gebühr bei Multilease
@@ -187,21 +204,26 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
     // Bare domain redirects to English — link the German entry point.
     officialSite: "https://www.bank-now.ch/de",
     infoUrl: "https://www.bank-now.ch/de",
+    heroNote:
+      "Gut zu wissen: BANK-now gehört heute zur UBS – bestehende Leasingverträge laufen normal bei BANK-now weiter.",
+    descriptionDetail: "Ablauf, Bonitätsprüfung und was die UBS-Übernahme bedeutet",
     introNote: {
       text:
-        "BANK-now ist eine hundertprozentige Tochtergesellschaft der UBS Switzerland. Das Porsche-Leasing-Neugeschäft wechselte im Juli 2025 zu Porsche Financial Services; bestehende BANK-now-Verträge laufen bei BANK-now weiter (Quelle: finews, Stand August 2026).",
+        "BANK-now ist eine hundertprozentige Tochtergesellschaft der UBS Switzerland AG. Das Porsche-Leasing-Neugeschäft wechselte im Juli 2025 zu Porsche Financial Services; bestehende BANK-now-Verträge laufen bei BANK-now weiter (Quelle: finews, Stand August 2026).",
       sourceLinkText: "finews",
       sourceUrl:
         "https://www.finews.com/news/english-news/68246-porsche-switzerland-porsche-financial-services-bank-now-ubs-credit-suisse-leasing-business",
     },
     facts: {
       transferFee: {
+        // Kein publizierter Tarif = Negativ-Befund aus der Recherche; die
+        // ursprünglich zitierte credit-now-FAQ behandelt die Verlängerung
+        // nach Ablauf, nicht die Übernahme, und trägt die Aussage darum
+        // nicht — Attribution entfernt, URL nur als Referenz:
+        // https://www.credit-now.ch/de/faq/faq-detail/15336-Kann_ich_einen_Leasingvertrag_nach_Ablauf_verlngern_lassen_
         // ERFAHRUNGSWERT-VINCE: real verrechnete Gebühr bei BANK-now
         text:
-          "BANK-now publiziert keinen Übernahme-Tarif; die Konditionen werden im Einzelfall mit dem Kundendienst geklärt (gemäss BANK-now-FAQ).",
-        sourceLinkText: "BANK-now-FAQ",
-        sourceUrl:
-          "https://www.credit-now.ch/de/faq/faq-detail/15336-Kann_ich_einen_Leasingvertrag_nach_Ablauf_verlngern_lassen_",
+          "BANK-now publiziert keinen Übernahme-Tarif – die Konditionen klärst du direkt mit BANK-now.",
       },
       // ERFAHRUNGSWERT-VINCE: typische Dauer einer BANK-now-Übertragung
       typicalDuration: null,
@@ -211,8 +233,11 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
           "Die Bonität der übernehmenden Person wird nach Konsumkreditgesetz geprüft – wie beim Neuvertrag inklusive Abfrage bei ZEK/IKO.",
       },
       transferProcess: {
+        // ERFAHRUNGSWERT-VINCE: konkreter Übertragungsweg bei BANK-now
+        // (Kundendienst? Formular?) — die Kundendienst-Angabe aus der
+        // Recherche hat keine öffentliche Quelle und bleibt deshalb draussen.
         text:
-          "Die Übernahme-Anfrage geht an den BANK-now-Kundendienst – am einfachsten, wenn bereits eine konkrete übernehmende Person feststeht. Wie bei allen Leasinggesellschaften gilt: Code 178 im Fahrzeugausweis, Umschreibung nur mit Freigabe der Bank.",
+          "Die Übernahme-Anfrage richtest du direkt an BANK-now; die Konditionen werden im Einzelfall geklärt. Wie bei allen Leasinggesellschaften gilt: Code 178 im Fahrzeugausweis – die Umschreibung braucht die Freigabe der Bank.",
       },
     },
     // Interne Notiz (NICHT publizieren, Quelle 2016 veraltet): Übernahmen
@@ -223,6 +248,26 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
 
 // Backlog-Notiz: Porsche Financial Services (Porsche-Leasing-Neugeschäft seit
 // Juli 2025) als Kandidat für eine fünfte Gesellschaftsseite vormerken.
+
+// Build-time guard: a SourcedFact whose sourceLinkText is not a verbatim
+// substring of its text would silently lose its citation link at render time —
+// fail the build instead. Runs at module import, i.e. during next build.
+for (const company of LEASING_COMPANIES) {
+  const sourced: (SourcedFact | undefined | null)[] = [
+    company.introNote,
+    company.facts.transferFee,
+    company.facts.typicalDuration,
+    company.facts.documents,
+    company.facts.transferProcess,
+  ];
+  for (const fact of sourced) {
+    if (fact?.sourceLinkText && !fact.text.includes(fact.sourceLinkText)) {
+      throw new Error(
+        `leasingCompanies: sourceLinkText «${fact.sourceLinkText}» not found in fact text for ${company.slug}`
+      );
+    }
+  }
+}
 
 export function otherLeasingCompanies(slug: string): LeasingCompany[] {
   return LEASING_COMPANIES.filter((c) => c.slug !== slug);

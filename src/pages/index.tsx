@@ -38,18 +38,19 @@ export default function HomePage({ premiumListings, takeoverCount }: HomePagePro
         <title>Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto</title>
         <meta
           name="description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen für Privatpersonen und Garagen."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
 
         <meta property="og:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           property="og:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen für Privatpersonen und Garagen."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
-        <meta property="og:image" content="https://www.buyauto.ch/share-logo.jpg" />
+        {/* key matches _app's fallback og:image so next/head dedupes them. */}
+        <meta key="og:image" property="og:image" content="https://www.buyauto.ch/share-logo.jpg" />
         <meta property="og:image:width" content="1075" />
         <meta property="og:image:height" content="716" />
         <meta property="og:image:alt" content="BuyAuto Logo" />
@@ -60,7 +61,7 @@ export default function HomePage({ premiumListings, takeoverCount }: HomePagePro
         <meta name="twitter:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           name="twitter:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen für Privatpersonen und Garagen."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <meta name="twitter:image" content="https://www.buyauto.ch/share-logo.jpg" />
 

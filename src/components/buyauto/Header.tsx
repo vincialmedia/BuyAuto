@@ -286,7 +286,10 @@ export default function Header() {
           </div>
 
           {/* Mobile Navigation Menu */}
-          <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+          {/* 640px cap: the signed-in menu (search links + Für Garagen + account
+              block) measures ~550px, ~600px for admins — 500px clipped the
+              Abmelden button, the only sign-out control on mobile. */}
+          <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-[640px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
             <nav className="pb-4 pt-2 space-y-2 border-t border-neutral-200">
               {/* Fahrzeuge Suchen Section */}
               <div className="px-4 py-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">

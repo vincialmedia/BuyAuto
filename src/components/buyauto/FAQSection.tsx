@@ -6,6 +6,8 @@ import Head from "next/head";
 import Link from "next/link";
 import { HelpCircle, ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { pricingPlans } from "@/lib/buyauto/stripe_config";
+import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
 
 const faqs = [
   {
@@ -56,7 +58,9 @@ const faqs = [
   {
     id: "faq-10",
     question: "Was kostet ein Inserat auf BuyAuto?",
-    answer: "Für Private ist das Standard-Inserat gratis: 60 Tage online, bis 5 Fotos. Wer länger und sichtbarer inserieren will, wählt Verlängert (CHF 50, 90 Tage, Premium-Platzierung und 15 Fotos inklusive) oder Unlimitiert (CHF 190, online bis verkauft). Garagen buchen ein Monatspaket ab CHF 149. Alle Preise stehen offen auf der Preisseite."
+    // Prices and durations interpolated from the pricing configs so this
+    // answer (and its FAQPage JSON-LD) can never drift from /preise.
+    answer: `Für Private ist das Standard-Inserat gratis: ${pricingPlans.standard.duration_days} Tage online, bis 5 Fotos. Wer länger und sichtbarer inserieren will, wählt Verlängert (CHF ${pricingPlans.extended.price}, ${pricingPlans.extended.duration_days} Tage, Premium-Platzierung und 15 Fotos inklusive) oder Unlimitiert (CHF ${pricingPlans.unlimited.price}, online bis verkauft). Garagen buchen ein Monatspaket ab CHF ${GARAGE_PLANS.starter.monthlyPriceChf}. Alle Preise stehen offen auf der Preisseite.`
   }
 ];
 
