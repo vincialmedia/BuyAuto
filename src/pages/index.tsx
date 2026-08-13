@@ -38,14 +38,14 @@ export default function HomePage({ premiumListings, takeoverCount }: HomePagePro
         <title>Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto</title>
         <meta
           name="description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen für Privatpersonen und Garagen."
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
 
         <meta property="og:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           property="og:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen für Privatpersonen und Garagen."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
@@ -60,7 +60,7 @@ export default function HomePage({ premiumListings, takeoverCount }: HomePagePro
         <meta name="twitter:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           name="twitter:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen für Privatpersonen und Garagen."
         />
         <meta name="twitter:image" content="https://www.buyauto.ch/share-logo.jpg" />
 
@@ -130,7 +130,7 @@ export default function HomePage({ premiumListings, takeoverCount }: HomePagePro
               Ohne <span className="text-red-500">Verlust.</span>
             </h1>
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/80 font-medium max-w-2xl mx-auto drop-shadow-md">
-              Die Schweizer Plattform für Leasingübernahme – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.
+              Ein Schweizer Marktplatz für Leasingübernahmen – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.
             </p>
           </div>
         </div>

@@ -1,6 +1,6 @@
 # BuyAuto
 
-> BuyAuto ist die Schweizer Plattform für Leasingübernahme – «Raus aus dem Leasing. Ohne Verlust.» Wer sein Leasing vorzeitig abgeben will, findet hier eine Nachfolgerin oder einen Nachfolger; wer ein Auto sucht, übernimmt einen laufenden Leasingvertrag ohne hohe Anzahlung und mit kurzer Restlaufzeit. Besonders stark für E-Autos und Leasingverträge mit hohem Restwert. Alle Preise in CHF, bei Leasingübernahmen als Monatsrate mit Restlaufzeit (z.B. CHF 557/Monat bei 30 Monaten Restlaufzeit); daneben gibt es Direktkauf-Inserate mit Kaufpreis.
+> BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. «Raus aus dem Leasing. Ohne Verlust.» Wer sein Leasing vorzeitig abgeben will, findet hier eine Nachfolgerin oder einen Nachfolger; wer ein Auto sucht, übernimmt einen laufenden Leasingvertrag ohne hohe Anzahlung und mit kurzer Restlaufzeit. Besonders stark für E-Autos und Leasingverträge mit hohem Restwert. Alle Preise in CHF, bei Leasingübernahmen als Monatsrate mit Restlaufzeit (z.B. CHF 557/Monat bei 30 Monaten Restlaufzeit); daneben gibt es Direktkauf-Inserate mit Kaufpreis.
 
 ## Fahrzeuge
 

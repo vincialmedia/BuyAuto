@@ -35,23 +35,23 @@ export function SeoCopyBlock() {
           </p>
 
           <p>
-            Für Abgeber ist das oft{" "}
+            Für Abgeber entfällt damit die{" "}
             <Link href="/leasing-abgeben-schweiz" className="text-red-600 font-semibold hover:underline">
-              der günstigste legale Weg aus dem Leasing
-            </Link>
-            , weil die{" "}
-            <Link href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline">
               teure vorzeitige Vertragsauflösung
             </Link>{" "}
-            entfällt. Für Übernehmer heisst es: fahren ohne hohe Anzahlung und mit kurzer Restlaufzeit.
+            – statt einer Auflösungsentschädigung fällt nur die{" "}
+            <Link href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline">
+              Umschreibegebühr der Leasinggesellschaft
+            </Link>{" "}
+            an. Für Übernehmer heisst es: fahren ohne hohe Anzahlung und mit kurzer Restlaufzeit.
           </p>
 
           <p>
-            BuyAuto ist der Schweizer Marktplatz, der beide Seiten zusammenbringt – mit Inseraten, die Monatsrate und Restlaufzeit transparent ausweisen, und einem persönlichen{" "}
+            BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. Die Inserate weisen Monatsrate und Restlaufzeit transparent aus, und ein persönlicher{" "}
             <Link href="/leasing-concierge" className="text-red-600 font-semibold hover:underline">
               Concierge-Service
             </Link>{" "}
-            für alle, die den Prozess nicht allein durchziehen wollen. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum <strong>Direktkauf</strong>.
+            unterstützt alle, die den Prozess nicht allein durchziehen wollen. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum <strong>Direktkauf</strong>.
           </p>
         </div>
 

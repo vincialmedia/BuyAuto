@@ -168,12 +168,21 @@ export default function Header() {
               </DropdownMenu>
               
               {/* Preise */}
-              <Link 
-                href="/preise" 
+              <Link
+                href="/preise"
                 className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1.5"
               >
                 <Coins className="w-4 h-4" />
                 Preise
+              </Link>
+
+              {/* Für Garagen — supply-side entry point, visually secondary
+                  (muted, smaller) to the consumer items. */}
+              <Link
+                href="/fuer-garagen"
+                className="text-neutral-400 hover:text-red-500 text-sm font-medium transition-colors"
+              >
+                Für Garagen
               </Link>
             </nav>
 
@@ -322,12 +331,22 @@ export default function Header() {
               <div className="border-t border-neutral-100 my-2"></div>
               
               {/* Preise */}
-              <Link 
-                href="/preise" 
+              <Link
+                href="/preise"
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Preise
+              </Link>
+
+              {/* Für Garagen — muted like its desktop counterpart, but always
+                  present in the mobile menu. */}
+              <Link
+                href="/fuer-garagen"
+                className="block px-4 py-2 text-neutral-400 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors text-sm"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Für Garagen
               </Link>
 
               <div className="border-t border-neutral-100 my-2"></div>

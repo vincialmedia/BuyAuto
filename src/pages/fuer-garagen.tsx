@@ -110,9 +110,11 @@ const BENEFITS = [
     linkText: "Preisseite",
   },
   {
+    // Scoped to pre-sale contact so it cannot conflict with the tiered
+    // support levels sold in garagePlans.ts.
     icon: MessageCircle,
     title: "Direkter Draht",
-    text: "Du sprichst direkt mit dem Gründer – keine Warteschleife, keine Tickets.",
+    text: "Fragen, bevor du startest? Du sprichst direkt mit dem Gründer.",
   },
 ];
 

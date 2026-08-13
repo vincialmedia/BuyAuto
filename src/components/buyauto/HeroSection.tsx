@@ -36,7 +36,7 @@ export default function HeroSection() {
           <div className="max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-primary/20 text-white px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/30 backdrop-blur-sm">
               <Sparkles className="w-4 h-4" />
-              Die Schweizer Plattform
+              Schweizer Marktplatz für Leasingübernahmen
             </div>
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-6 break-words">
               Leasingübernahme<br />
