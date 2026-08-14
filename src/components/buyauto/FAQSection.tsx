@@ -51,11 +51,6 @@ const faqs = [
     answer: "Wenn dich ein Angebot interessiert, nimmst du direkt mit dem Anbieter oder der Garage Kontakt auf. So klärst du offene Fragen zum Vertrag, vereinbarst eine Besichtigung und startest die Übertragung ohne unnötige Umwege."
   },
   {
-    id: "faq-9",
-    question: "Was macht der Leasing Concierge?",
-    answer: "Der Concierge-Service begleitet dich persönlich durch den Leasing-Ausstieg – vom Inserat über die Kommunikation mit Interessenten bis zur Übertragung. Er richtet sich an alle, die den Prozess nicht allein durchziehen wollen."
-  },
-  {
     id: "faq-10",
     question: "Was kostet ein Inserat auf BuyAuto?",
     // Prices and durations interpolated from the pricing configs so this

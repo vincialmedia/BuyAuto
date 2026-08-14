@@ -104,10 +104,15 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
       const hasLeasingOffer = listing.leasing_offer?.enabled === true || listing.financing_type === "leasing";
 
       if (activeFilter === "direct_purchase") {
-        // A Direktkauf with enabled Übernahme-Angebot presents as
-        // «Leasingübernahme» (getDealTypeLabel), so it belongs under that tab —
-        // showing it here put Leasingübernahme-badged cards under Direktkauf.
-        return listing.deal_type === "direct_purchase" && !hasLeaseTakeoverOffer;
+        // Directly buyable cars with a real Kaufpreis. Hybrids (enabled
+        // Übernahme-Angebot) are included but rendered AS Direktkauf under
+        // this tab — badge and Kaufpreis first — so no Leasingübernahme-
+        // badged card ever sits under the Direktkauf filter.
+        return (
+          listing.deal_type === "direct_purchase" &&
+          typeof listing.purchasePriceCHF === "number" &&
+          listing.purchasePriceCHF > 0
+        );
       }
       if (activeFilter === "leasing") {
         // Show if it has leasing financing available (but not pure lease takeovers)
@@ -202,7 +207,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     );
   }
 
-  function renderPriceBlock(listing: Listing) {
+  function renderPriceBlock(listing: Listing, presentAsDirectPurchase: boolean) {
     const takeoverOffer = listing.leasing_offer?.lease_takeover_offer?.enabled
       ? listing.leasing_offer.lease_takeover_offer
       : null;
@@ -212,8 +217,9 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     const hasTakeoverMonthly = typeof takeoverOffer?.price_per_month_chf === "number" && takeoverOffer.price_per_month_chf > 0;
 
     // An enabled Übernahme-Angebot leads with the monthly rate — the Kaufpreis
-    // becomes the secondary line (same rule as the search cards).
-    if (hasTakeoverMonthly) {
+    // becomes the secondary line (same rule as the search cards). Under the
+    // Direktkauf tab the same hybrid leads with the Kaufpreis instead.
+    if (hasTakeoverMonthly && !presentAsDirectPurchase) {
       return (
         <div className="text-right">
           <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Leasingübernahme</div>
@@ -330,10 +336,19 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                 </>
               )}
 
+              {/* Empty tab: keep the section frame, explain instead of a blank grid */}
+              {filteredListings.length === 0 && (
+                <p className="text-center text-neutral-500 py-10">
+                  In dieser Kategorie gibt es aktuell keine Premium-Angebote – schau dir alle Fahrzeuge in der
+                  Suche an.
+                </p>
+              )}
+
               {/* Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {visibleListings.map((listing) => {
-                  const dealTypeLabel = getDealTypeLabel(listing);
+                  const presentAsDirectPurchase = activeFilter === "direct_purchase";
+                  const dealTypeLabel = presentAsDirectPurchase ? "Direktkauf" : getDealTypeLabel(listing);
 
                   return (
                     <Link
@@ -388,7 +403,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                                 </h3>
                                 <p className="text-neutral-500 text-sm">{listing.year}</p>
                               </div>
-                              {renderPriceBlock(listing)}
+                              {renderPriceBlock(listing, presentAsDirectPurchase)}
                             </div>
 
                             {/* Meta info */}

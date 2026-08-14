@@ -615,12 +615,8 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                   <p className="font-black text-neutral-900 mb-1">Wichtig zu wissen:</p>
                   <p className="text-neutral-700 leading-relaxed">
                     Ein Leasingvertrag ist rechtlich bindend – einfach zurückgeben ist nicht möglich. Aber es gibt
-                    legale, kostengünstige Alternativen. Und wenn dir die Suche nach einem Nachfolger zu stressig ist:
-                    Nutze den{" "}
-                    <Link href="/leasing-concierge" className="text-primary font-semibold hover:underline">
-                      BuyAuto Concierge-Service – wir übernehmen den Verkauf für dich
-                    </Link>
-                    .
+                    legale, kostengünstige Alternativen: Die wichtigste ist die Übertragung an eine Nachfolgerin
+                    oder einen Nachfolger – wie das geht, zeigt dieser Leitfaden Schritt für Schritt.
                   </p>
                 </div>
               </div>

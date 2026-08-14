@@ -44,7 +44,10 @@ export default function LeasingConcierge() {
           name="description"
           content="Leasing abgeben oder übernehmen? Wir koordinieren alles – inkl. Leasingbank/Versicherung klären. Schreib uns für eine kostenlose Ersteinschätzung."
         />
-        <link rel="canonical" href={`${baseUrl}/leasing-concierge`} />
+        {/* Delisted on purpose: page stays reachable for direct visitors, but
+            carries noindex, sits outside the sitemap and has no internal
+            links. No self-canonical — never canonical + noindex together. */}
+        <meta name="robots" content="noindex,follow" />
 
         <meta property="og:title" content="Leasing Concierge Schweiz | Leasing abgeben lassen & Übernahme" />
         <meta

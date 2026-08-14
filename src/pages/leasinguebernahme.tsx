@@ -1216,12 +1216,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <BadgeCheck className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasing Concierge Service</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasing abgeben in der Schweiz</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Kein Stress mit Inseraten und Interessenten? Unser Concierge unterstützt dich – von der Bewerbung bis zur Übergabe.
+                        Du willst raus aus deinem Vertrag? Der Leitfaden zeigt alle legalen Wege aus dem Leasing – und was sie kosten.
                       </p>
-                      <Link href="/leasing-concierge" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Leasing Concierge für Abgeber
+                      <Link href="/leasing-abgeben-schweiz" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
+                        Leasing abgeben: der Leitfaden
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>

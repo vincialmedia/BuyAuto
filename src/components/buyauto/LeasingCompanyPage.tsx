@@ -116,9 +116,7 @@ function buildFaqs(company: LeasingCompany): Faq[] {
     },
     {
       q: `Wie inseriere ich meinen ${compoundName}-Vertrag auf BuyAuto?`,
-      a: "Erstelle in wenigen Minuten ein Inserat mit Monatsrate, Restlaufzeit und Kilometerstand. Interessenten melden sich direkt bei dir – und wenn du den Prozess nicht allein durchziehen willst, unterstützt dich unser Concierge bei der Abwicklung.",
-      href: "/leasing-concierge",
-      linkText: "Concierge",
+      a: `Erstelle in wenigen Minuten ein Inserat mit Monatsrate, Restlaufzeit und Kilometerstand. Interessenten melden sich direkt bei dir – die eigentliche Übertragung läuft anschliessend über ${name}.`,
     },
   ];
 }
@@ -482,11 +480,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                   Du willst deinen {compoundName}-Vertrag abgeben?
                 </h3>
                 <p className="text-neutral-300 mb-6">
-                  Erstelle dein Inserat in wenigen Minuten – oder lass den{" "}
-                  <Link href="/leasing-concierge" className="text-neutral-200 underline hover:text-white">
-                    Concierge
-                  </Link>{" "}
-                  den Prozess für dich übernehmen.
+                  Erstelle dein Inserat in wenigen Minuten – Interessenten melden sich direkt bei dir.
                 </p>
                 <Button
                   asChild
@@ -523,7 +517,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
 
             {/* Interlinks: Ratgeber + andere Gesellschaften. Der Link zur
                 Gesellschaft steht bewusst NACH den BuyAuto-CTAs (Funnel-Regel:
-                erst Inserat/Concierge, dann externe Nachfrage). */}
+                erst das BuyAuto-Inserat, dann externe Nachfrage). */}
             <div className="mt-10 text-center text-sm text-neutral-400 space-y-3">
               <p>
                 Direkt bei der Gesellschaft nachfragen:{" "}

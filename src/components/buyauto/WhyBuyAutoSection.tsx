@@ -1,7 +1,7 @@
 import {
   DoorOpen,
   Landmark,
-  ConciergeBell,
+  MessagesSquare,
   Wallet,
   CalendarClock,
   TrendingDown,
@@ -36,9 +36,9 @@ const cardGroups: CardGroup[] = [
         description: "Wir führen dich durch die Übertragung, die deine Leasinggesellschaft akzeptiert."
       },
       {
-        icon: ConciergeBell,
-        title: "Concierge auf Wunsch",
-        description: "Unser Concierge unterstützt dich beim Ausstieg – vom Inserat bis zur Übergabe."
+        icon: MessagesSquare,
+        title: "Direkter Draht zu Interessenten",
+        description: "Interessenten melden sich über den eingebauten Chat direkt bei dir."
       }
     ]
   },

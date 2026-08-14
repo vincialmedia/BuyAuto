@@ -8,7 +8,8 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/": "2026-08-14",
   "/suche": "2026-08-04",
   "/preise": "2026-08-04",
-  "/leasing-concierge": "2026-08-14",
+  // /leasing-concierge is deliberately absent: the page stays reachable but
+  // is delisted (noindex, no sitemap entry, no internal links).
   "/leasinguebernahme": "2026-08-14",
   "/leasinguebernahme-kosten": "2026-08-04",
   "/leasingvertrag-uebertragen": "2026-08-04",

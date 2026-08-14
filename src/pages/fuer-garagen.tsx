@@ -216,7 +216,7 @@ export default function FuerGaragen() {
                 className="border-2 border-neutral-300 text-neutral-700 hover:border-red-500 hover:text-red-600 font-bold rounded-xl px-8 h-14 hover:scale-105 transition-all duration-300"
               >
                 {/* hello@buyauto.ch is the address shown in the footer contact
-                    block and used by the Concierge page. */}
+                    block — the site-wide contact address. */}
                 <a href="mailto:hello@buyauto.ch?subject=Frage%20von%20unserer%20Garage">
                   <Mail className="w-5 h-5 mr-2" />
                   Frage stellen

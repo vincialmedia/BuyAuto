@@ -6,7 +6,7 @@ export function SeoCopyBlock() {
     { label: "Leasingübernahme in der Schweiz", href: "/leasinguebernahme" },
     { label: "Leasing abgeben in der Schweiz", href: "/leasing-abgeben-schweiz" },
     { label: "Was kostet eine Leasingübernahme?", href: "/leasinguebernahme-kosten" },
-    { label: "Leasing Concierge", href: "/leasing-concierge" },
+    { label: "Leasingvertrag übertragen", href: "/leasingvertrag-uebertragen" },
     { label: "Aktuelle Leasingübernahme-Angebote", href: "/suche?dealType=lease_takeover" },
   ];
 
@@ -47,11 +47,7 @@ export function SeoCopyBlock() {
           </p>
 
           <p>
-            BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. Die Inserate weisen Monatsrate und Restlaufzeit transparent aus, und ein persönlicher{" "}
-            <Link href="/leasing-concierge" className="text-red-600 font-semibold hover:underline">
-              Concierge-Service
-            </Link>{" "}
-            unterstützt alle, die den Prozess nicht allein durchziehen wollen. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum <strong>Direktkauf</strong>.
+            BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. Die Inserate weisen Monatsrate und Restlaufzeit transparent aus, und du stehst direkt mit dem Anbieter in Kontakt. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum <strong>Direktkauf</strong>.
           </p>
         </div>
 
