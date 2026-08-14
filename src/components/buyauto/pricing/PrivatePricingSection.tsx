@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { PREMIUM_BOOST_PRICE, pricingPlans, type Plan } from "@/lib/buyauto/stripe_config";
 import { privatePlanMarketingFeatures } from "@/components/buyauto/pricing/pricingData";
 import { PrivatePlanExclusions } from "@/components/buyauto/pricing/PrivatePlanExclusions";
+import { PrivateFeatureMatrix } from "@/components/buyauto/pricing/PrivateFeatureMatrix";
 
 export function PrivatePricingSection() {
   return (
@@ -155,6 +156,10 @@ export function PrivatePricingSection() {
           </div>
         </div>
       </Card>
+
+      {/* Same pattern as the garage side: cards sell the plan, the matrix
+          answers "what exactly do I lose with the cheaper one". */}
+      <PrivateFeatureMatrix />
     </motion.section>
   );
 }

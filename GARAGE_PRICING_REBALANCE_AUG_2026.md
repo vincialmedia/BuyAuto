@@ -139,11 +139,22 @@ Kennzahl-Kachel heisst «Premium-Boosts/Mt.» statt «Premium / Monat».
 
 **«Es gibt keine Seite mit Side-by-Side-Vergleich»** — /preise zeigt über den
 Persona-Toggle immer nur *eine* Seite, und für die Privat-Pläne existierte
-gar keine Vergleichstabelle. Fix: neue Seite **`/preise/vergleich`** mit
-(1) Privat vs. Garage nebeneinander inkl. Faustregel, wann ein Paket sich
-lohnt, (2) Privat-Matrix Standard/Verlängert/Unlimitiert (neu),
-(3) Garagen-Matrix (bestehende Komponente), (4) der Pro-Fahrzeug-Rechnung
-über beide Welten. Verlinkt von /preise, im Sitemap.
+gar keine Vergleichstabelle. Fix (nach Review konsolidiert auf **eine**
+Seite statt einer separaten /preise/vergleich): (1) Privat-Matrix
+Standard/Verlängert/Unlimitiert direkt unter den Privat-Karten (neu),
+(2) Garagen-Matrix wie gehabt unter den Garagen-Karten, (3) darunter — für
+beide Personas sichtbar — der Block «Privat oder Garagen-Paket?» mit
+Faustregel und der Pro-Fahrzeug-Rechnung über beide Welten. Der
+Hero-Verlauf, der die USP-Kacheln weiss überblendete, ist entfernt.
+
+**Nachtrag Enforcement:** «Keine Website-Tools» im Starter war bis dahin nur
+eine UI-Fence — die Embed-iFrames (`/embed/garage/<slug>`,
+`/embed/eintauschwert-rechner`) waren öffentlich und der Rechner-Snippet
+stand jedem Paket im Dashboard. Jetzt: SECURITY-DEFINER-RPC
+`get_garage_website_tools_enabled` (Override → Subscription →
+garages.plan), beide Embeds prüfen serverseitig (fail-open bei Fehlern),
+das Rechner-Widget verlangt `?garage=<slug>`, und der Snippet im Dashboard
+ist Growth+.
 
 ## 5. Code-Änderungen in diesem Branch
 
@@ -152,13 +163,17 @@ lohnt, (2) Privat-Matrix Standard/Verlängert/Unlimitiert (neu),
 | `src/lib/buyauto/garagePlans.ts` | neue Stückzahlen, neue Highlight-Copy, `perVehicleLine` statt `planValueLine`, `GARAGE_CUSTOM_FROM_CHF = 999` |
 | `supabase/migrations/20260814_rebalance_dealer_plans_proportionality.sql` | Growth/Pro-Zahlen, Onboarding-Cap 100, Custom-Zeile «100+» |
 | `src/components/buyauto/pricing/GaragePlanCards.tsx` | Kachel-Label, einfache Pro-Fahrzeug-Zeile |
-| `src/pages/preise.tsx` | Link auf den Vergleich |
-| `src/pages/preise/vergleich.tsx` | **neu** — Side-by-Side-Seite |
+| `src/pages/preise.tsx` | konsolidiert: Privat-Matrix + «Privat oder Garage?»-Block auf der Seite |
 | `src/components/buyauto/pricing/PrivateFeatureMatrix.tsx` | **neu** — Privat-Matrix |
+| `src/components/buyauto/pricing/PrivatVsGarageSection.tsx` | **neu** — Side-by-Side-Block inkl. Pro-Fahrzeug-Rechnung |
+| `src/components/buyauto/pricing/PricingHero.tsx` | Weiss-Verlauf entfernt (überblendete die USP-Kacheln) |
 | `src/components/buyauto/pricing/pricingData.ts` | `PRIVATE_COMPARISON_ROWS` |
 | `src/components/buyauto/pricing/GaragePricingSection.tsx`, `src/pages/garage-plan.tsx`, `GarageBillingTab.tsx` | «100+ ab CHF 999» sichtbar |
 | `src/pages/eintauschwert-rechner.tsx` | FAQ-Kontingente interpoliert statt hartkodiert (25/100/400 stand fest im Text) |
-| `src/lib/buyauto/contentDates.ts` | Sitemap-Eintrag `/preise/vergleich`, `/preise` gebumpt |
+| `src/pages/embed/garage/[dealerSlug].tsx`, `src/pages/embed/eintauschwert-rechner.tsx` | Website-Tools serverseitig erzwungen (Growth+), Rechner-Embed braucht `?garage=` |
+| `src/components/buyauto/dashboard/GarageDashboard.tsx` | Rechner-Snippet nur noch Growth+, Snippet mit `?garage=` |
+| `supabase/migrations/20260814130000_garage_website_tools_gate.sql` | **neu** — `get_garage_website_tools_enabled` RPC |
+| `src/lib/buyauto/contentDates.ts` | `/preise` gebumpt |
 
 Nicht angefasst: Stripe-Konfiguration, Privat-Pläne, Webhook-Logik (kopiert
 `listing_limit`/`premium_included_per_month` bei Checkout automatisch aus der

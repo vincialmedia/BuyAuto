@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import { AnimatePresence } from "framer-motion";
 import { PricingHero } from "@/components/buyauto/pricing/PricingHero";
@@ -10,6 +9,7 @@ import {
 } from "@/components/buyauto/pricing/PricingToggle";
 import { PrivatePricingSection } from "@/components/buyauto/pricing/PrivatePricingSection";
 import { GaragePricingSection } from "@/components/buyauto/pricing/GaragePricingSection";
+import { PrivatVsGarageSection } from "@/components/buyauto/pricing/PrivatVsGarageSection";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 export default function GaragePreisePage() {
@@ -27,6 +27,13 @@ export default function GaragePreisePage() {
   useEffect(() => {
     setPersona(initialPersona);
   }, [initialPersona]);
+
+  // CTA in the Privat-vs-Garage block below: switch the toggle and bring the
+  // plans back into view so the change is visible.
+  const handleSelectPersona = (next: PricingPersona) => {
+    setPersona(next);
+    document.getElementById("plaene")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <>
@@ -56,7 +63,7 @@ export default function GaragePreisePage() {
         <PricingHero persona={persona} onPersonaChange={setPersona} />
 
         <main className="relative">
-          <div className="container py-10 sm:py-12">
+          <div id="plaene" className="container py-10 sm:py-12 scroll-mt-6">
             <div className="flex justify-center sm:hidden mb-8">
               <div className="rounded-3xl bg-neutral-900 px-4 py-3 text-white w-full max-w-[520px]">
                 <div className="flex justify-center">
@@ -73,17 +80,11 @@ export default function GaragePreisePage() {
               )}
             </AnimatePresence>
 
-            {/* The toggle shows one persona at a time — the side-by-side view
-                lives on its own page. */}
-            <p className="mt-10 text-center text-sm text-neutral-600">
-              Du willst alles nebeneinander sehen?{" "}
-              <Link
-                href="/preise/vergleich"
-                className="font-semibold text-neutral-900 underline underline-offset-4 hover:text-primary"
-              >
-                Private Pläne & Garagen-Pakete im Vergleich
-              </Link>
-            </p>
+            {/* The toggle above shows one persona at a time — this block is
+                where both stand side by side, whatever the toggle says. */}
+            <div className="mt-14 border-t border-neutral-200 pt-12">
+              <PrivatVsGarageSection onSelectPersona={handleSelectPersona} />
+            </div>
           </div>
         </main>
       </div>
