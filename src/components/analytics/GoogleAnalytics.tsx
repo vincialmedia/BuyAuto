@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Script from "next/script";
 import {
+  loadGtagOnInteraction,
   CONSENT_STORAGE_KEY,
   GA_MEASUREMENT_ID,
   GOOGLE_ADS_ID,
@@ -90,20 +91,23 @@ export function GoogleAnalytics() {
     pageview(router.asPath);
   }, [router.asPath, enabled]);
 
-  if (!enabled) return null;
-
   // gtag.js is the same file whichever ID requests it; the `id` only decides
   // which destination's settings ride along in the response. Ask for whichever
   // product is on, preferring GA4 when both are.
   const scriptId = isGaEnabled ? GA_MEASUREMENT_ID : GOOGLE_ADS_ID;
 
+  // The library itself loads on first interaction (immediately on ad-click
+  // landings) — see loadGtagOnInteraction. The config commands below still run
+  // at hydration and queue on dataLayer until it arrives.
+  useEffect(() => {
+    if (!enabled) return;
+    return loadGtagOnInteraction(scriptId);
+  }, [enabled, scriptId]);
+
+  if (!enabled) return null;
+
   return (
     <>
-      <Script
-        id="ga-lib"
-        src={`https://www.googletagmanager.com/gtag/js?id=${scriptId}`}
-        strategy="afterInteractive"
-      />
       <Script id="ga-config" strategy="afterInteractive">
         {`
           window.dataLayer = window.dataLayer || [];

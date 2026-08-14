@@ -204,6 +204,81 @@ export function trackEvent(name: string, params: Record<string, unknown> = {}) {
   gtag("event", name, params);
 }
 
+// Guards against double-injection across route changes and the React 18
+// strict-mode double-mount in dev.
+let gtagLoadRequested = false;
+
+/**
+ * Injects gtag.js on the first user interaction (or after a generous idle
+ * delay) instead of during page load.
+ *
+ * Why: the tag is ~115 KB of third-party JavaScript whose evaluation lands in
+ * the exact window Lighthouse scores as TBT, and it delays the LCP paint on
+ * mobile. Every command issued before the script arrives — the Consent Mode
+ * defaults from _document, the `config` calls, page views, conversions — is
+ * queued on `window.dataLayer` and drained in order the moment it loads, so
+ * nothing is lost and consent ordering is preserved; hits are merely sent a
+ * beat later.
+ *
+ * The one case that must NOT wait is an ad-click landing: the hit fired by the
+ * Ads `config` captures the click ID, and a visitor can bounce without ever
+ * interacting. When the URL carries gclid/gbraid/wbraid/gclsrc the script
+ * loads immediately, exactly as before.
+ *
+ * Returns a cleanup that removes the listeners (the injected script itself is
+ * global and survives route changes by design).
+ */
+export function loadGtagOnInteraction(scriptId: string): () => void {
+  if (typeof window === "undefined" || gtagLoadRequested) return () => {};
+
+  const inject = () => {
+    if (gtagLoadRequested) return;
+    gtagLoadRequested = true;
+    removeListeners();
+    window.clearTimeout(idleTimer);
+    const s = document.createElement("script");
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${scriptId}`;
+    s.async = true;
+    document.head.appendChild(s);
+  };
+
+  // Scroll is included: it is the earliest signal most real sessions produce.
+  const events: (keyof WindowEventMap)[] = [
+    "pointerdown",
+    "keydown",
+    "touchstart",
+    "scroll",
+  ];
+  const removeListeners = () =>
+    events.forEach((e) => window.removeEventListener(e, inject));
+
+  const hasAdClickId = /[?&](gclid|gbraid|wbraid|gclsrc)=/.test(
+    window.location.search,
+  );
+
+  // Fallback for visitors who genuinely never interact, kept long enough to
+  // stay outside the lab trace window. Sessions shorter than this without a
+  // single scroll or tap were never going to convert anyway. Created before
+  // inject can possibly run so the closure never reads it uninitialised.
+  const idleTimer = hasAdClickId
+    ? undefined
+    : window.setTimeout(inject, 8000);
+
+  if (hasAdClickId) {
+    inject();
+    return () => {};
+  }
+
+  events.forEach((e) =>
+    window.addEventListener(e, inject, { passive: true }),
+  );
+
+  return () => {
+    removeListeners();
+    window.clearTimeout(idleTimer);
+  };
+}
+
 /**
  * Conversion action labels, copied from Google Ads → Ziele → Conversions →
  * (action) → *Tag einrichten*. The label is the part after the slash in

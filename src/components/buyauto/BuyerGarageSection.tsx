@@ -146,7 +146,7 @@ export function BuyerGarageSection() {
               {/* CTA Button */}
               <Link 
                 href="/inserat-erstellen"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-all duration-300 group/btn hover:shadow-lg hover:shadow-red-500/30"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-all duration-300 group/btn hover:shadow-lg hover:shadow-red-500/30"
               >
                 <PenLine className="w-5 h-5" />
                 Jetzt Inserieren
@@ -158,7 +158,7 @@ export function BuyerGarageSection() {
         </div>
 
         {/* Quiet B2B pointer */}
-        <p className="mt-10 text-center text-sm text-neutral-500">
+        <p className="mt-10 text-center text-sm text-neutral-600">
           Du bist eine Garage?{" "}
           <Link href="/fuer-garagen" className="text-red-600 font-semibold hover:underline">
             So nutzt du BuyAuto für deine Kunden

@@ -4,9 +4,15 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getBrands, getModelsForBrand, getVariantsForBrandModel } from "@/services/listingsService";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+
+// listingsService drags the whole Supabase client into whatever bundle
+// imports it statically. The search bar sits above the fold on the homepage,
+// so it loads the service on demand instead (first interaction, or shortly
+// after hydration) — the dropdown data arrives long before anyone can open a
+// dropdown, and the critical JS stays free of Supabase.
+const listingsService = () => import("@/services/listingsService");
 
 type DealType = "" | "direct_purchase" | "leasing" | "lease_takeover";
 
@@ -271,7 +277,7 @@ function PriceFilter({
                       className={cn(
                         "px-3 py-1.5 text-xs font-medium rounded-full transition-colors",
                         monthlyPrice === val
-                          ? "bg-red-500 text-white"
+                          ? "bg-red-600 text-white"
                           : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                       )}
                     >
@@ -289,7 +295,7 @@ function PriceFilter({
                       className={cn(
                         "px-3 py-1.5 text-xs font-medium rounded-full transition-colors",
                         purchasePrice === val
-                          ? "bg-red-500 text-white"
+                          ? "bg-red-600 text-white"
                           : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                       )}
                     >
@@ -348,19 +354,42 @@ export function SearchBarV2() {
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [variants, setVariants] = useState<string[]>([]);
-  const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
 
-  // Fetch brands on mount
+  // Fetch brands on the first interaction, or after a short post-hydration
+  // delay — whichever comes first. Deliberately NOT on mount: that would pull
+  // the Supabase chunk into the same busy window that delays the LCP paint.
+  // The brand dropdown is never disabled while this is pending; opened too
+  // early it shows only the placeholder row and fills in live.
   useEffect(() => {
-    const fetchBrands = async () => {
-      setLoadingBrands(true);
-      const data = await getBrands();
-      setBrands(data);
-      setLoadingBrands(false);
+    let cancelled = false;
+    let started = false;
+
+    const start = () => {
+      if (started || cancelled) return;
+      started = true;
+      removeListeners();
+      window.clearTimeout(idleTimer);
+      void (async () => {
+        const { getBrands } = await listingsService();
+        const data = await getBrands();
+        if (!cancelled) setBrands(data);
+      })();
     };
-    fetchBrands();
+
+    // pointerdown fires before click, so the tap that opens the dropdown is
+    // also the one that kicks off the fetch.
+    const events: (keyof WindowEventMap)[] = ["pointerdown", "keydown", "touchstart"];
+    const removeListeners = () => events.forEach((e) => window.removeEventListener(e, start));
+    events.forEach((e) => window.addEventListener(e, start, { passive: true }));
+    const idleTimer = window.setTimeout(start, 1200);
+
+    return () => {
+      cancelled = true;
+      removeListeners();
+      window.clearTimeout(idleTimer);
+    };
   }, []);
 
   // Fetch models when brand changes
@@ -373,6 +402,7 @@ export function SearchBarV2() {
 
     const fetchModels = async () => {
       setLoadingModels(true);
+      const { getModelsForBrand } = await listingsService();
       const data = await getModelsForBrand(brand);
       setModels(data);
       setLoadingModels(false);
@@ -390,6 +420,7 @@ export function SearchBarV2() {
 
     const fetchVariants = async () => {
       setLoadingVariants(true);
+      const { getVariantsForBrandModel } = await listingsService();
       const data = await getVariantsForBrandModel(brand, model);
       setVariants(data);
       setLoadingVariants(false);
@@ -469,7 +500,6 @@ export function SearchBarV2() {
             onChange={(v) => { setBrand(v); setModel(""); }}
             options={brandOptions}
             placeholder="Marke"
-            disabled={loadingBrands}
             compact
             className="flex-1 min-w-0"
           />
@@ -498,8 +528,10 @@ export function SearchBarV2() {
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
+          aria-label={showAdvanced ? "Erweiterte Filter ausblenden" : "Erweiterte Filter anzeigen"}
+          aria-expanded={showAdvanced}
           className={cn(
-            "h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 flex-shrink-0",
+            "relative h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 flex-shrink-0",
             showAdvanced || advancedFilterCount > 0
               ? "bg-neutral-900 text-white"
               : "bg-neutral-100 text-neutral-600"
@@ -507,7 +539,7 @@ export function SearchBarV2() {
         >
           <SlidersHorizontal className="w-4 h-4" />
           {advancedFilterCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
               {advancedFilterCount}
             </span>
           )}
@@ -516,7 +548,7 @@ export function SearchBarV2() {
         {/* Search Button - Compact */}
         <button
           type="submit"
-          className="h-9 px-4 flex items-center gap-1.5 rounded-lg text-xs font-semibold bg-red-500 text-white flex-shrink-0"
+          className="h-9 px-4 flex items-center gap-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white flex-shrink-0"
         >
           <Search className="w-3.5 h-3.5" />
           <span>Suchen</span>
@@ -532,7 +564,6 @@ export function SearchBarV2() {
             onChange={(v) => { setBrand(v); setModel(""); }}
             options={[{ value: "", label: "Alle Marken" }, ...brands.map(b => ({ value: b, label: b }))]}
             placeholder="Marke"
-            disabled={loadingBrands}
             className="flex-1"
           />
           <SelectField
@@ -574,6 +605,7 @@ export function SearchBarV2() {
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
+            aria-expanded={showAdvanced}
             className={cn(
               "h-11 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition-all duration-200",
               "border",
@@ -585,7 +617,7 @@ export function SearchBarV2() {
             <SlidersHorizontal className="w-4 h-4" />
             <span>Filter</span>
             {advancedFilterCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+              <span className="w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center">
                 {advancedFilterCount}
               </span>
             )}
@@ -595,7 +627,7 @@ export function SearchBarV2() {
             type="submit"
             className={cn(
               "h-11 px-6 flex items-center gap-2 rounded-xl text-sm font-semibold transition-all duration-200",
-              "bg-red-500 text-white hover:bg-red-600",
+              "bg-red-600 text-white hover:bg-red-700",
               "shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30",
               "hover:-translate-y-0.5 active:translate-y-0"
             )}
@@ -613,12 +645,14 @@ export function SearchBarV2() {
       )}>
         <div className="pt-4 border-t border-neutral-200">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-neutral-700">Erweiterte Filter</h4>
+            {/* Not a heading: "Erweiterte Filter" is a UI label, and an h4
+                directly after the page h1 broke the document outline. */}
+            <p className="text-sm font-semibold text-neutral-700">Erweiterte Filter</p>
             {hasAnyFilter && (
               <button
                 type="button"
                 onClick={clearAllFilters}
-                className="text-xs font-medium text-red-500 hover:text-red-600 flex items-center gap-1 transition-colors"
+                className="text-xs font-medium text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
               >
                 <X className="w-3 h-3" />
                 Alle zurücksetzen

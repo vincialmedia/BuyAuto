@@ -79,7 +79,7 @@ export function NewsletterSignup() {
           <Button
             type="submit"
             disabled={loading || success}
-            className="bg-red-500 hover:bg-red-600 text-white px-6 whitespace-nowrap shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300"
+            className="bg-red-600 hover:bg-red-700 text-white px-6 whitespace-nowrap shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300"
           >
             {loading ? (
               <>
