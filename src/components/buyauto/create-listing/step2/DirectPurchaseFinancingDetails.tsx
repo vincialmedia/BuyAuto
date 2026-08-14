@@ -643,7 +643,11 @@ export function DirectPurchaseFinancingDetails() {
         location: data.location,
         canton_code: data.canton_code,
         title: data.title,
-        price_plan: data.price_plan,
+        // Only persist a plan the user actually chose (Step 3 sets the
+        // plan_choice_v2 marker). Writing the scaffold default here made
+        // resumed drafts skip the Verlängert default in Step 3, because
+        // toWizardPatchFromListing treats any stored plan as a real choice.
+        price_plan: (data as any).plan_choice_v2 ? data.price_plan : undefined,
         // premium is a paid entitlement and is never written from the client —
         // see ListingUpdatePayload in createListingService.
         images: data.images,

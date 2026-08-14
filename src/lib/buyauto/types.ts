@@ -124,6 +124,12 @@ export interface ListingData {
   donation_amount_chf?: number;
   
   price_plan?: PricePlanId;
+  /**
+   * Edit-mode anchor: the plan the listing was paid with, before any Step-3
+   * change in this wizard session. Never persisted — Step 5 compares it with
+   * price_plan to route between content-save and the paid plan-change flow.
+   */
+  original_price_plan?: PricePlanId | null;
   premium?: boolean;
   duration_days?: number;
   expires_at?: string;
@@ -185,7 +191,8 @@ export interface ListingDetail extends Listing {
   /** Hard-delete deadline for aged-out drafts; survives archived -> draft revives. */
   draft_delete_at?: string | null;
   cover_image_index?: number;
-  listing_price?: number;
+  /** What the seller actually paid (listings.price_paid_chf). */
+  price_paid_chf?: number | null;
   description?: string; // ✅ Added description field
 }
 

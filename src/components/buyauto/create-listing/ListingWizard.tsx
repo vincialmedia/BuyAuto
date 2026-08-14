@@ -198,6 +198,12 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     // DB default), so a non-null value is a genuine user choice — mark it as
     // such so Step 3 doesn't replace it with the Verlängert default.
     ...(listing?.price_plan ? { plan_choice_v2: true } : {}),
+    // Edit-mode anchors: the server row's plan and payment state, kept
+    // separately from price_plan (which the user may change in Step 3). Step 5
+    // compares against original_price_plan to decide between «Änderungen
+    // speichern» (no expiry change) and the paid plan-change flow.
+    original_price_plan: (listing?.price_plan ?? (prev as any)?.original_price_plan ?? null) as any,
+    payment_status: (listing?.payment_status ?? (prev as any)?.payment_status ?? null) as any,
     // The row's premium is server state, not the seller's boost choice: the
     // premium-authority trigger keeps it false until the webhook grants it, so
     // taking it here would wipe the boost choice saved in the wizard draft.

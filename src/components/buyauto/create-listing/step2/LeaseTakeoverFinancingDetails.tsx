@@ -326,7 +326,9 @@ export function LeaseTakeoverFinancingDetails() {
         location: data.location,
         canton_code: data.canton_code,
         title: data.title,
-        price_plan: data.price_plan,
+        // Only persist a plan the user actually chose — see the identical
+        // comment in DirectPurchaseFinancingDetails.
+        price_plan: (data as any).plan_choice_v2 ? data.price_plan : undefined,
         // premium is a paid entitlement and is never written from the client —
         // see ListingUpdatePayload in createListingService.
         images: data.images,

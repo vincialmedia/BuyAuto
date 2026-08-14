@@ -5,7 +5,7 @@ import { stripe } from "@/lib/stripe-server";
 
 type ListingRow = Pick<
   Database["public"]["Tables"]["listings"]["Row"],
-  "id" | "user_id" | "created_by" | "premium" | "premium_until"
+  "id" | "user_id" | "created_by" | "premium" | "premium_until" | "garage_id"
 >;
 
 type PrepareBody = {
@@ -43,7 +43,7 @@ async function getOwnedListing(
 ): Promise<ListingRow | null> {
   const { data: byUserId, error: byUserIdError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, premium, premium_until")
+    .select("id, user_id, created_by, premium, premium_until, garage_id")
     .eq("id", listingId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -55,7 +55,7 @@ async function getOwnedListing(
 
   const { data: byCreatedBy, error: byCreatedByError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, premium, premium_until")
+    .select("id, user_id, created_by, premium, premium_until, garage_id")
     .eq("id", listingId)
     .eq("created_by", userId)
     .maybeSingle();
@@ -116,10 +116,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const amountCents = 3000;
 
+    // The return must land on the dashboard the seller actually uses:
+    // /dashboard/garage was hardcoded, so private sellers were bounced through
+    // the SSR role router and lost the query params — the reconciliation
+    // effect in ListingsSection never ran for them. {CHECKOUT_SESSION_ID} is
+    // substituted by Stripe and feeds /api/billing/premium-upgrade/verify.
+    const dashboardBase = listing.garage_id ? "/dashboard/garage" : "/dashboard/private";
+
     const sessionCheckout = await stripe.checkout.sessions.create({
       mode: "payment",
-      success_url: `${origin}/dashboard/garage?premium_upgrade=success&listingId=${encodeURIComponent(listingId)}`,
-      cancel_url: `${origin}/dashboard/garage?premium_upgrade=cancel&listingId=${encodeURIComponent(listingId)}`,
+      success_url: `${origin}${dashboardBase}?premium_upgrade=success&listingId=${encodeURIComponent(listingId)}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}${dashboardBase}?premium_upgrade=cancel&listingId=${encodeURIComponent(listingId)}`,
       line_items: [
         {
           price_data: {
