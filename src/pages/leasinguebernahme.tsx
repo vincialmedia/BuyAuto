@@ -1218,7 +1218,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                     <div>
                       <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasing Concierge Service</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Kein Stress mit Inseraten und Interessenten? Unser Concierge übernimmt alles für dich – von der Bewerbung bis zur Übergabe.
+                        Kein Stress mit Inseraten und Interessenten? Unser Concierge unterstützt dich – von der Bewerbung bis zur Übergabe.
                       </p>
                       <Link href="/leasing-concierge" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
                         Leasing Concierge für Abgeber

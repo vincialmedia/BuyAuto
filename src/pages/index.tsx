@@ -11,7 +11,6 @@ import PremiumListings from "@/components/buyauto/PremiumListings";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
 
@@ -26,10 +25,9 @@ type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
 
 interface HomePageProps {
   premiumListings: Listing[];
-  takeoverCount: number | null;
 }
 
-export default function HomePage({ premiumListings, takeoverCount }: HomePageProps) {
+export default function HomePage({ premiumListings }: HomePageProps) {
   const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");
 
   return (
@@ -155,7 +153,6 @@ export default function HomePage({ premiumListings, takeoverCount }: HomePagePro
       <div className="scroll-mt-4">
         <PremiumListings
           initialListings={premiumListings}
-          takeoverCount={takeoverCount}
           externalFilter={premiumFilter}
           onFilterChange={setPremiumFilter}
         />
@@ -333,17 +330,9 @@ export default function HomePage({ premiumListings, takeoverCount }: HomePagePro
 // layout shift) and refresh in the background every 5 minutes.
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
   try {
-    const [leaseTakeoverResult, directPurchaseResult, takeoverCountResult] = await Promise.all([
+    const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
       searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
       searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
-      // Head-only count of pure lease takeovers — deliberately the same
-      // filter as /suche?dealType=lease_takeover, which the section's CTAs
-      // link to, so the number always matches what a click-through shows.
-      supabase
-        .from("listings_public")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "published")
-        .eq("deal_type", "lease_takeover"),
     ]);
 
     const ordered = [...leaseTakeoverResult.items, ...directPurchaseResult.items];
@@ -353,11 +342,9 @@ export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
     // Strip undefined fields so Next can serialize.
     const premiumListings = JSON.parse(JSON.stringify(Array.from(uniqueById.values()))) as Listing[];
 
-    const takeoverCount = takeoverCountResult.error ? null : takeoverCountResult.count ?? null;
-
-    return { props: { premiumListings, takeoverCount }, revalidate: 300 };
+    return { props: { premiumListings }, revalidate: 300 };
   } catch (error) {
     console.error("Homepage premium listings fetch failed:", error);
-    return { props: { premiumListings: [], takeoverCount: null }, revalidate: 60 };
+    return { props: { premiumListings: [] }, revalidate: 60 };
   }
 };

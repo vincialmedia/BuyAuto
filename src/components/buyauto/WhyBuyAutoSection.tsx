@@ -37,8 +37,8 @@ const cardGroups: CardGroup[] = [
       },
       {
         icon: ConciergeBell,
-        title: "Kein Inserate-Stress",
-        description: "Unser Concierge übernimmt alles, von der Bewerbung bis zur Übergabe."
+        title: "Concierge auf Wunsch",
+        description: "Unser Concierge unterstützt dich beim Ausstieg – vom Inserat bis zur Übergabe."
       }
     ]
   },

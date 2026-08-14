@@ -94,8 +94,8 @@ export default function LeasingConcierge() {
               </p>
 
               <p className="text-lg md:text-xl text-neutral-300 font-medium">
-                Leasing Concierge ist dein persönlicher Service, der den Ablauf für dich übernimmt: klar, schnell,
-                stressfrei.
+                Leasing Concierge ist dein persönlicher Service, der dich durch den ganzen Ablauf begleitet: klar,
+                schnell, stressfrei.
               </p>
             </div>
 
@@ -261,8 +261,8 @@ export default function LeasingConcierge() {
               <CardHeader>
                 <CardTitle className="text-2xl font-bold text-blue-700">Option 2: Leasing Exit – Full Service</CardTitle>
                 <CardDescription className="text-base mt-3 text-neutral-600">
-                  Du willst raus, hast aber keinen Übernehmer oder keine klare Strategie? Dann übernehmen wir den ganzen
-                  Weg bis zur Lösung. Wenn du die Abgabe lieber selbst organisierst, zeigt dir{" "}
+                  Du willst raus, hast aber keinen Übernehmer oder keine klare Strategie? Dann begleiten wir dich den
+                  ganzen Weg bis zur Lösung. Wenn du die Abgabe lieber selbst organisierst, zeigt dir{" "}
                   <Link href="/leasing-abgeben-schweiz" className="text-blue-600 hover:underline font-medium">
                     Leasing abgeben in der Schweiz – der Leitfaden
                   </Link>{" "}

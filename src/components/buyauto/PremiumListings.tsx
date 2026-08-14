@@ -38,13 +38,9 @@ interface PremiumListingsProps {
   /** Listings fetched at build/request time. When provided, no client fetch
    *  happens and the cards are part of the first paint (no layout shift). */
   initialListings?: Listing[];
-  /** Live count of vehicles currently offered for lease takeover (pure
-   *  lease_takeover plus Direktkauf with enabled Übernahme-Angebot). Rendered
-   *  only when a positive number arrives — never hardcoded. */
-  takeoverCount?: number | null;
 }
 
-export default function PremiumListings({ externalFilter, onFilterChange, initialListings, takeoverCount }: PremiumListingsProps) {
+export default function PremiumListings({ externalFilter, onFilterChange, initialListings }: PremiumListingsProps) {
   const [listings, setListings] = useState<Listing[]>(initialListings ?? []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(initialListings === undefined);
@@ -108,8 +104,10 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
       const hasLeasingOffer = listing.leasing_offer?.enabled === true || listing.financing_type === "leasing";
 
       if (activeFilter === "direct_purchase") {
-        // Show if it's a direct purchase deal type (regardless of other offers it may have)
-        return listing.deal_type === "direct_purchase";
+        // A Direktkauf with enabled Übernahme-Angebot presents as
+        // «Leasingübernahme» (getDealTypeLabel), so it belongs under that tab —
+        // showing it here put Leasingübernahme-badged cards under Direktkauf.
+        return listing.deal_type === "direct_purchase" && !hasLeaseTakeoverOffer;
       }
       if (activeFilter === "leasing") {
         // Show if it has leasing financing available (but not pure lease takeovers)
@@ -284,9 +282,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                 Aktuelle Leasingübernahmen
               </h2>
               <p className="text-neutral-500 text-base max-w-xl mx-auto mb-6">
-                {typeof takeoverCount === "number" && takeoverCount > 0
-                  ? `Aktuell ${takeoverCount} ${takeoverCount === 1 ? "Fahrzeug" : "Fahrzeuge"} zur Übernahme – hier siehst du Premium-Angebote mit erhöhter Sichtbarkeit.`
-                  : "Premium-Angebote mit erhöhter Sichtbarkeit."}
+                Premium-Angebote mit erhöhter Sichtbarkeit.
               </p>
               
               {/* Category Filter Tabs */}

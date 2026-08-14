@@ -116,7 +116,7 @@ function buildFaqs(company: LeasingCompany): Faq[] {
     },
     {
       q: `Wie inseriere ich meinen ${compoundName}-Vertrag auf BuyAuto?`,
-      a: "Erstelle in wenigen Minuten ein Inserat mit Monatsrate, Restlaufzeit und Kilometerstand. Interessenten melden sich direkt bei dir – und wenn du den Prozess nicht allein durchziehen willst, übernimmt unser Concierge die Abwicklung.",
+      a: "Erstelle in wenigen Minuten ein Inserat mit Monatsrate, Restlaufzeit und Kilometerstand. Interessenten melden sich direkt bei dir – und wenn du den Prozess nicht allein durchziehen willst, unterstützt dich unser Concierge bei der Abwicklung.",
       href: "/leasing-concierge",
       linkText: "Concierge",
     },
