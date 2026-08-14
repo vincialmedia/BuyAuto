@@ -506,7 +506,13 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       .single();
 
     if (error && (error as any)?.code !== "PGRST116") {
+      // supabase-js returns transport failures as error VALUES, not throws —
+      // without this rethrow a Supabase outage fell through to the 404 branch
+      // and every live, sitemap-listed listing URL answered with a hard 404
+      // Google could de-index. The catch below turns it into 503 + Retry-After
+      // (same pattern as the dealer microsite).
       console.error("Error fetching listing by ID (published):", error);
+      throw error;
     }
 
     let listing = !error && data ? transformPublicRowToListingDetail(data as any) : null;
@@ -552,12 +558,17 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       // "was live, now gone" (410) from "never public / unknown" (404): anon RLS only
       // exposes status='published' on the base table, so a hit here means the row is
       // published-but-expired (or excluded as internal) → 410 Gone; a miss → 404.
-      const { data: publishedRow } = await supabase
+      const { data: publishedRow, error: publishedRowError } = await supabase
         .from("listings")
         .select("id")
         .eq("id", listingId)
         .eq("status", "published")
         .maybeSingle();
+
+      // Same rule as above: a failed lookup is not a 404 verdict.
+      if (publishedRowError) {
+        throw publishedRowError;
+      }
 
       if (context.res) {
         context.res.statusCode = publishedRow ? 410 : 404;

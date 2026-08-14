@@ -328,7 +328,11 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                       Restraten, die dein Nachfolger übernimmt
                     </p>
                     <p className="text-3xl md:text-4xl font-black text-white">
-                      CHF {remainingObligation.toLocaleString("de-CH")}
+                      {/* Deterministic formatting: toLocaleString("de-CH") uses
+                          whichever apostrophe the runtime's ICU ships (' vs ’),
+                          and a server/browser mismatch threw hydration error
+                          #425 on this page. */}
+                      CHF {String(remainingObligation).replace(/\B(?=(\d{3})+(?!\d))/g, "'")}
                     </p>
                   </div>
 

@@ -20,14 +20,18 @@ function isSafeNextPath(input: unknown): input is string {
 
 export default function GaragePlanPage() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading, profileLoading } = useAuth();
   const userRole = profile?.role;
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<GaragePlanCode | null>(null);
 
   useEffect(() => {
     if (!router.isReady) return;
-    if (profile === undefined) return;
+    // Wait for auth AND profile resolution: the old `profile === undefined`
+    // guard could never fire (AuthContext initializes profile as null), so a
+    // hard refresh bounced logged-in garages to /auth and a pending profile
+    // fetch produced a wrong «Zugriff verweigert».
+    if (authLoading || profileLoading) return;
 
     if (!user) {
       const legacyNext = typeof router.query.next === "string" ? router.query.next : null;
@@ -49,7 +53,14 @@ export default function GaragePlanPage() {
   const handleSelectPlan = async (planCode: GaragePlanCode) => {
     if (!user) return;
 
-    const redirectPathRaw = typeof router.query.redirect === "string" ? router.query.redirect : null;
+    // ?next= is the legacy spelling still sent by the wizard's listing-limit
+    // upsell — honor it as a fallback so return-to-edit works from there too.
+    const redirectPathRaw =
+      typeof router.query.redirect === "string"
+        ? router.query.redirect
+        : typeof router.query.next === "string"
+          ? router.query.next
+          : null;
     const successPath = isSafeNextPath(redirectPathRaw) ? redirectPathRaw : null;
     const cancelPath = successPath ? `/garage-plan?redirect=${encodeURIComponent(successPath)}` : null;
 

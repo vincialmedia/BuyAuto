@@ -122,7 +122,9 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
 
     setResetSending(true);
     try {
-      const redirectTo = `${getSiteOrigin()}/auth?mode=reset-password`;
+      // Same canonical marker as authService.resetPassword — auth.tsx only
+      // recognizes type=recovery (plus the PASSWORD_RECOVERY event).
+      const redirectTo = `${getSiteOrigin()}/auth?type=recovery`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
 

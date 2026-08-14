@@ -108,8 +108,10 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
 
   const currentPlanDetails = useMemo(() => garagePlanFor(effectivePlanId), [effectivePlanId]);
 
-  function handleUpgrade(planId: GaragePlanCode) {
-    router.push(`/garage-plan?plan=${planId}`);
+  function handleUpgrade(_planId: GaragePlanCode) {
+    // garage-plan never read the old ?plan= param (the user picks the plan
+    // there anyway) — send a real redirect back to this tab instead.
+    router.push(`/garage-plan?redirect=${encodeURIComponent("/dashboard/garage?tab=subscription")}`);
   }
 
   return (

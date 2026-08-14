@@ -410,16 +410,9 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
               </div>
 
               {/* Message Center moved out of this row — see the full-width
-                  mobile button above the card. */}
-              <div className="flex gap-2 items-center">
-                <Button
-                  variant="secondary"
-                  onClick={() => router.push("/dashboard")}
-                  className="w-full sm:w-auto h-12 bg-white/15 text-white hover:bg-white/20 border border-white/20 rounded-2xl"
-                >
-                  Zur Übersicht
-                </Button>
-              </div>
+                  mobile button above the card. («Zur Übersicht» was removed:
+                  /dashboard SSR-redirects garage accounts straight back here,
+                  so the button was a circular page reload.) */}
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

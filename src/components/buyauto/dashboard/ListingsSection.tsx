@@ -189,9 +189,27 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     const status = typeof router.query.premium_upgrade === "string" ? router.query.premium_upgrade : null;
     if (!status) return;
 
-    loadUserListings();
-    loadPremiumCredits();
-  }, [router.query.premium_upgrade, loadUserListings, loadPremiumCredits]);
+    // Back from the premium checkout: reconcile server-side first (idempotent —
+    // the RPC dedupes on the checkout session, so webhook + verify can both
+    // run), then reload so the granted boost is visible immediately.
+    const sessionId = typeof router.query.session_id === "string" ? router.query.session_id : null;
+    const run = async () => {
+      if (status === "success" && sessionId) {
+        try {
+          await fetch("/api/billing/premium-upgrade/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId }),
+          });
+        } catch (error) {
+          console.error("Error verifying premium upgrade payment:", error);
+        }
+      }
+      loadUserListings();
+      loadPremiumCredits();
+    };
+    void run();
+  }, [router.query.premium_upgrade, router.query.session_id, loadUserListings, loadPremiumCredits]);
 
   useEffect(() => {
     const status = typeof router.query.relist === "string" ? router.query.relist : null;
@@ -721,7 +739,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                           <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 mb-3">
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4" />
-                              <span>Bezahlt: {formatPrice(listing.listing_price ?? 0)}</span>
+                              <span>Bezahlt: {formatPrice(listing.price_paid_chf ?? 0)}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <MapPin className="w-4 h-4" />
@@ -988,6 +1006,45 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
               </Card>
             );
           })}
+
+          {/* Deleted sold listings live on as read-only tombstones — they were
+              counted in the sold tab's header but never rendered, so the tab
+              could claim «N Inserate» above an empty list. */}
+          {effectiveView === "sold" &&
+            tombstoneCards.map((t) => (
+              <Card key={`tombstone-${t.id}`} className="border-neutral-200/60 rounded-3xl opacity-80">
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                    <div className="w-full sm:w-40 h-28 rounded-2xl bg-neutral-100 overflow-hidden flex-shrink-0">
+                      {t.coverImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={t.coverImageUrl} alt={`${t.brand} ${t.model}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm">
+                          {t.brand} {t.model}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge className="bg-green-100 text-green-700 border-green-200">Verkauft</Badge>
+                        <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200">
+                          Gelöscht
+                        </Badge>
+                      </div>
+                      <h3 className="text-lg font-semibold text-neutral-900 truncate">
+                        {t.brand} {t.model}
+                        {t.year ? ` (${t.year})` : ""}
+                      </h3>
+                      <p className="text-sm text-neutral-500">
+                        {t.soldAt ? `Verkauft am ${new Date(t.soldAt).toLocaleDateString("de-CH")}` : "Verkauft"}
+                        {t.location ? ` · ${t.location}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
         </div>
       )}
 
