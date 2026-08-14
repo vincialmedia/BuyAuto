@@ -7,6 +7,7 @@ import { GaragePlanCards } from "@/components/buyauto/pricing/GaragePlanCards";
 import { GarageFeatureMatrix } from "@/components/buyauto/pricing/GarageFeatureMatrix";
 import { GarageTrustRow } from "@/components/buyauto/pricing/GarageTrustRow";
 import {
+  GARAGE_CUSTOM_FROM_CHF,
   GARAGE_CUSTOM_THRESHOLD,
   GARAGE_PLANS,
   formatChf,
@@ -147,7 +148,7 @@ export default function GaragePlanPage() {
               >
                 Kontaktiere uns
               </a>{" "}
-              für ein individuelles Angebot.
+              für ein individuelles Angebot ab CHF {formatChf(GARAGE_CUSTOM_FROM_CHF)}/Monat.
             </p>
           </div>
         </div>

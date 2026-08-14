@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { AnimatePresence } from "framer-motion";
 import { PricingHero } from "@/components/buyauto/pricing/PricingHero";
@@ -71,6 +72,18 @@ export default function GaragePreisePage() {
                 <GaragePricingSection key="garage" />
               )}
             </AnimatePresence>
+
+            {/* The toggle shows one persona at a time — the side-by-side view
+                lives on its own page. */}
+            <p className="mt-10 text-center text-sm text-neutral-600">
+              Du willst alles nebeneinander sehen?{" "}
+              <Link
+                href="/preise/vergleich"
+                className="font-semibold text-neutral-900 underline underline-offset-4 hover:text-primary"
+              >
+                Private Pläne & Garagen-Pakete im Vergleich
+              </Link>
+            </p>
           </div>
         </main>
       </div>
