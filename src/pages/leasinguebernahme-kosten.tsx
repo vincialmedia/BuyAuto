@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
+import { LEASING_COMPANIES } from "@/lib/buyauto/leasingCompanies";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -737,6 +738,30 @@ export default function LeasinguebernahmeKostenPage() {
                 </p>
               </div>
               <SearchForm />
+            </div>
+          </div>
+        </section>
+
+        {/* KONDITIONEN NACH GESELLSCHAFT */}
+        <section className="py-16 px-4 bg-neutral-50">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-neutral-900 mb-3">
+              Konditionen nach Leasinggesellschaft
+            </h2>
+            <p className="text-neutral-600 mb-8 max-w-2xl mx-auto">
+              Die Umschreibegebühr legt deine Leasinggesellschaft fest – hier findest du den Ablauf pro
+              Anbieter:
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {LEASING_COMPANIES.map((company) => (
+                <Link
+                  key={company.slug}
+                  href={`/${company.slug}`}
+                  className="inline-flex items-center px-5 py-2.5 rounded-full bg-white border border-neutral-200 text-neutral-700 text-sm font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors duration-200"
+                >
+                  {company.name}
+                </Link>
+              ))}
             </div>
           </div>
         </section>

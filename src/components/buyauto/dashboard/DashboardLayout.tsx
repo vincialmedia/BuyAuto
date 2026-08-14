@@ -35,24 +35,14 @@ export default function DashboardLayout({ children, currentSection = "overview",
   const isDesktop = useIsDesktop();
   const router = useRouter();
 
+  // Only the overview entry is real: no dashboard page ever read the old
+  // ?section= params, so the parameterized links were silent no-ops.
   const navigation = [
     {
       id: "overview",
       name: "Übersicht",
       icon: LayoutDashboard,
       href: "/dashboard"
-    },
-    {
-      id: "listings", 
-      name: "Meine Inserate",
-      icon: Car,
-      href: "/dashboard?section=listings"
-    },
-    {
-      id: "account",
-      name: "Konto",
-      icon: User,
-      href: "/dashboard?section=account"
     }
   ];
 

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { useWizard } from "./ListingWizard";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -114,9 +113,10 @@ export default function Step3_PlanSelection() {
   const planFeatures = privatePlanMarketingFeatures;
 
   const handlePlanSelection = async () => {
-    if (!user) {
-      // Deferred login: keep the plan choice in wizard state — the listing row
-      // is created after sign-in at Step 5.
+    if (!user || !(data as any).id) {
+      // Deferred login (guest) OR a signed-in user without a listing row yet —
+      // e.g. a guest who signed in at Step 5 and navigated back here. Keep the
+      // plan choice in wizard state; Step 5 creates/updates the row.
       updateData({
         price_plan: selectedPlan,
         plan_choice_v2: true,
@@ -194,19 +194,9 @@ export default function Step3_PlanSelection() {
         <p className="text-neutral-600 font-light leading-relaxed">Wähle den passenden Plan für dein Inserat.</p>
       </div>
 
-      {/* Guests have no listing row by design (deferred login — the row is
-          created after sign-in at Step 5), so the missing-id warning is a
-          logged-in-only signal. */}
-      {Boolean(user) && !(data as any).id && (
-        <Alert variant="destructive">
-          <AlertTitle>Weiter zu Fotos ist blockiert</AlertTitle>
-          <AlertDescription>
-            Die Inserat-ID fehlt. Das bedeutet, dass der vorherige Schritt nicht gespeichert werden konnte.
-            Bitte gehe zurück, prüfe die Pflichtfelder und speichere erneut. Falls danach wieder ein Fehler erscheint,
-            kopiere bitte den exakten Fehlertext aus der Meldung und sende ihn hier.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* No listing row yet is not a dead end anymore: the deferred branch in
+          handlePlanSelection keeps the choice in wizard state and Step 5
+          creates the row (same as the guest flow). No blocking alert needed. */}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {(Object.keys(pricingPlans) as Plan[]).map((planKey) => {

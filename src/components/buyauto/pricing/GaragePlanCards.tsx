@@ -187,7 +187,7 @@ export function GaragePlanCards({
                       )}
                       variant={isPopular ? "default" : "outline"}
                     >
-                      <Link href={hrefFor ? hrefFor(code) : "/auth?mode=register&type=garage"}>
+                      <Link href={hrefFor ? hrefFor(code) : "/auth?view=register&type=garage"}>
                         {plan.cta}
                       </Link>
                     </Button>

@@ -32,7 +32,9 @@ const footerSections = [
     links: [
       { label: "Inserat erstellen", href: "/inserat-erstellen" },
       { label: "Preise", href: "/preise" },
-      { label: "Für Garagen", href: "/garage-plan" },
+      // Public garage landing page — /garage-plan is noindex and auth-gated,
+      // so the footer sends garages to the pitch first.
+      { label: "Für Garagen", href: "/fuer-garagen" },
       { label: "Eintauschwert-Rechner", href: "/eintauschwert-rechner" }
     ]
   },
@@ -83,10 +85,10 @@ export function Footer() {
               />
             </Link>
             <p className="text-neutral-300 mb-3 leading-relaxed font-light text-base max-w-sm">
-              Die Schweizer Plattform für den einfacheren Weg zum nächsten Auto.
+              BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen.
             </p>
             <p className="text-neutral-400 text-sm leading-relaxed max-w-sm mb-6">
-              Occasionen, Neuwagen, Leasing und Leasingübernahmen – alles auf BuyAuto.
+              Leasing übernehmen oder ohne Verlust abgeben – daneben ausgewählte Fahrzeuge zum Direktkauf.
             </p>
             
             {/* Contact info */}

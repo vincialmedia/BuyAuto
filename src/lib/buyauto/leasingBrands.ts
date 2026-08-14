@@ -86,6 +86,17 @@ export const LEASING_BRANDS: LeasingBrand[] = [
       "Übernimm ein Toyota-Leasing in der Schweiz und profitiere von bewährter Hybrid-Effizienz – vom Yaris bis zum RAV4. Die Leasingübernahme ist die kostengünstige Alternative zum Neuleasing: keine hohe Anzahlung, kurze Restlaufzeit.",
     popularModels: ["Yaris", "Corolla", "C-HR", "RAV4", "bZ4X"],
   },
+  {
+    // Curated so the AMAG-Leasing page can link /leasinguebernahme/skoda
+    // permanently — as a dynamic-only brand the URL would 404 whenever the
+    // last live Škoda listing expires.
+    slug: "skoda",
+    name: "Škoda",
+    dbBrands: ["Škoda", "Skoda"],
+    intro:
+      "Übernimm einen laufenden Škoda-Leasingvertrag in der Schweiz – vom Octavia bis zum vollelektrischen Enyaq. Du steigst ohne hohe Anzahlung ein und bindest dich nur für die Restlaufzeit statt für die volle Laufzeit eines neuen Leasings.",
+    popularModels: ["Octavia", "Enyaq", "Kodiaq", "Fabia"],
+  },
 ];
 
 export const LEASING_BRAND_SLUGS = LEASING_BRANDS.map((b) => b.slug);

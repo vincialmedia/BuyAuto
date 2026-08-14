@@ -64,7 +64,7 @@ function getPlanLabel(args: { completed: CompletedListingData | null; listing: S
   if (!planKey || !(planKey in pricingPlans)) return null;
 
   const plan = pricingPlans[planKey];
-  return `${plan.name} · ${plan.duration_days} Tage`;
+  return plan.duration_days ? `${plan.name} · ${plan.duration_days} Tage` : `${plan.name} · Online bis verkauft`;
 }
 
 function isOnlineStatus(status: string | null | undefined): boolean {

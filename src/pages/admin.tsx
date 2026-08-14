@@ -12,9 +12,12 @@ export default function AdminPage() {
   useEffect(() => {
     if (!loading && !adminLoading) {
       if (!user) {
-        router.replace('/auth?message=' + encodeURIComponent('Kein Zugriff'));
+        // Logged out: send to login and come back here after.
+        router.replace('/auth?redirect=' + encodeURIComponent('/admin'));
       } else if (!isAdmin) {
-        router.replace('/auth?message=' + encodeURIComponent('Kein Zugriff'));
+        // Logged in without admin rights: home, like the middleware does —
+        // /auth would just bounce an authenticated user onwards anyway.
+        router.replace('/');
       }
     }
   }, [user, loading, isAdmin, adminLoading, router]);

@@ -108,8 +108,10 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
 
   const currentPlanDetails = useMemo(() => garagePlanFor(effectivePlanId), [effectivePlanId]);
 
-  function handleUpgrade(planId: GaragePlanCode) {
-    router.push(`/garage-plan?plan=${planId}`);
+  function handleUpgrade(_planId: GaragePlanCode) {
+    // garage-plan never read the old ?plan= param (the user picks the plan
+    // there anyway) — send a real redirect back to this tab instead.
+    router.push(`/garage-plan?redirect=${encodeURIComponent("/dashboard/garage?tab=subscription")}`);
   }
 
   return (
@@ -219,7 +221,7 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
         <Button
           variant="outline"
           className="mt-4 sm:mt-0 rounded-xl px-6 h-11 border-neutral-300 hover:bg-white"
-          onClick={() => { window.location.href = "mailto:kontakt@buyauto.ch"; }}
+          onClick={() => { window.location.href = "mailto:hello@buyauto.ch"; }}
         >
           Kontakt aufnehmen
         </Button>
