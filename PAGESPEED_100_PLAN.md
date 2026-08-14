@@ -7,6 +7,15 @@ attribution of every chunk. Local absolute numbers are pessimistic (slower
 container CPU, cold image-optimizer cache, no Vercel CDN) — the *attribution*
 is what transfers to production.
 
+> **Status: Phases 1–5 are implemented in this branch.** Measured on the same
+> rig as the baseline (see Implementation results at the bottom): shared First
+> Load JS 223 → 134 KB gz, homepage First Load 235 → 154 KB gz, mobile
+> Lighthouse **54 → 94**, desktop **93 → 97**, accessibility **90 → 100** —
+> production on Vercel's CDN and PSI's faster hardware sits above these local
+> numbers. An SEO-equivalence harness (SSR HTML diff + Googlebot-style
+> rendered-DOM checks) verified that nothing about how Google reads the page
+> changed.
+
 ## Baseline (local prod build, Lighthouse 13, PSI settings)
 
 | | Mobile | Desktop |
@@ -187,3 +196,74 @@ by ~28 days and is unaffected by lab-only wins.
    ~150 KB gz after Phase 2.
 3. After production deploy, re-run PSI on `https://www.buyauto.ch/` and check
    Vercel Speed Insights for real-user LCP/INP regressions.
+
+---
+
+## Implementation results (this branch)
+
+Same rig and settings as the baseline (local prod build, Lighthouse 13,
+PSI-equivalent emulation, gtag blocked in both runs so the deltas are
+apples-to-apples; production "before" additionally paid gtag on load, which
+the "after" no longer does — real-world deltas are larger).
+
+| | Before | After |
+|---|---|---|
+| Mobile performance | 54 | **94** |
+| Mobile LCP / TBT / SI | 4.8 s / 1,410 ms / 4.7 s | **2.2 s / 250 ms / 1.3 s** |
+| Desktop performance | 93 | **97** |
+| Desktop TBT | 160 ms | **40 ms** |
+| Accessibility | 90 | **100** |
+| SEO | 100 | 100 |
+| CLS | 0 | 0 |
+| Shared First Load JS | 223 KB gz (`_app` 119.5) | **134 KB gz** (`_app` 30.6) |
+| Homepage First Load JS | ~235 KB gz | **154 KB gz** |
+
+Best Practices reads 96 locally only because the sandboxed test box blocks
+Supabase/gtag network calls (console errors + a 404 for Vercel insights);
+none of those conditions exist in production.
+
+### What was changed
+
+1. **gtag.js loads on first interaction** (pointerdown/keydown/touchstart/
+   scroll), with an 8 s idle fallback — and immediately when the landing URL
+   carries `gclid`/`gbraid`/`wbraid`/`gclsrc`, so Ads click attribution is
+   untouched. Consent Mode defaults still run first (unchanged, in
+   `_document`); all queued commands drain in order when the tag arrives.
+2. **Supabase out of the critical bundle**: `AuthContext`, `Header` sign-out,
+   `SearchBarV2` and `PremiumListings` load the client/services via dynamic
+   `import()`; the auth init keeps its 6 s failsafe.
+3. **Toasters load post-hydration** (`next/dynamic`, `ssr: false`); both toast
+   systems stay mounted and both queue toasts fired before mount.
+4. **Header dropdowns**: Radix menu + floating-ui replaced with a ~90-line
+   disclosure component. SEO side-benefit: the nav links are now in the server
+   HTML of every page (Radix only rendered them while open).
+5. **styled-jsx dropped** (the one global font style is a plain `<style>`).
+6. **LazyHydrate** wrapper defers hydration of the six below-fold homepage
+   sections until they approach the viewport. Server HTML is byte-identical
+   content; verified empirically (see below).
+7. **Hero `quality` 75 → 60** (mobile LCP payload 43 → ~30 KB).
+8. **Accessibility to 100**: names for the hamburger and filter icon buttons,
+   `aria-expanded` on disclosure triggers, the stray `h4` in the search bar
+   demoted to `<p>`, and every white-on-red-500 / low-contrast text stepped to
+   a passing shade (red-600/700, neutral-500/600, white/90).
+
+### SEO equivalence — verified, not assumed
+
+`seo_diff.py` (scratch harness) parsed the before/after server HTML:
+title, canonical, all 16 meta tags, all 3 JSON-LD blocks, all 20 link hrefs,
+all image alts **identical**; visible text 99.55 % identical, the only delta
+being ADDED text (the five nav links now server-rendered) plus the intended
+`h4` removal. Hero preload structure unchanged (only `q=75→60` in the URL).
+
+`render_check.js` (Playwright, Chromium) then verified the rendered page the
+way Google's Web Rendering Service sees it:
+- Googlebot-style tall viewport, zero interaction: every section's text
+  present in the rendered DOM, the reveal-animated section fully visible
+  (opacity 1), nav links in the DOM, no hydration errors.
+- Phone viewport without scrolling: below-fold server DOM intact after
+  hydration (LazyHydrate never wipes it).
+- Phone viewport with scrolling: all sections hydrate and animate, zero
+  hydration errors.
+
+Nothing meta-related, canonical, structured-data, robots or sitemap was
+touched. `getStaticProps`/ISR behaviour is unchanged.

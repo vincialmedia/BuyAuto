@@ -10,6 +10,7 @@ import { FounderStory } from "@/components/buyauto/FounderStory";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
+import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
@@ -116,7 +117,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
             fetchPriority="high"
             className="object-cover object-[center_30%]"
             sizes="100vw"
-            quality={75}
+            // q60 AVIF/WebP is visually indistinguishable under the dark
+            // gradient overlay and cuts the LCP payload by roughly a third.
+            quality={60}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/70 to-neutral-900/40" />
         </div>
@@ -128,7 +131,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
               <br />
               Ohne <span className="text-red-500">Verlust.</span>
             </h1>
-            <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/80 font-medium max-w-2xl mx-auto drop-shadow-md">
+            <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/90 font-medium max-w-2xl mx-auto drop-shadow-md">
               Ein Schweizer Marktplatz für Leasingübernahmen – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.
             </p>
           </div>
@@ -158,9 +161,17 @@ export default function HomePage({ premiumListings }: HomePageProps) {
         />
       </div>
 
-      <WhyBuyAutoSection />
-      <BuyerGarageSection />
+      {/* Everything below the premium carousel is out of the first viewport on
+          every device; LazyHydrate keeps it fully in the server HTML (SEO
+          unchanged) but spares the load-time main thread its hydration. */}
+      <LazyHydrate>
+        <WhyBuyAutoSection />
+      </LazyHydrate>
+      <LazyHydrate>
+        <BuyerGarageSection />
+      </LazyHydrate>
 
+      <LazyHydrate>
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-neutral-50 to-white" />
         <div
@@ -174,7 +185,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 
         <div className="max-w-5xl mx-auto relative z-10">
           <div className="text-center mb-14 md:mb-20">
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5 hover:bg-red-500/20 transition-colors cursor-default">
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-700 text-sm font-bold uppercase tracking-wider mb-5 hover:bg-red-500/20 transition-colors cursor-default">
               <Zap className="w-4 h-4" />
               So einfach geht&apos;s
             </span>
@@ -214,7 +225,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                         <div className="w-16 h-16 rounded-2xl bg-neutral-100 group-hover:bg-red-500 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                           <item.icon className="w-7 h-7 text-neutral-600 group-hover:text-white transition-colors duration-300" />
                         </div>
-                        <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                           {item.step}
                         </span>
                       </div>
@@ -247,7 +258,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
           </div>
         </div>
       </section>
+      </LazyHydrate>
 
+      <LazyHydrate>
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="relative bg-red-500 rounded-[2rem] p-10 md:p-14 overflow-hidden group hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-500">
@@ -261,7 +274,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3">Bereit loszufahren?</h2>
-                <p className="text-white/80 text-lg md:text-xl max-w-lg">
+                <p className="text-white/90 text-lg md:text-xl max-w-lg">
                   Gib dein Leasing zur Übernahme frei oder steig in einen laufenden Vertrag ein.
                 </p>
               </div>
@@ -278,7 +291,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                 <Link href="/suche">
                   <Button
                     size="lg"
-                    className="bg-white/20 border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                    className="bg-black/20 border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   >
                     Alle Fahrzeuge
                     <ChevronRight className="w-5 h-5 ml-1" />
@@ -289,11 +302,15 @@ export default function HomePage({ premiumListings }: HomePageProps) {
           </div>
         </div>
       </section>
+      </LazyHydrate>
 
-      <FounderStory />
+      <LazyHydrate>
+        <FounderStory />
+      </LazyHydrate>
       <FAQSection />
       <SeoCopyBlock />
 
+      <LazyHydrate>
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-neutral-900">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Bereit, dein Leasing abzugeben?</h2>
@@ -304,7 +321,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
             <Link href="/inserat-erstellen">
               <Button
                 size="lg"
-                className="bg-red-500 text-white hover:bg-red-600 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 shadow-lg shadow-red-500/25"
+                className="bg-red-600 text-white hover:bg-red-700 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 shadow-lg shadow-red-500/25"
               >
                 Inserat erstellen
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -322,6 +339,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
           </div>
         </div>
       </section>
+      </LazyHydrate>
     </div>
   );
 }

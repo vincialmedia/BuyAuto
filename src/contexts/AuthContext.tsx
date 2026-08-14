@@ -3,9 +3,15 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { getMyMessageCounts } from "@/services/messagingService";
+
+// The Supabase stack (auth, realtime + its Buffer polyfill, storage, postgrest)
+// is ~40 KB gz — the single largest block of _app.js. Loading it with a dynamic
+// import moves it out of the critical bundle every page pays before first
+// paint: hydration finishes, then the client chunk loads and auth resolves a
+// beat later. import() caches after the first call, so the helpers are as good
+// as free once the chunk is in.
+const getSupabase = async () => (await import("@/integrations/supabase/client")).supabase;
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -66,6 +72,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const refreshMessageCount = useCallback(async () => {
     try {
       setMessageCountLoading(true);
+      const { getMyMessageCounts } = await import("@/services/messagingService");
       const counts = await getMyMessageCounts({ force: true });
       setMessageCount(counts.total);
     } catch (e) {
@@ -81,6 +88,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setProfileLoading(true);
       setAdminLoading(true);
 
+      const supabase = await getSupabase();
       const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
 
       if (error) {
@@ -129,6 +137,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const refreshProfile = useCallback(async () => {
+    const supabase = await getSupabase();
     const { data, error } = await supabase.auth.getSession();
 
     if (error) {
@@ -141,6 +150,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     const applyInitialSession = (nextSession: Session | null) => {
       if (!mounted) return;
@@ -158,44 +168,57 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       handleSessionChange(null, { force: true });
     }, 6000);
 
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
-        if (error) console.error("Error getting session:", error);
-        applyInitialSession(data.session ?? null);
+    // The client arrives via dynamic import (see getSupabase) — the timeout
+    // above also covers a chunk that fails to load, so the app never hangs in
+    // the loading state.
+    getSupabase()
+      .then((supabase) => {
+        if (!mounted) return;
+
+        supabase.auth
+          .getSession()
+          .then(({ data, error }) => {
+            if (error) console.error("Error getting session:", error);
+            applyInitialSession(data.session ?? null);
+          })
+          .finally(() => {
+            window.clearTimeout(timeoutId);
+          });
+
+        const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
+          if (!mounted) return;
+
+          if (event === "INITIAL_SESSION") {
+            applyInitialSession(nextSession);
+            return;
+          }
+
+          if (event === "SIGNED_OUT") {
+            didInitRef.current = true;
+            handleSessionChange(null, { force: true });
+            return;
+          }
+
+          if (!didInitRef.current) {
+            applyInitialSession(nextSession);
+            return;
+          }
+
+          handleSessionChange(nextSession);
+        });
+
+        subscription = data.subscription;
       })
-      .finally(() => {
+      .catch((error) => {
+        console.error("Error loading Supabase client:", error);
         window.clearTimeout(timeoutId);
+        applyInitialSession(null);
       });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (!mounted) return;
-
-      if (event === "INITIAL_SESSION") {
-        applyInitialSession(nextSession);
-        return;
-      }
-
-      if (event === "SIGNED_OUT") {
-        didInitRef.current = true;
-        handleSessionChange(null, { force: true });
-        return;
-      }
-
-      if (!didInitRef.current) {
-        applyInitialSession(nextSession);
-        return;
-      }
-
-      handleSessionChange(nextSession);
-    });
 
     return () => {
       mounted = false;
       window.clearTimeout(timeoutId);
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, [handleSessionChange]);
 

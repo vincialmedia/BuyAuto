@@ -31,7 +31,7 @@ export function FounderStory() {
               {/* Floating badge */}
               <div className="absolute -bottom-2 -right-2 lg:bottom-6 lg:-left-4 bg-white rounded-xl shadow-lg px-3 py-1.5 transform group-hover:scale-110 group-hover:rotate-2 transition-all duration-300">
                 <p className="text-xs font-bold text-neutral-900">Gründer & CEO</p>
-                <p className="text-xs text-red-500">seit 2024</p>
+                <p className="text-xs text-red-600">seit 2024</p>
               </div>
             </div>
           </div>
@@ -39,7 +39,7 @@ export function FounderStory() {
           {/* Text Content */}
           <div className="space-y-5 text-center lg:text-left">
             <div>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-600 text-xs font-bold uppercase tracking-wider mb-3 hover:scale-105 transition-transform cursor-default">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-700 text-xs font-bold uppercase tracking-wider mb-3 hover:scale-105 transition-transform cursor-default">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                 Die Geschichte
               </span>

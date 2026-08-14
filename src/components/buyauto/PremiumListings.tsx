@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Listing } from "@/lib/buyauto/types";
-import { searchListings } from "@/services/listingsService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
@@ -67,6 +66,10 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     const loadPremiumListings = async () => {
       setIsLoading(true);
       try {
+        // Dynamic import keeps the Supabase client out of the homepage's
+        // critical bundle — on the homepage this effect never runs anyway
+        // (initialListings comes from getStaticProps).
+        const { searchListings } = await import("@/services/listingsService");
         const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
           searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
           searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
