@@ -10,7 +10,9 @@ import { GaragePlanCards } from "@/components/buyauto/pricing/GaragePlanCards";
 import { GarageFeatureMatrix } from "@/components/buyauto/pricing/GarageFeatureMatrix";
 import { GarageTrustRow } from "@/components/buyauto/pricing/GarageTrustRow";
 import {
+  GARAGE_CUSTOM_FROM_CHF,
   GARAGE_CUSTOM_THRESHOLD,
+  formatChf,
   garagePlanFor,
   type GaragePlanCode,
 } from "@/lib/buyauto/garagePlans";
@@ -215,7 +217,8 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
           <h4 className="text-lg font-bold text-neutral-900">Grösseres Inventar?</h4>
           <p className="text-sm text-neutral-600 mt-1 max-w-xl">
             Für Garagen mit mehr als {GARAGE_CUSTOM_THRESHOLD} Fahrzeugen oder mehreren
-            Standorten machen wir ein individuelles Angebot.
+            Standorten machen wir ein individuelles Angebot ab{" "}
+            CHF {formatChf(GARAGE_CUSTOM_FROM_CHF)}/Monat.
           </p>
         </div>
         <Button

@@ -74,8 +74,9 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
         }}
       />
 
-      <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-white" />
-
+      {/* No bottom white fade here: it sat behind the translucent USP tiles
+          and washed their lower text into white-on-white (unreadable). The
+          hero ends on a clean dark edge instead. */}
       <div className="relative container">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-white/85 text-sm font-semibold tracking-wide">

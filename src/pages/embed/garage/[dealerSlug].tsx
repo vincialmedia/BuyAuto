@@ -1,22 +1,47 @@
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import { SEO } from "@/components/SEO";
+import { supabase } from "@/integrations/supabase/client";
 import { getPublicGarageBySlug } from "@/services/garageService";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
+import { EmbedLockedNotice } from "@/components/buyauto/dealer/EmbedLockedNotice";
 
 type PublicGarage = NonNullable<Awaited<ReturnType<typeof getPublicGarageBySlug>>>;
 
 type PageProps =
   | {
-      ok: true;
+      status: "ok";
       garage: PublicGarage;
       absoluteUrl: string;
       initialQuery: Record<string, string | number | boolean>;
       embedId: string;
     }
   | {
-      ok: false;
+      status: "locked";
+      garageName: string | null;
+    }
+  | {
+      status: "error";
     };
+
+/**
+ * Whether the garage's effective package includes the website tools. The RPC
+ * resolves the same entitlement chain the app uses (override → subscription →
+ * garages.plan) under SECURITY DEFINER, so it works with the anon key.
+ * Fails OPEN: a transient error must not blank a paying dealer's website.
+ */
+async function websiteToolsEnabled(garageId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc("get_garage_website_tools_enabled", {
+      p_garage_id: garageId,
+    });
+    if (error) throw error;
+    return data !== false;
+  } catch (e) {
+    console.error("embed: website-tools check failed, failing open", e);
+    return true;
+  }
+}
 
 function parseNumber(value: string | string[] | undefined): number | undefined {
   const v = Array.isArray(value) ? value[0] : value;
@@ -34,11 +59,17 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
   const dealerSlugRaw = ctx.params?.dealerSlug;
   const dealerSlug = typeof dealerSlugRaw === "string" ? dealerSlugRaw : null;
 
-  if (!dealerSlug) return { props: { ok: false } };
+  if (!dealerSlug) return { props: { status: "error" } };
 
   try {
     const garage = await getPublicGarageBySlug(dealerSlug);
     if (!garage || !garage.slug) return { notFound: true };
+
+    // The slug is public (it's the profile URL), so without this check the
+    // "Website-Tools" fence would be dashboard-cosmetics only.
+    if (!(await websiteToolsEnabled(garage.id))) {
+      return { props: { status: "locked", garageName: garage.garage_name ?? null } };
+    }
 
     const base =
       (process.env.NEXT_PUBLIC_SITE_URL || "").trim() ||
@@ -65,7 +96,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 
     return {
       props: {
-        ok: true,
+        status: "ok",
         garage,
         absoluteUrl,
         initialQuery,
@@ -73,12 +104,16 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       },
     };
   } catch {
-    return { props: { ok: false } };
+    return { props: { status: "error" } };
   }
 };
 
 export default function DealerInventoryEmbedPage(props: PageProps) {
-  if (!props.ok) {
+  if (props.status === "locked") {
+    return <EmbedLockedNotice garageName={props.garageName} />;
+  }
+
+  if (props.status === "error") {
     return (
       <main className="min-h-screen bg-white">
         <div className="mx-auto max-w-4xl px-4 py-10">

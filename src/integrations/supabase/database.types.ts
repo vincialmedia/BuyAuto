@@ -1835,6 +1835,10 @@ export type Database = {
           slug: string
         }[]
       }
+      get_garage_website_tools_enabled: {
+        Args: { p_garage_id: string }
+        Returns: boolean
+      }
       get_listing_cover_image: {
         Args: { p_cover_index: number; p_cover_url: string; p_images: Json }
         Returns: string

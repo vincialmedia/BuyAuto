@@ -7,7 +7,7 @@ import {
   GARAGE_PLAN_ORDER,
   GARAGE_PLANS,
   formatChf,
-  planValueLine,
+  perVehicleLine,
   type GaragePlanCode,
 } from "@/lib/buyauto/garagePlans";
 
@@ -106,7 +106,7 @@ export function GaragePlanCards({
                 <div className="mt-5 grid grid-cols-2 gap-2">
                   <div className="rounded-2xl bg-neutral-900/5 px-3 py-2.5 text-center">
                     <div className="text-lg font-bold text-neutral-900">{plan.listingLimit}</div>
-                    <div className="text-[11px] leading-tight text-neutral-600">Inserate</div>
+                    <div className="text-[11px] leading-tight text-neutral-600">Fahrzeuge online</div>
                   </div>
                   <div
                     className={cn(
@@ -122,11 +122,11 @@ export function GaragePlanCards({
                     >
                       {plan.premiumPerMonth}
                     </div>
-                    <div className="text-[11px] leading-tight text-neutral-600">Premium / Monat</div>
+                    <div className="text-[11px] leading-tight text-neutral-600">Premium-Boosts / Mt.</div>
                   </div>
                 </div>
 
-                <p className="mt-3 text-xs text-neutral-500">{planValueLine(plan)}</p>
+                <p className="mt-3 text-xs text-neutral-500">{perVehicleLine(plan)}</p>
 
                 <div className="mt-5 space-y-2">
                   {plan.highlights.map((feature) => (

@@ -9,6 +9,7 @@ import {
 } from "@/components/buyauto/pricing/PricingToggle";
 import { PrivatePricingSection } from "@/components/buyauto/pricing/PrivatePricingSection";
 import { GaragePricingSection } from "@/components/buyauto/pricing/GaragePricingSection";
+import { PrivatVsGarageSection } from "@/components/buyauto/pricing/PrivatVsGarageSection";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 
 export default function GaragePreisePage() {
@@ -26,6 +27,13 @@ export default function GaragePreisePage() {
   useEffect(() => {
     setPersona(initialPersona);
   }, [initialPersona]);
+
+  // CTA in the Privat-vs-Garage block below: switch the toggle and bring the
+  // plans back into view so the change is visible.
+  const handleSelectPersona = (next: PricingPersona) => {
+    setPersona(next);
+    document.getElementById("plaene")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <>
@@ -55,7 +63,7 @@ export default function GaragePreisePage() {
         <PricingHero persona={persona} onPersonaChange={setPersona} />
 
         <main className="relative">
-          <div className="container py-10 sm:py-12">
+          <div id="plaene" className="container py-10 sm:py-12 scroll-mt-6">
             <div className="flex justify-center sm:hidden mb-8">
               <div className="rounded-3xl bg-neutral-900 px-4 py-3 text-white w-full max-w-[520px]">
                 <div className="flex justify-center">
@@ -71,6 +79,12 @@ export default function GaragePreisePage() {
                 <GaragePricingSection key="garage" />
               )}
             </AnimatePresence>
+
+            {/* The toggle above shows one persona at a time — this block is
+                where both stand side by side, whatever the toggle says. */}
+            <div className="mt-14 border-t border-neutral-200 pt-12">
+              <PrivatVsGarageSection onSelectPersona={handleSelectPersona} />
+            </div>
           </div>
         </main>
       </div>
