@@ -3,15 +3,22 @@
 // The measurement ID is inlined at build time, so it must be referenced as a
 // full literal `process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID` — a computed lookup
 // would come back undefined in the browser bundle.
+// Ships with the buyauto.ch property's ID compiled in, same reasoning as the
+// Ads ID below: the GA4 property exists and reporting depends on the tag, so a
+// missing env var on a deployment must not silently switch it off. The env var
+// overrides (set it to an empty string to disable GA, e.g. on a fork or in
+// local dev).
 // Surrounding quotes are stripped: pasting `"G-XXXX"` into a Vercel env var is
 // an easy mistake and would otherwise fail the check below and disable GA with
 // no visible symptom.
-export const GA_MEASUREMENT_ID = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "")
+const RAW_GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+export const GA_MEASUREMENT_ID = (RAW_GA_ID === undefined ? "G-6GJ6D58G1S" : RAW_GA_ID)
   .trim()
   .replace(/^["']|["']$/g, "");
 
-// Everything below no-ops when the ID is unset, so preview/local builds without
-// the env var behave exactly as they did before GA existed.
+// Everything below no-ops when the resolved ID is empty or malformed (env var
+// explicitly set to "" — the local-dev default via .env.local — or a typo'd
+// override), so such builds behave exactly as they did before GA existed.
 export const isGaEnabled = /^G-[A-Z0-9]+$/i.test(GA_MEASUREMENT_ID);
 
 if (typeof window !== "undefined" && GA_MEASUREMENT_ID && !isGaEnabled) {
@@ -22,11 +29,12 @@ if (typeof window !== "undefined" && GA_MEASUREMENT_ID && !isGaEnabled) {
   );
 }
 
-// Google Ads conversion/remarketing tag. Unlike the GA4 ID this one ships with a
-// default: the account it belongs to is fixed for buyauto.ch and the campaigns
-// depend on it being live in production, so it must not silently vanish when an
-// env var is missing from a deployment. The override exists so a fork or a test
-// account can point somewhere else — set it to an empty string to switch Ads off.
+// Google Ads conversion/remarketing tag. Ships with a default for the same
+// reason as the GA4 ID above: the account it belongs to is fixed for buyauto.ch
+// and the campaigns depend on it being live in production, so it must not
+// silently vanish when an env var is missing from a deployment. The override
+// exists so a fork or a test account can point somewhere else — set it to an
+// empty string to switch Ads off.
 // NEXT_PUBLIC_GADS_ID is the canonical override (format "AW-XXXXXXXXX");
 // NEXT_PUBLIC_GOOGLE_ADS_ID is honoured for backwards compatibility. Every
 // consumer — the base tag config and each conversion's send_to — resolves the
