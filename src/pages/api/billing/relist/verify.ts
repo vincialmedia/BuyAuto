@@ -83,7 +83,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 'skipped' is a success from the caller's perspective: the webhook (or an
     // earlier verify call) already republished it.
-    return res.status(200).json({ success: true, outcome: result.outcome });
+    // amount_chf lets the client report the conversion with the amount Stripe
+    // actually charged — the relist price varies by plan, so the session total
+    // is the only trustworthy source.
+    const amountChf =
+      typeof checkoutSession.amount_total === "number"
+        ? Math.round(checkoutSession.amount_total / 100)
+        : null;
+    return res.status(200).json({ success: true, outcome: result.outcome, amount_chf: amountChf });
   } catch (err: unknown) {
     console.error("relist.verify error:", err);
     return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });

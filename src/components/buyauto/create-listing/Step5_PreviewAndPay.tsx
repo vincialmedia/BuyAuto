@@ -24,6 +24,7 @@ import { uploadListingImages } from "@/services/storageService";
 import { clearGuestImages } from "@/lib/buyauto/guestImageStore";
 import type { ListingUpdatePayload } from "@/services/createListingService";
 import { ADS_CONVERSIONS, trackAdsConversion, trackEvent } from "@/lib/analytics/gtag";
+import { GADS_LABEL_PUBLISH, trackConversionOnce } from "@/lib/gads";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -567,6 +568,15 @@ export default function Step5_PreviewAndPay() {
           // here, so the premium check also consults the fetched listing.
           const paidChf = paymentIntent.amount / 100;
           trackEvent("listing_published", { deal_type: dealType, value: paidChf, currency: "CHF" });
+          // Google Ads publish conversion with the amount actually charged.
+          // Keyed by the payment intent, so the back button restoring the
+          // ?payment_confirmed URL (which re-runs this handler) — or this
+          // payment being observed again anywhere else — cannot double-count.
+          trackConversionOnce(
+            `listing-payment:${paymentIntent.id}`,
+            GADS_LABEL_PUBLISH,
+            paidChf > 0 ? paidChf : undefined,
+          );
 
           const confirmedListingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
           const listingId = confirmedListingId;
@@ -802,6 +812,8 @@ export default function Step5_PreviewAndPay() {
           premium: false,
           deal_type: dealType,
         });
+        // Google Ads publish conversion — free tier, so no value.
+        trackConversionOnce(`listing-publish:${listingIdToUse}`, GADS_LABEL_PUBLISH);
         toast({ title: "Erfolgreich", description: "Dein kostenloses Inserat wird geprüft." });
         setIsComplete(true);
         return;
@@ -952,6 +964,9 @@ export default function Step5_PreviewAndPay() {
 
       // Garage listings publish instantly — no payment, but still a funnel event.
       trackEvent("listing_published", { seller: "garage", deal_type: dealType });
+      // Google Ads publish conversion — nothing was paid here, so no value.
+      // (The "already published" early return above deliberately doesn't fire.)
+      trackConversionOnce(`listing-publish:${listingIdToUse}`, GADS_LABEL_PUBLISH);
       toast({
         title: "Inserat veröffentlicht!",
         description: "Dein Inserat ist jetzt live.",
@@ -1025,6 +1040,19 @@ export default function Step5_PreviewAndPay() {
       });
       trackAdsConversion(ADS_CONVERSIONS.premiumPurchase, { value: total, currency: "CHF" });
     }
+
+    // Google Ads publish conversion with the paid amount. The dedupe key is the
+    // payment intent behind the client secret — the same identity the redirect
+    // return path uses — so one payment yields exactly one conversion no matter
+    // which confirmation path (or how many of them) observes it.
+    const paymentKey =
+      (clientSecret ?? "").split("_secret")[0] ||
+      (typeof data.id === "string" && data.id.length > 0 ? data.id : "unknown");
+    trackConversionOnce(
+      `listing-payment:${paymentKey}`,
+      GADS_LABEL_PUBLISH,
+      total > 0 ? total : undefined,
+    );
 
     toast({
       title: "Zahlung erfolgreich!",

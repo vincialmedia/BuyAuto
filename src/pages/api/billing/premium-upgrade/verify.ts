@@ -87,7 +87,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: "Premium konnte nicht aktiviert werden. Bitte lade die Seite neu." });
     }
 
-    return res.status(200).json({ success: true });
+    // amount_chf lets the client report the conversion with the amount Stripe
+    // actually charged, rather than re-deriving it from price config.
+    return res.status(200).json({ success: true, amount_chf: amountChf });
   } catch (err: unknown) {
     console.error("premium-upgrade.verify error:", err);
     return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
