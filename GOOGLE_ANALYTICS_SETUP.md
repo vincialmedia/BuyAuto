@@ -68,8 +68,11 @@ multi-product snippet works.
 Unlike the measurement ID it is **not** required as an env var: the ID is
 compiled in as the default, because the campaigns depend on it being live and a
 missing variable on a deployment must not silently switch conversion tracking
-off. `NEXT_PUBLIC_GOOGLE_ADS_ID` overrides it (set it to an empty string to
-disable the tag, e.g. on a fork or a staging deployment).
+off. `NEXT_PUBLIC_GADS_ID` overrides it (format `AW-XXXXXXXXX`; set it to an
+empty string to disable the tag, e.g. on a fork or a staging deployment). The
+legacy name `NEXT_PUBLIC_GOOGLE_ADS_ID` is still honoured when the canonical
+one is unset. Base tag and every conversion `send_to` resolve from the same
+value, so they cannot diverge.
 
 Differences from the GA4 config, both deliberate:
 
@@ -86,13 +89,21 @@ A conversion action reads as **"not detected"** in Google Ads until something on
 the site actually fires it — the base tag alone is never enough, which is the
 usual reason the troubleshooter comes back red on a freshly installed tag.
 
-Labels live in `ADS_CONVERSIONS` in `src/lib/analytics/gtag.ts`; each is the part
-after the slash in the `AW-XXXXXXXXX/LabelHere` string shown under the
-conversion's *Tag einrichten* in Google Ads.
+Labels live in `ADS_CONVERSIONS` in `src/lib/analytics/gtag.ts` — or, for the
+listing-funnel conversions, in env vars read by `src/lib/gads.ts`. Either way a
+label is the part after the slash in the `AW-XXXXXXXXX/LabelHere` string shown
+under the conversion's *Tag einrichten* in Google Ads.
 
-| Conversion action | Fires on | Where |
-| --- | --- | --- |
-| Submit lead form | A guest seller creates an account to publish their listing (registration only — signing in with an existing account does not count) | `src/components/buyauto/create-listing/GuestAuthGate.tsx` |
+| Conversion action | Label source | Fires on | Where |
+| --- | --- | --- | --- |
+| Submit lead form | `ADS_CONVERSIONS.submitLeadForm` | A guest seller creates an account to publish their listing (registration only — signing in with an existing account does not count) | `src/components/buyauto/create-listing/GuestAuthGate.tsx` |
+| Listing creation started | `NEXT_PUBLIC_GADS_LABEL_START` | First meaningful interaction with the creation form on `/inserat-erstellen` (first input/change in any field; once per browser session, not in edit mode) | `src/components/buyauto/create-listing/ListingWizard.tsx` |
+| Listing published / paid upgrade | `NEXT_PUBLIC_GADS_LABEL_PUBLISH` | Every successful publish (free, paid — embedded or TWINT/3DS redirect — and garage), plus payment success for a listing upgrade (premium boost, relist, paid plan change). `value` carries the CHF actually paid when there was a payment; value-less otherwise. Deduped per payment via `transaction_id` + a session guard, so a publish and its payment confirmation count once. | `Step5_PreviewAndPay.tsx`, `dashboard/ListingsSection.tsx` |
+
+The env-label conversions no-op while their env var is unset, so the call sites
+ship safely before the conversion actions exist in Google Ads. All three
+`NEXT_PUBLIC_GADS_*` vars are build-time-inlined — set them in Vercel and
+redeploy (see `.env.local` for the placeholder block).
 
 To add another, put its label in `ADS_CONVERSIONS` and call it from the success
 path:

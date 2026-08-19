@@ -29,7 +29,8 @@ import StatusBadge from "./StatusBadge";
 import SelectBuyerDialog from "./SelectBuyerDialog";
 import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
 import { selectBuyerAndMarkListingSold } from "@/services/messagingService";
-import { RELIST_PROMO_ACTIVE, relistPriceChf } from "@/lib/buyauto/stripe_config";
+import { PREMIUM_BOOST_PRICE, RELIST_PROMO_ACTIVE, relistPriceChf } from "@/lib/buyauto/stripe_config";
+import { GADS_LABEL_PUBLISH, trackConversionOnce } from "@/lib/gads";
 import { DECLINE_DELETE_AFTER_DAYS, DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyauto/draftLifecycle";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
@@ -196,11 +197,29 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     const run = async () => {
       if (status === "success" && sessionId) {
         try {
-          await fetch("/api/billing/premium-upgrade/verify", {
+          const res = await fetch("/api/billing/premium-upgrade/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ session_id: sessionId }),
           });
+          if (res.ok) {
+            let amountChf: number | undefined;
+            try {
+              const json = (await res.json()) as { amount_chf?: unknown };
+              if (typeof json?.amount_chf === "number") amountChf = json.amount_chf;
+            } catch {
+              /* body is optional — fall back to the configured boost price */
+            }
+            // Google Ads: a paid listing upgrade counts as the same conversion
+            // action as a paid publish. Keyed by the checkout session, so a
+            // reload of this URL (the query params survive) or a payment the
+            // publish flow already reported cannot double-count.
+            trackConversionOnce(
+              `listing-payment:${sessionId}`,
+              GADS_LABEL_PUBLISH,
+              amountChf ?? PREMIUM_BOOST_PRICE,
+            );
+          }
         } catch (error) {
           console.error("Error verifying premium upgrade payment:", error);
         }
@@ -224,11 +243,25 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     const run = async () => {
       if (status === "success" && sessionId) {
         try {
-          await fetch("/api/billing/relist/verify", {
+          const res = await fetch("/api/billing/relist/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ session_id: sessionId }),
           });
+          if (res.ok) {
+            let amountChf: number | undefined;
+            try {
+              const json = (await res.json()) as { amount_chf?: unknown };
+              if (typeof json?.amount_chf === "number") amountChf = json.amount_chf;
+            } catch {
+              /* body is optional */
+            }
+            // Google Ads: paid relist = paid listing upgrade, same conversion
+            // action as a paid publish, session-keyed against double-firing.
+            // The relist price varies by plan, so only the server-reported
+            // amount is trusted — without it the conversion fires value-less.
+            trackConversionOnce(`listing-payment:${sessionId}`, GADS_LABEL_PUBLISH, amountChf);
+          }
         } catch (error) {
           console.error("Error verifying relist payment:", error);
         }

@@ -27,7 +27,11 @@ if (typeof window !== "undefined" && GA_MEASUREMENT_ID && !isGaEnabled) {
 // depend on it being live in production, so it must not silently vanish when an
 // env var is missing from a deployment. The override exists so a fork or a test
 // account can point somewhere else — set it to an empty string to switch Ads off.
-const RAW_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
+// NEXT_PUBLIC_GADS_ID is the canonical override (format "AW-XXXXXXXXX");
+// NEXT_PUBLIC_GOOGLE_ADS_ID is honoured for backwards compatibility. Every
+// consumer — the base tag config and each conversion's send_to — resolves the
+// ID from this one value, so the two can never diverge.
+const RAW_ADS_ID = process.env.NEXT_PUBLIC_GADS_ID ?? process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
 export const GOOGLE_ADS_ID = (RAW_ADS_ID === undefined ? "AW-18317910859" : RAW_ADS_ID)
   .trim()
   .replace(/^["']|["']$/g, "");
@@ -36,7 +40,7 @@ export const isAdsEnabled = /^AW-[0-9]+$/i.test(GOOGLE_ADS_ID);
 
 if (typeof window !== "undefined" && GOOGLE_ADS_ID && !isAdsEnabled) {
   console.warn(
-    `[analytics] NEXT_PUBLIC_GOOGLE_ADS_ID is set to "${GOOGLE_ADS_ID}" but is not a valid Google Ads ID (expected AW-XXXXXXXXX). Google Ads tracking is disabled.`,
+    `[analytics] NEXT_PUBLIC_GADS_ID / NEXT_PUBLIC_GOOGLE_ADS_ID is set to "${GOOGLE_ADS_ID}" but is not a valid Google Ads ID (expected AW-XXXXXXXXX). Google Ads tracking is disabled.`,
   );
 }
 
