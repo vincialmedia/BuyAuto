@@ -1,7 +1,8 @@
 import type { GetStaticProps } from "next";
 import Head from "next/head";
+import Image from "next/image";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
-import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
+import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
@@ -190,6 +191,17 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
         <meta property="og:url" content="https://www.buyauto.ch/leasing-abgeben-schweiz" />
       </Head>
 
+      {/* The visible crumb bar is gone (the full-bleed hero leaves no room for
+          it), but the BreadcrumbList structured data stays so the cluster
+          hierarchy is unchanged for search. */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Leasingübernahme", href: "/leasinguebernahme" },
+          { name: "Leasing abgeben", href: "/leasing-abgeben-schweiz" },
+        ]}
+      />
+
       <div className="bg-white">
         {/* STICKY CTA BAR */}
         <div
@@ -222,70 +234,71 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
           </div>
         </div>
 
-        {/* BREADCRUMBS — kept for SEO, but as a thin bar so it costs the hero
-            almost no vertical space. */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3">
-          <Breadcrumbs
-            items={[
-              { name: "Home", href: "/" },
-              { name: "Leasingübernahme", href: "/leasinguebernahme" },
-              { name: "Leasing abgeben", href: "/leasing-abgeben-schweiz" },
-            ]}
-          />
-        </div>
-
         {/* HERO — the whole offer (headline, promise, CTA, proof) plus the
-            calculator must land in the first screenful. Nothing decorative is
-            allowed to push the CTA below the fold. */}
-        <section className="relative overflow-hidden">
-          {/* Light, cheap background. The previous 2.5 MB handshake PNG was the
-              LCP element and sat under a near-opaque white gradient, so it cost
-              load time and read as empty space. */}
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-neutral-50 to-white" />
-          <div className="absolute top-0 right-0 -z-10 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
+            calculator must land in the first screenful. The cinematic alpine
+            shot matches the homepage hero, so ad → home → landing page read as
+            one brand. The overlay is left-weighted: text sits on the darkest
+            part, the car stays visible mid-frame. */}
+        <section className="relative overflow-hidden bg-neutral-950">
+          <div className="absolute inset-0">
+            <Image
+              src="/hero-porsche.png"
+              alt="Rotes Porsche Macan Leasingfahrzeug auf Schweizer Bergstrasse"
+              fill
+              priority
+              fetchPriority="high"
+              className="object-cover object-[65%_55%]"
+              sizes="100vw"
+              // Same trade-off as the homepage hero: q60 AVIF/WebP is visually
+              // indistinguishable under the dark overlay and keeps the LCP
+              // payload small.
+              quality={60}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/95 via-neutral-950/75 to-neutral-950/35" />
+            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/90 via-transparent to-neutral-950/30" />
+          </div>
 
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 lg:pt-8 lg:pb-16">
+          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12 lg:pt-14 lg:pb-16">
             <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-12 items-center">
               {/* Left: offer */}
               <div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-neutral-900 tracking-tight leading-[1.05] mb-5">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.05] mb-5">
                   Leasing abgeben –<br />
                   <span className="text-primary">ohne teure Kündigung.</span>
                 </h1>
 
-                <p className="text-lg md:text-xl text-neutral-600 leading-relaxed mb-7">
+                <p className="text-lg md:text-xl text-white/85 leading-relaxed mb-7 drop-shadow-sm">
                   Übergib deinen Leasingvertrag an eine Nachfolgerin oder einen Nachfolger: Sie übernehmen die
                   Restraten, du zahlst nur die Umschreibegebühr von typischerweise rund CHF {TRANSFER_FEE_CHF}.
                 </p>
 
                 <CtaButton
                   location="hero"
-                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 px-8 py-7 text-lg font-bold rounded-2xl"
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/40 px-8 py-7 text-lg font-bold rounded-2xl"
                 />
-                <p className="mt-3 text-sm text-neutral-500">
+                <p className="mt-3 text-sm text-white/60">
                   Gratis · 60 Tage online · Login erst beim Veröffentlichen
                 </p>
 
-                <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-neutral-700">
+                <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-white/90">
                   {[
                     "Keine Vorfälligkeitsentschädigung",
                     "Bankseitige Abwicklung in wenigen Tagen",
                     "100% legal – der Vertrag läuft weiter",
                   ].map((item) => (
                     <li key={item} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600 shrink-0" />
+                      <Check className="w-4 h-4 text-green-400 shrink-0" />
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
 
-              {/* Right: the calculator, promoted out of the middle of the page.
-                  It is the one element that makes the offer personal ("these are
-                  YOUR CHF 10'800"), so it belongs next to the CTA, not 1000px
-                  below it. */}
+              {/* Right: the calculator. It is the one element that makes the
+                  offer personal ("these are YOUR CHF 10'800"), so it floats as
+                  a white card directly on the hero, next to the CTA. */}
               <div id="calculator" className="scroll-mt-24">
-                <div className="bg-white rounded-3xl border border-neutral-200 shadow-xl shadow-neutral-900/5 p-6 md:p-8">
+                <div className="bg-white rounded-3xl ring-1 ring-white/20 shadow-2xl shadow-black/40 p-6 md:p-8">
                   <h2 className="text-xl font-black text-neutral-900 mb-1">Was kostet dich der Ausstieg?</h2>
                   <p className="text-sm text-neutral-500 mb-6">
                     Stell deinen Vertrag ein – transparent, ohne Schönrechnen.
@@ -370,7 +383,8 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
         </section>
 
         {/* OPTIONS COMPARISON — the decision the visitor came to make, so it is
-            the first thing under the hero. */}
+            the first thing under the hero. Bento layout: the recommended path
+            gets the large card, the two expensive paths stack beside it. */}
         <section className="py-16 px-4 bg-white">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12 max-w-3xl mx-auto">
@@ -385,102 +399,111 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Option 1: Cancellation */}
-              <Card className="border-2 border-red-100 rounded-3xl overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="bg-red-50 p-6">
-                    <div className="bg-red-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
-                      <XCircle className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Vorzeitige Kündigung</h3>
-                    <div className="text-xs font-bold text-red-600 bg-red-200 inline-block px-3 py-1 rounded-full">
-                      TEUERSTE OPTION
-                    </div>
-                  </div>
-                  <div className="p-6 bg-white">
-                    <ul className="space-y-3">
-                      {[
-                        "Restschuld für verbleibende Vertragsdauer",
-                        "Vorfälligkeitsentschädigung",
-                        "Rücknahmekosten",
-                        "Kosten bei Schäden",
-                      ].map((item) => (
-                        <li key={item} className="flex items-start gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0" />
-                          <span className="text-neutral-700 text-sm">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-sm text-neutral-500 italic mt-5">Fast immer die teuerste Lösung</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Option 2: Selling */}
-              <Card className="border-2 border-orange-100 rounded-3xl overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="bg-orange-50 p-6">
-                    <div className="bg-orange-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
-                      <AlertTriangle className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Auto verkaufen</h3>
-                    <div className="text-xs font-bold text-orange-600 bg-orange-200 inline-block px-3 py-1 rounded-full">
-                      UNSICHER
-                    </div>
-                  </div>
-                  <div className="p-6 bg-white">
-                    <ul className="space-y-3">
-                      {[
-                        "Niedriger Ankaufpreis",
-                        "Risiko eines Wertverlusts",
-                        "Weiterlaufende Raten",
-                        "Unerwartete Zusatzgebühren",
-                      ].map((item) => (
-                        <li key={item} className="flex items-start gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-2 shrink-0" />
-                          <span className="text-neutral-700 text-sm">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-sm text-neutral-500 italic mt-5">Nur bei hohem Marktwert sinnvoll</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Option 3: Transfer — the recommended path, visually dominant */}
-              <Card className="border-2 border-green-400 rounded-3xl overflow-hidden shadow-xl relative lg:-mt-3">
+              {/* The winner dominates the grid: two thirds of the width, full
+                  height, its own CTA. */}
+              <Card className="lg:col-span-2 lg:row-span-2 border-2 border-green-400 rounded-3xl overflow-hidden shadow-xl relative">
                 <div className="absolute top-4 right-4 z-10">
                   <div className="bg-green-600 text-white text-xs font-black px-3 py-1.5 rounded-full">EMPFOHLEN</div>
                 </div>
-                <CardContent className="p-0">
-                  <div className="bg-green-50 p-6">
+                <CardContent className="p-0 h-full flex flex-col">
+                  <div className="bg-green-50 p-6 md:p-8">
                     <div className="bg-green-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
                       <BadgeCheck className="w-5 h-5" />
                     </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Leasingübernahme</h3>
+                    <h3 className="text-2xl md:text-3xl font-black text-neutral-900 mb-2">Leasingübernahme</h3>
                     <div className="text-xs font-bold text-green-700 bg-green-200 inline-block px-3 py-1 rounded-full">
                       BESTE LÖSUNG
                     </div>
                   </div>
-                  <div className="p-6 bg-white">
-                    <ul className="space-y-3 mb-6">
-                      {[
-                        "Schneller Ausstieg",
-                        "Keine Strafzahlungen",
-                        "Kein Verkauf nötig",
-                        "Win-Win für beide Seiten",
-                      ].map((item) => (
-                        <li key={item} className="flex items-start gap-3">
-                          <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                          <span className="text-neutral-700 text-sm font-medium">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <CtaButton
-                      location="options_compare"
-                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 rounded-2xl"
-                    />
+                  <div className="p-6 md:p-8 bg-white flex-1 flex flex-col">
+                    <div className="grid sm:grid-cols-2 gap-6 mb-6">
+                      <ul className="space-y-3">
+                        {[
+                          "Schneller Ausstieg",
+                          "Keine Strafzahlungen",
+                          "Kein Verkauf nötig",
+                          "Win-Win für beide Seiten",
+                        ].map((item) => (
+                          <li key={item} className="flex items-start gap-3">
+                            <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                            <span className="text-neutral-700 text-sm font-medium">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="rounded-2xl bg-neutral-50 border border-neutral-200 p-5">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-1">
+                          Deine Kosten
+                        </p>
+                        <p className="text-2xl font-black text-green-700 mb-1">~ CHF {TRANSFER_FEE_CHF}</p>
+                        <p className="text-sm text-neutral-600 leading-relaxed">
+                          Nur die Umschreibegebühr deiner Leasingbank. Die Restraten zahlt dein Nachfolger.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-auto">
+                      <CtaButton
+                        location="options_compare"
+                        className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-bold px-8 py-6 rounded-2xl"
+                      />
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* The two expensive paths, compact, stacked in the third column */}
+              <Card className="border border-red-100 rounded-3xl overflow-hidden bg-red-50/50">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-red-600 text-white w-9 h-9 rounded-xl flex items-center justify-center shrink-0">
+                      <XCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-neutral-900 leading-tight">Vorzeitige Kündigung</h3>
+                      <span className="text-[11px] font-bold text-red-600">TEUERSTE OPTION</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-2">
+                    {[
+                      "Restschuld für verbleibende Vertragsdauer",
+                      "Vorfälligkeitsentschädigung",
+                      "Rücknahmekosten",
+                      "Kosten bei Schäden",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                        <span className="text-neutral-700 text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-neutral-500 italic mt-4">Fast immer die teuerste Lösung</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-orange-100 rounded-3xl overflow-hidden bg-orange-50/50">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-orange-600 text-white w-9 h-9 rounded-xl flex items-center justify-center shrink-0">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-neutral-900 leading-tight">Auto verkaufen</h3>
+                      <span className="text-[11px] font-bold text-orange-600">UNSICHER</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-2">
+                    {[
+                      "Niedriger Ankaufpreis",
+                      "Risiko eines Wertverlusts",
+                      "Weiterlaufende Raten",
+                      "Unerwartete Zusatzgebühren",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
+                        <span className="text-neutral-700 text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-neutral-500 italic mt-4">Nur bei hohem Marktwert sinnvoll</p>
                 </CardContent>
               </Card>
             </div>
@@ -495,8 +518,8 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
           </div>
         </section>
 
-        {/* PROCESS — five steps in one horizontal band instead of five
-            full-width stacked cards. */}
+        {/* PROCESS — five steps in one horizontal band. A hairline behind the
+            number tiles connects them into a timeline on desktop. */}
         <section id="ablauf" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
@@ -509,32 +532,38 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
               </p>
             </div>
 
-            <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-              {[
-                { step: 1, title: "Vertrag prüfen", desc: "Restwert, Laufzeit und Kilometerstand checken", icon: FileText },
-                { step: 2, title: "Bank kontaktieren", desc: "Konditionen für die Übernahme klären", icon: Phone },
-                { step: 3, title: "Inserat erstellen", desc: "Auf BuyAuto.ch veröffentlichen und Nachfolger finden", icon: Search },
-                { step: 4, title: "Bonitätsprüfung", desc: "Leasingbank prüft den Übernehmer", icon: ShieldCheck },
-                { step: 5, title: "Umschreibung", desc: "Vertrag umschreiben, Fahrzeug übergeben – fertig!", icon: CheckCircle },
-              ].map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <li
-                    key={item.step}
-                    className="bg-white rounded-2xl p-6 border border-neutral-200 hover:border-primary/40 hover:shadow-lg transition-all duration-300"
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-black shrink-0">
-                        {item.step}
-                      </span>
-                      <IconComponent className="w-5 h-5 text-primary" />
-                    </div>
-                    <h3 className="text-lg font-black text-neutral-900 mb-2">{item.title}</h3>
-                    <p className="text-neutral-600 text-sm leading-relaxed">{item.desc}</p>
-                  </li>
-                );
-              })}
-            </ol>
+            <div className="relative">
+              {/* Timeline hairline: sits at the vertical centre of the number
+                  tiles (p-6 card padding + half the h-9 tile). lg only, where
+                  the five cards share one row. */}
+              <div className="hidden lg:block absolute left-8 right-8 top-[42px] h-px bg-neutral-300" aria-hidden />
+              <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+                {[
+                  { step: 1, title: "Vertrag prüfen", desc: "Restwert, Laufzeit und Kilometerstand checken", icon: FileText },
+                  { step: 2, title: "Bank kontaktieren", desc: "Konditionen für die Übernahme klären", icon: Phone },
+                  { step: 3, title: "Inserat erstellen", desc: "Auf BuyAuto.ch veröffentlichen und Nachfolger finden", icon: Search },
+                  { step: 4, title: "Bonitätsprüfung", desc: "Leasingbank prüft den Übernehmer", icon: ShieldCheck },
+                  { step: 5, title: "Umschreibung", desc: "Vertrag umschreiben, Fahrzeug übergeben – fertig!", icon: CheckCircle },
+                ].map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <li
+                      key={item.step}
+                      className="relative bg-white rounded-2xl p-6 border border-neutral-200 hover:border-primary/40 hover:shadow-lg transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-black shrink-0">
+                          {item.step}
+                        </span>
+                        <IconComponent className="w-5 h-5 text-primary" />
+                      </div>
+                      <h3 className="text-lg font-black text-neutral-900 mb-2">{item.title}</h3>
+                      <p className="text-neutral-600 text-sm leading-relaxed">{item.desc}</p>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
 
             <div className="mt-10 text-center">
               <CtaButton
@@ -669,8 +698,9 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
           </div>
         </section>
 
-        {/* FINAL CTA — one action, no competing button. */}
-        <section className="py-20 bg-neutral-900 px-4 relative overflow-hidden">
+        {/* FINAL CTA — one action, no competing button. neutral-950 bookends
+            the hero so the page opens and closes on the same dark stage. */}
+        <section className="py-20 bg-neutral-950 px-4 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 left-0 w-96 h-96 bg-primary rounded-full blur-3xl" />
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary rounded-full blur-3xl" />
