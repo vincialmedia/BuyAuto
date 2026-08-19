@@ -114,9 +114,9 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
   const [months, setMonths] = useState(24);
   const [monthlyRate, setMonthlyRate] = useState(450);
 
-  // The one number the calculator can state honestly: a takeover moves exactly
-  // these rates to the successor. It doubles as the Kündigung anchor ("bis
-  // CHF X") — cancellation can cost up to the whole remaining obligation.
+  // The one number the calculator can state honestly: cancellation can cost up
+  // to the whole remaining obligation, so it anchors the Kündigung box ("bis
+  // CHF X").
   const remainingObligation = months * monthlyRate;
 
   const heroChips =
@@ -325,16 +325,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                   />
                 </div>
 
-                <div className="mt-6 px-[18px] py-4 bg-neutral-50 border border-neutral-200 rounded-[14px] flex justify-between items-center gap-3.5">
-                  <span className="text-[13px] leading-[1.4] text-neutral-600 max-w-[190px]">
-                    Restraten, die dein Nachfolger übernimmt
-                  </span>
-                  <span className="text-[26px] leading-tight font-black tracking-[-0.02em] text-neutral-900 whitespace-nowrap">
-                    {fmtChf(remainingObligation)}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mt-3">
+                <div className="grid grid-cols-2 gap-3 mt-6">
                   <div className="bg-red-600 rounded-[14px] px-4 py-3.5">
                     <p className="text-[10.5px] font-extrabold tracking-[0.06em] uppercase text-white/70">Kündigung</p>
                     {/* No nowrap here: at max slider values ("bis CHF 120’000")
