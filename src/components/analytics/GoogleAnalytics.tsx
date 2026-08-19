@@ -12,6 +12,7 @@ import {
   pageview,
 } from "@/lib/analytics/gtag";
 import { rememberAiReferral } from "@/lib/analytics/aiReferral";
+import { isChromeFreeRoute } from "@/lib/routes";
 
 /**
  * Loads gtag.js and reports client-side navigations.
@@ -28,12 +29,11 @@ import { rememberAiReferral } from "@/lib/analytics/aiReferral";
 export function GoogleAnalytics() {
   const router = useRouter();
 
-  // /embed pages are iframed onto dealer sites, where MainLayout strips the
-  // cookie banner — so consent can never be asked for or given there. Don't
-  // load the tag at all rather than load it and stay permanently silent.
-  const isEmbed =
-    router.pathname === "/embed" || router.pathname.startsWith("/embed/");
-  const enabled = isTagEnabled && !isEmbed;
+  // MainLayout strips the cookie banner from chrome-free routes — /embed, which
+  // is iframed onto dealer sites, and the Padkos pages, which are a different
+  // brand — so consent can never be asked for or given there. Don't load the
+  // tag at all rather than load it and stay permanently silent.
+  const enabled = isTagEnabled && !isChromeFreeRoute(router.pathname);
 
   const pendingNavigationIsShallow = useRef(false);
   const initialPageViewHandled = useRef(false);
