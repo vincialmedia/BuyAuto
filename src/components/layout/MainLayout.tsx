@@ -22,6 +22,11 @@ interface MainLayoutProps {
 // space under the header and there is nothing to jump to.
 const FOCUSED_FLOW_ROUTES = new Set(["/inserat-erstellen"]);
 
+// Paid-traffic conversion pages render their own minimal funnel header (logo,
+// trust line, one CTA — no nav, no login) so ad clicks have exactly one exit.
+// The full footer stays: its legal links are the page's only other exits.
+const FUNNEL_ROUTES = new Set(["/leasing-abgeben-schweiz"]);
+
 export default function MainLayout({ children }: MainLayoutProps) {
   const router = useRouter();
 
@@ -52,6 +57,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </main>
         <CookieConsent />
       </div>
+    );
+  }
+
+  if (FUNNEL_ROUTES.has(router.pathname)) {
+    return (
+      <>
+        <main>{children}</main>
+        <Footer />
+        <CookieConsent />
+      </>
     );
   }
 
