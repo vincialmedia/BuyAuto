@@ -97,13 +97,14 @@ under the conversion's *Tag einrichten* in Google Ads.
 | Conversion action | Label source | Fires on | Where |
 | --- | --- | --- | --- |
 | Submit lead form | `ADS_CONVERSIONS.submitLeadForm` | A guest seller creates an account to publish their listing (registration only — signing in with an existing account does not count) | `src/components/buyauto/create-listing/GuestAuthGate.tsx` |
-| Listing creation started | `NEXT_PUBLIC_GADS_LABEL_START` | First meaningful interaction with the creation form on `/inserat-erstellen` (first input/change in any field; once per browser session, not in edit mode) | `src/components/buyauto/create-listing/ListingWizard.tsx` |
-| Listing published / paid upgrade | `NEXT_PUBLIC_GADS_LABEL_PUBLISH` | Every successful publish (free, paid — embedded or TWINT/3DS redirect — and garage), plus payment success for a listing upgrade (premium boost, relist, paid plan change). `value` carries the CHF actually paid when there was a payment; value-less otherwise. Deduped per payment via `transaction_id` + a session guard, so a publish and its payment confirmation count once. | `Step5_PreviewAndPay.tsx`, `dashboard/ListingsSection.tsx` |
+| Listing creation started („Inserat gestartet“) | compiled default in `src/lib/gads.ts`; `NEXT_PUBLIC_GADS_LABEL_START` overrides | First meaningful interaction with the creation form on `/inserat-erstellen` (first input/change in any field; once per browser session, not in edit mode) | `src/components/buyauto/create-listing/ListingWizard.tsx` |
+| Listing published / paid upgrade („Inserat veröffentlicht“) | compiled default in `src/lib/gads.ts`; `NEXT_PUBLIC_GADS_LABEL_PUBLISH` overrides | Every successful publish (free, paid — embedded or TWINT/3DS redirect — and garage), plus payment success for a listing upgrade (premium boost, relist, paid plan change). `value` carries the CHF actually paid when there was a payment; value-less otherwise. Deduped per payment via `transaction_id` + a session guard, so a publish and its payment confirmation count once. | `Step5_PreviewAndPay.tsx`, `dashboard/ListingsSection.tsx` |
 
-The env-label conversions no-op while their env var is unset, so the call sites
-ship safely before the conversion actions exist in Google Ads. All three
-`NEXT_PUBLIC_GADS_*` vars are build-time-inlined — set them in Vercel and
-redeploy (see `.env.local` for the placeholder block).
+Like the Ads ID, the two listing-funnel labels are compiled in as defaults, so
+**no Vercel configuration is needed** for conversion tracking to run in
+production. The `NEXT_PUBLIC_GADS_*` env vars exist as build-time-inlined
+overrides only (set a label to an empty string to switch that conversion off,
+e.g. on a fork); after changing one in Vercel, redeploy.
 
 To add another, put its label in `ADS_CONVERSIONS` and call it from the success
 path:

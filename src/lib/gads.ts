@@ -15,9 +15,8 @@
 //   NEXT_PUBLIC_GADS_LABEL_PUBLISH  — listing published (with the paid CHF
 //                                     amount when a paid tier/upgrade was bought)
 //
-// Everything here no-ops safely when gtag.js is unavailable, the Ads ID is
-// unset/invalid, or a label env var is missing — so the call sites can ship
-// before the conversion actions exist in Google Ads.
+// Everything here no-ops safely when gtag.js is unavailable or the Ads ID is
+// unset/invalid.
 
 import { isAdsEnabled, trackAdsConversion } from "@/lib/analytics/gtag";
 
@@ -27,16 +26,33 @@ import { isAdsEnabled, trackAdsConversion } from "@/lib/analytics/gtag";
 const cleanLabel = (raw: string | undefined) =>
   (raw || "").trim().replace(/^["']|["']$/g, "");
 
+// Compiled-in defaults, same reasoning as the Ads ID in gtag.ts: the campaigns
+// depend on these conversions firing in production, so a missing env var on a
+// deployment must not silently switch them off. They belong to the
+// "Inserat gestartet" / "Inserat veröffentlicht" actions in the
+// AW-18317910859 account; labels ship in the public bundle either way, so they
+// are not secrets. The env vars override — set one to an empty string to
+// disable that conversion (e.g. on a fork or a test deployment).
+const DEFAULT_LABEL_START = "-f3wCPWDmeQcEMvG1J5E";
+const DEFAULT_LABEL_PUBLISH = "nB-nCPKDmeQcEMvG1J5E";
+
 // Env vars must be referenced as full literals — Next.js inlines NEXT_PUBLIC_*
 // at build time and a computed lookup comes back undefined in the browser.
-export const GADS_LABEL_START = cleanLabel(process.env.NEXT_PUBLIC_GADS_LABEL_START);
-export const GADS_LABEL_PUBLISH = cleanLabel(process.env.NEXT_PUBLIC_GADS_LABEL_PUBLISH);
+const RAW_LABEL_START = process.env.NEXT_PUBLIC_GADS_LABEL_START;
+const RAW_LABEL_PUBLISH = process.env.NEXT_PUBLIC_GADS_LABEL_PUBLISH;
+
+export const GADS_LABEL_START = cleanLabel(
+  RAW_LABEL_START === undefined ? DEFAULT_LABEL_START : RAW_LABEL_START,
+);
+export const GADS_LABEL_PUBLISH = cleanLabel(
+  RAW_LABEL_PUBLISH === undefined ? DEFAULT_LABEL_PUBLISH : RAW_LABEL_PUBLISH,
+);
 
 /**
  * Reports a Google Ads conversion for `label`. When `value` is given it is sent
  * as a CHF conversion value (the actual amount paid); omit it for value-less
  * conversions. No-ops on the server, when gtag/the Ads ID is unavailable, or
- * when the label is empty (i.e. its env var is not configured).
+ * when the label is empty (its env var set to an empty string to disable it).
  */
 export function trackConversion(label: string, value?: number): void {
   if (typeof window === "undefined" || !isAdsEnabled || !label) return;
