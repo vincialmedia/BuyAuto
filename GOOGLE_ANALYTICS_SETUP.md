@@ -26,24 +26,18 @@ and stopped the moment the site began deploying from this repository.
 | `src/components/buyauto/CookieConsent.tsx` | Banner now has **Ablehnen** and **Einverstanden**; both write a Consent Mode update covering analytics *and* advertising storage. |
 | `src/pages/datenschutz.tsx` | Privacy policy matches actual behaviour, incl. opt-out path. |
 
-## Required step: set the measurement ID
+## The measurement ID
 
-The tag only renders when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is present at **build**
-time (Next.js inlines `NEXT_PUBLIC_*` into the client bundle — setting it at
-runtime has no effect).
+The BuyAuto property's Measurement ID (`G-6GJ6D58G1S`) is **compiled in as the
+default** in `src/lib/analytics/gtag.ts` — like the Ads ID and the conversion
+labels, it ships in the public bundle either way, and a missing env var on a
+deployment must not silently switch reporting off. **No Vercel configuration is
+needed.**
 
-1. In [Google Analytics](https://analytics.google.com/) → **Admin** → **Data streams**,
-   open (or create) the web stream for `https://www.buyauto.ch` and copy the
-   **Measurement ID** — format `G-XXXXXXXXXX`.
-2. In Vercel → project → **Settings** → **Environment Variables**, add:
-
-   | Key | Value | Environments |
-   | --- | --- | --- |
-   | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | `G-XXXXXXXXXX` | Production (and Preview, if you want preview traffic) |
-
-3. **Redeploy.** Existing deployments were built without the variable and will not
-   pick it up.
-4. For local development, add the same line to `.env.local`.
+`NEXT_PUBLIC_GA_MEASUREMENT_ID` overrides the default at **build** time (Next.js
+inlines `NEXT_PUBLIC_*` into the client bundle — setting it at runtime has no
+effect; redeploy after changing it). Set it to an empty string to disable GA —
+`.env.local` does exactly that so local development never pollutes the stats.
 
 ## Verifying
 
