@@ -25,7 +25,7 @@ const FOCUSED_FLOW_ROUTES = new Set(["/inserat-erstellen"]);
 // Paid-traffic conversion pages render their own minimal funnel header (logo,
 // trust line, one CTA — no nav, no login) so ad clicks have exactly one exit.
 // The full footer stays: its legal links are the page's only other exits.
-const FUNNEL_ROUTES = new Set(["/leasing-abgeben-schweiz"]);
+const FUNNEL_ROUTES = new Set(["/lp/leasing-abgeben"]);
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const router = useRouter();
