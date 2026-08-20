@@ -5,6 +5,7 @@ import Header from "@/components/buyauto/Header";
 // so footer links are in the server HTML for SEO and there is no post-hydration
 // layout jump from the placeholder swap.
 import { Footer } from "@/components/buyauto/Footer";
+import { LpFooter } from "@/components/buyauto/LpFooter";
 
 // CookieConsent is purely client-side interaction
 const CookieConsent = dynamic(() => import("@/components/buyauto/CookieConsent").then(mod => mod.CookieConsent), {
@@ -64,7 +65,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     return (
       <>
         <main>{children}</main>
-        <Footer />
+        <LpFooter />
         <CookieConsent />
       </>
     );

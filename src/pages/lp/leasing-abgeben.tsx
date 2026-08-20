@@ -2,7 +2,7 @@ import type { GetStaticProps } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CircleCheck, Shield, SlidersHorizontal, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -82,7 +82,8 @@ const initialsOf = (name?: string | null) =>
 
 /**
  * Every conversion click on this page goes through here, so GA4/Ads can tell
- * which slot actually produced the listing (header vs. calculator vs. slab).
+ * which slot actually produced the listing (header, calculator, steps, slab
+ * or the mobile sticky bar).
  */
 function CtaButton({
   location,
@@ -109,9 +110,23 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
   const [months, setMonths] = useState(24);
   const [monthlyRate, setMonthlyRate] = useState(450);
 
-  // The one number the calculator can state honestly: cancellation can cost up
-  // to the whole remaining obligation, so it anchors the Kündigung box ("bis
-  // CHF X").
+  // Mobile sticky CTA: appears once the hero (which carries two CTAs of its
+  // own) has fully scrolled out, so the bar never competes with them.
+  const heroRef = useRef<HTMLElement>(null);
+  const [showStickyCTA, setShowStickyCTA] = useState(false);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    const observer = new IntersectionObserver(([entry]) => setShowStickyCTA(!entry.isIntersecting));
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, []);
+
+  // The one number the calculator can state honestly: a takeover moves exactly
+  // these rates to the successor. Shown only as that context — never as a
+  // cancellation-cost figure (see the UWG note at the Restraten box).
   const remainingObligation = months * monthlyRate;
 
   const heroChips =
@@ -139,6 +154,26 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
       </Head>
 
       <div className="bg-white">
+        {/* STICKY MOBILE CTA — takes over once the hero's own CTAs scroll out.
+            Mobile only: on desktop the sticky funnel header already keeps a
+            CTA visible. LpFooter carries a matching bottom spacer so the bar
+            never covers the footer's last line. */}
+        <div
+          className={`fixed bottom-0 left-0 right-0 z-50 md:hidden transition-transform duration-300 ${
+            showStickyCTA ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          <div className="bg-neutral-900 border-t border-white/10 shadow-2xl px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-white text-sm font-bold leading-tight">Bereit, dein Leasing abzugeben?</p>
+                <p className="text-white/60 text-xs leading-tight mt-0.5">Gratis inserieren · 60 Tage online</p>
+              </div>
+              <CtaButton location="sticky_bar" className="shrink-0 h-11 px-4 text-sm font-bold rounded-xl" />
+            </div>
+          </div>
+        </div>
+
         {/* FUNNEL HEADER — replaces the global site header on this page (see
             MainLayout's FUNNEL_ROUTES): logo, one trust line, one CTA. No nav,
             no login — ad traffic gets exactly one thing to click. */}
@@ -167,7 +202,7 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
 
         {/* HERO — dark stage, alpine shot at 55% under the gradient, offer
             left, calculator card right. The calculator is the focal point. */}
-        <section className="relative bg-[#0a0a0a] overflow-hidden">
+        <section ref={heroRef} className="relative bg-[#0a0a0a] overflow-hidden">
           <Image
             src="/hero-macan-mountain.png"
             alt=""
@@ -277,16 +312,24 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-6">
-                  <div className="bg-red-600 rounded-[14px] px-4 py-3.5">
-                    <p className="text-[10.5px] font-extrabold tracking-[0.06em] uppercase text-white/70">Kündigung</p>
-                    {/* No nowrap here: at max slider values ("bis CHF 120’000")
-                        the figure must wrap instead of clipping on mobile. */}
-                    <p className="mt-1 text-xl leading-tight font-black text-white">
-                      bis {fmtChf(remainingObligation)}
-                    </p>
-                    <p className="mt-0.5 text-[11px] leading-tight text-white/70">je nach Bank & Vertrag</p>
-                  </div>
+                {/* The dynamic figure is deliberately labelled as what the
+                    successor takes over, NOT as cancellation cost: real
+                    cancellation is a bank-specific recalculation (Restwert,
+                    Vorfälligkeitsentschädigung, fees), so presenting the full
+                    remaining-rates sum as "Kündigung bis CHF X" would be an
+                    unsubstantiated claim (UWG Art. 3). */}
+                <div className="mt-6 px-[18px] py-4 bg-neutral-50 border border-neutral-200 rounded-[14px] flex justify-between items-center gap-3.5">
+                  <span className="text-[13px] leading-[1.4] text-neutral-600 max-w-[190px]">
+                    Restraten, die dein Nachfolger übernimmt
+                  </span>
+                  {/* Smaller on phones so even the max value ("CHF 120’000")
+                      stays on one line next to the two-line label. */}
+                  <span className="text-[22px] sm:text-[26px] leading-tight font-black tracking-[-0.02em] text-neutral-900 whitespace-nowrap">
+                    {fmtChf(remainingObligation)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-3">
                   <div className="relative bg-emerald-50 border border-emerald-200 rounded-[14px] px-4 py-3.5">
                     <span className="absolute -top-[11px] right-3 text-[9.5px] font-extrabold tracking-[0.06em] uppercase px-2.5 py-1 rounded-full bg-amber-400 text-amber-900 shadow-[0_0_0_3px_#fffbeb,0_0_14px_rgba(251,191,36,0.65)] whitespace-nowrap">
                       Beste Lösung
@@ -294,6 +337,11 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
                     <p className="text-[10.5px] font-extrabold tracking-[0.06em] uppercase text-emerald-700">Übernahme</p>
                     <p className="mt-1 text-xl leading-tight font-black text-emerald-700 whitespace-nowrap">CHF 0 – 650</p>
                     <p className="mt-0.5 text-[11px] leading-tight text-emerald-600">Umschreibegebühr</p>
+                  </div>
+                  <div className="bg-red-600 rounded-[14px] px-4 py-3.5">
+                    <p className="text-[10.5px] font-extrabold tracking-[0.06em] uppercase text-white/70">Kündigung</p>
+                    <p className="mt-1 text-xl leading-tight font-black text-white">Mehrere tausend</p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-white/70">je nach Bank & Vertrag</p>
                   </div>
                 </div>
 
@@ -404,13 +452,6 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
             </div>
           </div>
 
-          <p className="mt-5 text-[13px] text-neutral-500 text-center">
-            Wie die Übernahme im Detail funktioniert, liest du unter{" "}
-            <Link href="/leasinguebernahme" className="font-semibold text-red-600 hover:text-red-700">
-              Leasingübernahme
-            </Link>
-            .
-          </p>
         </section>
 
         {/* LIVE TAKEOVER LISTINGS — real, current social proof. The cards stay
