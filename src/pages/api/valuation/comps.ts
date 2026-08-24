@@ -5,12 +5,10 @@ import {
   autolinaCategoryUrl,
   baseModel,
   comparisCategoryUrl,
-  displacementOf,
   extractPrices,
   identifyCategoryUrl,
   identifyListingUrl,
   isNewVehicleText,
-  matchesDisplacement,
   parseCategoryMarkdown,
   parseDetailMarkdown,
   parseListingText,
@@ -229,6 +227,17 @@ function resultsToComps(
   return { comps, onMarketplace };
 }
 
+/** Drop duplicate price/km pairs (same car listed twice). */
+function dedupeByPriceKm(comps: CompOut[]): CompOut[] {
+  const uniquePairs = new Set<string>();
+  return comps.filter((c) => {
+    const key = `${c.price}:${c.km}`;
+    if (uniquePairs.has(key)) return false;
+    uniquePairs.add(key);
+    return true;
+  });
+}
+
 /**
  * `searchStats` must contain ONLY the round-1 search tiers. The round-2 scrape
  * pushes a synthetic stat whose counts describe pages fetched, not listings
@@ -412,17 +421,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     autolinaCategoryUrl(makeStr, modelStr),
     ...categoryUrls,
   ].filter((u, i, arr) => arr.indexOf(u) === i);
-  // Gate on comps that will SURVIVE the trim filter, not on the raw haul. Round 1
-  // routinely returns a full set of wrong-engine Golfs; counting those as "enough"
-  // skipped the deterministic inventory scrape and then the filter deleted them
-  // all, handing the user an empty result while the AS24/comparis Golf inventory
-  // pages (full of real 1.5 TSI cards) were never fetched.
-  // Counts CONFIRMED matches only — engine-less cards are usable as a top-up but
-  // are not a reason to stop looking for the real thing.
-  const requestedDisplacement = displacementOf(modelStr);
-  const viableSoFar = requestedDisplacement
-    ? comps.filter((c) => matchesDisplacement(c.title, modelStr, c.url)).length
-    : comps.length;
+  // Gate on comps that will SURVIVE selection, not on the raw haul: run the
+  // real (pure, cheap) selectComps over the round-1 harvest and count what it
+  // would actually put into the median. An earlier gate anticipated only the
+  // trim filter and counted 5 raw i8s as "enough" — then the near-new filter
+  // deleted 3 of them and the valuation ran on the 2 survivors (a CHF 124'900
+  // Coupé and a CHF 49'900 Roadster) while the AS24/comparis i8 inventory pages,
+  // full of normal cards, were never fetched. Any filter inside selectComps
+  // (trim, body variant, near-new, outliers) must depress this count, so the
+  // preview IS the selection, not a re-implementation of it.
+  // Counts CONFIRMED picks only (minus top-ups) — engine-less cards are usable
+  // as a top-up but are not a reason to stop looking for the real thing.
+  comps = dedupeByPriceKm(comps);
+  const preview = selectComps(comps, modelStr, kmNum);
+  const viableSoFar = preview.picked.length - preview.toppedUp;
   if (viableSoFar < MAX_COMPS && withinBudget()) {
     const catPages = orderedCategoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
     const detailPages = candidates.slice(0, MAX_SCRAPES - catPages.length);
@@ -509,28 +521,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  // Drop duplicate price/km pairs (same car listed twice).
-  const uniquePairs = new Set<string>();
-  comps = comps.filter((c) => {
-    const key = `${c.price}:${c.km}`;
-    if (uniquePairs.has(key)) return false;
-    uniquePairs.add(key);
-    return true;
-  });
+  // Round 2 may have re-harvested a round-1 car — dedupe again before selection.
+  comps = dedupeByPriceKm(comps);
 
-  // Quality guards + km-similarity pick. Pure and unit-tested in compsParser.
+  // Quality guards + km-similarity pick. Pure functions in compsParser.
   const {
     picked,
     relaxed,
     toppedUp,
     droppedForTrim,
+    droppedForBody,
     droppedNearNew,
     droppedOutliers,
+    mixedBody,
     unverifiedAvailable,
     harvested,
   } = selectComps(comps, modelStr, kmNum);
-  // Counters are disjoint (trim | near-new | outlier) so the funnel log adds up.
-  const droppedForQuality = droppedForTrim + droppedNearNew + droppedOutliers;
+  // Counters are disjoint (trim | body | near-new | outlier) so the funnel log adds up.
+  const droppedForQuality = droppedForTrim + droppedForBody + droppedNearNew + droppedOutliers;
 
   // The search actually ran (Firecrawl was billed) — commit ONE search against
   // the logged-in user's quota now, not before, so a platform failure above
@@ -545,9 +553,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     stats,
     harvested,
     droppedForTrim,
+    droppedForBody,
     droppedNearNew,
     droppedOutliers,
     droppedForQuality,
+    mixedBody,
     unverifiedAvailable,
     toppedUp,
     picked: picked.length,
@@ -563,34 +573,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Diagnostics only — never let logging break the search response.
   }
 
-  // A zero result caused by the trim filter (we DID find this model, just not
-  // the requested engine) needs its own message so the user knows to enter the
-  // matching listings by hand rather than thinking the model doesn't exist.
+  // A zero result caused by the trim/body filters (we DID find this model, just
+  // not the requested engine or variant) needs its own message so the user knows
+  // to enter the matching listings by hand rather than thinking the model
+  // doesn't exist.
   const trimZero = picked.length === 0 && droppedForTrim > 0;
+  const bodyZero = picked.length === 0 && !trimZero && droppedForBody > 0;
   const modelLabel = `${queryMake} ${baseModel(modelStr)}`.trim();
   const diagnosis =
     picked.length > 0
       ? undefined
       : trimZero
         ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Motorisierung (${modelStr}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
-        : buildDiagnosis(searchStats, candidatesTried);
+        : bodyZero
+          ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Karosserie-Variante (${modelStr}). Erfasse 3–5 passende Vergleichsfahrzeuge manuell.`
+          : buildDiagnosis(searchStats, candidatesTried);
 
   return res.status(200).json({
     comps: picked,
     queried: stats.map((s) => s.query),
     quota: quota ?? undefined,
     diagnosis,
+    // The picked set blends distinct body variants (e.g. Coupé + Roadster) —
+    // the client should treat the result as a range, not a point estimate.
+    mixedBody,
     warning:
       picked.length === 0
         ? trimZero
           ? `Keine ${modelStr}-Inserate mit passender Motorisierung gefunden – erfasse sie manuell.`
-          : "Keine Vergleichsinserate gefunden – erfasse sie manuell."
+          : bodyZero
+            ? `Keine ${modelStr}-Inserate mit passender Karosserie-Variante gefunden – erfasse sie manuell.`
+            : "Keine Vergleichsinserate gefunden – erfasse sie manuell."
         : picked.length < 3
           ? "Nur wenige Vergleichsinserate gefunden – prüf die Werte und ergänze manuell."
-          : toppedUp > 0
-            ? "Bei einigen Inseraten ist die Motorisierung nicht ausgewiesen – prüf sie kurz nach."
-            : relaxed
-              ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
-              : undefined,
+          : mixedBody
+            ? "Die Treffer mischen verschiedene Karosserie-Varianten (z.B. Coupé und Roadster) – entferne unpassende und rechne neu."
+            : toppedUp > 0
+              ? "Bei einigen Inseraten ist die Motorisierung nicht ausgewiesen – prüf sie kurz nach."
+              : relaxed
+                ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
+                : undefined,
   });
 }

@@ -16,6 +16,7 @@ import {
   ExternalLink,
   ArrowRight,
   Pencil,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +76,6 @@ interface CalculatorState {
   year: number;
   vehicleKm: number;
   comps: CompRow[];
-  kmRate: number;        // CHF pro km Laufleistungs-Differenz
   reconCost: number;     // Aufbereitung & Reparaturen (fix)
   warrantyCost: number;  // Garantie-Rückstellung (fix)
   standingCost: number;  // Standzeit & Kapitalbindung (fix)
@@ -99,9 +99,30 @@ interface CalcResult {
   offerMax: number;
   offerShare: number; // Eintauschwert in % vom Marktwert
   compCount: number;
+  /** marketMax / marketMin der angeglichenen Preise; null wenn nicht sinnvoll. */
+  spreadFactor: number | null;
+  /** Zu wenige oder zu stark streuende Vergleichswerte — Spanne statt Punktwert zeigen. */
+  lowConfidence: boolean;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
+
+// Laufleistungs-Angleich: ein Auto verliert grob diesen Anteil seines Werts pro
+// 10'000 km. Wert-proportional statt eines fixen Rappenbetrags — 10 Rp./km war
+// auf die Golf-Klasse (~CHF 20'000) kalibriert und hat sechsstellige Fahrzeuge
+// praktisch nicht angeglichen (CHF 7'000 Korrektur bei 70'000 km Differenz auf
+// einem CHF 130'000-Roadster). 5%/10'000 km ergibt für den 20k-Golf weiterhin
+// die bewährten ~10 Rp./km.
+const KM_ADJUST_PCT_PER_10K = 5;
+// Bei extremen km-Differenzen läuft die lineare Korrektur aus dem Ruder —
+// Angleich auf ±50% des Inseratspreises begrenzen.
+const KM_ADJUST_CAP = 0.5;
+
+// Unter 3 Vergleichsfahrzeugen oder ab diesem Faktor zwischen teuerstem und
+// günstigstem angeglichenen Preis ist der Median keine belastbare Punktschätzung
+// mehr — das Ergebnis wird als Spanne mit Warnung präsentiert.
+const MIN_CONFIDENT_COMPS = 3;
+const MAX_CONFIDENT_SPREAD = 1.8;
 
 const DEFAULT_STATE: CalculatorState = {
   make: "",
@@ -113,7 +134,6 @@ const DEFAULT_STATE: CalculatorState = {
     { price: 0, km: 0 },
     { price: 0, km: 0 },
   ],
-  kmRate: 0.10,
   reconCost: 800,
   warrantyCost: 500,
   standingCost: 300,
@@ -132,7 +152,6 @@ const PRESET_GOLF: CalculatorState = {
     { price: 17500, km: 82000 },
     { price: 16900, km: 95000 },
   ],
-  kmRate: 0.10,
   reconCost: 800,
   warrantyCost: 500,
   standingCost: 300,
@@ -179,14 +198,23 @@ function compute(state: CalculatorState): CalcResult | null {
   if (validComps.length === 0) return null;
 
   // Laufleistungs-Angleich: hat das Vergleichsfahrzeug MEHR km als unseres,
-  // ist unser Fahrzeug entsprechend mehr wert (und umgekehrt).
-  const adjustedPrices = validComps.map(
-    (c) => c.price + (c.km - state.vehicleKm) * state.kmRate
-  );
+  // ist unser Fahrzeug entsprechend mehr wert (und umgekehrt). Die Korrektur
+  // skaliert mit dem Fahrzeugwert (KM_ADJUST_PCT_PER_10K), gedeckelt auf ±50%.
+  const adjustedPrices = validComps.map((c) => {
+    const factor = 1 + (KM_ADJUST_PCT_PER_10K / 100) * ((c.km - state.vehicleKm) / 10_000);
+    const clamped = Math.min(1 + KM_ADJUST_CAP, Math.max(1 - KM_ADJUST_CAP, factor));
+    return c.price * clamped;
+  });
 
   const marketValue = median(adjustedPrices);
   const marketMin = Math.min(...adjustedPrices);
   const marketMax = Math.max(...adjustedPrices);
+
+  const spreadFactor = marketMin > 0 ? marketMax / marketMin : null;
+  const lowConfidence =
+    validComps.length < MIN_CONFIDENT_COMPS ||
+    spreadFactor === null ||
+    spreadFactor > MAX_CONFIDENT_SPREAD;
 
   const marginValue =
     state.marginMode === 'percent'
@@ -215,6 +243,8 @@ function compute(state: CalculatorState): CalcResult | null {
     offerMax,
     offerShare: marketValue > 0 ? (offer / marketValue) * 100 : 0,
     compCount: validComps.length,
+    spreadFactor,
+    lowConfidence,
   };
 }
 
@@ -602,7 +632,6 @@ export function EintauschwertRechner() {
     setState((prev) => ({
       ...DEFAULT_STATE,
       comps: DEFAULT_STATE.comps.map((c) => ({ ...c })),
-      kmRate: prev.kmRate,
       reconCost: prev.reconCost,
       warrantyCost: prev.warrantyCost,
       standingCost: prev.standingCost,
@@ -873,13 +902,14 @@ export function EintauschwertRechner() {
     </div>
   );
 
-  // The km correction is applied silently (state.kmRate, 10 Rp./km) — an
-  // editable "CHF/km" factor confused every tester, so it's explained, not asked.
+  // The km correction is applied silently (KM_ADJUST_PCT_PER_10K) — an editable
+  // factor confused every tester, so it's explained, not asked.
   const kmAdjustNote = (
     <p className="text-xs text-neutral-500 leading-relaxed">
       <strong className="text-neutral-700">Kilometerstand wird automatisch berücksichtigt:</strong>{" "}
       Vergleichsautos mit mehr Kilometern als deins sind entsprechend günstiger – der Rechner
-      gleicht das mit 10 Rp. pro Kilometer aus. Beispiel: 20&apos;000 km Unterschied ≈ CHF 2&apos;000.
+      gleicht das mit rund {KM_ADJUST_PCT_PER_10K}% des Inseratspreises pro 10&apos;000 km
+      Differenz aus. Beispiel: CHF 20&apos;000-Auto, 20&apos;000 km Unterschied ≈ CHF 2&apos;000.
     </p>
   );
 
@@ -1504,19 +1534,57 @@ export function EintauschwertRechner() {
               Ergebnis{vehicleLabel ? ` – ${vehicleLabel}` : ""}
             </h3>
 
+            {/* Zu dünne oder zu breit streuende Datenbasis: die Spanne IST das
+                Ergebnis — ein einzelner selbstbewusster Punktwert wäre gelogen. */}
+            {result.lowConfidence && (
+              <div className="max-w-2xl mx-auto mb-8 bg-amber-500/10 border border-amber-500/40 rounded-xl p-4 sm:p-5 flex gap-3 text-left">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-sm text-neutral-200 leading-relaxed">
+                  <p className="font-bold text-amber-300 mb-1">
+                    Unsichere Bewertung – nimm die Spanne, nicht den Mittelwert
+                  </p>
+                  <p>
+                    {result.compCount < MIN_CONFIDENT_COMPS &&
+                      `Nur ${result.compCount} Vergleichsfahrzeug${result.compCount === 1 ? "" : "e"} vorhanden. `}
+                    {result.spreadFactor !== null &&
+                      result.spreadFactor > MAX_CONFIDENT_SPREAD &&
+                      `Die angeglichenen Preise liegen um Faktor ${result.spreadFactor.toFixed(1)} auseinander – vermutlich stecken unterschiedliche Varianten oder Ausstattungen in den Treffern. `}
+                    Prüf die Vergleichsinserate, entferne unpassende und ergänze 3–5 wirklich
+                    vergleichbare – die Neuberechnung ist gratis.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 md:gap-8 mb-10">
               {/* MARKET VALUE */}
               <div className="flex-1 bg-white/5 rounded-xl p-6 border border-white/10">
                 <div className="text-sm font-medium text-neutral-400 mb-4">
                   Marktwert (Verkaufspreis)
                 </div>
-                <div className="text-3xl font-bold">CHF {chf(result.marketValue)}</div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  Median aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
-                </div>
-                <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                  Spanne: CHF {chf(result.marketMin)} – {chf(result.marketMax)}
-                </div>
+                {result.lowConfidence ? (
+                  <>
+                    <div className="text-2xl sm:text-3xl font-bold">
+                      CHF {chf(result.marketMin)} – {chf(result.marketMax)}
+                    </div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      Spanne aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
+                      Median: CHF {chf(result.marketValue)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold">CHF {chf(result.marketValue)}</div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      Median aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
+                      Spanne: CHF {chf(result.marketMin)} – {chf(result.marketMax)}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* VS Divider */}
@@ -1527,20 +1595,48 @@ export function EintauschwertRechner() {
               </div>
 
               {/* OFFER */}
-              <div className="flex-1 bg-green-500/5 rounded-xl p-6 border border-green-500/50 shadow-lg shadow-green-900/20">
+              <div
+                className={`flex-1 rounded-xl p-6 border shadow-lg ${
+                  result.lowConfidence
+                    ? "bg-amber-500/5 border-amber-500/50 shadow-amber-900/20"
+                    : "bg-green-500/5 border-green-500/50 shadow-green-900/20"
+                }`}
+              >
                 <div className="text-sm font-medium text-neutral-400 mb-4 flex justify-between items-start">
-                  Dein Eintauschwert (Angebot)
-                  <Badge className="bg-green-500 hover:bg-green-600 text-white border-none">
-                    {result.offerShare.toFixed(0)}% vom Marktwert
-                  </Badge>
+                  {result.lowConfidence ? "Dein Eintauschwert (Spanne)" : "Dein Eintauschwert (Angebot)"}
+                  {result.lowConfidence ? (
+                    <Badge className="bg-amber-500 hover:bg-amber-600 text-neutral-950 border-none">
+                      Grobe Schätzung
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-green-500 hover:bg-green-600 text-white border-none">
+                      {result.offerShare.toFixed(0)}% vom Marktwert
+                    </Badge>
+                  )}
                 </div>
-                <div className="text-4xl font-bold text-green-400">CHF {chf(result.offer)}</div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  Marktwert minus Abzüge, gerundet auf CHF 50
-                </div>
-                <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                  Verhandlungs-Spanne: CHF {chf(result.offerMin)} – {chf(result.offerMax)}
-                </div>
+                {result.lowConfidence ? (
+                  <>
+                    <div className="text-2xl sm:text-3xl font-bold text-amber-400">
+                      CHF {chf(result.offerMin)} – {chf(result.offerMax)}
+                    </div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      Marktwert-Spanne minus Abzüge, gerundet auf CHF 50
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
+                      Rechnerischer Mittelwert: CHF {chf(result.offer)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-4xl font-bold text-green-400">CHF {chf(result.offer)}</div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      Marktwert minus Abzüge, gerundet auf CHF 50
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
+                      Verhandlungs-Spanne: CHF {chf(result.offerMin)} – {chf(result.offerMax)}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1591,9 +1687,16 @@ export function EintauschwertRechner() {
               <div className="max-w-2xl mx-auto mt-4 p-4 bg-black/20 rounded-lg text-xs text-neutral-400 font-mono">
                 <p className="mb-2 font-bold text-white">Berechnungslogik:</p>
                 <div className="space-y-1">
-                  <p>Angeglichener Preis = Inseratspreis, korrigiert um die km-Differenz (10 Rp./km)</p>
+                  <p>
+                    Angeglichener Preis = Inseratspreis ± {KM_ADJUST_PCT_PER_10K}% pro 10&apos;000 km
+                    Differenz (max. ±{Math.round(KM_ADJUST_CAP * 100)}%)
+                  </p>
                   <p>Marktwert = Median der angeglichenen Preise</p>
                   <p>Eintauschwert = Marktwert − Aufbereitung − Garantie − Standzeit − Marge</p>
+                  <p>
+                    Unter {MIN_CONFIDENT_COMPS} Inseraten oder ab Faktor {MAX_CONFIDENT_SPREAD} zwischen
+                    günstigstem und teuerstem Preis wird die Spanne statt des Medians gezeigt
+                  </p>
                 </div>
                 <p className="mt-3 text-neutral-500">
                   Angeglichene Vergleichspreise: {result.adjustedPrices.map((p) => chf(p)).join(" / ")}
