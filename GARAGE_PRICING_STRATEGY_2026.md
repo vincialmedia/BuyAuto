@@ -2,6 +2,11 @@
 
 Stand: Juli 2026. Grundlage für den Umbau der Garagen-Pakete in diesem Branch.
 
+> **Update 14.8.2026:** Die Stückzahlen aus Abschnitt 4 wurden nachjustiert
+> (Growth/Pro waren gegenüber der Privatseite und den Budget-Konkurrenten zu
+> grosszügig) — aktueller Stand und Begründung in
+> `GARAGE_PRICING_REBALANCE_AUG_2026.md`.
+
 ---
 
 ## 1. Ausgangslage

@@ -48,15 +48,17 @@ export default function AuthPage() {
       const search = window.location.search;
       const asPath = router.asPath; // Next.js original path before any history.replaceState
       
+      // Only explicit recovery markers this app controls flip the page into
+      // the «Neues Passwort» view. A bare `code=` is NOT enough: Supabase PKCE
+      // signup-confirmation links also arrive as ?code=..., and treating them
+      // as recovery showed fresh registrants a password-reset form. The
+      // PASSWORD_RECOVERY auth event above stays the authoritative signal.
       if (
-        hash.includes("type=recovery") || 
-        hash.includes("recovery") ||
+        hash.includes("type=recovery") ||
         search.includes("type=recovery") ||
         search.includes("reset=true") ||
-        search.includes("code=") ||
         asPath.includes("type=recovery") ||
         asPath.includes("reset=true") ||
-        asPath.includes("code=") ||
         router.query.type === "recovery" ||
         router.query.reset === "true"
       ) {

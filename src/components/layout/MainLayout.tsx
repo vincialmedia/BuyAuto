@@ -5,6 +5,7 @@ import Header from "@/components/buyauto/Header";
 // so footer links are in the server HTML for SEO and there is no post-hydration
 // layout jump from the placeholder swap.
 import { Footer } from "@/components/buyauto/Footer";
+import { LpFooter } from "@/components/buyauto/LpFooter";
 
 // CookieConsent is purely client-side interaction
 const CookieConsent = dynamic(() => import("@/components/buyauto/CookieConsent").then(mod => mod.CookieConsent), {
@@ -21,6 +22,11 @@ interface MainLayoutProps {
 // on the step they just opened. Without one the flow can be centred in the
 // space under the header and there is nothing to jump to.
 const FOCUSED_FLOW_ROUTES = new Set(["/inserat-erstellen"]);
+
+// Paid-traffic conversion pages render their own minimal funnel header (logo,
+// trust line, one CTA — no nav, no login) so ad clicks have exactly one exit.
+// The full footer stays: its legal links are the page's only other exits.
+const FUNNEL_ROUTES = new Set(["/lp/leasing-abgeben"]);
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const router = useRouter();
@@ -52,6 +58,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </main>
         <CookieConsent />
       </div>
+    );
+  }
+
+  if (FUNNEL_ROUTES.has(router.pathname)) {
+    return (
+      <>
+        <main>{children}</main>
+        <LpFooter />
+        <CookieConsent />
+      </>
     );
   }
 

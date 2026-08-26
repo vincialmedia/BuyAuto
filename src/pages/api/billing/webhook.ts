@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { buffer } from "micro";
 import { adminService } from "@/services/adminService";
 import { fulfillListingRelist } from "@/lib/billing/relist-fulfillment";
+import { getPlanDetails } from "@/lib/buyauto/stripe_config";
 
 export const config = {
   api: {
@@ -387,6 +388,98 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         break;
       }
 
+      if (kind === "plan_change") {
+        // Paid upgrade of an already-published listing's package. Must be
+        // dispatched before the generic publish handling below: its premium
+        // grant and paid/pending promotion assume an initial publish, and its
+        // terminal-state guard treats 'paid' — the very state a plan change
+        // starts from — as already handled.
+        const listingId = safeString(paymentIntent.metadata?.listing_id);
+        const newPlan = safeString(paymentIntent.metadata?.plan);
+
+        if (!listingId || (newPlan !== "extended" && newPlan !== "unlimited")) {
+          console.error("Webhook: invalid plan_change metadata", {
+            listingId,
+            newPlan,
+            paymentIntentId: paymentIntent.id,
+          });
+          break;
+        }
+
+        const { data: listing } = await supabaseAdmin
+          .from("listings")
+          .select("price_plan, payment_status, status, stripe_payment_intent_id, expires_at")
+          .eq("id", listingId)
+          .single();
+
+        if (!listing) {
+          console.warn(`Webhook: listing ${listingId} not found for plan_change`);
+          break;
+        }
+
+        // Same superseded-intent rule as the publish flow below: only the
+        // intent currently attached to the listing may change its plan.
+        if (!listing.stripe_payment_intent_id || listing.stripe_payment_intent_id !== paymentIntent.id) {
+          console.warn(
+            `Webhook: plan_change intent ${paymentIntent.id} does not match listing ${listingId} current intent ${listing.stripe_payment_intent_id ?? "NULL"}; skipping`
+          );
+          break;
+        }
+
+        if (listing.payment_status === "refunded") {
+          console.warn(`Webhook: listing ${listingId} is refunded; skipping plan_change`);
+          break;
+        }
+
+        // Replay guard: a redelivered succeeded event must not re-anchor the
+        // runtime a second time.
+        if (listing.price_plan === newPlan) {
+          break;
+        }
+
+        const durationDays = getPlanDetails(newPlan).duration_days;
+        // Edit policy: content edits never move the expiry — only this paid
+        // plan change re-anchors it, to the chosen package's runtime from now.
+        // A listing still waiting in review (expires_at NULL) keeps NULL: the
+        // set_listing_expires_at trigger anchors the new duration_days at
+        // publication, so the paid window doesn't tick during review.
+        const newExpiresAt =
+          newPlan === "unlimited" || durationDays === null || !listing.expires_at
+            ? null
+            : addDaysIso(new Date().toISOString(), durationDays);
+
+        const { error: planChangeError } = await supabaseAdmin
+          .from("listings")
+          .update({
+            // Prepare refuses expired listings, but a checkout left open in a
+            // stale tab can still be paid after the listing expires. The money
+            // bought a fresh runtime and the listing already passed review, so
+            // republish rather than leaving a paid-for listing invisible.
+            ...(listing.status === "expired" ? { status: "published" } : {}),
+            price_plan: newPlan,
+            // Dual-write until the legacy column drop — the expiry triggers
+            // resolve the plan legacy-first (pricing_plan before price_plan).
+            pricing_plan: newPlan,
+            duration_days: durationDays,
+            expires_at: newExpiresAt,
+            price_paid_chf: Math.round(paymentIntent.amount / 100),
+            // Both target plans include premium placement; it runs with the
+            // listing (align_included_premium_on_publish re-anchors pending
+            // listings when they go live).
+            premium: true,
+            is_premium: true,
+            premium_until: newExpiresAt,
+          })
+          .eq("id", listingId);
+
+        if (planChangeError) {
+          console.error(`Webhook: Failed to apply plan_change for listing ${listingId}`, planChangeError);
+          fulfillmentError = true;
+        }
+
+        break;
+      }
+
       const listingId = paymentIntent.metadata?.listing_id;
       if (listingId) {
         // Fetch current listing to validate the intent and check its state.
@@ -488,6 +581,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const kind = paymentIntent.metadata?.kind;
       if (kind === "dealer_plan") {
+        break;
+      }
+
+      if (kind === "plan_change") {
+        // A failed upgrade payment leaves the listing untouched: it is still
+        // a fully paid listing on its current plan, and writing
+        // 'payment_failed' here would knock that paid record over.
         break;
       }
 

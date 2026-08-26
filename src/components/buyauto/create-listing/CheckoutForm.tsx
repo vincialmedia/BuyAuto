@@ -23,10 +23,18 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     setIsLoading(true);
     setMessage(null);
 
+    // Preserve the wizard's current query (draft/edit ids) in the return URL:
+    // TWINT/3DS redirects used to come back without ?draft=, so the server
+    // draft was never cleaned up and the next visit resumed a stale draft of
+    // an already-published listing.
+    const returnUrl = new URL(window.location.href);
+    returnUrl.searchParams.set("payment_confirmed", "true");
+    returnUrl.searchParams.delete("payment_intent_client_secret");
+
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/inserat-erstellen?payment_confirmed=true`,
+        return_url: returnUrl.toString(),
       },
       redirect: "if_required",
     });

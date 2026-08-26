@@ -7,19 +7,15 @@ import { User, LogOut, Settings, BarChart3, Plus, ChevronDown, Car, Coins } from
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  HeaderDropdown,
+  HeaderDropdownSeparator,
+  headerDropdownItemClass,
+} from "@/components/buyauto/HeaderDropdown";
 import { useAuth } from "@/contexts/AuthContext";
-import authService from "@/services/authService";
-import { toast } from "sonner";
 
 export default function Header() {
   const router = useRouter();
-  const { user, loading, profile, profileLoading, messageCount, isAdmin } = useAuth();
+  const { user, loading, messageCount, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -38,13 +34,24 @@ export default function Header() {
     };
   }, [router]);
 
+  // authService drags the Supabase client with it and sonner is its own
+  // bundle — both load on demand here so signing out (a rare action) doesn't
+  // put either into the critical JS every visitor downloads.
   const handleSignOut = async () => {
     try {
-      await authService.signOut();
-      toast.success("Erfolgreich abgemeldet!");
+      const [{ default: authService }, { toast }] = await Promise.all([
+        import("@/services/authService"),
+        import("sonner"),
+      ]);
+      try {
+        await authService.signOut();
+        toast.success("Erfolgreich abgemeldet!");
+      } catch (error) {
+        console.error("Sign out error:", error);
+        toast.error("Fehler beim Abmelden");
+      }
     } catch (error) {
       console.error("Sign out error:", error);
-      toast.error("Fehler beim Abmelden");
     }
   };
 
@@ -122,58 +129,60 @@ export default function Header() {
                   <Plus className="w-4 h-4" />
                   Inserat erstellen
                 </Link>
-                <span className="absolute -top-2 left-full ml-1 text-red-500 font-scribble text-sm font-bold rotate-[-8deg] whitespace-nowrap pointer-events-none">
+                <span className="absolute -top-2 left-full ml-1 text-red-600 font-scribble text-sm font-bold rotate-[-8deg] whitespace-nowrap pointer-events-none">
                   CHF0
                 </span>
               </div>
               
-              {/* Fahrzeuge Suchen - Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1">
+              {/* Fahrzeuge Suchen - Dropdown. The links are always in the
+                  server HTML now (panel is CSS-toggled), so crawlers see them
+                  on every page — Radix only rendered them while open. */}
+              <HeaderDropdown
+                align="center"
+                triggerClassName="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1"
+                trigger={
+                  <>
                     <Car className="w-4 h-4" />
                     Fahrzeuge Suchen
                     <ChevronDown className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link href="/suche?dealType=lease_takeover" className="cursor-pointer">
-                      Leasingübernahmen
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/suche?dealType=direct_purchase" className="cursor-pointer">
-                      Occasion & Neuwagen
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/suche?dealType=direct_purchase&financingType=leasing" className="cursor-pointer">
-                      Leasing Suchen
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/suche" className="cursor-pointer font-medium">
-                      Alle Fahrzeuge
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/leasinguebernahme" className="cursor-pointer">
-                      Leasingübernahme – Ratgeber
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </>
+                }
+              >
+                <Link href="/suche?dealType=lease_takeover" className={headerDropdownItemClass}>
+                  Leasingübernahmen
+                </Link>
+                <Link href="/suche?dealType=direct_purchase" className={headerDropdownItemClass}>
+                  Occasion & Neuwagen
+                </Link>
+                <Link href="/suche?dealType=direct_purchase&financingType=leasing" className={headerDropdownItemClass}>
+                  Leasing Suchen
+                </Link>
+                <HeaderDropdownSeparator />
+                <Link href="/suche" className={`${headerDropdownItemClass} font-medium`}>
+                  Alle Fahrzeuge
+                </Link>
+                <HeaderDropdownSeparator />
+                <Link href="/leasinguebernahme" className={headerDropdownItemClass}>
+                  Leasingübernahme – Ratgeber
+                </Link>
+              </HeaderDropdown>
               
               {/* Preise */}
-              <Link 
-                href="/preise" 
+              <Link
+                href="/preise"
                 className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1.5"
               >
                 <Coins className="w-4 h-4" />
                 Preise
+              </Link>
+
+              {/* Für Garagen — supply-side entry point, visually secondary
+                  (muted, smaller) to the consumer items. */}
+              <Link
+                href="/fuer-garagen"
+                className="text-neutral-500 hover:text-red-500 text-sm font-medium transition-colors"
+              >
+                Für Garagen
               </Link>
             </nav>
 
@@ -181,13 +190,13 @@ export default function Header() {
             <div className="flex md:hidden items-center flex-shrink-0 gap-3">
               <Button
                 size="sm"
-                className="bg-red-500 hover:bg-red-600 text-white shadow-sm relative px-2 sm:px-3 py-2 text-xs font-medium"
+                className="bg-red-600 hover:bg-red-700 text-white shadow-sm relative px-2 sm:px-3 py-2 text-xs font-medium"
                 onClick={handleCreateListingClick}
               >
                 <Plus className="h-4 w-4 mr-1 md:mr-1.5" />
                 <span className="hidden xs:inline">Inserat erstellen</span>
                 <span className="xs:hidden">Inserieren</span>
-                <span className="ml-1 text-[10px] font-bold bg-white text-red-500 rounded px-1.5 py-0.5">
+                <span className="ml-1 text-[10px] font-bold bg-white text-red-600 rounded px-1.5 py-0.5">
                   CHF0
                 </span>
               </Button>
@@ -202,18 +211,17 @@ export default function Header() {
                   <div className="hidden sm:block w-20 h-4 bg-neutral-200 rounded animate-pulse"></div>
                 </div>
               ) : user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="flex items-center space-x-2 hover:bg-neutral-100 transition-colors"
-                    >
+                <HeaderDropdown
+                  align="end"
+                  triggerClassName="inline-flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium hover:bg-neutral-100 transition-colors"
+                  trigger={
+                    <>
                       <span className="relative inline-flex items-center">
-                        <div className="w-8 h-8 bg-gradient-to-br from-neutral-500 to-neutral-600 rounded-full flex items-center justify-center">
+                        <span className="w-8 h-8 bg-gradient-to-br from-neutral-500 to-neutral-600 rounded-full flex items-center justify-center">
                           <User className="h-4 w-4 text-white" />
-                        </div>
+                        </span>
                         {safeMessageCount > 0 ? (
-                          <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center">
+                          <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-[18px] text-center">
                             {safeMessageCount >= 10 ? "9+" : String(safeMessageCount)}
                           </span>
                         ) : null}
@@ -221,38 +229,34 @@ export default function Header() {
                       <span className="hidden sm:block text-sm font-medium text-neutral-700">
                         {displayName}
                       </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="cursor-pointer" onClick={handleDashboardClick}>
-                        <BarChart3 className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    {/* Admin link - only show for admin users */}
-                    {isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin" className="cursor-pointer">
-                          <Settings className="mr-2 h-4 w-4" />
-                          Admin
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
-                      onClick={handleSignOut}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Abmelden
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </>
+                  }
+                >
+                  <Link href="/dashboard" className={headerDropdownItemClass} onClick={handleDashboardClick}>
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Link>
+                  {/* Admin link - only show for admin users */}
+                  {isAdmin && (
+                    <Link href="/admin" className={headerDropdownItemClass}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Admin
+                    </Link>
+                  )}
+                  <HeaderDropdownSeparator />
+                  <button
+                    type="button"
+                    className={`${headerDropdownItemClass} text-red-600 hover:text-red-600 hover:bg-red-50`}
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Abmelden
+                  </button>
+                </HeaderDropdown>
               ) : (
                 <Button
                   asChild
-                  className="bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
+                  className="bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
                 >
                   <Link href="/auth">Anmelden</Link>
                 </Button>
@@ -266,6 +270,8 @@ export default function Header() {
                 size="sm"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2"
+                aria-label={isMenuOpen ? "Menü schliessen" : "Menü öffnen"}
+                aria-expanded={isMenuOpen}
               >
                 <div className="w-6 h-6 flex flex-col justify-center items-center">
                   <span className={`bg-neutral-600 block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm ${isMenuOpen ? 'rotate-45 translate-y-1' : '-translate-y-0.5'}`}></span>
@@ -277,7 +283,10 @@ export default function Header() {
           </div>
 
           {/* Mobile Navigation Menu */}
-          <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+          {/* 640px cap: the signed-in menu (search links + Für Garagen + account
+              block) measures ~550px, ~600px for admins — 500px clipped the
+              Abmelden button, the only sign-out control on mobile. */}
+          <div className={`md:hidden transition-all duration-300 ease-out ${isMenuOpen ? 'max-h-[640px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
             <nav className="pb-4 pt-2 space-y-2 border-t border-neutral-200">
               {/* Fahrzeuge Suchen Section */}
               <div className="px-4 py-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
@@ -322,12 +331,22 @@ export default function Header() {
               <div className="border-t border-neutral-100 my-2"></div>
               
               {/* Preise */}
-              <Link 
-                href="/preise" 
+              <Link
+                href="/preise"
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Preise
+              </Link>
+
+              {/* Für Garagen — muted like its desktop counterpart, but always
+                  present in the mobile menu. */}
+              <Link
+                href="/fuer-garagen"
+                className="block px-4 py-2 text-neutral-500 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors text-sm"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Für Garagen
               </Link>
 
               <div className="border-t border-neutral-100 my-2"></div>

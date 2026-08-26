@@ -1,18 +1,29 @@
 import type { AppProps } from "next/app";
+import dynamic from "next/dynamic";
 import { Manrope, Caveat } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import MainLayout from "@/components/layout/MainLayout";
 import RouteProgress from "@/components/layout/RouteProgress";
 import AuthProvider from "@/contexts/AuthContext";
-import { Toaster } from "@/components/ui/sonner";
-// Second toast system: 11 files (the whole create-listing wizard among them)
-// fire toasts through @/hooks/use-toast, which renders via this Toaster — it
-// was never mounted, so all of that feedback was silently dropped.
-import { Toaster as RadixToaster } from "@/components/ui/toaster";
 import "@/styles/globals.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
+
+// Both toast systems stay mounted (11 files — the whole create-listing wizard
+// among them — fire through @/hooks/use-toast and the rest through sonner),
+// but neither renders anything until a toast fires and both are client-only
+// UI. Loading them post-hydration keeps sonner + radix-toast (~12 KB gz) out
+// of the critical bundle; each library queues toasts fired before its
+// Toaster mounts, so no feedback is dropped.
+const Toaster = dynamic(
+  () => import("@/components/ui/sonner").then((m) => m.Toaster),
+  { ssr: false },
+);
+const RadixToaster = dynamic(
+  () => import("@/components/ui/toaster").then((m) => m.Toaster),
+  { ssr: false },
+);
 
 // Both families are variable fonts: omitting `weight` loads a single
 // variable file per family instead of one file per weight.
@@ -37,7 +48,7 @@ const organizationSchema = {
   url: "https://www.buyauto.ch",
   logo: "https://www.buyauto.ch/share-logo.jpg",
   description:
-    "Schweizer Plattform für Leasingübernahme – Leasing übernehmen oder ohne Verlust abgeben.",
+    "Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen – Leasing übernehmen oder ohne Verlust abgeben.",
   founder: { "@type": "Person", name: "Vincent Hänggi" },
   sameAs: [],
 };
@@ -93,12 +104,16 @@ export default function App({ Component, pageProps }: AppProps) {
           fell back to the browser serif. On iOS Safari that unstyled portal
           text additionally got font-boosted and could push the document wider
           than the viewport. Declaring the resolved font on <html> covers
-          every portal. */}
-      <style jsx global>{`
-        html {
-          font-family: ${manrope.style.fontFamily}, sans-serif;
-        }
-      `}</style>
+          every portal. A plain <style> tag rather than styled-jsx: this was
+          the only styled-jsx use in the app and carried its whole runtime in
+          the shared bundle. */}
+      <Head>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `html { font-family: ${manrope.style.fontFamily}, sans-serif; }`,
+          }}
+        />
+      </Head>
       <AuthProvider>
         <MainLayout>
           <Head>

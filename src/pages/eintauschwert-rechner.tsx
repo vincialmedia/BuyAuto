@@ -1,5 +1,7 @@
 import Head from "next/head";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
+import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
+import { FREE_MONTHLY_LIMIT } from "@/lib/buyauto/valuationQuota";
 import Link from "next/link";
 import {
   Check,
@@ -69,7 +71,9 @@ const FAQ_ITEMS = [
   },
   {
     q: "Ist die Eintauschwert-Berechnung kostenlos?",
-    a: "Die ersten 3 automatischen Suchen pro Monat sind gratis. Danach brauchst du ein Garagen-Paket: Starter 25, Growth 100 und Pro 400 automatische Suchen pro Monat. Manuelle Berechnungen (eigene Vergleichspreise eintragen) sind in jedem Paket unbegrenzt gratis.",
+    // Quotas interpolated from the plan config — this answer had drifted once
+    // already when the tiers changed underneath a hardcoded copy of the numbers.
+    a: `Die ersten ${FREE_MONTHLY_LIMIT} automatischen Suchen pro Monat sind gratis. Danach brauchst du ein Garagen-Paket: Starter ${GARAGE_PLANS.starter.valuationsPerMonth}, Growth ${GARAGE_PLANS.growth.valuationsPerMonth} und Pro ${GARAGE_PLANS.pro.valuationsPerMonth} automatische Suchen pro Monat. Manuelle Berechnungen (eigene Vergleichspreise eintragen) sind in jedem Paket unbegrenzt gratis.`,
   },
   {
     q: "Woher kommen die Vergleichspreise bei der automatischen Suche?",

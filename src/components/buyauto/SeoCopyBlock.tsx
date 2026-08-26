@@ -1,15 +1,13 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { Repeat } from "lucide-react";
 
 export function SeoCopyBlock() {
   const internalLinks = [
-    { label: "Occasionen in der Schweiz", href: "/suche?dealType=direct_purchase" },
-    { label: "Auto Leasing in der Schweiz", href: "/suche?dealType=direct_purchase&financingType=leasing" },
-    // Descriptive head-term anchor points at the editorial hub (the page meant to own the
-    // term); a separate, plainer anchor sends transactional intent to the listings grid.
     { label: "Leasingübernahme in der Schweiz", href: "/leasinguebernahme" },
+    { label: "Leasing abgeben in der Schweiz", href: "/leasing-abgeben-schweiz" },
+    { label: "Was kostet eine Leasingübernahme?", href: "/leasinguebernahme-kosten" },
+    { label: "Leasingvertrag übertragen", href: "/leasingvertrag-uebertragen" },
     { label: "Aktuelle Leasingübernahme-Angebote", href: "/suche?dealType=lease_takeover" },
-    { label: "Alle Fahrzeuge", href: "/suche" },
   ];
 
   return (
@@ -18,26 +16,38 @@ export function SeoCopyBlock() {
         {/* Section header */}
         <div className="mb-8">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-100 text-neutral-600 text-sm font-medium mb-4">
-            <MapPin className="w-4 h-4" />
-            Auto kaufen Schweiz
+            <Repeat className="w-4 h-4" />
+            Leasingübernahme Schweiz
           </span>
           <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
-            Auto kaufen in der Schweiz mit BuyAuto
+            Leasingübernahme in der Schweiz – so funktioniert BuyAuto
           </h2>
         </div>
-        
+
         {/* Body copy */}
         <div className="prose prose-lg max-w-none text-neutral-600 space-y-4">
           <p>
-            Wer ein Auto in der Schweiz kaufen will, hat heute mehr Möglichkeiten denn je. Mit BuyAuto findest du Occasionen, Neuwagen, Leasingangebote und Leasingübernahmen auf einer Plattform – übersichtlich, modern und einfach vergleichbar.
+            Eine{" "}
+            <Link href="/leasinguebernahme" className="text-red-600 font-semibold hover:underline">
+              Leasingübernahme
+            </Link>{" "}
+            bedeutet: Du übernimmst einen laufenden Leasingvertrag – inklusive Monatsrate, Restlaufzeit und Kilometerlimit – und die bisherige Leasingnehmerin oder der bisherige Leasingnehmer wird aus dem Vertrag entlassen.
           </p>
 
           <p>
-            Egal ob du nach einer günstigen Occasion, einem Neuwagen, einem passenden Leasing oder einer flexiblen Leasingübernahme suchst: BuyAuto bringt Angebote aus der ganzen Schweiz zusammen und macht den Weg zum nächsten Auto einfacher.
+            Für Abgeber entfällt damit die{" "}
+            <Link href="/leasing-abgeben-schweiz" className="text-red-600 font-semibold hover:underline">
+              teure vorzeitige Vertragsauflösung
+            </Link>{" "}
+            – statt einer Auflösungsentschädigung fällt nur die{" "}
+            <Link href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline">
+              Umschreibegebühr der Leasinggesellschaft
+            </Link>{" "}
+            an. Für Übernehmer heisst es: fahren ohne hohe Anzahlung und mit kurzer Restlaufzeit.
           </p>
 
           <p>
-            Entdecke jetzt Fahrzeuge zum <strong>Kauf</strong>, <strong>Leasing</strong> oder zur <strong>Leasingübernahme</strong> – alles an einem Ort.
+            BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. Die Inserate weisen Monatsrate und Restlaufzeit transparent aus, und du stehst direkt mit dem Anbieter in Kontakt. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum <strong>Direktkauf</strong>.
           </p>
         </div>
 
@@ -46,7 +56,7 @@ export function SeoCopyBlock() {
           <p className="text-sm font-medium text-neutral-500 mb-4">Entdecke mehr auf BuyAuto:</p>
           <div className="flex flex-wrap gap-3">
             {internalLinks.map((link, index) => (
-              <Link 
+              <Link
                 key={index}
                 href={link.href}
                 className="inline-flex items-center px-4 py-2 rounded-full bg-neutral-100 text-neutral-700 text-sm font-medium hover:bg-red-50 hover:text-red-600 transition-colors duration-200"

@@ -10,7 +10,9 @@ import { GaragePlanCards } from "@/components/buyauto/pricing/GaragePlanCards";
 import { GarageFeatureMatrix } from "@/components/buyauto/pricing/GarageFeatureMatrix";
 import { GarageTrustRow } from "@/components/buyauto/pricing/GarageTrustRow";
 import {
+  GARAGE_CUSTOM_FROM_CHF,
   GARAGE_CUSTOM_THRESHOLD,
+  formatChf,
   garagePlanFor,
   type GaragePlanCode,
 } from "@/lib/buyauto/garagePlans";
@@ -108,8 +110,10 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
 
   const currentPlanDetails = useMemo(() => garagePlanFor(effectivePlanId), [effectivePlanId]);
 
-  function handleUpgrade(planId: GaragePlanCode) {
-    router.push(`/garage-plan?plan=${planId}`);
+  function handleUpgrade(_planId: GaragePlanCode) {
+    // garage-plan never read the old ?plan= param (the user picks the plan
+    // there anyway) — send a real redirect back to this tab instead.
+    router.push(`/garage-plan?redirect=${encodeURIComponent("/dashboard/garage?tab=subscription")}`);
   }
 
   return (
@@ -213,13 +217,14 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
           <h4 className="text-lg font-bold text-neutral-900">Grösseres Inventar?</h4>
           <p className="text-sm text-neutral-600 mt-1 max-w-xl">
             Für Garagen mit mehr als {GARAGE_CUSTOM_THRESHOLD} Fahrzeugen oder mehreren
-            Standorten machen wir ein individuelles Angebot.
+            Standorten machen wir ein individuelles Angebot ab{" "}
+            CHF {formatChf(GARAGE_CUSTOM_FROM_CHF)}/Monat.
           </p>
         </div>
         <Button
           variant="outline"
           className="mt-4 sm:mt-0 rounded-xl px-6 h-11 border-neutral-300 hover:bg-white"
-          onClick={() => { window.location.href = "mailto:kontakt@buyauto.ch"; }}
+          onClick={() => { window.location.href = "mailto:hello@buyauto.ch"; }}
         >
           Kontakt aufnehmen
         </Button>

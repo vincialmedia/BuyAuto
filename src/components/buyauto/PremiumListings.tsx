@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Listing } from "@/lib/buyauto/types";
-import { searchListings } from "@/services/listingsService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
@@ -67,14 +66,18 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     const loadPremiumListings = async () => {
       setIsLoading(true);
       try {
-        const [directPurchaseResult, leaseTakeoverResult] = await Promise.all([
-          searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
+        // Dynamic import keeps the Supabase client out of the homepage's
+        // critical bundle — on the homepage this effect never runs anyway
+        // (initialListings comes from getStaticProps).
+        const { searchListings } = await import("@/services/listingsService");
+        const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
           searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
+          searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
         ]);
 
         if (cancelled) return;
 
-        const ordered = [...directPurchaseResult.items, ...leaseTakeoverResult.items];
+        const ordered = [...leaseTakeoverResult.items, ...directPurchaseResult.items];
         const uniqueById = new Map<string, Listing>();
         for (const l of ordered) uniqueById.set(l.id, l);
 
@@ -104,8 +107,15 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
       const hasLeasingOffer = listing.leasing_offer?.enabled === true || listing.financing_type === "leasing";
 
       if (activeFilter === "direct_purchase") {
-        // Show if it's a direct purchase deal type (regardless of other offers it may have)
-        return listing.deal_type === "direct_purchase";
+        // Directly buyable cars with a real Kaufpreis. Hybrids (enabled
+        // Übernahme-Angebot) are included but rendered AS Direktkauf under
+        // this tab — badge and Kaufpreis first — so no Leasingübernahme-
+        // badged card ever sits under the Direktkauf filter.
+        return (
+          listing.deal_type === "direct_purchase" &&
+          typeof listing.purchasePriceCHF === "number" &&
+          listing.purchasePriceCHF > 0
+        );
       }
       if (activeFilter === "leasing") {
         // Show if it has leasing financing available (but not pure lease takeovers)
@@ -200,7 +210,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     );
   }
 
-  function renderPriceBlock(listing: Listing) {
+  function renderPriceBlock(listing: Listing, presentAsDirectPurchase: boolean) {
     const takeoverOffer = listing.leasing_offer?.lease_takeover_offer?.enabled
       ? listing.leasing_offer.lease_takeover_offer
       : null;
@@ -210,8 +220,9 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     const hasTakeoverMonthly = typeof takeoverOffer?.price_per_month_chf === "number" && takeoverOffer.price_per_month_chf > 0;
 
     // An enabled Übernahme-Angebot leads with the monthly rate — the Kaufpreis
-    // becomes the secondary line (same rule as the search cards).
-    if (hasTakeoverMonthly) {
+    // becomes the secondary line (same rule as the search cards). Under the
+    // Direktkauf tab the same hybrid leads with the Kaufpreis instead.
+    if (hasTakeoverMonthly && !presentAsDirectPurchase) {
       return (
         <div className="text-right">
           <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Leasingübernahme</div>
@@ -277,10 +288,10 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                 <span className="text-amber-700 font-semibold text-sm">Premium Inserate</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 mb-3">
-                Premium Fahrzeuge aus allen Kategorien
+                Aktuelle Leasingübernahmen
               </h2>
               <p className="text-neutral-500 text-base max-w-xl mx-auto mb-6">
-                Handverlesene Top-Angebote mit erhöhter Sichtbarkeit.
+                Premium-Angebote mit erhöhter Sichtbarkeit.
               </p>
               
               {/* Category Filter Tabs */}
@@ -328,10 +339,19 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                 </>
               )}
 
+              {/* Empty tab: keep the section frame, explain instead of a blank grid */}
+              {filteredListings.length === 0 && (
+                <p className="text-center text-neutral-500 py-10">
+                  In dieser Kategorie gibt es aktuell keine Premium-Angebote – schau dir alle Fahrzeuge in der
+                  Suche an.
+                </p>
+              )}
+
               {/* Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {visibleListings.map((listing) => {
-                  const dealTypeLabel = getDealTypeLabel(listing);
+                  const presentAsDirectPurchase = activeFilter === "direct_purchase";
+                  const dealTypeLabel = presentAsDirectPurchase ? "Direktkauf" : getDealTypeLabel(listing);
 
                   return (
                     <Link
@@ -386,7 +406,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                                 </h3>
                                 <p className="text-neutral-500 text-sm">{listing.year}</p>
                               </div>
-                              {renderPriceBlock(listing)}
+                              {renderPriceBlock(listing, presentAsDirectPurchase)}
                             </div>
 
                             {/* Meta info */}
@@ -450,7 +470,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                 size="lg"
                 className="bg-red-500 hover:bg-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all rounded-xl px-8"
               >
-                <Link href="/suche?premiumOnly=true">Alle Premium-Angebote ansehen</Link>
+                <Link href="/suche?dealType=lease_takeover">Alle Leasingübernahmen ansehen</Link>
               </Button>
             </div>
           </div>

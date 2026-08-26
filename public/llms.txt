@@ -1,13 +1,12 @@
 # BuyAuto
 
-> BuyAuto ist die Schweizer Plattform für Leasingübernahme – «Raus aus dem Leasing. Ohne Verlust.» Wer sein Leasing vorzeitig abgeben will, findet hier eine Nachfolgerin oder einen Nachfolger; wer ein Auto sucht, übernimmt einen laufenden Leasingvertrag ohne hohe Anzahlung und mit kurzer Restlaufzeit. Besonders stark für E-Autos und Leasingverträge mit hohem Restwert. Alle Preise in CHF, bei Leasingübernahmen als Monatsrate mit Restlaufzeit (z.B. CHF 557/Monat bei 30 Monaten Restlaufzeit); daneben gibt es Direktkauf-Inserate mit Kaufpreis.
+> BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. «Raus aus dem Leasing. Ohne Verlust.» Wer sein Leasing vorzeitig abgeben will, findet hier eine Nachfolgerin oder einen Nachfolger; wer ein Auto sucht, übernimmt einen laufenden Leasingvertrag ohne hohe Anzahlung und mit kurzer Restlaufzeit. Besonders stark für E-Autos und Leasingverträge mit hohem Restwert. Alle Preise in CHF, bei Leasingübernahmen als Monatsrate mit Restlaufzeit (z.B. CHF 557/Monat bei 30 Monaten Restlaufzeit); daneben gibt es Direktkauf-Inserate mit Kaufpreis.
 
 ## Fahrzeuge
 
 - [Fahrzeugsuche](https://www.buyauto.ch/suche): Alle aktuellen Inserate mit Preis, Restlaufzeit und Kilometerstand
 - [Leasingübernahmen](https://www.buyauto.ch/suche?dealType=lease_takeover): Laufende Leasingverträge zur Übernahme (Monatsrate + Restlaufzeit)
 - [Autos zum Direktkauf](https://www.buyauto.ch/suche?dealType=direct_purchase): Occasionen mit Kaufpreis in CHF
-- [Leasingübernahme nach Marke](https://www.buyauto.ch/leasinguebernahme): Markenübersicht mit aktuellen Übernahme-Angeboten
 
 ## Ratgeber
 
@@ -26,5 +25,15 @@
 
 ## Preise
 
-- [Preise für Inserate](https://www.buyauto.ch/preise): Was ein Inserat auf BuyAuto kostet (einmalig, kein Abo)
-- [Leasing Concierge](https://www.buyauto.ch/leasing-concierge): Begleiteter Leasing-Ausstieg als Service
+- [Preise für Inserate](https://www.buyauto.ch/preise): Was ein Inserat auf BuyAuto kostet (Private einmalig, Garagen im Monatspaket)
+
+## Leasinggesellschaften
+
+- [Cembra-Leasing übernehmen oder abgeben](https://www.buyauto.ch/cembra-leasing-uebernehmen): Übertragung eines Cembra-Leasingvertrags – Ablauf, Bonitätsprüfung und Umschreibung
+- [AMAG-Leasing übernehmen oder abgeben](https://www.buyauto.ch/amag-leasing-uebernehmen): Übertragung eines AMAG-Leasingvertrags – Ablauf, Bonitätsprüfung und Umschreibung
+- [Multilease-Leasing übernehmen oder abgeben](https://www.buyauto.ch/multilease-leasing-uebernehmen): Übertragung eines Multilease-Vertrags – Ablauf, Bonitätsprüfung und Umschreibung
+- [BANK-now-Leasing übernehmen oder abgeben](https://www.buyauto.ch/bank-now-leasing-uebernehmen): Übertragung eines BANK-now-Vertrags – Ablauf, Bonitätsprüfung und Umschreibung
+
+## Für Garagen
+
+- [BuyAuto für Garagen](https://www.buyauto.ch/fuer-garagen): Leasingübernahme als Verkaufschance – blockierte Eintausch-Deals abschlussfähig machen

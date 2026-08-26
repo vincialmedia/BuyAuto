@@ -227,14 +227,14 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
               <div className="rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-10 text-center">
                 <p className="text-neutral-600">
                   Momentan sind keine {brand.name}-Fahrzeuge zur Leasingübernahme inseriert. Stöbere in allen
-                  verfügbaren Leasingübernahmen oder lass dich benachrichtigen, sobald ein {brand.name} verfügbar ist.
+                  verfügbaren Leasingübernahmen – oder gib dein eigenes {brand.name}-Leasing zur Übernahme frei.
                 </p>
                 <div className="mt-6 flex flex-wrap justify-center gap-3">
                   <Button asChild className="font-bold">
                     <Link href="/suche?dealType=lease_takeover">Alle Leasingübernahmen ansehen</Link>
                   </Button>
                   <Button asChild variant="outline" className="font-bold">
-                    <Link href="/leasing-concierge">Concierge benachrichtigen lassen</Link>
+                    <Link href="/inserat-erstellen">Eigenes Leasing abgeben</Link>
                   </Button>
                 </div>
               </div>

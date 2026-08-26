@@ -5,12 +5,13 @@
 // honest). Seeded from each page's last real edit in git history.
 
 export const CONTENT_LAST_UPDATED: Record<string, string> = {
-  "/": "2026-06-11",
+  "/": "2026-08-14",
   "/suche": "2026-08-04",
-  "/preise": "2026-08-04",
+  "/preise": "2026-08-14",
   "/updates": "2026-08-07",
-  "/leasing-concierge": "2026-08-04",
-  "/leasinguebernahme": "2026-08-04",
+  // /leasing-concierge is deliberately absent: the page stays reachable but
+  // is delisted (noindex, no sitemap entry, no internal links).
+  "/leasinguebernahme": "2026-08-14",
   "/leasinguebernahme-kosten": "2026-08-04",
   "/leasingvertrag-uebertragen": "2026-08-04",
   "/leasinguebernahme-vs-neues-leasing": "2026-08-04",
@@ -19,6 +20,11 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/auto-abo-vs-leasing-kosten": "2026-08-04",
   "/eintauschwert-rechner": "2026-08-04",
   "/leasing-abgeben-schweiz": "2026-08-04",
+  "/fuer-garagen": "2026-08-13",
+  "/cembra-leasing-uebernehmen": "2026-08-14",
+  "/amag-leasing-uebernehmen": "2026-08-14",
+  "/multilease-leasing-uebernehmen": "2026-08-14",
+  "/bank-now-leasing-uebernehmen": "2026-08-14",
   "/autoscout24-alternative-leasinguebernahme": "2026-08-04",
   "/carify-alternativen": "2026-08-04",
   "/auto-abos-im-vergleich": "2026-08-04",

@@ -10,6 +10,7 @@ import { FounderStory } from "@/components/buyauto/FounderStory";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
+import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
@@ -36,18 +37,19 @@ export default function HomePage({ premiumListings }: HomePageProps) {
         <title>Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto</title>
         <meta
           name="description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
 
         <meta property="og:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           property="og:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
-        <meta property="og:image" content="https://www.buyauto.ch/share-logo.jpg" />
+        {/* key matches _app's fallback og:image so next/head dedupes them. */}
+        <meta key="og:image" property="og:image" content="https://www.buyauto.ch/share-logo.jpg" />
         <meta property="og:image:width" content="1075" />
         <meta property="og:image:height" content="716" />
         <meta property="og:image:alt" content="BuyAuto Logo" />
@@ -58,7 +60,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
         <meta name="twitter:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           name="twitter:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, der Schweizer Plattform für Leasingübernahme. Geprüfte Angebote und persönlicher Concierge-Service."
+          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <meta name="twitter:image" content="https://www.buyauto.ch/share-logo.jpg" />
 
@@ -115,7 +117,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
             fetchPriority="high"
             className="object-cover object-[center_30%]"
             sizes="100vw"
-            quality={75}
+            // q60 AVIF/WebP is visually indistinguishable under the dark
+            // gradient overlay and cuts the LCP payload by roughly a third.
+            quality={60}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/70 to-neutral-900/40" />
         </div>
@@ -127,8 +131,8 @@ export default function HomePage({ premiumListings }: HomePageProps) {
               <br />
               Ohne <span className="text-red-500">Verlust.</span>
             </h1>
-            <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/80 font-medium max-w-2xl mx-auto drop-shadow-md">
-              Die Schweizer Plattform für Leasingübernahme – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.
+            <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/90 font-medium max-w-2xl mx-auto drop-shadow-md">
+              Ein Schweizer Marktplatz für Leasingübernahmen – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.
             </p>
           </div>
         </div>
@@ -150,12 +154,24 @@ export default function HomePage({ premiumListings }: HomePageProps) {
       </div>
 
       <div className="scroll-mt-4">
-        <PremiumListings initialListings={premiumListings} externalFilter={premiumFilter} onFilterChange={setPremiumFilter} />
+        <PremiumListings
+          initialListings={premiumListings}
+          externalFilter={premiumFilter}
+          onFilterChange={setPremiumFilter}
+        />
       </div>
 
-      <WhyBuyAutoSection />
-      <BuyerGarageSection />
+      {/* Everything below the premium carousel is out of the first viewport on
+          every device; LazyHydrate keeps it fully in the server HTML (SEO
+          unchanged) but spares the load-time main thread its hydration. */}
+      <LazyHydrate>
+        <WhyBuyAutoSection />
+      </LazyHydrate>
+      <LazyHydrate>
+        <BuyerGarageSection />
+      </LazyHydrate>
 
+      <LazyHydrate>
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-neutral-50 to-white" />
         <div
@@ -169,7 +185,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 
         <div className="max-w-5xl mx-auto relative z-10">
           <div className="text-center mb-14 md:mb-20">
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5 hover:bg-red-500/20 transition-colors cursor-default">
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-700 text-sm font-bold uppercase tracking-wider mb-5 hover:bg-red-500/20 transition-colors cursor-default">
               <Zap className="w-4 h-4" />
               So einfach geht&apos;s
             </span>
@@ -183,20 +199,20 @@ export default function HomePage({ premiumListings }: HomePageProps) {
               {[
                 {
                   step: "01",
-                  title: "Weg wählen",
-                  desc: "Entscheide, ob du kaufen, leasen oder eine Leasingübernahme suchst.",
+                  title: "Seite wählen",
+                  desc: "Entscheide, ob du ein laufendes Leasing übernehmen oder dein eigenes abgeben willst.",
                   icon: Car,
                 },
                 {
                   step: "02",
                   title: "Angebote vergleichen",
-                  desc: "Filtere nach Marke, Modell, Preis, Laufzeit und Anbieter.",
+                  desc: "Filtere nach Marke, Modell, Monatsrate und Restlaufzeit – jedes Übernahme-Inserat zeigt die Vertragsdaten transparent.",
                   icon: Search,
                 },
                 {
                   step: "03",
                   title: "Kontakt aufnehmen",
-                  desc: "Tritt direkt mit dem Anbieter oder der Garage in Kontakt und bring den Deal ins Rollen.",
+                  desc: "Tritt direkt mit dem Anbieter in Kontakt – die Übertragung läuft immer über die Leasinggesellschaft.",
                   icon: MessageCircle,
                 },
               ].map((item, i) => (
@@ -209,7 +225,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                         <div className="w-16 h-16 rounded-2xl bg-neutral-100 group-hover:bg-red-500 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                           <item.icon className="w-7 h-7 text-neutral-600 group-hover:text-white transition-colors duration-300" />
                         </div>
-                        <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                           {item.step}
                         </span>
                       </div>
@@ -242,7 +258,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
           </div>
         </div>
       </section>
+      </LazyHydrate>
 
+      <LazyHydrate>
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="relative bg-red-500 rounded-[2rem] p-10 md:p-14 overflow-hidden group hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-500">
@@ -256,8 +274,8 @@ export default function HomePage({ premiumListings }: HomePageProps) {
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3">Bereit loszufahren?</h2>
-                <p className="text-white/80 text-lg md:text-xl max-w-lg">
-                  Erstelle jetzt dein Inserat oder finde dein nächstes passendes Auto.
+                <p className="text-white/90 text-lg md:text-xl max-w-lg">
+                  Gib dein Leasing zur Übernahme frei oder steig in einen laufenden Vertrag ein.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -273,7 +291,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                 <Link href="/suche">
                   <Button
                     size="lg"
-                    className="bg-white/20 border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                    className="bg-black/20 border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   >
                     Alle Fahrzeuge
                     <ChevronRight className="w-5 h-5 ml-1" />
@@ -284,39 +302,44 @@ export default function HomePage({ premiumListings }: HomePageProps) {
           </div>
         </div>
       </section>
+      </LazyHydrate>
 
-      <FounderStory />
+      <LazyHydrate>
+        <FounderStory />
+      </LazyHydrate>
       <FAQSection />
       <SeoCopyBlock />
 
+      <LazyHydrate>
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-neutral-900">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Bereit für dein nächstes Auto?</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Bereit, dein Leasing abzugeben?</h2>
           <p className="text-lg md:text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
-            Finde passende Fahrzeuge aus der ganzen Schweiz oder erstelle dein Inserat in wenigen Schritten.
+            Erstelle dein Inserat in wenigen Minuten – oder übernimm einen laufenden Vertrag aus den aktuellen Angeboten.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/suche">
+            <Link href="/inserat-erstellen">
               <Button
                 size="lg"
-                className="bg-red-500 text-white hover:bg-red-600 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 shadow-lg shadow-red-500/25"
+                className="bg-red-600 text-white hover:bg-red-700 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 shadow-lg shadow-red-500/25"
               >
-                Fahrzeuge suchen
+                Inserat erstellen
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
-            <Link href="/inserat-erstellen">
+            <Link href="/suche?dealType=lease_takeover">
               <Button
                 size="lg"
                 variant="outline"
                 className="border-2 border-neutral-600 bg-white text-neutral-900 hover:bg-neutral-100 hover:text-neutral-900 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300"
               >
-                Inserat erstellen
+                Fahrzeuge ansehen
               </Button>
             </Link>
           </div>
         </div>
       </section>
+      </LazyHydrate>
     </div>
   );
 }
@@ -325,12 +348,12 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 // layout shift) and refresh in the background every 5 minutes.
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
   try {
-    const [directPurchaseResult, leaseTakeoverResult] = await Promise.all([
-      searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
+    const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
       searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
+      searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
     ]);
 
-    const ordered = [...directPurchaseResult.items, ...leaseTakeoverResult.items];
+    const ordered = [...leaseTakeoverResult.items, ...directPurchaseResult.items];
     const uniqueById = new Map<string, Listing>();
     for (const l of ordered) uniqueById.set(l.id, l);
 

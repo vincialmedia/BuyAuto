@@ -24,6 +24,7 @@ import { uploadListingImages } from "@/services/storageService";
 import { clearGuestImages } from "@/lib/buyauto/guestImageStore";
 import type { ListingUpdatePayload } from "@/services/createListingService";
 import { ADS_CONVERSIONS, trackAdsConversion, trackEvent } from "@/lib/analytics/gtag";
+import { GADS_LABEL_PUBLISH, trackConversionOnce } from "@/lib/gads";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -146,6 +147,15 @@ export default function Step5_PreviewAndPay() {
     const p = planDetails?.price;
     return typeof p === "number" && Number.isFinite(p) ? p : 0;
   }, [planDetails]);
+
+  // Editing a completed (paid) listing: content saves must never touch plan,
+  // payment or expiry — the original runtime keeps ticking. Choosing a
+  // DIFFERENT paid package instead goes through payment, and only then is the
+  // expiry re-anchored to the new package (Vince's edit policy).
+  const isEditingCompleted = !isGarage && (data as any)?.payment_status === "paid";
+  const originalPlan = ((data as any)?.original_price_plan ?? null) as Plan | null;
+  const planChanged =
+    isEditingCompleted && selectedPlanId !== null && originalPlan !== null && selectedPlanId !== originalPlan;
 
   // Verlängert/Unlimitiert include premium placement — the boost is only a
   // chargeable add-on on plans that don't already ship with it.
@@ -558,8 +568,18 @@ export default function Step5_PreviewAndPay() {
           // here, so the premium check also consults the fetched listing.
           const paidChf = paymentIntent.amount / 100;
           trackEvent("listing_published", { deal_type: dealType, value: paidChf, currency: "CHF" });
+          // Google Ads publish conversion with the amount actually charged.
+          // Keyed by the payment intent, so the back button restoring the
+          // ?payment_confirmed URL (which re-runs this handler) — or this
+          // payment being observed again anywhere else — cannot double-count.
+          trackConversionOnce(
+            `listing-payment:${paymentIntent.id}`,
+            GADS_LABEL_PUBLISH,
+            paidChf > 0 ? paidChf : undefined,
+          );
 
-          const listingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
+          const confirmedListingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
+          const listingId = confirmedListingId;
           if (listingId && user) {
             const freshListingData = await getListingByIdForOwner(listingId, user);
             if (freshListingData) {
@@ -590,7 +610,10 @@ export default function Step5_PreviewAndPay() {
               }
             }
           }
-          await cleanupDraftAfterPublish();
+          // Pass the intent's listing id explicitly: on a TWINT/3DS return the
+          // wizard state may still be rehydrating, so data.id can be empty and
+          // the server draft would survive the publish.
+          await cleanupDraftAfterPublish(confirmedListingId || undefined);
           setIsComplete(true);
           break;
         case 'processing':
@@ -616,6 +639,10 @@ export default function Step5_PreviewAndPay() {
 
   useEffect(() => {
     if (!mounted) return;
+    // Wait for auth resolution: the confirmation path cleans up the server
+    // draft, and cleanupDraftAfterPublish is a silent no-op while user is
+    // still null — running early left stale drafts behind after redirects.
+    if (userLoading) return;
 
     const query = new URLSearchParams(window.location.search);
     if (query.get('payment_confirmed')) {
@@ -624,7 +651,31 @@ export default function Step5_PreviewAndPay() {
         handlePaymentConfirmation(paymentIntentClientSecret);
       }
     }
-  }, [mounted, handlePaymentConfirmation]);
+  }, [mounted, userLoading, handlePaymentConfirmation]);
+
+  // EDIT MODE, plan unchanged: save the content, leave plan/expiry untouched.
+  const handleSaveEdits = async () => {
+    if (!mounted || !user) {
+      toast({ title: "Fehler", description: "Du musst angemeldet sein.", variant: "destructive" });
+      return;
+    }
+
+    setIsPreparingPayment(true);
+    try {
+      const payload = buildListingPayloadFromWizard();
+      // Never write plan fields on a content edit — the original package and
+      // its expiry keep running (a plan CHANGE goes through payment instead).
+      delete (payload as any).price_plan;
+      await createOrUpdateListing(payload, user);
+      toast({ title: "Gespeichert", description: "Deine Änderungen wurden übernommen." });
+      void router.push("/dashboard");
+    } catch (e: any) {
+      const message = typeof e?.message === "string" ? e.message : "Änderungen konnten nicht gespeichert werden.";
+      toast({ title: "Fehler", description: message, variant: "destructive" });
+    } finally {
+      setIsPreparingPayment(false);
+    }
+  };
 
   // PRIVATE USERS: Prepare Stripe Payment
   const handlePreparePayment = async () => {
@@ -646,6 +697,18 @@ export default function Step5_PreviewAndPay() {
       return;
     }
 
+    // Plan change on a completed listing: only paid packages can be the
+    // target — «downgrading» to the free plan would mean a free expiry reset.
+    if (isEditingCompleted && planChanged && selectedPlanId === "standard") {
+      toast({
+        title: "Nicht möglich",
+        description:
+          "Ein Wechsel auf das Gratis-Inserat ist nicht möglich. Wähle den bisherigen Plan, um nur die Inhalte zu speichern.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsPreparingPayment(true);
 
     try {
@@ -654,6 +717,9 @@ export default function Step5_PreviewAndPay() {
       try {
         const uploadedImages = await uploadPendingGuestImages();
         const payload = buildListingPayloadFromWizard();
+        // During a paid plan change the new plan is applied by the payment
+        // fulfillment, not by this content save.
+        if (isEditingCompleted) delete (payload as any).price_plan;
         if (uploadedImages) payload.images = uploadedImages;
         const saved = await createOrUpdateListing(payload, user);
         if (saved?.id) {
@@ -686,6 +752,9 @@ export default function Step5_PreviewAndPay() {
           premium: isPremium,
           donation_enabled: donationEnabled,
           donation_amount_chf: donationEnabled ? donationAmountChf : 0,
+          // Paid package switch on an already-paid listing: the server charges
+          // the new plan and re-anchors the expiry on fulfillment.
+          plan_change: isEditingCompleted && planChanged,
         }),
       });
 
@@ -743,6 +812,8 @@ export default function Step5_PreviewAndPay() {
           premium: false,
           deal_type: dealType,
         });
+        // Google Ads publish conversion — free tier, so no value.
+        trackConversionOnce(`listing-publish:${listingIdToUse}`, GADS_LABEL_PUBLISH);
         toast({ title: "Erfolgreich", description: "Dein kostenloses Inserat wird geprüft." });
         setIsComplete(true);
         return;
@@ -893,6 +964,9 @@ export default function Step5_PreviewAndPay() {
 
       // Garage listings publish instantly — no payment, but still a funnel event.
       trackEvent("listing_published", { seller: "garage", deal_type: dealType });
+      // Google Ads publish conversion — nothing was paid here, so no value.
+      // (The "already published" early return above deliberately doesn't fire.)
+      trackConversionOnce(`listing-publish:${listingIdToUse}`, GADS_LABEL_PUBLISH);
       toast({
         title: "Inserat veröffentlicht!",
         description: "Dein Inserat ist jetzt live.",
@@ -966,6 +1040,19 @@ export default function Step5_PreviewAndPay() {
       });
       trackAdsConversion(ADS_CONVERSIONS.premiumPurchase, { value: total, currency: "CHF" });
     }
+
+    // Google Ads publish conversion with the paid amount. The dedupe key is the
+    // payment intent behind the client secret — the same identity the redirect
+    // return path uses — so one payment yields exactly one conversion no matter
+    // which confirmation path (or how many of them) observes it.
+    const paymentKey =
+      (clientSecret ?? "").split("_secret")[0] ||
+      (typeof data.id === "string" && data.id.length > 0 ? data.id : "unknown");
+    trackConversionOnce(
+      `listing-payment:${paymentKey}`,
+      GADS_LABEL_PUBLISH,
+      total > 0 ? total : undefined,
+    );
 
     toast({
       title: "Zahlung erfolgreich!",
@@ -1311,6 +1398,24 @@ export default function Step5_PreviewAndPay() {
                   )}
                 </Button>
               </div>
+            ) : isEditingCompleted && !planChanged ? (
+              <Button
+                onClick={handleSaveEdits}
+                disabled={isPreparingPayment}
+                className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 w-full sm:w-auto sm:min-w-[200px]"
+              >
+                {isPreparingPayment ? (
+                  <>
+                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Wird gespeichert...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Änderungen speichern
+                  </>
+                )}
+              </Button>
             ) : (
               <Button
                 onClick={handlePreparePayment}
@@ -1325,7 +1430,9 @@ export default function Step5_PreviewAndPay() {
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    {total === 0 ? 'Kostenlos Inserieren' : `Jetzt bezahlen (CHF ${total.toFixed(2)})`}
+                    {isEditingCompleted && planChanged
+                      ? `Planwechsel bezahlen (CHF ${total.toFixed(2)})`
+                      : total === 0 ? 'Kostenlos Inserieren' : `Jetzt bezahlen (CHF ${total.toFixed(2)})`}
                   </>
                 )}
               </Button>

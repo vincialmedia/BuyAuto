@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
-import { Building2, Crown, Loader2, Calculator } from "lucide-react";
+import { Building2, Crown, Loader2, Calculator, Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageServi
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { formatDealerEntitlementLabel, formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
+import { GARAGE_PLANS, garagePlanFor } from "@/lib/buyauto/garagePlans";
 import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { GarageBasisTab } from "@/components/buyauto/dashboard/GarageBasisTab";
@@ -103,6 +104,13 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const [garage, setGarage] = useState<Garage | null>(initialGarage);
   const [garageLoading, setGarageLoading] = useState(!initialGarage);
   const [entitlement, setEntitlement] = useState<DealerEntitlement>({ kind: "none" });
+
+  // Growth+ fence for the embed snippets, resolved from the same entitlement
+  // the header badge shows. The embed pages enforce it server-side as well.
+  const websiteToolsEnabled = useMemo(() => {
+    const code = entitlement.kind === "none" ? null : entitlement.planCode;
+    return Boolean(garagePlanFor(code)?.websiteTools);
+  }, [entitlement]);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -410,16 +418,9 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
               </div>
 
               {/* Message Center moved out of this row — see the full-width
-                  mobile button above the card. */}
-              <div className="flex gap-2 items-center">
-                <Button
-                  variant="secondary"
-                  onClick={() => router.push("/dashboard")}
-                  className="w-full sm:w-auto h-12 bg-white/15 text-white hover:bg-white/20 border border-white/20 rounded-2xl"
-                >
-                  Zur Übersicht
-                </Button>
-              </div>
+                  mobile button above the card. («Zur Übersicht» was removed:
+                  /dashboard SSR-redirects garage accounts straight back here,
+                  so the button was a circular page reload.) */}
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -536,18 +537,43 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
 
                   <EintauschwertRechner />
 
-                  <details className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-                    <summary className="cursor-pointer select-none font-medium text-neutral-900">
-                      Rechner auf der eigenen Website einbetten
-                    </summary>
-                    <div className="mt-3 space-y-3">
-                      <p className="text-neutral-600">
-                        Füge diesen Code auf deiner Website ein – die Höhe passt sich automatisch an.
-                      </p>
-                      <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-xs text-white">
+                  {/* The widget snippet is a Growth+ website tool — the embed
+                      page enforces the same fence server-side, so showing the
+                      code to Starter would only hand out a locked iframe. */}
+                  {!websiteToolsEnabled ? (
+                    <div className="mt-8 rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4">
+                      <div className="flex items-start gap-3">
+                        <Lock className="h-4 w-4 text-amber-700 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-amber-900">
+                            Rechner-Widget ab {GARAGE_PLANS.growth.name}
+                          </div>
+                          <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
+                            Mit {GARAGE_PLANS.growth.name} bindest du den Eintauschwert-Rechner
+                            als Widget direkt auf deiner eigenen Website ein – ein Snippet
+                            einfügen, fertig. Hier im Dashboard rechnest du in jedem Paket.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : !garage?.slug ? (
+                    <div className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                      Speichere zuerst deine <span className="font-semibold">Profil-URL</span> (Slug)
+                      im Profil-Tab – danach erscheint hier dein Embed-Code für den Rechner.
+                    </div>
+                  ) : (
+                    <details className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                      <summary className="cursor-pointer select-none font-medium text-neutral-900">
+                        Rechner auf der eigenen Website einbetten
+                      </summary>
+                      <div className="mt-3 space-y-3">
+                        <p className="text-neutral-600">
+                          Füge diesen Code auf deiner Website ein – die Höhe passt sich automatisch an.
+                        </p>
+                        <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-xs text-white">
 {`<iframe
   id="buyauto-eintauschwert-rechner"
-  src="https://www.buyauto.ch/embed/eintauschwert-rechner?embedId=buyauto-eintauschwert-rechner"
+  src="https://www.buyauto.ch/embed/eintauschwert-rechner?garage=${encodeURIComponent(garage.slug)}&embedId=buyauto-eintauschwert-rechner"
   style="width:100%;border:0;display:block;min-height:640px;"
   loading="lazy"
 ></iframe>
@@ -559,9 +585,10 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     if (f && typeof e.data.height === "number") f.style.height = Math.max(640, e.data.height) + "px";
   });
 </script>`}
-                      </pre>
-                    </div>
-                  </details>
+                        </pre>
+                      </div>
+                    </details>
+                  )}
                 </div>
               </TabsContent>
 

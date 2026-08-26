@@ -13,6 +13,11 @@ type PrepareBody = {
   premium?: boolean;
   donation_enabled?: boolean;
   donation_amount_chf?: number;
+  /**
+   * Upgrade the package of an already-paid listing. Content edits never touch
+   * the runtime — only this paid flow re-anchors expires_at to the new plan.
+   */
+  plan_change?: boolean;
 };
 
 async function getOwnedListing(
@@ -105,12 +110,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: "Listing not found or you do not have permission to access it." });
     }
 
-    // Guard: the initial-publish payment flow must never re-charge or wipe the
-    // payment record of a listing that is already paid/refunded. Without this,
-    // the free-plan path below silently knocks a paid listing back to 'pending'
-    // and a paid listing can be charged a second time. (Premium upgrades run
-    // through their own endpoint, not this one.)
-    if (listing.payment_status === "paid" || listing.payment_status === "refunded") {
+    const isPlanChange = body.plan_change === true;
+
+    if (isPlanChange) {
+      // Plan change: an already-paid listing upgrades to a bigger package.
+      // Nothing on the listing moves here — the paid state, current plan and
+      // runtime stay untouched until the upgrade payment lands (the webhook /
+      // verify-payment fulfillment applies the new plan and re-anchors the
+      // expiry). Only upgrades exist: standard→extended, standard→unlimited,
+      // extended→unlimited.
+      if (listing.payment_status !== "paid") {
+        return res
+          .status(409)
+          .json({ error: "Ein Planwechsel ist nur für bereits bezahlte Inserate möglich." });
+      }
+      const currentPlan = listing.price_plan ?? "standard";
+      if (plan === "standard") {
+        return res.status(400).json({ error: "Ein Wechsel auf das Gratis-Inserat ist nicht möglich." });
+      }
+      if (currentPlan === plan) {
+        return res.status(400).json({ error: "Dieses Inserat nutzt diesen Plan bereits." });
+      }
+      if (currentPlan === "unlimited") {
+        return res.status(400).json({ error: "Das Unlimitiert-Paket kann nicht gewechselt werden." });
+      }
+      const blockedStatuses = ["sold", "archived", "expired", "rejected"];
+      if (blockedStatuses.includes(String(listing.status))) {
+        // Expired listings revive through the relist flow, which also resets
+        // the status — a plan change here would take money without making the
+        // listing visible again.
+        return res.status(409).json({ error: "Für dieses Inserat ist kein Planwechsel mehr möglich." });
+      }
+    } else if (listing.payment_status === "paid" || listing.payment_status === "refunded") {
+      // Guard: the initial-publish payment flow must never re-charge or wipe the
+      // payment record of a listing that is already paid/refunded. Without this,
+      // the free-plan path below silently knocks a paid listing back to 'pending'
+      // and a paid listing can be charged a second time. (Premium upgrades run
+      // through their own endpoint, not this one.)
       return res
         .status(409)
         .json({ error: "Dieses Inserat wurde bereits bezahlt und kann nicht erneut bezahlt werden." });
@@ -127,6 +163,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // premium choice travels in the PaymentIntent metadata and the Stripe
     // webhook (service role) grants it after payment.
     if (totalCHF === 0) {
+      // Unreachable for plan changes (both target plans are paid), but the
+      // free path below rewrites the whole payment record — never let it run
+      // against an already-paid listing.
+      if (isPlanChange) {
+        return res.status(400).json({ error: "Ungültiger Planwechsel." });
+      }
       const { error: updateError } = await (supabase as any)
         .from("listings")
         .update({
@@ -167,9 +209,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // in-flight pre-deploy intent are hard-blocked for the key's ~24h TTL.
     // Update and create also get distinct keys: Stripe idempotency keys are
     // account-global, and replaying an update's key against create errors.
+    // Plan changes get their own key space ("pc"): the same listing/plan/user
+    // combination must never collide with an initial-publish intent.
     const idemBase = crypto
       .createHash("sha256")
-      .update(`v2-${listingId}-${plan}-${premium}-${donation.amount}-${totalCHF}-${session.user.id}`)
+      .update(
+        `v2-${isPlanChange ? "pc-" : ""}${listingId}-${plan}-${premium}-${donation.amount}-${totalCHF}-${session.user.id}`
+      )
       .digest("hex");
 
     const paymentIntentBaseParams = {
@@ -183,10 +229,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         premium_included: String(premiumIncluded),
         donation_enabled: String(donation.enabled),
         donation_amount_chf: String(donation.amount),
+        // The webhook and verify-payment dispatch fulfillment on this marker;
+        // without it a succeeded intent runs the initial-publish promotion.
+        ...(isPlanChange ? { kind: "plan_change" } : {}),
       },
       statement_descriptor: "BUYAUTO",
     } as const;
 
+    // Never for plan changes: their payment_status is 'paid', so the stored
+    // intent is the original (already succeeded) publish intent, which Stripe
+    // refuses to update. Plan changes always create, deduped by the idem key.
     let paymentIntentIdToUpdate: string | null = null;
     if (listing.stripe_payment_intent_id && listing.payment_status === "requires_payment") {
       paymentIntentIdToUpdate = listing.stripe_payment_intent_id;
@@ -234,19 +286,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // real on payment_intent.succeeded. (trg_enforce_listing_premium_authority
     // also rejects premium writes made from a user session, so this endpoint
     // could not grant it even if it tried.)
+    const listingUpdate = isPlanChange
+      ? // Plan change: only attach the new intent so the fulfillment can match
+        // it. The listing stays 'paid' on its current plan and keeps its
+        // expiry — abandoning this checkout must leave it exactly as it was.
+        { stripe_payment_intent_id: paymentIntent.id }
+      : {
+          price_plan: plan,
+          // Dual-write until the legacy column drop (see the free-plan path above).
+          pricing_plan: plan,
+          duration_days: planDetails.duration_days,
+          // No expires_at here either — see the free-plan path above. The clock
+          // starts when the listing is published, not when checkout opens.
+          price_paid_chf: totalCHF,
+          payment_status: "requires_payment",
+          stripe_payment_intent_id: paymentIntent.id,
+        };
+
     const { error: updateError } = await (supabase as any)
       .from("listings")
-      .update({
-        price_plan: plan,
-        // Dual-write until the legacy column drop (see the free-plan path above).
-        pricing_plan: plan,
-        duration_days: planDetails.duration_days,
-        // No expires_at here either — see the free-plan path above. The clock
-        // starts when the listing is published, not when checkout opens.
-        price_paid_chf: totalCHF,
-        payment_status: "requires_payment",
-        stripe_payment_intent_id: paymentIntent.id,
-      })
+      .update(listingUpdate)
       .eq("id", listingId);
 
     if (updateError) {

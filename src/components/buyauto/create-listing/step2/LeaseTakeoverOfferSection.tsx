@@ -41,7 +41,10 @@ function calculateRemainingMonths(endDate: Date): number {
     months -= 1;
   }
 
-  return months < 0 ? 0 : months;
+  // Any selectable future end date counts as at least 1 month: the schema
+  // requires remaining_months > 0, and a date inside the current month used to
+  // compute 0 — failing validation on a field the user cannot see.
+  return Math.max(1, months);
 }
 
 export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues>(props: LeaseTakeoverOfferSectionProps<T>) {

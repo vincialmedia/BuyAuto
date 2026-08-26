@@ -12,8 +12,9 @@
  * anything money- or entitlement-related at runtime (the Stripe webhook copies
  * listing_limit / premium_included_per_month onto the garage); these constants
  * are what we *show*, plus the fallback for surfaces that render before the
- * plan row is loaded. Keep both in sync — see the migration
- * `20260730_repackage_dealer_plans.sql`.
+ * plan row is loaded. Keep both in sync — latest migration:
+ * `20260814_rebalance_dealer_plans_proportionality.sql` (rationale in
+ * GARAGE_PRICING_REBALANCE_AUG_2026.md).
  *
  * Deliberately framework-free so API routes and lib code can import it without
  * dragging React in.
@@ -64,9 +65,9 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     supportLevel: "E-Mail-Support",
     cta: "Mit Starter loslegen",
     highlights: [
+      `1 Premium-Boost pro Monat inklusive – einzeln CHF ${PREMIUM_BOOST_PRICE}`,
       "Eigene Garage-Profilseite mit SEO",
-      "25 Eintauschwert-Bewertungen / Monat",
-      "E-Mail-Support",
+      "25 Eintauschwert-Bewertungen pro Monat",
     ],
     notIncluded: [
       "Keine Website-Tools (Inventar- & Rechner-Widget)",
@@ -78,18 +79,18 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     name: "Growth",
     tagline: "Für Garagen mit laufendem Occasionsgeschäft",
     monthlyPriceChf: 349,
-    listingLimit: 60,
-    premiumPerMonth: 6,
-    valuationsPerMonth: 100,
+    listingLimit: 40,
+    premiumPerMonth: 3,
+    valuationsPerMonth: 60,
     websiteTools: true,
     onboardingVehicles: null,
     supportLevel: "Priorisierter Support",
     popular: true,
     cta: "Growth wählen",
     highlights: [
+      `3 Premium-Boosts pro Monat inklusive – Wert CHF ${3 * PREMIUM_BOOST_PRICE}`,
       "Website-Tools: Inventar- & Eintauschwert-Widget auf deiner eigenen Seite",
-      "100 Eintauschwert-Bewertungen / Monat",
-      "Priorisierter Support",
+      "60 Eintauschwert-Bewertungen pro Monat, priorisierter Support",
     ],
     notIncluded: ["Kein persönliches Onboarding"],
   },
@@ -98,17 +99,17 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     name: "Pro",
     tagline: "Für grosse Bestände und mehrere Standorte",
     monthlyPriceChf: 599,
-    listingLimit: 150,
-    premiumPerMonth: 15,
-    valuationsPerMonth: 400,
+    listingLimit: 100,
+    premiumPerMonth: 6,
+    valuationsPerMonth: 150,
     websiteTools: true,
-    onboardingVehicles: 150,
+    onboardingVehicles: 100,
     supportLevel: "Persönlicher Ansprechpartner",
     cta: "Pro wählen",
     highlights: [
-      "Personalisiertes Onboarding: wir richten dich ein und laden deinen Bestand hoch",
-      "400 Eintauschwert-Bewertungen / Monat – praktisch unbegrenzt",
-      "Persönlicher Ansprechpartner statt Ticket-Queue",
+      "Personalisiertes Onboarding: wir richten dich ein und laden bis zu 100 Fahrzeuge hoch",
+      `6 Premium-Boosts pro Monat inklusive – Wert CHF ${6 * PREMIUM_BOOST_PRICE}`,
+      "150 Eintauschwert-Bewertungen pro Monat, persönlicher Ansprechpartner",
     ],
     notIncluded: [],
   },
@@ -116,6 +117,13 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
 
 /** Above this inventory size we quote individually. */
 export const GARAGE_CUSTOM_THRESHOLD = GARAGE_PLANS.pro.listingLimit;
+
+/**
+ * Visible floor for the individual "100+" quote. A hidden "auf Anfrage" price
+ * destroys the anchor (July research verdict); the floor also keeps pricing
+ * headroom above Pro without needing a Stripe price.
+ */
+export const GARAGE_CUSTOM_FROM_CHF = 999;
 
 /**
  * Photos per listing for a garage. Dealers do not pick a per-listing plan, so
@@ -139,14 +147,9 @@ export const garagePlans: GaragePlan[] = GARAGE_PLAN_ORDER.map((code) => GARAGE_
  * Derived numbers used in the copy
  * ------------------------------------------------------------------ */
 
-/** "ab CHF 3.99 pro Fahrzeug" — decomposing the price is what makes 599 feel small. */
+/** "ab CHF 5.99 pro Fahrzeug" — decomposing the price is what makes 599 feel small. */
 export function pricePerVehicleChf(plan: GaragePlan): number {
   return plan.monthlyPriceChf / plan.listingLimit;
-}
-
-/** Monthly retail value of the included premium boosts. */
-export function premiumValueChf(plan: GaragePlan): number {
-  return plan.premiumPerMonth * PREMIUM_BOOST_PRICE;
 }
 
 export function formatChf(value: number, decimals = 0): string {
@@ -156,11 +159,14 @@ export function formatChf(value: number, decimals = 0): string {
   }).format(value);
 }
 
-/** The value line under the price, e.g. "Premium-Wert CHF 180/Monat inklusive · CHF 5.82 pro Fahrzeug". */
-export function planValueLine(plan: GaragePlan): string {
-  const premium = `Premium-Wert CHF ${formatChf(premiumValueChf(plan))}/Monat inklusive`;
-  const perVehicle = `CHF ${formatChf(pricePerVehicleChf(plan), 2)} pro Fahrzeug`;
-  return `${premium} · ${perVehicle}`;
+/**
+ * The one line under the price, e.g. "= CHF 8.73 pro Fahrzeug und Monat".
+ * Replaces the old two-part value line ("Premium-Wert CHF 180/Monat inklusive
+ * · CHF 5.82 pro Fahrzeug") — two calculations glued together read as jargon;
+ * the boost value now lives in a plain highlight bullet with its unit price.
+ */
+export function perVehicleLine(plan: GaragePlan): string {
+  return `= CHF ${formatChf(pricePerVehicleChf(plan), 2)} pro Fahrzeug und Monat`;
 }
 
 /* ------------------------------------------------------------------ *

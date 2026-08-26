@@ -7,6 +7,7 @@ import { GaragePlanCards } from "@/components/buyauto/pricing/GaragePlanCards";
 import { GarageFeatureMatrix } from "@/components/buyauto/pricing/GarageFeatureMatrix";
 import { GarageTrustRow } from "@/components/buyauto/pricing/GarageTrustRow";
 import {
+  GARAGE_CUSTOM_FROM_CHF,
   GARAGE_CUSTOM_THRESHOLD,
   GARAGE_PLANS,
   formatChf,
@@ -20,14 +21,18 @@ function isSafeNextPath(input: unknown): input is string {
 
 export default function GaragePlanPage() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading, profileLoading } = useAuth();
   const userRole = profile?.role;
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<GaragePlanCode | null>(null);
 
   useEffect(() => {
     if (!router.isReady) return;
-    if (profile === undefined) return;
+    // Wait for auth AND profile resolution: the old `profile === undefined`
+    // guard could never fire (AuthContext initializes profile as null), so a
+    // hard refresh bounced logged-in garages to /auth and a pending profile
+    // fetch produced a wrong «Zugriff verweigert».
+    if (authLoading || profileLoading) return;
 
     if (!user) {
       const legacyNext = typeof router.query.next === "string" ? router.query.next : null;
@@ -49,7 +54,14 @@ export default function GaragePlanPage() {
   const handleSelectPlan = async (planCode: GaragePlanCode) => {
     if (!user) return;
 
-    const redirectPathRaw = typeof router.query.redirect === "string" ? router.query.redirect : null;
+    // ?next= is the legacy spelling still sent by the wizard's listing-limit
+    // upsell — honor it as a fallback so return-to-edit works from there too.
+    const redirectPathRaw =
+      typeof router.query.redirect === "string"
+        ? router.query.redirect
+        : typeof router.query.next === "string"
+          ? router.query.next
+          : null;
     const successPath = isSafeNextPath(redirectPathRaw) ? redirectPathRaw : null;
     const cancelPath = successPath ? `/garage-plan?redirect=${encodeURIComponent(successPath)}` : null;
 
@@ -131,12 +143,12 @@ export default function GaragePlanPage() {
             <p className="text-xs text-neutral-400">
               Mehr als {GARAGE_CUSTOM_THRESHOLD} Fahrzeuge?{" "}
               <a
-                href="mailto:kontakt@buyauto.ch"
+                href="mailto:hello@buyauto.ch"
                 className="text-neutral-600 underline hover:text-neutral-900"
               >
                 Kontaktiere uns
               </a>{" "}
-              für ein individuelles Angebot.
+              für ein individuelles Angebot ab CHF {formatChf(GARAGE_CUSTOM_FROM_CHF)}/Monat.
             </p>
           </div>
         </div>

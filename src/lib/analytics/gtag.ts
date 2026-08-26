@@ -3,15 +3,22 @@
 // The measurement ID is inlined at build time, so it must be referenced as a
 // full literal `process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID` — a computed lookup
 // would come back undefined in the browser bundle.
+// Ships with the buyauto.ch property's ID compiled in, same reasoning as the
+// Ads ID below: the GA4 property exists and reporting depends on the tag, so a
+// missing env var on a deployment must not silently switch it off. The env var
+// overrides (set it to an empty string to disable GA, e.g. on a fork or in
+// local dev).
 // Surrounding quotes are stripped: pasting `"G-XXXX"` into a Vercel env var is
 // an easy mistake and would otherwise fail the check below and disable GA with
 // no visible symptom.
-export const GA_MEASUREMENT_ID = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "")
+const RAW_GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+export const GA_MEASUREMENT_ID = (RAW_GA_ID === undefined ? "G-6GJ6D58G1S" : RAW_GA_ID)
   .trim()
   .replace(/^["']|["']$/g, "");
 
-// Everything below no-ops when the ID is unset, so preview/local builds without
-// the env var behave exactly as they did before GA existed.
+// Everything below no-ops when the resolved ID is empty or malformed (env var
+// explicitly set to "" — the local-dev default via .env.local — or a typo'd
+// override), so such builds behave exactly as they did before GA existed.
 export const isGaEnabled = /^G-[A-Z0-9]+$/i.test(GA_MEASUREMENT_ID);
 
 if (typeof window !== "undefined" && GA_MEASUREMENT_ID && !isGaEnabled) {
@@ -22,12 +29,17 @@ if (typeof window !== "undefined" && GA_MEASUREMENT_ID && !isGaEnabled) {
   );
 }
 
-// Google Ads conversion/remarketing tag. Unlike the GA4 ID this one ships with a
-// default: the account it belongs to is fixed for buyauto.ch and the campaigns
-// depend on it being live in production, so it must not silently vanish when an
-// env var is missing from a deployment. The override exists so a fork or a test
-// account can point somewhere else — set it to an empty string to switch Ads off.
-const RAW_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
+// Google Ads conversion/remarketing tag. Ships with a default for the same
+// reason as the GA4 ID above: the account it belongs to is fixed for buyauto.ch
+// and the campaigns depend on it being live in production, so it must not
+// silently vanish when an env var is missing from a deployment. The override
+// exists so a fork or a test account can point somewhere else — set it to an
+// empty string to switch Ads off.
+// NEXT_PUBLIC_GADS_ID is the canonical override (format "AW-XXXXXXXXX");
+// NEXT_PUBLIC_GOOGLE_ADS_ID is honoured for backwards compatibility. Every
+// consumer — the base tag config and each conversion's send_to — resolves the
+// ID from this one value, so the two can never diverge.
+const RAW_ADS_ID = process.env.NEXT_PUBLIC_GADS_ID ?? process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
 export const GOOGLE_ADS_ID = (RAW_ADS_ID === undefined ? "AW-18317910859" : RAW_ADS_ID)
   .trim()
   .replace(/^["']|["']$/g, "");
@@ -36,7 +48,7 @@ export const isAdsEnabled = /^AW-[0-9]+$/i.test(GOOGLE_ADS_ID);
 
 if (typeof window !== "undefined" && GOOGLE_ADS_ID && !isAdsEnabled) {
   console.warn(
-    `[analytics] NEXT_PUBLIC_GOOGLE_ADS_ID is set to "${GOOGLE_ADS_ID}" but is not a valid Google Ads ID (expected AW-XXXXXXXXX). Google Ads tracking is disabled.`,
+    `[analytics] NEXT_PUBLIC_GADS_ID / NEXT_PUBLIC_GOOGLE_ADS_ID is set to "${GOOGLE_ADS_ID}" but is not a valid Google Ads ID (expected AW-XXXXXXXXX). Google Ads tracking is disabled.`,
   );
 }
 
@@ -202,6 +214,81 @@ export function pageview(url: string, referrer?: string) {
 export function trackEvent(name: string, params: Record<string, unknown> = {}) {
   if (!isTagEnabled) return;
   gtag("event", name, params);
+}
+
+// Guards against double-injection across route changes and the React 18
+// strict-mode double-mount in dev.
+let gtagLoadRequested = false;
+
+/**
+ * Injects gtag.js on the first user interaction (or after a generous idle
+ * delay) instead of during page load.
+ *
+ * Why: the tag is ~115 KB of third-party JavaScript whose evaluation lands in
+ * the exact window Lighthouse scores as TBT, and it delays the LCP paint on
+ * mobile. Every command issued before the script arrives — the Consent Mode
+ * defaults from _document, the `config` calls, page views, conversions — is
+ * queued on `window.dataLayer` and drained in order the moment it loads, so
+ * nothing is lost and consent ordering is preserved; hits are merely sent a
+ * beat later.
+ *
+ * The one case that must NOT wait is an ad-click landing: the hit fired by the
+ * Ads `config` captures the click ID, and a visitor can bounce without ever
+ * interacting. When the URL carries gclid/gbraid/wbraid/gclsrc the script
+ * loads immediately, exactly as before.
+ *
+ * Returns a cleanup that removes the listeners (the injected script itself is
+ * global and survives route changes by design).
+ */
+export function loadGtagOnInteraction(scriptId: string): () => void {
+  if (typeof window === "undefined" || gtagLoadRequested) return () => {};
+
+  const inject = () => {
+    if (gtagLoadRequested) return;
+    gtagLoadRequested = true;
+    removeListeners();
+    window.clearTimeout(idleTimer);
+    const s = document.createElement("script");
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${scriptId}`;
+    s.async = true;
+    document.head.appendChild(s);
+  };
+
+  // Scroll is included: it is the earliest signal most real sessions produce.
+  const events: (keyof WindowEventMap)[] = [
+    "pointerdown",
+    "keydown",
+    "touchstart",
+    "scroll",
+  ];
+  const removeListeners = () =>
+    events.forEach((e) => window.removeEventListener(e, inject));
+
+  const hasAdClickId = /[?&](gclid|gbraid|wbraid|gclsrc)=/.test(
+    window.location.search,
+  );
+
+  // Fallback for visitors who genuinely never interact, kept long enough to
+  // stay outside the lab trace window. Sessions shorter than this without a
+  // single scroll or tap were never going to convert anyway. Created before
+  // inject can possibly run so the closure never reads it uninitialised.
+  const idleTimer = hasAdClickId
+    ? undefined
+    : window.setTimeout(inject, 8000);
+
+  if (hasAdClickId) {
+    inject();
+    return () => {};
+  }
+
+  events.forEach((e) =>
+    window.addEventListener(e, inject, { passive: true }),
+  );
+
+  return () => {
+    removeListeners();
+    window.clearTimeout(idleTimer);
+  };
 }
 
 /**

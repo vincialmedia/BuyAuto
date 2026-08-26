@@ -142,7 +142,7 @@ export default function CreateListingPage() {
         <title>Inserat erstellen | BuyAuto Schweiz</title>
         <meta
           name="description"
-          content="Erstelle dein Auto-Leasing-Inserat auf BuyAuto. Gratis oder Premium, 30 Tage, 90 Tage oder Unlimitiert."
+          content="Erstelle dein Auto-Leasing-Inserat auf BuyAuto. Gratis oder Premium, 60 Tage, 90 Tage oder Unlimitiert."
         />
         <meta name="robots" content="index, follow" />
       </Head>

@@ -26,24 +26,18 @@ and stopped the moment the site began deploying from this repository.
 | `src/components/buyauto/CookieConsent.tsx` | Banner now has **Ablehnen** and **Einverstanden**; both write a Consent Mode update covering analytics *and* advertising storage. |
 | `src/pages/datenschutz.tsx` | Privacy policy matches actual behaviour, incl. opt-out path. |
 
-## Required step: set the measurement ID
+## The measurement ID
 
-The tag only renders when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is present at **build**
-time (Next.js inlines `NEXT_PUBLIC_*` into the client bundle — setting it at
-runtime has no effect).
+The BuyAuto property's Measurement ID (`G-6GJ6D58G1S`) is **compiled in as the
+default** in `src/lib/analytics/gtag.ts` — like the Ads ID and the conversion
+labels, it ships in the public bundle either way, and a missing env var on a
+deployment must not silently switch reporting off. **No Vercel configuration is
+needed.**
 
-1. In [Google Analytics](https://analytics.google.com/) → **Admin** → **Data streams**,
-   open (or create) the web stream for `https://www.buyauto.ch` and copy the
-   **Measurement ID** — format `G-XXXXXXXXXX`.
-2. In Vercel → project → **Settings** → **Environment Variables**, add:
-
-   | Key | Value | Environments |
-   | --- | --- | --- |
-   | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | `G-XXXXXXXXXX` | Production (and Preview, if you want preview traffic) |
-
-3. **Redeploy.** Existing deployments were built without the variable and will not
-   pick it up.
-4. For local development, add the same line to `.env.local`.
+`NEXT_PUBLIC_GA_MEASUREMENT_ID` overrides the default at **build** time (Next.js
+inlines `NEXT_PUBLIC_*` into the client bundle — setting it at runtime has no
+effect; redeploy after changing it). Set it to an empty string to disable GA —
+`.env.local` does exactly that so local development never pollutes the stats.
 
 ## Verifying
 
@@ -68,8 +62,11 @@ multi-product snippet works.
 Unlike the measurement ID it is **not** required as an env var: the ID is
 compiled in as the default, because the campaigns depend on it being live and a
 missing variable on a deployment must not silently switch conversion tracking
-off. `NEXT_PUBLIC_GOOGLE_ADS_ID` overrides it (set it to an empty string to
-disable the tag, e.g. on a fork or a staging deployment).
+off. `NEXT_PUBLIC_GADS_ID` overrides it (format `AW-XXXXXXXXX`; set it to an
+empty string to disable the tag, e.g. on a fork or a staging deployment). The
+legacy name `NEXT_PUBLIC_GOOGLE_ADS_ID` is still honoured when the canonical
+one is unset. Base tag and every conversion `send_to` resolve from the same
+value, so they cannot diverge.
 
 Differences from the GA4 config, both deliberate:
 
@@ -86,13 +83,22 @@ A conversion action reads as **"not detected"** in Google Ads until something on
 the site actually fires it — the base tag alone is never enough, which is the
 usual reason the troubleshooter comes back red on a freshly installed tag.
 
-Labels live in `ADS_CONVERSIONS` in `src/lib/analytics/gtag.ts`; each is the part
-after the slash in the `AW-XXXXXXXXX/LabelHere` string shown under the
-conversion's *Tag einrichten* in Google Ads.
+Labels live in `ADS_CONVERSIONS` in `src/lib/analytics/gtag.ts` — or, for the
+listing-funnel conversions, in env vars read by `src/lib/gads.ts`. Either way a
+label is the part after the slash in the `AW-XXXXXXXXX/LabelHere` string shown
+under the conversion's *Tag einrichten* in Google Ads.
 
-| Conversion action | Fires on | Where |
-| --- | --- | --- |
-| Submit lead form | A guest seller creates an account to publish their listing (registration only — signing in with an existing account does not count) | `src/components/buyauto/create-listing/GuestAuthGate.tsx` |
+| Conversion action | Label source | Fires on | Where |
+| --- | --- | --- | --- |
+| Submit lead form | `ADS_CONVERSIONS.submitLeadForm` | A guest seller creates an account to publish their listing (registration only — signing in with an existing account does not count) | `src/components/buyauto/create-listing/GuestAuthGate.tsx` |
+| Listing creation started („Inserat gestartet“) | compiled default in `src/lib/gads.ts`; `NEXT_PUBLIC_GADS_LABEL_START` overrides | First meaningful interaction with the creation form on `/inserat-erstellen` (first input/change in any field; once per browser session, not in edit mode) | `src/components/buyauto/create-listing/ListingWizard.tsx` |
+| Listing published / paid upgrade („Inserat veröffentlicht“) | compiled default in `src/lib/gads.ts`; `NEXT_PUBLIC_GADS_LABEL_PUBLISH` overrides | Every successful publish (free, paid — embedded or TWINT/3DS redirect — and garage), plus payment success for a listing upgrade (premium boost, relist, paid plan change). `value` carries the CHF actually paid when there was a payment; value-less otherwise. Deduped per payment via `transaction_id` + a session guard, so a publish and its payment confirmation count once. | `Step5_PreviewAndPay.tsx`, `dashboard/ListingsSection.tsx` |
+
+Like the Ads ID, the two listing-funnel labels are compiled in as defaults, so
+**no Vercel configuration is needed** for conversion tracking to run in
+production. The `NEXT_PUBLIC_GADS_*` env vars exist as build-time-inlined
+overrides only (set a label to an empty string to switch that conversion off,
+e.g. on a fork); after changing one in Vercel, redeploy.
 
 To add another, put its label in `ADS_CONVERSIONS` and call it from the success
 path:

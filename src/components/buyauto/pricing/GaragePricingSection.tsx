@@ -8,6 +8,7 @@ import { GarageFeatureMatrix } from "@/components/buyauto/pricing/GarageFeatureM
 import { GarageTrustRow } from "@/components/buyauto/pricing/GarageTrustRow";
 import {
   GARAGE_CORE_FEATURES,
+  GARAGE_CUSTOM_FROM_CHF,
   GARAGE_CUSTOM_THRESHOLD,
   GARAGE_PLANS,
   formatChf,
@@ -102,7 +103,8 @@ export function GaragePricingSection() {
             </h3>
             <p className="mt-2 text-white/80">
               Für grosse Bestände, mehrere Betriebe oder Spezialprozesse machen
-              wir dir ein individuelles Angebot – weiterhin als Fixpreis.
+              wir dir ein individuelles Angebot ab{" "}
+              CHF {formatChf(GARAGE_CUSTOM_FROM_CHF)}/Monat – weiterhin als Fixpreis.
             </p>
           </div>
 

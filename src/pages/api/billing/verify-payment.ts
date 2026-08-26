@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
+import { getPlanDetails } from "@/lib/buyauto/stripe_config";
 
 /**
  * Client-side fallback that reconciles a listing's payment state right after the
@@ -65,7 +66,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: listing, error: fetchError } = await supabaseAdmin
       .from("listings")
-      .select("status, payment_status, user_id, created_by, stripe_payment_intent_id, expires_at, premium, premium_until")
+      .select(
+        "status, payment_status, user_id, created_by, stripe_payment_intent_id, expires_at, premium, premium_until, price_plan"
+      )
       .eq("id", listingId)
       .single();
 
@@ -87,6 +90,66 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // premium-grant a listing whose current cycle never paid it.
     if (!listing.stripe_payment_intent_id || listing.stripe_payment_intent_id !== paymentIntentId) {
       return res.status(409).json({ error: "PaymentIntent does not match this listing." });
+    }
+
+    // A plan-change intent upgrades an already-paid listing's package, so it
+    // must be handled before the terminal-state guards below — 'paid' is
+    // exactly the state a plan change starts from. Mirrors the webhook's
+    // plan_change branch; both are idempotent via the price_plan comparison,
+    // so whichever lands first applies it and the other becomes a no-op.
+    const metadataKind = typeof paymentIntent.metadata?.kind === "string" ? paymentIntent.metadata.kind : null;
+    if (metadataKind === "plan_change") {
+      const newPlan = typeof paymentIntent.metadata?.plan === "string" ? paymentIntent.metadata.plan : null;
+      if (newPlan !== "extended" && newPlan !== "unlimited") {
+        return res.status(400).json({ error: "Invalid plan on plan-change intent" });
+      }
+      if (listing.payment_status === "refunded") {
+        return res.status(200).json({ success: true, message: "Listing refunded; plan change not applied." });
+      }
+      if (listing.price_plan === newPlan) {
+        return res.status(200).json({ success: true, message: "Plan change already applied." });
+      }
+
+      const durationDays = getPlanDetails(newPlan).duration_days;
+      // Content edits never move the expiry — only this paid plan change
+      // re-anchors it, to the chosen package's runtime from now. A listing
+      // still in review (expires_at NULL) keeps NULL; set_listing_expires_at
+      // anchors the new duration_days at publication. Unlimited never expires.
+      const newExpiresAt =
+        newPlan === "unlimited" || durationDays === null || !listing.expires_at
+          ? null
+          : new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+      const { error: planChangeError } = await supabaseAdmin
+        .from("listings")
+        .update({
+          // Prepare refuses expired listings, but a checkout left open in a
+          // stale tab can still be paid after the listing expires. The money
+          // bought a fresh runtime and the listing already passed review, so
+          // republish rather than leaving a paid-for listing invisible.
+          ...(listing.status === "expired" ? { status: "published" } : {}),
+          price_plan: newPlan,
+          // Dual-write until the legacy column drop — the expiry triggers
+          // resolve the plan legacy-first (pricing_plan before price_plan).
+          pricing_plan: newPlan,
+          duration_days: durationDays,
+          expires_at: newExpiresAt,
+          price_paid_chf: Math.round(paymentIntent.amount / 100),
+          // Both target plans include premium placement; it runs with the
+          // listing (align_included_premium_on_publish re-anchors pending
+          // listings when they go live).
+          premium: true,
+          is_premium: true,
+          premium_until: newExpiresAt,
+        })
+        .eq("id", listingId);
+
+      if (planChangeError) {
+        console.error(`verify-payment: failed to apply plan change for listing ${listingId}`, planChangeError);
+        return res.status(500).json({ error: "Failed to apply plan change" });
+      }
+
+      return res.status(200).json({ success: true, message: "Plan change applied." });
     }
 
     // Idempotent + non-destructive: never clobber a terminal state.

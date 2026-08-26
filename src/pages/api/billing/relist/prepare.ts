@@ -23,7 +23,7 @@ import { RELIST_PROMO_ACTIVE, pricingPlans, relistPriceChf } from "@/lib/buyauto
 
 type ListingRow = Pick<
   Database["public"]["Tables"]["listings"]["Row"],
-  "id" | "user_id" | "created_by" | "status" | "brand" | "model" | "duration_days" | "updated_at" | "price_plan"
+  "id" | "user_id" | "created_by" | "status" | "brand" | "model" | "duration_days" | "updated_at" | "price_plan" | "garage_id"
 >;
 
 type PrepareBody = {
@@ -63,7 +63,7 @@ async function getOwnedListing(
 ): Promise<ListingRow | null> {
   const { data: byUserId, error: byUserIdError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at, price_plan")
+    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at, price_plan, garage_id")
     .eq("id", listingId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -75,7 +75,7 @@ async function getOwnedListing(
 
   const { data: byCreatedBy, error: byCreatedByError } = await supabase
     .from("listings")
-    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at, price_plan")
+    .select("id, user_id, created_by, status, brand, model, duration_days, updated_at, price_plan, garage_id")
     .eq("id", listingId)
     .eq("created_by", userId)
     .maybeSingle();
@@ -205,8 +205,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // {CHECKOUT_SESSION_ID}, which the dashboard passes to
         // /api/billing/relist/verify to reconcile the payment without
         // depending on the webhook.
-        success_url: `${origin}/dashboard/private?relist=success&listingId=${encodeURIComponent(listingId)}&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/dashboard/private?relist=cancel&listingId=${encodeURIComponent(listingId)}`,
+        success_url: `${origin}${listing.garage_id ? "/dashboard/garage" : "/dashboard/private"}?relist=success&listingId=${encodeURIComponent(listingId)}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}${listing.garage_id ? "/dashboard/garage" : "/dashboard/private"}?relist=cancel&listingId=${encodeURIComponent(listingId)}`,
         expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
         line_items: [
           {
