@@ -5,6 +5,7 @@ import {
   autolinaCategoryUrl,
   baseModel,
   comparisCategoryUrl,
+  displacementOf,
   extractPrices,
   identifyCategoryUrl,
   identifyListingUrl,
@@ -311,6 +312,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const requestedBody: BodyType | null = (BODY_TYPE_VALUES as string[]).includes(bodyStr)
     ? (bodyStr as BodyType)
     : null;
+  // Optional engine displacement (from a Typenschein/VIN decode, e.g. "2.0").
+  // Only used when the MODEL string names no displacement itself: appended to
+  // the model handed to selectComps so the trim filter activates, while the
+  // search queries keep the clean model name.
+  const dispRaw = typeof (input as { displacement?: unknown }).displacement === "string"
+    ? ((input as { displacement?: string }).displacement ?? "").trim().replace(",", ".")
+    : "";
+  const requestedDisplacement = /^\d\.\d$/.test(dispRaw) ? dispRaw : null;
 
   if (
     !makeStr ||
@@ -362,6 +371,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // A known Karosserie sharpens the searches: "BMW i8 Coupé" surfaces the right
   // variant's listings instead of a Coupé/Roadster mix.
   const vehicleQuery = requestedBody ? `${vehicle} ${BODY_TYPE_LABEL[requestedBody]}` : vehicle;
+  // The model used for SELECTION (trim filter). A decoded displacement is
+  // appended only when the typed model names none itself — searches and
+  // category URLs keep the clean model name.
+  const filterModel =
+    requestedDisplacement && !displacementOf(modelStr)
+      ? `${modelStr} ${requestedDisplacement}`
+      : modelStr;
   const stats: TierStat[] = [];
   const seenUrls = new Set<string>();
   const candidates: Candidate[] = [];
@@ -459,7 +475,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Counts CONFIRMED picks only (minus top-ups) — engine-less cards are usable
   // as a top-up but are not a reason to stop looking for the real thing.
   comps = dedupeByPriceKm(comps);
-  const preview = selectComps(comps, modelStr, kmNum, requestedBody);
+  const preview = selectComps(comps, filterModel, kmNum, requestedBody);
   const viableSoFar = preview.picked.length - preview.toppedUp;
   if (viableSoFar < MAX_COMPS && withinBudget()) {
     const catPages = orderedCategoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
@@ -562,7 +578,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     mixedBody,
     unverifiedAvailable,
     harvested,
-  } = selectComps(comps, modelStr, kmNum, requestedBody);
+  } = selectComps(comps, filterModel, kmNum, requestedBody);
   // Counters are disjoint (trim | body | near-new | outlier) so the funnel log adds up.
   const droppedForQuality = droppedForTrim + droppedForBody + droppedNearNew + droppedOutliers;
 
@@ -591,7 +607,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
   console.log(
     "valuation/comps funnel:",
-    JSON.stringify({ vehicle, yearNum, kmNum, requestedBody, ...funnel })
+    JSON.stringify({ vehicle, yearNum, kmNum, requestedBody, requestedDisplacement, ...funnel })
   );
   try {
     await supabase.rpc("log_valuation_search", {
@@ -613,7 +629,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     picked.length > 0
       ? undefined
       : trimZero
-        ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Motorisierung (${modelStr}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
+        ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Motorisierung (${filterModel}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
         : bodyZero
           ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Karosserie-Variante (${modelStr}). Erfasse 3–5 passende Vergleichsfahrzeuge manuell.`
           : buildDiagnosis(searchStats, candidatesTried);
@@ -629,7 +645,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     warning:
       picked.length === 0
         ? trimZero
-          ? `Keine ${modelStr}-Inserate mit passender Motorisierung gefunden – erfasse sie manuell.`
+          ? `Keine ${filterModel}-Inserate mit passender Motorisierung gefunden – erfasse sie manuell.`
           : bodyZero
             ? `Keine ${modelStr}-Inserate mit passender Karosserie-Variante gefunden – erfasse sie manuell.`
             : "Keine Vergleichsinserate gefunden – erfasse sie manuell."

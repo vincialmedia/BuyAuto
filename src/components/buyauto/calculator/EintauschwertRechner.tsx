@@ -77,6 +77,9 @@ interface CalculatorState {
   vehicleKm: number;
   /** Karosserie ('' = unbekannt/egal) — schärft die automatische Suche. */
   bodyType: string;
+  /** Hubraum-Token aus dem Typenschein (z.B. "2.0", '' = unbekannt) — aktiviert
+   *  den Motorisierungs-Filter serverseitig, ohne die Suchqueries zu verändern. */
+  displacement: string;
   comps: CompRow[];
   reconCost: number;     // Aufbereitung & Reparaturen (fix)
   warrantyCost: number;  // Garantie-Rückstellung (fix)
@@ -148,6 +151,7 @@ const DEFAULT_STATE: CalculatorState = {
   year: 0,
   vehicleKm: 0,
   bodyType: "",
+  displacement: "",
   comps: [
     { price: 0, km: 0 },
     { price: 0, km: 0 },
@@ -167,6 +171,7 @@ const PRESET_GOLF: CalculatorState = {
   year: 2020,
   vehicleKm: 78000,
   bodyType: "",
+  displacement: "",
   comps: [
     { price: 18900, km: 65000 },
     { price: 17500, km: 82000 },
@@ -389,6 +394,9 @@ export function EintauschwertRechner() {
   const [vehicleFieldMode, setVehicleFieldMode] = useState<'select' | 'text'>('select');
   // Two-step flow: 1 = vehicle & market, 2 = garage deductions + result.
   const [step, setStep] = useState<1 | 2>(1);
+  // Typenschein quick-fill (Fahrzeugausweis Feld 24 -> exakte Fahrzeugdaten).
+  const [tgInput, setTgInput] = useState("");
+  const [tgLoading, setTgLoading] = useState(false);
   // Vehicle identity at calculation time — changing the car invalidates comps.
   const searchedVehicleRef = useRef("");
 
@@ -537,6 +545,7 @@ export function EintauschwertRechner() {
     setFoundListings([]);
     setMakeId("");
     setModelId("");
+    setTgInput("");
     setVehicleFieldMode('select');
     setStep(1);
   };
@@ -588,6 +597,79 @@ export function EintauschwertRechner() {
     setTimeout(() => {
       document.getElementById("comps-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 200);
+  };
+
+  // Typenschein-Lookup: füllt Marke/Modell/Karosserie/Hubraum aus der
+  // ASTRA-Typengenehmigung (Feld 24). Kostenlos, kein Kontingent.
+  const handleTgLookup = async () => {
+    const tg = tgInput.trim().toUpperCase().replace(/[\s.\-]/g, "");
+    setTgInput(tg);
+    if (!/^[A-Z0-9]{6}$/.test(tg)) {
+      toast.error("Ungültige Typenschein-Nr.", {
+        description: "6 Zeichen aus Feld 24 des Fahrzeugausweises, z.B. 1TD812.",
+      });
+      return;
+    }
+    setTgLoading(true);
+    try {
+      const res = await fetch(`/api/vehicles/decode-tg?tg=${encodeURIComponent(tg)}`);
+      const data = (await res.json().catch(() => ({}))) as {
+        provider_make?: string | null;
+        provider_model?: string | null;
+        body_key?: string | null;
+        body_label?: string | null;
+        displacement_l?: string | null;
+        message?: string;
+      };
+      if (!res.ok) {
+        toast.error("Typenschein nicht gefunden", {
+          description: data?.message ?? "Prüf die Nummer oder erfasse das Fahrzeug manuell.",
+        });
+        return;
+      }
+      // Karosserie-Wörter ("LIM", "KOMBI") gehören nicht in den Modell-Suchstring
+      // — die Karosserie kommt separat als bodyType mit.
+      const model = (data.provider_model ?? "")
+        .split(/\s+/)
+        .filter(
+          (t) =>
+            !/^(lim|limousine|kombi|coupe|coupé|cabriolet|cabrio|roadster|targa|suv|schr(ä|ae)gheck|stufenheck)$/i.test(
+              t
+            )
+        )
+        .join(" ")
+        .trim();
+      const bodyKey =
+        data.body_key && BODY_TYPE_OPTIONS.some((o) => o.value === data.body_key)
+          ? data.body_key
+          : "";
+      setVehicleFieldMode('text');
+      setMakeId("");
+      setModelId("");
+      setState((prev) => ({
+        ...prev,
+        make: data.provider_make ?? prev.make,
+        model: model || prev.model,
+        bodyType: bodyKey,
+        displacement: data.displacement_l ?? "",
+      }));
+      toast.success("Typenschein erkannt", {
+        description: [
+          data.provider_make,
+          model,
+          data.body_label,
+          data.displacement_l ? `${data.displacement_l}l` : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      });
+    } catch {
+      toast.error("Abfrage fehlgeschlagen", {
+        description: "Typenschein konnte nicht geladen werden – erfasse das Fahrzeug manuell.",
+      });
+    } finally {
+      setTgLoading(false);
+    }
   };
 
   const validateVehicle = (): boolean => {
@@ -650,7 +732,7 @@ export function EintauschwertRechner() {
     }
     setResult(computed);
     setGateKind(null);
-    searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}|${nextState.bodyType}`;
+    searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}|${nextState.bodyType}|${nextState.displacement}`;
     return true;
   };
 
@@ -686,6 +768,7 @@ export function EintauschwertRechner() {
     setGateKind(null);
     setMakeId("");
     setModelId("");
+    setTgInput("");
     setVehicleFieldMode('select');
     setCompsMode('auto');
     setStep(1);
@@ -707,7 +790,7 @@ export function EintauschwertRechner() {
       });
       return;
     }
-    const key = `${state.make}|${state.model}|${state.year}|${state.bodyType}`;
+    const key = `${state.make}|${state.model}|${state.year}|${state.bodyType}|${state.displacement}`;
     if (result && searchedVehicleRef.current && key !== searchedVehicleRef.current) {
       setResult(null);
       if (compsMode === 'auto') {
@@ -770,6 +853,7 @@ export function EintauschwertRechner() {
           year: state.year,
           km: state.vehicleKm,
           body: state.bodyType || undefined,
+          displacement: state.displacement || undefined,
         }),
       });
 
@@ -993,6 +1077,43 @@ export function EintauschwertRechner() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
+            {/* Typenschein-Schnell-Erfassung: ein 6-stelliger Code aus dem
+                Fahrzeugausweis identifiziert das Fahrzeug exakt (ASTRA-Daten). */}
+            <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-red-600" />
+                <Label className="text-sm font-bold text-neutral-900">
+                  Schnell-Erfassung mit Typenschein-Nr.
+                </Label>
+                <span className="text-xs text-neutral-400">(optional)</span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={tgInput}
+                  onChange={(e) => setTgInput(e.target.value.toUpperCase())}
+                  placeholder="z.B. 1TD812"
+                  className="uppercase bg-white"
+                  maxLength={10}
+                  autoComplete="off"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTgLookup}
+                  disabled={tgLoading}
+                  className="shrink-0 border-neutral-300"
+                >
+                  {tgLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Übernehmen
+                </Button>
+              </div>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Feld 24 im Fahrzeugausweis – füllt Marke, Modell, Karosserie und Motorisierung
+                exakt aus (ASTRA-Typengenehmigung, gratis). Steht dort «IVI» oder «X», erfasse
+                das Fahrzeug manuell.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-sm font-bold text-neutral-900">Marke *</Label>

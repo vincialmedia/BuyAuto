@@ -659,10 +659,13 @@ const BODY_TYPE_TOKENS: Array<{ type: BodyType; re: RegExp }> = [
   { type: "cabrio", re: /\b(cabriolet|cabrio|convertible)\b/ },
   { type: "roadster", re: /\b(roadster|spider|spyder)\b/ },
   { type: "targa", re: /\btarga\b/ },
-  { type: "kombi", re: /\b(kombi|touring|avant|variant|sportwagon|estate|break)\b/ },
+  // "Kombiwagen" ist das TARGA/Fahrzeugausweis-Label für Kombis.
+  { type: "kombi", re: /\b(kombi(wagen)?|touring|avant|variant|sportwagon|estate|break)\b/ },
   { type: "limousine", re: /\b(limousine|sedan|saloon)\b/ },
   { type: "sportback", re: /\bsportback\b/ },
-  { type: "suv", re: /\bsuv\b/ },
+  // "Geländewagen" ist das TARGA/Fahrzeugausweis-Label für SUVs (nach dem
+  // Diakritika-Folding "gelandewagen").
+  { type: "suv", re: /\b(suv|gelandewagen|gelaendewagen)\b/ },
 ];
 
 /** Every valid BodyType value — for validating client-supplied body params. */
