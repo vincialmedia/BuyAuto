@@ -194,6 +194,7 @@ async function main(): Promise<void> {
     console.log(result.headers.map((h) => `  - ${JSON.stringify(h)}`).join("\n"));
     console.log(`\nResolved column mapping:`);
     console.log(JSON.stringify(result.mapping, null, 2));
+    console.log(`vmax_kmh = max of: ${JSON.stringify(result.vmaxColumns)}`);
     console.log(`\nParsed rows: ${result.rowCount} (skipped without TG-Nr: ${result.skipped})`);
     console.log(`\nSample parsed records (raw omitted):`);
     console.log(JSON.stringify(samples, null, 2));

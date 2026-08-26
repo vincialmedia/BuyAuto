@@ -1,4 +1,4 @@
-01 Typengenehmigung	02 Variante	03 Fahrzeugart	04 Marke	04 Typ	07 Karosserieform Code	07 Karosserieform	20 Motormarke	20 Motortyp	21 Getriebe	22 Bauart Treibstoff	23 Hubraum	24 Leistung kW	31 Höchstgeschwindigkeit	12 Typengenehmigung erteilt
-1TD812	01	Personenwagen	ŠKODA	Octavia Combi	AC	Kombilimousine	ŠKODA	DNNA	Automatisiertes Schaltgetriebe	Benzin	1998	141	235	01.03.2018
-1TD812	02	Personenwagen	ŠKODA	Octavia Combi	AC	Kombilimousine	ŠKODA	DNNA	Schaltgetriebe 6-Gang	Benzin	1998	140.5	232	01.03.2018
-2AB345		Personenwagen	Citroën	C4 – Édition €uro	AB	Limousine	PSA	EB2ADTS	Automat	Benzin	1199	96		15.11.2021
+Typengenehmigungsnummer	Typengenehmigung erteilt	01 Fahrzeugart	04 Marke	04 Typ	05 Typ; Variante/Version	07 Karosserieform Code	07 Karosserieform	18 Getriebe 1	19 Fahrzeug Vmax mech von	19 Fahrzeug Vmax mech bis	19 Fahrzeug Vmax autom von	19 Fahrzeug Vmax autom bis	25 Motor Marke	25 Motor Typ	26 Bauart Treibstoff	27 Hubraum	28 Leistung kW		
+1TD812	01.03.2018	PERSONENWAGEN	ŠKODA	Octavia Combi 2.0 TSI	NX35HJ	163	Kombilimousine	m6	220	231			ŠKODA	DNNA	B	1998	141	x1	y1
+1TD812	01.03.2018	PERSONENWAGEN	ŠKODA	Octavia Combi 2.0 TSI	NX35HK	163	Kombilimousine	a7			225	229	ŠKODA	DNNA	B	1998	140,5	x2	y2
+2AB345	15.11.2021	PERSONENWAGEN	Citroën	C4 – Édition €uro		162	Limousine	a8					PSA	EB2ADTS	B	1199	96		

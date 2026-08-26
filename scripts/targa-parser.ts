@@ -71,8 +71,12 @@ const CANDIDATES: Array<{ target: keyof ColumnMapping; matchers: Matcher[] }> = 
     ],
   },
   {
+    // Real TG-Automobil.txt header: "05 Typ; Variante/Version"
     target: "variante",
-    matchers: [eq("variante", "typenvariante", "variante des typs")],
+    matchers: [
+      eq("typ variante version", "variante", "typenvariante", "variante version"),
+      (n) => n.includes("variante"),
+    ],
   },
   {
     target: "marke",
@@ -107,8 +111,12 @@ const CANDIDATES: Array<{ target: keyof ColumnMapping; matchers: Matcher[] }> = 
     matchers: [eq("leistung kw", "leistung in kw"), has("leistung")],
   },
   {
+    // Real file has "18 Getriebe 1".."18 Getriebe 4" — the first is primary.
     target: "getriebe",
-    matchers: [eq("getriebe", "getriebeart"), (n) => n.includes("getriebe") && !n.includes("uebersetzung")],
+    matchers: [
+      eq("getriebe 1", "getriebe", "getriebeart"),
+      (n) => n.includes("getriebe") && !n.includes("uebersetzung"),
+    ],
   },
   {
     target: "motor_marke",
@@ -119,13 +127,6 @@ const CANDIDATES: Array<{ target: keyof ColumnMapping; matchers: Matcher[] }> = 
     matchers: [eq("motortyp", "typ des motors"), has("motor", "typ")],
   },
   {
-    target: "vmax_kmh",
-    matchers: [
-      eq("hoechstgeschwindigkeit", "v max", "vmax"),
-      (n) => n.includes("geschwindigkeit") || n.includes("v max"),
-    ],
-  },
-  {
     target: "tg_erteilt",
     matchers: [
       eq("typengenehmigung erteilt", "erteilt", "erteilt am", "tg erteilt"),
@@ -134,6 +135,18 @@ const CANDIDATES: Array<{ target: keyof ColumnMapping; matchers: Matcher[] }> = 
     ],
   },
 ];
+
+/**
+ * The real export has no single top-speed column — it carries ranges per
+ * transmission kind ("19 Fahrzeug Vmax mech von/bis", "19 Fahrzeug Vmax autom
+ * von/bis"). vmax_kmh is computed as the max across all of them.
+ */
+export function resolveVmaxColumns(headers: string[]): string[] {
+  return headers.filter((h) => {
+    const n = normalizeHeader(h);
+    return n.includes("vmax") || n.includes("v max") || n.includes("geschwindigkeit");
+  });
+}
 
 export function resolveColumns(headers: string[]): ColumnMapping {
   const normalized = headers.map(normalizeHeader);
@@ -190,9 +203,16 @@ function cell(raw: Record<string, string>, header: string | null): string | unde
   return v ? v : undefined;
 }
 
-export function toRecord(raw: Record<string, string>, mapping: ColumnMapping): TgRecord | null {
+export function toRecord(
+  raw: Record<string, string>,
+  mapping: ColumnMapping,
+  vmaxColumns: string[] = []
+): TgRecord | null {
   const tgNr = cell(raw, mapping.tg_nr);
   if (!tgNr) return null;
+  const vmaxValues = vmaxColumns
+    .map((col) => parseIntOrNull(cell(raw, col)))
+    .filter((v): v is number => v !== null);
   return {
     tg_nr: tgNr,
     variante: cell(raw, mapping.variante) ?? null,
@@ -207,7 +227,7 @@ export function toRecord(raw: Record<string, string>, mapping: ColumnMapping): T
     getriebe: cell(raw, mapping.getriebe) ?? null,
     motor_marke: cell(raw, mapping.motor_marke) ?? null,
     motor_typ: cell(raw, mapping.motor_typ) ?? null,
-    vmax_kmh: parseIntOrNull(cell(raw, mapping.vmax_kmh)),
+    vmax_kmh: vmaxValues.length > 0 ? Math.max(...vmaxValues) : null,
     tg_erteilt: parseDateOrNull(cell(raw, mapping.tg_erteilt)),
     raw,
   };
@@ -216,8 +236,23 @@ export function toRecord(raw: Record<string, string>, mapping: ColumnMapping): T
 export interface ParseResult {
   headers: string[];
   mapping: ColumnMapping;
+  vmaxColumns: string[];
   rowCount: number;
   skipped: number;
+}
+
+/**
+ * The real export contains unnamed columns (and could repeat names); make
+ * every header unique so no cell is lost when building the raw jsonb object.
+ */
+export function uniquifyHeaders(headers: string[]): string[] {
+  const seen = new Set<string>();
+  return headers.map((h, i) => {
+    let name = h || `col_${i + 1}`;
+    if (seen.has(name)) name = `${name} (${i + 1})`;
+    seen.add(name);
+    return name;
+  });
 }
 
 /**
@@ -231,14 +266,17 @@ export async function parseTargaStream(
   let buffer = "";
   let headers: string[] | null = null;
   let mapping: ColumnMapping | null = null;
+  let vmaxColumns: string[] = [];
   let rowCount = 0;
   let skipped = 0;
 
   const handleLine = async (line: string) => {
     if (line === "") return;
     if (headers === null) {
-      headers = line.replace(/^\uFEFF/, "").split("\t").map((h) => h.trim());
+      const rawHeaders = line.replace(/^\uFEFF/, "").split("\t").map((h) => h.trim());
+      headers = uniquifyHeaders(rawHeaders);
       mapping = resolveColumns(headers);
+      vmaxColumns = resolveVmaxColumns(headers);
       return;
     }
     const cells = line.split("\t");
@@ -246,7 +284,7 @@ export async function parseTargaStream(
     for (let i = 0; i < headers.length; i++) {
       raw[headers[i]] = cells[i] ?? "";
     }
-    const record = toRecord(raw, mapping as ColumnMapping);
+    const record = toRecord(raw, mapping as ColumnMapping, vmaxColumns);
     if (record) {
       rowCount++;
       await onRecord(record);
@@ -271,5 +309,5 @@ export async function parseTargaStream(
   if (headers === null || mapping === null) {
     throw new Error("TARGA file is empty: no header row found");
   }
-  return { headers, mapping, rowCount, skipped };
+  return { headers, mapping, vmaxColumns, rowCount, skipped };
 }
