@@ -70,7 +70,7 @@ export function displacementFromCcm(ccm: number | null): string | null {
   return litres.toFixed(1);
 }
 
-function mapTgFuel(raw: string | null): string | null {
+export function mapTgFuel(raw: string | null): string | null {
   const trimmed = String(raw ?? "").trim();
   if (!trimmed) return null;
   // Der reale TARGA-Export liefert Bauart-Treibstoff als CODE ("B" = Benzin,
@@ -100,7 +100,7 @@ function mapTgFuel(raw: string | null): string | null {
   return null;
 }
 
-function mapTgTransmission(raw: string | null): string | null {
+export function mapTgTransmission(raw: string | null): string | null {
   const v = String(raw ?? "").toLowerCase().trim();
   if (!v) return null;
   // TARGA-Getriebecodes: m5/m6 = manuell, a6/a7/a8 = Automat; Klartexte kommen
@@ -111,7 +111,7 @@ function mapTgTransmission(raw: string | null): string | null {
 }
 
 /** Karosserieform-Label -> Listing-BODY_TYPES-Wert (listingContract). */
-function mapTgListingBody(raw: string | null): string | null {
+export function mapTgListingBody(raw: string | null): string | null {
   const v = String(raw ?? "").toLowerCase();
   if (!v) return null;
   if (/coup/.test(v)) return "Coupe";
