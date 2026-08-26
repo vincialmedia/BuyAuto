@@ -482,13 +482,64 @@ export function portalMakeSlug(make: string): string {
   return PORTAL_MAKE_SLUG[slug] ?? slug;
 }
 
-export function as24CategoryUrl(make: string, model: string): string {
-  return `https://www.autoscout24.ch/de/s/mo-${marketplaceSlug(baseModel(model))}/mk-${portalMakeSlug(make)}`;
+/** Optional server-side filters for the inventory URLs. */
+export interface CategoryFilters {
+  yearFrom?: number;
+  yearTo?: number;
+  kmFrom?: number;
+  kmTo?: number;
+  body?: BodyType | null;
 }
 
+/**
+ * AutoScout24's own body-type enum (SMG API spec). Only positively known
+ * mappings — an unmapped body simply leaves the URL unfiltered rather than
+ * risking a 0-result page. Roadster/Targa are classed as Cabriolet on AS24.
+ */
+const AS24_BODY_SLUG: Partial<Record<BodyType, string>> = {
+  coupe: "coupe",
+  cabrio: "cabriolet",
+  roadster: "cabriolet",
+  targa: "cabriolet",
+  kombi: "estate",
+  limousine: "saloon",
+  suv: "suv",
+};
+
+export function as24CategoryUrl(make: string, model: string, filters?: CategoryFilters): string {
+  const base = `https://www.autoscout24.ch/de/s/mo-${marketplaceSlug(baseModel(model))}/mk-${portalMakeSlug(make)}`;
+  if (!filters) return base;
+  // Param names verified against SMG's official autoscout24-api-specs repo and
+  // working third-party scrapers (firstRegistrationYearFrom/To, mileageFrom/To,
+  // bodyTypes[0]) — the server filters the inventory before we ever scrape it.
+  const params = new URLSearchParams();
+  if (filters.yearFrom) params.set("firstRegistrationYearFrom", String(filters.yearFrom));
+  if (filters.yearTo) params.set("firstRegistrationYearTo", String(filters.yearTo));
+  if (filters.kmFrom !== undefined && filters.kmFrom > 0) params.set("mileageFrom", String(filters.kmFrom));
+  if (filters.kmTo !== undefined && filters.kmTo > 0) params.set("mileageTo", String(filters.kmTo));
+  const bodySlug = filters.body ? AS24_BODY_SLUG[filters.body] : undefined;
+  if (bodySlug) params.set("bodyTypes[0]", bodySlug);
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
+/**
+ * Comparis facets are PATH segments, not query params, and only the body-type
+ * segments below are verified (via server-side result counts on indexed pages).
+ * Year/km ranges are not URL-addressable on comparis — they stay client-side.
+ */
+const COMPARIS_BODY_SEGMENT: Partial<Record<BodyType, string>> = {
+  coupe: "coupe-aufbau",
+  cabrio: "cabrio",
+  roadster: "cabrio",
+  targa: "cabrio",
+};
+
 /** Verified shape: comparis.ch/carfinder/marktplatz/vw/golf/occasion (aggregates all portals). */
-export function comparisCategoryUrl(make: string, model: string): string {
-  return `https://www.comparis.ch/carfinder/marktplatz/${portalMakeSlug(make)}/${marketplaceSlug(baseModel(model))}/occasion`;
+export function comparisCategoryUrl(make: string, model: string, filters?: CategoryFilters): string {
+  const bodySegment = filters?.body ? COMPARIS_BODY_SEGMENT[filters.body] : undefined;
+  const facet = bodySegment ?? "occasion";
+  return `https://www.comparis.ch/carfinder/marktplatz/${portalMakeSlug(make)}/${marketplaceSlug(baseModel(model))}/${facet}`;
 }
 
 /**
@@ -613,6 +664,32 @@ const BODY_TYPE_TOKENS: Array<{ type: BodyType; re: RegExp }> = [
   { type: "sportback", re: /\bsportback\b/ },
   { type: "suv", re: /\bsuv\b/ },
 ];
+
+/** Every valid BodyType value — for validating client-supplied body params. */
+export const BODY_TYPE_VALUES: BodyType[] = [
+  "coupe",
+  "gran-coupe",
+  "cabrio",
+  "roadster",
+  "targa",
+  "kombi",
+  "limousine",
+  "sportback",
+  "suv",
+];
+
+/** German display/search word per body type (used to sharpen search queries). */
+export const BODY_TYPE_LABEL: Record<BodyType, string> = {
+  coupe: "Coupé",
+  "gran-coupe": "Gran Coupé",
+  cabrio: "Cabriolet",
+  roadster: "Roadster",
+  targa: "Targa",
+  kombi: "Kombi",
+  limousine: "Limousine",
+  sportback: "Sportback",
+  suv: "SUV",
+};
 
 const foldBodyText = (s: string) =>
   s
@@ -809,7 +886,8 @@ export interface CompSelection {
 export function selectComps(
   raw: CompCandidate[],
   model: string,
-  targetKm: number
+  targetKm: number,
+  requestedBodyOverride?: BodyType | null
 ): CompSelection {
   const harvested = raw.length;
   const requestedDisplacement = displacementOf(model);
@@ -835,15 +913,20 @@ export function selectComps(
   }
   const droppedForTrim = harvested - confirmed.length - unverified.length;
 
-  // 1b) Body-variant verdict. Only when the MODEL names a variant ("i8
-  //     Roadster", "Golf Variant") is a positively-different comp dropped;
-  //     untyped comps always survive. A plain "i8" drops nothing here — the
-  //     majority preference below keeps the picked set homogeneous instead.
-  const requestedBody = bodyTypeOf(model);
+  // 1b) Body-variant verdict. Only when the requested variant is KNOWN — the
+  //     caller passed one (the calculator's Karosserie field), or the model
+  //     names it ("i8 Roadster", "Golf Variant") — is a positively-different
+  //     comp dropped; untyped comps always survive. A plain "i8" with no
+  //     caller-supplied body drops nothing here — the majority preference
+  //     below keeps the picked set homogeneous instead.
+  const requestedBody = requestedBodyOverride ?? bodyTypeOf(model);
   let droppedForBody = 0;
   if (requestedBody) {
     const beforeBody = confirmed.length + unverified.length;
-    const keep = (c: CompCandidate) => bodyVerdict(c.title, model, c.url) !== "mismatch";
+    const keep = (c: CompCandidate) => {
+      const got = compBodyType(c.title, c.url);
+      return !got || got === requestedBody;
+    };
     confirmed = confirmed.filter(keep);
     unverified = unverified.filter(keep);
     droppedForBody = beforeBody - confirmed.length - unverified.length;

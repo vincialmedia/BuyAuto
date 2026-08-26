@@ -14,7 +14,11 @@ import {
   parseListingText,
   selectComps,
   yearMatches,
+  BODY_TYPE_LABEL,
+  BODY_TYPE_VALUES,
   MAX_COMPS,
+  MIN_COMP_KM,
+  type BodyType,
   type CompCandidate,
 } from "@/lib/buyauto/compsParser";
 import { peekQuota, commitSearch, type QuotaResult } from "@/lib/buyauto/valuationQuota";
@@ -289,17 +293,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  const { make, model, year, km } = input as {
+  const { make, model, year, km, body } = input as {
     make?: unknown;
     model?: unknown;
     year?: unknown;
     km?: unknown;
+    body?: unknown;
   };
 
   const makeStr = typeof make === "string" ? make.trim().slice(0, 40) : "";
   const modelStr = typeof model === "string" ? model.trim().slice(0, 60) : "";
   const yearNum = Number(year);
   const kmNum = Number(km);
+  // Optional Karosserie from the calculator's body-type field. Unknown values
+  // are ignored (never an error) — the filter is an optimization, not a gate.
+  const bodyStr = typeof body === "string" ? body.trim().toLowerCase() : "";
+  const requestedBody: BodyType | null = (BODY_TYPE_VALUES as string[]).includes(bodyStr)
+    ? (bodyStr as BodyType)
+    : null;
 
   if (
     !makeStr ||
@@ -348,6 +359,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Query with the name listings actually use ("VW", not "Volkswagen").
   const queryMake = MAKE_ALIASES[makeStr.toLowerCase()] ?? makeStr;
   const vehicle = `${queryMake} ${modelStr}`;
+  // A known Karosserie sharpens the searches: "BMW i8 Coupé" surfaces the right
+  // variant's listings instead of a Coupé/Roadster mix.
+  const vehicleQuery = requestedBody ? `${vehicle} ${BODY_TYPE_LABEL[requestedBody]}` : vehicle;
   const stats: TierStat[] = [];
   const seenUrls = new Set<string>();
   const candidates: Candidate[] = [];
@@ -364,9 +378,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // should target the exact engine to surface real matches. Wrong-trim listings
   // that slip in are dropped by the displacement filter below.
   const queries = [
-    `site:autoscout24.ch/de/d ${vehicle} ${yearNum}`,
-    `site:tutti.ch/de/vi ${vehicle}`,
-    `${vehicle} ${yearNum} Occasion Schweiz CHF km`,
+    `site:autoscout24.ch/de/d ${vehicleQuery} ${yearNum}`,
+    `site:tutti.ch/de/vi ${vehicleQuery}`,
+    `${vehicleQuery} ${yearNum} Occasion Schweiz CHF km`,
   ];
   const outcomes = await Promise.all(queries.map((q) => firecrawlSearch(apiKey, q, 15)));
 
@@ -415,9 +429,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let candidatesTried = 0;
   // Deterministic inventory pages FIRST — search-discovered categories only fill
   // the remaining slot, so junk can never crowd out the two known-good sources.
+  // AS24 supports server-side filters (year window matches the ±2 tolerance of
+  // yearMatches, km window matches the middle pickBySimilarKm band, body from
+  // the request) — the inventory arrives pre-filtered instead of being pruned
+  // after the scrape. Comparis only supports the body facet; autolina neither.
+  const kmBand = Math.max(60_000, kmNum * 0.8);
+  const as24Filters = {
+    yearFrom: yearNum - 2,
+    yearTo: yearNum + 2,
+    kmFrom: Math.max(MIN_COMP_KM, Math.round(kmNum - kmBand)),
+    kmTo: Math.round(kmNum + kmBand),
+    body: requestedBody,
+  };
   const orderedCategoryUrls = [
-    as24CategoryUrl(makeStr, modelStr),
-    comparisCategoryUrl(makeStr, modelStr),
+    as24CategoryUrl(makeStr, modelStr, as24Filters),
+    comparisCategoryUrl(makeStr, modelStr, { body: requestedBody }),
     autolinaCategoryUrl(makeStr, modelStr),
     ...categoryUrls,
   ].filter((u, i, arr) => arr.indexOf(u) === i);
@@ -433,7 +459,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Counts CONFIRMED picks only (minus top-ups) — engine-less cards are usable
   // as a top-up but are not a reason to stop looking for the real thing.
   comps = dedupeByPriceKm(comps);
-  const preview = selectComps(comps, modelStr, kmNum);
+  const preview = selectComps(comps, modelStr, kmNum, requestedBody);
   const viableSoFar = preview.picked.length - preview.toppedUp;
   if (viableSoFar < MAX_COMPS && withinBudget()) {
     const catPages = orderedCategoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
@@ -536,7 +562,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     mixedBody,
     unverifiedAvailable,
     harvested,
-  } = selectComps(comps, modelStr, kmNum);
+  } = selectComps(comps, modelStr, kmNum, requestedBody);
   // Counters are disjoint (trim | body | near-new | outlier) so the funnel log adds up.
   const droppedForQuality = droppedForTrim + droppedForBody + droppedNearNew + droppedOutliers;
 
@@ -563,10 +589,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     picked: picked.length,
     pickedComps: picked.map((c) => ({ price: c.price, km: c.km, title: c.title, source: c.source })),
   };
-  console.log("valuation/comps funnel:", JSON.stringify({ vehicle, yearNum, kmNum, ...funnel }));
+  console.log(
+    "valuation/comps funnel:",
+    JSON.stringify({ vehicle, yearNum, kmNum, requestedBody, ...funnel })
+  );
   try {
     await supabase.rpc("log_valuation_search", {
-      p_vehicle: { make: makeStr, model: modelStr, year: yearNum, km: kmNum },
+      p_vehicle: { make: makeStr, model: modelStr, year: yearNum, km: kmNum, body: requestedBody },
       p_funnel: funnel,
     });
   } catch {

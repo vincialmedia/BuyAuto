@@ -75,6 +75,8 @@ interface CalculatorState {
   model: string;
   year: number;
   vehicleKm: number;
+  /** Karosserie ('' = unbekannt/egal) — schärft die automatische Suche. */
+  bodyType: string;
   comps: CompRow[];
   reconCost: number;     // Aufbereitung & Reparaturen (fix)
   warrantyCost: number;  // Garantie-Rückstellung (fix)
@@ -99,7 +101,12 @@ interface CalcResult {
   offerMax: number;
   offerShare: number; // Eintauschwert in % vom Marktwert
   compCount: number;
-  /** marketMax / marketMin der angeglichenen Preise; null wenn nicht sinnvoll. */
+  /** Absolute Extremwerte der angeglichenen Preise (immer min–max). */
+  fullMin: number;
+  fullMax: number;
+  /** true: marketMin/marketMax sind die P25–P75-Spanne (ab 4 Comps), nicht min–max. */
+  bandIsIqr: boolean;
+  /** fullMax / fullMin der angeglichenen Preise; null wenn nicht sinnvoll. */
   spreadFactor: number | null;
   /** Zu wenige oder zu stark streuende Vergleichswerte — Spanne statt Punktwert zeigen. */
   lowConfidence: boolean;
@@ -124,11 +131,23 @@ const KM_ADJUST_CAP = 0.5;
 const MIN_CONFIDENT_COMPS = 3;
 const MAX_CONFIDENT_SPREAD = 1.8;
 
+// Karosserie-Auswahl für die automatische Suche. Werte = compsParser BodyType;
+// '' heisst unbekannt/egal und lässt die Suche ungefiltert.
+const BODY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "limousine", label: "Limousine" },
+  { value: "kombi", label: "Kombi" },
+  { value: "suv", label: "SUV" },
+  { value: "coupe", label: "Coupé" },
+  { value: "cabrio", label: "Cabriolet" },
+  { value: "roadster", label: "Roadster" },
+];
+
 const DEFAULT_STATE: CalculatorState = {
   make: "",
   model: "",
   year: 0,
   vehicleKm: 0,
+  bodyType: "",
   comps: [
     { price: 0, km: 0 },
     { price: 0, km: 0 },
@@ -147,6 +166,7 @@ const PRESET_GOLF: CalculatorState = {
   model: "Golf 1.5 TSI",
   year: 2020,
   vehicleKm: 78000,
+  bodyType: "",
   comps: [
     { price: 18900, km: 65000 },
     { price: 17500, km: 82000 },
@@ -193,6 +213,15 @@ const median = (values: number[]): number => {
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
 
+// Lineares Interpolations-Quantil (p in [0,1]) über bereits SORTIERTE Werte.
+const quantileSorted = (sorted: number[], p: number): number => {
+  const idx = (sorted.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+};
+
 function compute(state: CalculatorState): CalcResult | null {
   const validComps = state.comps.filter((c) => c.price > 0);
   if (validComps.length === 0) return null;
@@ -207,10 +236,20 @@ function compute(state: CalculatorState): CalcResult | null {
   });
 
   const marketValue = median(adjustedPrices);
-  const marketMin = Math.min(...adjustedPrices);
-  const marketMax = Math.max(...adjustedPrices);
+  const sortedAdjusted = [...adjustedPrices].sort((a, b) => a - b);
+  const fullMin = sortedAdjusted[0];
+  const fullMax = sortedAdjusted[sortedAdjusted.length - 1];
 
-  const spreadFactor = marketMin > 0 ? marketMax / marketMin : null;
+  // Ab 4 Comps ist die gezeigte Spanne P25–P75 ("typische Spanne") statt
+  // min–max: die Extremwerte sind sonst wortwörtlich die zwei schlechtesten
+  // Datenpunkte. Die absolute min–max-Spanne bleibt als fullMin/fullMax
+  // sichtbar, und die Unsicherheits-Warnung urteilt weiterhin über die VOLLE
+  // Streuung — die engere Anzeige darf echte Ausreisser nie verstecken.
+  const bandIsIqr = validComps.length >= 4;
+  const marketMin = bandIsIqr ? quantileSorted(sortedAdjusted, 0.25) : fullMin;
+  const marketMax = bandIsIqr ? quantileSorted(sortedAdjusted, 0.75) : fullMax;
+
+  const spreadFactor = fullMin > 0 ? fullMax / fullMin : null;
   const lowConfidence =
     validComps.length < MIN_CONFIDENT_COMPS ||
     spreadFactor === null ||
@@ -243,6 +282,9 @@ function compute(state: CalculatorState): CalcResult | null {
     offerMax,
     offerShare: marketValue > 0 ? (offer / marketValue) * 100 : 0,
     compCount: validComps.length,
+    fullMin,
+    fullMax,
+    bandIsIqr,
     spreadFactor,
     lowConfidence,
   };
@@ -608,7 +650,7 @@ export function EintauschwertRechner() {
     }
     setResult(computed);
     setGateKind(null);
-    searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}`;
+    searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}|${nextState.bodyType}`;
     return true;
   };
 
@@ -665,7 +707,7 @@ export function EintauschwertRechner() {
       });
       return;
     }
-    const key = `${state.make}|${state.model}|${state.year}`;
+    const key = `${state.make}|${state.model}|${state.year}|${state.bodyType}`;
     if (result && searchedVehicleRef.current && key !== searchedVehicleRef.current) {
       setResult(null);
       if (compsMode === 'auto') {
@@ -727,6 +769,7 @@ export function EintauschwertRechner() {
           model: state.model.trim(),
           year: state.year,
           km: state.vehicleKm,
+          body: state.bodyType || undefined,
         }),
       });
 
@@ -1065,6 +1108,43 @@ export function EintauschwertRechner() {
                 placeholder="z.B. 80'000"
                 tooltip="Kilometerstand des Fahrzeugs, das du in Eintausch nimmst."
               />
+              <div className="sm:col-span-2 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-neutral-600">
+                    Karosserie (optional)
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-neutral-600 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
+                        <p className="text-xs">
+                          Existiert das Modell in mehreren Varianten (z.B. Coupé und Roadster),
+                          macht die Angabe die automatische Suche deutlich präziser – nur
+                          passende Varianten fliessen in die Bewertung ein.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Select
+                  value={state.bodyType === "" ? "any" : state.bodyType}
+                  onValueChange={(v) => updateState('bodyType', v === "any" ? "" : v)}
+                >
+                  <SelectTrigger className="bg-neutral-50/50">
+                    <SelectValue placeholder="Weiss nicht / egal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Weiss nicht / egal</SelectItem>
+                    {BODY_TYPE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <Separator />
@@ -1569,10 +1649,16 @@ export function EintauschwertRechner() {
                       CHF {chf(result.marketMin)} – {chf(result.marketMax)}
                     </div>
                     <div className="text-xs text-neutral-500 mt-1">
-                      Spanne aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                      {result.bandIsIqr ? "Typische Spanne (P25–P75)" : "Spanne"} aus{" "}
+                      {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
                       Median: CHF {chf(result.marketValue)}
+                      {result.bandIsIqr && (
+                        <span className="block text-xs text-neutral-500 mt-1">
+                          Alle Inserate: CHF {chf(result.fullMin)} – {chf(result.fullMax)}
+                        </span>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -1582,7 +1668,13 @@ export function EintauschwertRechner() {
                       Median aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                      Spanne: CHF {chf(result.marketMin)} – {chf(result.marketMax)}
+                      {result.bandIsIqr ? "Typische Spanne (P25–P75)" : "Spanne"}: CHF{" "}
+                      {chf(result.marketMin)} – {chf(result.marketMax)}
+                      {result.bandIsIqr && (
+                        <span className="block text-xs text-neutral-500 mt-1">
+                          Alle Inserate: CHF {chf(result.fullMin)} – {chf(result.fullMax)}
+                        </span>
+                      )}
                     </div>
                   </>
                 )}
@@ -1695,8 +1787,12 @@ export function EintauschwertRechner() {
                   <p>Marktwert = Median der angeglichenen Preise</p>
                   <p>Eintauschwert = Marktwert − Aufbereitung − Garantie − Standzeit − Marge</p>
                   <p>
+                    Ab 4 Inseraten zeigt die Spanne das mittlere Preisfeld (P25–P75); die
+                    absolute Streuung aller Inserate bleibt separat sichtbar
+                  </p>
+                  <p>
                     Unter {MIN_CONFIDENT_COMPS} Inseraten oder ab Faktor {MAX_CONFIDENT_SPREAD} zwischen
-                    günstigstem und teuerstem Preis wird die Spanne statt des Medians gezeigt
+                    günstigstem und teuerstem Inserat wird die Spanne statt des Medians gezeigt
                   </p>
                 </div>
                 <p className="mt-3 text-neutral-500">
