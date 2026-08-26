@@ -1438,7 +1438,7 @@ export function EintauschwertRechner() {
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Kaufanfragen von Interessenten direkt per E-Mail
+                    Alle Informationen und Dokumente bleiben an einem zentralen Ort in der App
                   </li>
                 </ul>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
@@ -1464,8 +1464,9 @@ export function EintauschwertRechner() {
                   Du hast diesen Monat alle <strong className="text-white">{FREE_MONTHLY_LIMIT} Gratis-Suchen</strong>{" "}
                   genutzt. Weitere automatische Suchen sind nicht gratis – mit einem{" "}
                   <strong className="text-white">Garagen-Paket sind bis zu {MAX_PLAN_VALUATIONS} Suchen pro Monat</strong>{" "}
-                  inklusive. Dazu inserierst du deine Fahrzeuge, bekommst eine eigene Garagen-Seite
-                  mit deinem ganzen Bestand und Kaufanfragen direkt per E-Mail.
+                  inklusive. Dazu inserierst du deine Fahrzeuge und bekommst eine eigene Garagen-Seite
+                  mit deinem ganzen Bestand – alle Informationen und Dokumente bleiben an einem
+                  zentralen Ort in der App.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                   {/* /garage-plan ejects non-garage accounts, so private users go
@@ -1708,13 +1709,13 @@ export function EintauschwertRechner() {
             <div className="max-w-2xl mx-auto mt-8 bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
               <p className="text-neutral-300 mb-4">
                 Fahrzeug übernommen? <strong className="text-white">Verkauf es schneller mit BuyAuto.</strong>{" "}
-                Als Garage zeigst du deinen ganzen Fahrzeugbestand auf einer eigenen Garagen-Seite,
-                erreichst tausende Käufer und bekommst Kaufanfragen direkt per E-Mail – kürzere
-                Standzeit, mehr Marge.
+                Als Garage zeigst du deinen ganzen Fahrzeugbestand auf einer eigenen Garagen-Seite
+                und erreichst tausende Käufer. Alle Informationen und Dokumente bleiben an einem
+                zentralen Ort in der App – kürzere Standzeit, mehr Marge.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild className="bg-red-600 hover:bg-red-700 text-white border-none">
-                  <Link href="/garage-plan">Garagen-Paket entdecken</Link>
+                  <Link href="/preise#plaene">Garagen-Pakete & Preise</Link>
                 </Button>
                 <Button asChild variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
                   <Link href="/inserat-erstellen">Occasion inserieren</Link>
