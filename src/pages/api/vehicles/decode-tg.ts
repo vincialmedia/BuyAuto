@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { canonicalizeMakeText, deriveModelFamily, normalizeVehicleKey } from "@/lib/buyauto/vin-canonical";
-import { bodyTypeOf, type BodyType as CompsBodyType } from "@/lib/buyauto/compsParser";
+import { bodyTypeOf, displacementOf, type BodyType as CompsBodyType } from "@/lib/buyauto/compsParser";
 
 // Typengenehmigungs-Lookup: Fahrzeugausweis Feld 24 (z.B. "1TD812") -> exakte
 // Fahrzeugdaten aus der wöchentlich ingestierten ASTRA-TARGA-Tabelle
@@ -71,8 +71,24 @@ export function displacementFromCcm(ccm: number | null): string | null {
 }
 
 function mapTgFuel(raw: string | null): string | null {
-  const v = String(raw ?? "").toLowerCase();
-  if (!v) return null;
+  const trimmed = String(raw ?? "").trim();
+  if (!trimmed) return null;
+  // Der reale TARGA-Export liefert Bauart-Treibstoff als CODE ("B" = Benzin,
+  // "D" = Diesel, "E" = elektrisch; Kombinationen wie "BE" = Hybrid) — im Live-
+  // Datenbestand verifiziert. Klartexte werden zusätzlich erkannt, falls
+  // künftige Exporte Labels liefern.
+  if (/^[A-Z/+\s-]{1,4}$/i.test(trimmed)) {
+    const code = trimmed.toUpperCase().replace(/[^A-Z]/g, "");
+    const hasB = code.includes("B");
+    const hasD = code.includes("D");
+    const hasE = code.includes("E");
+    if (hasE && (hasB || hasD)) return "Hybrid";
+    if (hasE) return "Elektro";
+    if (hasD) return "Diesel";
+    if (hasB) return "Benzin";
+    return null;
+  }
+  const v = trimmed.toLowerCase();
   const electric = /elektr/.test(v);
   const petrol = /benzin/.test(v);
   const diesel = /diesel/.test(v);
@@ -235,7 +251,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     body_type: mapTgListingBody(primary.karosserieform),
     body_key: bodyTypeOf(bodySource),
     body_label: primary.karosserieform?.trim() || null,
-    displacement_l: displacementFromCcm(primary.hubraum_ccm),
+    // Das Marketing-Hubraum-Token bevorzugt aus dem Typ-Text ("155 1.8 TS"):
+    // 1747 ccm rechnet sich zu "1.7", verkauft wurde das Auto aber als 1.8 —
+    // und der Filter muss matchen, was in Inseraten steht. ccm nur als Fallback.
+    displacement_l: displacementOf(providerModel ?? "") ?? displacementFromCcm(primary.hubraum_ccm),
     hubraum_ccm: primary.hubraum_ccm,
     vmax_kmh: primary.vmax_kmh,
     variants: tgRows.map((r) => ({
