@@ -74,6 +74,10 @@ async function connectClient(databaseUrl: string): Promise<Client> {
     });
     try {
       await client.connect();
+      // Supabase's default statement_timeout (2 min) cancels the final
+      // staging→live copy of ~210k rows (run 33038197183 failed with 57014).
+      // This session moves a full national registry — give it real headroom.
+      await client.query("set statement_timeout = '30min'");
       console.log(`  db host: ${host} (connected)`);
       return client;
     } catch (err) {
