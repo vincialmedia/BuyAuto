@@ -132,7 +132,10 @@ export default function TgTestPage() {
     setTyps([]);
     setSelectedTyp("");
     setVariants([]);
-    if (!selectedMake) return;
+    if (!selectedMake) {
+      setBrowseLoading(false);
+      return;
+    }
     let cancelled = false;
     setBrowseLoading(true);
     (async () => {
@@ -150,7 +153,10 @@ export default function TgTestPage() {
 
   useEffect(() => {
     setVariants([]);
-    if (!selectedMake || !selectedTyp) return;
+    if (!selectedMake || !selectedTyp) {
+      setBrowseLoading(false);
+      return;
+    }
     let cancelled = false;
     setBrowseLoading(true);
     (async () => {
