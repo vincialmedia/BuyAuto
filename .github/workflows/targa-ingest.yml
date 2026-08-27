@@ -1,0 +1,55 @@
+# Weekly ingest of ASTRA TARGA type approvals (Typengenehmigungen) into
+# Supabase. ASTRA refreshes the open-data export on Fridays; we ingest
+# Saturday 05:00 UTC. Runs from GitHub runners because they have open egress
+# to opendata.astra.admin.ch.
+#
+# Without a SUPABASE_DB_URL repo secret the run is a DRY RUN: it downloads,
+# decodes and parses the file, reports row count + detected headers + sample
+# records, and writes nothing. It never fails just because the secret is
+# missing. To go live, add an Actions secret SUPABASE_DB_URL with the
+# Supabase Postgres connection string (Project Settings → Database →
+# Connection string, URI format).
+name: TARGA ingest
+
+on:
+  schedule:
+    - cron: "0 5 * * 6"
+  workflow_dispatch:
+    inputs:
+      targa_url:
+        description: "Override source URL (e.g. .../TG-Moto.txt for a quick validation run)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Force dry run (parse + report only, no DB writes)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: targa-ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Parser fixture checks
+        run: npx tsx scripts/test-targa-parser.ts
+
+      - name: Ingest TARGA data
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TARGA_URL: ${{ inputs.targa_url }}
+          DRY_RUN: ${{ inputs.dry_run == true && '1' || '' }}
+        run: npx tsx scripts/ingest-targa.ts
