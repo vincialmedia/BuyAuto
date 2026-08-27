@@ -113,6 +113,8 @@ export interface ListingData {
   location?: string;
   canton_code?: string;
   title?: string;
+  /** Freitext hinter dem generierten Titel ("... | Frisch ab MFK"), max 50 Zeichen. */
+  title_suffix?: string | null;
 
   seller_type?: "private" | "garage" | null;
   garage_id?: string | null;

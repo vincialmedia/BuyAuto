@@ -27,6 +27,7 @@ import {
   GEARBOX_TYPES,
   DRIVETRAIN_TYPES,
   CANTON_LABELS,
+  TITLE_SUFFIX_MAX,
   isCantonCode,
   type CantonCode,
 } from "@/lib/buyauto/listingContract";
@@ -57,6 +58,8 @@ export interface VehicleStepFormValues {
   first_registration?: string | null;
 
   description?: string;
+  /** Freitext hinter dem generierten Titel ("... | Frisch ab MFK"), max 50 Zeichen. */
+  title_suffix?: string;
 }
 
 // Body/fuel/gearbox/drivetrain options come from the single field contract so
@@ -269,6 +272,30 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </Field>
+
+            <Field
+              icon={Check}
+              label="Titel-Zusatz"
+              hint='Erscheint hinter dem automatischen Titel, z.B. «… | Yamaha Monster Edition · Frisch ab MFK». Nur Text, keine Links.'
+              error={errors.title_suffix?.message as string | undefined}
+            >
+              <div className="relative">
+                <Input
+                  {...register("title_suffix")}
+                  type="text"
+                  maxLength={TITLE_SUFFIX_MAX}
+                  placeholder="z.B. Frisch ab MFK (optional)"
+                  disabled={disableAllFields}
+                  className={`${selectTriggerCls} pr-14`}
+                />
+                <span
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none tabular-nums"
+                  aria-live="polite"
+                >
+                  {(watch("title_suffix") ?? "").length}/{TITLE_SUFFIX_MAX}
+                </span>
+              </div>
             </Field>
 
             <Field icon={Calendar} label="Baujahr" required error={errors.year?.message as string | undefined}>

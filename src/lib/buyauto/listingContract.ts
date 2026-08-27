@@ -57,6 +57,35 @@ export const YEAR_MIN = 1990;
 export const YEAR_MAX_DB = 2030; // hard DB ceiling (listings_year_check)
 export const MILEAGE_MIN = 0;
 export const DESCRIPTION_MAX = 2000;
+// Optionaler Freitext-Zusatz hinter dem generierten Titel (DB-CHECK
+// listings_title_suffix_len erzwingt die Grenze serverseitig).
+export const TITLE_SUFFIX_MAX = 50;
+
+/**
+ * Bereinigt den Titel-Zusatz auf reinen Text: HTML-Tags und Links fliegen
+ * raus, ebenso "|" (unser Trennzeichen zwischen generiertem Titel und Zusatz —
+ * so bleibt der komponierte Titel eindeutig zerlegbar), Whitespace wird
+ * kollabiert und auf TITLE_SUFFIX_MAX gekürzt.
+ */
+export function sanitizeTitleSuffix(raw: unknown): string {
+  if (typeof raw !== "string") return "";
+  return raw
+    .replace(/<[^>]*>/g, " ")
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/www\.\S+/gi, " ")
+    .replace(/[|<>]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, TITLE_SUFFIX_MAX)
+    .trim();
+}
+
+/** "FIAT 500 1.4 Abarth" + "Frisch ab MFK" -> "FIAT 500 1.4 Abarth | Frisch ab MFK". */
+export function composeListingTitle(base: string, suffix?: string | null): string {
+  const cleanBase = String(base ?? "").trim();
+  const cleanSuffix = sanitizeTitleSuffix(suffix ?? "");
+  return cleanSuffix ? `${cleanBase} | ${cleanSuffix}` : cleanBase;
+}
 
 /** Form-facing year ceiling: next model year, never above the DB ceiling. */
 export function currentYearMax(now: Date = new Date()): number {

@@ -18,7 +18,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VehicleBasicsSection, type CanonicalOption, type VehicleStepFormValues } from "./VehicleBasicsSection";
 import type { DealType, FinancingType, ListingData } from "@/lib/buyauto/types";
-import { zBody, zFuel, zGearbox, zYear, isCantonCode } from "@/lib/buyauto/listingContract";
+import {
+  zBody,
+  zFuel,
+  zGearbox,
+  zYear,
+  isCantonCode,
+  composeListingTitle,
+  sanitizeTitleSuffix,
+  TITLE_SUFFIX_MAX,
+} from "@/lib/buyauto/listingContract";
 
 const vehicleStepSchema = z.object({
   vin: z
@@ -59,6 +68,10 @@ const vehicleStepSchema = z.object({
     .optional(),
 
   description: z.string().max(2000, "Maximal 2000 Zeichen").optional(),
+
+  // Freitext hinter dem generierten Titel ("... | Frisch ab MFK"). Die 50er-
+  // Grenze gilt zusätzlich serverseitig (DB-CHECK listings_title_suffix_len).
+  title_suffix: z.string().max(TITLE_SUFFIX_MAX, `Maximal ${TITLE_SUFFIX_MAX} Zeichen`).optional(),
 });
 
 type VinDecodeResponse = {
@@ -202,6 +215,7 @@ export function Step1Form() {
       first_registration: typeof (data as any).first_registration === "string" ? (data as any).first_registration : null,
 
       description: data.description || "",
+      title_suffix: typeof (data as any).title_suffix === "string" ? (data as any).title_suffix : "",
     },
     mode: "onBlur",
   });
@@ -663,8 +677,16 @@ export function Step1Form() {
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
       const variantName = values.variant_id ? (variants.find((v) => v.id === values.variant_id)?.name ?? "") : "";
 
+      // Falls back to data.title only when no make is picked — that stored
+      // title is already composed, so the suffix must not be appended twice.
       const title = makeName
-        ? [makeName, variantName ? joinModelAndVariant(modelName, variantName) : modelName].filter(Boolean).join(" ").trim()
+        ? composeListingTitle(
+            [makeName, variantName ? joinModelAndVariant(modelName, variantName) : modelName]
+              .filter(Boolean)
+              .join(" ")
+              .trim(),
+            values.title_suffix
+          )
         : (data as any)?.title;
 
       return {
@@ -805,11 +827,16 @@ export function Step1Form() {
             : variantTextRaw
           : "");
 
-      const generatedTitle =
-        [makeName, variantForTitle ? joinModelAndVariant(modelName, variantForTitle) : modelName]
-          .filter(Boolean)
-          .join(" ")
-          .trim() || ((data as any)?.title ?? "");
+      const titleSuffix = sanitizeTitleSuffix(values.title_suffix);
+      const baseTitle = [makeName, variantForTitle ? joinModelAndVariant(modelName, variantForTitle) : modelName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      // The data.title fallback is already composed — never append the suffix
+      // onto it a second time.
+      const generatedTitle = baseTitle
+        ? composeListingTitle(baseTitle, titleSuffix)
+        : ((data as any)?.title ?? "");
       const isNewListing = !(data as any).id;
 
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");
@@ -830,6 +857,7 @@ export function Step1Form() {
         brand: makeName,
         model: modelName,
         title: generatedTitle,
+        title_suffix: titleSuffix || null,
 
         year: Number(values.year),
         km: Number(values.km),
@@ -875,6 +903,7 @@ export function Step1Form() {
           location: values.location as any,
           canton_code: values.canton_code as any,
           title: generatedTitle as any,
+          title_suffix: (titleSuffix || null) as any,
 
           power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
           drivetrain: values.drivetrain as any,
@@ -930,6 +959,7 @@ export function Step1Form() {
           location: values.location as any,
           canton_code: values.canton_code as any,
           title: generatedTitle as any,
+          title_suffix: (titleSuffix || null) as any,
 
           power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
           drivetrain: values.drivetrain as any,

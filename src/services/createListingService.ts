@@ -42,6 +42,8 @@ export type ListingUpdatePayload = Partial<{
   location?: string;
   canton_code?: string;
   title?: string;
+  /** Freitext hinter dem generierten Titel; DB-CHECK begrenzt auf 50 Zeichen. */
+  title_suffix?: string | null;
   price_plan?: PricePlanId;
   /**
    * Deliberately absent: premium, is_premium and premium_until. Premium is a paid
