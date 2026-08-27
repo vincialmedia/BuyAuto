@@ -29,6 +29,62 @@ const DRY_RUN =
 const BATCH_SIZE = 1000;
 const STAGING_TABLE = "tg_vehicle_types_staging";
 
+// Supabase's direct-connection host (db.<ref>.supabase.co) is IPv6-only, and
+// GitHub Actions runners have no IPv6 — connecting from CI fails with
+// ENETUNREACH. When DATABASE_URL points at the direct host, fall back to the
+// IPv4 session poolers (same credentials, username becomes postgres.<ref>).
+const SUPABASE_DIRECT_HOST = /^db\.([a-z0-9]+)\.supabase\.co$/;
+const SUPABASE_REGION = process.env.SUPABASE_REGION || "eu-central-2";
+
+function connectionCandidates(databaseUrl: string): string[] {
+  const candidates = [databaseUrl];
+  try {
+    const url = new URL(databaseUrl);
+    const match = url.hostname.match(SUPABASE_DIRECT_HOST);
+    if (match) {
+      for (const cluster of [`aws-1-${SUPABASE_REGION}`, `aws-0-${SUPABASE_REGION}`]) {
+        const alt = new URL(databaseUrl);
+        alt.hostname = `${cluster}.pooler.supabase.com`;
+        alt.port = "5432";
+        alt.username = `postgres.${match[1]}`;
+        candidates.push(alt.toString());
+      }
+    }
+  } catch {
+    /* not URL-shaped — let pg try it verbatim */
+  }
+  return candidates;
+}
+
+async function connectClient(databaseUrl: string): Promise<Client> {
+  let lastError: unknown;
+  for (const candidate of connectionCandidates(databaseUrl)) {
+    let host = "";
+    try {
+      host = new URL(candidate).hostname;
+    } catch {
+      /* keep host empty for logging */
+    }
+    const client = new Client({
+      connectionString: candidate,
+      // Supabase certs are signed by Supabase's own CA.
+      ssl: host.endsWith(".supabase.co") || host.endsWith(".supabase.com")
+        ? { rejectUnauthorized: false }
+        : undefined,
+    });
+    try {
+      await client.connect();
+      console.log(`  db host: ${host} (connected)`);
+      return client;
+    } catch (err) {
+      lastError = err;
+      await client.end().catch(() => {});
+      console.log(`  db host: ${host} failed: ${(err as Error).message}`);
+    }
+  }
+  throw lastError;
+}
+
 const DATA_COLUMNS = [
   "tg_nr",
   "variante",
@@ -113,8 +169,7 @@ async function main(): Promise<void> {
   let runId: number | null = null;
 
   if (!DRY_RUN) {
-    client = new Client({ connectionString: DATABASE_URL });
-    await client.connect();
+    client = await connectClient(DATABASE_URL);
 
     if (lastModified) {
       const prev = await client.query(
