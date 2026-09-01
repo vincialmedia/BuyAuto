@@ -161,6 +161,11 @@ export const deleteListingDraftsForListingId = async (params: {
   // Two passes rather than one `.or()`: the legacy match reaches into the JSON
   // blob and the durable one is a plain column, and a draft written before
   // listing_id existed only answers to the former.
+  //
+  // The column pass is non-fatal on purpose. It is the newer of the two and
+  // depends on a migration; if this bundle is ever live before that migration
+  // lands, failing here would take the legacy pass down with it and leave more
+  // drafts behind than before the change.
   const byColumn = await supabase
     .from("listing_drafts")
     .delete()
@@ -168,7 +173,7 @@ export const deleteListingDraftsForListingId = async (params: {
     .eq("listing_id", listingId);
 
   if (byColumn.error) {
-    throw byColumn.error;
+    console.warn("Draft cleanup by listing_id failed, falling back to the legacy key:", byColumn.error);
   }
 
   const byLegacyJson = await supabase

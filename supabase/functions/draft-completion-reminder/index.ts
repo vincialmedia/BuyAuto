@@ -443,9 +443,12 @@ serve(async (req) => {
   };
 
   // --- Wizard drafts (listing_drafts) ---------------------------------------
+  // `*` rather than naming listing_id: naming a column that does not exist yet
+  // fails the whole select, which would tie this function's deploy to the
+  // migration landing first. The table is small, so the overfetch is free.
   const { data: wizardDrafts, error: wizardError } = await supabase
     .from("listing_drafts")
-    .select("id,user_id,data,updated_at,archived_at,listing_id");
+    .select("*");
 
   if (wizardError) {
     console.error("draft-completion-reminder wizardError:", wizardError);
