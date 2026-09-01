@@ -94,19 +94,28 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
             .map((l) => l.id)
         );
 
-        const staleDrafts = data.filter((d) => {
-          const id = (d?.data as any)?.id;
-          return typeof id === "string" && publishedIds.has(id);
-        });
+        // listing_id is the durable link; data.id is the legacy key, which the
+        // create path never wrote — a draft carrying only the latter (i.e.
+        // none) used to look unfinished forever.
+        const linkedListingId = (d: (typeof data)[number]): string | null => {
+          const column = (d as any)?.listing_id;
+          if (typeof column === "string" && column.length > 0) return column;
+          const legacy = (d?.data as any)?.id;
+          return typeof legacy === "string" && legacy.length > 0 ? legacy : null;
+        };
+
+        const isStale = (d: (typeof data)[number]) => {
+          const id = linkedListingId(d);
+          return id !== null && publishedIds.has(id);
+        };
+
+        const staleDrafts = data.filter(isStale);
 
         if (staleDrafts.length > 0) {
           void Promise.allSettled(
             staleDrafts.map((d) => deleteListingDraft({ user, draftId: d.id }))
           ).then(() => {
-            setDrafts(data.filter((d) => {
-              const id = (d?.data as any)?.id;
-              return !(typeof id === "string" && publishedIds.has(id));
-            }));
+            setDrafts(data.filter((d) => !isStale(d)));
           });
           return;
         }
