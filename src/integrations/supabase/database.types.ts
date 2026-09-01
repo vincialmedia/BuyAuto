@@ -524,6 +524,7 @@ export type Database = {
           created_at: string
           data: Json
           id: string
+          listing_id: string | null
           make_id: string | null
           model_id: string | null
           updated_at: string
@@ -538,6 +539,7 @@ export type Database = {
           created_at?: string
           data?: Json
           id?: string
+          listing_id?: string | null
           make_id?: string | null
           model_id?: string | null
           updated_at?: string
@@ -552,6 +554,7 @@ export type Database = {
           created_at?: string
           data?: Json
           id?: string
+          listing_id?: string | null
           make_id?: string | null
           model_id?: string | null
           updated_at?: string
@@ -560,6 +563,13 @@ export type Database = {
           variant_text?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "listing_drafts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "listing_drafts_make_id_fkey"
             columns: ["make_id"]

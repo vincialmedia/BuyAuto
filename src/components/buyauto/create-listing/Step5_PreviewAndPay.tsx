@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useWizard } from "./ListingWizard";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,11 @@ import { useRouter } from "next/router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import type { Tables } from "@/integrations/supabase/types";
-import { deleteListingDraft, deleteListingDraftsForListingId } from "@/services/listingDraftService";
+import {
+  deleteListingDraft,
+  deleteListingDraftsForListingId,
+  linkListingDraftToListing,
+} from "@/services/listingDraftService";
 import { uploadListingImages } from "@/services/storageService";
 import { clearGuestImages } from "@/lib/buyauto/guestImageStore";
 import type { ListingUpdatePayload } from "@/services/createListingService";
@@ -382,10 +386,18 @@ export default function Step5_PreviewAndPay() {
     await router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
   }, [router.isReady, router.pathname, router.query, router.replace]);
 
+  // The draft id as of *now*, not as of the render that built the submit
+  // handler. The autosave that creates the draft row resolves asynchronously,
+  // so a fast publish could capture draftId === null and leave the row behind.
+  const draftIdRef = useRef<string | null>(draftId);
+  useEffect(() => {
+    draftIdRef.current = draftId;
+  }, [draftId]);
+
   const cleanupDraftAfterPublish = useCallback(async (listingIdOverride?: string) => {
     if (!user) return;
 
-    const currentDraftId = typeof draftId === "string" ? draftId : null;
+    const currentDraftId = draftIdRef.current;
     const listingId =
       typeof listingIdOverride === "string" && listingIdOverride.length > 0
         ? listingIdOverride
@@ -393,22 +405,31 @@ export default function Step5_PreviewAndPay() {
           ? data.id
           : null;
 
-    try {
-      if (currentDraftId && currentDraftId.length > 0) {
+    // Both passes run: deleting the draft we know about does not rule out a
+    // second row for the same listing (a resumed session, an autosave that
+    // raced). The old early return meant whichever branch went first was the
+    // only one that ever ran.
+    if (currentDraftId && currentDraftId.length > 0) {
+      try {
         await deleteListingDraft({ user, draftId: currentDraftId });
         setDraftId(null);
-        await clearDraftQueryParam();
-        return;
+      } catch (e) {
+        console.warn("Could not delete draft after publish:", e);
       }
-
-      if (listingId && listingId.length > 0) {
-        await deleteListingDraftsForListingId({ user, listingId });
-        await clearDraftQueryParam();
-      }
-    } catch (e) {
-      console.warn("Could not delete draft after publish:", e);
     }
-  }, [clearDraftQueryParam, data.id, draftId, setDraftId, user]);
+
+    if (listingId && listingId.length > 0) {
+      try {
+        await deleteListingDraftsForListingId({ user, listingId });
+      } catch (e) {
+        console.warn("Could not delete drafts for listing after publish:", e);
+      }
+    }
+
+    if (currentDraftId || listingId) {
+      await clearDraftQueryParam();
+    }
+  }, [clearDraftQueryParam, data.id, setDraftId, user]);
 
   const buildListingPayloadFromWizard = useCallback((): ListingUpdatePayload => {
     const anyData = data as any;
@@ -727,6 +748,16 @@ export default function Step5_PreviewAndPay() {
           if (saved.id !== data.id) {
             updateData({ id: saved.id } as any);
           }
+          // Link the draft to the listing it just spawned, so the delete
+          // trigger and the reminder's skip guard can both find it even if the
+          // cleanup below never runs.
+          if (draftIdRef.current) {
+            await linkListingDraftToListing({
+              user,
+              draftId: draftIdRef.current,
+              listingId: saved.id,
+            });
+          }
         }
       } catch (e: any) {
         const message = typeof e?.message === "string" ? e.message : "Inserat konnte nicht gespeichert werden.";
@@ -849,6 +880,13 @@ export default function Step5_PreviewAndPay() {
         if (created?.id) {
           listingIdToUse = created.id;
           updateData({ id: created.id, status: created.status ?? "draft" } as any);
+          if (draftIdRef.current) {
+            await linkListingDraftToListing({
+              user,
+              draftId: draftIdRef.current,
+              listingId: created.id,
+            });
+          }
         }
       } catch (e: any) {
         const message = typeof e?.message === "string" ? e.message : "Inserat konnte nicht gespeichert werden.";
