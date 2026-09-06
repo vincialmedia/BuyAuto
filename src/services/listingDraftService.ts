@@ -117,6 +117,39 @@ export const deleteListingDraft = async (params: {
   }
 };
 
+/**
+ * Point a draft at the listing it just spawned.
+ *
+ * This is the link every cleanup path keys on. It used to live only inside the
+ * draft's `data` JSON, written by the wizard's autosave — which is change-gated
+ * and stops entirely once the wizard completes, so on the create path it was
+ * never written at all and the draft outlived its listing. Writing the column
+ * here, in the same step that creates the listing, is what makes the delete
+ * trigger and the reminder's skip guard able to find it.
+ *
+ * Best-effort by design: the DB trigger deletes the draft on submit anyway, and
+ * failing to link must never block a publish.
+ */
+export const linkListingDraftToListing = async (params: {
+  user: User;
+  draftId: string;
+  listingId: string;
+}): Promise<void> => {
+  const { user, draftId, listingId } = params;
+
+  if (draftId.length === 0 || listingId.length === 0) return;
+
+  const { error } = await supabase
+    .from("listing_drafts")
+    .update({ listing_id: listingId } as never)
+    .eq("id", draftId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.warn("Could not link draft to listing:", error);
+  }
+};
+
 export const deleteListingDraftsForListingId = async (params: {
   user: User;
   listingId: string;
@@ -125,14 +158,32 @@ export const deleteListingDraftsForListingId = async (params: {
 
   if (listingId.length === 0) return;
 
-  const { error } = await supabase
+  // Two passes rather than one `.or()`: the legacy match reaches into the JSON
+  // blob and the durable one is a plain column, and a draft written before
+  // listing_id existed only answers to the former.
+  //
+  // The column pass is non-fatal on purpose. It is the newer of the two and
+  // depends on a migration; if this bundle is ever live before that migration
+  // lands, failing here would take the legacy pass down with it and leave more
+  // drafts behind than before the change.
+  const byColumn = await supabase
+    .from("listing_drafts")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("listing_id", listingId);
+
+  if (byColumn.error) {
+    console.warn("Draft cleanup by listing_id failed, falling back to the legacy key:", byColumn.error);
+  }
+
+  const byLegacyJson = await supabase
     .from("listing_drafts")
     .delete()
     .eq("user_id", user.id)
     .eq("data->>id", listingId);
 
-  if (error) {
-    throw error;
+  if (byLegacyJson.error) {
+    throw byLegacyJson.error;
   }
 };
 

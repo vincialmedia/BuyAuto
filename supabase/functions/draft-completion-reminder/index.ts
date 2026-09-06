@@ -393,10 +393,62 @@ serve(async (req) => {
   const addDays = (iso: string, days: number): string =>
     new Date(Date.parse(iso) + days * MS_PER_DAY).toISOString();
 
+  // --- Cars the owner has already put on the market -------------------------
+  //
+  // The backstop that makes a false reminder impossible. A draft is skipped
+  // when its owner already has this very car listed, however the draft came to
+  // survive — no link, a stale link, a cleanup that silently failed. Without
+  // this, an orphaned draft gets the seller told their live car is unfinished,
+  // and the resume link re-runs the wizard into a duplicate listing.
+  const LISTED_STATUSES = ["pending", "published", "active", "sold", "expired", "paused"];
+
+  const { data: listedRows, error: listedError } = await supabase
+    .from("listings")
+    .select("id,user_id,created_by,brand,model,year,vin,status")
+    .in("status", LISTED_STATUSES);
+
+  if (listedError) {
+    console.error("draft-completion-reminder listedError:", listedError);
+  }
+
+  /** "<owner>|vin:<vin>" and "<owner>|car:<brand>|<model>|<year>" */
+  const listedKeys = new Set<string>();
+  const vinKey = (owner: string, vin: string) => `${owner}|vin:${vin.trim().toUpperCase()}`;
+  const carKey = (owner: string, brand: unknown, model: unknown, year: unknown) =>
+    `${owner}|car:${String(brand ?? "").trim().toLowerCase()}|${String(model ?? "")
+      .trim()
+      .toLowerCase()}|${year ?? ""}`;
+
+  for (const row of listedRows ?? []) {
+    const owner = (row.user_id ?? row.created_by) as string | null;
+    if (!owner) continue;
+    const vin = typeof row.vin === "string" ? row.vin.trim() : "";
+    if (vin) listedKeys.add(vinKey(owner, vin));
+    if (row.brand || row.model) listedKeys.add(carKey(owner, row.brand, row.model, row.year));
+  }
+
+  /** True when this owner already has the described car on the market. */
+  const alreadyListed = (
+    owner: string,
+    vin: unknown,
+    brand: unknown,
+    model: unknown,
+    year: unknown
+  ): boolean => {
+    const v = typeof vin === "string" ? vin.trim() : "";
+    // A VIN identifies the physical car, so it decides on its own when present.
+    if (v && listedKeys.has(vinKey(owner, v))) return true;
+    if (!brand && !model) return false;
+    return listedKeys.has(carKey(owner, brand, model, year));
+  };
+
   // --- Wizard drafts (listing_drafts) ---------------------------------------
+  // `*` rather than naming listing_id: naming a column that does not exist yet
+  // fails the whole select, which would tie this function's deploy to the
+  // migration landing first. The table is small, so the overfetch is free.
   const { data: wizardDrafts, error: wizardError } = await supabase
     .from("listing_drafts")
-    .select("id,user_id,data,updated_at,archived_at");
+    .select("*");
 
   if (wizardError) {
     console.error("draft-completion-reminder wizardError:", wizardError);
@@ -406,8 +458,14 @@ serve(async (req) => {
     const data = (row.data ?? {}) as Record<string, unknown>;
 
     // A wizard draft that already spawned a listing row is represented by that
-    // listing below — don't list the same vehicle twice.
+    // listing below — don't list the same vehicle twice. listing_id is the
+    // durable link; data.id is the legacy key kept for rows written before it.
+    if (typeof row.listing_id === "string" && row.listing_id.length > 0) continue;
     if (typeof data.id === "string" && data.id.length > 0) continue;
+
+    // Neither link, but the owner has this car listed anyway — a leftover
+    // draft. Never tell someone their live car is an unfinished draft.
+    if (alreadyListed(row.user_id, data.vin, data.brand, data.model, data.year)) continue;
 
     const archivedAt = (row.archived_at as string | null) ?? null;
     const step = archivedAt ? ARCHIVED_STEP : stepForIdleDays(daysBetween(row.updated_at, now));
