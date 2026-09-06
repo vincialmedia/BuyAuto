@@ -193,6 +193,7 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     location: listing?.location ?? prev.location,
     canton_code: listing?.canton_code ?? (prev as any)?.canton_code,
     title: listing?.title ?? (prev as any)?.title,
+    title_suffix: (listing as any)?.title_suffix ?? (prev as any)?.title_suffix ?? null,
 
     price_plan: (listing?.price_plan ?? prev.price_plan) as any,
     // listings.price_plan is only ever written by Step 3's submit (it has no

@@ -876,6 +876,7 @@ export type Database = {
           stripe_payment_intent_id: string | null
           stripe_refund_id: string | null
           title: string | null
+          title_suffix: string | null
           ui_version: string | null
           updated_at: string | null
           user_id: string | null
@@ -944,6 +945,7 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
           title?: string | null
+          title_suffix?: string | null
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -1012,6 +1014,7 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
           title?: string | null
+          title_suffix?: string | null
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null

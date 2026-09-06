@@ -482,13 +482,64 @@ export function portalMakeSlug(make: string): string {
   return PORTAL_MAKE_SLUG[slug] ?? slug;
 }
 
-export function as24CategoryUrl(make: string, model: string): string {
-  return `https://www.autoscout24.ch/de/s/mo-${marketplaceSlug(baseModel(model))}/mk-${portalMakeSlug(make)}`;
+/** Optional server-side filters for the inventory URLs. */
+export interface CategoryFilters {
+  yearFrom?: number;
+  yearTo?: number;
+  kmFrom?: number;
+  kmTo?: number;
+  body?: BodyType | null;
 }
 
+/**
+ * AutoScout24's own body-type enum (SMG API spec). Only positively known
+ * mappings — an unmapped body simply leaves the URL unfiltered rather than
+ * risking a 0-result page. Roadster/Targa are classed as Cabriolet on AS24.
+ */
+const AS24_BODY_SLUG: Partial<Record<BodyType, string>> = {
+  coupe: "coupe",
+  cabrio: "cabriolet",
+  roadster: "cabriolet",
+  targa: "cabriolet",
+  kombi: "estate",
+  limousine: "saloon",
+  suv: "suv",
+};
+
+export function as24CategoryUrl(make: string, model: string, filters?: CategoryFilters): string {
+  const base = `https://www.autoscout24.ch/de/s/mo-${marketplaceSlug(baseModel(model))}/mk-${portalMakeSlug(make)}`;
+  if (!filters) return base;
+  // Param names verified against SMG's official autoscout24-api-specs repo and
+  // working third-party scrapers (firstRegistrationYearFrom/To, mileageFrom/To,
+  // bodyTypes[0]) — the server filters the inventory before we ever scrape it.
+  const params = new URLSearchParams();
+  if (filters.yearFrom) params.set("firstRegistrationYearFrom", String(filters.yearFrom));
+  if (filters.yearTo) params.set("firstRegistrationYearTo", String(filters.yearTo));
+  if (filters.kmFrom !== undefined && filters.kmFrom > 0) params.set("mileageFrom", String(filters.kmFrom));
+  if (filters.kmTo !== undefined && filters.kmTo > 0) params.set("mileageTo", String(filters.kmTo));
+  const bodySlug = filters.body ? AS24_BODY_SLUG[filters.body] : undefined;
+  if (bodySlug) params.set("bodyTypes[0]", bodySlug);
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
+/**
+ * Comparis facets are PATH segments, not query params, and only the body-type
+ * segments below are verified (via server-side result counts on indexed pages).
+ * Year/km ranges are not URL-addressable on comparis — they stay client-side.
+ */
+const COMPARIS_BODY_SEGMENT: Partial<Record<BodyType, string>> = {
+  coupe: "coupe-aufbau",
+  cabrio: "cabrio",
+  roadster: "cabrio",
+  targa: "cabrio",
+};
+
 /** Verified shape: comparis.ch/carfinder/marktplatz/vw/golf/occasion (aggregates all portals). */
-export function comparisCategoryUrl(make: string, model: string): string {
-  return `https://www.comparis.ch/carfinder/marktplatz/${portalMakeSlug(make)}/${marketplaceSlug(baseModel(model))}/occasion`;
+export function comparisCategoryUrl(make: string, model: string, filters?: CategoryFilters): string {
+  const bodySegment = filters?.body ? COMPARIS_BODY_SEGMENT[filters.body] : undefined;
+  const facet = bodySegment ?? "occasion";
+  return `https://www.comparis.ch/carfinder/marktplatz/${portalMakeSlug(make)}/${marketplaceSlug(baseModel(model))}/${facet}`;
 }
 
 /**
@@ -581,6 +632,117 @@ export function matchesDisplacement(title: string, model: string, url = ""): boo
   return slugRe.test(decoded);
 }
 
+// --- Body-type (Karosserie) matching --------------------------------------
+//
+// Same failure mode as the engine trim, one level up: for a "BMW i8" lookup the
+// portals return Coupés (~CHF 65k) AND Roadsters (~CHF 110-130k) — different
+// price classes that wreck a median exactly like a GTI in a 1.5-TSI valuation.
+// Detection is a strict token allowlist over title + URL slug; anything not
+// positively naming a variant stays null ("unknown") and is never dropped.
+
+export type BodyType =
+  | "coupe"
+  | "gran-coupe"
+  | "cabrio"
+  | "roadster"
+  | "targa"
+  | "kombi"
+  | "limousine"
+  | "sportback"
+  | "suv";
+
+// Multi-word types FIRST: "Gran Coupé" is a 4-door and must never classify as
+// "coupe". Tokens are matched on word boundaries, accent-insensitive.
+const BODY_TYPE_TOKENS: Array<{ type: BodyType; re: RegExp }> = [
+  { type: "gran-coupe", re: /\bgran[\s-]?coupe\b/ },
+  { type: "coupe", re: /\bcoupe\b/ },
+  { type: "cabrio", re: /\b(cabriolet|cabrio|convertible)\b/ },
+  { type: "roadster", re: /\b(roadster|spider|spyder)\b/ },
+  { type: "targa", re: /\btarga\b/ },
+  // "Kombiwagen" ist das TARGA/Fahrzeugausweis-Label für Kombis.
+  { type: "kombi", re: /\b(kombi(wagen)?|touring|avant|variant|sportwagon|estate|break)\b/ },
+  { type: "limousine", re: /\b(limousine|sedan|saloon)\b/ },
+  { type: "sportback", re: /\bsportback\b/ },
+  // "Geländewagen" ist das TARGA/Fahrzeugausweis-Label für SUVs (nach dem
+  // Diakritika-Folding "gelandewagen").
+  { type: "suv", re: /\b(suv|gelandewagen|gelaendewagen)\b/ },
+];
+
+/** Every valid BodyType value — for validating client-supplied body params. */
+export const BODY_TYPE_VALUES: BodyType[] = [
+  "coupe",
+  "gran-coupe",
+  "cabrio",
+  "roadster",
+  "targa",
+  "kombi",
+  "limousine",
+  "sportback",
+  "suv",
+];
+
+/** German display/search word per body type (used to sharpen search queries). */
+export const BODY_TYPE_LABEL: Record<BodyType, string> = {
+  coupe: "Coupé",
+  "gran-coupe": "Gran Coupé",
+  cabrio: "Cabriolet",
+  roadster: "Roadster",
+  targa: "Targa",
+  kombi: "Kombi",
+  limousine: "Limousine",
+  sportback: "Sportback",
+  suv: "SUV",
+};
+
+const foldBodyText = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    // Slugs write "bmw-i8-roadster-123": separators become spaces so the
+    // word-boundary tokens above match inside URLs too.
+    .replace(/[-_/]+/g, " ");
+
+/** The body-type variant a text positively names, or null when it names none. */
+export function bodyTypeOf(text: string): BodyType | null {
+  if (!text) return null;
+  const t = foldBodyText(text);
+  for (const { type, re } of BODY_TYPE_TOKENS) {
+    if (re.test(t)) return type;
+  }
+  return null;
+}
+
+/** Body type of a comp, from its title first, its URL slug as backstop. */
+function compBodyType(title: string, url: string): BodyType | null {
+  const fromTitle = bodyTypeOf(title);
+  if (fromTitle) return fromTitle;
+  if (!url) return null;
+  let decoded = url;
+  try {
+    decoded = decodeURIComponent(url);
+  } catch {
+    /* malformed escape — test the raw URL */
+  }
+  return bodyTypeOf(decoded);
+}
+
+export type BodyVerdict = "match" | "mismatch" | "unknown";
+
+/**
+ * Three-way body-type check, mirroring trimVerdict(): only a comp that
+ * POSITIVELY names a different variant than the requested model is a mismatch.
+ * When the model names no variant (plain "i8"), everything matches — majority
+ * preference in selectComps handles that case instead.
+ */
+export function bodyVerdict(title: string, model: string, url = ""): BodyVerdict {
+  const wanted = bodyTypeOf(model);
+  if (!wanted) return "match";
+  const got = compBodyType(title, url);
+  if (!got) return "unknown";
+  return got === wanted ? "match" : "mismatch";
+}
+
 export type TrimVerdict = "match" | "mismatch" | "unknown";
 
 /**
@@ -653,13 +815,24 @@ function pickBySimilarKm(
   comps: CompCandidate[],
   targetKm: number,
   model: string,
-  limit: number = MAX_COMPS
+  limit: number = MAX_COMPS,
+  preferredBody: BodyType | null = null
 ): { picked: CompCandidate[]; relaxed: boolean } {
   // Trim precision beats km proximity: a GTI comp poisons a 1.5-TSI valuation far
   // worse than a 20'000-km mileage gap (the km-Angleich corrects mileage anyway).
+  // Body-type agreement sits between the two: a same-variant comp with a bigger
+  // mileage gap beats a Roadster in a Coupé valuation.
+  const bodyRank = (c: CompCandidate): number => {
+    if (!preferredBody) return 0;
+    const got = compBodyType(c.title, c.url);
+    if (!got) return 1;
+    return got === preferredBody ? 0 : 2;
+  };
   const byDistance = [...comps].sort((a, b) => {
     const p = modelPrecision(a.title, model) - modelPrecision(b.title, model);
     if (p !== 0) return p;
+    const bd = bodyRank(a) - bodyRank(b);
+    if (bd !== 0) return bd;
     return Math.abs(a.km - targetKm) - Math.abs(b.km - targetKm);
   });
   const bands = [
@@ -693,8 +866,12 @@ export interface CompSelection {
   toppedUp: number;
   /** Positively the WRONG engine — always excluded. */
   droppedForTrim: number;
+  /** Positively the WRONG body variant (model named one) — always excluded. */
+  droppedForBody: number;
   droppedNearNew: number;
   droppedOutliers: number;
+  /** The final picks still mix body variants (e.g. Coupé + Roadster). */
+  mixedBody: boolean;
   /** Unverified comps still on the bench after selection. */
   unverifiedAvailable: number;
   harvested: number;
@@ -703,8 +880,8 @@ export interface CompSelection {
 /**
  * Turn the raw harvest into the comps that actually drive the valuation.
  *
- * Order matters: engine verdict → mileage floor → price band → km-similarity
- * pick. Confirmed comps always fill the seats first; unverified ones (no engine
+ * Order matters: engine verdict → body verdict → mileage floor → price band →
+ * km-similarity pick. Confirmed comps always fill the seats first; unverified ones (no engine
  * stated anywhere) only fill seats that would otherwise stay empty, which is
  * what lifts a real lookup off "3 Inserate" without ever letting a known-wrong
  * engine into the median.
@@ -712,7 +889,8 @@ export interface CompSelection {
 export function selectComps(
   raw: CompCandidate[],
   model: string,
-  targetKm: number
+  targetKm: number,
+  requestedBodyOverride?: BodyType | null
 ): CompSelection {
   const harvested = raw.length;
   const requestedDisplacement = displacementOf(model);
@@ -737,6 +915,25 @@ export function selectComps(
     confirmed = [...raw];
   }
   const droppedForTrim = harvested - confirmed.length - unverified.length;
+
+  // 1b) Body-variant verdict. Only when the requested variant is KNOWN — the
+  //     caller passed one (the calculator's Karosserie field), or the model
+  //     names it ("i8 Roadster", "Golf Variant") — is a positively-different
+  //     comp dropped; untyped comps always survive. A plain "i8" with no
+  //     caller-supplied body drops nothing here — the majority preference
+  //     below keeps the picked set homogeneous instead.
+  const requestedBody = requestedBodyOverride ?? bodyTypeOf(model);
+  let droppedForBody = 0;
+  if (requestedBody) {
+    const beforeBody = confirmed.length + unverified.length;
+    const keep = (c: CompCandidate) => {
+      const got = compBodyType(c.title, c.url);
+      return !got || got === requestedBody;
+    };
+    confirmed = confirmed.filter(keep);
+    unverified = unverified.filter(keep);
+    droppedForBody = beforeBody - confirmed.length - unverified.length;
+  }
 
   // 2) Drop near-new / demo cars (a 140-km GTE is no comp for a used trade-in).
   const beforeKmFloor = confirmed.length + unverified.length;
@@ -764,16 +961,57 @@ export function selectComps(
     }
   }
 
-  // 4) Pick by mileage similarity — confirmed first, then top up.
-  const confirmedPick = pickBySimilarKm(confirmed, targetKm, model);
+  // 4) Body-variant preference for the pick. When the model names a variant,
+  //    that is the preference (mismatches are already gone, this just ranks
+  //    typed matches above untyped comps). Otherwise prefer the STRICT MAJORITY
+  //    variant among the survivors — for a plain "i8" a mixed 8-Coupé/4-Roadster
+  //    harvest then yields an all-Coupé median instead of a Coupé/Roadster blend.
+  //    No majority (tie, or everything untyped) → no preference.
+  let preferredBody: BodyType | null = requestedBody;
+  if (!preferredBody) {
+    const counts = new Map<BodyType, number>();
+    for (const c of [...confirmed, ...unverified]) {
+      const b = compBodyType(c.title, c.url);
+      if (b) counts.set(b, (counts.get(b) ?? 0) + 1);
+    }
+    let best: BodyType | null = null;
+    let bestCount = 0;
+    let typedTotal = 0;
+    for (const [b, n] of counts) {
+      typedTotal += n;
+      if (n > bestCount) {
+        best = b;
+        bestCount = n;
+      }
+    }
+    if (best && bestCount >= 2 && bestCount * 2 > typedTotal) preferredBody = best;
+  }
+
+  // 5) Pick by mileage similarity — confirmed first, then top up.
+  const confirmedPick = pickBySimilarKm(confirmed, targetKm, model, MAX_COMPS, preferredBody);
   const picked = confirmedPick.picked;
   let relaxed = confirmedPick.relaxed;
   let toppedUp = 0;
   if (picked.length < MAX_COMPS && unverified.length > 0) {
-    const topUp = pickBySimilarKm(unverified, targetKm, model, MAX_COMPS - picked.length);
+    const topUp = pickBySimilarKm(
+      unverified,
+      targetKm,
+      model,
+      MAX_COMPS - picked.length,
+      preferredBody
+    );
     picked.push(...topUp.picked);
     toppedUp = topUp.picked.length;
     if (topUp.relaxed) relaxed = true;
+  }
+
+  // Do the final picks still mix positively-named variants? (Two distinct typed
+  // bodies in the set — untyped comps don't count as a mix.) This is the "the
+  // median blends different cars" signal the caller should surface.
+  const pickedBodies = new Set<BodyType>();
+  for (const c of picked) {
+    const b = compBodyType(c.title, c.url);
+    if (b) pickedBodies.add(b);
   }
 
   return {
@@ -781,8 +1019,10 @@ export function selectComps(
     relaxed,
     toppedUp,
     droppedForTrim,
+    droppedForBody,
     droppedNearNew,
     droppedOutliers,
+    mixedBody: pickedBodies.size >= 2,
     unverifiedAvailable: unverified.length - toppedUp,
     harvested,
   };

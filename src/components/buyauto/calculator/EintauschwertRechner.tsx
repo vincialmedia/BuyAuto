@@ -16,6 +16,7 @@ import {
   ExternalLink,
   ArrowRight,
   Pencil,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,8 +75,12 @@ interface CalculatorState {
   model: string;
   year: number;
   vehicleKm: number;
+  /** Karosserie ('' = unbekannt/egal) — schärft die automatische Suche. */
+  bodyType: string;
+  /** Hubraum-Token aus dem Typenschein (z.B. "2.0", '' = unbekannt) — aktiviert
+   *  den Motorisierungs-Filter serverseitig, ohne die Suchqueries zu verändern. */
+  displacement: string;
   comps: CompRow[];
-  kmRate: number;        // CHF pro km Laufleistungs-Differenz
   reconCost: number;     // Aufbereitung & Reparaturen (fix)
   warrantyCost: number;  // Garantie-Rückstellung (fix)
   standingCost: number;  // Standzeit & Kapitalbindung (fix)
@@ -99,21 +104,59 @@ interface CalcResult {
   offerMax: number;
   offerShare: number; // Eintauschwert in % vom Marktwert
   compCount: number;
+  /** Absolute Extremwerte der angeglichenen Preise (immer min–max). */
+  fullMin: number;
+  fullMax: number;
+  /** true: marketMin/marketMax sind die P25–P75-Spanne (ab 4 Comps), nicht min–max. */
+  bandIsIqr: boolean;
+  /** fullMax / fullMin der angeglichenen Preise; null wenn nicht sinnvoll. */
+  spreadFactor: number | null;
+  /** Zu wenige oder zu stark streuende Vergleichswerte — Spanne statt Punktwert zeigen. */
+  lowConfidence: boolean;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
+
+// Laufleistungs-Angleich: ein Auto verliert grob diesen Anteil seines Werts pro
+// 10'000 km. Wert-proportional statt eines fixen Rappenbetrags — 10 Rp./km war
+// auf die Golf-Klasse (~CHF 20'000) kalibriert und hat sechsstellige Fahrzeuge
+// praktisch nicht angeglichen (CHF 7'000 Korrektur bei 70'000 km Differenz auf
+// einem CHF 130'000-Roadster). 5%/10'000 km ergibt für den 20k-Golf weiterhin
+// die bewährten ~10 Rp./km.
+const KM_ADJUST_PCT_PER_10K = 5;
+// Bei extremen km-Differenzen läuft die lineare Korrektur aus dem Ruder —
+// Angleich auf ±50% des Inseratspreises begrenzen.
+const KM_ADJUST_CAP = 0.5;
+
+// Unter 3 Vergleichsfahrzeugen oder ab diesem Faktor zwischen teuerstem und
+// günstigstem angeglichenen Preis ist der Median keine belastbare Punktschätzung
+// mehr — das Ergebnis wird als Spanne mit Warnung präsentiert.
+const MIN_CONFIDENT_COMPS = 3;
+const MAX_CONFIDENT_SPREAD = 1.8;
+
+// Karosserie-Auswahl für die automatische Suche. Werte = compsParser BodyType;
+// '' heisst unbekannt/egal und lässt die Suche ungefiltert.
+const BODY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "limousine", label: "Limousine" },
+  { value: "kombi", label: "Kombi" },
+  { value: "suv", label: "SUV" },
+  { value: "coupe", label: "Coupé" },
+  { value: "cabrio", label: "Cabriolet" },
+  { value: "roadster", label: "Roadster" },
+];
 
 const DEFAULT_STATE: CalculatorState = {
   make: "",
   model: "",
   year: 0,
   vehicleKm: 0,
+  bodyType: "",
+  displacement: "",
   comps: [
     { price: 0, km: 0 },
     { price: 0, km: 0 },
     { price: 0, km: 0 },
   ],
-  kmRate: 0.10,
   reconCost: 800,
   warrantyCost: 500,
   standingCost: 300,
@@ -127,12 +170,13 @@ const PRESET_GOLF: CalculatorState = {
   model: "Golf 1.5 TSI",
   year: 2020,
   vehicleKm: 78000,
+  bodyType: "",
+  displacement: "",
   comps: [
     { price: 18900, km: 65000 },
     { price: 17500, km: 82000 },
     { price: 16900, km: 95000 },
   ],
-  kmRate: 0.10,
   reconCost: 800,
   warrantyCost: 500,
   standingCost: 300,
@@ -174,19 +218,47 @@ const median = (values: number[]): number => {
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
 
+// Lineares Interpolations-Quantil (p in [0,1]) über bereits SORTIERTE Werte.
+const quantileSorted = (sorted: number[], p: number): number => {
+  const idx = (sorted.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+};
+
 function compute(state: CalculatorState): CalcResult | null {
   const validComps = state.comps.filter((c) => c.price > 0);
   if (validComps.length === 0) return null;
 
   // Laufleistungs-Angleich: hat das Vergleichsfahrzeug MEHR km als unseres,
-  // ist unser Fahrzeug entsprechend mehr wert (und umgekehrt).
-  const adjustedPrices = validComps.map(
-    (c) => c.price + (c.km - state.vehicleKm) * state.kmRate
-  );
+  // ist unser Fahrzeug entsprechend mehr wert (und umgekehrt). Die Korrektur
+  // skaliert mit dem Fahrzeugwert (KM_ADJUST_PCT_PER_10K), gedeckelt auf ±50%.
+  const adjustedPrices = validComps.map((c) => {
+    const factor = 1 + (KM_ADJUST_PCT_PER_10K / 100) * ((c.km - state.vehicleKm) / 10_000);
+    const clamped = Math.min(1 + KM_ADJUST_CAP, Math.max(1 - KM_ADJUST_CAP, factor));
+    return c.price * clamped;
+  });
 
   const marketValue = median(adjustedPrices);
-  const marketMin = Math.min(...adjustedPrices);
-  const marketMax = Math.max(...adjustedPrices);
+  const sortedAdjusted = [...adjustedPrices].sort((a, b) => a - b);
+  const fullMin = sortedAdjusted[0];
+  const fullMax = sortedAdjusted[sortedAdjusted.length - 1];
+
+  // Ab 4 Comps ist die gezeigte Spanne P25–P75 ("typische Spanne") statt
+  // min–max: die Extremwerte sind sonst wortwörtlich die zwei schlechtesten
+  // Datenpunkte. Die absolute min–max-Spanne bleibt als fullMin/fullMax
+  // sichtbar, und die Unsicherheits-Warnung urteilt weiterhin über die VOLLE
+  // Streuung — die engere Anzeige darf echte Ausreisser nie verstecken.
+  const bandIsIqr = validComps.length >= 4;
+  const marketMin = bandIsIqr ? quantileSorted(sortedAdjusted, 0.25) : fullMin;
+  const marketMax = bandIsIqr ? quantileSorted(sortedAdjusted, 0.75) : fullMax;
+
+  const spreadFactor = fullMin > 0 ? fullMax / fullMin : null;
+  const lowConfidence =
+    validComps.length < MIN_CONFIDENT_COMPS ||
+    spreadFactor === null ||
+    spreadFactor > MAX_CONFIDENT_SPREAD;
 
   const marginValue =
     state.marginMode === 'percent'
@@ -215,6 +287,11 @@ function compute(state: CalculatorState): CalcResult | null {
     offerMax,
     offerShare: marketValue > 0 ? (offer / marketValue) * 100 : 0,
     compCount: validComps.length,
+    fullMin,
+    fullMax,
+    bandIsIqr,
+    spreadFactor,
+    lowConfidence,
   };
 }
 
@@ -317,6 +394,9 @@ export function EintauschwertRechner() {
   const [vehicleFieldMode, setVehicleFieldMode] = useState<'select' | 'text'>('select');
   // Two-step flow: 1 = vehicle & market, 2 = garage deductions + result.
   const [step, setStep] = useState<1 | 2>(1);
+  // Typenschein quick-fill (Fahrzeugausweis Feld 24 -> exakte Fahrzeugdaten).
+  const [tgInput, setTgInput] = useState("");
+  const [tgLoading, setTgLoading] = useState(false);
   // Vehicle identity at calculation time — changing the car invalidates comps.
   const searchedVehicleRef = useRef("");
 
@@ -465,6 +545,7 @@ export function EintauschwertRechner() {
     setFoundListings([]);
     setMakeId("");
     setModelId("");
+    setTgInput("");
     setVehicleFieldMode('select');
     setStep(1);
   };
@@ -516,6 +597,79 @@ export function EintauschwertRechner() {
     setTimeout(() => {
       document.getElementById("comps-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 200);
+  };
+
+  // Typenschein-Lookup: füllt Marke/Modell/Karosserie/Hubraum aus der
+  // ASTRA-Typengenehmigung (Feld 24). Kostenlos, kein Kontingent.
+  const handleTgLookup = async () => {
+    const tg = tgInput.trim().toUpperCase().replace(/[\s.\-]/g, "");
+    setTgInput(tg);
+    if (!/^[A-Z0-9]{6}$/.test(tg)) {
+      toast.error("Ungültige Typenschein-Nr.", {
+        description: "6 Zeichen aus Feld 24 des Fahrzeugausweises, z.B. 1TD812.",
+      });
+      return;
+    }
+    setTgLoading(true);
+    try {
+      const res = await fetch(`/api/vehicles/decode-tg?tg=${encodeURIComponent(tg)}`);
+      const data = (await res.json().catch(() => ({}))) as {
+        provider_make?: string | null;
+        provider_model?: string | null;
+        body_key?: string | null;
+        body_label?: string | null;
+        displacement_l?: string | null;
+        message?: string;
+      };
+      if (!res.ok) {
+        toast.error("Typenschein nicht gefunden", {
+          description: data?.message ?? "Prüf die Nummer oder erfasse das Fahrzeug manuell.",
+        });
+        return;
+      }
+      // Karosserie-Wörter ("LIM", "KOMBI") gehören nicht in den Modell-Suchstring
+      // — die Karosserie kommt separat als bodyType mit.
+      const model = (data.provider_model ?? "")
+        .split(/\s+/)
+        .filter(
+          (t) =>
+            !/^(lim|limousine|kombi|coupe|coupé|cabriolet|cabrio|roadster|targa|suv|schr(ä|ae)gheck|stufenheck)$/i.test(
+              t
+            )
+        )
+        .join(" ")
+        .trim();
+      const bodyKey =
+        data.body_key && BODY_TYPE_OPTIONS.some((o) => o.value === data.body_key)
+          ? data.body_key
+          : "";
+      setVehicleFieldMode('text');
+      setMakeId("");
+      setModelId("");
+      setState((prev) => ({
+        ...prev,
+        make: data.provider_make ?? prev.make,
+        model: model || prev.model,
+        bodyType: bodyKey,
+        displacement: data.displacement_l ?? "",
+      }));
+      toast.success("Typenschein erkannt", {
+        description: [
+          data.provider_make,
+          model,
+          data.body_label,
+          data.displacement_l ? `${data.displacement_l}l` : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      });
+    } catch {
+      toast.error("Abfrage fehlgeschlagen", {
+        description: "Typenschein konnte nicht geladen werden – erfasse das Fahrzeug manuell.",
+      });
+    } finally {
+      setTgLoading(false);
+    }
   };
 
   const validateVehicle = (): boolean => {
@@ -578,7 +732,7 @@ export function EintauschwertRechner() {
     }
     setResult(computed);
     setGateKind(null);
-    searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}`;
+    searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}|${nextState.bodyType}|${nextState.displacement}`;
     return true;
   };
 
@@ -602,7 +756,6 @@ export function EintauschwertRechner() {
     setState((prev) => ({
       ...DEFAULT_STATE,
       comps: DEFAULT_STATE.comps.map((c) => ({ ...c })),
-      kmRate: prev.kmRate,
       reconCost: prev.reconCost,
       warrantyCost: prev.warrantyCost,
       standingCost: prev.standingCost,
@@ -615,6 +768,7 @@ export function EintauschwertRechner() {
     setGateKind(null);
     setMakeId("");
     setModelId("");
+    setTgInput("");
     setVehicleFieldMode('select');
     setCompsMode('auto');
     setStep(1);
@@ -636,7 +790,7 @@ export function EintauschwertRechner() {
       });
       return;
     }
-    const key = `${state.make}|${state.model}|${state.year}`;
+    const key = `${state.make}|${state.model}|${state.year}|${state.bodyType}|${state.displacement}`;
     if (result && searchedVehicleRef.current && key !== searchedVehicleRef.current) {
       setResult(null);
       if (compsMode === 'auto') {
@@ -698,6 +852,8 @@ export function EintauschwertRechner() {
           model: state.model.trim(),
           year: state.year,
           km: state.vehicleKm,
+          body: state.bodyType || undefined,
+          displacement: state.displacement || undefined,
         }),
       });
 
@@ -873,13 +1029,14 @@ export function EintauschwertRechner() {
     </div>
   );
 
-  // The km correction is applied silently (state.kmRate, 10 Rp./km) — an
-  // editable "CHF/km" factor confused every tester, so it's explained, not asked.
+  // The km correction is applied silently (KM_ADJUST_PCT_PER_10K) — an editable
+  // factor confused every tester, so it's explained, not asked.
   const kmAdjustNote = (
     <p className="text-xs text-neutral-500 leading-relaxed">
       <strong className="text-neutral-700">Kilometerstand wird automatisch berücksichtigt:</strong>{" "}
       Vergleichsautos mit mehr Kilometern als deins sind entsprechend günstiger – der Rechner
-      gleicht das mit 10 Rp. pro Kilometer aus. Beispiel: 20&apos;000 km Unterschied ≈ CHF 2&apos;000.
+      gleicht das mit rund {KM_ADJUST_PCT_PER_10K}% des Inseratspreises pro 10&apos;000 km
+      Differenz aus. Beispiel: CHF 20&apos;000-Auto, 20&apos;000 km Unterschied ≈ CHF 2&apos;000.
     </p>
   );
 
@@ -920,6 +1077,43 @@ export function EintauschwertRechner() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
+            {/* Typenschein-Schnell-Erfassung: ein 6-stelliger Code aus dem
+                Fahrzeugausweis identifiziert das Fahrzeug exakt (ASTRA-Daten). */}
+            <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-red-600" />
+                <Label className="text-sm font-bold text-neutral-900">
+                  Schnell-Erfassung mit Typenschein-Nr.
+                </Label>
+                <span className="text-xs text-neutral-400">(optional)</span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={tgInput}
+                  onChange={(e) => setTgInput(e.target.value.toUpperCase())}
+                  placeholder="z.B. 1TD812"
+                  className="uppercase bg-white"
+                  maxLength={10}
+                  autoComplete="off"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTgLookup}
+                  disabled={tgLoading}
+                  className="shrink-0 border-neutral-300"
+                >
+                  {tgLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Übernehmen
+                </Button>
+              </div>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Feld 24 im Fahrzeugausweis – füllt Marke, Modell, Karosserie und Motorisierung
+                exakt aus (ASTRA-Typengenehmigung, gratis). Steht dort «IVI» oder «X», erfasse
+                das Fahrzeug manuell.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-sm font-bold text-neutral-900">Marke *</Label>
@@ -1035,6 +1229,43 @@ export function EintauschwertRechner() {
                 placeholder="z.B. 80'000"
                 tooltip="Kilometerstand des Fahrzeugs, das du in Eintausch nimmst."
               />
+              <div className="sm:col-span-2 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-neutral-600">
+                    Karosserie (optional)
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-neutral-600 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
+                        <p className="text-xs">
+                          Existiert das Modell in mehreren Varianten (z.B. Coupé und Roadster),
+                          macht die Angabe die automatische Suche deutlich präziser – nur
+                          passende Varianten fliessen in die Bewertung ein.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Select
+                  value={state.bodyType === "" ? "any" : state.bodyType}
+                  onValueChange={(v) => updateState('bodyType', v === "any" ? "" : v)}
+                >
+                  <SelectTrigger className="bg-neutral-50/50">
+                    <SelectValue placeholder="Weiss nicht / egal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Weiss nicht / egal</SelectItem>
+                    {BODY_TYPE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <Separator />
@@ -1408,7 +1639,7 @@ export function EintauschwertRechner() {
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Kaufanfragen von Interessenten direkt per E-Mail
+                    Alle Informationen und Dokumente bleiben an einem zentralen Ort in der App
                   </li>
                 </ul>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
@@ -1434,8 +1665,9 @@ export function EintauschwertRechner() {
                   Du hast diesen Monat alle <strong className="text-white">{FREE_MONTHLY_LIMIT} Gratis-Suchen</strong>{" "}
                   genutzt. Weitere automatische Suchen sind nicht gratis – mit einem{" "}
                   <strong className="text-white">Garagen-Paket sind bis zu {MAX_PLAN_VALUATIONS} Suchen pro Monat</strong>{" "}
-                  inklusive. Dazu inserierst du deine Fahrzeuge, bekommst eine eigene Garagen-Seite
-                  mit deinem ganzen Bestand und Kaufanfragen direkt per E-Mail.
+                  inklusive. Dazu inserierst du deine Fahrzeuge und bekommst eine eigene Garagen-Seite
+                  mit deinem ganzen Bestand – alle Informationen und Dokumente bleiben an einem
+                  zentralen Ort in der App.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                   {/* /garage-plan ejects non-garage accounts, so private users go
@@ -1504,19 +1736,69 @@ export function EintauschwertRechner() {
               Ergebnis{vehicleLabel ? ` – ${vehicleLabel}` : ""}
             </h3>
 
+            {/* Zu dünne oder zu breit streuende Datenbasis: die Spanne IST das
+                Ergebnis — ein einzelner selbstbewusster Punktwert wäre gelogen. */}
+            {result.lowConfidence && (
+              <div className="max-w-2xl mx-auto mb-8 bg-amber-500/10 border border-amber-500/40 rounded-xl p-4 sm:p-5 flex gap-3 text-left">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-sm text-neutral-200 leading-relaxed">
+                  <p className="font-bold text-amber-300 mb-1">
+                    Unsichere Bewertung – nimm die Spanne, nicht den Mittelwert
+                  </p>
+                  <p>
+                    {result.compCount < MIN_CONFIDENT_COMPS &&
+                      `Nur ${result.compCount} Vergleichsfahrzeug${result.compCount === 1 ? "" : "e"} vorhanden. `}
+                    {result.spreadFactor !== null &&
+                      result.spreadFactor > MAX_CONFIDENT_SPREAD &&
+                      `Die angeglichenen Preise liegen um Faktor ${result.spreadFactor.toFixed(1)} auseinander – vermutlich stecken unterschiedliche Varianten oder Ausstattungen in den Treffern. `}
+                    Prüf die Vergleichsinserate, entferne unpassende und ergänze 3–5 wirklich
+                    vergleichbare – die Neuberechnung ist gratis.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 md:gap-8 mb-10">
               {/* MARKET VALUE */}
               <div className="flex-1 bg-white/5 rounded-xl p-6 border border-white/10">
                 <div className="text-sm font-medium text-neutral-400 mb-4">
                   Marktwert (Verkaufspreis)
                 </div>
-                <div className="text-3xl font-bold">CHF {chf(result.marketValue)}</div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  Median aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
-                </div>
-                <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                  Spanne: CHF {chf(result.marketMin)} – {chf(result.marketMax)}
-                </div>
+                {result.lowConfidence ? (
+                  <>
+                    <div className="text-2xl sm:text-3xl font-bold">
+                      CHF {chf(result.marketMin)} – {chf(result.marketMax)}
+                    </div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      {result.bandIsIqr ? "Typische Spanne (P25–P75)" : "Spanne"} aus{" "}
+                      {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
+                      Median: CHF {chf(result.marketValue)}
+                      {result.bandIsIqr && (
+                        <span className="block text-xs text-neutral-500 mt-1">
+                          Alle Inserate: CHF {chf(result.fullMin)} – {chf(result.fullMax)}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold">CHF {chf(result.marketValue)}</div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      Median aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
+                      {result.bandIsIqr ? "Typische Spanne (P25–P75)" : "Spanne"}: CHF{" "}
+                      {chf(result.marketMin)} – {chf(result.marketMax)}
+                      {result.bandIsIqr && (
+                        <span className="block text-xs text-neutral-500 mt-1">
+                          Alle Inserate: CHF {chf(result.fullMin)} – {chf(result.fullMax)}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* VS Divider */}
@@ -1527,20 +1809,48 @@ export function EintauschwertRechner() {
               </div>
 
               {/* OFFER */}
-              <div className="flex-1 bg-green-500/5 rounded-xl p-6 border border-green-500/50 shadow-lg shadow-green-900/20">
+              <div
+                className={`flex-1 rounded-xl p-6 border shadow-lg ${
+                  result.lowConfidence
+                    ? "bg-amber-500/5 border-amber-500/50 shadow-amber-900/20"
+                    : "bg-green-500/5 border-green-500/50 shadow-green-900/20"
+                }`}
+              >
                 <div className="text-sm font-medium text-neutral-400 mb-4 flex justify-between items-start">
-                  Dein Eintauschwert (Angebot)
-                  <Badge className="bg-green-500 hover:bg-green-600 text-white border-none">
-                    {result.offerShare.toFixed(0)}% vom Marktwert
-                  </Badge>
+                  {result.lowConfidence ? "Dein Eintauschwert (Spanne)" : "Dein Eintauschwert (Angebot)"}
+                  {result.lowConfidence ? (
+                    <Badge className="bg-amber-500 hover:bg-amber-600 text-neutral-950 border-none">
+                      Grobe Schätzung
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-green-500 hover:bg-green-600 text-white border-none">
+                      {result.offerShare.toFixed(0)}% vom Marktwert
+                    </Badge>
+                  )}
                 </div>
-                <div className="text-4xl font-bold text-green-400">CHF {chf(result.offer)}</div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  Marktwert minus Abzüge, gerundet auf CHF 50
-                </div>
-                <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                  Verhandlungs-Spanne: CHF {chf(result.offerMin)} – {chf(result.offerMax)}
-                </div>
+                {result.lowConfidence ? (
+                  <>
+                    <div className="text-2xl sm:text-3xl font-bold text-amber-400">
+                      CHF {chf(result.offerMin)} – {chf(result.offerMax)}
+                    </div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      Marktwert-Spanne minus Abzüge, gerundet auf CHF 50
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
+                      Rechnerischer Mittelwert: CHF {chf(result.offer)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-4xl font-bold text-green-400">CHF {chf(result.offer)}</div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      Marktwert minus Abzüge, gerundet auf CHF 50
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
+                      Verhandlungs-Spanne: CHF {chf(result.offerMin)} – {chf(result.offerMax)}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1591,9 +1901,20 @@ export function EintauschwertRechner() {
               <div className="max-w-2xl mx-auto mt-4 p-4 bg-black/20 rounded-lg text-xs text-neutral-400 font-mono">
                 <p className="mb-2 font-bold text-white">Berechnungslogik:</p>
                 <div className="space-y-1">
-                  <p>Angeglichener Preis = Inseratspreis, korrigiert um die km-Differenz (10 Rp./km)</p>
+                  <p>
+                    Angeglichener Preis = Inseratspreis ± {KM_ADJUST_PCT_PER_10K}% pro 10&apos;000 km
+                    Differenz (max. ±{Math.round(KM_ADJUST_CAP * 100)}%)
+                  </p>
                   <p>Marktwert = Median der angeglichenen Preise</p>
                   <p>Eintauschwert = Marktwert − Aufbereitung − Garantie − Standzeit − Marge</p>
+                  <p>
+                    Ab 4 Inseraten zeigt die Spanne das mittlere Preisfeld (P25–P75); die
+                    absolute Streuung aller Inserate bleibt separat sichtbar
+                  </p>
+                  <p>
+                    Unter {MIN_CONFIDENT_COMPS} Inseraten oder ab Faktor {MAX_CONFIDENT_SPREAD} zwischen
+                    günstigstem und teuerstem Inserat wird die Spanne statt des Medians gezeigt
+                  </p>
                 </div>
                 <p className="mt-3 text-neutral-500">
                   Angeglichene Vergleichspreise: {result.adjustedPrices.map((p) => chf(p)).join(" / ")}
@@ -1605,13 +1926,13 @@ export function EintauschwertRechner() {
             <div className="max-w-2xl mx-auto mt-8 bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
               <p className="text-neutral-300 mb-4">
                 Fahrzeug übernommen? <strong className="text-white">Verkauf es schneller mit BuyAuto.</strong>{" "}
-                Als Garage zeigst du deinen ganzen Fahrzeugbestand auf einer eigenen Garagen-Seite,
-                erreichst tausende Käufer und bekommst Kaufanfragen direkt per E-Mail – kürzere
-                Standzeit, mehr Marge.
+                Als Garage zeigst du deinen ganzen Fahrzeugbestand auf einer eigenen Garagen-Seite
+                und erreichst tausende Käufer. Alle Informationen und Dokumente bleiben an einem
+                zentralen Ort in der App – kürzere Standzeit, mehr Marge.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild className="bg-red-600 hover:bg-red-700 text-white border-none">
-                  <Link href="/garage-plan">Garagen-Paket entdecken</Link>
+                  <Link href="/preise#plaene">Garagen-Pakete & Preise</Link>
                 </Button>
                 <Button asChild variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
                   <Link href="/inserat-erstellen">Occasion inserieren</Link>

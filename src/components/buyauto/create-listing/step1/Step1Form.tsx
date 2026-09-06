@@ -18,7 +18,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VehicleBasicsSection, type CanonicalOption, type VehicleStepFormValues } from "./VehicleBasicsSection";
 import type { DealType, FinancingType, ListingData } from "@/lib/buyauto/types";
-import { zBody, zFuel, zGearbox, zYear, isCantonCode } from "@/lib/buyauto/listingContract";
+import {
+  zBody,
+  zFuel,
+  zGearbox,
+  zYear,
+  isCantonCode,
+  composeListingTitle,
+  sanitizeTitleSuffix,
+  TITLE_SUFFIX_MAX,
+} from "@/lib/buyauto/listingContract";
 
 const vehicleStepSchema = z.object({
   vin: z
@@ -59,6 +68,10 @@ const vehicleStepSchema = z.object({
     .optional(),
 
   description: z.string().max(2000, "Maximal 2000 Zeichen").optional(),
+
+  // Freitext hinter dem generierten Titel ("... | Frisch ab MFK"). Die 50er-
+  // Grenze gilt zusätzlich serverseitig (DB-CHECK listings_title_suffix_len).
+  title_suffix: z.string().max(TITLE_SUFFIX_MAX, `Maximal ${TITLE_SUFFIX_MAX} Zeichen`).optional(),
 });
 
 type VinDecodeResponse = {
@@ -156,6 +169,12 @@ export function Step1Form() {
   );
   const [vinError, setVinError] = useState<string | null>(null);
   const [vinReview, setVinReview] = useState<VinDecodeResponse | null>(null);
+  // Typenschein (Fahrzeugausweis Feld 24) — second quick-fill path besides the
+  // VIN, backed by the free ASTRA-TARGA lookup (/api/vehicles/decode-tg).
+  const [tgInput, setTgInput] = useState<string>("");
+  const [tgLoading, setTgLoading] = useState(false);
+  const [tgStatus, setTgStatus] = useState<"idle" | "success" | "error">("idle");
+  const [tgError, setTgError] = useState<string | null>(null);
 
   const [makes, setMakes] = useState<CanonicalOption[]>([]);
   const [models, setModels] = useState<CanonicalOption[]>([]);
@@ -196,6 +215,7 @@ export function Step1Form() {
       first_registration: typeof (data as any).first_registration === "string" ? (data as any).first_registration : null,
 
       description: data.description || "",
+      title_suffix: typeof (data as any).title_suffix === "string" ? (data as any).title_suffix : "",
     },
     mode: "onBlur",
   });
@@ -388,7 +408,9 @@ export function Step1Form() {
   };
 
   const applyVinAutofill = (payload: VinDecodeResponse, vin: string) => {
-    if (shouldAutofill("vin")) {
+    // Empty vin = the payload came from a Typenschein decode, which has no VIN
+    // to write — never clear a VIN the user already entered.
+    if (vin && shouldAutofill("vin")) {
       setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
       if (initialValuesRef.current) {
         (initialValuesRef.current as any).vin = vin;
@@ -439,6 +461,101 @@ export function Step1Form() {
 
     if (payload.first_registration && shouldAutofill("first_registration")) {
       applyDecodedValue("first_registration", payload.first_registration, { shouldValidate: true });
+    }
+  };
+
+  const onDecodeTg = async () => {
+    const tg = tgInput.trim().toUpperCase().replace(/[\s.\-]/g, "");
+    setTgInput(tg);
+    setTgError(null);
+
+    if (!/^[A-Z0-9]{6}$/.test(tg)) {
+      setTgStatus("error");
+      const msg = "Die Typenschein-Nr. hat 6 Zeichen, z.B. 1TD812 (Fahrzeugausweis Feld 24).";
+      setTgError(msg);
+      toast({ title: "Ungültige Typenschein-Nr.", description: msg, variant: "destructive" });
+      return;
+    }
+
+    setTgLoading(true);
+    setTgStatus("idle");
+    try {
+      const resp = await fetch(`/api/vehicles/decode-tg?tg=${encodeURIComponent(tg)}`);
+      const json = (await resp.json().catch(() => ({}))) as {
+        make_id?: string | null;
+        model_id?: string | null;
+        variant_text?: string | null;
+        provider_make?: string | null;
+        provider_model?: string | null;
+        fuel?: string | null;
+        transmission?: string | null;
+        power_hp?: number | null;
+        body_type?: string | null;
+        error?: string;
+        message?: string;
+      };
+
+      if (!resp.ok) {
+        const msg = json?.message || "Typenschein konnte nicht abgefragt werden.";
+        setTgStatus("error");
+        setTgError(msg);
+        toast({ title: "Typenschein nicht gefunden", description: msg, variant: "destructive" });
+        return;
+      }
+
+      updateData({
+        provider_make: json.provider_make ?? null,
+        provider_model: json.provider_model ?? null,
+        provider_trim: json.variant_text ?? null,
+        provider_model_id: json.model_id ?? null,
+        variant_text: json.variant_text ?? null,
+        catalog_confidence: null,
+        catalog_needs_review: null,
+      } as any);
+
+      // Reuse the VIN autofill path with a TG-shaped payload — the Typenschein
+      // carries no VIN, year or first registration, so those stay untouched.
+      applyVinAutofill(
+        {
+          vin: "",
+          make_id: json.make_id ?? null,
+          model_id: json.model_id ?? null,
+          variant_id: null,
+          variant_text: json.variant_text ?? null,
+          fuel: json.fuel ?? null,
+          transmission: json.transmission ?? null,
+          power_hp: json.power_hp ?? null,
+          body_type: json.body_type ?? null,
+          provider_make: json.provider_make ?? null,
+          provider_model: json.provider_model ?? null,
+          provider_trim: json.variant_text ?? null,
+        },
+        ""
+      );
+
+      setTgStatus("success");
+      toast({
+        title: "Typenschein-Daten geladen",
+        description: [json.provider_make, json.provider_model].filter(Boolean).join(" ") || tg,
+      });
+
+      if (!json.make_id || !json.model_id) {
+        toast({
+          title: "Bitte prüfen",
+          description: "Marke/Modell konnten nicht eindeutig zugeordnet werden. Bitte wähle sie manuell aus.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      setTgStatus("error");
+      setTgError("Typenschein-Daten konnten nicht geladen werden.");
+      toast({
+        title: "Abfrage fehlgeschlagen",
+        description: "Typenschein-Daten konnten nicht geladen werden. Bitte versuche es erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setTgLoading(false);
     }
   };
 
@@ -560,8 +677,16 @@ export function Step1Form() {
       const modelName = models.find((m) => m.id === values.model_id)?.name ?? "";
       const variantName = values.variant_id ? (variants.find((v) => v.id === values.variant_id)?.name ?? "") : "";
 
+      // Falls back to data.title only when no make is picked — that stored
+      // title is already composed, so the suffix must not be appended twice.
       const title = makeName
-        ? [makeName, variantName ? joinModelAndVariant(modelName, variantName) : modelName].filter(Boolean).join(" ").trim()
+        ? composeListingTitle(
+            [makeName, variantName ? joinModelAndVariant(modelName, variantName) : modelName]
+              .filter(Boolean)
+              .join(" ")
+              .trim(),
+            values.title_suffix
+          )
         : (data as any)?.title;
 
       return {
@@ -702,11 +827,16 @@ export function Step1Form() {
             : variantTextRaw
           : "");
 
-      const generatedTitle =
-        [makeName, variantForTitle ? joinModelAndVariant(modelName, variantForTitle) : modelName]
-          .filter(Boolean)
-          .join(" ")
-          .trim() || ((data as any)?.title ?? "");
+      const titleSuffix = sanitizeTitleSuffix(values.title_suffix);
+      const baseTitle = [makeName, variantForTitle ? joinModelAndVariant(modelName, variantForTitle) : modelName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      // The data.title fallback is already composed — never append the suffix
+      // onto it a second time.
+      const generatedTitle = baseTitle
+        ? composeListingTitle(baseTitle, titleSuffix)
+        : ((data as any)?.title ?? "");
       const isNewListing = !(data as any).id;
 
       const nextFinancingType: FinancingType | null = nextDealType === "lease_takeover" ? null : ((data as any).financing_type ?? "cash");
@@ -727,6 +857,7 @@ export function Step1Form() {
         brand: makeName,
         model: modelName,
         title: generatedTitle,
+        title_suffix: titleSuffix || null,
 
         year: Number(values.year),
         km: Number(values.km),
@@ -772,6 +903,7 @@ export function Step1Form() {
           location: values.location as any,
           canton_code: values.canton_code as any,
           title: generatedTitle as any,
+          title_suffix: (titleSuffix || null) as any,
 
           power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
           drivetrain: values.drivetrain as any,
@@ -827,6 +959,7 @@ export function Step1Form() {
           location: values.location as any,
           canton_code: values.canton_code as any,
           title: generatedTitle as any,
+          title_suffix: (titleSuffix || null) as any,
 
           power_hp: typeof values.power_hp === "number" && Number.isFinite(values.power_hp) ? Math.round(Number(values.power_hp)) : null,
           drivetrain: values.drivetrain as any,
@@ -973,7 +1106,8 @@ export function Step1Form() {
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Fahrzeugdaten</h2>
         <p className="text-neutral-600 font-light leading-relaxed">
-          Gib deine VIN ein – wir füllen so viele Felder wie möglich automatisch aus. Kein VIN? Erfasse die Daten einfach manuell.
+          Gib deine VIN oder die Typenschein-Nr. aus dem Fahrzeugausweis ein – wir füllen so viele
+          Felder wie möglich automatisch aus. Beides nicht zur Hand? Erfasse die Daten einfach manuell.
         </p>
       </div>
 
@@ -1021,6 +1155,48 @@ export function Step1Form() {
               <div className="text-xs text-emerald-700 font-light">VIN erkannt – Felder wurden automatisch vorausgefüllt.</div>
             ) : null}
             {vinError ? <div className="text-sm text-red-600">{vinError}</div> : null}
+          </div>
+        </div>
+
+        <div className="border-t border-primary/15 pt-3 space-y-2">
+          <div className="text-sm font-medium text-neutral-900">
+            Oder: Typenschein-Nr. (Fahrzeugausweis Feld 24) (optional)
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-stretch">
+              <Input
+                value={tgInput}
+                onChange={(e) => setTgInput(e.target.value.toUpperCase())}
+                placeholder="z.B. 1TD812 (6 Zeichen)"
+                className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl w-full"
+                autoComplete="off"
+                inputMode="text"
+                maxLength={10}
+              />
+
+              <Button
+                type="button"
+                onClick={onDecodeTg}
+                disabled={tgLoading}
+                variant="outline"
+                className="rounded-2xl h-12 px-6 w-full md:w-auto whitespace-nowrap"
+              >
+                {tgLoading ? "Lade..." : "Daten laden"}
+              </Button>
+            </div>
+
+            <div className="text-xs text-neutral-700/80 font-light">
+              Die 6-stellige Nummer aus Feld 24 des Fahrzeugausweises – erkennt Marke, Modell,
+              Karosserie, Treibstoff und Leistung (ASTRA-Typengenehmigung). Steht dort «IVI» oder
+              «X», nutze stattdessen die VIN.
+            </div>
+            {tgStatus === "success" ? (
+              <div className="text-xs text-emerald-700 font-light">
+                Typenschein erkannt – Felder wurden automatisch vorausgefüllt.
+              </div>
+            ) : null}
+            {tgError ? <div className="text-sm text-red-600">{tgError}</div> : null}
           </div>
         </div>
       </div>
