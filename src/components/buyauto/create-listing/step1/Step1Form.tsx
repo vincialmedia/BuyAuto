@@ -13,7 +13,6 @@ import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/cre
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 import { getMyGarage } from "@/services/garageService";
 
-import { Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VehicleBasicsSection, type CanonicalOption, type VehicleStepFormValues } from "./VehicleBasicsSection";
@@ -160,17 +159,8 @@ export function Step1Form() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const didPrefillLocationRef = useRef(false);
 
-  const [vinInput, setVinInput] = useState<string>(typeof (data as any)?.vin === "string" ? (data as any).vin : "");
-  const [vinLoading, setVinLoading] = useState(false);
-  const [vinStatus, setVinStatus] = useState<"idle" | "loading" | "success" | "error">(
-    typeof (data as any)?.vin === "string" && (data as any)?.make_id && (data as any)?.model_id
-      ? "success"
-      : "idle"
-  );
-  const [vinError, setVinError] = useState<string | null>(null);
-  const [vinReview, setVinReview] = useState<VinDecodeResponse | null>(null);
-  // Typenschein (Fahrzeugausweis Feld 24) — second quick-fill path besides the
-  // VIN, backed by the free ASTRA-TARGA lookup (/api/vehicles/decode-tg).
+  // Typenschein (Fahrzeugausweis Feld 24) — the quick-fill path, backed by the
+  // free ASTRA-TARGA lookup (/api/vehicles/decode-tg).
   const [tgInput, setTgInput] = useState<string>("");
   const [tgLoading, setTgLoading] = useState(false);
   const [tgStatus, setTgStatus] = useState<"idle" | "success" | "error">("idle");
@@ -242,7 +232,6 @@ export function Step1Form() {
   const selectedMake = useMemo(() => makes.find((m) => m.id === selectedMakeId) ?? null, [makes, selectedMakeId]);
   const selectedModel = useMemo(() => models.find((m) => m.id === selectedModelId) ?? null, [models, selectedModelId]);
 
-  const isVinReady = vinStatus === "success";
   const fieldsDisabled = false;
 
   useEffect(() => {
@@ -559,115 +548,6 @@ export function Step1Form() {
     }
   };
 
-  const onDecodeVin = async () => {
-    const vin = vinInput.trim().toUpperCase();
-    setVinInput(vin);
-    setValue("vin", vin, { shouldValidate: true, shouldDirty: true });
-    setVinError(null);
-
-    if (!vin) {
-      setVinStatus("error");
-      setVinError("Bitte gib deine VIN ein.");
-      toast({
-        title: "VIN fehlt",
-        description: "Bitte gib die VIN (17 Zeichen) ein.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!/^[A-Z0-9]{17}$/.test(vin)) {
-      setVinStatus("error");
-      setVinError("VIN muss 17 Zeichen (A-Z, 0-9) haben.");
-      toast({
-        title: "Ungültige VIN",
-        description: "Die VIN muss genau 17 Zeichen haben (A–Z, 0–9).",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setVinLoading(true);
-    setVinStatus("loading");
-    setVinReview(null);
-    try {
-      // Auth is optional here: guests may decode too (they get a small per-IP
-      // budget server-side); a signed-in session is sent along when present.
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const resp = await fetch("/api/vehicles/decode-vin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ vin }),
-      });
-
-      const json = (await resp.json()) as VinDecodeResponse & { error?: string; message?: string };
-
-      const providerPatch = {
-        provider_make: json?.provider_make ?? null,
-        provider_model: json?.provider_model ?? null,
-        provider_trim: json?.provider_trim ?? null,
-        // The catalog model this decode mapped to. The generated title only
-        // falls back to variant_text/provider_trim while the form still points
-        // at this model — after a manual make/model correction the old engine
-        // badge must not leak into the new car's title.
-        provider_model_id: json?.model_id ?? null,
-        variant_text: json?.variant_text ?? null,
-        catalog_confidence: json?.catalog_confidence ?? null,
-        catalog_needs_review: json?.catalog_needs_review ?? null,
-      };
-
-      if (!resp.ok) {
-        updateData(providerPatch as any);
-
-        const msg = json?.message || json?.error || "Bitte prüfe die VIN und versuche es erneut.";
-        setVinStatus("error");
-        setVinError(msg);
-
-        toast({
-          title: "VIN Decode fehlgeschlagen",
-          description: msg,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      updateData(providerPatch as any);
-
-      applyVinAutofill(json, vin);
-      setVinReview(json);
-
-      setVinStatus("success");
-      setVinError(null);
-
-      toast({
-        title: "VIN-Daten geladen",
-        description: json.cached ? "VIN-Daten aus dem Cache geladen." : "VIN-Daten erfolgreich geladen.",
-      });
-
-      if (!json.make_id || !json.model_id) {
-        toast({
-          title: "Bitte prüfen",
-          description: "Marke/Modell konnten nicht eindeutig bestimmt werden. Bitte wähle sie manuell aus.",
-          variant: "destructive",
-        });
-      }
-    } catch {
-      setVinStatus("error");
-      setVinError("VIN-Daten konnten nicht geladen werden.");
-      toast({
-        title: "Fehler",
-        description: "VIN-Daten konnten nicht geladen werden.",
-        variant: "destructive",
-      });
-    } finally {
-      setVinLoading(false);
-    }
-  };
 
   useEffect(() => {
     registerDraftSnapshotter(() => {
@@ -783,7 +663,7 @@ export function Step1Form() {
     if (!values.make_id || !values.model_id) {
       toast({
         title: "Fahrzeugdaten fehlen",
-        description: "Bitte wähle mindestens Marke und Modell aus (oder lade sie per VIN).",
+        description: "Bitte wähle mindestens Marke und Modell aus (oder lade sie per Typenschein-Nr.).",
         variant: "destructive",
       });
       return;
@@ -1097,8 +977,7 @@ export function Step1Form() {
     return <div className="text-sm text-neutral-600">Lade Profil...</div>;
   }
 
-  const vinOk = typeof vinInput === "string" ? vinInput.trim().length === 0 || /^[A-Z0-9]{17}$/.test(vinInput.trim().toUpperCase()) : true;
-  const canProceed = Boolean(watch("make_id")) && Boolean(watch("model_id")) && vinOk;
+  const canProceed = Boolean(watch("make_id")) && Boolean(watch("model_id"));
   const locationRequired = effectiveDealType !== "lease_takeover";
 
   return (
@@ -1106,61 +985,15 @@ export function Step1Form() {
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Fahrzeugdaten</h2>
         <p className="text-neutral-600 font-light leading-relaxed">
-          Gib deine VIN oder die Typenschein-Nr. aus dem Fahrzeugausweis ein – wir füllen so viele
-          Felder wie möglich automatisch aus. Beides nicht zur Hand? Erfasse die Daten einfach manuell.
+          Gib die Typenschein-Nr. aus Feld 24 deines Fahrzeugausweises ein – wir füllen so viele
+          Felder wie möglich automatisch aus. Nicht zur Hand? Erfasse die Daten einfach manuell.
         </p>
       </div>
 
       <div className="rounded-3xl border border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 p-4 md:p-6 shadow-sm space-y-3">
         <div className="space-y-2">
-          <div className="text-sm font-medium text-neutral-900">VIN (Fahrgestellnummer) (optional)</div>
-
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-stretch">
-              <Input
-                value={vinInput}
-                onChange={(e) => {
-                  const next = e.target.value.toUpperCase();
-                  setVinInput(next);
-                  setValue("vin", next.trim().toUpperCase(), { shouldValidate: true, shouldDirty: true });
-                }}
-                onBlur={() => {
-                  const normalized = vinInput.trim().toUpperCase();
-                  setVinInput(normalized);
-                  setValue("vin", normalized, { shouldValidate: true, shouldDirty: true });
-                }}
-                placeholder="z.B. WBA... (17 Zeichen)"
-                className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl w-full"
-                autoComplete="off"
-                inputMode="text"
-              />
-
-              <Button
-                type="button"
-                onClick={onDecodeVin}
-                disabled={vinLoading}
-                className="rounded-2xl h-12 px-6 w-full md:w-auto whitespace-nowrap"
-              >
-                {vinLoading ? "Lade..." : "Daten laden"}
-              </Button>
-            </div>
-
-            <div className="text-xs text-neutral-700/80 font-light">Optional – wenn du deine VIN hast, können wir Marke/Modell automatisch erkennen.</div>
-            {!vinOk && vinInput.trim().length > 0 ? (
-              <div className="text-xs text-red-600 font-light">
-                Ungültige/angefangene VIN. Lösche das Feld, um manuell fortzufahren – oder gib alle 17 Zeichen ein.
-              </div>
-            ) : null}
-            {vinStatus === "success" ? (
-              <div className="text-xs text-emerald-700 font-light">VIN erkannt – Felder wurden automatisch vorausgefüllt.</div>
-            ) : null}
-            {vinError ? <div className="text-sm text-red-600">{vinError}</div> : null}
-          </div>
-        </div>
-
-        <div className="border-t border-primary/15 pt-3 space-y-2">
           <div className="text-sm font-medium text-neutral-900">
-            Oder: Typenschein-Nr. (Fahrzeugausweis Feld 24) (optional)
+            Typenschein-Nr. (Fahrzeugausweis Feld 24)
           </div>
 
           <div className="flex flex-col gap-2">
@@ -1179,7 +1012,6 @@ export function Step1Form() {
                 type="button"
                 onClick={onDecodeTg}
                 disabled={tgLoading}
-                variant="outline"
                 className="rounded-2xl h-12 px-6 w-full md:w-auto whitespace-nowrap"
               >
                 {tgLoading ? "Lade..." : "Daten laden"}
@@ -1188,8 +1020,8 @@ export function Step1Form() {
 
             <div className="text-xs text-neutral-700/80 font-light">
               Die 6-stellige Nummer aus Feld 24 des Fahrzeugausweises – erkennt Marke, Modell,
-              Karosserie, Treibstoff und Leistung (ASTRA-Typengenehmigung). Steht dort «IVI» oder
-              «X», nutze stattdessen die VIN.
+              Karosserie, Treibstoff und Leistung aus der offiziellen ASTRA-Typengenehmigung.
+              Steht dort «IVI» oder «X» (Direktimport), erfasse die Daten unten manuell.
             </div>
             {tgStatus === "success" ? (
               <div className="text-xs text-emerald-700 font-light">
@@ -1200,8 +1032,6 @@ export function Step1Form() {
           </div>
         </div>
       </div>
-
-      {vinReview && vinStatus === "success" ? <VinReviewCard data={vinReview} /> : null}
 
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-10">
         <VehicleBasicsSection
@@ -1231,68 +1061,10 @@ export function Step1Form() {
 
         {!canProceed ? (
           <div className="text-sm text-neutral-600">
-            Bitte wähle mindestens Marke und Modell aus, bevor du weitergehst. (VIN ist optional.)
+            Bitte wähle mindestens Marke und Modell aus, bevor du weitergehst.
           </div>
         ) : null}
       </form>
-    </div>
-  );
-}
-
-function LabelVin() {
-  return <div className="text-sm font-medium text-neutral-700">VIN (optional)</div>;
-}
-
-function VinReviewCard({ data }: { data: VinDecodeResponse }) {
-  const rows: Array<{ label: string; value: string | null }> = [
-    { label: "Marke", value: data.provider_make ?? null },
-    { label: "Modell", value: data.provider_model ?? null },
-    { label: "Ausführung", value: data.provider_trim ?? data.variant_text ?? null },
-    { label: "Baujahr", value: typeof data.year === "number" ? String(data.year) : null },
-    { label: "Treibstoff", value: data.fuel ?? null },
-    { label: "Getriebe", value: data.transmission ?? null },
-    { label: "Karosserie", value: data.body_type ?? null },
-    { label: "Leistung", value: typeof data.power_hp === "number" ? `${data.power_hp} PS` : null },
-    { label: "Antrieb", value: data.drivetrain ?? null },
-    { label: "Erstzulassung", value: data.first_registration ?? null },
-  ];
-
-  const detected = rows.filter((r) => r.value && r.value.trim().length > 0).length;
-
-  return (
-    <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-4 md:p-6 shadow-sm space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white">
-          <Check className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-neutral-900">Aus der VIN erkannt</p>
-          <p className="text-xs text-neutral-600">
-            {detected} von {rows.length} Feldern automatisch ausgefüllt · bitte unten prüfen und Fehlendes ergänzen.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
-        {rows.map((row) => {
-          const hasValue = !!row.value && row.value.trim().length > 0;
-          return (
-            <div key={row.label} className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wide text-neutral-500">{row.label}</p>
-              {hasValue ? (
-                <p className="truncate text-sm font-medium text-neutral-900" title={row.value ?? undefined}>
-                  {row.value}
-                </p>
-              ) : (
-                <p className="flex items-center gap-1 text-sm text-amber-600">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  <span>nicht erkannt</span>
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
