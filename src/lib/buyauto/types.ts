@@ -63,6 +63,9 @@ export interface Listing {
   garage_logo_url?: string | null;
 
   view_count?: number;
+
+  /** listings.created_at (ISO). Lets client-side merges keep newest-first. */
+  created_at?: string | null;
 }
 
 export type PricePlanId = "free30" | "standard" | "extended" | "unlimited";

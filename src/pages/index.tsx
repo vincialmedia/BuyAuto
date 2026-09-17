@@ -14,6 +14,7 @@ import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
+import { orderPremiumListings } from "@/lib/buyauto/premiumListings";
 
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"), {
   loading: () => <div className="h-96 bg-white animate-pulse" />,
@@ -353,12 +354,12 @@ export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
       searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
     ]);
 
-    const ordered = [...leaseTakeoverResult.items, ...directPurchaseResult.items];
-    const uniqueById = new Map<string, Listing>();
-    for (const l of ordered) uniqueById.set(l.id, l);
+    // Takeovers first (legacy rows AND wizard-created Direktkauf + Übernahme
+    // rows), newest first — see orderPremiumListings.
+    const ordered = orderPremiumListings([...leaseTakeoverResult.items, ...directPurchaseResult.items]);
 
     // Strip undefined fields so Next can serialize.
-    const premiumListings = JSON.parse(JSON.stringify(Array.from(uniqueById.values()))) as Listing[];
+    const premiumListings = JSON.parse(JSON.stringify(ordered)) as Listing[];
 
     return { props: { premiumListings }, revalidate: 300 };
   } catch (error) {

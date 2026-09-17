@@ -384,6 +384,7 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     garage_id,
     garage_name,
     garage_logo_url: null,
+    created_at: row.created_at ?? null,
   };
 }
 
