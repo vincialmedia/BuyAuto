@@ -374,6 +374,13 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                   // Direktkauf + Übernahme); km when the card is presented as a
                   // purchase (plain Direktkauf, or a hybrid under the Direktkauf tab).
                   const showRemainingMonths = isLeaseTakeoverListing(listing) && !presentAsDirectPurchase;
+                  // Source of truth for a hybrid is the offer JSON (the flat column is a
+                  // mirror) — same fallback order as SimilarListings and the detail page.
+                  const takeoverRemainingMonths = listing.leasing_offer?.lease_takeover_offer?.remaining_months;
+                  const remainingMonths =
+                    hasEnabledTakeoverOffer(listing) && typeof takeoverRemainingMonths === "number" && takeoverRemainingMonths > 0
+                      ? takeoverRemainingMonths
+                      : listing.remainingMonths;
 
                   return (
                     <Link
@@ -446,7 +453,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                               {showRemainingMonths ? (
                                 <div className="flex items-center gap-1.5">
                                   <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                                  <span>{listing.remainingMonths} Mt.</span>
+                                  <span>{remainingMonths} Mt.</span>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1.5">
