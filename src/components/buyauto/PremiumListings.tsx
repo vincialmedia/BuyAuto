@@ -32,16 +32,35 @@ function getDealTypeLabel(listing: Listing): DealTypeLabel {
 }
 
 /**
- * Badge text for one card. Under the Direktkauf tab a hybrid (Direktkauf with
- * an enabled Übernahme-Angebot) leads with its Kaufpreis, but it must still
- * say that a Leasingübernahme is on offer — the same label the detail page
- * and the admin panel use. Relabelling it as a plain "Direktkauf" hid the
- * seller's actual offer.
+ * Badge text for one card — a property of the listing, never of the active
+ * tab, so a card keeps its label when the buyer switches tabs. A Direktkauf
+ * with an enabled Übernahme-Angebot AND a Kaufpreis is "Direktkauf +
+ * Leasingübernahme" (the label the detail page and the admin panel use);
+ * relabelling it as a plain "Direktkauf" under the Direktkauf tab hid the
+ * seller's actual offer. A hybrid without a Kaufpreis is simply a
+ * Leasingübernahme.
  */
-function getCardDealLabel(listing: Listing, presentAsDirectPurchase: boolean): CardDealLabel {
-  if (!presentAsDirectPurchase) return getDealTypeLabel(listing);
-  return hasEnabledTakeoverOffer(listing) ? "Direktkauf + Leasingübernahme" : "Direktkauf";
+function getCardDealLabel(listing: Listing): CardDealLabel {
+  const hasPurchasePrice = typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0;
+  if (hasEnabledTakeoverOffer(listing) && hasPurchasePrice) return "Direktkauf + Leasingübernahme";
+  return getDealTypeLabel(listing);
 }
+
+/**
+ * Restlaufzeit of an enabled Übernahme-Angebot. The offer JSON is the source
+ * of truth and remaining_months a mirror — same fallback order as
+ * SimilarListings and the detail page.
+ */
+function getTakeoverRemainingMonths(listing: Listing): number | null {
+  const fromOffer = listing.leasing_offer?.lease_takeover_offer?.remaining_months;
+  if (hasEnabledTakeoverOffer(listing) && typeof fromOffer === "number" && fromOffer > 0) return fromOffer;
+  return typeof listing.remainingMonths === "number" && listing.remainingMonths > 0 ? listing.remainingMonths : null;
+}
+
+/** Swiss thousands grouping without Intl: Node and browsers disagree on the
+ *  de-CH separator glyph, which produced hydration mismatches on the
+ *  server-rendered search cards (see ModernListingCard). */
+const swissInt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 
 interface PremiumListingsProps {
   externalFilter?: FilterCategory;
@@ -117,7 +136,8 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
         // Directly buyable cars with a real Kaufpreis. Hybrids (enabled
         // Übernahme-Angebot next to the Kaufpreis) are included because they
         // can be bought outright; under this tab they lead with the Kaufpreis
-        // and carry the "Direktkauf + Leasingübernahme" badge (getCardDealLabel).
+        // (renderPriceBlock) and keep their "Direktkauf + Leasingübernahme"
+        // badge (getCardDealLabel) like everywhere else.
         return (
           listing.deal_type === "direct_purchase" &&
           typeof listing.purchasePriceCHF === "number" &&
@@ -228,6 +248,9 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
       takeoverOffer && typeof takeoverOffer.price_per_month_chf === "number" && takeoverOffer.price_per_month_chf > 0
         ? takeoverOffer.price_per_month_chf
         : null;
+    // A monthly rate without its term is half an offer, so the Restlaufzeit
+    // rides on the rate line; the meta row keeps the km (a vehicle fact).
+    const takeoverMonths = takeoverMonthly !== null ? getTakeoverRemainingMonths(listing) : null;
 
     // An enabled Übernahme-Angebot leads with the monthly rate — the Kaufpreis
     // becomes the secondary line (same rule as the search cards). Under the
@@ -237,7 +260,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
         <div className="text-right">
           <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Leasingübernahme</div>
           <div className="text-xl font-bold text-red-600">{formatPrice(takeoverMonthly)}</div>
-          <div className="text-xs text-neutral-500">/ Monat</div>
+          <div className="text-xs text-neutral-500">/ Monat{takeoverMonths !== null ? ` · ${takeoverMonths} Mt.` : ""}</div>
 
           {hasPurchasePrice && (
             <div className="mt-1 text-xs text-neutral-500">
@@ -260,7 +283,9 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
           {takeoverMonthly !== null ? (
             <div className="mt-1 text-xs text-neutral-500">
               Leasingübernahme:{" "}
-              <span className="font-semibold text-neutral-700">{formatPrice(takeoverMonthly)}/Mt.</span>
+              <span className="font-semibold text-neutral-700">
+                {formatPrice(takeoverMonthly)}/Mt.{takeoverMonths !== null ? ` · ${takeoverMonths} Mt.` : ""}
+              </span>
             </div>
           ) : hasLeasingMonthly ? (
             <div className="mt-1 text-xs text-neutral-500">
@@ -369,18 +394,12 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {visibleListings.map((listing) => {
                   const presentAsDirectPurchase = activeFilter === "direct_purchase";
-                  const dealTypeLabel = getCardDealLabel(listing, presentAsDirectPurchase);
-                  // Restlaufzeit for every takeover shape (legacy row or
-                  // Direktkauf + Übernahme); km when the card is presented as a
-                  // purchase (plain Direktkauf, or a hybrid under the Direktkauf tab).
-                  const showRemainingMonths = isLeaseTakeoverListing(listing) && !presentAsDirectPurchase;
-                  // Source of truth for a hybrid is the offer JSON (the flat column is a
-                  // mirror) — same fallback order as SimilarListings and the detail page.
-                  const takeoverRemainingMonths = listing.leasing_offer?.lease_takeover_offer?.remaining_months;
-                  const remainingMonths =
-                    hasEnabledTakeoverOffer(listing) && typeof takeoverRemainingMonths === "number" && takeoverRemainingMonths > 0
-                      ? takeoverRemainingMonths
-                      : listing.remainingMonths;
+                  const dealTypeLabel = getCardDealLabel(listing);
+                  // Meta slot: legacy takeover rows carry no mileage worth
+                  // showing and keep their Restlaufzeit chip; every
+                  // direct_purchase row (hybrids included) shows km — a hybrid's
+                  // Restlaufzeit rides on its rate line in renderPriceBlock.
+                  const showLegacyRemainingMonths = listing.deal_type === "lease_takeover";
 
                   return (
                     <Link
@@ -450,15 +469,15 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                                 <span>{listing.fuel}</span>
                               </div>
 
-                              {showRemainingMonths ? (
+                              {showLegacyRemainingMonths ? (
                                 <div className="flex items-center gap-1.5">
                                   <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                                  <span>{remainingMonths} Mt.</span>
+                                  <span>{listing.remainingMonths} Mt.</span>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1.5">
                                   <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                                  <span>{(listing.mileageKm || 0).toLocaleString("de-CH")} km</span>
+                                  <span>{swissInt(listing.mileageKm || 0)} km</span>
                                 </div>
                               )}
                             </div>

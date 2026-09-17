@@ -35,11 +35,15 @@ import { DECLINE_DELETE_AFTER_DAYS, DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyau
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { hasEnabledTakeoverOffer } from "@/lib/buyauto/premiumListings";
 
-function getDealTypeLabel(input: { deal_type?: string | null; financing_type?: string | null }): string {
-  const dealType = input.deal_type ?? "lease_takeover";
+function getDealTypeLabel(listing: ListingDetail): string {
+  const dealType = listing.deal_type ?? "lease_takeover";
   if (dealType === "direct_purchase") {
-    if (input.financing_type === "leasing") return "Direktkauf · Leasing";
+    // The wizard stores a Leasingübernahme as a Direktkauf with an enabled
+    // Übernahme-Angebot; the seller should see the offer they actually made.
+    if (hasEnabledTakeoverOffer(listing)) return "Direktkauf + Leasingübernahme";
+    if (listing.financing_type === "leasing") return "Direktkauf · Leasing";
     return "Direktkauf · Barzahlung";
   }
   return "Leasingübernahme";
@@ -794,7 +798,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               expiresAt={listing.expires_at}
                             />
                             <Badge variant="secondary" className="rounded-full">
-                              {getDealTypeLabel({ deal_type: (listing as any).deal_type, financing_type: (listing as any).financing_type })}
+                              {getDealTypeLabel(listing)}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
                               {getPlanBadge(listing)}

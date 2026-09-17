@@ -25,6 +25,13 @@ export function hasEnabledTakeoverOffer(listing: Listing): boolean {
  * every wizard-created takeover, so a freshly published premium
  * Leasingübernahme landed on carousel page 4 behind rows from last winter.
  * Merging by date keeps paid premium placement where the seller expects it.
+ *
+ * Product decision, deliberately kept from the Leasing-Fokus homepage: the
+ * section is headed «Aktuelle Leasingübernahmen», so takeovers stay in
+ * front and a premium plain Direktkauf follows them under «Alle» (it is
+ * still newest-first under the Direktkauf tab). If the carousel should ever
+ * become a general premium slot, drop the takeoverFirst tier and rename the
+ * heading in the same change.
  */
 export function orderPremiumListings(items: Listing[]): Listing[] {
   const uniqueById = new Map<string, Listing>();
