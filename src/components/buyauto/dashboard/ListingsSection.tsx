@@ -42,7 +42,7 @@ function getDealTypeLabel(listing: ListingDetail): string {
   if (dealType === "direct_purchase") {
     // The wizard stores a Leasingübernahme as a Direktkauf with an enabled
     // Übernahme-Angebot; the seller should see the offer they actually made.
-    if (hasEnabledTakeoverOffer(listing)) return "Direktkauf + Leasingübernahme";
+    if (hasEnabledTakeoverOffer(listing)) return "Leasingübernahme";
     if (listing.financing_type === "leasing") return "Direktkauf · Leasing";
     return "Direktkauf · Barzahlung";
   }
