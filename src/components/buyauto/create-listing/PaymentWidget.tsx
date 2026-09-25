@@ -10,7 +10,7 @@ import { useT } from '@/i18n/runtime';
 interface PaymentWidgetProps {
   clientSecret: string;
   totalAmount: number;
-  onSuccess: () => void;
+  onSuccess: (paymentIntent: { id: string; amount: number }) => void;
 }
 
 export default function PaymentWidget({ clientSecret, totalAmount, onSuccess }: PaymentWidgetProps) {

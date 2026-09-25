@@ -36,7 +36,7 @@ export interface TgDecodeResponse {
   tg_nr: string;
   make_id: string | null;
   model_id: string | null;
-  variant_id: null;
+  variant_id: string | null;
   variant_text: string | null;
   provider_make: string | null;
   provider_model: string | null;
@@ -73,16 +73,32 @@ export function displacementFromCcm(ccm: number | null): string | null {
 export function mapTgFuel(raw: string | null): string | null {
   const trimmed = String(raw ?? "").trim();
   if (!trimmed) return null;
-  // Der reale TARGA-Export liefert Bauart-Treibstoff als CODE ("B" = Benzin,
-  // "D" = Diesel, "E" = elektrisch; Kombinationen wie "BE" = Hybrid) — im Live-
-  // Datenbestand verifiziert. Klartexte werden zusätzlich erkannt, falls
-  // künftige Exporte Labels liefern.
+  // Der reale TARGA-Export liefert Bauart-Treibstoff als CODE. Bedeutungen
+  // empirisch am Live-Datenbestand verifiziert (Beispielfahrzeuge je Code):
+  //   B Benzin · D Diesel · E Elektrisch · C Benzin-Hybrid (MHEV/PHEV, z.B.
+  //   "Tonale 1.3 PHEV") · F Diesel-Hybrid (z.B. Alpina D3 S MHEV) · R Elektro
+  //   mit Range Extender (BMW i3 REX) · K Ethanol E85 · N/Y Erdgas (g-tron) ·
+  //   Z Autogas LPG · X Wasserstoff. Gas/H2 haben keinen Wert im FUEL_TYPES-
+  //   Vokabular (Benzin|Diesel|Hybrid|Elektro) -> null, Nutzer wählt manuell.
   if (/^[A-Z/+\s-]{1,4}$/i.test(trimmed)) {
     const code = trimmed.toUpperCase().replace(/[^A-Z]/g, "");
+    if (code.length === 1) {
+      const single: Record<string, string> = {
+        B: "Benzin",
+        D: "Diesel",
+        E: "Elektro",
+        C: "Hybrid",
+        F: "Hybrid",
+        R: "Hybrid",
+        K: "Benzin",
+      };
+      return single[code] ?? null;
+    }
     const hasB = code.includes("B");
     const hasD = code.includes("D");
     const hasE = code.includes("E");
     if (hasE && (hasB || hasD)) return "Hybrid";
+    if (code.includes("C") || code.includes("F") || code.includes("R")) return "Hybrid";
     if (hasE) return "Elektro";
     if (hasD) return "Diesel";
     if (hasB) return "Benzin";
@@ -103,10 +119,15 @@ export function mapTgFuel(raw: string | null): string | null {
 export function mapTgTransmission(raw: string | null): string | null {
   const v = String(raw ?? "").toLowerCase().trim();
   if (!v) return null;
-  // TARGA-Getriebecodes: m5/m6 = manuell, a6/a7/a8 = Automat; Klartexte kommen
-  // je nach Ära ebenfalls vor ("Automat", "stufenlos").
-  if (/^a\d|autom|stufenlos|cvt|dsg/.test(v)) return "Automatik";
-  if (/^m\d|manuell|schalt/.test(v)) return "Manuell";
+  // TARGA-Getriebecodes (empirisch am Live-Datenbestand verifiziert):
+  // mN = Handschaltung N-Gang; Suffix "a" = automatisiertes Schaltgetriebe
+  // (DSG & Co., z.B. m7a; m1a = Eingang-Automat der E-Autos) -> Automatik;
+  // aN = Automat; s = stufenlos (CVT); "m?"/"m?a" = Gangzahl unbekannt;
+  // h1/h2 = hydrostatisch (Arbeitsmaschinen) -> null. Klartexte kommen je
+  // nach Ära ebenfalls vor ("Automat", "stufenlos").
+  if (/^m[\d?]+a$/.test(v)) return "Automatik";
+  if (/^a\d|^s$|autom|stufenlos|cvt|dsg/.test(v)) return "Automatik";
+  if (/^m[\d?]+$|manuell|schalt/.test(v)) return "Manuell";
   return null;
 }
 
@@ -120,6 +141,76 @@ export function mapTgListingBody(raw: string | null): string | null {
   if (/gel(ä|ae?)nde|suv|kompaktvan|van/.test(v) && /gel(ä|ae?)nde|suv/.test(v)) return "SUV";
   if (/limousine|stufenheck|schr(ä|ae?)gheck|sedan/.test(v)) return "Limousine";
   return null;
+}
+
+/**
+ * Findet das Katalog-Modell, dessen Name den Anfang des TARGA-Typ-Texts bildet
+ * ("Golf 8 1.5 eTSI" -> "Golf"; "Golf GTI Clubsport 2.0" -> "Golf GTI
+ * Clubsport"). Vergleich tokenweise über normalizeVehicleKey, damit
+ * Punktierung/Umlaute nicht stören ("ID.3 Pro" matcht "ID.3") und "T500"
+ * NICHT "T5" matcht. Bei mehreren Treffern gewinnt der längste Name.
+ */
+export function matchModelFromTyp(
+  typ: string,
+  models: Array<{ id: string; name: string }>
+): { id: string; name: string; rest: string } | null {
+  const typTokens = typ.trim().split(/\s+/).filter(Boolean);
+  if (typTokens.length === 0) return null;
+  const normTyp = typTokens.map((t) => normalizeVehicleKey(t));
+
+  let best: { id: string; name: string; rest: string; len: number } | null = null;
+  for (const model of models) {
+    const nameTokens = model.name.trim().split(/\s+/).filter(Boolean);
+    if (nameTokens.length === 0 || nameTokens.length > typTokens.length) continue;
+    let ok = true;
+    for (let i = 0; i < nameTokens.length; i++) {
+      const nt = normalizeVehicleKey(nameTokens[i]);
+      if (!nt || nt !== normTyp[i]) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok && (!best || nameTokens.length > best.len)) {
+      best = {
+        id: model.id,
+        name: model.name,
+        rest: typTokens.slice(nameTokens.length).join(" "),
+        len: nameTokens.length,
+      };
+    }
+  }
+  return best ? { id: best.id, name: best.name, rest: best.rest } : null;
+}
+
+/**
+ * Findet im Rest-Text nach dem Modellnamen ("8 1.5 eTSI", "LongRange") die
+ * Katalog-Ausführung: ein zusammenhängendes Token-Fenster des Rests muss —
+ * normalisiert, also ohne Leerzeichen/Punkte — exakt dem Ausführungsnamen
+ * entsprechen ("1.5 eTSI" -> "15etsi"; "LongRange" == "Long Range"). Token-
+ * genau, damit "R" nicht in "LongRange" matcht. Längster Treffer gewinnt
+ * ("GTI Clubsport" vor "GTI").
+ */
+export function matchVariantFromRest(
+  rest: string,
+  variants: Array<{ id: string; name: string }>
+): { id: string; name: string } | null {
+  const tokens = rest.trim().split(/\s+/).filter(Boolean).map((t) => normalizeVehicleKey(t));
+  if (tokens.length === 0) return null;
+  const windows = new Set<string>();
+  for (let i = 0; i < tokens.length; i++) {
+    let acc = "";
+    for (let j = i; j < tokens.length; j++) {
+      acc += tokens[j];
+      if (acc) windows.add(acc);
+    }
+  }
+  let best: { id: string; name: string; len: number } | null = null;
+  for (const v of variants) {
+    const key = normalizeVehicleKey(v.name);
+    if (!key || !windows.has(key)) continue;
+    if (!best || key.length > best.len) best = { id: v.id, name: v.name, len: key.length };
+  }
+  return best ? { id: best.id, name: best.name } : null;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -205,6 +296,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // manuelle Auswahl zurück.
   let makeId: string | null = null;
   let modelId: string | null = null;
+  let variantId: string | null = null;
   let variantText: string | null = null;
   const providerMake = primary.marke?.trim() || null;
   const providerModel = primary.typ?.trim() || null;
@@ -220,15 +312,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (makeId && providerModel) {
       const family = deriveModelFamily({ rawModel: providerModel, providerMake });
       variantText = family.variantText;
-      const candidate = family.familyName ?? providerModel.split(/\s+/)[0];
-      if (candidate) {
-        const { data: modelRow } = await supabase
-          .from("models")
-          .select("id")
-          .eq("make_id", makeId)
-          .eq("normalized_name", normalizeVehicleKey(candidate))
-          .maybeSingle();
-        modelId = (modelRow as { id?: string } | null)?.id ?? null;
+
+      // Tokenweiser Präfix-Match gegen die echten Katalog-Modelle der Marke —
+      // deutlich treffersicherer als die abgeleitete Modellfamilie, weil er
+      // Generationszahlen und Motorisierungs-Suffixe im TARGA-Typ übersteht.
+      const { data: modelRows } = await supabase
+        .from("models")
+        .select("id,name")
+        .eq("make_id", makeId)
+        .limit(1000);
+      const matched = matchModelFromTyp(
+        providerModel,
+        (modelRows ?? []) as Array<{ id: string; name: string }>
+      );
+      if (matched) {
+        modelId = matched.id;
+        if (matched.rest) {
+          variantText = matched.rest;
+          const { data: variantRows } = await supabase
+            .from("variants")
+            .select("id,name")
+            .eq("model_id", matched.id)
+            .limit(500);
+          const variant = matchVariantFromRest(
+            matched.rest,
+            (variantRows ?? []) as Array<{ id: string; name: string }>
+          );
+          if (variant) variantId = variant.id;
+        }
+      } else {
+        const candidate = family.familyName ?? providerModel.split(/\s+/)[0];
+        if (candidate) {
+          const { data: modelRow } = await supabase
+            .from("models")
+            .select("id")
+            .eq("make_id", makeId)
+            .eq("normalized_name", normalizeVehicleKey(candidate))
+            .maybeSingle();
+          modelId = (modelRow as { id?: string } | null)?.id ?? null;
+        }
       }
     }
   }
@@ -238,7 +360,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     tg_nr: tgNr,
     make_id: makeId,
     model_id: modelId,
-    variant_id: null,
+    variant_id: variantId,
     variant_text: variantText,
     provider_make: providerMake,
     provider_model: providerModel,

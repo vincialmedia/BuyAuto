@@ -19,7 +19,7 @@ export default function Document({ locale }: DocumentProps) {
           in the server HTML — a next/script tag would run after gtag.js has
           already fired its first hit, which is exactly the hit we must not send
           before the visitor has decided. Storage keys are duplicated from
-          @/lib/analytics/gtag here because this runs outside the bundle.
+          @/lib/analytics here because this runs outside the bundle.
         */}
         <script
           dangerouslySetInnerHTML={{

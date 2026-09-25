@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref, buildListingSlugSegment, extractListingIdFromParam } from "@/lib/buyauto/listingUrl";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
+import { safeFreeText, toDealType, track } from "@/lib/analytics";
 import {
   buildVehicleDescription,
   driveWheelConfigurationFor,
@@ -111,6 +112,26 @@ export default function ListingDetailPage({
   }, [listingId, initialListing, notFound]);
 
   const [garage, setGarage] = useState<GaragePublicInfo | null>(null);
+
+  // GA4 view_item: once per listing shown (a similar-listing click re-fires
+  // for the new id). Not for the owner's ?preview=true view.
+  useEffect(() => {
+    if (!listing?.id || router.query.preview === "true" || isOwnerPreview) return;
+    const dealType = toDealType(listing);
+    const price = dealType === "lease_takeover"
+      ? listing.leasing_offer?.lease_takeover_offer?.price_per_month_chf ?? listing.pricePerMonthCHF
+      : listing.purchasePriceCHF;
+    track("view_item", {
+      listing_id: listing.id,
+      deal_type: dealType,
+      brand: safeFreeText(listing.brand) ?? "",
+      model: safeFreeText(listing.model) ?? "",
+      price: typeof price === "number" && Number.isFinite(price) ? price : 0,
+      currency: "CHF",
+    });
+    // Keyed on the id only: re-renders of the same listing are not new views.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listing?.id, router.query.preview, isOwnerPreview]);
 
   useEffect(() => {
     if (!listing && !notFound && !clientNotFound && listingId) {

@@ -20,7 +20,7 @@ import {
 } from "@/lib/buyauto/guestImageStore";
 import { Check, Loader2, Save } from "lucide-react";
 import { GARAGE_MAX_PHOTOS } from "@/lib/buyauto/garagePlans";
-import { GADS_LABEL_START, trackConversionOnce } from "@/lib/gads";
+import { getEntryPage, toDealType, trackOncePerSession, track, type DealType as AnalyticsDealType } from "@/lib/analytics";
 import { useT } from "@/i18n/runtime";
 
 const StepLoading = () => (
@@ -76,6 +76,15 @@ export const useWizard = () => {
 // Guests (not logged in) can't write server-side drafts, so their in-progress
 // listing is mirrored to localStorage and restored on return.
 const GUEST_DRAFT_KEY = "buyauto:guest-listing-draft";
+
+// Reported as listing_step.step_name (stable ids, not the German UI labels).
+const STEP_NAMES: Record<number, string> = {
+  1: "vehicle",
+  2: "offer",
+  3: "plan",
+  4: "photos",
+  5: "preview_payment",
+};
 
 const createEmptyListingData = (): ListingData => ({
   id: undefined,
@@ -218,6 +227,7 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     status: listing?.status ?? (prev as any)?.status,
 
     vin: listing?.vin ?? (prev as any)?.vin,
+    tg_nr: (listing as any)?.tg_nr ?? (prev as any)?.tg_nr,
     make_id: listing?.make_id ?? (prev as any)?.make_id,
     model_id: listing?.model_id ?? (prev as any)?.model_id,
     variant_id: listing?.variant_id ?? (prev as any)?.variant_id,
@@ -766,14 +776,18 @@ export default function ListingWizard() {
     return () => clearInterval(interval);
   }, [runAutosave]);
 
-  // Google Ads "listing creation started": the first meaningful interaction
-  // with the creation form, i.e. the first input/change event from any field —
-  // merely opening the page or clicking around does not count. Native
-  // capture-phase listeners on the steps container so Radix controls (whose
-  // hidden bubble inputs dispatch bubbling change events) count alongside
-  // plain inputs. Keyed per browser session, so reloads, draft resumes and the
-  // Stripe redirect return don't fire it again; editing an existing listing is
-  // not a creation start.
+  // Latest deal type for the listeners/effects below without re-binding them.
+  const dealTypeRef = useRef<AnalyticsDealType>(toDealType(data));
+  dealTypeRef.current = toDealType(data);
+
+  // GA4 listing_start: the first meaningful interaction with the creation
+  // form, i.e. the first input/change event from any field — merely opening
+  // the page or clicking around does not count. Native capture-phase
+  // listeners on the steps container so Radix controls (whose hidden bubble
+  // inputs dispatch bubbling change events) count alongside plain inputs.
+  // Once per browser session, so reloads, draft resumes and the Stripe
+  // redirect return don't fire it again; editing an existing listing is not a
+  // creation start.
   const stepsContainerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (isEditingExistingListing) return;
@@ -781,7 +795,10 @@ export default function ListingWizard() {
     if (!el) return;
     const onFirstFormInput = () => {
       removeListeners();
-      trackConversionOnce("listing-create-start", GADS_LABEL_START);
+      trackOncePerSession("ba_listing_start", "listing_start", {
+        deal_type: dealTypeRef.current,
+        entry_page: getEntryPage(),
+      });
     };
     const removeListeners = () => {
       el.removeEventListener("input", onFirstFormInput, true);
@@ -791,6 +808,25 @@ export default function ListingWizard() {
     el.addEventListener("change", onFirstFormInput, true);
     return removeListeners;
   }, [isEditingExistingListing]);
+
+  // GA4 listing_step: one event per step reached by moving forward, each step
+  // once per wizard visit (going back and forth doesn't re-count). Not for
+  // edits, and not for the jump to step 5 on a Stripe redirect return.
+  const reportedStepsRef = useRef<Set<number>>(new Set([1]));
+  const previousStepRef = useRef(currentStep);
+  useEffect(() => {
+    const previous = previousStepRef.current;
+    previousStepRef.current = currentStep;
+    if (currentStep <= previous) return;
+    if (isEditingExistingListing || router.query.payment_confirmed === "true") return;
+    if (reportedStepsRef.current.has(currentStep)) return;
+    reportedStepsRef.current.add(currentStep);
+    track("listing_step", {
+      funnel_step: currentStep,
+      step_name: STEP_NAMES[currentStep] ?? `step_${currentStep}`,
+      deal_type: dealTypeRef.current,
+    });
+  }, [currentStep, isEditingExistingListing, router.query.payment_confirmed]);
 
   // Once the listing is published, the guest draft has served its purpose.
   useEffect(() => {

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n/runtime";
 
 interface CheckoutFormProps {
-  onSuccess: () => void;
+  /** Receives the succeeded intent's id and amount (in cents), for analytics. */
+  onSuccess: (paymentIntent: { id: string; amount: number }) => void;
   totalAmount: number;
 }
 
@@ -56,7 +57,7 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     // it does run, only treat an actually-succeeded intent as success — a
     // "processing" intent is not yet paid and must not advance the wizard.
     if (paymentIntent?.status === "succeeded") {
-      onSuccess();
+      onSuccess({ id: paymentIntent.id, amount: paymentIntent.amount });
     } else if (paymentIntent?.status === "processing") {
       setMessage(
         t("Deine Zahlung wird verarbeitet. Sobald sie bestätigt ist, wird dein Inserat automatisch veröffentlicht.")

@@ -42,6 +42,7 @@ export interface AdminListing {
   drivetrain: string | null;
   first_registration: string | null;
   vin: string | null;
+  tg_nr?: string | null;
   created_at: string;
   created_by: string | null;
   user_id: string | null;
@@ -117,6 +118,7 @@ export interface AdminBusinessEditableListingUpdate {
   drivetrain?: string | null;
   first_registration?: string | null;
   vin?: string | null;
+  tg_nr?: string | null;
 
   premium?: boolean;
   premium_until?: string | null;

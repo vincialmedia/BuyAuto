@@ -1,7 +1,7 @@
 import { Mail, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useHasMounted } from "@/hooks/use-has-mounted";
-import { reopenConsent } from "@/lib/analytics/gtag";
+import { reopenConsent } from "@/lib/analytics";
 import Image from "next/image";
 import { NewsletterSignup } from "./NewsletterSignup";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
