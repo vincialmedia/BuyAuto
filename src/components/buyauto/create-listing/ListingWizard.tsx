@@ -382,8 +382,12 @@ export default function ListingWizard() {
 
       // Reuse the pending guest draft's id (if any) so another tab migrating the
       // same guest draft converges on this row. Every create in this tab —
-      // autosave or migration, whichever wins — uses it.
-      const preferredId = guestDraftKeyRef.current ?? (typeof window !== "undefined" ? readGuestDraftKey() : null);
+      // autosave or migration, whichever wins — uses it. Only a key this tab
+      // itself read or wrote counts: a tab that never touched the guest payload
+      // (edit mode, ?draft=, garage) must not claim it, or a later migration
+      // would 23505 into that unrelated draft and overwrite it.
+      const isExistingListingDraft = typeof draftData.id === "string" && draftData.id.length > 0;
+      const preferredId = isExistingListingDraft ? null : guestDraftKeyRef.current;
       const createPromise = (async () => {
         let id: string;
         try {
