@@ -93,6 +93,9 @@ export default function Datenschutz() {
                 Analyse-Cookies werden erst gesetzt, nachdem Sie im Cookie-Banner auf «Einverstanden» geklickt haben. Bis dahin – und wenn Sie «Ablehnen» wählen – werden über den Google-Consent-Modus ausschliesslich cookielose, nicht auf Sie zurückführbare Signale übermittelt. Rechtsgrundlage der Bearbeitung ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 DSG).
               </p>
               <p className="mb-4">
+                Sind Sie in Ihrem Benutzerkonto angemeldet und haben Sie eingewilligt, übermitteln wir zusätzlich eine pseudonyme Kennung Ihres Kontos (eine zufällige ID, nicht Ihren Namen oder Ihre E-Mail-Adresse) sowie Ihre Kontoart (privat oder Garage) an Google Analytics. So können wir Ihre Nutzung über mehrere Geräte hinweg zusammenfassen. Name, E-Mail-Adresse, Telefonnummer oder Inhalte Ihrer Nachrichten werden nicht an Google Analytics übermittelt.
+              </p>
+              <p className="mb-4">
                 Sie können Ihre Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, indem Sie die in Ihrem Browser für diese Website gespeicherten Daten (Cookies und lokaler Speicher) löschen. Beim nächsten Besuch erscheint das Cookie-Banner erneut und Sie können neu entscheiden. Zusätzlich können Sie die Erfassung durch das Browser-Add-on von Google unter{" "}
                 <a
                   href="https://tools.google.com/dlpage/gaoptout"
