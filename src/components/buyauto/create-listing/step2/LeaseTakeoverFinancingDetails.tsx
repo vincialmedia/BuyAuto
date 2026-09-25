@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, vehicleCoreFieldsFromWizard, type ListingUpdatePayload } from "@/services/createListingService";
-import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
+import { updateListingDraft } from "@/services/listingDraftService";
 import {
   leaseTakeoverFinancingSchema,
   type LeaseTakeoverFinancingForm,
@@ -125,7 +125,7 @@ function normalizeWizardPatch(params: {
 
 export function LeaseTakeoverFinancingDetails() {
   const router = useRouter();
-  const { data, updateData, nextStep, prevStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
+  const { data, updateData, nextStep, prevStep, draftId, persistDraft, registerDraftSnapshotter } = useWizard();
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const isGarage = profile?.role === "garage";
@@ -284,21 +284,7 @@ export function LeaseTakeoverFinancingDetails() {
         };
         (nextDraftData as any).id = undefined;
 
-        let nextDraftId = draftId;
-        if (!nextDraftId) {
-          const created = await createListingDraft({ user, data: nextDraftData });
-          nextDraftId = created.id;
-          setDraftId(created.id);
-          if (router.isReady) {
-            await router.replace(
-              { pathname: router.pathname, query: { ...router.query, draft: created.id } },
-              undefined,
-              { shallow: true }
-            );
-          }
-        } else {
-          await updateListingDraft({ user, draftId: nextDraftId, data: nextDraftData });
-        }
+        await persistDraft(nextDraftData);
 
         toast({
           title: "Gespeichert",

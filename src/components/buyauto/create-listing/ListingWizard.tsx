@@ -59,6 +59,12 @@ interface WizardContextType {
   setGuestImageFiles: (files: { url: string; file: File }[]) => void;
   draftId: string | null;
   setDraftId: (id: string | null) => void;
+  /**
+   * Create-or-update the wizard's server draft and return its id. Single-flight:
+   * concurrent callers (autosave, guest-draft migration after sign-in, step
+   * saves) share one insert instead of each creating their own row.
+   */
+  persistDraft: (data: Partial<ListingData>) => Promise<string>;
   registerDraftSnapshotter: (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => void;
 }
 
@@ -75,6 +81,25 @@ export const useWizard = () => {
 // Guests (not logged in) can't write server-side drafts, so their in-progress
 // listing is mirrored to localStorage and restored on return.
 const GUEST_DRAFT_KEY = "buyauto:guest-listing-draft";
+
+// The guest payload also carries the row id its server draft will get. After an
+// email-confirmation sign-up the original tab and the link's tab both migrate
+// the same localStorage draft; with a shared id the second insert collides
+// (23505) and adopts the first row instead of adding a duplicate.
+const toGuestDraftKey = (value: unknown): string | null =>
+  typeof value === "string" && value.length > 0 ? value : null;
+
+const readGuestDraftKey = (): string | null => {
+  try {
+    const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
+    return toGuestDraftKey(raw ? (JSON.parse(raw) as { draftKey?: unknown }).draftKey : null);
+  } catch {
+    return null;
+  }
+};
+
+const newGuestDraftKey = (): string | null =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : null;
 
 // Reported as listing_step.step_name (stable ids, not the German UI labels).
 const STEP_NAMES: Record<number, string> = {
@@ -310,6 +335,93 @@ export default function ListingWizard() {
   const autosaveInFlightRef = useRef(false);
   const lastAutosavedRef = useRef<string>("");
   const guestImageFilesRef = useRef(guestImageFiles);
+  // Mirrors draftId synchronously, plus the in-flight insert (if any), so two
+  // callers racing on "no draft yet" can't both insert. This is what used to
+  // leave a freshly signed-up seller with two identical drafts: the post-sign-in
+  // guest-draft migration and the autosave tick each created one.
+  const draftIdRef = useRef<string | null>(null);
+  const draftCreateRef = useRef<Promise<string> | null>(null);
+  // Set when a step closes the draft (Step 5 clears it after publishing). An
+  // autosave tick landing between that and setIsComplete(true) would otherwise
+  // insert a fresh row for the listing that was just published.
+  const draftClosedRef = useRef(false);
+  // The guest draftKey this tab last read or wrote, captured together with the
+  // payload. The other tab may remove the localStorage entry while this one is
+  // still rehydrating photos, so the key must not be re-read only at insert time.
+  const guestDraftKeyRef = useRef<string | null>(null);
+
+  const setDraftIdSynced = useCallback((id: string | null) => {
+    draftIdRef.current = id;
+    if (id === null) draftCreateRef.current = null;
+    else draftClosedRef.current = false;
+    setDraftId(id);
+  }, []);
+
+  const setDraftIdFromStep = useCallback(
+    (id: string | null) => {
+      if (id === null) draftClosedRef.current = true;
+      setDraftIdSynced(id);
+    },
+    [setDraftIdSynced]
+  );
+
+  const persistDraft = useCallback(
+    async (draftData: Partial<ListingData>): Promise<string> => {
+      if (!user) throw new Error("persistDraft requires a signed-in user");
+
+      if (!draftIdRef.current && draftCreateRef.current) {
+        // Another caller is already inserting; wait for its row and update it.
+        await draftCreateRef.current;
+      }
+
+      const existingId = draftIdRef.current;
+      if (existingId) {
+        await updateListingDraft({ user, draftId: existingId, data: draftData });
+        return existingId;
+      }
+
+      // Reuse the pending guest draft's id (if any) so another tab migrating the
+      // same guest draft converges on this row. Every create in this tab —
+      // autosave or migration, whichever wins — uses it. Only a key this tab
+      // itself read or wrote counts: a tab that never touched the guest payload
+      // (edit mode, ?draft=, garage) must not claim it, or a later migration
+      // would 23505 into that unrelated draft and overwrite it.
+      const isExistingListingDraft = typeof draftData.id === "string" && draftData.id.length > 0;
+      const preferredId = isExistingListingDraft ? null : guestDraftKeyRef.current;
+      const createPromise = (async () => {
+        let id: string;
+        try {
+          id = (await createListingDraft({ user, data: draftData, id: preferredId ?? undefined })).id;
+        } catch (e) {
+          if (!preferredId || (e as { code?: string } | null)?.code !== "23505") throw e;
+          // Another tab already migrated this guest draft: adopt its row. If it
+          // isn't ours to update (shouldn't happen), fall back to a fresh row.
+          try {
+            id = (await updateListingDraft({ user, draftId: preferredId, data: draftData })).id;
+          } catch {
+            id = (await createListingDraft({ user, data: draftData })).id;
+          }
+        }
+        draftIdRef.current = id;
+        guestDraftKeyRef.current = null;
+        setDraftId(id);
+        return id;
+      })();
+      draftCreateRef.current = createPromise;
+      try {
+        const id = await createPromise;
+        if (router.isReady && router.query.draft !== id) {
+          await router.replace({ pathname: router.pathname, query: { ...router.query, draft: id } }, undefined, {
+            shallow: true,
+          });
+        }
+        return id;
+      } finally {
+        if (draftCreateRef.current === createPromise) draftCreateRef.current = null;
+      }
+    },
+    [router, user]
+  );
 
   useEffect(() => {
     guestImageFilesRef.current = guestImageFiles;
@@ -391,7 +503,8 @@ export default function ListingWizard() {
       guestImageFiles,
       setGuestImageFiles,
       draftId,
-      setDraftId,
+      setDraftId: setDraftIdFromStep,
+      persistDraft,
       registerDraftSnapshotter,
     }),
     [
@@ -404,9 +517,15 @@ export default function ListingWizard() {
       getMaxPhotos,
       guestImageFiles,
       draftId,
+      setDraftIdFromStep,
+      persistDraft,
       registerDraftSnapshotter,
     ]
   );
+
+  // Read through a ref so the loader below doesn't re-run on every router change.
+  const persistDraftRef = useRef(persistDraft);
+  persistDraftRef.current = persistDraft;
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -424,7 +543,8 @@ export default function ListingWizard() {
             try {
               const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
               if (raw) {
-                const parsed = JSON.parse(raw) as { data?: Partial<ListingData> };
+                const parsed = JSON.parse(raw) as { data?: Partial<ListingData>; draftKey?: unknown };
+                guestDraftKeyRef.current = toGuestDraftKey(parsed?.draftKey);
                 const restored = parsed?.data;
                 if (restored && hasAnyUserInput({ ...createEmptyListingData(), ...restored } as ListingData)) {
                   const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
@@ -446,7 +566,7 @@ export default function ListingWizard() {
         if (typeof draftQuery === "string" && draftQuery.length > 0) {
           const draft = await getListingDraftById({ user, draftId: draftQuery });
           if (draft) {
-            setDraftId(draft.id);
+            setDraftIdSynced(draft.id);
             const draftDataRaw = (draft.data as any) ?? {};
             if (isGarage) {
               const { id: _id, status: _status, ...rest } = draftDataRaw ?? {};
@@ -488,7 +608,7 @@ export default function ListingWizard() {
         if (typeof editQuery === "string" && editQuery.length > 0) {
           const listing = await getListingByIdForOwner(editQuery, user);
           if (listing) {
-            setDraftId(null);
+            setDraftIdSynced(null);
             setData((prev) => ({ ...prev, ...toWizardPatchFromListing(listing, prev) }));
           }
           setIsLoadingFromQuery(false);
@@ -505,8 +625,9 @@ export default function ListingWizard() {
           let guestDraft: Partial<ListingData> | null = null;
           try {
             const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
-            const parsed = raw ? (JSON.parse(raw) as { data?: Partial<ListingData> }) : null;
+            const parsed = raw ? (JSON.parse(raw) as { data?: Partial<ListingData>; draftKey?: unknown }) : null;
             guestDraft = parsed?.data ?? null;
+            if (guestDraft) guestDraftKeyRef.current = toGuestDraftKey(parsed?.draftKey);
           } catch {
             guestDraft = null;
           }
@@ -519,14 +640,8 @@ export default function ListingWizard() {
             setGuestImageFiles(pairs);
             setData((prev) => ({ ...prev, ...hydrated, id: undefined }));
             try {
-              const created = await createListingDraft({ user, data: hydrated });
-              setDraftId(created.id);
+              await persistDraftRef.current(hydrated);
               window.localStorage.removeItem(GUEST_DRAFT_KEY);
-              await router.replace(
-                { pathname: router.pathname, query: { ...router.query, draft: created.id } },
-                undefined,
-                { shallow: true }
-              );
             } catch (e) {
               console.warn("Could not migrate guest draft to a server draft:", e);
             }
@@ -546,7 +661,7 @@ export default function ListingWizard() {
               hasAnyUserInput({ ...createEmptyListingData(), ...(d.data as any) } as ListingData)
             );
             if (resumable) {
-              setDraftId(resumable.id);
+              setDraftIdSynced(resumable.id);
               const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
                 resumable.data,
                 guestImageFilesRef.current
@@ -586,7 +701,7 @@ export default function ListingWizard() {
     };
 
     void run();
-  }, [isGarage, router.isReady, router.query.draft, router.query.edit, router.query.deal_type, toast, user]);
+  }, [isGarage, router.isReady, router.query.draft, router.query.edit, router.query.deal_type, setDraftIdSynced, toast, user]);
 
   const onSaveDraft = useCallback(async () => {
     if (isSavingDraft) return;
@@ -659,17 +774,7 @@ export default function ListingWizard() {
 
       updateData(draftData);
 
-      if (!draftId) {
-        const created = await createListingDraft({ user, data: draftData });
-        setDraftId(created.id);
-        await router.replace({ pathname: router.pathname, query: { ...router.query, draft: created.id } }, undefined, {
-          shallow: true,
-        });
-        toast({ title: "Entwurf gespeichert" });
-        return;
-      }
-
-      await updateListingDraft({ user, draftId, data: draftData });
+      await persistDraft(draftData);
       toast({ title: "Entwurf gespeichert" });
     } catch (e) {
       toast({
@@ -680,14 +785,14 @@ export default function ListingWizard() {
     } finally {
       setIsSavingDraft(false);
     }
-  }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, router, toast, updateData, user]);
+  }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, persistDraft, toast, updateData, user]);
 
   // Continuous autosave: periodically capture the active step's live form values
   // (via the snapshotter) plus committed wizard data, and upsert the draft with
   // last-write-wins. Purely additive — the explicit "Entwurf speichern" button
   // and per-step draft writes keep working; this just means work is never lost.
   const runAutosave = useCallback(async () => {
-    if (isLoadingFromQuery || isEditingExistingListing || isComplete) return;
+    if (isLoadingFromQuery || isEditingExistingListing || isComplete || draftClosedRef.current) return;
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("payment_confirmed") === "true") {
       return;
     }
@@ -716,7 +821,12 @@ export default function ListingWizard() {
     // before they sign in at the final step. Server-side drafts need a user_id.
     if (!user) {
       try {
-        window.localStorage.setItem(GUEST_DRAFT_KEY, JSON.stringify({ savedAt: new Date().toISOString(), data: draftData }));
+        const draftKey = guestDraftKeyRef.current ?? readGuestDraftKey() ?? newGuestDraftKey();
+        guestDraftKeyRef.current = draftKey;
+        window.localStorage.setItem(
+          GUEST_DRAFT_KEY,
+          JSON.stringify({ savedAt: new Date().toISOString(), draftKey, data: draftData })
+        );
         lastAutosavedRef.current = snapshot;
         setAutosaveState("saved");
       } catch {
@@ -728,19 +838,7 @@ export default function ListingWizard() {
     autosaveInFlightRef.current = true;
     setAutosaveState("saving");
     try {
-      if (!draftId) {
-        const created = await createListingDraft({ user, data: draftData });
-        setDraftId(created.id);
-        if (router.isReady && router.query.draft !== created.id) {
-          await router.replace(
-            { pathname: router.pathname, query: { ...router.query, draft: created.id } },
-            undefined,
-            { shallow: true }
-          );
-        }
-      } else {
-        await updateListingDraft({ user, draftId, data: draftData });
-      }
+      await persistDraft(draftData);
       lastAutosavedRef.current = snapshot;
       setAutosaveState("saved");
       // The server draft now owns the state; drop the pre-sign-in mirror so a
@@ -757,7 +855,7 @@ export default function ListingWizard() {
     } finally {
       autosaveInFlightRef.current = false;
     }
-  }, [data, draftId, isComplete, isEditingExistingListing, isGarage, isLoadingFromQuery, router, user]);
+  }, [data, isComplete, isEditingExistingListing, isGarage, isLoadingFromQuery, persistDraft, user]);
 
   useEffect(() => {
     const interval = setInterval(() => {
