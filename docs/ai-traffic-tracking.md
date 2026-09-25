@@ -5,35 +5,19 @@ Claude, Copilot, Gemini, You.com), and how to read them in GA4.
 
 ## What the site does
 
-`src/lib/analytics/aiReferral.ts`, mounted via `GoogleAnalytics` (so it runs on every
-page, once per page load):
+Nothing extra. The custom `ai_referral` event (and `src/lib/analytics/aiReferral.ts`)
+was removed in the Sept 2026 GA4 rebuild: GA4's built-in default channel group now
+has its own AI-assistant channel, and a custom event only duplicated it. AI visits
+are attributed through the normal referrer on the landing page view, sent by
+`src/lib/analytics.ts` (see `docs/analytics-events.md`).
 
-1. On first load it checks `document.referrer` against these hosts (subdomains
-   included): `chatgpt.com`, `chat.openai.com`, `perplexity.ai`, `claude.ai`,
-   `copilot.microsoft.com`, `gemini.google.com`, `you.com`.
-2. On a match it stores the source label in `sessionStorage` under
-   `buyauto:ai-source` (`chatgpt`, `perplexity`, `claude`, `copilot`, `gemini`,
-   `you`) — once per session, so reloads don't double-count.
-3. It fires one gtag event: **`ai_referral`** with parameters `ai_source` and
-   `page_referrer`.
+Limitations that still apply:
 
-Notes and limitations:
-
-- The event goes through the shared `trackEvent()` helper, so it reaches **every
-  configured gtag destination**. GA4 only records it when
-  `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in the Vercel environment (the repo itself
-  carries no `G-` ID). The Google Ads tag (`AW-18317910859`, hardcoded default)
-  ignores unknown event names — it neither breaks nor reports them. **If only the
-  Ads tag is live, `ai_referral` is effectively invisible: create/verify the GA4
-  property first** (see `GOOGLE_ANALYTICS_SETUP.md`).
-- Consent Mode v2 applies. Before the visitor answers the cookie banner the event is
-  sent cookieless; GA4 only models such traffic if behavioral modeling is active.
-  Consented sessions are also attributed through the normal referrer on the released
-  page view, so the AI channel group below works even where the custom event was
-  modeled away.
 - ChatGPT sometimes opens links with `Referrer-Policy` stripped or via the
   `utm_source=chatgpt.com` parameter instead of a referrer. The channel-group regex
   below catches the UTM case; a missing referrer is unmeasurable and lands in Direct.
+- Consent Mode v2 applies: before the visitor answers the cookie banner the landing
+  page view is held; it is released (cookied or cookieless) when they choose.
 
 ## GA4 setup: custom "AI" channel group
 
@@ -63,9 +47,6 @@ Add `you\.com` to the regex only if You.com referrals actually appear; the bare 
 
 - **Berichte → Akquisition → Neu generierte Nutzer** with your custom channel group
   as primary dimension → the `AI` row is assistant-driven traffic.
-- **Custom event**: Berichte → Interaktionen → Ereignisse → `ai_referral`. Register
-  `ai_source` as a custom dimension (Verwaltung → Benutzerdefinierte Definitionen →
-  Ereignisparameter `ai_source`) to split by assistant.
-- **Explorativ**: dimension `ai_source`, metrics Sitzungen/Conversions, to see which
-  assistant sends users who actually convert (`listing_published`,
-  `submit_lead_form` Ads conversions).
+- **Explorativ**: dimension *Sitzungsquelle* (session source), filtered to the AI
+  hosts above, metrics Sitzungen / Schlüsselereignisse (`listing_published`,
+  `purchase`), to see which assistant sends users who actually convert.

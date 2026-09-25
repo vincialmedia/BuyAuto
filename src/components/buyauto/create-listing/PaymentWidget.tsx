@@ -9,7 +9,7 @@ import type { Stripe } from '@stripe/stripe-js';
 interface PaymentWidgetProps {
   clientSecret: string;
   totalAmount: number;
-  onSuccess: () => void;
+  onSuccess: (paymentIntent: { id: string; amount: number }) => void;
 }
 
 export default function PaymentWidget({ clientSecret, totalAmount, onSuccess }: PaymentWidgetProps) {

@@ -7,7 +7,7 @@ import {
   adoptConsentFromOtherTab,
   readStoredConsent,
   setConsent,
-} from "@/lib/analytics/gtag";
+} from "@/lib/analytics";
 
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);

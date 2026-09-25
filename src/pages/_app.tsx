@@ -2,7 +2,7 @@ import type { AppProps } from "next/app";
 import dynamic from "next/dynamic";
 import { Manrope, Caveat } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
-import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import MainLayout from "@/components/layout/MainLayout";
 import RouteProgress from "@/components/layout/RouteProgress";
 import AuthProvider from "@/contexts/AuthContext";
@@ -151,7 +151,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <Toaster />
         <RadixToaster />
         <Analytics />
-        <GoogleAnalytics />
+        <AnalyticsProvider />
       </AuthProvider>
     </div>
   );

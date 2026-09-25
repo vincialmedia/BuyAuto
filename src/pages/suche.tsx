@@ -9,6 +9,7 @@ import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { debounce } from "@/lib/utils";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
+import { safeFreeText, track } from "@/lib/analytics";
 
 const DynamicFilterBar = dynamic(() => import("@/components/buyauto/search/DynamicFilterBar"), {
   ssr: true,
@@ -139,6 +140,24 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
     return urlQuery;
   }, []);
 
+  // GA4 search: once per distinct query string, when its results are in.
+  const lastReportedSearchKey = useRef<string | null>(null);
+  const initialResultsRef = useRef(initialResults);
+  const reportSearch = useCallback(
+    (query: SearchQuery, results: SearchResult) => {
+      const key = JSON.stringify(buildUrlQuery(query));
+      if (key === lastReportedSearchKey.current) return;
+      lastReportedSearchKey.current = key;
+      track("search", {
+        search_term: safeFreeText(query.query),
+        deal_type: query.dealType,
+        results_count: results.total ?? 0,
+        page: results.page || query.page || 1,
+      });
+    },
+    [buildUrlQuery]
+  );
+
   const initialQueryKey = useMemo(
     () => JSON.stringify(buildUrlQuery(initialQuery ?? {})),
     [buildUrlQuery, initialQuery]
@@ -192,6 +211,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
     const currentKey = JSON.stringify(buildUrlQuery(searchQuery));
     if (hydratedRef.current && currentKey === initialQueryKey) {
       hydratedRef.current = false;
+      if (initialResultsRef.current) reportSearch(searchQuery, initialResultsRef.current);
       return;
     }
 
@@ -200,6 +220,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
       try {
         const results = await searchListings(searchQuery);
         setSearchResults(results);
+        reportSearch(searchQuery, results);
       } catch (error) {
         console.error("Search failed:", error);
         setSearchResults({ items: [], total: 0, page: searchQuery.page || 1, pageSize: 12 });
@@ -209,7 +230,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
     };
 
     performSearch();
-  }, [searchQuery, isInitialized, buildUrlQuery, initialQueryKey]);
+  }, [searchQuery, isInitialized, buildUrlQuery, initialQueryKey, reportSearch]);
 
   useEffect(() => {
     const handleScroll = () => {
