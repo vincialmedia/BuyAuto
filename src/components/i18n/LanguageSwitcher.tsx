@@ -7,12 +7,21 @@ import { cn } from "@/lib/utils";
 import { rememberLanguage } from "./languagePreference";
 
 /**
+ * Error pages are rendered for their own route on the server ("/404") but show
+ * the requested URL on the client, so a same-page link would differ between
+ * the two (hydration mismatch) — and would only lead to another error page.
+ */
+const ERROR_ROUTES: ReadonlySet<string> = new Set(["/404", "/_error"]);
+
+/**
  * Current path without locale, hash — and without the query until the router is
  * ready. Statically generated pages render without a query on the server, so
  * using it before hydration would make server and client hrefs disagree.
+ * Error pages link to the home page of each language instead.
  */
 function useCurrentPath(): string {
   const router = useRouter();
+  if (ERROR_ROUTES.has(router.pathname)) return "/";
   const [withoutHash] = router.asPath.split("#");
   if (!router.isReady) return withoutHash.split("?")[0] || "/";
   return withoutHash || "/";
@@ -29,6 +38,10 @@ export function LanguageSwitcher({ className, tone = "dark" }: { className?: str
   const t = useT();
   const current = toLocale(router.locale);
   const path = useCurrentPath();
+  // Filtered views keep their query so visitors keep their filters, but are
+  // nofollow: crawlers must not multiply every filtered URL by four. Derived
+  // from the same path as the href, so server and client always agree.
+  const rel = path.includes("?") ? "nofollow" : undefined;
 
   const idle = tone === "dark" ? "text-neutral-400 hover:text-white" : "text-neutral-500 hover:text-neutral-900";
   const active = tone === "dark" ? "text-white" : "text-neutral-900";
@@ -53,6 +66,7 @@ export function LanguageSwitcher({ className, tone = "dark" }: { className?: str
               ) : (
                 <a
                   href={localizePath(path, locale)}
+                  rel={rel}
                   hrefLang={HREFLANG[locale]}
                   lang={HTML_LANG[locale]}
                   onClick={() => rememberLanguage(locale)}

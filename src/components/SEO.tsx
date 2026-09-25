@@ -8,6 +8,8 @@ export interface SEOProps {
   description?: string;
   image?: string;
   url?: string;
+  /** Keep this page out of the index: robots noindex,follow and NO canonical (never both together). */
+  noindex?: boolean;
 }
 
 function getAbsoluteUrl(pathOrUrl: string | undefined): string | undefined {
@@ -59,7 +61,7 @@ function buildMeta({ title, description, image, url }: SEOProps, t: TFunction, l
   };
 }
 
-function renderMetaTags(meta: ReturnType<typeof buildMeta>): ReactNode[] {
+function renderMetaTags(meta: ReturnType<typeof buildMeta>, noindex = false): ReactNode[] {
   return [
     <title key="title">{meta.title}</title>,
     <meta key="desc" name="description" content={meta.description} />,
@@ -76,7 +78,11 @@ function renderMetaTags(meta: ReturnType<typeof buildMeta>): ReactNode[] {
     <meta key="tw:desc" name="twitter:description" content={meta.description} />,
     <meta key="tw:image" name="twitter:image" content={meta.image} />,
 
-    <link key="canonical" rel="canonical" href={meta.url} />,
+    noindex ? (
+      <meta key="robots" name="robots" content="noindex,follow" />
+    ) : (
+      <link key="canonical" rel="canonical" href={meta.url} />
+    ),
   ];
 }
 
@@ -84,12 +90,12 @@ export function SEOElements(props: SEOProps) {
   const t = useT();
   const locale = useLocale();
   const meta = buildMeta(props, t, locale);
-  return <>{renderMetaTags(meta)}</>;
+  return <>{renderMetaTags(meta, props.noindex)}</>;
 }
 
 export function SEO(props: SEOProps) {
   const t = useT();
   const locale = useLocale();
   const meta = buildMeta(props, t, locale);
-  return <Head>{renderMetaTags(meta)}</Head>;
+  return <Head>{renderMetaTags(meta, props.noindex)}</Head>;
 }

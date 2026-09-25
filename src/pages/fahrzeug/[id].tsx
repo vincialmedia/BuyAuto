@@ -26,7 +26,13 @@ import { useLocale, useT, type I18nPageProps } from "@/i18n/runtime";
 import { LOCALES, localizePath, toLocale, type Locale } from "@/i18n/config";
 import { withI18n } from "@/i18n/server";
 import { Hreflang } from "@/i18n/seo";
-import { getFreshTranslations, listingNeedsTranslation, resolveListingTranslation } from "@/lib/i18n/listingTranslations";
+import {
+  getFreshTranslations,
+  listingNeedsTranslation,
+  scheduleListingTranslation,
+  type StoredTranslation,
+  type TranslatedLocale,
+} from "@/lib/i18n/listingTranslations";
 
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
   // No extra top margin: the bottomContent wrapper already applies mt-10,
@@ -447,10 +453,14 @@ export default function ListingDetailPage({
             location: String(listing.location),
           })}
         />
-        <link rel="canonical" href={listingUrl} />
         {/* Untranslated main content: keep this language version out of the
-            index until the description is translated (German never hits this). */}
-        {descriptionIsOriginal ? <meta name="robots" content="noindex,follow" /> : null}
+            index until the description is translated (German never hits this).
+            noindex without a canonical, as on brand pages without listings. */}
+        {descriptionIsOriginal ? (
+          <meta name="robots" content="noindex,follow" />
+        ) : (
+          <link rel="canonical" href={listingUrl} />
+        )}
 
         <meta property="og:title" content={`${seoName} ${listing.year} - BuyAuto`} />
         <meta
@@ -570,6 +580,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
     }
 
     let listing = !error && data ? transformPublicRowToListingDetail(data as any) : null;
+    let freshPromise: Promise<Partial<Record<TranslatedLocale, StoredTranslation>>> | null = null;
 
     if (listing) {
       // Redirect legacy/malformed slugs to the canonical URL before any further
@@ -584,6 +595,13 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
           },
         };
       }
+
+      // Which translations of the seller's text exist: fetched alongside the
+      // seller profile instead of after it.
+      freshPromise = getFreshTranslations(listing.id, {
+        title: listing.title ?? null,
+        description: listing.description ?? null,
+      }).catch(() => ({}));
 
       const sellerType = (data as any)?.seller_type ?? null;
       const ownerId = (data as any)?.user_id ?? (data as any)?.created_by ?? null;
@@ -633,22 +651,16 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
 
     // Seller-written text (title + description) per language. German shows the
     // original and only needs to know which translations exist (hreflang);
-    // fr/it/en show the stored translation, translating on demand once.
+    // fr/it/en show the stored translation. A missing one is translated in the
+    // background: this response never waits for the model.
     const sourceText = { title: listing.title ?? null, description: listing.description ?? null };
     const needsTranslation = listingNeedsTranslation(sourceText);
-    const fresh = await getFreshTranslations(listing.id, sourceText);
+    const fresh = await (freshPromise ?? getFreshTranslations(listing.id, sourceText));
     let originalDescription: string | null = null;
     let descriptionIsOriginal = false;
 
     if (locale !== "de") {
-      let hit = fresh[locale];
-      if (!hit && needsTranslation) {
-        const resolved = await resolveListingTranslation(listing.id, locale, sourceText, { translateNowMs: 8000 });
-        if (resolved.status === "translated") {
-          hit = { title: resolved.title, description: resolved.description };
-          fresh[locale] = hit;
-        }
-      }
+      const hit = fresh[locale];
       if (hit) {
         if (needsTranslation && hit.description && hit.description !== listing.description) {
           originalDescription = listing.description ?? null;
@@ -660,6 +672,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
         };
       } else if (needsTranslation) {
         descriptionIsOriginal = true;
+        scheduleListingTranslation(listing.id, locale, sourceText);
       }
     }
 
@@ -671,7 +684,14 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
     const serializedListing = serializeListing(listing);
 
     if (context.res) {
-      context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+      // An untranslated version is only cached briefly so the translation,
+      // typically ready seconds later, replaces it quickly.
+      context.res.setHeader(
+        "Cache-Control",
+        descriptionIsOriginal
+          ? "public, s-maxage=15, stale-while-revalidate=60"
+          : "public, s-maxage=60, stale-while-revalidate=600",
+      );
     }
 
     return {

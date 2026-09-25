@@ -25,6 +25,9 @@ export function Hreflang({ path, locales = LOCALES }: { path: string; locales?: 
  * /suche is excluded on purpose: its canonical depends on the query, so the
  * page renders its own cluster for its indexable views.
  */
-export const AUTO_HREFLANG_ROUTES: ReadonlySet<string> = new Set(
-  Object.keys(CONTENT_LAST_UPDATED).filter((p) => p !== "/suche"),
-);
+export const AUTO_HREFLANG_ROUTES: ReadonlySet<string> = new Set([
+  ...Object.keys(CONTENT_LAST_UPDATED).filter((p) => p !== "/suche"),
+  // Indexable and fully translated, but not in the sitemaps (it has no
+  // CONTENT_LAST_UPDATED entry; adding one would also change /sitemap.xml).
+  "/impressum",
+]);

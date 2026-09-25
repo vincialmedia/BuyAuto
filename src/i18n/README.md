@@ -123,10 +123,22 @@ use `<Link>` or `localizePath(href, locale)`.
 Stored per language in `listing_translations` (migration
 `20260925080000_listing_translations.sql`), keyed by a hash of the listing's
 current title + description, so an edit invalidates the translation. See
-`src/lib/i18n/listingTranslations.ts` for the flow (on-demand translation on
-first view, nightly backfill via `/api/cron/translate-listings`, noindex while a
-description is untranslated). Needs `ANTHROPIC_API_KEY`, `CRON_SECRET` and
-`SUPABASE_SERVICE_ROLE_KEY` in the Vercel environment.
+`src/lib/i18n/listingTranslations.ts` for the flow:
+
+- A fr/it/en listing page without a fresh translation renders immediately with
+  the original text (marked, noindexed in that language) and schedules the
+  translation in the background; the page never waits for the model.
+- `/api/cron/translate-listings` backfills nightly whatever no page view
+  triggered.
+- Each translation is claimed first in `listing_translation_attempts`
+  (migration `20260925150000_listing_translation_attempts.sql`), so parallel
+  requests don't pay twice and failures back off (1 h, 4 h, 16 h, … weekly).
+- The Anthropic SDK is only loaded by `listingTranslator.ts`, lazily, when a
+  translation actually runs.
+
+Needs `ANTHROPIC_API_KEY`, `CRON_SECRET` and `SUPABASE_SERVICE_ROLE_KEY` in the
+Vercel environment. `LISTING_TRANSLATION_MODEL` optionally overrides the model
+(default `claude-opus-5`; the override must support structured outputs).
 
 ## Checking
 

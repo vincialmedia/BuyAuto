@@ -27,8 +27,11 @@ async function loadNamespace(locale: Locale, ns: Namespace): Promise<Messages> {
 
 export async function loadMessages(locale: Locale, namespaces: Namespace[] = []): Promise<Messages> {
   if (locale === DEFAULT_LOCALE) return {};
-  const unique = Array.from(new Set(["common", "cards", ...namespaces]));
-  const dicts = await Promise.all(unique.map((ns) => loadNamespace(locale, ns)));
+  // Shared namespaces are merged last, so header, footer and cards read the
+  // same on every page even when a page namespace translates the same German
+  // text differently. A page that needs its own wording uses an "@@context" key.
+  const pageNamespaces = Array.from(new Set(namespaces)).filter((ns) => ns !== "common" && ns !== "cards");
+  const dicts = await Promise.all([...pageNamespaces, "common", "cards"].map((ns) => loadNamespace(locale, ns)));
   return Object.assign({}, ...dicts) as Messages;
 }
 

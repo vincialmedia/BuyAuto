@@ -12,7 +12,12 @@ const COPY: Record<Locale, { text: string; cta: string; close: string }> = {
   en: { text: "This page is also available in English.", cta: "View in English", close: "Close" },
 };
 
-const BOT_UA = /bot|crawl|spider|slurp|lighthouse|pagespeed|headless|preview|facebookexternalhit|embedly|quora link/i;
+// Crawlers, link previews and testing tools, case-insensitive. Some carry no
+// "bot": Google-InspectionTool (Search Console URL inspection, Rich Results
+// Test), Chrome-Lighthouse (PageSpeed Insights, via "lighthouse") and
+// "Google Page Speed Insights".
+const BOT_UA =
+  /bot|crawl|spider|slurp|google-inspectiontool|lighthouse|page ?speed|headless|preview|facebookexternalhit|embedly|quora link/i;
 
 function preferredSupportedLocale(): Locale | null {
   const candidates = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]) || [];

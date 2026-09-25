@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ADS_CONVERSIONS, trackAdsConversion } from "@/lib/analytics/gtag";
 import authService from "@/services/authService";
-import { T, useLocale, useT } from "@/i18n/runtime";
-import { localizePath } from "@/i18n/config";
+import { T, useT } from "@/i18n/runtime";
 
 /**
  * Shown at the final step when a guest (not logged in) wants to publish. They
@@ -20,7 +19,6 @@ import { localizePath } from "@/i18n/config";
 export default function GuestAuthGate() {
   const { toast } = useToast();
   const t = useT();
-  const locale = useLocale();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -66,7 +64,9 @@ export default function GuestAuthGate() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           accountType: "private",
-          emailRedirectTo: `${window.location.origin}${localizePath("/inserat-erstellen", locale)}`,
+          // Unprefixed on purpose: this URL must be on the Supabase redirect
+          // allow-list, which today lists the German paths.
+          emailRedirectTo: `${window.location.origin}/inserat-erstellen`,
         });
         // The Google Ads lead conversion. Reported here rather than in either
         // branch below because the lead is complete either way — the seller has

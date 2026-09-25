@@ -1,13 +1,13 @@
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import { SEO } from "@/components/SEO";
-import { getPublicGarageBySlug } from "@/services/garageService";
+import { garageNeedsTranslation, getPublicGarageBySlug } from "@/services/garageService";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
 import { DealerHeroHeader } from "@/components/buyauto/dealer/DealerHeroHeader";
 import { DealerAboutAndMap } from "@/components/buyauto/dealer/DealerAboutAndMap";
 import { DealerTeamAndHours } from "@/components/buyauto/dealer/DealerTeamAndHours";
 import { StructuredData } from "@/components/buyauto/StructuredData";
-import { useT, type TFunction } from "@/i18n/runtime";
+import { useLocale, useT, type TFunction } from "@/i18n/runtime";
 import { withI18n } from "@/i18n/server";
 import { Hreflang } from "@/i18n/seo";
 
@@ -75,6 +75,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 
 export default function DealerMicrositePage(props: PageProps) {
   const t = useT();
+  const locale = useLocale();
 
   if (!props.ok) {
     return (
@@ -95,8 +96,17 @@ export default function DealerMicrositePage(props: PageProps) {
 
   const { garage, logoUrl, absoluteUrl } = props;
 
+  // Garage-written text (description, services, team) exists in German only.
+  // Such a profile forms no hreflang cluster (German alone is not one) and its
+  // fr/it/en versions are noindex,follow without canonical — the same rule and
+  // predicate that keep them out of the fr/it/en sitemaps. German keeps its
+  // canonical unchanged.
+  const needsTranslation = garageNeedsTranslation(garage);
+  const untranslated = needsTranslation && locale !== "de";
+
   const title = t("{name} – Fahrzeuge & Angebote | BuyAuto", { name: garage.garage_name });
-  const description = getSafeDescription(garage.description, t);
+  // fr/it/en: the translated generic description, never the German free text.
+  const description = getSafeDescription(untranslated ? null : garage.description, t);
   const image = garage.header_image_url || logoUrl || "/buyauto-logo.png";
 
   const openingHours = garage.opening_hours;
@@ -104,8 +114,8 @@ export default function DealerMicrositePage(props: PageProps) {
 
   return (
     <>
-      <SEO title={title} description={description} image={image} url={absoluteUrl} />
-      <Hreflang path={`/${garage.slug}`} />
+      <SEO title={title} description={description} image={image} url={absoluteUrl} noindex={untranslated} />
+      {needsTranslation ? null : <Hreflang path={`/${garage.slug}`} />}
       <StructuredData
         type="dealer"
         dealerData={{

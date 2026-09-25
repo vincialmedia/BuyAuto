@@ -63,7 +63,8 @@ export function toLocale(value: unknown): Locale {
 
 /** "/x" → "/fr/x", "/" → "/fr"; German stays unprefixed. Query and hash are preserved. */
 export function localizePath(path: string, locale: Locale): string {
-  const clean = path.startsWith("/") ? path : `/${path}`;
+  // Idempotent: an already prefixed path ("/fr/x") is re-localized, never doubled.
+  const clean = stripLocale(path.startsWith("/") ? path : `/${path}`);
   if (locale === DEFAULT_LOCALE) return clean;
   if (clean === "/") return `/${locale}`;
   if (clean.startsWith("/?") || clean.startsWith("/#")) return `/${locale}${clean.slice(1)}`;

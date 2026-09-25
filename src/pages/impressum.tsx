@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
+import { absoluteUrl } from "@/i18n/config";
 import { T, useLocale, useT } from "@/i18n/runtime";
 import { staticI18nProps } from "@/i18n/server";
 
@@ -13,6 +14,7 @@ export default function Impressum() {
       <Head>
         <title>{t("Impressum | BuyAuto")}</title>
         <meta name="description" content={t("Impressum von BuyAuto – Betreiber, Adresse und Kontakt.")} />
+        <link rel="canonical" href={absoluteUrl("/impressum", locale)} />
       </Head>
 
       <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">

@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { absoluteUrl } from "@/i18n/config";
 import { T, useLocale, useT } from "@/i18n/runtime";
 import { staticI18nProps } from "@/i18n/server";
 
@@ -14,6 +15,7 @@ export default function Datenschutz() {
       <Head>
         <title>{t("Datenschutz & Impressum | BuyAuto")}</title>
         <meta name="description" content={t("Datenschutzerklärung und Impressum von BuyAuto")} />
+        <link rel="canonical" href={absoluteUrl("/datenschutz", locale)} />
       </Head>
 
       <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">

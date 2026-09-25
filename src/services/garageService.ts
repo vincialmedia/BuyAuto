@@ -63,6 +63,26 @@ export type GarageUpdate = Partial<
   >
 >;
 
+function hasFreeText(value: unknown): boolean {
+  return typeof value === "string" && value.trim().length > 1;
+}
+
+/**
+ * Whether a garage profile carries text written by the garage: description,
+ * services (free-text chips, not a fixed list) or team roles and bios. That
+ * text exists in German only — profiles are not translated — so such a
+ * microsite is not a translated page in fr/it/en: noindex there, no hreflang
+ * cluster in any language, and no entry in the fr/it/en sitemaps. Names
+ * (garage, team members, city) are proper nouns and do not count.
+ * Counterpart of listingNeedsTranslation for listings. The only definition:
+ * both [dealerSlug].tsx and sitemap.xml.ts decide with it.
+ */
+export function garageNeedsTranslation(garage: Pick<Garage, "description" | "services" | "team_members">): boolean {
+  if (hasFreeText(garage.description)) return true;
+  if (Array.isArray(garage.services) && garage.services.some(hasFreeText)) return true;
+  return Array.isArray(garage.team_members) && garage.team_members.some((m) => hasFreeText(m.role) || hasFreeText(m.bio));
+}
+
 function toTeamMembers(value: unknown): TeamMember[] | null {
   if (!Array.isArray(value)) return null;
 

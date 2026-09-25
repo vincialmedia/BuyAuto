@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { absoluteUrl } from "@/i18n/config";
 import { useLocale, useT } from "@/i18n/runtime";
 import { staticI18nProps } from "@/i18n/server";
 
@@ -14,6 +15,7 @@ export default function AGB() {
       <Head>
         <title>{t("Allgemeine Geschäftsbedingungen (AGB) | BuyAuto")}</title>
         <meta name="description" content={t("Allgemeine Geschäftsbedingungen von BuyAuto - Ihre Plattform für Leasingübernahmen.")} />
+        <link rel="canonical" href={absoluteUrl("/agb", locale)} />
       </Head>
 
       <div className="min-h-screen bg-neutral-50">
