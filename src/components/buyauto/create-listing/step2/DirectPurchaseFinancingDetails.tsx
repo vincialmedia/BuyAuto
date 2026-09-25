@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
 import { createOrUpdateListing, vehicleCoreFieldsFromWizard, type ListingUpdatePayload } from "@/services/createListingService";
-import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
+import { updateListingDraft } from "@/services/listingDraftService";
 
 import { LeaseTakeoverOfferSection, type LeaseTakeoverOfferFormValues } from "./LeaseTakeoverOfferSection";
 import { GarageLeasingOfferSection, type GarageLeasingOfferFormValues } from "./GarageLeasingOfferSection";
@@ -220,7 +220,7 @@ const directPurchaseFinancingSchema = z
   });
 
 export function DirectPurchaseFinancingDetails() {
-  const { data, updateData, nextStep, prevStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
+  const { data, updateData, nextStep, prevStep, draftId, persistDraft, registerDraftSnapshotter } = useWizard();
   const { user, profile, profileLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -600,21 +600,7 @@ export function DirectPurchaseFinancingDetails() {
         };
         (nextDraftData as any).id = undefined;
 
-        let nextDraftId = draftId;
-        if (!nextDraftId) {
-          const created = await createListingDraft({ user, data: nextDraftData });
-          nextDraftId = created.id;
-          setDraftId(created.id);
-          if (router.isReady) {
-            await router.replace(
-              { pathname: router.pathname, query: { ...router.query, draft: created.id } },
-              undefined,
-              { shallow: true }
-            );
-          }
-        } else {
-          await updateListingDraft({ user, draftId: nextDraftId, data: nextDraftData });
-        }
+        await persistDraft(nextDraftData);
 
         toast({
           title: "Gespeichert",

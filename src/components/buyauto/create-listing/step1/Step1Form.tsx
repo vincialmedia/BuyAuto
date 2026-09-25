@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { supabase } from "@/integrations/supabase/client";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
-import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
+import { updateListingDraft } from "@/services/listingDraftService";
 import { getMyGarage } from "@/services/garageService";
 
 import { Button } from "@/components/ui/button";
@@ -144,7 +144,7 @@ export function Step1Form() {
   const isGarage = profile?.role === "garage";
   const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
 
-  const { data, updateData, nextStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
+  const { data, updateData, nextStep, draftId, persistDraft, registerDraftSnapshotter } = useWizard();
 
   const dealTypeFromWizard: DealType | null =
     (data as any)?.deal_type === "lease_takeover"
@@ -804,13 +804,7 @@ export function Step1Form() {
         (nextDraftData as any).id = undefined;
 
         try {
-          if (!draftId) {
-            const created = await createListingDraft({ user, data: nextDraftData });
-            setDraftId(created.id);
-            await router.replace({ pathname: router.pathname, query: { ...router.query, draft: created.id } }, undefined, { shallow: true });
-          } else {
-            await updateListingDraft({ user, draftId, data: nextDraftData });
-          }
+          await persistDraft(nextDraftData);
         } catch {
           // Best-effort only
         }
@@ -859,13 +853,7 @@ export function Step1Form() {
         };
 
         try {
-          if (!draftId) {
-            const created = await createListingDraft({ user, data: nextDraftData });
-            setDraftId(created.id);
-            await router.replace({ pathname: router.pathname, query: { ...router.query, draft: created.id } }, undefined, { shallow: true });
-          } else {
-            await updateListingDraft({ user, draftId, data: nextDraftData });
-          }
+          await persistDraft(nextDraftData);
         } catch {
           // Best-effort only
         }

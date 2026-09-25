@@ -12,7 +12,7 @@ import { useWizard } from "./ListingWizard";
 import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
 import { uploadOptimizedImage } from "@/services/storageService";
-import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
+import { updateListingDraft } from "@/services/listingDraftService";
 import { removeGuestImage, saveGuestImages } from "@/lib/buyauto/guestImageStore";
 
 interface ImageItem {
@@ -21,7 +21,7 @@ interface ImageItem {
 }
 
 export function Step4_Images() {
-  const { data, updateData, nextStep, prevStep, getMaxPhotos, draftId, setDraftId, guestImageFiles, setGuestImageFiles } = useWizard();
+  const { data, updateData, nextStep, prevStep, getMaxPhotos, persistDraft, guestImageFiles, setGuestImageFiles } = useWizard();
   const images = data.images || [];
   const coverImageIndex = data.cover_image_index || 0;
   const { toast } = useToast();
@@ -180,19 +180,7 @@ export function Step4_Images() {
         };
         (nextDraftData as any).id = undefined;
 
-        if (!draftId) {
-          const created = await createListingDraft({ user, data: nextDraftData });
-          setDraftId(created.id);
-          if (router.isReady) {
-            await router.replace(
-              { pathname: router.pathname, query: { ...router.query, draft: created.id } },
-              undefined,
-              { shallow: true }
-            );
-          }
-        } else {
-          await updateListingDraft({ user, draftId, data: nextDraftData });
-        }
+        await persistDraft(nextDraftData);
       } else {
         await createOrUpdateListing(
           {

@@ -59,6 +59,12 @@ interface WizardContextType {
   setGuestImageFiles: (files: { url: string; file: File }[]) => void;
   draftId: string | null;
   setDraftId: (id: string | null) => void;
+  /**
+   * Create-or-update the wizard's server draft and return its id. Single-flight:
+   * concurrent callers (autosave, guest-draft migration after sign-in, step
+   * saves) share one insert instead of each creating their own row.
+   */
+  persistDraft: (data: Partial<ListingData>) => Promise<string>;
   registerDraftSnapshotter: (snapshotter: () => Partial<ListingData> | Promise<Partial<ListingData>>) => void;
 }
 
@@ -310,6 +316,54 @@ export default function ListingWizard() {
   const autosaveInFlightRef = useRef(false);
   const lastAutosavedRef = useRef<string>("");
   const guestImageFilesRef = useRef(guestImageFiles);
+  // Mirrors draftId synchronously, plus the in-flight insert (if any), so two
+  // callers racing on "no draft yet" can't both insert. This is what used to
+  // leave a freshly signed-up seller with two identical drafts: the post-sign-in
+  // guest-draft migration and the autosave tick each created one.
+  const draftIdRef = useRef<string | null>(null);
+  const draftCreateRef = useRef<Promise<string> | null>(null);
+
+  const setDraftIdSynced = useCallback((id: string | null) => {
+    draftIdRef.current = id;
+    if (id === null) draftCreateRef.current = null;
+    setDraftId(id);
+  }, []);
+
+  const persistDraft = useCallback(
+    async (draftData: Partial<ListingData>): Promise<string> => {
+      if (!user) throw new Error("persistDraft requires a signed-in user");
+
+      if (!draftIdRef.current && draftCreateRef.current) {
+        // Another caller is already inserting; wait for its row and update it.
+        await draftCreateRef.current;
+      }
+
+      const existingId = draftIdRef.current;
+      if (existingId) {
+        await updateListingDraft({ user, draftId: existingId, data: draftData });
+        return existingId;
+      }
+
+      const createPromise = createListingDraft({ user, data: draftData }).then((created) => {
+        draftIdRef.current = created.id;
+        setDraftId(created.id);
+        return created.id;
+      });
+      draftCreateRef.current = createPromise;
+      try {
+        const id = await createPromise;
+        if (router.isReady && router.query.draft !== id) {
+          await router.replace({ pathname: router.pathname, query: { ...router.query, draft: id } }, undefined, {
+            shallow: true,
+          });
+        }
+        return id;
+      } finally {
+        if (draftCreateRef.current === createPromise) draftCreateRef.current = null;
+      }
+    },
+    [router, user]
+  );
 
   useEffect(() => {
     guestImageFilesRef.current = guestImageFiles;
@@ -391,7 +445,8 @@ export default function ListingWizard() {
       guestImageFiles,
       setGuestImageFiles,
       draftId,
-      setDraftId,
+      setDraftId: setDraftIdSynced,
+      persistDraft,
       registerDraftSnapshotter,
     }),
     [
@@ -404,9 +459,15 @@ export default function ListingWizard() {
       getMaxPhotos,
       guestImageFiles,
       draftId,
+      setDraftIdSynced,
+      persistDraft,
       registerDraftSnapshotter,
     ]
   );
+
+  // Read through a ref so the loader below doesn't re-run on every router change.
+  const persistDraftRef = useRef(persistDraft);
+  persistDraftRef.current = persistDraft;
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -446,7 +507,7 @@ export default function ListingWizard() {
         if (typeof draftQuery === "string" && draftQuery.length > 0) {
           const draft = await getListingDraftById({ user, draftId: draftQuery });
           if (draft) {
-            setDraftId(draft.id);
+            setDraftIdSynced(draft.id);
             const draftDataRaw = (draft.data as any) ?? {};
             if (isGarage) {
               const { id: _id, status: _status, ...rest } = draftDataRaw ?? {};
@@ -488,7 +549,7 @@ export default function ListingWizard() {
         if (typeof editQuery === "string" && editQuery.length > 0) {
           const listing = await getListingByIdForOwner(editQuery, user);
           if (listing) {
-            setDraftId(null);
+            setDraftIdSynced(null);
             setData((prev) => ({ ...prev, ...toWizardPatchFromListing(listing, prev) }));
           }
           setIsLoadingFromQuery(false);
@@ -519,14 +580,8 @@ export default function ListingWizard() {
             setGuestImageFiles(pairs);
             setData((prev) => ({ ...prev, ...hydrated, id: undefined }));
             try {
-              const created = await createListingDraft({ user, data: hydrated });
-              setDraftId(created.id);
+              await persistDraftRef.current(hydrated);
               window.localStorage.removeItem(GUEST_DRAFT_KEY);
-              await router.replace(
-                { pathname: router.pathname, query: { ...router.query, draft: created.id } },
-                undefined,
-                { shallow: true }
-              );
             } catch (e) {
               console.warn("Could not migrate guest draft to a server draft:", e);
             }
@@ -546,7 +601,7 @@ export default function ListingWizard() {
               hasAnyUserInput({ ...createEmptyListingData(), ...(d.data as any) } as ListingData)
             );
             if (resumable) {
-              setDraftId(resumable.id);
+              setDraftIdSynced(resumable.id);
               const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
                 resumable.data,
                 guestImageFilesRef.current
@@ -586,7 +641,7 @@ export default function ListingWizard() {
     };
 
     void run();
-  }, [isGarage, router.isReady, router.query.draft, router.query.edit, router.query.deal_type, toast, user]);
+  }, [isGarage, router.isReady, router.query.draft, router.query.edit, router.query.deal_type, setDraftIdSynced, toast, user]);
 
   const onSaveDraft = useCallback(async () => {
     if (isSavingDraft) return;
@@ -659,17 +714,7 @@ export default function ListingWizard() {
 
       updateData(draftData);
 
-      if (!draftId) {
-        const created = await createListingDraft({ user, data: draftData });
-        setDraftId(created.id);
-        await router.replace({ pathname: router.pathname, query: { ...router.query, draft: created.id } }, undefined, {
-          shallow: true,
-        });
-        toast({ title: "Entwurf gespeichert" });
-        return;
-      }
-
-      await updateListingDraft({ user, draftId, data: draftData });
+      await persistDraft(draftData);
       toast({ title: "Entwurf gespeichert" });
     } catch (e) {
       toast({
@@ -680,7 +725,7 @@ export default function ListingWizard() {
     } finally {
       setIsSavingDraft(false);
     }
-  }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, router, toast, updateData, user]);
+  }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, persistDraft, toast, updateData, user]);
 
   // Continuous autosave: periodically capture the active step's live form values
   // (via the snapshotter) plus committed wizard data, and upsert the draft with
@@ -728,19 +773,7 @@ export default function ListingWizard() {
     autosaveInFlightRef.current = true;
     setAutosaveState("saving");
     try {
-      if (!draftId) {
-        const created = await createListingDraft({ user, data: draftData });
-        setDraftId(created.id);
-        if (router.isReady && router.query.draft !== created.id) {
-          await router.replace(
-            { pathname: router.pathname, query: { ...router.query, draft: created.id } },
-            undefined,
-            { shallow: true }
-          );
-        }
-      } else {
-        await updateListingDraft({ user, draftId, data: draftData });
-      }
+      await persistDraft(draftData);
       lastAutosavedRef.current = snapshot;
       setAutosaveState("saved");
       // The server draft now owns the state; drop the pre-sign-in mirror so a
@@ -757,7 +790,7 @@ export default function ListingWizard() {
     } finally {
       autosaveInFlightRef.current = false;
     }
-  }, [data, draftId, isComplete, isEditingExistingListing, isGarage, isLoadingFromQuery, router, user]);
+  }, [data, isComplete, isEditingExistingListing, isGarage, isLoadingFromQuery, persistDraft, user]);
 
   useEffect(() => {
     const interval = setInterval(() => {
