@@ -226,6 +226,7 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     status: listing?.status ?? (prev as any)?.status,
 
     vin: listing?.vin ?? (prev as any)?.vin,
+    tg_nr: (listing as any)?.tg_nr ?? (prev as any)?.tg_nr,
     make_id: listing?.make_id ?? (prev as any)?.make_id,
     model_id: listing?.model_id ?? (prev as any)?.model_id,
     variant_id: listing?.variant_id ?? (prev as any)?.variant_id,

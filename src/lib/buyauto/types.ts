@@ -118,6 +118,8 @@ export interface ListingData {
   title?: string;
   /** Freitext hinter dem generierten Titel ("... | Frisch ab MFK"), max 50 Zeichen. */
   title_suffix?: string | null;
+  /** Typengenehmigungs-Nr. (Fahrzeugausweis Feld 24), z.B. "1XZ901". */
+  tg_nr?: string | null;
 
   seller_type?: "private" | "garage" | null;
   garage_id?: string | null;

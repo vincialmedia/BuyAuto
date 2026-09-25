@@ -167,6 +167,7 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
       drivetrain: listing.drivetrain,
       first_registration: listing.first_registration,
       vin: listing.vin,
+      tg_nr: (listing as any).tg_nr ?? null,
       status: listing.status,
       premium: listing.premium,
       moderation_note: listing.moderation_note,
@@ -246,6 +247,10 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
         drivetrain: safeString(String(editData.drivetrain ?? "")),
         first_registration: safeString(String(editData.first_registration ?? "")),
         vin: safeString(String(editData.vin ?? "")),
+        tg_nr: (() => {
+          const v = String(editData.tg_nr ?? "").trim().toUpperCase();
+          return /^[A-Z0-9]{6}$/.test(v) ? v : null;
+        })(),
 
         premium: !!editData.premium,
         moderation_note: safeString(String(editData.moderation_note ?? "")),
@@ -580,12 +585,22 @@ export function ListingDetailsModal({ listing, open, onOpenChange, onUpdate, mod
                   </div>
 
                   <div className="space-y-1 sm:col-span-2">
-                    <label className="text-sm text-neutral-600">VIN</label>
+                    <label className="text-sm text-neutral-600">Typenschein-Nr. (Feld 24)</label>
                     {editing ? (
-                      <Input value={String(editData.vin ?? "")} onChange={(e) => setEditData((p) => ({ ...p, vin: e.target.value }))} placeholder="Optional" />
+                      <Input
+                        value={String(editData.tg_nr ?? "")}
+                        onChange={(e) => setEditData((p) => ({ ...p, tg_nr: e.target.value.toUpperCase() }))}
+                        placeholder="z.B. 1XZ901"
+                        maxLength={6}
+                      />
                     ) : (
-                      <p className="font-mono text-xs break-all text-neutral-900">{(listing as any).vin ?? <span className="text-neutral-400">—</span>}</p>
+                      <p className="font-mono text-sm text-neutral-900">{(listing as any).tg_nr ?? <span className="text-neutral-400">—</span>}</p>
                     )}
+                    {(listing as any).vin ? (
+                      <p className="text-xs text-neutral-500">
+                        Alt-VIN (vor Typenschein-Umstellung erfasst): <span className="font-mono">{(listing as any).vin}</span>
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </div>

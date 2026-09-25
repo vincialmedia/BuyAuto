@@ -161,7 +161,7 @@ export function Step1Form() {
 
   // Typenschein (Fahrzeugausweis Feld 24) — the quick-fill path, backed by the
   // free ASTRA-TARGA lookup (/api/vehicles/decode-tg).
-  const [tgInput, setTgInput] = useState<string>("");
+  const [tgInput, setTgInput] = useState<string>(typeof (data as any)?.tg_nr === "string" ? (data as any).tg_nr : "");
   const [tgLoading, setTgLoading] = useState(false);
   const [tgStatus, setTgStatus] = useState<"idle" | "success" | "error">("idle");
   const [tgError, setTgError] = useState<string | null>(null);
@@ -493,6 +493,7 @@ export function Step1Form() {
       }
 
       updateData({
+        tg_nr: tg,
         provider_make: json.provider_make ?? null,
         provider_model: json.provider_model ?? null,
         provider_trim: json.variant_text ?? null,
@@ -651,6 +652,10 @@ export function Step1Form() {
     }
 
     const normalizedVin = (values.vin ?? "").trim().toUpperCase();
+    const savedTgNr =
+      typeof (data as any)?.tg_nr === "string" && /^[A-Z0-9]{6}$/.test((data as any).tg_nr)
+        ? ((data as any).tg_nr as string)
+        : null;
     if (normalizedVin.length > 0 && !/^[A-Z0-9]{17}$/.test(normalizedVin)) {
       toast({
         title: "Ungültige VIN",
@@ -725,6 +730,7 @@ export function Step1Form() {
         id: isGarageDraftFlow ? undefined : (data as any).id,
         ...values,
         vin: normalizedVin.length > 0 ? normalizedVin : null,
+        tg_nr: savedTgNr,
 
         deal_type: nextDealType,
         financing_type: nextFinancingType,
@@ -763,6 +769,7 @@ export function Step1Form() {
         const nextDraftData: Partial<ListingData> = {
           ...(data as any),
           vin: normalizedVin.length > 0 ? normalizedVin : null,
+          tg_nr: savedTgNr,
 
           deal_type: nextDealType,
           financing_type: nextFinancingType,
@@ -819,6 +826,7 @@ export function Step1Form() {
         const nextDraftData: Partial<ListingData> = {
           ...(data as any),
           vin: normalizedVin.length > 0 ? normalizedVin : null,
+          tg_nr: savedTgNr,
 
           deal_type: nextDealType,
           financing_type: nextFinancingType,
@@ -876,6 +884,7 @@ export function Step1Form() {
         leasing_offer: nextDealType === "lease_takeover" ? null : ((data as any).leasing_offer ?? null),
 
         vin: normalizedVin.length > 0 ? normalizedVin : null,
+        tg_nr: savedTgNr,
         make_id: values.make_id as any,
         model_id: values.model_id as any,
         variant_id: values.variant_id ? (values.variant_id as any) : null,
@@ -902,6 +911,7 @@ export function Step1Form() {
         ...payload,
         id: result.id,
         vin: normalizedVin.length > 0 ? normalizedVin : null,
+        tg_nr: savedTgNr,
       } as any);
 
       toast({
@@ -911,7 +921,7 @@ export function Step1Form() {
 
       if (draftId) {
         try {
-          await updateListingDraft({ user, draftId, data: { ...(data as any), ...payload, vin: normalizedVin.length > 0 ? normalizedVin : null } });
+          await updateListingDraft({ user, draftId, data: { ...(data as any), ...payload, vin: normalizedVin.length > 0 ? normalizedVin : null, tg_nr: savedTgNr } });
         } catch {
           setIsSubmitting(false);
           return;
