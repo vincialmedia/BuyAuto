@@ -473,6 +473,7 @@ export function Step1Form() {
       const json = (await resp.json().catch(() => ({}))) as {
         make_id?: string | null;
         model_id?: string | null;
+        variant_id?: string | null;
         variant_text?: string | null;
         provider_make?: string | null;
         provider_model?: string | null;
@@ -510,7 +511,7 @@ export function Step1Form() {
           vin: "",
           make_id: json.make_id ?? null,
           model_id: json.model_id ?? null,
-          variant_id: null,
+          variant_id: json.variant_id ?? null,
           variant_text: json.variant_text ?? null,
           fuel: json.fuel ?? null,
           transmission: json.transmission ?? null,

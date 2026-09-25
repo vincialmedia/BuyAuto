@@ -36,7 +36,7 @@ export interface TgDecodeResponse {
   tg_nr: string;
   make_id: string | null;
   model_id: string | null;
-  variant_id: null;
+  variant_id: string | null;
   variant_text: string | null;
   provider_make: string | null;
   provider_model: string | null;
@@ -182,6 +182,37 @@ export function matchModelFromTyp(
   return best ? { id: best.id, name: best.name, rest: best.rest } : null;
 }
 
+/**
+ * Findet im Rest-Text nach dem Modellnamen ("8 1.5 eTSI", "LongRange") die
+ * Katalog-Ausführung: ein zusammenhängendes Token-Fenster des Rests muss —
+ * normalisiert, also ohne Leerzeichen/Punkte — exakt dem Ausführungsnamen
+ * entsprechen ("1.5 eTSI" -> "15etsi"; "LongRange" == "Long Range"). Token-
+ * genau, damit "R" nicht in "LongRange" matcht. Längster Treffer gewinnt
+ * ("GTI Clubsport" vor "GTI").
+ */
+export function matchVariantFromRest(
+  rest: string,
+  variants: Array<{ id: string; name: string }>
+): { id: string; name: string } | null {
+  const tokens = rest.trim().split(/\s+/).filter(Boolean).map((t) => normalizeVehicleKey(t));
+  if (tokens.length === 0) return null;
+  const windows = new Set<string>();
+  for (let i = 0; i < tokens.length; i++) {
+    let acc = "";
+    for (let j = i; j < tokens.length; j++) {
+      acc += tokens[j];
+      if (acc) windows.add(acc);
+    }
+  }
+  let best: { id: string; name: string; len: number } | null = null;
+  for (const v of variants) {
+    const key = normalizeVehicleKey(v.name);
+    if (!key || !windows.has(key)) continue;
+    if (!best || key.length > best.len) best = { id: v.id, name: v.name, len: key.length };
+  }
+  return best ? { id: best.id, name: best.name } : null;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET" && req.method !== "POST") {
     res.setHeader("Allow", "GET, POST");
@@ -265,6 +296,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // manuelle Auswahl zurück.
   let makeId: string | null = null;
   let modelId: string | null = null;
+  let variantId: string | null = null;
   let variantText: string | null = null;
   const providerMake = primary.marke?.trim() || null;
   const providerModel = primary.typ?.trim() || null;
@@ -295,7 +327,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       );
       if (matched) {
         modelId = matched.id;
-        if (matched.rest) variantText = matched.rest;
+        if (matched.rest) {
+          variantText = matched.rest;
+          const { data: variantRows } = await supabase
+            .from("variants")
+            .select("id,name")
+            .eq("model_id", matched.id)
+            .limit(500);
+          const variant = matchVariantFromRest(
+            matched.rest,
+            (variantRows ?? []) as Array<{ id: string; name: string }>
+          );
+          if (variant) variantId = variant.id;
+        }
       } else {
         const candidate = family.familyName ?? providerModel.split(/\s+/)[0];
         if (candidate) {
@@ -316,7 +360,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     tg_nr: tgNr,
     make_id: makeId,
     model_id: modelId,
-    variant_id: null,
+    variant_id: variantId,
     variant_text: variantText,
     provider_make: providerMake,
     provider_model: providerModel,
