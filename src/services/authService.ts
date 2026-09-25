@@ -149,7 +149,9 @@ const authService = {
     
     // Force page reload to clear any cached auth state
     setTimeout(() => {
-      window.location.href = "/auth";
+      // Stay in the visitor's language: /fr/auth, /it/auth, /en/auth; German unprefixed.
+      const localeMatch = /^\/(fr|it|en)(?=\/|$)/.exec(window.location.pathname);
+      window.location.href = `${localeMatch ? `/${localeMatch[1]}` : ""}/auth`;
     }, 100);
   },
 

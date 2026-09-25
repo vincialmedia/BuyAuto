@@ -13,11 +13,22 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "buyauto.ch" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
       "destination": "https://www.buyauto.ch/:path*",
       "permanent": true
     }
   ],
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "crons": [
+    {
+      "path": "/api/cron/translate-listings",
+      "schedule": "17 3 * * *"
+    }
+  ]
 }

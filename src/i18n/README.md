@@ -38,9 +38,10 @@ Text with inline elements (links, bold, <br />) → one key with numbered tags:
 ```tsx
 <T
   k="Details finden Sie in unserer <0>Datenschutzerklärung</0>."
-  c={[<Link href="/datenschutz" className="text-red-600 underline" />]}
+  c={[<Link key="0" href="/datenschutz" className="text-red-600 underline" />]}
 />
-<T k="Raus aus dem Leasing.<0/>Ohne <1>Verlust.</1>" c={[<br />, <span className="text-red-500" />]} />
+<T k="Raus aus dem Leasing.<0/>Ohne <1>Verlust.</1>" c={[<br key="0" />, <span key="1" className="text-red-500" />]} />
+// (the keys only satisfy ESLint's react/jsx-key rule; <T> assigns its own)
 ```
 
 Rules:
@@ -116,6 +117,16 @@ use `<Link>` or `localizePath(href, locale)`.
 | `calculator` | Eintauschwert-Rechner, Auto-Abo-vs-Leasing calculator |
 | `leasing` | Leasing company pages, brand pages |
 | `pages/<slug>` | Long-form text of a single page |
+
+## Listing descriptions (seller-written text)
+
+Stored per language in `listing_translations` (migration
+`20260925080000_listing_translations.sql`), keyed by a hash of the listing's
+current title + description, so an edit invalidates the translation. See
+`src/lib/i18n/listingTranslations.ts` for the flow (on-demand translation on
+first view, nightly backfill via `/api/cron/translate-listings`, noindex while a
+description is untranslated). Needs `ANTHROPIC_API_KEY`, `CRON_SECRET` and
+`SUPABASE_SERVICE_ROLE_KEY` in the Vercel environment.
 
 ## Checking
 

@@ -13,7 +13,7 @@ import {
   Zap,
   MapPin,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import type { GaragePublicInfo } from "@/services/garageService";
 import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
@@ -64,6 +64,30 @@ function getGoogleMapsOpenUrl(locationText: string): string | null {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
+/** Shown under a machine-translated description (fr/it/en pages only). */
+function OriginalTextToggle({ original }: { original: string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-4 border-t border-neutral-100 pt-3">
+      <p className="text-xs text-neutral-500">
+        {t("Automatisch aus dem Original übersetzt.")}{" "}
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="font-medium text-neutral-700 underline underline-offset-2 hover:text-neutral-900"
+        >
+          {open ? t("Original ausblenden") : t("Original anzeigen")}
+        </button>
+      </p>
+      {open ? (
+        <p className="mt-3 rounded-2xl bg-neutral-50 p-4 text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">{original}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function FactGrid({
   items,
 }: {
@@ -100,6 +124,8 @@ export function ListingDetailV2({
   purchasePriceChf,
   childrenBelowFold,
   bottomContent,
+  originalDescription = null,
+  descriptionIsOriginal = false,
 }: {
   listing: ListingDetail;
   images: string[];
@@ -109,6 +135,10 @@ export function ListingDetailV2({
   purchasePriceChf: number | null;
   childrenBelowFold?: React.ReactNode;
   bottomContent?: React.ReactNode;
+  /** fr/it/en: the seller's original text when `listing.description` is a translation. */
+  originalDescription?: string | null;
+  /** fr/it/en: the description could not be translated yet and is shown as written. */
+  descriptionIsOriginal?: boolean;
 }) {
   const t = useT();
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
@@ -373,6 +403,10 @@ export function ListingDetailV2({
                   <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">{t("Beschreibung")}</h2>
                 </div>
                 <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
+                {originalDescription ? <OriginalTextToggle original={originalDescription} /> : null}
+                {descriptionIsOriginal ? (
+                  <p className="mt-4 text-xs text-neutral-500">{t("Die Beschreibung wird in der Originalsprache des Inserats angezeigt.")}</p>
+                ) : null}
               </section>
             )}
 

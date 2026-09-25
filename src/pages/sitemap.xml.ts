@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { brandPagesForInventory } from "@/lib/buyauto/leasingBrands";
 import { CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
+import { toLocale, type Locale } from "@/i18n/config";
+import { listingNeedsTranslation, listingSourceHash } from "@/lib/i18n/listingTranslations";
 
 type ListingSitemapRow = {
   id: string;
@@ -30,7 +32,83 @@ function urlTag(loc: string, lastmod: string | null): string {
     `;
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ res }) => {
+// One sitemap per language: /sitemap.xml (German, unchanged) and
+// /fr/sitemap.xml, /it/sitemap.xml, /en/sitemap.xml — separate files so each
+// language can be submitted and monitored on its own in Search Console.
+// hreflang lives in the pages' <head> only (one source, no risk of the two
+// disagreeing).
+async function localizedSitemap(locale: Exclude<Locale, "de">): Promise<string> {
+  const baseUrl = `https://www.buyauto.ch/${locale}`;
+
+  const [{ data: listings, error: listingsError }, { data: translations, error: translationsError }, { data: garageRows }] =
+    await Promise.all([
+      supabase.from("listings_public").select("id, brand, model, deal_type, title, description, updated_at, created_at"),
+      supabase.from("listing_translations").select("listing_id, source_hash").eq("locale", locale),
+      supabase.rpc("get_public_garage_slugs"),
+    ]);
+  if (listingsError) console.error("Sitemap: failed to load listings", listingsError);
+  if (translationsError) console.error("Sitemap: failed to load listing translations", translationsError);
+
+  type Row = ListingSitemapRow & { title: string | null; description: string | null };
+  const rows = (listings as Row[] | null) || [];
+  const translated = new Set(
+    ((translations as { listing_id: string; source_hash: string }[] | null) || []).map((t) => `${t.listing_id}:${t.source_hash}`),
+  );
+  const lastmodOf = (l: ListingSitemapRow) => toSitemapLastmod(l.updated_at ?? l.created_at);
+  const newest = rows.map(lastmodOf).filter(Boolean).sort().pop() ?? null;
+
+  const staticUrls = Object.keys(CONTENT_LAST_UPDATED)
+    .map((page) => {
+      const lastmod = page === "/" || page === "/suche" ? newest ?? CONTENT_LAST_UPDATED[page] : CONTENT_LAST_UPDATED[page];
+      return urlTag(`${baseUrl}${page === "/" ? "" : page}`, lastmod);
+    })
+    .join("");
+
+  // Only listings whose main content exists in this language — the same rule
+  // the listing page uses to decide between index and noindex.
+  const indexableRows = rows.filter(
+    (l) => !listingNeedsTranslation(l) || translated.has(`${l.id}:${listingSourceHash(l.title, l.description)}`),
+  );
+  const listingUrls = indexableRows
+    .map((l) => urlTag(`${baseUrl}${buildListingHref({ id: l.id, brand: l.brand, model: l.model })}`, lastmodOf(l)))
+    .join("");
+
+  const takeoverRows = rows.filter((l) => l.deal_type === "lease_takeover");
+  const brandUrls = brandPagesForInventory(takeoverRows.map((l) => ({ brand: l.brand, model: null, deal_type: l.deal_type })))
+    .map((b) => {
+      const brandLastmod =
+        takeoverRows.filter((l) => b.dbBrands.includes(l.brand)).map(lastmodOf).filter(Boolean).sort().pop() ?? null;
+      return urlTag(`${baseUrl}/leasinguebernahme/${b.slug}`, brandLastmod);
+    })
+    .join("");
+
+  const garageUrls = (garageRows || [])
+    .map((g) => ({ slug: typeof g?.slug === "string" ? g.slug.trim() : "", lastmod: toSitemapLastmod(g?.updated_at ?? null) }))
+    .filter((g) => g.slug.length > 0)
+    .map((g) => urlTag(`${baseUrl}/${g.slug}`, g.lastmod))
+    .join("");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      ${staticUrls}
+      ${brandUrls}
+      ${garageUrls}
+      ${listingUrls}
+    </urlset>
+  `;
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ res, locale: requestLocale }) => {
+  const locale = toLocale(requestLocale);
+  if (locale !== "de") {
+    const xml = await localizedSitemap(locale);
+    res.setHeader("Content-Type", "text/xml");
+    res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+    res.write(xml);
+    res.end();
+    return { props: {} };
+  }
+
   const baseUrl = "https://www.buyauto.ch";
 
   // Source from the listings_public view so the sitemap equals exactly what renders:

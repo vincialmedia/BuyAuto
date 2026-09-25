@@ -145,5 +145,9 @@
   "Kaution: CHF {amount}.": "Deposit: CHF {amount}.",
   "Direktkauf: {vehicle} für CHF {price}.": "Direct purchase: {vehicle} for CHF {price}.",
   "Direktkauf: {vehicle}.": "Direct purchase: {vehicle}.",
-  "Kilometerstand: {km} km.": "Mileage: {km} km."
+  "Kilometerstand: {km} km.": "Mileage: {km} km.",
+  "Die Beschreibung wird in der Originalsprache des Inserats angezeigt.": "The description is shown in the listing's original language.",
+  "Automatisch aus dem Original übersetzt.": "Automatically translated from the original.",
+  "Original anzeigen": "Show original",
+  "Original ausblenden": "Hide original"
 }

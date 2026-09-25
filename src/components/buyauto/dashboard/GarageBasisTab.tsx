@@ -8,8 +8,7 @@ import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { Garage } from "@/services/garageService";
-import { localizePath } from "@/i18n/config";
-import { useLocale, useT } from "@/i18n/runtime";
+import { useT } from "@/i18n/runtime";
 
 interface GarageBasisTabProps {
   garage: Garage | null;
@@ -34,7 +33,6 @@ function getSiteOrigin(): string {
 
 export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
   const t = useT();
-  const locale = useLocale();
   const [user, setUser] = useState<User | null>(null);
 
   const [draft, setDraft] = useState({
@@ -128,8 +126,10 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
     try {
       // Same canonical marker as authService.resetPassword — auth.tsx only
       // recognizes type=recovery (plus the PASSWORD_RECOVERY event).
-      // The locale prefix keeps fr/it/en users in their language (German unchanged).
-      const redirectTo = `${getSiteOrigin()}${localizePath("/auth?type=recovery", locale)}`;
+      // Deliberately unprefixed: this URL must match Supabase Auth's redirect
+      // allow-list, which only the German /auth path is known to be on. A
+      // /fr/auth link could be rejected and silently fall back to the Site URL.
+      const redirectTo = `${getSiteOrigin()}/auth?type=recovery`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
 

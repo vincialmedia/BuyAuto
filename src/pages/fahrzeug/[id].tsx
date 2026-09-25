@@ -23,8 +23,10 @@ import {
   parseListingPlace,
 } from "@/lib/buyauto/vehicleSchema";
 import { useLocale, useT, type I18nPageProps } from "@/i18n/runtime";
-import { localizePath, toLocale } from "@/i18n/config";
+import { LOCALES, localizePath, toLocale, type Locale } from "@/i18n/config";
 import { withI18n } from "@/i18n/server";
+import { Hreflang } from "@/i18n/seo";
+import { getFreshTranslations, listingNeedsTranslation, resolveListingTranslation } from "@/lib/i18n/listingTranslations";
 
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
   // No extra top margin: the bottomContent wrapper already applies mt-10,
@@ -37,6 +39,12 @@ interface ListingDetailPageProps {
   notFound?: boolean;
   // Set when the id is not a live listing (handled with a 404/410 status in getServerSideProps).
   gone?: boolean;
+  /** fr/it/en only: the seller's original description when the shown one is a translation. */
+  originalDescription?: string | null;
+  /** fr/it/en only: no translation yet — description shown as written, page noindexed. */
+  descriptionIsOriginal?: boolean;
+  /** Languages in which this listing is fully available (hreflang cluster); null = none. */
+  hreflangLocales?: Locale[] | null;
 }
 
 function serializeListing(listing: ListingDetail | null): ListingDetail | null {
@@ -59,7 +67,14 @@ function serializeListing(listing: ListingDetail | null): ListingDetail | null {
   };
 }
 
-export default function ListingDetailPage({ listing: initialListing, notFound, gone }: ListingDetailPageProps) {
+export default function ListingDetailPage({
+  listing: initialListing,
+  notFound,
+  gone,
+  originalDescription = null,
+  descriptionIsOriginal = false,
+  hreflangLocales = null,
+}: ListingDetailPageProps) {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
@@ -433,6 +448,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
           })}
         />
         <link rel="canonical" href={listingUrl} />
+        {/* Untranslated main content: keep this language version out of the
+            index until the description is translated (German never hits this). */}
+        {descriptionIsOriginal ? <meta name="robots" content="noindex,follow" /> : null}
 
         <meta property="og:title" content={`${seoName} ${listing.year} - BuyAuto`} />
         <meta
@@ -463,6 +481,13 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         />
       </Head>
 
+      {hreflangLocales && hreflangLocales.length > 1 && !descriptionIsOriginal ? (
+        <Hreflang
+          path={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}
+          locales={hreflangLocales}
+        />
+      ) : null}
+
       {/* Schema-only: the detail layout has no room for a visible crumb bar. */}
       <BreadcrumbJsonLd
         items={[
@@ -492,6 +517,8 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         garage={garage}
         teaserMonthlyLabel={teaserMonthlyLabel}
         purchasePriceChf={purchasePriceChf}
+        originalDescription={originalDescription}
+        descriptionIsOriginal={descriptionIsOriginal}
         childrenBelowFold={undefined}
         bottomContent={
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
@@ -604,13 +631,57 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
       return { props: { listing: null, gone: true, ...(await withI18n(context.locale, ["listing"])) } };
     }
 
+    // Seller-written text (title + description) per language. German shows the
+    // original and only needs to know which translations exist (hreflang);
+    // fr/it/en show the stored translation, translating on demand once.
+    const sourceText = { title: listing.title ?? null, description: listing.description ?? null };
+    const needsTranslation = listingNeedsTranslation(sourceText);
+    const fresh = await getFreshTranslations(listing.id, sourceText);
+    let originalDescription: string | null = null;
+    let descriptionIsOriginal = false;
+
+    if (locale !== "de") {
+      let hit = fresh[locale];
+      if (!hit && needsTranslation) {
+        const resolved = await resolveListingTranslation(listing.id, locale, sourceText, { translateNowMs: 8000 });
+        if (resolved.status === "translated") {
+          hit = { title: resolved.title, description: resolved.description };
+          fresh[locale] = hit;
+        }
+      }
+      if (hit) {
+        if (needsTranslation && hit.description && hit.description !== listing.description) {
+          originalDescription = listing.description ?? null;
+        }
+        listing = {
+          ...listing,
+          title: hit.title?.trim() ? hit.title : listing.title,
+          description: needsTranslation ? hit.description ?? listing.description : listing.description,
+        };
+      } else if (needsTranslation) {
+        descriptionIsOriginal = true;
+      }
+    }
+
+    // A language version belongs in the hreflang cluster only when its main
+    // content exists in that language: German always, others once translated
+    // (or when there is no description to translate).
+    const hreflangLocales = LOCALES.filter((l) => l === "de" || !needsTranslation || Boolean(fresh[l]));
+
     const serializedListing = serializeListing(listing);
 
     if (context.res) {
       context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     }
 
-    return { props: { listing: serializedListing, ...(await withI18n(context.locale, ["listing"])) } };
+    return {
+      props: {
+        listing: serializedListing,
+        ...(locale !== "de" ? { originalDescription, descriptionIsOriginal } : {}),
+        ...(hreflangLocales.length > 1 ? { hreflangLocales } : {}),
+        ...(await withI18n(context.locale, ["listing"])),
+      },
+    };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
     // Transient backend failure: signal 503 (retry later) instead of a 200 skeleton that
