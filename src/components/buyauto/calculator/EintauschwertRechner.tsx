@@ -1,3 +1,4 @@
+import { tgDecodeUrl } from "@/lib/buyauto/listingContract";
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -627,7 +628,7 @@ export function EintauschwertRechner() {
     }
     setTgLoading(true);
     try {
-      const res = await fetch(`/api/vehicles/decode-tg?tg=${encodeURIComponent(tg)}`);
+      const res = await fetch(tgDecodeUrl(tg));
       const data = (await res.json().catch(() => ({}))) as {
         provider_make?: string | null;
         provider_model?: string | null;

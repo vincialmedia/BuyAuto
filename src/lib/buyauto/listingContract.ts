@@ -138,3 +138,15 @@ export const zDescriptionOptional = z
   .max(DESCRIPTION_MAX, `Beschreibung darf maximal ${DESCRIPTION_MAX} Zeichen enthalten`)
   .optional()
   .or(z.literal(""));
+
+/**
+ * Version der decode-tg-Zuordnungslogik. Die Antworten werden am CDN bis zu
+ * 24h gecacht (s-maxage) — bei jeder Änderung an Treibstoff-/Getriebe-/
+ * Modell-/Ausführungs-Mapping hochzählen, damit Aufrufer eine neue URL
+ * anfragen statt eine veraltete gecachte Antwort zu bekommen.
+ */
+export const TG_DECODE_VERSION = 3;
+
+export function tgDecodeUrl(tg: string): string {
+  return `/api/vehicles/decode-tg?tg=${encodeURIComponent(tg)}&v=${TG_DECODE_VERSION}`;
+}
