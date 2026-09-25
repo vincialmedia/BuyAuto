@@ -22,6 +22,9 @@ import {
   leaseLengthIso,
   parseListingPlace,
 } from "@/lib/buyauto/vehicleSchema";
+import { useLocale, useT, type I18nPageProps } from "@/i18n/runtime";
+import { localizePath, toLocale } from "@/i18n/config";
+import { withI18n } from "@/i18n/server";
 
 const SimilarListings = dynamic(() => import("@/components/buyauto/detail/SimilarListings"), {
   // No extra top margin: the bottomContent wrapper already applies mt-10,
@@ -60,6 +63,8 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
+  const t = useT();
+  const locale = useLocale();
 
   const listingId = useMemo(() => {
     if (typeof id !== "string") return null;
@@ -215,7 +220,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
     return (
       <>
         <Head>
-          <title>Auto verkauft | BuyAuto</title>
+          <title>{t("Auto verkauft | BuyAuto")}</title>
           <meta name="robots" content="noindex,follow" />
         </Head>
         <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
@@ -225,15 +230,15 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-neutral-900 mb-3">Dieses Auto wurde verkauft</h1>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-3">{t("Dieses Auto wurde verkauft")}</h1>
             <p className="text-neutral-600 mb-8">
-              Das Inserat ist nicht mehr verfügbar. Entdecke ähnliche Angebote in unserer Suche.
+              {t("Das Inserat ist nicht mehr verfügbar. Entdecke ähnliche Angebote in unserer Suche.")}
             </p>
             <Button
               onClick={() => router.push("/suche")}
               className="bg-red-500 hover:bg-red-600 text-white rounded-2xl px-8"
             >
-              Weitere Autos entdecken
+              {t("Weitere Autos entdecken")}
             </Button>
           </div>
         </div>
@@ -262,7 +267,8 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   }
 
   const baseUrl = process.env.NODE_ENV === "production" ? "https://www.buyauto.ch" : "http://localhost:3000";
-  const listingUrl = `${baseUrl}${buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}`;
+  // German stays unprefixed (identical to before); fr/it/en → /<locale>/fahrzeug/<slug>.
+  const listingUrl = `${baseUrl}${localizePath(buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model }), locale)}`;
   const ogImage = listing.imageUrl || (images.length > 0 ? images[0] : `${baseUrl}/buyauto-logo.png`);
 
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
@@ -298,7 +304,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
 
   const teaserMonthlyLabel =
     typeof teaserMonthlyChf === "number"
-      ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
+      ? t("Ab CHF {amount} / Monat", {
+          amount: new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf)),
+        })
       : null;
 
   // Prefer the stored title — it carries the decoded trim ("BMW 5 Series 530i
@@ -308,9 +316,13 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const metaPriceText =
     dealType === "direct_purchase"
       ? purchasePriceChf
-        ? `${new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(purchasePriceChf)} Kaufpreis`
-        : "Kaufpreis"
-      : `${new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(listing.pricePerMonthCHF)}/Monat`;
+        ? t("{price} Kaufpreis", {
+            price: new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(purchasePriceChf),
+          })
+        : t("Kaufpreis@@meta")
+      : t("{price}/Monat", {
+          price: new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(listing.pricePerMonthCHF),
+        });
 
   // Per-deal-type Offer: a one-time sale price for direct purchase, a monthly rate for
   // lease takeover (never a hardcoded monthly unit on a purchase price).
@@ -361,17 +373,20 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
 
   const dateVehicleFirstRegistered = firstRegistrationIso(listing.firstRegistration);
   const driveWheelConfiguration = driveWheelConfigurationFor(listing.drivetrain);
-  const schemaDescription = buildVehicleDescription({
-    dealType,
-    brand: listing.brand,
-    model: listing.model,
-    year: listing.year,
-    pricePerMonthCHF: listing.pricePerMonthCHF ?? null,
-    remainingMonths: listing.remainingMonths ?? null,
-    purchasePriceCHF: purchasePriceChf,
-    mileageKm: listing.mileageKm ?? null,
-    depositCHF: isDirectPurchase ? null : listing.depositCHF ?? null,
-  });
+  const schemaDescription = buildVehicleDescription(
+    {
+      dealType,
+      brand: listing.brand,
+      model: listing.model,
+      year: listing.year,
+      pricePerMonthCHF: listing.pricePerMonthCHF ?? null,
+      remainingMonths: listing.remainingMonths ?? null,
+      purchasePriceCHF: purchasePriceChf,
+      mileageKm: listing.mileageKm ?? null,
+      depositCHF: isDirectPurchase ? null : listing.depositCHF ?? null,
+    },
+    t
+  );
 
   const vehicleJsonLd = {
     "@context": "https://schema.org",
@@ -388,9 +403,10 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
     ...(listing.mileageKm
       ? { mileageFromOdometer: { "@type": "QuantitativeValue", value: listing.mileageKm, unitCode: "KMT" } }
       : {}),
-    ...(listing.fuel ? { fuelType: listing.fuel } : {}),
-    ...(listing.gearbox ? { vehicleTransmission: listing.gearbox } : {}),
-    ...(listing.body ? { bodyType: listing.body } : {}),
+    // Stored values are German enums; the labels come from the "cards" dictionary.
+    ...(listing.fuel ? { fuelType: t(listing.fuel) } : {}),
+    ...(listing.gearbox ? { vehicleTransmission: t(listing.gearbox) } : {}),
+    ...(listing.body ? { bodyType: t(listing.body) } : {}),
     ...(listing.vin ? { vehicleIdentificationNumber: listing.vin } : {}),
     ...(typeof listing.powerHp === "number" && listing.powerHp > 0
       ? {
@@ -409,14 +425,24 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         <title>{`${seoName} ${listing.year} - BuyAuto`}</title>
         <meta
           name="description"
-          content={`${seoName} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
+          content={t("{name} {year} für {price} in {location}. Jetzt Auto-Angebot entdecken!", {
+            name: seoName,
+            year: String(listing.year),
+            price: metaPriceText,
+            location: String(listing.location),
+          })}
         />
         <link rel="canonical" href={listingUrl} />
 
         <meta property="og:title" content={`${seoName} ${listing.year} - BuyAuto`} />
         <meta
           property="og:description"
-          content={`${listing.brand} ${listing.model} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
+          content={t("{name} {year} für {price} in {location}. Jetzt Auto-Angebot entdecken!", {
+            name: `${listing.brand} ${listing.model}`,
+            year: String(listing.year),
+            price: metaPriceText,
+            location: String(listing.location),
+          })}
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={listingUrl} />
@@ -440,8 +466,8 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
       {/* Schema-only: the detail layout has no room for a visible crumb bar. */}
       <BreadcrumbJsonLd
         items={[
-          { name: "Home", href: "/" },
-          { name: "Fahrzeugsuche", href: "/suche" },
+          { name: t("Home"), href: "/" },
+          { name: t("Fahrzeugsuche"), href: "/suche" },
           { name: seoName, href: buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model }) },
         ]}
       />
@@ -452,7 +478,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
           <div className="flex items-center justify-between h-16">
             <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2 hover:bg-neutral-100">
               <ArrowLeft className="w-4 h-4" />
-              Zurück
+              {t("Zurück")}
             </Button>
             <div className="text-sm text-neutral-600">ID: {listing.id.slice(0, 8)}...</div>
           </div>
@@ -477,9 +503,10 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   );
 }
 
-export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = async (context) => {
+export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18nPageProps> = async (context) => {
   const { id } = context.params!;
   const { preview } = context.query;
+  const locale = toLocale(context.locale);
 
   if (!id || typeof id !== "string") {
     return { notFound: true };
@@ -492,7 +519,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
 
   try {
     if (preview === "true") {
-      return { props: { listing: null } };
+      return { props: { listing: null, ...(await withI18n(context.locale, ["listing"])) } };
     }
 
     const { data, error } = await supabase
@@ -524,7 +551,8 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       if (id !== canonicalSegment) {
         return {
           redirect: {
-            destination: `/fahrzeug/${canonicalSegment}`,
+            // Stay in the requested language: German unprefixed, fr/it/en under /<locale>.
+            destination: localizePath(`/fahrzeug/${canonicalSegment}`, locale),
             permanent: true,
           },
         };
@@ -573,7 +601,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       if (context.res) {
         context.res.statusCode = publishedRow ? 410 : 404;
       }
-      return { props: { listing: null, gone: true } };
+      return { props: { listing: null, gone: true, ...(await withI18n(context.locale, ["listing"])) } };
     }
 
     const serializedListing = serializeListing(listing);
@@ -582,7 +610,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     }
 
-    return { props: { listing: serializedListing } };
+    return { props: { listing: serializedListing, ...(await withI18n(context.locale, ["listing"])) } };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
     // Transient backend failure: signal 503 (retry later) instead of a 200 skeleton that
@@ -591,6 +619,6 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
       context.res.statusCode = 503;
       context.res.setHeader("Retry-After", "120");
     }
-    return { props: { listing: null } };
+    return { props: { listing: null, ...(await withI18n(context.locale, ["listing"])) } };
   }
 };

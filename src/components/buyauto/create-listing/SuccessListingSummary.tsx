@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { cantons } from "@/lib/buyauto/data";
+import { useT } from "@/i18n/runtime";
 
 type SellerType = "private" | "garage";
 type DealType = "lease_takeover" | "direct_purchase";
@@ -204,6 +205,7 @@ function getPrimaryPricing(args: {
 
 export function SuccessListingSummary({ listing, sellerType, planLabel }: SuccessListingSummaryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const t = useT();
 
   const brand = getString(listing.brand) ?? "-";
   const model = getString(listing.model) ?? "";
@@ -240,15 +242,15 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
   // Compute capability label
   let capabilityLabel = "";
   if (variant === "lease_takeover") {
-    capabilityLabel = "pro Monat";
+    capabilityLabel = t("pro Monat");
   } else {
     // direct purchase
     if (variant === "direct_purchase_leasing" && takeoverOfferEnabled) {
-      capabilityLabel = "Leasing & Leasing Übernahme möglich";
+      capabilityLabel = t("Leasing & Leasing Übernahme möglich");
     } else if (variant === "direct_purchase_leasing") {
-      capabilityLabel = "Leasing möglich";
+      capabilityLabel = t("Leasing möglich");
     } else if (takeoverOfferEnabled) {
-      capabilityLabel = "Leasing Übernahme möglich";
+      capabilityLabel = t("Leasing Übernahme möglich");
     }
     // cash only -> blank
   }
@@ -289,9 +291,9 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
     const fahrzeugRows: Array<{ label: string; value: string }> = [];
     if (typeof year === "number") fahrzeugRows.push({ label: "Baujahr", value: String(year) });
     if (typeof mileageKm === "number") fahrzeugRows.push({ label: "Kilometer", value: formatKm(mileageKm) });
-    if (getString(listing.body)) fahrzeugRows.push({ label: "Karosserie", value: String(listing.body) });
-    if (getString(listing.fuel)) fahrzeugRows.push({ label: "Antrieb", value: String(listing.fuel) });
-    if (getString(listing.gearbox)) fahrzeugRows.push({ label: "Getriebe", value: String(listing.gearbox) });
+    if (getString(listing.body)) fahrzeugRows.push({ label: "Karosserie", value: t(String(listing.body)) });
+    if (getString(listing.fuel)) fahrzeugRows.push({ label: "Antrieb@@fuel", value: t(String(listing.fuel)) });
+    if (getString(listing.gearbox)) fahrzeugRows.push({ label: "Getriebe", value: t(String(listing.gearbox)) });
 
     const locationLabel = getString(listing.location) ?? getString(listing.canton_code);
     if (locationLabel) fahrzeugRows.push({ label: "Standort", value: locationLabel });
@@ -300,14 +302,14 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
 
     // Listing Meta Info
     const listingRows: Array<{ label: string; value: string }> = [];
-    if (sellerType) listingRows.push({ label: "Verkäufer", value: getSellerLabel(sellerType) });
-    if (typeof listing.premium === "boolean") listingRows.push({ label: "Premium", value: listing.premium ? "Ja" : "Nein" });
+    if (sellerType) listingRows.push({ label: "Verkäufer", value: t(getSellerLabel(sellerType)) });
+    if (typeof listing.premium === "boolean") listingRows.push({ label: "Premium", value: listing.premium ? t("Ja") : t("Nein") });
     if (planLabel) listingRows.push({ label: "Plan", value: planLabel });
 
     if (listingRows.length > 0) out.push({ title: "Details", rows: listingRows });
 
     return out;
-  }, [variant, year, mileageKm, listing, purchasePriceChf, pricePerMonthChf, sellerType, planLabel, leasingOffer]);
+  }, [variant, year, mileageKm, listing, purchasePriceChf, pricePerMonthChf, sellerType, planLabel, leasingOffer, t]);
 
   const description = getString(listing.description);
 
@@ -319,21 +321,21 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
             {mainImageUrl ? (
               <Image
                 src={mainImageUrl}
-                alt={`${brand} ${model}`.trim() || "Fahrzeug"}
+                alt={`${brand} ${model}`.trim() || t("Fahrzeug")}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 768px"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-neutral-500">
-                Keine Fotos verfügbar
+                {t("Keine Fotos verfügbar")}
               </div>
             )}
           </div>
 
           <div className="absolute left-4 top-4 flex gap-2">
             {listing.premium ? (
-              <Badge className="bg-red-500 text-white border-red-500">Premium</Badge>
+              <Badge className="bg-red-500 text-white border-red-500">{t("Premium")}</Badge>
             ) : null}
           </div>
         </div>
@@ -350,12 +352,12 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
                     "relative h-16 w-24 shrink-0 overflow-hidden rounded-2xl border transition",
                     idx === safeActiveIndex ? "border-primary ring-2 ring-primary/20" : "border-neutral-200 hover:border-neutral-300"
                   )}
-                  aria-label={idx === coverIndex ? "Titelbild" : `Foto ${idx + 1}`}
+                  aria-label={idx === coverIndex ? t("Titelbild") : t("Foto {n}", { n: idx + 1 })}
                 >
-                  <Image src={url} alt={`Foto ${idx + 1}`} fill className="object-cover" sizes="96px" />
+                  <Image src={url} alt={t("Foto {n}", { n: idx + 1 })} fill className="object-cover" sizes="96px" />
                   {idx === coverIndex ? (
                     <span className="absolute left-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white">
-                      Titelbild
+                      {t("Titelbild")}
                     </span>
                   ) : null}
                 </button>
@@ -371,7 +373,7 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
               <div className="text-2xl font-bold tracking-tight text-neutral-900">
                 {brand} {model}
               </div>
-              <div className="mt-1 text-sm text-neutral-500">{getCantonName(listing.canton_code) || title || "-"}</div>
+              <div className="mt-1 text-sm text-neutral-500">{t(getCantonName(listing.canton_code)) || title || "-"}</div>
             </div>
             <div className="text-right">
                {variant === "lease_takeover" ? (
@@ -388,7 +390,7 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
                     <p className="text-2xl font-bold tracking-tight text-neutral-900">
                       {formatChf(getNumber(leasingOffer?.lease_takeover_offer?.price_per_month_chf))}
                     </p>
-                    <p className="text-sm text-neutral-500 mt-1">pro Monat (Leasingübernahme)</p>
+                    <p className="text-sm text-neutral-500 mt-1">{t("pro Monat (Leasingübernahme)")}</p>
                   </>
                 ) : (
                   <>
@@ -407,11 +409,11 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
           <div className="grid gap-8 md:grid-cols-2 mb-8">
               {sections.map((section) => (
                 <div key={section.title} className="space-y-3">
-                  <div className="text-sm font-semibold text-neutral-900">{section.title}</div>
+                  <div className="text-sm font-semibold text-neutral-900">{t(section.title)}</div>
                   <div className="space-y-2">
                     {section.rows.map((row) => (
                       <div key={`${section.title}-${row.label}`} className="flex items-start justify-between gap-3">
-                        <div className="text-sm text-neutral-600">{row.label}</div>
+                        <div className="text-sm text-neutral-600">{t(row.label)}</div>
                         <div className="text-sm font-medium text-neutral-900 text-right">{row.value}</div>
                       </div>
                     ))}
@@ -426,33 +428,33 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
              {variant === "direct_purchase_leasing" && leasingOffer && (
                 <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
                   <div className="flex justify-between items-baseline mb-4">
-                    <h4 className="font-semibold text-neutral-900 text-sm">Leasing-Konditionen</h4>
+                    <h4 className="font-semibold text-neutral-900 text-sm">{t("Leasing-Konditionen")}</h4>
                     {leasingTeaser && leasingTeaser > 0 && (
                       <span className="text-sm font-medium text-neutral-900">
-                        ab CHF {leasingTeaser.toLocaleString('de-CH')} / Monat
+                        {t("ab CHF {amount} / Monat", { amount: leasingTeaser.toLocaleString('de-CH') })}
                       </span>
                     )}
                   </div>
                   <div className="grid grid-cols-1 gap-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">Zinssatz</span>
+                      <span className="text-neutral-500">{t("Zinssatz")}</span>
                       <span className="text-neutral-900">{getNumber(leasingOffer.interest_rate_pct)}%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">Anzahlung</span>
+                      <span className="text-neutral-500">{t("Anzahlung")}</span>
                       <span className="text-neutral-900">
-                        {leasingOffer.no_down_payment ? "Keine Anzahlung" : `${getNumber(leasingOffer.down_payment_pct)}%`}
+                        {leasingOffer.no_down_payment ? t("Keine Anzahlung") : `${getNumber(leasingOffer.down_payment_pct)}%`}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">Laufzeit</span>
+                      <span className="text-neutral-500">{t("Laufzeit")}</span>
                       <span className="text-neutral-900">
-                        {getNumber(leasingOffer.min_term_months)}–{getNumber(leasingOffer.max_term_months)} Monate
+                        {t("{min}–{max} Monate", { min: getNumber(leasingOffer.min_term_months) ?? "", max: getNumber(leasingOffer.max_term_months) ?? "" })}
                       </span>
                     </div>
                     {leasingOffer.km_options && leasingOffer.km_options.length > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-neutral-500">KM-Optionen</span>
+                        <span className="text-neutral-500">{t("KM-Optionen")}</span>
                         <span className="text-neutral-900 text-right max-w-[50%] truncate">
                           {leasingOffer.km_options.filter((k: number) => typeof k === 'number').map((k: number) => `${(k/1000).toFixed(0)}k`).join(', ')}
                         </span>
@@ -465,31 +467,31 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
              {/* Lease Takeover Offer */}
              {takeoverOfferEnabled && leasingOffer?.lease_takeover_offer && (
                 <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
-                  <h4 className="font-semibold text-neutral-900 text-sm mb-4">Leasingübernahme-Angebot</h4>
+                  <h4 className="font-semibold text-neutral-900 text-sm mb-4">{t("Leasingübernahme-Angebot")}</h4>
                   <div className="grid grid-cols-1 gap-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">Monatliche Rate</span>
+                      <span className="text-neutral-500">{t("Monatliche Rate")}</span>
                       <span className="text-neutral-900 font-medium">CHF {getNumber(leasingOffer.lease_takeover_offer.price_per_month_chf)?.toLocaleString('de-CH')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">Restlaufzeit</span>
-                      <span className="text-neutral-900">{getNumber(leasingOffer.lease_takeover_offer.remaining_months)} Monate</span>
+                      <span className="text-neutral-500">{t("Restlaufzeit")}</span>
+                      <span className="text-neutral-900">{t("{n} Monate", { n: getNumber(leasingOffer.lease_takeover_offer.remaining_months) ?? "" })}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">Depot / Anzahlung</span>
+                      <span className="text-neutral-500">{t("Depot / Anzahlung")}</span>
                       <span className="text-neutral-900">CHF {getNumber(leasingOffer.lease_takeover_offer.deposit_chf)?.toLocaleString('de-CH')}</span>
                     </div>
                     {getNumber(leasingOffer.lease_takeover_offer.remaining_km) && (
                       <div className="flex justify-between">
-                        <span className="text-neutral-500">Verbleibende KM</span>
+                        <span className="text-neutral-500">{t("Verbleibende KM")}</span>
                         <span className="text-neutral-900">{getNumber(leasingOffer.lease_takeover_offer.remaining_km)?.toLocaleString('de-CH')} km</span>
                       </div>
                     )}
                     {getString(leasingOffer.lease_takeover_offer.pickup_canton_code) &&
                       getString(leasingOffer.lease_takeover_offer.pickup_canton_code).trim().toUpperCase() !== "XX" && (
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-neutral-600">Abhol-Kanton</span>
-                          <span className="text-neutral-900">{getCantonName(getString(leasingOffer.lease_takeover_offer.pickup_canton_code))}</span>
+                          <span className="text-neutral-600">{t("Abhol-Kanton")}</span>
+                          <span className="text-neutral-900">{t(getCantonName(getString(leasingOffer.lease_takeover_offer.pickup_canton_code)))}</span>
                         </div>
                       )}
                   </div>
@@ -499,19 +501,19 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
              {/* Pure Lease Takeover (for deal_type=lease_takeover) - Values Summary */}
              {variant === "lease_takeover" && (
                 <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
-                   <h4 className="font-semibold text-neutral-900 text-sm mb-4">Vertragsdaten</h4>
+                   <h4 className="font-semibold text-neutral-900 text-sm mb-4">{t("Vertragsdaten")}</h4>
                    <div className="grid grid-cols-1 gap-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-neutral-500">Restlaufzeit</span>
-                        <span className="text-neutral-900">{getNumber(listing.remaining_months)} Monate</span>
+                        <span className="text-neutral-500">{t("Restlaufzeit")}</span>
+                        <span className="text-neutral-900">{t("{n} Monate", { n: getNumber(listing.remaining_months) ?? "" })}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-neutral-500">Depot / Anzahlung</span>
+                        <span className="text-neutral-500">{t("Depot / Anzahlung")}</span>
                         <span className="text-neutral-900">CHF {getNumber(listing.deposit_chf)?.toLocaleString('de-CH') ?? '-'}</span>
                       </div>
                       {getNumber(listing.remaining_km) && (
                         <div className="flex justify-between">
-                          <span className="text-neutral-500">Verbleibende KM</span>
+                          <span className="text-neutral-500">{t("Verbleibende KM")}</span>
                           <span className="text-neutral-900">{getNumber(listing.remaining_km)?.toLocaleString('de-CH')} km</span>
                         </div>
                       )}
@@ -524,7 +526,7 @@ export function SuccessListingSummary({ listing, sellerType, planLabel }: Succes
             <>
               <Separator className="my-8 border-neutral-100" />
               <div className="space-y-2">
-                <div className="text-sm font-semibold text-neutral-900">Beschreibung</div>
+                <div className="text-sm font-semibold text-neutral-900">{t("Beschreibung")}</div>
                 <div className="text-sm text-neutral-700 whitespace-pre-line leading-relaxed">{description}</div>
               </div>
             </>

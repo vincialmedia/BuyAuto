@@ -1,5 +1,7 @@
 import Head from "next/head";
 import type { ReactNode } from "react";
+import { DEFAULT_LOCALE, localizePath, stripLocale, type Locale } from "@/i18n/config";
+import { useLocale, useT, type TFunction } from "@/i18n/runtime";
 
 export interface SEOProps {
   title?: string;
@@ -20,19 +22,33 @@ function getAbsoluteUrl(pathOrUrl: string | undefined): string | undefined {
   return `${cleanBase}${cleanPath}`;
 }
 
-function buildMeta({ title, description, image, url }: SEOProps): Required<
+/**
+ * Canonical / og:url in the page's language. German keeps the URL exactly as
+ * passed; fr/it/en get their /fr, /it, /en prefix after the origin. Idempotent:
+ * a URL that is already localized is not prefixed twice.
+ */
+function localizeUrl(pathOrUrl: string, locale: Locale): string {
+  if (locale === DEFAULT_LOCALE) return pathOrUrl;
+  const match = /^(https?:\/\/[^/?#]+)?(.*)$/.exec(pathOrUrl);
+  const origin = match?.[1] ?? "";
+  const rest = match?.[2] || "/";
+  return `${origin}${localizePath(stripLocale(rest), locale)}`;
+}
+
+function buildMeta({ title, description, image, url }: SEOProps, t: TFunction, locale: Locale): Required<
   Pick<SEOProps, "title" | "description" | "image" | "url">
 > {
-  const fallbackTitle = "Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto";
-  const fallbackDescription =
-    "Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto.";
+  const fallbackTitle = t("Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto");
+  const fallbackDescription = t(
+    "Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto.",
+  );
   const fallbackUrl = getAbsoluteUrl("/") ?? "/";
   const fallbackImage = getAbsoluteUrl("/buyauto-logo.jpg") ?? "/buyauto-logo.jpg";
 
   const resolvedTitle = (title ?? "").trim() || fallbackTitle;
   const resolvedDescription = (description ?? "").trim() || fallbackDescription;
 
-  const resolvedUrl = getAbsoluteUrl(url) ?? fallbackUrl;
+  const resolvedUrl = localizeUrl(getAbsoluteUrl(url) ?? fallbackUrl, locale);
   const resolvedImage = getAbsoluteUrl(image) ?? fallbackImage;
 
   return {
@@ -65,11 +81,15 @@ function renderMetaTags(meta: ReturnType<typeof buildMeta>): ReactNode[] {
 }
 
 export function SEOElements(props: SEOProps) {
-  const meta = buildMeta(props);
+  const t = useT();
+  const locale = useLocale();
+  const meta = buildMeta(props, t, locale);
   return <>{renderMetaTags(meta)}</>;
 }
 
 export function SEO(props: SEOProps) {
-  const meta = buildMeta(props);
+  const t = useT();
+  const locale = useLocale();
+  const meta = buildMeta(props, t, locale);
   return <Head>{renderMetaTags(meta)}</Head>;
 }

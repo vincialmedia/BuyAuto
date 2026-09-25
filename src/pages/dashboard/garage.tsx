@@ -9,6 +9,9 @@ import DashboardLayout from "@/components/buyauto/dashboard/DashboardLayout";
 import { GarageDashboard } from "@/components/buyauto/dashboard/GarageDashboard";
 import type { Garage } from "@/services/garageService";
 import { MessageCenterRail } from "@/components/buyauto/messages/MessageCenterRail";
+import { localizePath, toLocale } from "@/i18n/config";
+import { useT } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
 
 interface GarageDashboardPageProps {
   initialGarage: Garage | null;
@@ -16,6 +19,7 @@ interface GarageDashboardPageProps {
 
 export default function GarageDashboardPage({ initialGarage }: GarageDashboardPageProps) {
   const router = useRouter();
+  const t = useT();
   const { user, loading: authLoading, profile, profileLoading } = useAuth();
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function GarageDashboardPage({ initialGarage }: GarageDashboardPa
   return (
     <>
       <Head>
-        <title>Garage Dashboard - BuyAuto</title>
+        <title>{t("Garage Dashboard - BuyAuto")}</title>
         <meta name="robots" content="noindex,nofollow" />
       </Head>
 
@@ -50,6 +54,7 @@ export default function GarageDashboardPage({ initialGarage }: GarageDashboardPa
 
 export const getServerSideProps: GetServerSideProps<GarageDashboardPageProps> = async (ctx) => {
   const supabase = createPagesServerClient<Database>(ctx);
+  const locale = toLocale(ctx.locale);
 
   const {
     data: { session },
@@ -58,7 +63,7 @@ export const getServerSideProps: GetServerSideProps<GarageDashboardPageProps> = 
   if (!session) {
     return {
       redirect: {
-        destination: "/auth",
+        destination: localizePath("/auth", locale),
         permanent: false,
       },
     };
@@ -82,7 +87,7 @@ export const getServerSideProps: GetServerSideProps<GarageDashboardPageProps> = 
   if (role !== "garage") {
     return {
       redirect: {
-        destination: "/dashboard",
+        destination: localizePath("/dashboard", locale),
         permanent: false,
       },
     };
@@ -91,6 +96,10 @@ export const getServerSideProps: GetServerSideProps<GarageDashboardPageProps> = 
   return {
     props: {
       initialGarage: (garage as unknown as Garage | null) ?? null,
+      // garage: this page + its tabs; dashboard: listings/drafts sections and the
+      // message center; pricing: plan cards/matrix and plan names in the billing
+      // tab; calculator: the Eintauschwert-Rechner tab; wizard: LocationAutocomplete.
+      ...(await withI18n(ctx.locale, ["garage", "dashboard", "pricing", "calculator", "wizard"])),
     },
   };
 };

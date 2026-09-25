@@ -1,6 +1,7 @@
 import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GARAGE_TRUST_POINTS } from "@/lib/buyauto/garagePlans";
+import { GARAGE_TRUST_POINTS, translatePlanCopy } from "@/lib/buyauto/garagePlans";
+import { useT } from "@/i18n/runtime";
 
 /**
  * Risk reversal, next to the CTAs rather than in the footer — the three
@@ -8,6 +9,7 @@ import { GARAGE_TRUST_POINTS } from "@/lib/buyauto/garagePlans";
  * setup cost, and the value-based pricing they know from the big portals.
  */
 export function GarageTrustRow({ className }: { className?: string }) {
+  const t = useT();
   return (
     <div className={cn("grid grid-cols-1 gap-3 sm:grid-cols-3", className)}>
       {GARAGE_TRUST_POINTS.map((point) => (
@@ -17,9 +19,9 @@ export function GarageTrustRow({ className }: { className?: string }) {
         >
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-            <span className="text-sm font-semibold text-neutral-900">{point.title}</span>
+            <span className="text-sm font-semibold text-neutral-900">{translatePlanCopy(t, point.title)}</span>
           </div>
-          <p className="mt-1 text-xs leading-relaxed text-neutral-600">{point.body}</p>
+          <p className="mt-1 text-xs leading-relaxed text-neutral-600">{translatePlanCopy(t, point.body)}</p>
         </div>
       ))}
     </div>

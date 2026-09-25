@@ -9,6 +9,7 @@ import { searchDealerListings } from "@/services/listingsService";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { T, useT } from "@/i18n/runtime";
 
 type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
 
@@ -26,6 +27,7 @@ function deriveSaleType(query: SearchQuery): SaleTypeOption {
   return "direct_purchase";
 }
 
+/** German label = i18n key; translated where it is rendered. */
 function getSaleTypeLabel(option: SaleTypeOption): string {
   if (option === "lease_takeover") return "Leasingübernahme";
   if (option === "leasing") return "Leasing";
@@ -65,6 +67,7 @@ function postHeightToParent(embedId?: string) {
 }
 
 export function PublicDealerInventory({ garageId, className, initialQuery, embedId }: PublicDealerInventoryProps) {
+  const t = useT();
   const [query, setQuery] = useState<SearchQuery>(() => {
     const base: SearchQuery = {
       page: 1,
@@ -91,8 +94,8 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
   const purchasePriceOptions = useMemo(() => Array.from({ length: 60 }, (_, i) => (i + 1) * 5000), []);
   const priceOptions = isDirectPurchase ? purchasePriceOptions : monthlyPriceOptions;
 
-  const priceMinPlaceholder = isDirectPurchase ? "Min. Kaufpreis" : "Min. Rate";
-  const priceMaxPlaceholder = isDirectPurchase ? "Max. Kaufpreis" : "Max. Rate";
+  const priceMinPlaceholder = isDirectPurchase ? t("Min. Kaufpreis") : t("Min. Rate");
+  const priceMaxPlaceholder = isDirectPurchase ? t("Max. Kaufpreis") : t("Max. Rate");
 
   useEffect(() => {
     let cancelled = false;
@@ -224,34 +227,41 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
       <div className="border-b border-neutral-200 px-6 py-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold tracking-tight text-neutral-900">Fahrzeuge im Angebot</h2>
+            <h2 className="text-lg font-bold tracking-tight text-neutral-900">{t("Fahrzeuge im Angebot")}</h2>
             <p className="mt-1 text-sm text-neutral-600">
-              {loading ? "Lade Fahrzeuge…" : total > 0 ? `${total.toLocaleString("de-CH")} Fahrzeuge` : "Aktuell keine Fahrzeuge verfügbar"}
+              {/* "1 Fahrzeuge" is what German always rendered; its own key lets fr/it/en use the singular. */}
+              {loading
+                ? t("Lade Fahrzeuge…")
+                : total > 0
+                  ? total === 1
+                    ? t("1 Fahrzeuge")
+                    : t("{count} Fahrzeuge", { count: total.toLocaleString("de-CH") })
+                  : t("Aktuell keine Fahrzeuge verfügbar")}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Select value={saleType} onValueChange={handleSaleTypeChange}>
               <SelectTrigger className="h-9 w-[180px] rounded-2xl text-sm">
-                <SelectValue placeholder="Alle" />
+                <SelectValue placeholder={t("Alle")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle</SelectItem>
-                <SelectItem value="lease_takeover">Leasingübernahme</SelectItem>
-                <SelectItem value="direct_purchase">Direktkauf</SelectItem>
-                <SelectItem value="leasing">Leasing</SelectItem>
+                <SelectItem value="all">{t("Alle")}</SelectItem>
+                <SelectItem value="lease_takeover">{t("Leasingübernahme")}</SelectItem>
+                <SelectItem value="direct_purchase">{t("Direktkauf")}</SelectItem>
+                <SelectItem value="leasing">{t("Leasing")}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={query.yearMin ? `${query.yearMin}` : "all"} onValueChange={handleYearChange}>
               <SelectTrigger className="h-9 w-[150px] rounded-2xl text-sm">
-                <SelectValue placeholder="Jahr" />
+                <SelectValue placeholder={t("Jahr")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Jahre</SelectItem>
+                <SelectItem value="all">{t("Alle Jahre")}</SelectItem>
                 {yearOptions.map((y) => (
                   <SelectItem key={y} value={`${y}`}>
-                    ab {y}
+                    {t("ab {year}", { year: y })}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -262,7 +272,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
                 <SelectValue placeholder={priceMinPlaceholder} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Kein Min.</SelectItem>
+                <SelectItem value="all">{t("Kein Min.")}</SelectItem>
                 {priceOptions.map((p) => (
                   <SelectItem key={p} value={`${p}`}>
                     {formatChf(p)}
@@ -276,7 +286,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
                 <SelectValue placeholder={priceMaxPlaceholder} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Kein Max.</SelectItem>
+                <SelectItem value="all">{t("Kein Max.")}</SelectItem>
                 {priceOptions.map((p) => (
                   <SelectItem key={p} value={`${p}`}>
                     {formatChf(p)}
@@ -287,49 +297,49 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
 
             <Select value={isLeaseTakeover && query.monthsMax ? `${query.monthsMax}` : "all"} onValueChange={handleMonthsMaxChange} disabled={!isLeaseTakeover}>
               <SelectTrigger className="h-9 w-[170px] rounded-2xl text-sm">
-                <SelectValue placeholder={isLeaseTakeover ? "Max. Laufzeit" : "Nur Leasingübernahme"} />
+                <SelectValue placeholder={isLeaseTakeover ? t("Max. Laufzeit") : t("Nur Leasingübernahme")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle</SelectItem>
-                <SelectItem value="6">bis 6 Mon.</SelectItem>
-                <SelectItem value="12">bis 12 Mon.</SelectItem>
-                <SelectItem value="24">bis 24 Mon.</SelectItem>
-                <SelectItem value="36">bis 36 Mon.</SelectItem>
+                <SelectItem value="all">{t("Alle")}</SelectItem>
+                <SelectItem value="6">{t("bis {n} Mon.", { n: 6 })}</SelectItem>
+                <SelectItem value="12">{t("bis {n} Mon.", { n: 12 })}</SelectItem>
+                <SelectItem value="24">{t("bis {n} Mon.", { n: 24 })}</SelectItem>
+                <SelectItem value="36">{t("bis {n} Mon.", { n: 36 })}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={query.sort ?? "dateDesc"} onValueChange={handleSortChange}>
               <SelectTrigger className="h-9 w-[160px] rounded-2xl text-sm">
-                <SelectValue placeholder="Sortierung" />
+                <SelectValue placeholder={t("Sortierung")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="dateDesc">Neueste</SelectItem>
-                <SelectItem value="yearDesc">Baujahr ↓</SelectItem>
-                <SelectItem value="kmAsc">KM ↑</SelectItem>
+                <SelectItem value="dateDesc">{t("Neueste")}</SelectItem>
+                <SelectItem value="yearDesc">{t("Baujahr ↓")}</SelectItem>
+                <SelectItem value="kmAsc">{t("KM ↑")}</SelectItem>
                 {!isMixed && (
                   <>
-                    <SelectItem value="priceAsc">Preis ↑</SelectItem>
-                    <SelectItem value="priceDesc">Preis ↓</SelectItem>
+                    <SelectItem value="priceAsc">{t("Preis ↑")}</SelectItem>
+                    <SelectItem value="priceDesc">{t("Preis ↓")}</SelectItem>
                   </>
                 )}
                 {isLeaseTakeover && (
                   <>
-                    <SelectItem value="monthsAsc">Kurze Laufzeit</SelectItem>
-                    <SelectItem value="monthsDesc">Lange Laufzeit</SelectItem>
+                    <SelectItem value="monthsAsc">{t("Kurze Laufzeit")}</SelectItem>
+                    <SelectItem value="monthsDesc">{t("Lange Laufzeit")}</SelectItem>
                   </>
                 )}
               </SelectContent>
             </Select>
 
             <Button variant="outline" className="h-9 rounded-2xl" onClick={() => setQuery({ page: 1, sort: "dateDesc" })}>
-              Zurücksetzen
+              {t("Zurücksetzen")}
             </Button>
           </div>
         </div>
 
         {isMixed && (
           <p className="mt-3 text-xs text-neutral-500">
-            Hinweis: Bei “Alle” werden verschiedene Preisarten gemischt; Preisfilter sind deshalb deaktiviert. Wähle eine Verkaufsart, um nach Preisen zu filtern.
+            {t("Hinweis: Bei “Alle” werden verschiedene Preisarten gemischt; Preisfilter sind deshalb deaktiviert. Wähle eine Verkaufsart, um nach Preisen zu filtern.")}
           </p>
         )}
       </div>
@@ -351,8 +361,8 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
 
         {!loading && results && results.items.length === 0 ? (
           <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-10 text-center">
-            <h3 className="text-base font-semibold text-neutral-900">Keine Fahrzeuge gefunden</h3>
-            <p className="mt-2 text-sm text-neutral-600">Passe die Filter an oder setze sie zurück, um weitere Fahrzeuge zu sehen.</p>
+            <h3 className="text-base font-semibold text-neutral-900">{t("Keine Fahrzeuge gefunden")}</h3>
+            <p className="mt-2 text-sm text-neutral-600">{t("Passe die Filter an oder setze sie zurück, um weitere Fahrzeuge zu sehen.")}</p>
           </div>
         ) : null}
 
@@ -367,7 +377,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
                       ? formatChf(listing.purchasePriceCHF)
                       : null
                     : typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
-                      ? `${formatChf(listing.pricePerMonthCHF)}/Monat`
+                      ? t("{price}/Monat", { price: formatChf(listing.pricePerMonthCHF) })
                       : null;
 
                 return (
@@ -398,25 +408,25 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
                         </div>
 
                         {listing.premium ? (
-                          <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[11px] font-semibold text-white">Premium</span>
+                          <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[11px] font-semibold text-white">{t("Premium")}</span>
                         ) : null}
                       </div>
 
                       <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-neutral-700">
-                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{listing.fuel}</span>
-                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{listing.gearbox}</span>
-                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{listing.body}</span>
+                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{t(listing.fuel)}</span>
+                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{t(listing.gearbox)}</span>
+                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{t(listing.body)}</span>
                       </div>
 
                       <div className="mt-4 flex items-end justify-between gap-3">
                         <div>
                           <div className="text-xs uppercase tracking-wide text-neutral-500">
-                            {getSaleTypeLabel(deriveSaleType({ dealType: listing.deal_type, financingType: listing.financing_type ?? undefined }))}
+                            {t(getSaleTypeLabel(deriveSaleType({ dealType: listing.deal_type, financingType: listing.financing_type ?? undefined })))}
                           </div>
-                          <div className="mt-1 text-sm font-bold text-neutral-900">{priceLine ?? "Preis auf Anfrage"}</div>
+                          <div className="mt-1 text-sm font-bold text-neutral-900">{priceLine ?? t("Preis auf Anfrage")}</div>
                         </div>
 
-                        <span className="text-sm font-semibold text-primary underline underline-offset-4">Details</span>
+                        <span className="text-sm font-semibold text-primary underline underline-offset-4">{t("Details")}</span>
                       </div>
                     </div>
                   </Link>
@@ -426,17 +436,23 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
 
             <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-neutral-200 pt-6 sm:flex-row">
               <div className="text-sm text-neutral-600">
-                Seite <span className="font-semibold text-neutral-900">{page}</span> von{" "}
-                <span className="font-semibold text-neutral-900">{totalPages}</span>
+                <T
+                  k="Seite <0>{page}</0> von <1>{totalPages}</1>"
+                  vars={{ page, totalPages }}
+                  c={[
+                    <span key="page" className="font-semibold text-neutral-900" />,
+                    <span key="totalPages" className="font-semibold text-neutral-900" />,
+                  ]}
+                />
               </div>
 
               <div className="flex items-center gap-2">
                 <Button variant="outline" className="h-9 rounded-2xl" onClick={() => goToPage(page - 1)} disabled={page <= 1}>
                   <ChevronLeft className="mr-2 h-4 w-4" />
-                  Zurück
+                  {t("Zurück@@pagination")}
                 </Button>
                 <Button variant="outline" className="h-9 rounded-2xl" onClick={() => goToPage(page + 1)} disabled={page >= totalPages}>
-                  Weiter
+                  {t("Weiter@@pagination")}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>

@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { T, useT } from "@/i18n/runtime";
 
 // --- Types ---
 
@@ -279,6 +280,7 @@ export function AutoAboVsLeasingCalculator() {
   const [simpleMode, setSimpleMode] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [showFormulas, setShowFormulas] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     setIsClient(true);
@@ -303,7 +305,7 @@ export function AutoAboVsLeasingCalculator() {
 
   const handlePreset = (preset: CalculatorState) => {
     setState(preset);
-    toast.success("Beispielwerte geladen");
+    toast.success(t("Beispielwerte geladen"));
   };
 
   // --- Calculations ---
@@ -403,8 +405,8 @@ export function AutoAboVsLeasingCalculator() {
     });
     const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
     navigator.clipboard.writeText(url);
-    toast.success("Link kopiert!", {
-      description: "Deine Berechnung ist im Link gespeichert."
+    toast.success(t("Link kopiert!"), {
+      description: t("Deine Berechnung ist im Link gespeichert.")
     });
   };
 
@@ -416,7 +418,7 @@ export function AutoAboVsLeasingCalculator() {
       {/* --- PRESETS --- */}
       <div className="flex flex-wrap gap-3 items-center justify-center p-4 bg-neutral-50 rounded-xl border border-neutral-200">
         <span className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mr-2">
-          Beispiele laden:
+          {t("Beispiele laden:")}
         </span>
         <Button 
           variant="outline" 
@@ -425,7 +427,7 @@ export function AutoAboVsLeasingCalculator() {
           onClick={() => handlePreset(PRESET_FIAT_500)}
         >
           <Car className="w-4 h-4 mr-2 text-red-600" />
-          Kleinwagen (48 Mt)
+          {t("Kleinwagen (48 Mt)")}
         </Button>
         <Button 
           variant="outline" 
@@ -434,7 +436,7 @@ export function AutoAboVsLeasingCalculator() {
           onClick={() => handlePreset(PRESET_SHORT_COMPARISON)}
         >
           <TrendingUp className="w-4 h-4 mr-2 text-blue-600" />
-          Kurzzeit (12 Mt)
+          {t("Kurzzeit (12 Mt)")}
         </Button>
         <Button
            variant="ghost"
@@ -442,14 +444,14 @@ export function AutoAboVsLeasingCalculator() {
            className="ml-auto text-neutral-500 hover:text-neutral-900"
            onClick={() => setState(SUGGESTED_DEFAULTS)}
         >
-           <RotateCcw className="w-4 h-4 mr-2" /> Reset
+           <RotateCcw className="w-4 h-4 mr-2" /> {t("Reset")}
         </Button>
       </div>
 
       {/* --- Controls Bar --- */}
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-6 md:sticky md:top-20 z-20">
         <div className="w-full md:w-auto flex flex-col items-center md:items-start gap-2">
-          <Label className="text-neutral-500 uppercase tracking-wide text-xs font-bold">Laufzeit (Monate)</Label>
+          <Label className="text-neutral-500 uppercase tracking-wide text-xs font-bold">{t("Laufzeit (Monate)")}</Label>
           <Tabs 
             value={state.horizon.toString()} 
             onValueChange={(v) => updateState('horizon', Number(v) as Horizon)}
@@ -478,11 +480,11 @@ export function AutoAboVsLeasingCalculator() {
               className="data-[state=checked]:bg-red-600"
             />
             <Label htmlFor="simple-mode" className="cursor-pointer font-medium text-neutral-700">
-              Nur Monatsrate vergleichen
+              {t("Nur Monatsrate vergleichen")}
             </Label>
           </div>
           <Separator orientation="vertical" className="h-8 hidden md:block" />
-          <Button variant="ghost" size="icon" onClick={handleShare} title="Teilen">
+          <Button variant="ghost" size="icon" onClick={handleShare} title={t("Teilen")}>
             <Share2 className="h-4 w-4 text-neutral-500" />
           </Button>
         </div>
@@ -492,15 +494,15 @@ export function AutoAboVsLeasingCalculator() {
       <div className="bg-neutral-50/50 rounded-xl p-6 border border-neutral-200">
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            <KmInput 
-             label="Erwartete Fahrleistung pro Monat"
+             label={t("Erwartete Fahrleistung pro Monat")}
              value={state.expectedKmMonthly}
              onChange={(v) => updateState('expectedKmMonthly', v)}
            />
            <MoneyInput 
-             label="Allgemeine Fixkosten (Vignette etc.) / Jahr"
+             label={t("Allgemeine Fixkosten (Vignette etc.) / Jahr")}
              value={state.annualFixedCost}
              onChange={(v) => updateState('annualFixedCost', v)}
-             tooltip="Kosten die bei BEIDEN Varianten anfallen (z.B. Vignette)."
+             tooltip={t("Kosten die bei BEIDEN Varianten anfallen (z.B. Vignette).")}
            />
          </div>
       </div>
@@ -514,13 +516,13 @@ export function AutoAboVsLeasingCalculator() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <div className="w-8 h-8 rounded-full bg-neutral-900 text-white flex items-center justify-center text-sm font-bold">A</div>
-                Auto-Abo
+                {t("Auto-Abo")}
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <MoneyInput 
-              label="Monatsrate (Abo)" 
+              label={t("Monatsrate (Abo)")} 
               value={state.abo_monthlyRate} 
               onChange={(v) => updateState('abo_monthlyRate', v)} 
               highlight
@@ -531,39 +533,39 @@ export function AutoAboVsLeasingCalculator() {
                 <Separator />
                 <div className="grid grid-cols-2 gap-4">
                   <MoneyInput 
-                    label="Startgebühr (Einmalig)" 
+                    label={t("Startgebühr (Einmalig)")} 
                     value={state.abo_oneTimeFees} 
                     onChange={(v) => updateState('abo_oneTimeFees', v)}
-                    tooltip="Zustellung, Abholung, Mitgliedsgebühr."
+                    tooltip={t("Zustellung, Abholung, Mitgliedsgebühr.")}
                   />
                    <MoneyInput 
-                    label="Zusatzkosten (Monat)" 
+                    label={t("Zusatzkosten (Monat)")} 
                     value={state.abo_extraMonthlyCost} 
                     onChange={(v) => updateState('abo_extraMonthlyCost', v)}
-                    tooltip="Optionales Zubehör, Auslands-Pakete, etc."
+                    tooltip={t("Optionales Zubehör, Auslands-Pakete, etc.")}
                   />
                   <KmInput
-                    label="Inklusive km / Monat"
+                    label={t("Inklusive km / Monat")}
                     value={state.abo_includedKmMonthly}
                     onChange={(v) => updateState('abo_includedKmMonthly', v)}
                   />
                   <MoneyInput 
-                    label="Preis pro Mehr-km" 
+                    label={t("Preis pro Mehr-km")} 
                     value={state.abo_extraKmPrice} 
                     onChange={(v) => updateState('abo_extraKmPrice', v)}
                   />
                   <div className="col-span-2">
                     <MoneyInput 
-                      label="Erwartete Schaden-Kosten / Jahr" 
+                      label={t("Erwartete Schaden-Kosten / Jahr")} 
                       value={state.abo_expectedDamageYearly} 
                       onChange={(v) => updateState('abo_expectedDamageYearly', v)}
-                      tooltip="Puffer für Selbstbehalt oder Schäden bei Rückgabe."
+                      tooltip={t("Puffer für Selbstbehalt oder Schäden bei Rückgabe.")}
                     />
                   </div>
                 </div>
               </div>
             )}
-            {simpleMode && <p className="text-xs text-neutral-400 italic text-center">Detail-Optionen ausgeblendet</p>}
+            {simpleMode && <p className="text-xs text-neutral-400 italic text-center">{t("Detail-Optionen ausgeblendet")}</p>}
           </CardContent>
         </Card>
 
@@ -573,19 +575,19 @@ export function AutoAboVsLeasingCalculator() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <div className="w-8 h-8 rounded-full bg-white border-2 border-neutral-900 text-neutral-900 flex items-center justify-center text-sm font-bold">L</div>
-                Leasing
+                {t("Leasing")}
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <MoneyInput 
-              label="Monatsrate (Leasing)" 
+              label={t("Monatsrate (Leasing)")} 
               value={state.leasing_monthlyRate} 
               onChange={(v) => updateState('leasing_monthlyRate', v)} 
               highlight
             />
             <MoneyInput 
-              label="Anzahlung / Sonderzahlung" 
+              label={t("Anzahlung / Sonderzahlung")} 
               value={state.leasing_downPayment} 
               onChange={(v) => updateState('leasing_downPayment', v)}
             />
@@ -595,52 +597,52 @@ export function AutoAboVsLeasingCalculator() {
                 <Separator />
                 <div className="grid grid-cols-2 gap-4">
                   <MoneyInput 
-                    label="Versicherung (Monat)" 
+                    label={t("Versicherung (Monat)")} 
                     value={state.leasing_monthlyInsurance} 
                     onChange={(v) => updateState('leasing_monthlyInsurance', v)}
                   />
                   <MoneyInput 
-                    label="Service (Jahr)" 
+                    label={t("Service (Jahr)")} 
                     value={state.leasing_yearlyService} 
                     onChange={(v) => updateState('leasing_yearlyService', v)}
                   />
                   <MoneyInput 
-                    label="Reifen (Jahr)" 
+                    label={t("Reifen (Jahr)")} 
                     value={state.leasing_totalTires} 
                     onChange={(v) => updateState('leasing_totalTires', v)}
-                    tooltip="Kosten für Reifenwechsel und Einlagerung pro Jahr."
+                    tooltip={t("Kosten für Reifenwechsel und Einlagerung pro Jahr.")}
                   />
                    <MoneyInput 
-                    label="Verkehrssteuer (Jahr)" 
+                    label={t("Verkehrssteuer (Jahr)")} 
                     value={state.leasing_yearlyTax} 
                     onChange={(v) => updateState('leasing_yearlyTax', v)}
                   />
                   <div className="col-span-2 grid grid-cols-2 gap-4">
                      <KmInput
-                      label="Inklusive km / Jahr"
+                      label={t("Inklusive km / Jahr")}
                       value={state.leasing_includedKmYearly}
                       onChange={(v) => updateState('leasing_includedKmYearly', v)}
-                      unit="km/Jahr"
+                      unit={t("km/Jahr")}
                     />
                      <MoneyInput 
-                      label="Preis pro Mehr-km" 
+                      label={t("Preis pro Mehr-km")} 
                       value={state.leasing_extraKmPrice} 
                       onChange={(v) => updateState('leasing_extraKmPrice', v)}
                     />
                   </div>
                   <div className="col-span-2">
                     <MoneyInput 
-                      label="Gebühren & Ende (Total)" 
+                      label={t("Gebühren & Ende (Total)")} 
                       value={state.leasing_endCosts + state.leasing_setupFee} 
                       onChange={(v) => updateState('leasing_endCosts', v)}
-                      tooltip="Abschlussgebühr + Rückgabekosten + Instandstellung."
-                      subLabel="Einmalig (Start + Ende)"
+                      tooltip={t("Abschlussgebühr + Rückgabekosten + Instandstellung.")}
+                      subLabel={t("Einmalig (Start + Ende)")}
                     />
                   </div>
                 </div>
               </div>
             )}
-            {simpleMode && <p className="text-xs text-neutral-400 italic text-center">Detail-Optionen ausgeblendet</p>}
+            {simpleMode && <p className="text-xs text-neutral-400 italic text-center">{t("Detail-Optionen ausgeblendet")}</p>}
           </CardContent>
         </Card>
       </div>
@@ -650,9 +652,9 @@ export function AutoAboVsLeasingCalculator() {
         {simpleMode && (
            <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Vorsicht: Milchmädchen-Rechnung</AlertTitle>
+            <AlertTitle>{t("Vorsicht: Milchmädchen-Rechnung")}</AlertTitle>
             <AlertDescription>
-              Ein reiner Ratenvergleich ist irreführend. Versicherung, Service und Reifen machen beim Leasing oft 30-40% der Kosten aus. Deaktiviere "Nur Raten", um die Wahrheit zu sehen.
+              {t("Ein reiner Ratenvergleich ist irreführend. Versicherung, Service und Reifen machen beim Leasing oft 30-40% der Kosten aus. Deaktiviere \"Nur Raten\", um die Wahrheit zu sehen.")}
             </AlertDescription>
           </Alert>
         )}
@@ -666,14 +668,14 @@ export function AutoAboVsLeasingCalculator() {
 
         <div className="relative z-10">
           <h3 className="text-center text-neutral-400 font-medium uppercase tracking-widest text-sm mb-8">
-            Ergebnis nach {state.horizon} Monaten
+            {t("Ergebnis nach {n} Monaten", { n: state.horizon })}
           </h3>
 
           <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 md:gap-8 mb-10">
             
             {/* ABO RESULT */}
             <ResultCard 
-              title="Auto-Abo Total" 
+              title={t("Auto-Abo Total")} 
               total={results.abo.total} 
               monthly={results.abo.monthly}
               perKm={results.abo.per_km}
@@ -689,7 +691,7 @@ export function AutoAboVsLeasingCalculator() {
 
             {/* LEASING RESULT */}
             <ResultCard 
-              title="Leasing Total (Vollkosten)" 
+              title={t("Leasing Total (Vollkosten)")} 
               total={results.leasing.total} 
               monthly={results.leasing.monthly}
               perKm={results.leasing.per_km}
@@ -703,16 +705,27 @@ export function AutoAboVsLeasingCalculator() {
               <div className="text-xl md:text-2xl font-bold">
                 {results.winner === 'abo' ? (
                   <>
-                    Abo ist <span className="text-green-400">CHF {results.delta.toFixed(0)}</span> günstiger
+                    <T
+                      k="Abo ist <0>CHF {amount}</0> günstiger"
+                      vars={{ amount: results.delta.toFixed(0) }}
+                      c={[<span key="0" className="text-green-400" />]}
+                    />
                   </>
                 ) : (
                   <>
-                    Leasing ist <span className="text-green-400">CHF {results.delta.toFixed(0)}</span> günstiger
+                    <T
+                      k="Leasing ist <0>CHF {amount}</0> günstiger"
+                      vars={{ amount: results.delta.toFixed(0) }}
+                      c={[<span key="0" className="text-green-400" />]}
+                    />
                   </>
                 )}
               </div>
               <p className="text-neutral-400 text-sm md:text-base">
-                (Differenz über {state.horizon} Monate: ca. CHF {(results.delta / state.horizon).toFixed(0)} pro Monat)
+                {t("(Differenz über {months} Monate: ca. CHF {amount} pro Monat)", {
+                  months: state.horizon,
+                  amount: (results.delta / state.horizon).toFixed(0),
+                })}
               </p>
             </div>
           </div>
@@ -720,22 +733,22 @@ export function AutoAboVsLeasingCalculator() {
           {/* BREAKDOWN TABLE */}
            <div className="max-w-3xl mx-auto text-sm bg-neutral-950/50 rounded-lg p-3 sm:p-4 md:p-6 border border-white/5">
               <div className="flex justify-between items-center text-neutral-500 font-bold uppercase text-xs tracking-wider mb-4 border-b border-white/10 pb-2">
-                <span>Kostenfaktor (Total)</span>
-                <span className="w-16 sm:w-24 text-right">Abo</span>
-                <span className="w-16 sm:w-24 text-right">Leasing</span>
+                <span>{t("Kostenfaktor (Total)")}</span>
+                <span className="w-16 sm:w-24 text-right">{t("Abo")}</span>
+                <span className="w-16 sm:w-24 text-right">{t("Leasing")}</span>
               </div>
               
-              <BreakdownRow label="Monatsraten (Basis)" val1={results.abo.breakdown.rate} val2={results.leasing.breakdown.rate} highlight />
-              <BreakdownRow label="Einmalig / Anzahlung" val1={results.abo.breakdown.oneTime} val2={results.leasing.breakdown.down} />
-              <BreakdownRow label="Versicherung" val1={0} val2={results.leasing.breakdown.insurance} />
-              <BreakdownRow label="Service / Reifen" val1={0} val2={results.leasing.breakdown.service + results.leasing.breakdown.tires} />
-              <BreakdownRow label="Steuern" val1={0} val2={results.leasing.breakdown.tax} />
-              <BreakdownRow label="Mehrkilometer" val1={results.abo.breakdown.extraKm} val2={results.leasing.breakdown.extraKm} />
-              <BreakdownRow label="Schäden / Risiko" val1={results.abo.breakdown.damage} val2={0} />
-              <BreakdownRow label="Sonstiges (Fix)" val1={results.abo.breakdown.extraMonthly + results.abo.breakdown.fixed} val2={results.leasing.breakdown.fixed} />
+              <BreakdownRow label={t("Monatsraten (Basis)")} val1={results.abo.breakdown.rate} val2={results.leasing.breakdown.rate} highlight />
+              <BreakdownRow label={t("Einmalig / Anzahlung")} val1={results.abo.breakdown.oneTime} val2={results.leasing.breakdown.down} />
+              <BreakdownRow label={t("Versicherung")} val1={0} val2={results.leasing.breakdown.insurance} />
+              <BreakdownRow label={t("Service / Reifen")} val1={0} val2={results.leasing.breakdown.service + results.leasing.breakdown.tires} />
+              <BreakdownRow label={t("Steuern")} val1={0} val2={results.leasing.breakdown.tax} />
+              <BreakdownRow label={t("Mehrkilometer")} val1={results.abo.breakdown.extraKm} val2={results.leasing.breakdown.extraKm} />
+              <BreakdownRow label={t("Schäden / Risiko")} val1={results.abo.breakdown.damage} val2={0} />
+              <BreakdownRow label={t("Sonstiges (Fix)")} val1={results.abo.breakdown.extraMonthly + results.abo.breakdown.fixed} val2={results.leasing.breakdown.fixed} />
               
               <div className="border-t border-white/20 mt-3 pt-3 flex justify-between items-center font-bold text-sm sm:text-base">
-                <span>Total</span>
+                <span>{t("Total")}</span>
                 <span className="w-20 sm:w-24 text-right text-white">CHF {results.abo.total.toFixed(0)}</span>
                 <span className="w-20 sm:w-24 text-right text-white">CHF {results.leasing.total.toFixed(0)}</span>
               </div>
@@ -744,16 +757,16 @@ export function AutoAboVsLeasingCalculator() {
            <div className="flex justify-center mt-6">
              <Button variant="link" className="text-neutral-400 hover:text-white" onClick={() => setShowFormulas(!showFormulas)}>
                {showFormulas ? <ChevronUp className="w-4 h-4 mr-2"/> : <ChevronDown className="w-4 h-4 mr-2"/>}
-               Berechnungsdetails anzeigen
+               {t("Berechnungsdetails anzeigen")}
              </Button>
            </div>
            
            {showFormulas && (
              <div className="max-w-3xl mx-auto mt-4 p-4 bg-black/20 rounded-lg text-xs text-neutral-400 font-mono">
-               <p className="mb-2 font-bold text-white">Berechnungslogik ({state.horizon} Monate):</p>
+               <p className="mb-2 font-bold text-white">{t("Berechnungslogik ({n} Monate):", { n: state.horizon })}</p>
                <div className="space-y-1">
-                 <p>Abo Total = (Rate * M) + Startgebühr + (Zusatz * M) + (Mehr-Km * Preis) + (Schaden/Jahr / 12 * M) + Fixkosten</p>
-                 <p>Leasing Total = (Rate * M) + Anzahlung + Gebühren + (Versicherung * M) + (Service/Jahr / 12 * M) + (Reifen/Jahr / 12 * M) + (Steuer/Jahr / 12 * M) + (Mehr-Km * Preis) + Fixkosten</p>
+                 <p>{t("Abo Total = (Rate * M) + Startgebühr + (Zusatz * M) + (Mehr-Km * Preis) + (Schaden/Jahr / 12 * M) + Fixkosten")}</p>
+                 <p>{t("Leasing Total = (Rate * M) + Anzahlung + Gebühren + (Versicherung * M) + (Service/Jahr / 12 * M) + (Reifen/Jahr / 12 * M) + (Steuer/Jahr / 12 * M) + (Mehr-Km * Preis) + Fixkosten")}</p>
                </div>
              </div>
            )}
@@ -764,32 +777,35 @@ export function AutoAboVsLeasingCalculator() {
   );
 }
 
-const ResultCard = ({ title, total, monthly, perKm, isWinner }: any) => (
+const ResultCard = ({ title, total, monthly, perKm, isWinner }: any) => {
+  const t = useT();
+  return (
   <div className={`flex-1 bg-white/5 rounded-xl p-6 border transition-all duration-300 ${isWinner ? 'border-green-500/50 bg-green-500/5 shadow-lg shadow-green-900/20 transform scale-[1.02]' : 'border-white/10'}`}>
     <div className="text-sm font-medium text-neutral-400 mb-4 flex justify-between items-start">
       {title}
-      {isWinner && <Badge className="bg-green-500 hover:bg-green-600 text-white border-none">Günstiger</Badge>}
+      {isWinner && <Badge className="bg-green-500 hover:bg-green-600 text-white border-none">{t("Günstiger")}</Badge>}
     </div>
     
     <div className="space-y-4">
       <div>
         <div className="text-3xl font-bold">CHF {total.toFixed(0)}</div>
-        <div className="text-xs text-neutral-500">Gesamtkosten</div>
+        <div className="text-xs text-neutral-500">{t("Gesamtkosten")}</div>
       </div>
       
       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
         <div>
            <div className="text-xl font-semibold text-white">CHF {monthly.toFixed(0)}</div>
-           <div className="text-xs text-neutral-500">Ø pro Monat</div>
+           <div className="text-xs text-neutral-500">{t("Ø pro Monat")}</div>
         </div>
         <div className="text-right">
            <div className="text-xl font-semibold text-neutral-300">{perKm.toFixed(2)}</div>
-           <div className="text-xs text-neutral-500">CHF pro km</div>
+           <div className="text-xs text-neutral-500">{t("CHF pro km")}</div>
         </div>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const BreakdownRow = ({ 
   label, 

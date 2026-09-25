@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/i18n/runtime";
 
 export type LocationSuggestion = {
   label: string;
@@ -37,6 +38,7 @@ export function LocationAutocomplete(props: LocationAutocompleteProps) {
     onBlur,
   } = props;
 
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value ?? "");
   const [items, setItems] = useState<LocationSuggestion[]>([]);
@@ -126,10 +128,10 @@ export function LocationAutocomplete(props: LocationAutocompleteProps) {
       {showDropdown ? (
         <div className="absolute left-0 right-0 top-full mt-2 z-50 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl">
           <div className="max-h-64 overflow-auto py-1">
-            {loading ? <div className="px-3 py-2 text-sm text-neutral-500">Lade Vorschläge...</div> : null}
+            {loading ? <div className="px-3 py-2 text-sm text-neutral-500">{t("Lade Vorschläge...")}</div> : null}
 
             {!loading && items.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-neutral-500">Keine Vorschläge gefunden.</div>
+              <div className="px-3 py-2 text-sm text-neutral-500">{t("Keine Vorschläge gefunden.")}</div>
             ) : null}
 
             {items.map((item) => (

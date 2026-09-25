@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ADS_CONVERSIONS, trackAdsConversion } from "@/lib/analytics/gtag";
 import authService from "@/services/authService";
+import { T, useLocale, useT } from "@/i18n/runtime";
+import { localizePath } from "@/i18n/config";
 
 /**
  * Shown at the final step when a guest (not logged in) wants to publish. They
@@ -17,6 +19,8 @@ import authService from "@/services/authService";
  */
 export default function GuestAuthGate() {
   const { toast } = useToast();
+  const t = useT();
+  const locale = useLocale();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -31,19 +35,19 @@ export default function GuestAuthGate() {
 
     const mail = email.trim();
     if (!mail || !password) {
-      toast({ title: "Bitte E-Mail und Passwort eingeben", variant: "destructive" });
+      toast({ title: t("Bitte E-Mail und Passwort eingeben"), variant: "destructive" });
       return;
     }
     if (mode === "register" && (!firstName.trim() || !lastName.trim())) {
       toast({
-        title: "Bitte Vor- und Nachname eingeben",
-        description: "Dein Name wird bei deinem Inserat als Anbieter angezeigt.",
+        title: t("Bitte Vor- und Nachname eingeben"),
+        description: t("Dein Name wird bei deinem Inserat als Anbieter angezeigt."),
         variant: "destructive",
       });
       return;
     }
     if (mode === "register" && password.length < 8) {
-      toast({ title: "Passwort zu kurz", description: "Mindestens 8 Zeichen.", variant: "destructive" });
+      toast({ title: t("Passwort zu kurz"), description: t("Mindestens 8 Zeichen."), variant: "destructive" });
       return;
     }
 
@@ -51,7 +55,7 @@ export default function GuestAuthGate() {
     try {
       if (mode === "login") {
         await authService.signIn({ email: mail, password });
-        toast({ title: "Willkommen zurück!", description: "Dein Inserat wird jetzt veröffentlicht." });
+        toast({ title: t("Willkommen zurück!"), description: t("Dein Inserat wird jetzt veröffentlicht.") });
         // AuthContext updates `user`; the parent re-renders past this gate.
       } else {
         // Send the confirmation link back into the wizard: the draft (and, with
@@ -62,7 +66,7 @@ export default function GuestAuthGate() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           accountType: "private",
-          emailRedirectTo: `${window.location.origin}/inserat-erstellen`,
+          emailRedirectTo: `${window.location.origin}${localizePath("/inserat-erstellen", locale)}`,
         });
         // The Google Ads lead conversion. Reported here rather than in either
         // branch below because the lead is complete either way — the seller has
@@ -74,7 +78,7 @@ export default function GuestAuthGate() {
         trackAdsConversion(ADS_CONVERSIONS.submitLeadForm);
 
         if (res.session) {
-          toast({ title: "Konto erstellt!", description: "Dein Inserat wird jetzt veröffentlicht." });
+          toast({ title: t("Konto erstellt!"), description: t("Dein Inserat wird jetzt veröffentlicht.") });
         } else {
           // Email confirmation required — the draft is kept safe locally.
           setConfirmSent(true);
@@ -84,13 +88,13 @@ export default function GuestAuthGate() {
       const raw = String(err?.message ?? "");
       const emailAlreadyExists = err?.code === "email_exists" || /already registered|user already/i.test(raw);
       const msg = /invalid login credentials/i.test(raw)
-        ? "E-Mail oder Passwort ist falsch."
+        ? t("E-Mail oder Passwort ist falsch.")
         : emailAlreadyExists
-          ? "Diese E-Mail existiert bereits, bitte logge dich ein."
-          : raw || "Etwas ist schiefgelaufen. Bitte versuche es erneut.";
+          ? t("Diese E-Mail existiert bereits, bitte logge dich ein.")
+          : raw || t("Etwas ist schiefgelaufen. Bitte versuche es erneut.");
       // Flip over to the login tab so the user can sign in with the existing account.
       if (emailAlreadyExists) setMode("login");
-      toast({ title: "Anmeldung fehlgeschlagen", description: msg, variant: "destructive" });
+      toast({ title: t("Anmeldung fehlgeschlagen"), description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -99,10 +103,13 @@ export default function GuestAuthGate() {
   if (confirmSent) {
     return (
       <div className="mx-auto max-w-md rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8 text-center shadow-sm">
-        <h3 className="text-lg font-semibold text-neutral-900">Fast geschafft – bitte E-Mail bestätigen</h3>
+        <h3 className="text-lg font-semibold text-neutral-900">{t("Fast geschafft – bitte E-Mail bestätigen")}</h3>
         <p className="mt-2 text-sm text-neutral-600">
-          Wir haben dir eine Bestätigungs-E-Mail an <span className="font-medium">{email.trim()}</span> geschickt.
-          Bestätige sie und komm zurück – dein Inserat ist zwischengespeichert und wartet auf dich.
+          <T
+            k="Wir haben dir eine Bestätigungs-E-Mail an <0>{email}</0> geschickt. Bestätige sie und komm zurück – dein Inserat ist zwischengespeichert und wartet auf dich."
+            vars={{ email: email.trim() }}
+            c={[<span key="email" className="font-medium" />]}
+          />
         </p>
       </div>
     );
@@ -115,9 +122,9 @@ export default function GuestAuthGate() {
           <LockKeyhole className="h-5 w-5" aria-hidden />
         </div>
         <div>
-          <h3 className="text-lg font-semibold tracking-tight text-neutral-900">Fast geschafft!</h3>
+          <h3 className="text-lg font-semibold tracking-tight text-neutral-900">{t("Fast geschafft!")}</h3>
           <p className="text-sm text-neutral-600">
-            Melde dich an, um dein Inserat zu veröffentlichen. Deine Angaben bleiben erhalten.
+            {t("Melde dich an, um dein Inserat zu veröffentlichen. Deine Angaben bleiben erhalten.")}
           </p>
         </div>
       </div>
@@ -128,14 +135,14 @@ export default function GuestAuthGate() {
           onClick={() => setMode("login")}
           className={`rounded-xl py-2 transition-colors ${mode === "login" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"}`}
         >
-          Anmelden
+          {t("Anmelden")}
         </button>
         <button
           type="button"
           onClick={() => setMode("register")}
           className={`rounded-xl py-2 transition-colors ${mode === "register" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"}`}
         >
-          Registrieren
+          {t("Registrieren")}
         </button>
       </div>
 
@@ -144,39 +151,38 @@ export default function GuestAuthGate() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="guest-auth-first-name" className="text-sm font-medium text-neutral-700">
-                Vorname
+                {t("Vorname")}
               </Label>
               <Input
                 id="guest-auth-first-name"
                 autoComplete="given-name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Max"
+                placeholder={t("Max@@firstname")}
                 className="rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="guest-auth-last-name" className="text-sm font-medium text-neutral-700">
-                Nachname
+                {t("Nachname")}
               </Label>
               <Input
                 id="guest-auth-last-name"
                 autoComplete="family-name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                placeholder="Muster"
+                placeholder={t("Muster@@lastname")}
                 className="rounded-xl"
               />
             </div>
             <p className="col-span-2 text-xs text-neutral-500">
-              Dein Name wird bei deinem Inserat als Anbieter angezeigt. In deinem Dashboard kannst du
-              stattdessen jederzeit anonym als «Privatanbieter» auftreten.
+              {t("Dein Name wird bei deinem Inserat als Anbieter angezeigt. In deinem Dashboard kannst du stattdessen jederzeit anonym als «Privatanbieter» auftreten.")}
             </p>
           </div>
         )}
         <div className="space-y-1.5">
           <Label htmlFor="guest-auth-email" className="text-sm font-medium text-neutral-700">
-            E-Mail
+            {t("E-Mail")}
           </Label>
           <Input
             id="guest-auth-email"
@@ -184,13 +190,13 @@ export default function GuestAuthGate() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@beispiel.ch"
+            placeholder={t("name@beispiel.ch")}
             className="rounded-xl"
           />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="guest-auth-password" className="text-sm font-medium text-neutral-700">
-            Passwort
+            {t("Passwort")}
           </Label>
           <Input
             id="guest-auth-password"
@@ -198,7 +204,7 @@ export default function GuestAuthGate() {
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={mode === "register" ? "Mindestens 8 Zeichen" : "••••••••"}
+            placeholder={mode === "register" ? t("Mindestens 8 Zeichen") : "••••••••"}
             className="rounded-xl"
           />
         </div>
@@ -211,12 +217,12 @@ export default function GuestAuthGate() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Bitte warten…
+              {t("Bitte warten…")}
             </>
           ) : mode === "login" ? (
-            "Anmelden & veröffentlichen"
+            t("Anmelden & veröffentlichen")
           ) : (
-            "Konto erstellen & veröffentlichen"
+            t("Konto erstellen & veröffentlichen")
           )}
         </Button>
       </form>

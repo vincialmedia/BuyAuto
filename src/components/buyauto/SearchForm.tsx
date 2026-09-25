@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getBrands, getModelsForBrand, getVariantsForBrandModel } from "@/services/listingsService";
+import { useT } from "@/i18n/runtime";
 
 interface SearchFormProps {
   variant?: "default" | "hero";
@@ -42,6 +43,7 @@ function getModeLabel(mode: DealTypeMode): string {
 
 export default function SearchForm({ variant = "default" }: SearchFormProps) {
   const router = useRouter();
+  const t = useT();
   const isHero = variant === "hero";
 
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -244,7 +246,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <Select value={selectedBrand} onValueChange={handleBrandChange} disabled={loadingBrands}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-              <SelectValue placeholder="Marke" />
+              <SelectValue placeholder={t("Marke")} />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
               {brands.map((brand) => (
@@ -257,7 +259,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
           <Select value={selectedModel} onValueChange={handleModelChange} disabled={!selectedBrand || loadingModels}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-              <SelectValue placeholder="Modell" />
+              <SelectValue placeholder={t("Modell")} />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
               {models.map((model) => (
@@ -270,7 +272,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
           <Select value={selectedVariant} onValueChange={setSelectedVariant} disabled={!selectedModel || loadingVariants}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-              <SelectValue placeholder="Ausführung" />
+              <SelectValue placeholder={t("Ausführung")} />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
               {variants.map((v) => (
@@ -283,20 +285,20 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
 
           <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-              <SelectValue placeholder="Jahr" />
+              <SelectValue placeholder={t("Jahr")} />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-neutral-200">
               <SelectItem value="2023" className="font-medium">
-                ab 2023
+                {t("ab 2023")}
               </SelectItem>
               <SelectItem value="2022" className="font-medium">
-                ab 2022
+                {t("ab 2022")}
               </SelectItem>
               <SelectItem value="2020" className="font-medium">
-                ab 2020
+                {t("ab 2020")}
               </SelectItem>
               <SelectItem value="2018" className="font-medium">
-                ab 2018
+                {t("ab 2018")}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -306,7 +308,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
           <div className="space-y-4">
             <div>
               <label className={cn("block text-sm font-semibold mb-3 tracking-wide", labelStyles)}>
-                {sliderConfig.label}: {formatChf(activePriceRange[0] ?? sliderConfig.max)}
+                {t("{label}:", { label: t(sliderConfig.label) })} {formatChf(activePriceRange[0] ?? sliderConfig.max)}
                 {(activePriceRange[0] ?? sliderConfig.max) === sliderConfig.max ? sliderConfig.maxSuffix : ""}
               </label>
 
@@ -349,14 +351,14 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                 onClick={() => handleModeClick("direct_purchase_only")}
                 className={cn(pillBase, dealMode === "direct_purchase_only" ? pillActive : pillInactive)}
               >
-                {dealMode === "direct_purchase_only" ? getModeLabel("direct_purchase_only") : `Nur ${getModeLabel("direct_purchase_only")}`}
+                {dealMode === "direct_purchase_only" ? t(getModeLabel("direct_purchase_only")) : t("Nur Direktkauf")}
               </Button>
               <Button
                 type="button"
                 onClick={() => handleModeClick("leasing_only")}
                 className={cn(pillBase, dealMode === "leasing_only" ? pillActive : pillInactive)}
               >
-                {dealMode === "leasing_only" ? getModeLabel("leasing_only") : `Nur ${getModeLabel("leasing_only")}`}
+                {dealMode === "leasing_only" ? t(getModeLabel("leasing_only")) : t("Nur Leasingangebote")}
               </Button>
               <Button
                 type="button"
@@ -364,13 +366,13 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                 className={cn(pillBase, dealMode === "lease_takeover_only" ? pillActive : pillInactive)}
               >
                 {dealMode === "lease_takeover_only"
-                  ? getModeLabel("lease_takeover_only")
-                  : `Nur ${getModeLabel("lease_takeover_only")}`}
+                  ? t(getModeLabel("lease_takeover_only"))
+                  : t("Nur Leasingübernahmen")}
               </Button>
             </div>
 
             <p className={cn("text-xs font-medium", subTextStyles)}>
-              {dealMode === "all" ? "Suche über alle Deal Types." : `Filter aktiv: ${getModeLabel(dealMode)}.`}
+              {dealMode === "all" ? t("Suche über alle Deal Types.") : t("Filter aktiv: {mode}.", { mode: t(getModeLabel(dealMode)) })}
             </p>
           </div>
         </div>
@@ -389,7 +391,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
             >
               <span className="flex items-center gap-3">
                 <SlidersHorizontal className={cn("h-4 w-4", iconStyles)} />
-                Erweiterte Filter
+                {t("Erweiterte Filter")}
               </span>
               <ChevronDown
                 className={cn("h-4 w-4 transition-transform duration-200", iconStyles, expandedFilters ? "rotate-180" : "")}
@@ -402,23 +404,23 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select value={selectedRestlaufzeit} onValueChange={(v) => setSelectedRestlaufzeit(v as RestlaufzeitOption)}>
                   <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-                    <SelectValue placeholder="Restlaufzeit" />
+                    <SelectValue placeholder={t("Restlaufzeit")} />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-neutral-200">
                     <SelectItem value="" className="font-medium">
-                      Alle
+                      {t("Alle@@term")}
                     </SelectItem>
                     <SelectItem value="0-6" className="font-medium">
-                      {getRestlaufzeitLabel("0-6")}
+                      {t(getRestlaufzeitLabel("0-6"))}
                     </SelectItem>
                     <SelectItem value="7-12" className="font-medium">
-                      {getRestlaufzeitLabel("7-12")}
+                      {t(getRestlaufzeitLabel("7-12"))}
                     </SelectItem>
                     <SelectItem value="13-24" className="font-medium">
-                      {getRestlaufzeitLabel("13-24")}
+                      {t(getRestlaufzeitLabel("13-24"))}
                     </SelectItem>
                     <SelectItem value="24+" className="font-medium">
-                      {getRestlaufzeitLabel("24+")}
+                      {t(getRestlaufzeitLabel("24+"))}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -432,7 +434,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
                     noDeposit ? (isHero ? "ring-2 ring-white/40" : "ring-2 ring-neutral-900/20") : ""
                   )}
                 >
-                  Keine Kaution
+                  {t("Keine Kaution")}
                 </Button>
               </div>
             )}
@@ -440,54 +442,54 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select value={selectedBody} onValueChange={setSelectedBody}>
                 <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-                  <SelectValue placeholder="Karosserie" />
+                  <SelectValue placeholder={t("Karosserie")} />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
                   <SelectItem value="Limousine" className="font-medium">
-                    Limousine
+                    {t("Limousine")}
                   </SelectItem>
                   <SelectItem value="Kombi" className="font-medium">
-                    Kombi
+                    {t("Kombi")}
                   </SelectItem>
                   <SelectItem value="SUV" className="font-medium">
-                    SUV
+                    {t("SUV")}
                   </SelectItem>
                   <SelectItem value="Cabrio" className="font-medium">
-                    Cabrio
+                    {t("Cabrio")}
                   </SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={selectedFuel} onValueChange={setSelectedFuel}>
                 <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-                  <SelectValue placeholder="Antrieb" />
+                  <SelectValue placeholder={t("Antrieb@@fuel")} />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
                   <SelectItem value="Benzin" className="font-medium">
-                    Benzin
+                    {t("Benzin")}
                   </SelectItem>
                   <SelectItem value="Diesel" className="font-medium">
-                    Diesel
+                    {t("Diesel")}
                   </SelectItem>
                   <SelectItem value="Hybrid" className="font-medium">
-                    Hybrid
+                    {t("Hybrid")}
                   </SelectItem>
                   <SelectItem value="Elektro" className="font-medium">
-                    Elektro
+                    {t("Elektro")}
                   </SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={selectedGearbox} onValueChange={setSelectedGearbox}>
                 <SelectTrigger className={cn("h-12 rounded-xl font-medium transition-colors", inputStyles)}>
-                  <SelectValue placeholder="Getriebe" />
+                  <SelectValue placeholder={t("Getriebe")} />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200">
                   <SelectItem value="Automatik" className="font-medium">
-                    Automatik
+                    {t("Automatik")}
                   </SelectItem>
                   <SelectItem value="Manuell" className="font-medium">
-                    Manuell
+                    {t("Manuell")}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -500,7 +502,7 @@ export default function SearchForm({ variant = "default" }: SearchFormProps) {
           className="w-full bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-semibold text-base shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5"
         >
           <Search className="h-4 w-4 mr-3" />
-          Fahrzeug finden
+          {t("Fahrzeug finden")}
         </Button>
       </form>
     </Card>

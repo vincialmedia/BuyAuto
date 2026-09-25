@@ -5,14 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { PREMIUM_BOOST_PRICE, pricingPlans, type Plan } from "@/lib/buyauto/stripe_config";
-import { privatePlanMarketingFeatures } from "@/components/buyauto/pricing/pricingData";
+import { privatePlanMarketingFeatures, translatePlanCopy } from "@/components/buyauto/pricing/pricingData";
 import { PrivatePlanExclusions } from "@/components/buyauto/pricing/PrivatePlanExclusions";
 import { PrivateFeatureMatrix } from "@/components/buyauto/pricing/PrivateFeatureMatrix";
+import { useT } from "@/i18n/runtime";
 
 export function PrivatePricingSection() {
+  const t = useT();
   return (
     <motion.section
-      aria-label="Preise für Privatkunden"
+      aria-label={t("Preise für Privatkunden")}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
@@ -21,11 +23,10 @@ export function PrivatePricingSection() {
     >
       <div className="text-center">
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900">
-          Inserat-Plan auswählen
+          {t("Inserat-Plan auswählen")}
         </h2>
         <p className="mt-3 text-neutral-600 max-w-xl mx-auto">
-          Wähle Laufzeit und Sichtbarkeit. Premium Boost kannst du optional
-          dazunehmen.
+          {t("Wähle Laufzeit und Sichtbarkeit. Premium Boost kannst du optional dazunehmen.")}
         </p>
       </div>
 
@@ -47,7 +48,7 @@ export function PrivatePricingSection() {
                 <div className="absolute -top-3 left-6 z-10">
                   <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-semibold px-3 py-1 shadow-sm">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Beliebt
+                    {t("Beliebt")}
                   </span>
                 </div>
               )}
@@ -67,22 +68,23 @@ export function PrivatePricingSection() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-bold text-neutral-900">
-                        {pricingPlans[planKey].name}
+                        {t(pricingPlans[planKey].name)}
                       </h3>
                       <p className="mt-1 text-sm text-neutral-500">
                         {pricingPlans[planKey].duration_days
-                          ? `${pricingPlans[planKey].duration_days} Tage`
-                          : "Online bis verkauft"}
+                          ? t("{n} Tage", { n: pricingPlans[planKey].duration_days })
+                          : t("Online bis verkauft")}
                       </p>
                       {planKey === "extended" && (
                         <p className="mt-1 text-xs text-neutral-500">
-                          Premium im Wert von CHF {PREMIUM_BOOST_PRICE} inklusive ·
-                          weniger als 60 Rappen pro Tag
+                          {t("Premium im Wert von CHF {price} inklusive · weniger als 60 Rappen pro Tag", {
+                            price: PREMIUM_BOOST_PRICE,
+                          })}
                         </p>
                       )}
                       {planKey === "unlimited" && (
                         <p className="mt-1 text-xs text-neutral-500">
-                          Premium-Wert CHF {PREMIUM_BOOST_PRICE}/Monat dauerhaft inklusive
+                          {t("Premium-Wert CHF {price}/Monat dauerhaft inklusive", { price: PREMIUM_BOOST_PRICE })}
                         </p>
                       )}
                     </div>
@@ -91,7 +93,7 @@ export function PrivatePricingSection() {
                       <div className="text-3xl font-bold tracking-tight text-neutral-900">
                         CHF {pricingPlans[planKey].price}
                       </div>
-                      <div className="text-xs text-neutral-500">einmalig</div>
+                      <div className="text-xs text-neutral-500">{t("einmalig")}</div>
                     </div>
                   </div>
 
@@ -102,7 +104,7 @@ export function PrivatePricingSection() {
                         className="flex items-start gap-2 text-sm text-neutral-700"
                       >
                         <Check className="mt-0.5 h-4 w-4 text-primary flex-shrink-0" />
-                        <span>{feature}</span>
+                        <span>{translatePlanCopy(t, feature)}</span>
                       </div>
                     ))}
                     <PrivatePlanExclusions plan={planKey} />
@@ -120,7 +122,7 @@ export function PrivatePricingSection() {
                       )}
                       variant={isPopular ? "default" : "outline"}
                     >
-                      <Link href={`/inserat-erstellen?plan=${planKey}`}>Inserat erstellen</Link>
+                      <Link href={`/inserat-erstellen?plan=${planKey}`}>{t("Inserat erstellen")}</Link>
                     </Button>
                   </div>
                 </div>
@@ -135,15 +137,15 @@ export function PrivatePricingSection() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-neutral-900">Premium Boost</span>
+                <span className="text-base font-bold text-neutral-900">{t("Premium Boost")}</span>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-                  Zuoberst in der Suche
+                  {t("Zuoberst in der Suche")}
                 </span>
               </div>
               <p className="mt-1 text-sm text-neutral-600">
-                Dein Inserat wird 30 Tage hervorgehoben. In Verlängert und
-                Unlimitiert bereits inklusive – für Standard im Inserat-Flow
-                dazubuchbar.
+                {t(
+                  "Dein Inserat wird 30 Tage hervorgehoben. In Verlängert und Unlimitiert bereits inklusive – für Standard im Inserat-Flow dazubuchbar."
+                )}
               </p>
             </div>
 
@@ -151,7 +153,7 @@ export function PrivatePricingSection() {
               <div className="text-sm font-semibold text-neutral-900">
                 + CHF {PREMIUM_BOOST_PRICE}
               </div>
-              <div className="text-xs text-neutral-500">optional</div>
+              <div className="text-xs text-neutral-500">{t("optional")}</div>
             </div>
           </div>
         </div>

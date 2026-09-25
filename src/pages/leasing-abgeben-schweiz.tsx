@@ -38,6 +38,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { T, useLocale, useT } from "@/i18n/runtime";
+import { absoluteUrl } from "@/i18n/config";
+import { withI18n } from "@/i18n/server";
 
 type LeasingAbgebenPageProps = {
   takeoverListings: Listing[];
@@ -56,7 +59,11 @@ const CTA_LABEL = "Gratis Inserat erstellen";
 // Single source of truth for the FAQ: feeds BOTH the visible accordion and the
 // FAQPage JSON-LD, so the structured data can never drift from the page text.
 // `linkText` must appear verbatim in `a` — it is what the answer is split on to
-// turn that phrase into an internal link without duplicating the copy.
+// turn that phrase into an internal link without duplicating the copy. Both are
+// translated before the split, so each dictionary's `linkText` translation must
+// appear verbatim in its translation of `a` ("@@faq-link" only separates that
+// key from the capitalised "Leasingübernahme" heading; German renders the part
+// before "@@"). `{fee}` is filled in at render time.
 type Faq = { q: string; a: string; href?: string; linkText?: string };
 
 const FAQS: Faq[] = [
@@ -64,7 +71,7 @@ const FAQS: Faq[] = [
     q: "Kann ich mein Leasing einfach zurückgeben?",
     a: "Nein, ein Leasingvertrag ist bindend. Eine vorzeitige Rückgabe ist meist mit sehr hohen Kosten (Vorfälligkeitsentschädigung) verbunden. Die Leasingübernahme ist oft die einzige kostengünstige Alternative.",
     href: "/leasinguebernahme",
-    linkText: "Leasingübernahme",
+    linkText: "Leasingübernahme@@faq-link",
   },
   {
     q: "Wie schnell kann ich mein Leasing abgeben?",
@@ -72,13 +79,13 @@ const FAQS: Faq[] = [
   },
   {
     q: "Was kostet mich die Leasingübernahme?",
-    a: `In der Regel nur die Umschreibegebühr deiner Leasingbank – typischerweise rund CHF ${TRANSFER_FEE_CHF}. Die verbleibenden Raten zahlt ab der Umschreibung dein Nachfolger. Das Inserat auf BuyAuto ist gratis.`,
+    a: "In der Regel nur die Umschreibegebühr deiner Leasingbank – typischerweise rund CHF {fee}. Die verbleibenden Raten zahlt ab der Umschreibung dein Nachfolger. Das Inserat auf BuyAuto ist gratis.",
   },
   {
     q: "Was passiert, wenn ich nicht mehr zahlen kann?",
     a: "Kontaktiere sofort deine Leasingbank. Eine Leasingübernahme kann helfen, aus den Zahlungsverpflichtungen herauszukommen, bevor Schulden entstehen.",
     href: "/leasinguebernahme",
-    linkText: "Leasingübernahme",
+    linkText: "Leasingübernahme@@faq-link",
   },
   {
     q: "Wer trägt die Kosten bei einer Vertragsübernahme?",
@@ -107,13 +114,14 @@ function CtaButton({
   className?: string;
   children?: React.ReactNode;
 }) {
+  const t = useT();
   return (
     <Button asChild size="lg" className={className}>
       <Link
         href={CTA_HREF}
         onClick={() => trackEvent("cta_click", { cta_location: location, page: "leasing-abgeben-schweiz" })}
       >
-        {children}
+        {typeof children === "string" ? t(children) : children}
         <ArrowRight className="w-5 h-5 ml-2" />
       </Link>
     </Button>
@@ -121,6 +129,8 @@ function CtaButton({
 }
 
 export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgebenPageProps) {
+  const t = useT();
+  const locale = useLocale();
   const [months, setMonths] = useState(24);
   const [monthlyRate, setMonthlyRate] = useState(450);
   const [showStickyCTA, setShowStickyCTA] = useState(false);
@@ -144,19 +154,21 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
   return (
     <>
       <Head>
-        <title>Leasing abgeben Schweiz 2026: legal & ohne Verlust raus | BuyAuto</title>
+        <title>{t("Leasing abgeben Schweiz 2026: legal & ohne Verlust raus | BuyAuto")}</title>
         <meta
           name="description"
-          content="Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen – und warum die Leasingübernahme oft die günstigste Lösung ist."
+          content={t(
+            "Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen – und warum die Leasingübernahme oft die günstigste Lösung ist.",
+          )}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/leasing-abgeben-schweiz" />
+        <link rel="canonical" href={absoluteUrl("/leasing-abgeben-schweiz", locale)} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "Leasing abgeben ohne teure Kündigung.",
+              headline: t("Leasing abgeben ohne teure Kündigung."),
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -164,7 +176,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
               dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/leasing-abgeben-schweiz",
+              mainEntityOfPage: absoluteUrl("/leasing-abgeben-schweiz", locale),
             }),
           }}
         />
@@ -176,18 +188,21 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
               "@type": "FAQPage",
               mainEntity: FAQS.map((faq) => ({
                 "@type": "Question",
-                name: faq.q,
-                acceptedAnswer: { "@type": "Answer", text: faq.a },
+                name: t(faq.q),
+                acceptedAnswer: { "@type": "Answer", text: t(faq.a, { fee: TRANSFER_FEE_CHF }) },
               })),
             }),
           }}
         />
 
         {/* Open Graph */}
-        <meta property="og:title" content="Leasing abgeben Schweiz 2026: legal & ohne Verlust raus" />
-        <meta property="og:description" content="Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen." />
+        <meta property="og:title" content={t("Leasing abgeben Schweiz 2026: legal & ohne Verlust raus")} />
+        <meta
+          property="og:description"
+          content={t("Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen.")}
+        />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/leasing-abgeben-schweiz" />
+        <meta property="og:url" content={absoluteUrl("/leasing-abgeben-schweiz", locale)} />
       </Head>
 
       <div className="bg-white">
@@ -201,8 +216,8 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
             <div className="max-w-6xl mx-auto px-4 py-3">
               <div className="flex items-center justify-between gap-4">
                 <div className="hidden md:block">
-                  <p className="text-white font-bold">Bereit, dein Leasing abzugeben?</p>
-                  <p className="text-white/60 text-sm">Gratis inserieren · 60 Tage online</p>
+                  <p className="text-white font-bold">{t("Bereit, dein Leasing abzugeben?")}</p>
+                  <p className="text-white/60 text-sm">{t("Gratis inserieren · 60 Tage online")}</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                   <CtaButton
@@ -212,7 +227,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                   <button
                     onClick={() => setStickyDismissed(true)}
                     className="md:hidden p-2 text-white/70 hover:bg-white/10 rounded-lg transition-colors shrink-0"
-                    aria-label="Schliessen"
+                    aria-label={t("Schliessen")}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -227,9 +242,9 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3">
           <Breadcrumbs
             items={[
-              { name: "Home", href: "/" },
-              { name: "Leasingübernahme", href: "/leasinguebernahme" },
-              { name: "Leasing abgeben", href: "/leasing-abgeben-schweiz" },
+              { name: t("Home"), href: "/" },
+              { name: t("Leasingübernahme"), href: "/leasinguebernahme" },
+              { name: t("Leasing abgeben"), href: "/leasing-abgeben-schweiz" },
             ]}
           />
         </div>
@@ -249,13 +264,17 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
               {/* Left: offer */}
               <div>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-neutral-900 tracking-tight leading-[1.05] mb-5">
-                  Leasing abgeben –<br />
-                  <span className="text-primary">ohne teure Kündigung.</span>
+                  <T
+                    k="Leasing abgeben –<0/><1>ohne teure Kündigung.</1>"
+                    c={[<br key="0" />, <span key="1" className="text-primary" />]}
+                  />
                 </h1>
 
                 <p className="text-lg md:text-xl text-neutral-600 leading-relaxed mb-7">
-                  Übergib deinen Leasingvertrag an eine Nachfolgerin oder einen Nachfolger: Sie übernehmen die
-                  Restraten, du zahlst nur die Umschreibegebühr von typischerweise rund CHF {TRANSFER_FEE_CHF}.
+                  {t(
+                    "Übergib deinen Leasingvertrag an eine Nachfolgerin oder einen Nachfolger: Sie übernehmen die Restraten, du zahlst nur die Umschreibegebühr von typischerweise rund CHF {fee}.",
+                    { fee: TRANSFER_FEE_CHF },
+                  )}
                 </p>
 
                 <CtaButton
@@ -263,7 +282,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                   className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 px-8 py-7 text-lg font-bold rounded-2xl"
                 />
                 <p className="mt-3 text-sm text-neutral-500">
-                  Gratis · 60 Tage online · Login erst beim Veröffentlichen
+                  {t("Gratis · 60 Tage online · Login erst beim Veröffentlichen")}
                 </p>
 
                 <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-neutral-700">
@@ -274,7 +293,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                   ].map((item) => (
                     <li key={item} className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-green-600 shrink-0" />
-                      {item}
+                      {t(item)}
                     </li>
                   ))}
                 </ul>
@@ -286,16 +305,16 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                   below it. */}
               <div id="calculator" className="scroll-mt-24">
                 <div className="bg-white rounded-3xl border border-neutral-200 shadow-xl shadow-neutral-900/5 p-6 md:p-8">
-                  <h2 className="text-xl font-black text-neutral-900 mb-1">Was kostet dich der Ausstieg?</h2>
+                  <h2 className="text-xl font-black text-neutral-900 mb-1">{t("Was kostet dich der Ausstieg?")}</h2>
                   <p className="text-sm text-neutral-500 mb-6">
-                    Stell deinen Vertrag ein – transparent, ohne Schönrechnen.
+                    {t("Stell deinen Vertrag ein – transparent, ohne Schönrechnen.")}
                   </p>
 
                   <div className="space-y-5 mb-6">
                     <div>
                       <div className="flex items-baseline justify-between mb-2">
-                        <label className="text-sm font-semibold text-neutral-700">Restlaufzeit</label>
-                        <span className="text-lg font-black text-neutral-900">{months} Monate</span>
+                        <label className="text-sm font-semibold text-neutral-700">{t("Restlaufzeit")}</label>
+                        <span className="text-lg font-black text-neutral-900">{t("{months} Monate", { months })}</span>
                       </div>
                       <Slider
                         value={[months]}
@@ -303,12 +322,12 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                         min={6}
                         max={48}
                         step={6}
-                        aria-label="Restlaufzeit in Monaten"
+                        aria-label={t("Restlaufzeit in Monaten")}
                       />
                     </div>
                     <div>
                       <div className="flex items-baseline justify-between mb-2">
-                        <label className="text-sm font-semibold text-neutral-700">Monatsrate</label>
+                        <label className="text-sm font-semibold text-neutral-700">{t("Monatsrate")}</label>
                         <span className="text-lg font-black text-neutral-900">CHF {monthlyRate}</span>
                       </div>
                       <Slider
@@ -317,7 +336,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                         min={150}
                         max={1500}
                         step={50}
-                        aria-label="Monatsrate in Franken"
+                        aria-label={t("Monatsrate in Franken")}
                       />
                     </div>
                   </div>
@@ -325,7 +344,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                   {/* The honest anchor both options are measured against */}
                   <div className="rounded-2xl bg-neutral-900 p-5 text-center mb-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-1">
-                      Restraten, die dein Nachfolger übernimmt
+                      {t("Restraten, die dein Nachfolger übernimmt")}
                     </p>
                     <p className="text-3xl md:text-4xl font-black text-white">
                       {/* Deterministic formatting: toLocaleString("de-CH") uses
@@ -340,18 +359,18 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                     <div className="rounded-2xl border-2 border-green-300 bg-green-50 p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-                        <span className="text-xs font-bold text-neutral-900">Übernahme</span>
+                        <span className="text-xs font-bold text-neutral-900">{t("Übernahme")}</span>
                       </div>
                       <p className="text-xl font-black text-green-700">~ CHF {TRANSFER_FEE_CHF}</p>
-                      <p className="text-xs text-neutral-600 mt-0.5">Umschreibegebühr</p>
+                      <p className="text-xs text-neutral-600 mt-0.5">{t("Umschreibegebühr")}</p>
                     </div>
                     <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <XCircle className="w-4 h-4 text-red-600 shrink-0" />
-                        <span className="text-xs font-bold text-neutral-900">Kündigung</span>
+                        <span className="text-xs font-bold text-neutral-900">{t("Kündigung")}</span>
                       </div>
-                      <p className="text-xl font-black text-red-600">Mehrere tausend</p>
-                      <p className="text-xs text-neutral-600 mt-0.5">je nach Bank & Vertrag</p>
+                      <p className="text-xl font-black text-red-600">{t("Mehrere tausend")}</p>
+                      <p className="text-xs text-neutral-600 mt-0.5">{t("je nach Bank & Vertrag")}</p>
                     </div>
                   </div>
 
@@ -360,8 +379,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                     className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 rounded-2xl"
                   />
                   <p className="mt-3 text-xs text-neutral-500 text-center">
-                    Richtwerte zur Orientierung. Massgebend sind dein Leasingvertrag und die Konditionen deiner
-                    Leasingbank.
+                    {t("Richtwerte zur Orientierung. Massgebend sind dein Leasingvertrag und die Konditionen deiner Leasingbank.")}
                   </p>
                 </div>
               </div>
@@ -375,12 +393,12 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12 max-w-3xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-4">
-                Deine 3 Optionen im Vergleich
+                {t("Deine 3 Optionen im Vergleich")}
               </h2>
               <p className="text-neutral-600 text-lg leading-relaxed">
-                Du hast drei Wege aus dem Leasing: die Übernahme durch eine Nachfolgerin oder einen Nachfolger, die
-                vorzeitige Kündigung (teuer) oder den Verkauf mit Ablösung. Am günstigsten ist meist die
-                Leasingübernahme.
+                {t(
+                  "Du hast drei Wege aus dem Leasing: die Übernahme durch eine Nachfolgerin oder einen Nachfolger, die vorzeitige Kündigung (teuer) oder den Verkauf mit Ablösung. Am günstigsten ist meist die Leasingübernahme.",
+                )}
               </p>
             </div>
 
@@ -392,9 +410,9 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                     <div className="bg-red-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
                       <XCircle className="w-5 h-5" />
                     </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Vorzeitige Kündigung</h3>
+                    <h3 className="text-xl font-black text-neutral-900 mb-2">{t("Vorzeitige Kündigung")}</h3>
                     <div className="text-xs font-bold text-red-600 bg-red-200 inline-block px-3 py-1 rounded-full">
-                      TEUERSTE OPTION
+                      {t("TEUERSTE OPTION")}
                     </div>
                   </div>
                   <div className="p-6 bg-white">
@@ -407,11 +425,11 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                       ].map((item) => (
                         <li key={item} className="flex items-start gap-3">
                           <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0" />
-                          <span className="text-neutral-700 text-sm">{item}</span>
+                          <span className="text-neutral-700 text-sm">{t(item)}</span>
                         </li>
                       ))}
                     </ul>
-                    <p className="text-sm text-neutral-500 italic mt-5">Fast immer die teuerste Lösung</p>
+                    <p className="text-sm text-neutral-500 italic mt-5">{t("Fast immer die teuerste Lösung")}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -423,9 +441,9 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                     <div className="bg-orange-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
                       <AlertTriangle className="w-5 h-5" />
                     </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Auto verkaufen</h3>
+                    <h3 className="text-xl font-black text-neutral-900 mb-2">{t("Auto verkaufen")}</h3>
                     <div className="text-xs font-bold text-orange-600 bg-orange-200 inline-block px-3 py-1 rounded-full">
-                      UNSICHER
+                      {t("UNSICHER")}
                     </div>
                   </div>
                   <div className="p-6 bg-white">
@@ -438,11 +456,11 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                       ].map((item) => (
                         <li key={item} className="flex items-start gap-3">
                           <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-2 shrink-0" />
-                          <span className="text-neutral-700 text-sm">{item}</span>
+                          <span className="text-neutral-700 text-sm">{t(item)}</span>
                         </li>
                       ))}
                     </ul>
-                    <p className="text-sm text-neutral-500 italic mt-5">Nur bei hohem Marktwert sinnvoll</p>
+                    <p className="text-sm text-neutral-500 italic mt-5">{t("Nur bei hohem Marktwert sinnvoll")}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -450,16 +468,16 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
               {/* Option 3: Transfer — the recommended path, visually dominant */}
               <Card className="border-2 border-green-400 rounded-3xl overflow-hidden shadow-xl relative lg:-mt-3">
                 <div className="absolute top-4 right-4 z-10">
-                  <div className="bg-green-600 text-white text-xs font-black px-3 py-1.5 rounded-full">EMPFOHLEN</div>
+                  <div className="bg-green-600 text-white text-xs font-black px-3 py-1.5 rounded-full">{t("EMPFOHLEN")}</div>
                 </div>
                 <CardContent className="p-0">
                   <div className="bg-green-50 p-6">
                     <div className="bg-green-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
                       <BadgeCheck className="w-5 h-5" />
                     </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Leasingübernahme</h3>
+                    <h3 className="text-xl font-black text-neutral-900 mb-2">{t("Leasingübernahme")}</h3>
                     <div className="text-xs font-bold text-green-700 bg-green-200 inline-block px-3 py-1 rounded-full">
-                      BESTE LÖSUNG
+                      {t("BESTE LÖSUNG")}
                     </div>
                   </div>
                   <div className="p-6 bg-white">
@@ -472,7 +490,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                       ].map((item) => (
                         <li key={item} className="flex items-start gap-3">
                           <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                          <span className="text-neutral-700 text-sm font-medium">{item}</span>
+                          <span className="text-neutral-700 text-sm font-medium">{t(item)}</span>
                         </li>
                       ))}
                     </ul>
@@ -486,11 +504,10 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
             </div>
 
             <p className="text-center text-neutral-600 mt-8">
-              Wie die Übernahme im Detail funktioniert, liest du unter{" "}
-              <Link href="/leasinguebernahme" className="text-primary font-semibold hover:underline">
-                Leasingübernahme
-              </Link>
-              .
+              <T
+                k="Wie die Übernahme im Detail funktioniert, liest du unter <0>Leasingübernahme</0>."
+                c={[<Link key="0" href="/leasinguebernahme" className="text-primary font-semibold hover:underline" />]}
+              />
             </p>
           </div>
         </section>
@@ -500,12 +517,12 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
         <section id="ablauf" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-4">So funktioniert&apos;s</h2>
+              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-4">{t("So funktioniert's")}</h2>
               <p className="text-neutral-600 text-lg">
-                In 5 Schritten zum Ziel –{" "}
-                <Link href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline">
-                  so wird der Leasingvertrag übertragen
-                </Link>
+                <T
+                  k="In 5 Schritten zum Ziel – <0>so wird der Leasingvertrag übertragen</0>"
+                  c={[<Link key="0" href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline" />]}
+                />
               </p>
             </div>
 
@@ -529,8 +546,8 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                       </span>
                       <IconComponent className="w-5 h-5 text-primary" />
                     </div>
-                    <h3 className="text-lg font-black text-neutral-900 mb-2">{item.title}</h3>
-                    <p className="text-neutral-600 text-sm leading-relaxed">{item.desc}</p>
+                    <h3 className="text-lg font-black text-neutral-900 mb-2">{t(item.title)}</h3>
+                    <p className="text-neutral-600 text-sm leading-relaxed">{t(item.desc)}</p>
                   </li>
                 );
               })}
@@ -553,13 +570,13 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                   <Users className="w-4 h-4" />
-                  Live auf BuyAuto
+                  {t("Live auf BuyAuto")}
                 </div>
                 <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-4">
-                  Diese Fahrer geben gerade ihr Leasing ab
+                  {t("Diese Fahrer geben gerade ihr Leasing ab")}
                 </h2>
                 <p className="text-neutral-600 text-lg max-w-2xl mx-auto">
-                  Echte, aktuelle Inserate – so präsentiert sich dein Leasing möglichen Übernehmern.
+                  {t("Echte, aktuelle Inserate – so präsentiert sich dein Leasing möglichen Übernehmern.")}
                 </p>
               </div>
 
@@ -584,8 +601,8 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
         <section id="warum" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-3">Warum Leasing abgeben?</h2>
-              <p className="text-neutral-600 text-lg">Die häufigsten Gründe in der Schweiz</p>
+              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-3">{t("Warum Leasing abgeben?")}</h2>
+              <p className="text-neutral-600 text-lg">{t("Die häufigsten Gründe in der Schweiz")}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -604,8 +621,8 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                       <IconComponent className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-neutral-900 mb-1">{item.title}</h3>
-                      <p className="text-neutral-600 text-sm leading-relaxed">{item.desc}</p>
+                      <h3 className="font-bold text-neutral-900 mb-1">{t(item.title)}</h3>
+                      <p className="text-neutral-600 text-sm leading-relaxed">{t(item.desc)}</p>
                     </div>
                   </div>
                 );
@@ -616,11 +633,11 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
               <div className="flex items-start gap-4">
                 <AlertTriangle className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-black text-neutral-900 mb-1">Wichtig zu wissen:</p>
+                  <p className="font-black text-neutral-900 mb-1">{t("Wichtig zu wissen:")}</p>
                   <p className="text-neutral-700 leading-relaxed">
-                    Ein Leasingvertrag ist rechtlich bindend – einfach zurückgeben ist nicht möglich. Aber es gibt
-                    legale, kostengünstige Alternativen: Die wichtigste ist die Übertragung an eine Nachfolgerin
-                    oder einen Nachfolger – wie das geht, zeigt dieser Leitfaden Schritt für Schritt.
+                    {t(
+                      "Ein Leasingvertrag ist rechtlich bindend – einfach zurückgeben ist nicht möglich. Aber es gibt legale, kostengünstige Alternativen: Die wichtigste ist die Übertragung an eine Nachfolgerin oder einen Nachfolger – wie das geht, zeigt dieser Leitfaden Schritt für Schritt.",
+                    )}
                   </p>
                 </div>
               </div>
@@ -632,8 +649,8 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
         <section id="faq" className="py-16 px-4 bg-white scroll-mt-20">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-3">Häufige Fragen</h2>
-              <p className="text-neutral-600 text-lg">Alles, was du wissen musst</p>
+              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-3">{t("Häufige Fragen")}</h2>
+              <p className="text-neutral-600 text-lg">{t("Alles, was du wissen musst")}</p>
             </div>
 
             <Accordion type="single" collapsible className="w-full space-y-3">
@@ -644,19 +661,19 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                   className="bg-neutral-50 rounded-2xl border border-neutral-200 px-6 data-[state=open]:bg-white data-[state=open]:shadow-md transition-all"
                 >
                   <AccordionTrigger className="text-left font-bold text-neutral-900 hover:no-underline py-5">
-                    {faq.q}
+                    {t(faq.q)}
                   </AccordionTrigger>
                   <AccordionContent className="text-neutral-600 leading-relaxed pb-5 text-base">
                     {faq.href ? (
                       <>
-                        {faq.a.split(faq.linkText)[0]}
+                        {t(faq.a).split(t(faq.linkText))[0]}
                         <Link href={faq.href} className="text-primary font-semibold hover:underline">
-                          {faq.linkText}
+                          {t(faq.linkText)}
                         </Link>
-                        {faq.a.split(faq.linkText)[1]}
+                        {t(faq.a).split(t(faq.linkText))[1]}
                       </>
                     ) : (
-                      faq.a
+                      t(faq.a, { fee: TRANSFER_FEE_CHF })
                     )}
                   </AccordionContent>
                 </AccordionItem>
@@ -664,7 +681,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
             </Accordion>
 
             <p className="text-center text-sm text-neutral-400 mt-8">
-              Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
+              {t("Aktualisiert am {date}", { date: formatSwissDate(LAST_UPDATED_ISO) })}
             </p>
           </div>
         </section>
@@ -678,36 +695,37 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
 
           <div className="max-w-3xl mx-auto text-center relative z-10">
             <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-5">
-              Gib dein Leasing ab –<br />
-              <span className="text-primary">legal, schnell & günstig</span>
+              <T
+                k="Gib dein Leasing ab –<0/><1>legal, schnell & günstig</1>"
+                c={[<br key="0" />, <span key="1" className="text-primary" />]}
+              />
             </h2>
             <p className="text-neutral-300 text-lg leading-relaxed mb-8">
-              Die Leasingübernahme ist für die meisten Fahrer die beste Lösung. Keine versteckten Kosten, keine
-              Komplikationen.
+              {t("Die Leasingübernahme ist für die meisten Fahrer die beste Lösung. Keine versteckten Kosten, keine Komplikationen.")}
             </p>
             <CtaButton
               location="final"
               className="w-full sm:w-auto h-16 px-10 text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/30"
             />
             <p className="mt-4 text-sm text-neutral-400">
-              Gratis · 60 Tage online ·{" "}
-              <Link href="/leasinguebernahme" className="text-neutral-300 underline hover:text-white">
-                Mehr über die Leasingübernahme
-              </Link>
+              <T
+                k="Gratis · 60 Tage online · <0>Mehr über die Leasingübernahme</0>"
+                c={[<Link key="0" href="/leasinguebernahme" className="text-neutral-300 underline hover:text-white" />]}
+              />
             </p>
 
             <div className="pt-12 flex flex-wrap items-center justify-center gap-8 text-neutral-400 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-400" />
-                <span>100% legal</span>
+                <span>{t("100% legal")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-green-400" />
-                <span>Sicher & geprüft</span>
+                <span>{t("Sicher & geprüft")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-green-400" />
-                <span>In wenigen Tagen</span>
+                <span>{t("In wenigen Tagen")}</span>
               </div>
             </div>
           </div>
@@ -721,14 +739,16 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
   );
 }
 
-export const getStaticProps: GetStaticProps<LeasingAbgebenPageProps> = async () => {
+export const getStaticProps: GetStaticProps<LeasingAbgebenPageProps> = async (context) => {
+  // ModernListingCard and Breadcrumbs translate from the always-loaded cards/common.
+  const i18n = await withI18n(context.locale, ["pages/leasing-abgeben-schweiz"]);
   try {
     const results = await searchListings({ dealType: "lease_takeover", sort: "dateDesc" });
     // Newest three takeovers; strip undefined fields so Next can serialize.
     const takeoverListings = JSON.parse(JSON.stringify(results.items.slice(0, 3))) as Listing[];
-    return { props: { takeoverListings }, revalidate: 3600 };
+    return { props: { takeoverListings, ...i18n }, revalidate: 3600 };
   } catch (error) {
     console.error("Leasing abgeben landing: takeover fetch failed:", error);
-    return { props: { takeoverListings: [] }, revalidate: 3600 };
+    return { props: { takeoverListings: [], ...i18n }, revalidate: 3600 };
   }
 };

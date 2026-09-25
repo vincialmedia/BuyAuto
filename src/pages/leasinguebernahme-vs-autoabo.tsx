@@ -30,6 +30,11 @@ import {
 } from "@/components/ui/accordion";
 import Image from "next/image";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
+import { useT, T, useLocale } from "@/i18n/runtime";
+import { absoluteUrl } from "@/i18n/config";
+import { staticI18nProps } from "@/i18n/server";
+
+export const getStaticProps = staticI18nProps(["pages/leasinguebernahme-vs-autoabo"]);
 
 // Dynamically import heavy interactive components
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -44,6 +49,8 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-vs-autoabo"];
 
 export default function LeasingubernahmeVsAutoAboPage() {
+  const t = useT();
+  const locale = useLocale();
   const [showStickyCTA, setShowStickyCTA] = React.useState(false);
 
   React.useEffect(() => {
@@ -66,19 +73,19 @@ export default function LeasingubernahmeVsAutoAboPage() {
   return (
     <>
       <Head>
-        <title>Leasingübernahme vs. Auto-Abo – Der grosse Vergleich | BuyAuto</title>
+        <title>{t("Leasingübernahme vs. Auto-Abo – Der grosse Vergleich | BuyAuto")}</title>
         <meta
           name="description"
-          content="Leasingübernahme oder Auto-Abo? Vergleichen Sie Kosten, Flexibilität und Vorteile beider Modelle für Ihre ideale Mobilitätslösung."
+          content={t("Leasingübernahme oder Auto-Abo? Vergleichen Sie Kosten, Flexibilität und Vorteile beider Modelle für Ihre ideale Mobilitätslösung.")}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
+        <link rel="canonical" href={absoluteUrl("/leasinguebernahme-vs-autoabo", locale)} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "Leasingübernahme vs. Auto-Abo",
+              headline: t("Leasingübernahme vs. Auto-Abo"),
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -86,7 +93,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
               dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme-vs-autoabo",
+              mainEntityOfPage: absoluteUrl("/leasinguebernahme-vs-autoabo", locale),
             }),
           }}
         />
@@ -99,50 +106,50 @@ export default function LeasingubernahmeVsAutoAboPage() {
               mainEntity: [
                 {
                   "@type": "Question",
-                  name: "Was ist günstiger: Leasingübernahme oder Auto-Abo?",
+                  name: t("Was ist günstiger: Leasingübernahme oder Auto-Abo?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Eine Leasingübernahme ist in der Regel 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und oft von einer bereits geleisteten Anzahlung profitieren.",
+                    text: t("Eine Leasingübernahme ist in der Regel 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und oft von einer bereits geleisteten Anzahlung profitieren."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Welche Option bietet mehr Flexibilität?",
+                  name: t("Welche Option bietet mehr Flexibilität?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ein Auto-Abo bietet deutlich mehr Flexibilität mit monatlicher Kündigungsfrist. Eine Leasingübernahme bindet Sie für die Restlaufzeit (meist 6-24 Monate).",
+                    text: t("Ein Auto-Abo bietet deutlich mehr Flexibilität mit monatlicher Kündigungsfrist. Eine Leasingübernahme bindet Sie für die Restlaufzeit (meist 6-24 Monate)."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Brauche ich eine Anzahlung bei einem Auto-Abo?",
+                  name: t("Brauche ich eine Anzahlung bei einem Auto-Abo?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Nein, Auto-Abos erfordern keine Anzahlung. Sie zahlen nur die monatliche All-Inclusive-Rate. Bei einer Leasingübernahme kann eine kleine Anzahlung (0-2'000 CHF) anfallen.",
+                    text: t("Nein, Auto-Abos erfordern keine Anzahlung. Sie zahlen nur die monatliche All-Inclusive-Rate. Bei einer Leasingübernahme kann eine kleine Anzahlung (0-2'000 CHF) anfallen."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Welche versteckten Kosten gibt es?",
+                  name: t("Welche versteckten Kosten gibt es?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Bei Leasingübernahme: Versicherung, Service, Steuern separat. Bei Auto-Abo: Alles inklusive, nur Tanken/Laden extra. Beide: Kilometerlimit-Überschreitungen kosten extra.",
+                    text: t("Bei Leasingübernahme: Versicherung, Service, Steuern separat. Bei Auto-Abo: Alles inklusive, nur Tanken/Laden extra. Beide: Kilometerlimit-Überschreitungen kosten extra."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Kann ich beim Auto-Abo das Fahrzeug wechseln?",
+                  name: t("Kann ich beim Auto-Abo das Fahrzeug wechseln?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja, viele Auto-Abo-Anbieter erlauben nach einer Mindestlaufzeit (oft 6-12 Monate) einen Fahrzeugwechsel. Bei Leasingübernahme ist ein Wechsel nicht möglich.",
+                    text: t("Ja, viele Auto-Abo-Anbieter erlauben nach einer Mindestlaufzeit (oft 6-12 Monate) einen Fahrzeugwechsel. Bei Leasingübernahme ist ein Wechsel nicht möglich."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Für wen ist eine Leasingübernahme die bessere Wahl?",
+                  name: t("Für wen ist eine Leasingübernahme die bessere Wahl?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ideal für kostenbewusste Personen mit mittelfristigem Bedarf (6-24 Monate), die bereit sind, Versicherung und Service selbst zu organisieren und Wert auf Kostenersparnis legen.",
+                    text: t("Ideal für kostenbewusste Personen mit mittelfristigem Bedarf (6-24 Monate), die bereit sind, Versicherung und Service selbst zu organisieren und Wert auf Kostenersparnis legen."),
                   },
                 },
               ],
@@ -151,18 +158,18 @@ export default function LeasingubernahmeVsAutoAboPage() {
         />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingübernahme vs. Auto-Abo – Der grosse Vergleich" />
-        <meta property="og:description" content="Vergleichen Sie Leasingübernahme und Auto-Abo: Kosten, Flexibilität und beste Option für Sie." />
+        <meta property="og:title" content={t("Leasingübernahme vs. Auto-Abo – Der grosse Vergleich")} />
+        <meta property="og:description" content={t("Vergleichen Sie Leasingübernahme und Auto-Abo: Kosten, Flexibilität und beste Option für Sie.")} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
+        <meta property="og:url" content={absoluteUrl("/leasinguebernahme-vs-autoabo", locale)} />
       </Head>
 
       {/* Schema-only: hero layout has no room for a visible crumb bar. */}
       <BreadcrumbJsonLd
         items={[
-          { name: "Home", href: "/" },
-          { name: "Leasingübernahme", href: "/leasinguebernahme" },
-          { name: "Übernahme vs. Auto-Abo", href: "/leasinguebernahme-vs-autoabo" },
+          { name: t("Home"), href: "/" },
+          { name: t("Leasingübernahme"), href: "/leasinguebernahme" },
+          { name: t("Übernahme vs. Auto-Abo"), href: "/leasinguebernahme-vs-autoabo" },
         ]}
       />
 
@@ -179,10 +186,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="hidden md:block">
                   <p className="text-white font-bold text-lg">
-                    Finden Sie Ihre perfekte Leasingübernahme
+                    {t("Finden Sie Ihre perfekte Leasingübernahme")}
                   </p>
                   <p className="text-white/90 text-sm">
-                    Vergleichen und sparen Sie bis zu 30%
+                    {t("Vergleichen und sparen Sie bis zu 30%")}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
@@ -193,7 +200,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                   >
                     <Link href="/suche">
                       <Search className="w-5 h-5 mr-2" />
-                      Jetzt Angebote durchsuchen
+                      {t("Jetzt Angebote durchsuchen")}
                     </Link>
                   </Button>
                   <Button
@@ -202,7 +209,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     onClick={() => setShowStickyCTA(false)}
                     className="text-white hover:bg-white/20 md:hidden h-12 w-12 rounded-xl"
                   >
-                    <span className="sr-only">Schliessen</span>
+                    <span className="sr-only">{t("Schliessen")}</span>
                     ✕
                   </Button>
                 </div>
@@ -217,7 +224,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
           <div className="absolute inset-0">
             <Image
               src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=2400&q=80"
-              alt="Leasingübernahme vs Auto-Abo"
+              alt={t("Leasingübernahme vs Auto-Abo")}
               fill
               className="object-cover"
               priority
@@ -239,19 +246,16 @@ export default function LeasingubernahmeVsAutoAboPage() {
               <div className="max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <FileCheck className="w-4 h-4" />
-                  Detaillierter Vergleich · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
+                  {t("Detaillierter Vergleich · Aktualisiert am {date}", { date: formatSwissDate(LAST_UPDATED_ISO) })}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
-                  Leasingübernahme vs. Auto-Abo
+                  {t("Leasingübernahme vs. Auto-Abo")}
                 </h1>
                 <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Welches Modell passt zu dir?
+                  {t("Welches Modell passt zu dir?")}
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Die Leasingübernahme ist meist günstiger: Du übernimmst einen laufenden Vertrag für dessen
-                  Restlaufzeit und zahlst Versicherung und Service separat – auf 12 Monate rund 6'000–12'000 CHF
-                  Gesamtkosten. Das Auto-Abo kostet mit 7'200–14'400 CHF mehr, weil alles im Fixpreis steckt,
-                  ist dafür monatlich kündbar. Faustregel: Übernahme fürs Budget, Abo für maximale Flexibilität.
+                  {t("Die Leasingübernahme ist meist günstiger: Du übernimmst einen laufenden Vertrag für dessen Restlaufzeit und zahlst Versicherung und Service separat – auf 12 Monate rund 6'000–12'000 CHF Gesamtkosten. Das Auto-Abo kostet mit 7'200–14'400 CHF mehr, weil alles im Fixpreis steckt, ist dafür monatlich kündbar. Faustregel: Übernahme fürs Budget, Abo für maximale Flexibilität.")}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -261,7 +265,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
                   >
                     <Link href="/suche">
-                      Leasingübernahmen entdecken
+                      {t("Leasingübernahmen entdecken")}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
@@ -272,7 +276,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl bg-transparent"
                   >
                     <Link href="/inserat-erstellen">
-                      Inserat erstellen
+                      {t("Inserat erstellen")}
                     </Link>
                   </Button>
                 </div>
@@ -286,19 +290,24 @@ export default function LeasingubernahmeVsAutoAboPage() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-8">
               <Info className="w-5 h-5 text-primary" />
-              <span className="font-bold text-neutral-900">Kurz gesagt</span>
+              <span className="font-bold text-neutral-900">{t("Kurz gesagt")}</span>
             </div>
             <h2 className="text-4xl font-bold text-neutral-900 mb-8 tracking-tight">
-              Der Hauptunterschied
+              {t("Der Hauptunterschied")}
             </h2>
             
             <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/20 p-8 md:p-10 rounded-3xl shadow-lg text-left">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Bei einer <strong>Leasingübernahme</strong> übernehmen Sie einen bestehenden Vertrag mit fester Laufzeit und oft günstigen Konditionen. Ein <strong>Auto-Abo</strong> bietet maximale Flexibilität mit monatlicher Kündbarkeit und All-Inclusive-Service.
+                <T
+                  k="Bei einer <0>Leasingübernahme</0> übernehmen Sie einen bestehenden Vertrag mit fester Laufzeit und oft günstigen Konditionen. Ein <1>Auto-Abo</1> bietet maximale Flexibilität mit monatlicher Kündbarkeit und All-Inclusive-Service."
+                  c={[<strong key="0" />, <strong key="1" />]}
+                />
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
-                <strong>Leasingübernahme:</strong> Kosteneffizient, mittelfristige Bindung<br/>
-                <strong>Auto-Abo:</strong> Maximale Flexibilität, höhere Kosten
+                <T
+                  k="<0>Leasingübernahme:</0> Kosteneffizient, mittelfristige Bindung<1/><2>Auto-Abo:</2> Maximale Flexibilität, höhere Kosten"
+                  c={[<strong key="0" />, <br key="1" />, <strong key="2" />]}
+                />
               </p>
             </div>
           </div>
@@ -307,7 +316,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
         {/* TOC SECTION */}
         <section className="py-16 px-4 bg-neutral-50">
           <div className="max-w-4xl mx-auto text-center">
-            <h3 className="font-bold text-neutral-900 mb-8 text-2xl">Inhaltsverzeichnis</h3>
+            <h3 className="font-bold text-neutral-900 mb-8 text-2xl">{t("Inhaltsverzeichnis")}</h3>
             <div className="bg-white p-8 rounded-3xl border-2 border-neutral-100 shadow-lg">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
                 {[
@@ -326,7 +335,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     className="flex items-center gap-2 text-neutral-600 hover:text-primary transition-colors text-left group"
                   >
                     <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium">{t(item.label)}</span>
                   </button>
                 ))}
               </div>
@@ -339,10 +348,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
-                Hauptunterschiede im Überblick
+                {t("Hauptunterschiede im Überblick")}
               </h2>
               <p className="text-xl text-neutral-600">
-                Zwei verschiedene Mobilitätskonzepte im direkten Vergleich
+                {t("Zwei verschiedene Mobilitätskonzepte im direkten Vergleich")}
               </p>
             </div>
 
@@ -354,7 +363,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     <TrendingDown className="w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold text-neutral-900">
-                    Leasingübernahme
+                    {t("Leasingübernahme")}
                   </h3>
                 </div>
                 <ul className="space-y-4">
@@ -368,7 +377,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                      <span className="font-medium">{item}</span>
+                      <span className="font-medium">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -381,7 +390,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     <TrendingUp className="w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold text-neutral-900">
-                    Auto-Abo
+                    {t("Auto-Abo")}
                   </h3>
                 </div>
                 <ul className="space-y-4">
@@ -395,7 +404,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
-                      <span className="font-medium">{item}</span>
+                      <span className="font-medium">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -409,49 +418,49 @@ export default function LeasingubernahmeVsAutoAboPage() {
           <div className="max-w-5xl mx-auto text-center">
             <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-8">
               <DollarSign className="w-5 h-5 text-primary" />
-              <span className="font-bold text-neutral-900">Kosten im Vergleich</span>
+              <span className="font-bold text-neutral-900">{t("Kosten im Vergleich")}</span>
             </div>
             <h2 className="text-4xl font-bold text-neutral-900 mb-12 tracking-tight">
-              Kostenvergleich
+              {t("Kostenvergleich")}
             </h2>
             
             <div className="overflow-x-auto rounded-3xl border-2 border-primary shadow-2xl">
               <table className="w-full bg-white text-left">
                 <thead className="bg-primary text-white">
                   <tr>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenposition</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Leasingübernahme</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Auto-Abo</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Kostenposition")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Leasingübernahme")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Auto-Abo")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Anzahlung</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Anzahlung")}</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">0–2'000 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">0 CHF</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Monatliche Rate</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Monatliche Rate")}</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">400–800 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">600–1'200 CHF</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Separat (100-200 CHF)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Inklusive</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Versicherung")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Separat (100-200 CHF)")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Inklusive@@Versicherung")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Service/Wartung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Selbst zahlen</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Inklusive</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Service/Wartung")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Selbst zahlen")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Inklusive@@Service")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Laufzeit</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">6–24 Monate fest</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Monatlich kündbar</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Laufzeit")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("6–24 Monate fest")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Monatlich kündbar")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Gesamtkosten (12 Mo.)</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Gesamtkosten (12 Mo.)")}</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">6'000–12'000 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">7'200–14'400 CHF</td>
                   </tr>
@@ -463,9 +472,15 @@ export default function LeasingubernahmeVsAutoAboPage() {
               <div className="flex items-start gap-4">
                 <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-900 font-semibold mb-1">Spartipp</p>
+                  <p className="text-green-900 font-semibold mb-1">{t("Spartipp")}</p>
                   <p className="text-green-800">
-                    Leasingübernahme ist oft 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und von der bereits geleisteten Anzahlung profitieren. Eine detaillierte Übersicht über <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">alle Leasingübernahme-Kosten</Link> finden Sie in unserem separaten Ratgeber – und mit dem <Link href="/auto-abo-vs-leasing-kosten" className="text-primary font-semibold hover:underline">Auto-Abo vs. Leasing Kostenrechner</Link> berechnen Sie Ihre individuellen Gesamtkosten interaktiv.
+                    <T
+                      k="Leasingübernahme ist oft 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und von der bereits geleisteten Anzahlung profitieren. Eine detaillierte Übersicht über <0>alle Leasingübernahme-Kosten</0> finden Sie in unserem separaten Ratgeber – und mit dem <1>Auto-Abo vs. Leasing Kostenrechner</1> berechnen Sie Ihre individuellen Gesamtkosten interaktiv."
+                      c={[
+                        <Link key="0" href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline" />,
+                        <Link key="1" href="/auto-abo-vs-leasing-kosten" className="text-primary font-semibold hover:underline" />,
+                      ]}
+                    />
                   </p>
                 </div>
               </div>
@@ -480,13 +495,13 @@ export default function LeasingubernahmeVsAutoAboPage() {
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-6">
                   <Search className="w-5 h-5 text-primary" />
-                  <span className="font-bold text-neutral-900">Jetzt entdecken</span>
+                  <span className="font-bold text-neutral-900">{t("Jetzt entdecken")}</span>
                 </div>
                 <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
-                  Leasingübernahmen Entdecken
+                  {t("Leasingübernahmen Entdecken")}
                 </h2>
                 <p className="text-neutral-600 text-lg">
-                  Finden Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
+                  {t("Finden Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.")}
                 </p>
               </div>
               <SearchForm />
@@ -500,13 +515,13 @@ export default function LeasingubernahmeVsAutoAboPage() {
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-6">
                 <TrendingDown className="w-5 h-5 text-primary" />
-                <span className="font-bold text-neutral-900">Vorteile</span>
+                <span className="font-bold text-neutral-900">{t("Vorteile")}</span>
               </div>
               <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
-                Vorteile der Leasingübernahme
+                {t("Vorteile der Leasingübernahme")}
               </h2>
               <Link href="/leasinguebernahme" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
-                Mehr erfahren
+                {t("Mehr erfahren")}
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -552,8 +567,8 @@ export default function LeasingubernahmeVsAutoAboPage() {
                         <IconComponent className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-neutral-900 mb-2 text-lg">{item.title}</h3>
-                        <p className="text-neutral-600">{item.desc}</p>
+                        <h3 className="font-bold text-neutral-900 mb-2 text-lg">{t(item.title)}</h3>
+                        <p className="text-neutral-600">{t(item.desc)}</p>
                       </div>
                     </div>
                   </div>
@@ -569,10 +584,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-3 bg-neutral-200 px-5 py-2 rounded-full mb-6">
                 <TrendingUp className="w-5 h-5 text-neutral-700" />
-                <span className="font-bold text-neutral-900">Vorteile</span>
+                <span className="font-bold text-neutral-900">{t("Vorteile")}</span>
               </div>
               <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
-                Vorteile Auto-Abo
+                {t("Vorteile Auto-Abo")}
               </h2>
             </div>
             
@@ -617,8 +632,8 @@ export default function LeasingubernahmeVsAutoAboPage() {
                         <IconComponent className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-neutral-900 mb-2 text-lg">{item.title}</h3>
-                        <p className="text-neutral-600">{item.desc}</p>
+                        <h3 className="font-bold text-neutral-900 mb-2 text-lg">{t(item.title)}</h3>
+                        <p className="text-neutral-600">{t(item.desc)}</p>
                       </div>
                     </div>
                   </div>
@@ -633,10 +648,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
-                Für wen eignet sich was?
+                {t("Für wen eignet sich was?")}
               </h2>
               <p className="text-xl text-neutral-600">
-                Finden Sie die passende Mobilitätslösung für Ihre Situation
+                {t("Finden Sie die passende Mobilitätslösung für Ihre Situation")}
               </p>
             </div>
 
@@ -647,7 +662,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                   <div className="flex items-center gap-3 mb-6">
                     <Users className="w-7 h-7 text-primary" />
                     <h3 className="text-2xl font-bold text-neutral-900">
-                      Leasingübernahme passt zu Ihnen, wenn...
+                      {t("Leasingübernahme passt zu Ihnen, wenn...")}
                     </h3>
                   </div>
                   <ul className="space-y-4">
@@ -661,7 +676,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
                         <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="font-medium">{item}</span>
+                        <span className="font-medium">{t(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -674,7 +689,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                   <div className="flex items-center gap-3 mb-6">
                     <Users className="w-7 h-7 text-neutral-700" />
                     <h3 className="text-2xl font-bold text-neutral-900">
-                      Auto-Abo passt zu Ihnen, wenn...
+                      {t("Auto-Abo passt zu Ihnen, wenn...")}
                     </h3>
                   </div>
                   <ul className="space-y-4">
@@ -688,7 +703,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
                         <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
-                        <span className="font-medium">{item}</span>
+                        <span className="font-medium">{t(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -703,15 +718,15 @@ export default function LeasingubernahmeVsAutoAboPage() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-2 rounded-full mb-8">
               <FileCheck className="w-5 h-5 text-primary" />
-              <span className="font-bold text-neutral-900">Entscheidungshilfe</span>
+              <span className="font-bold text-neutral-900">{t("Entscheidungshilfe")}</span>
             </div>
             <h2 className="text-4xl font-bold text-neutral-900 mb-12 tracking-tight">
-              Entscheidungshilfe: Ihre Checkliste
+              {t("Entscheidungshilfe: Ihre Checkliste")}
             </h2>
             
             <div className="bg-gradient-to-br from-neutral-50 to-white border-2 border-primary/20 rounded-3xl p-8 md:p-10 shadow-xl text-left">
               <p className="text-lg text-neutral-700 mb-6">
-                Beantworten Sie diese Fragen, um die richtige Wahl zu treffen:
+                {t("Beantworten Sie diese Fragen, um die richtige Wahl zu treffen:")}
               </p>
               
               <div className="space-y-4">
@@ -729,7 +744,7 @@ export default function LeasingubernahmeVsAutoAboPage() {
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                         <span className="text-primary font-bold text-sm">{i + 1}</span>
                       </div>
-                      <p className="text-neutral-900 font-medium">{question}</p>
+                      <p className="text-neutral-900 font-medium">{t(question)}</p>
                     </div>
                   </div>
                 ))}
@@ -737,10 +752,17 @@ export default function LeasingubernahmeVsAutoAboPage() {
 
               <div className="mt-8 p-6 bg-primary/5 border border-primary/20 rounded-lg">
                 <p className="text-primary font-semibold mb-2">
-                  💡 Unser Tipp:
+                  {t("💡 Unser Tipp:")}
                 </p>
                 <p className="text-neutral-700">
-                  Wenn Sie "Kostenersparnis", "Mittelfristig" und "Sofort" priorisieren, ist eine <strong>Leasingübernahme</strong> ideal – werfen Sie am besten gleich einen Blick auf die aktuell <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">verfügbaren Leasingübernahmen</Link>. Wenn Sie "Flexibilität", "All-Inclusive" und "Fahrzeugwechsel" bevorzugen, ist ein <strong>Auto-Abo</strong> besser geeignet.
+                  <T
+                    k='Wenn Sie "Kostenersparnis", "Mittelfristig" und "Sofort" priorisieren, ist eine <0>Leasingübernahme</0> ideal – werfen Sie am besten gleich einen Blick auf die aktuell <1>verfügbaren Leasingübernahmen</1>. Wenn Sie "Flexibilität", "All-Inclusive" und "Fahrzeugwechsel" bevorzugen, ist ein <2>Auto-Abo</2> besser geeignet.'
+                    c={[
+                      <strong key="0" />,
+                      <Link key="1" href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline" />,
+                      <strong key="2" />,
+                    ]}
+                  />
                 </p>
               </div>
             </div>
@@ -756,10 +778,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 <span className="font-bold text-neutral-900">FAQ</span>
               </div>
               <h2 className="text-4xl font-bold text-neutral-900 mb-4 tracking-tight">
-                Häufige Fragen
+                {t("Häufige Fragen")}
               </h2>
               <p className="text-neutral-600 text-xl">
-                Die wichtigsten Fragen im Vergleich
+                {t("Die wichtigsten Fragen im Vergleich")}
               </p>
             </div>
             
@@ -769,10 +791,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Was ist günstiger: Leasingübernahme oder Auto-Abo?
+                  {t("Was ist günstiger: Leasingübernahme oder Auto-Abo?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Eine Leasingübernahme ist in der Regel 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und oft von einer bereits geleisteten Anzahlung profitieren.
+                  {t("Eine Leasingübernahme ist in der Regel 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und oft von einer bereits geleisteten Anzahlung profitieren.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -781,10 +803,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Welche Option bietet mehr Flexibilität?
+                  {t("Welche Option bietet mehr Flexibilität?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ein Auto-Abo bietet deutlich mehr Flexibilität mit monatlicher Kündigungsfrist. Eine Leasingübernahme bindet Sie für die Restlaufzeit (meist 6-24 Monate).
+                  {t("Ein Auto-Abo bietet deutlich mehr Flexibilität mit monatlicher Kündigungsfrist. Eine Leasingübernahme bindet Sie für die Restlaufzeit (meist 6-24 Monate).")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -793,10 +815,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Brauche ich eine Anzahlung bei einem Auto-Abo?
+                  {t("Brauche ich eine Anzahlung bei einem Auto-Abo?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Nein, Auto-Abos erfordern keine Anzahlung. Sie zahlen nur die monatliche All-Inclusive-Rate. Bei einer Leasingübernahme kann eine kleine Anzahlung (0-2'000 CHF) anfallen.
+                  {t("Nein, Auto-Abos erfordern keine Anzahlung. Sie zahlen nur die monatliche All-Inclusive-Rate. Bei einer Leasingübernahme kann eine kleine Anzahlung (0-2'000 CHF) anfallen.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -805,10 +827,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Welche versteckten Kosten gibt es?
+                  {t("Welche versteckten Kosten gibt es?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Bei Leasingübernahme: Versicherung, Service, Steuern separat. Bei Auto-Abo: Alles inklusive, nur Tanken/Laden extra. Beide: Kilometerlimit-Überschreitungen kosten extra.
+                  {t("Bei Leasingübernahme: Versicherung, Service, Steuern separat. Bei Auto-Abo: Alles inklusive, nur Tanken/Laden extra. Beide: Kilometerlimit-Überschreitungen kosten extra.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -817,10 +839,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Kann ich beim Auto-Abo das Fahrzeug wechseln?
+                  {t("Kann ich beim Auto-Abo das Fahrzeug wechseln?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, viele Auto-Abo-Anbieter erlauben nach einer Mindestlaufzeit (oft 6-12 Monate) einen Fahrzeugwechsel. Bei Leasingübernahme ist ein Wechsel nicht möglich.
+                  {t("Ja, viele Auto-Abo-Anbieter erlauben nach einer Mindestlaufzeit (oft 6-12 Monate) einen Fahrzeugwechsel. Bei Leasingübernahme ist ein Wechsel nicht möglich.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -829,10 +851,10 @@ export default function LeasingubernahmeVsAutoAboPage() {
                 className="bg-white rounded-3xl border-2 border-neutral-200 px-6 md:px-8 hover:border-primary hover:shadow-lg transition-all"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Für wen ist eine Leasingübernahme die bessere Wahl?
+                  {t("Für wen ist eine Leasingübernahme die bessere Wahl?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ideal für kostenbewusste Personen mit mittelfristigem Bedarf (6-24 Monate), die bereit sind, Versicherung und Service selbst zu organisieren und Wert auf Kostenersparnis legen.
+                  {t("Ideal für kostenbewusste Personen mit mittelfristigem Bedarf (6-24 Monate), die bereit sind, Versicherung und Service selbst zu organisieren und Wert auf Kostenersparnis legen.")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -844,24 +866,24 @@ export default function LeasingubernahmeVsAutoAboPage() {
           <div className="max-w-4xl mx-auto text-center space-y-10">
             <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-2 rounded-full mb-4">
               <Zap className="w-5 h-5 text-white" />
-              <span className="font-bold text-white">Bereit zum Start</span>
+              <span className="font-bold text-white">{t("Bereit zum Start")}</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-              Bereit für Ihre Mobilitätslösung?
+              {t("Bereit für Ihre Mobilitätslösung?")}
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-xl leading-relaxed">
-              Entdecken Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
+              {t("Entdecken Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-10 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/30 transition-all hover:-translate-y-1">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
-                  Angebote durchsuchen
+                  {t("Angebote durchsuchen")}
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-10 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-2xl bg-transparent transition-all hover:-translate-y-1">
                 <Link href="/inserat-erstellen">
-                  Inserat erstellen
+                  {t("Inserat erstellen")}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/runtime";
 import {
   LayoutDashboard,
   Car,
@@ -34,6 +35,7 @@ function useIsDesktop() {
 export default function DashboardLayout({ children, currentSection = "overview", leftRail, hideSidebar = false }: DashboardLayoutProps) {
   const isDesktop = useIsDesktop();
   const router = useRouter();
+  const t = useT();
 
   // Only the overview entry is real: no dashboard page ever read the old
   // ?section= params, so the parameterized links were silent no-ops.
@@ -83,7 +85,7 @@ export default function DashboardLayout({ children, currentSection = "overview",
                           onClick={() => handleNavigation(item.href, item.id)}
                         >
                           <Icon className="w-5 h-5 mr-3" />
-                          {item.name}
+                          {t(item.name)}
                         </Button>
                       );
                     })}

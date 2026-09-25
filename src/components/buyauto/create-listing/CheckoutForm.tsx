@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n/runtime";
 
 interface CheckoutFormProps {
   onSuccess: () => void;
@@ -12,6 +13,7 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const t = useT();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,9 +43,9 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
 
     if (error) {
       if (error.type === "card_error" || error.type === "validation_error") {
-        setMessage(error.message || "Die Zahlung konnte nicht verarbeitet werden.");
+        setMessage(error.message || t("Die Zahlung konnte nicht verarbeitet werden."));
       } else {
-        setMessage("Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.");
+        setMessage(t("Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."));
       }
       setIsLoading(false);
       return;
@@ -57,10 +59,10 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       onSuccess();
     } else if (paymentIntent?.status === "processing") {
       setMessage(
-        "Deine Zahlung wird verarbeitet. Sobald sie bestätigt ist, wird dein Inserat automatisch veröffentlicht."
+        t("Deine Zahlung wird verarbeitet. Sobald sie bestätigt ist, wird dein Inserat automatisch veröffentlicht.")
       );
     } else {
-      setMessage("Die Zahlung ist noch nicht abgeschlossen. Bitte versuche es erneut.");
+      setMessage(t("Die Zahlung ist noch nicht abgeschlossen. Bitte versuche es erneut."));
     }
     setIsLoading(false);
   };
@@ -87,10 +89,10 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         {isLoading ? (
           <>
             <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-            Zahlung wird verarbeitet...
+            {t("Zahlung wird verarbeitet...")}
           </>
         ) : (
-          "Jetzt bezahlen"
+          t("Jetzt bezahlen")
         )}
       </Button>
     </form>

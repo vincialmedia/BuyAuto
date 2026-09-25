@@ -7,6 +7,12 @@
 // automatically noindex until inventory exists — so it is safe to list brands
 // speculatively. When a DB spelling differs from the display name, list every stored
 // variant in dbBrands.
+//
+// i18n: the German intros (and German model designations like "3er"/"C-Klasse") stay
+// here and are translated at render time — each one is a key in the "leasing"
+// namespace (src/i18n/messages/{fr,it,en}/leasing.json). Editing a German text here
+// changes its key: update the three dictionaries too, or fr/it/en fall back to German.
+// Brand names are never translated.
 
 import { slugifyListingPart } from "@/lib/buyauto/listingUrl";
 
@@ -122,6 +128,15 @@ export function curatedBrandForDbBrand(dbBrand: string): LeasingBrand | null {
 }
 
 /**
+ * Generic intro of a dynamic brand page; {brand} = the DB brand string. Also the
+ * translation key ("leasing" namespace) the brand page renders it with.
+ */
+export const DYNAMIC_BRAND_INTRO =
+  "Übernimm einen laufenden {brand}-Leasingvertrag in der Schweiz: Du steigst zu den bestehenden " +
+  "Konditionen ein, zahlst die vereinbarte Monatsrate weiter und bindest dich nur für die Restlaufzeit – " +
+  "ohne die hohe Anzahlung eines neuen Leasings. Alle {brand}-Angebote unten sind aktuelle Inserate auf BuyAuto.";
+
+/**
  * Brand page for a DB brand that has inventory but no curated entry (e.g. Fiat, Škoda).
  * The intro states only how a lease takeover works — nothing brand-specific is invented;
  * popularModels must come from that brand's real listings.
@@ -131,10 +146,7 @@ export function buildDynamicBrand(dbBrand: string, liveModels: string[]): Leasin
     slug: slugifyBrandName(dbBrand),
     name: dbBrand,
     dbBrands: [dbBrand],
-    intro:
-      `Übernimm einen laufenden ${dbBrand}-Leasingvertrag in der Schweiz: Du steigst zu den bestehenden ` +
-      `Konditionen ein, zahlst die vereinbarte Monatsrate weiter und bindest dich nur für die Restlaufzeit – ` +
-      `ohne die hohe Anzahlung eines neuen Leasings. Alle ${dbBrand}-Angebote unten sind aktuelle Inserate auf BuyAuto.`,
+    intro: DYNAMIC_BRAND_INTRO.split("{brand}").join(dbBrand),
     popularModels: liveModels,
   };
 }

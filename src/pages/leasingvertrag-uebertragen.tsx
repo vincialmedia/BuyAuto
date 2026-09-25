@@ -1,7 +1,11 @@
 import Head from "next/head";
+import type { GetStaticPropsContext } from "next";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { LEASING_COMPANIES } from "@/lib/buyauto/leasingCompanies";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
+import { useT, T, useLocale } from "@/i18n/runtime";
+import { absoluteUrl } from "@/i18n/config";
+import { withI18n } from "@/i18n/server";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -51,6 +55,8 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasingvertrag-uebertragen"];
 
 export default function LeasingvertragUebertragenPage() {
+  const t = useT();
+  const locale = useLocale();
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -61,19 +67,19 @@ export default function LeasingvertragUebertragenPage() {
   return (
     <>
       <Head>
-        <title>Leasingvertrag übertragen Schweiz: Ablauf & Kosten | BuyAuto</title>
+        <title>{t("Leasingvertrag übertragen Schweiz: Ablauf & Kosten | BuyAuto")}</title>
         <meta
           name="description"
-          content="Leasingvertrag übertragen in der Schweiz: Alles zu Voraussetzungen, Ablauf, Kosten und rechtlichen Aspekten der Vertragsübertragung."
+          content={t("Leasingvertrag übertragen in der Schweiz: Alles zu Voraussetzungen, Ablauf, Kosten und rechtlichen Aspekten der Vertragsübertragung.")}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/leasingvertrag-uebertragen" />
+        <link rel="canonical" href={absoluteUrl("/leasingvertrag-uebertragen", locale)} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "Leasingvertrag übertragen in der Schweiz",
+              headline: t("Leasingvertrag übertragen in der Schweiz"),
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -81,7 +87,7 @@ export default function LeasingvertragUebertragenPage() {
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
               dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/leasingvertrag-uebertragen",
+              mainEntityOfPage: absoluteUrl("/leasingvertrag-uebertragen", locale),
             }),
           }}
         />
@@ -94,50 +100,50 @@ export default function LeasingvertragUebertragenPage() {
               mainEntity: [
                 {
                   "@type": "Question",
-                  name: "Wie lange dauert die Vertragsübertragung?",
+                  name: t("Wie lange dauert die Vertragsübertragung?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "In der Regel 5–10 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Bank.",
+                    text: t("In der Regel 5–10 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Bank."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Wer zahlt die Übertragungsgebühren?",
+                  name: t("Wer zahlt die Übertragungsgebühren?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Das wird zwischen den Parteien frei vereinbart. Oft übernimmt der Abgeber die Kosten, um die Übertragung attraktiver zu machen.",
+                    text: t("Das wird zwischen den Parteien frei vereinbart. Oft übernimmt der Abgeber die Kosten, um die Übertragung attraktiver zu machen."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Kann die Bank die Übertragung ablehnen?",
+                  name: t("Kann die Bank die Übertragung ablehnen?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja, die Leasingbank prüft die Bonität des neuen Vertragspartners und kann die Übertragung bei negativer Bonität ablehnen.",
+                    text: t("Ja, die Leasingbank prüft die Bonität des neuen Vertragspartners und kann die Übertragung bei negativer Bonität ablehnen."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Was passiert mit der Anzahlung?",
+                  name: t("Was passiert mit der Anzahlung?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Die Anzahlung bleibt im Vertrag und wird nicht rückerstattet. Der neue Vertragspartner profitiert von den dadurch oft günstigeren Monatsraten.",
+                    text: t("Die Anzahlung bleibt im Vertrag und wird nicht rückerstattet. Der neue Vertragspartner profitiert von den dadurch oft günstigeren Monatsraten."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Muss ich das Fahrzeug vor der Übergabe prüfen lassen?",
+                  name: t("Muss ich das Fahrzeug vor der Übergabe prüfen lassen?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeidest du spätere Streitigkeiten.",
+                    text: t("Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeidest du spätere Streitigkeiten."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Ändert sich die Versicherung bei der Übertragung?",
+                  name: t("Ändert sich die Versicherung bei der Übertragung?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Der neue Vertragspartner muss eine eigene Versicherung abschliessen. Die Konditionen können sich je nach Fahrerprofil ändern.",
+                    text: t("Der neue Vertragspartner muss eine eigene Versicherung abschliessen. Die Konditionen können sich je nach Fahrerprofil ändern."),
                   },
                 },
               ],
@@ -146,19 +152,19 @@ export default function LeasingvertragUebertragenPage() {
         />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingvertrag übertragen Schweiz – So funktioniert die Vertragsübertragung" />
-        <meta property="og:description" content="Leasingvertrag übertragen: Alle Infos zu Voraussetzungen, Ablauf und Kosten." />
+        <meta property="og:title" content={t("Leasingvertrag übertragen Schweiz – So funktioniert die Vertragsübertragung")} />
+        <meta property="og:description" content={t("Leasingvertrag übertragen: Alle Infos zu Voraussetzungen, Ablauf und Kosten.")} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/leasingvertrag-uebertragen" />
+        <meta property="og:url" content={absoluteUrl("/leasingvertrag-uebertragen", locale)} />
       </Head>
 
       <main className="bg-neutral-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
           <Breadcrumbs
             items={[
-              { name: "Home", href: "/" },
-              { name: "Leasingübernahme", href: "/leasinguebernahme" },
-              { name: "Vertrag übertragen", href: "/leasingvertrag-uebertragen" },
+              { name: t("Home"), href: "/" },
+              { name: t("Leasingübernahme"), href: "/leasinguebernahme" },
+              { name: t("Vertrag übertragen"), href: "/leasingvertrag-uebertragen" },
             ]}
           />
         </div>
@@ -169,7 +175,7 @@ export default function LeasingvertragUebertragenPage() {
           <div className="absolute inset-0">
             <Image
               src="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=2400&q=80"
-              alt="Leasingvertrag übertragen"
+              alt={t("Leasingvertrag übertragen")}
               fill
               className="object-cover"
               priority
@@ -191,19 +197,16 @@ export default function LeasingvertragUebertragenPage() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <FileCheck className="w-4 h-4" />
-                  Kompletter Ratgeber · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
+                  {t("Kompletter Ratgeber · Aktualisiert am {date}", { date: formatSwissDate(LAST_UPDATED_ISO) })}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
-                  Leasingvertrag übertragen in der Schweiz
+                  {t("Leasingvertrag übertragen in der Schweiz")}
                 </h1>
                 <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Dein Leitfaden zur erfolgreichen Vertragsübertragung
+                  {t("Dein Leitfaden zur erfolgreichen Vertragsübertragung")}
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Einen Leasingvertrag übertragen heisst: Du gibst deine laufende Leasing-Verpflichtung an eine
-                  andere Person weiter, die Rate, Restlaufzeit und Konditionen unverändert übernimmt. Nötig sind
-                  die Zustimmung der Leasinggesellschaft und eine Bonitätsprüfung der übernehmenden Person. Für
-                  die Umschreibung verlangen die meisten Leasinggeber eine Gebühr von rund 100–400 CHF.
+                  {t("Einen Leasingvertrag übertragen heisst: Du gibst deine laufende Leasing-Verpflichtung an eine andere Person weiter, die Rate, Restlaufzeit und Konditionen unverändert übernimmt. Nötig sind die Zustimmung der Leasinggesellschaft und eine Bonitätsprüfung der übernehmenden Person. Für die Umschreibung verlangen die meisten Leasinggeber eine Gebühr von rund 100–400 CHF.")}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -213,7 +216,7 @@ export default function LeasingvertragUebertragenPage() {
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
                   >
                     <Link href="/suche">
-                      Jetzt Vertrag übertragen
+                      {t("Jetzt Vertrag übertragen")}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
@@ -224,7 +227,7 @@ export default function LeasingvertragUebertragenPage() {
                     className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl bg-transparent"
                   >
                     <Link href="/inserat-erstellen">
-                      Inserat erstellen
+                      {t("Inserat erstellen")}
                     </Link>
                   </Button>
                 </div>
@@ -239,29 +242,35 @@ export default function LeasingvertragUebertragenPage() {
             <div className="flex items-center gap-3 mb-6">
               <Info className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kurz gesagt: Leasingvertrag übertragen
+                {t("Kurz gesagt: Leasingvertrag übertragen")}
               </h2>
             </div>
             
             <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Die Übertragung eines <strong>Leasingvertrags</strong> bedeutet, dass du deine laufende Leasing-Verpflichtung an eine andere Person weitergibst. Der neue Vertragspartner übernimmt alle Rechte und Pflichten aus dem bestehenden Vertrag.
+                <T
+                  k="Die Übertragung eines <0>Leasingvertrags</0> bedeutet, dass du deine laufende Leasing-Verpflichtung an eine andere Person weitergibst. Der neue Vertragspartner übernimmt alle Rechte und Pflichten aus dem bestehenden Vertrag."
+                  c={[<strong key={0} />]}
+                />
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
-                Dieser Prozess wird auch als <strong>Leasingübernahme</strong> oder <strong>Leasing Transfer</strong> bezeichnet.
+                <T
+                  k="Dieser Prozess wird auch als <0>Leasingübernahme</0> oder <1>Leasing Transfer</1> bezeichnet."
+                  c={[<strong key={0} />, <strong key={1} />]}
+                />
               </p>
               
               <div className="mt-6 pt-6 border-t border-primary/20">
                 <p className="text-primary font-medium flex items-center gap-2">
                   <AlertCircle className="w-5 h-5" />
-                  <strong>Wichtig:</strong> Die Übertragung benötigt die Zustimmung der Leasingbank.
+                  <T k="<0>Wichtig:</0> Die Übertragung benötigt die Zustimmung der Leasingbank." c={[<strong key={0} />]} />
                 </p>
               </div>
               
               <div className="mt-4">
                 <Link href="/leasinguebernahme" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
                   <ArrowRight className="w-4 h-4" />
-                  Leasingübernahme im Detail
+                  {t("Leasingübernahme im Detail")}
                 </Link>
               </div>
             </div>
@@ -271,7 +280,7 @@ export default function LeasingvertragUebertragenPage() {
         {/* TOC SECTION */}
         <section className="py-10 px-4 bg-neutral-50">
           <div className="max-w-4xl mx-auto">
-            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">Inhaltsverzeichnis</h3>
+            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">{t("Inhaltsverzeichnis")}</h3>
             <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
                 {[
@@ -291,7 +300,7 @@ export default function LeasingvertragUebertragenPage() {
                     className="flex items-center gap-2 text-neutral-600 hover:text-primary transition-colors text-left group"
                   >
                     <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium">{t(item.label)}</span>
                   </button>
                 ))}
               </div>
@@ -307,14 +316,17 @@ export default function LeasingvertragUebertragenPage() {
                 <div className="flex items-center gap-3 mb-6">
                   <FileCheck className="w-8 h-8 text-primary" />
                   <h2 className="text-3xl font-bold text-neutral-900">
-                    Was bedeutet „Leasingvertrag übertragen"?
+                    {t("Was bedeutet „Leasingvertrag übertragen\"?")}
                   </h2>
                 </div>
 
                 <Card className="border-2 border-primary/20 mb-8">
                   <CardContent className="p-8">
                     <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                      Wenn du deinen <strong>Leasingvertrag übertragen</strong> willst, gibst du alle Rechte und Pflichten aus dem Vertrag an eine andere Person weiter. Diese übernimmt:
+                      <T
+                        k="Wenn du deinen <0>Leasingvertrag übertragen</0> willst, gibst du alle Rechte und Pflichten aus dem Vertrag an eine andere Person weiter. Diese übernimmt:"
+                        c={[<strong key={0} />]}
+                      />
                     </p>
                     <ul className="space-y-3 ml-4">
                       {[
@@ -326,7 +338,7 @@ export default function LeasingvertragUebertragenPage() {
                       ].map((item, i) => (
                         <li key={i} className="flex items-start gap-2 text-neutral-700">
                           <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                          <span className="font-medium">{item}</span>
+                          <span className="font-medium">{t(item)}</span>
                         </li>
                       ))}
                     </ul>
@@ -334,7 +346,7 @@ export default function LeasingvertragUebertragenPage() {
                 </Card>
 
                 <h3 className="text-2xl font-bold text-neutral-900 mb-4">
-                  Typische Gründe für eine Vertragsübertragung:
+                  {t("Typische Gründe für eine Vertragsübertragung:")}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
@@ -349,7 +361,7 @@ export default function LeasingvertragUebertragenPage() {
                         <div className="mt-0.5">
                           <IconComponent className="w-5 h-5 text-primary" />
                         </div>
-                        <span className="text-neutral-700 font-medium">{item.text}</span>
+                        <span className="text-neutral-700 font-medium">{t(item.text)}</span>
                       </div>
                     );
                   })}
@@ -365,7 +377,7 @@ export default function LeasingvertragUebertragenPage() {
             <div className="flex items-center gap-3 mb-8">
               <BadgeCheck className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Voraussetzungen für die Vertragsübertragung
+                {t("Voraussetzungen für die Vertragsübertragung")}
               </h2>
             </div>
             
@@ -389,7 +401,7 @@ export default function LeasingvertragUebertragenPage() {
                       </div>
                       <div className="flex-1 flex items-center gap-3">
                         <IconComponent className="w-5 h-5 text-primary" />
-                        <p className="text-neutral-900 font-medium text-lg">{item.text}</p>
+                        <p className="text-neutral-900 font-medium text-lg">{t(item.text)}</p>
                       </div>
                     </div>
                   );
@@ -405,10 +417,10 @@ export default function LeasingvertragUebertragenPage() {
             <div className="bg-white rounded-2xl shadow-lg border-2 border-primary p-6 md:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
-                  Angebote Entdecken
+                  {t("Angebote Entdecken")}
                 </h2>
                 <p className="text-neutral-600 text-base md:text-lg">
-                  Finde verfügbare Leasingverträge oder erstelle dein eigenes Inserat.
+                  {t("Finde verfügbare Leasingverträge oder erstelle dein eigenes Inserat.")}
                 </p>
               </div>
               <SearchForm />
@@ -423,11 +435,11 @@ export default function LeasingvertragUebertragenPage() {
               <div className="flex items-center justify-center gap-3 mb-4">
                 <ChevronRight className="w-8 h-8 text-primary" />
                 <h2 className="text-3xl font-bold text-neutral-900">
-                  Ablauf: So überträgst du deinen Leasingvertrag
+                  {t("Ablauf: So überträgst du deinen Leasingvertrag")}
                 </h2>
               </div>
               <p className="text-lg text-neutral-600">
-                Schritt für Schritt zur erfolgreichen Übertragung
+                {t("Schritt für Schritt zur erfolgreichen Übertragung")}
               </p>
             </div>
 
@@ -501,16 +513,16 @@ export default function LeasingvertragUebertragenPage() {
                       <div className="flex-1 bg-white border border-neutral-200 rounded-xl p-6 md:p-8">
                         <div className="flex items-start gap-3 mb-3">
                           <IconComponent className="w-6 h-6 text-primary mt-1" />
-                          <h3 className="text-xl md:text-2xl font-bold text-neutral-900">{item.title}</h3>
+                          <h3 className="text-xl md:text-2xl font-bold text-neutral-900">{t(item.title)}</h3>
                         </div>
-                        <p className="text-neutral-700 mb-4">{item.desc}</p>
+                        <p className="text-neutral-700 mb-4">{t(item.desc)}</p>
                         
                         {item.items.length > 0 && (
                           <ul className="space-y-2 ml-4">
                             {item.items.map((listItem, i) => (
                               <li key={i} className="flex items-start gap-2 text-neutral-600">
                                 <span className="text-primary mt-1">•</span>
-                                <span>{listItem}</span>
+                                <span>{t(listItem)}</span>
                               </li>
                             ))}
                           </ul>
@@ -530,47 +542,46 @@ export default function LeasingvertragUebertragenPage() {
             <div className="flex items-center gap-3 mb-8">
               <DollarSign className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kosten der Vertragsübertragung
+                {t("Kosten der Vertragsübertragung")}
               </h2>
             </div>
             
             <p className="text-lg text-neutral-600 mb-8">
-              Die Kosten variieren je nach Leasingbank und Vereinbarung – in unserem Ratgeber findest du{" "}
-              <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">
-                alle Kosten der Leasingübernahme im Detail
-              </Link>
-              . Hier die wichtigsten Posten im Überblick:
+              <T
+                k="Die Kosten variieren je nach Leasingbank und Vereinbarung – in unserem Ratgeber findest du <0>alle Kosten der Leasingübernahme im Detail</0>. Hier die wichtigsten Posten im Überblick:"
+                c={[<Link key={0} href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline" />]}
+              />
             </p>
             
             <div className="overflow-x-auto rounded-xl border-2 border-primary shadow-lg">
               <table className="w-full bg-white text-left">
                 <thead className="bg-primary text-white">
                   <tr>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Typische Kosten</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Zahlt</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Kostenart")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Typische Kosten")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Zahlt")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Verhandelbar</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Übertragungsgebühr")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("100–400 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Verhandelbar")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Administrationskosten</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–200 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Meist Abgeber</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Administrationskosten")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("50–200 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Meist Abgeber")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Fahrzeugausweis / Ummeldung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Fahrzeugausweis / Ummeldung")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("50–150 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Übernehmer")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Versicherung")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("variabel")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Übernehmer")}</td>
                   </tr>
                 </tbody>
               </table>
@@ -580,9 +591,9 @@ export default function LeasingvertragUebertragenPage() {
               <div className="flex items-start gap-4">
                 <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-900 font-semibold mb-1">Tipp</p>
+                  <p className="text-green-900 font-semibold mb-1">{t("Tipp")}</p>
                   <p className="text-green-800">
-                    Viele Abgeber übernehmen die Übertragungsgebühren, um den Vertrag schneller loszuwerden.
+                    {t("Viele Abgeber übernehmen die Übertragungsgebühren, um den Vertrag schneller loszuwerden.")}
                   </p>
                 </div>
               </div>
@@ -595,10 +606,10 @@ export default function LeasingvertragUebertragenPage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                Vorteile der Vertragsübertragung
+                {t("Vorteile der Vertragsübertragung")}
               </h2>
               <p className="text-lg text-neutral-600">
-                Win-Win-Situation für beide Parteien
+                {t("Win-Win-Situation für beide Parteien")}
               </p>
             </div>
 
@@ -610,7 +621,7 @@ export default function LeasingvertragUebertragenPage() {
                     <Users className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="text-2xl font-bold text-neutral-900">
-                    Für Übernehmer
+                    {t("Für Übernehmer")}
                   </h3>
                 </div>
                 <ul className="space-y-4">
@@ -623,7 +634,7 @@ export default function LeasingvertragUebertragenPage() {
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="font-medium">{item}</span>
+                      <span className="font-medium">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -636,7 +647,7 @@ export default function LeasingvertragUebertragenPage() {
                     <RefreshCw className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="text-2xl font-bold text-neutral-900">
-                    Für Abgeber
+                    {t("Für Abgeber")}
                   </h3>
                 </div>
                 <ul className="space-y-4">
@@ -648,16 +659,15 @@ export default function LeasingvertragUebertragenPage() {
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="font-medium">{item}</span>
+                      <span className="font-medium">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
                 <p className="mt-6 text-neutral-700">
-                  Wie du als Abgeber Schritt für Schritt vorgehst, zeigt unser Ratgeber{" "}
-                  <Link href="/leasing-abgeben-schweiz" className="text-primary font-semibold hover:underline">
-                    Leasing abgeben in der Schweiz
-                  </Link>
-                  .
+                  <T
+                    k="Wie du als Abgeber Schritt für Schritt vorgehst, zeigt unser Ratgeber <0>Leasing abgeben in der Schweiz</0>."
+                    c={[<Link key={0} href="/leasing-abgeben-schweiz" className="text-primary font-semibold hover:underline" />]}
+                  />
                 </p>
               </div>
             </div>
@@ -670,7 +680,7 @@ export default function LeasingvertragUebertragenPage() {
             <div className="flex items-center gap-3 mb-8">
               <ShieldCheck className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold">
-                Rechtliche Hinweise
+                {t("Rechtliche Hinweise")}
               </h2>
             </div>
             
@@ -712,8 +722,8 @@ export default function LeasingvertragUebertragenPage() {
                             <IconComponent className="w-6 h-6 text-primary" />
                           </div>
                           <div>
-                            <h3 className="font-bold text-white text-lg mb-1">{item.title}</h3>
-                            <p className="text-neutral-300">{item.text}</p>
+                            <h3 className="font-bold text-white text-lg mb-1">{t(item.title)}</h3>
+                            <p className="text-neutral-300">{t(item.text)}</p>
                           </div>
                         </div>
                       );
@@ -731,7 +741,7 @@ export default function LeasingvertragUebertragenPage() {
             <div className="flex items-center gap-3 mb-8">
               <Zap className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Praktische Tipps für eine erfolgreiche Übertragung
+                {t("Praktische Tipps für eine erfolgreiche Übertragung")}
               </h2>
             </div>
             
@@ -766,8 +776,8 @@ export default function LeasingvertragUebertragenPage() {
                         <IconComponent className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-neutral-900 mb-2">{item.title}</h3>
-                        <p className="text-neutral-600">{item.desc}</p>
+                        <h3 className="font-bold text-neutral-900 mb-2">{t(item.title)}</h3>
+                        <p className="text-neutral-600">{t(item.desc)}</p>
                       </div>
                     </div>
                   </div>
@@ -781,10 +791,10 @@ export default function LeasingvertragUebertragenPage() {
         <section className="py-16 px-4 bg-white">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-              Konditionen nach Leasinggesellschaft
+              {t("Konditionen nach Leasinggesellschaft")}
             </h2>
             <p className="text-neutral-600 mb-8 max-w-2xl mx-auto">
-              Jede Gesellschaft regelt die Übertragung selbst – hier findest du den Ablauf pro Anbieter:
+              {t("Jede Gesellschaft regelt die Übertragung selbst – hier findest du den Ablauf pro Anbieter:")}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {LEASING_COMPANIES.map((company) => (
@@ -805,10 +815,10 @@ export default function LeasingvertragUebertragenPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                FAQ – Häufige Fragen
+                {t("FAQ – Häufige Fragen")}
               </h2>
               <p className="text-neutral-600 text-lg">
-                Antworten auf die wichtigsten Fragen
+                {t("Antworten auf die wichtigsten Fragen")}
               </p>
             </div>
             
@@ -818,10 +828,10 @@ export default function LeasingvertragUebertragenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Wie lange dauert die Vertragsübertragung?
+                  {t("Wie lange dauert die Vertragsübertragung?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  In der Regel 5–10 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Bank.
+                  {t("In der Regel 5–10 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Bank.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -830,10 +840,10 @@ export default function LeasingvertragUebertragenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Wer zahlt die Übertragungsgebühren?
+                  {t("Wer zahlt die Übertragungsgebühren?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Das wird zwischen den Parteien frei vereinbart. Oft übernimmt der Abgeber die Kosten, um die Übertragung attraktiver zu machen.
+                  {t("Das wird zwischen den Parteien frei vereinbart. Oft übernimmt der Abgeber die Kosten, um die Übertragung attraktiver zu machen.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -842,10 +852,10 @@ export default function LeasingvertragUebertragenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Kann die Bank die Übertragung ablehnen?
+                  {t("Kann die Bank die Übertragung ablehnen?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, die Leasingbank prüft die Bonität des neuen Vertragspartners und kann die Übertragung bei negativer Bonität ablehnen.
+                  {t("Ja, die Leasingbank prüft die Bonität des neuen Vertragspartners und kann die Übertragung bei negativer Bonität ablehnen.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -854,10 +864,10 @@ export default function LeasingvertragUebertragenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Was passiert mit der Anzahlung?
+                  {t("Was passiert mit der Anzahlung?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Die Anzahlung bleibt im Vertrag und wird nicht rückerstattet. Der neue Vertragspartner profitiert von den dadurch oft günstigeren Monatsraten.
+                  {t("Die Anzahlung bleibt im Vertrag und wird nicht rückerstattet. Der neue Vertragspartner profitiert von den dadurch oft günstigeren Monatsraten.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -866,10 +876,10 @@ export default function LeasingvertragUebertragenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Muss ich das Fahrzeug vor der Übergabe prüfen lassen?
+                  {t("Muss ich das Fahrzeug vor der Übergabe prüfen lassen?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeidest du spätere Streitigkeiten.
+                  {t("Es ist ratsam, ein Übergabeprotokoll zu erstellen und den Zustand des Fahrzeugs zu dokumentieren. So vermeidest du spätere Streitigkeiten.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -878,10 +888,10 @@ export default function LeasingvertragUebertragenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Ändert sich die Versicherung bei der Übertragung?
+                  {t("Ändert sich die Versicherung bei der Übertragung?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Der neue Vertragspartner muss eine eigene Versicherung abschliessen. Die Konditionen können sich je nach Fahrerprofil ändern.
+                  {t("Der neue Vertragspartner muss eine eigene Versicherung abschliessen. Die Konditionen können sich je nach Fahrerprofil ändern.")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -892,25 +902,24 @@ export default function LeasingvertragUebertragenPage() {
         <section className="py-20 bg-neutral-900 px-4">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Bereit für die Vertragsübertragung?
+              {t("Bereit für die Vertragsübertragung?")}
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Erstelle jetzt ein kostenloses Inserat – oder du kannst direkt alle{" "}
-              <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">
-                verfügbaren Leasingübernahmen durchsuchen
-              </Link>
-              .
+              <T
+                k="Erstelle jetzt ein kostenloses Inserat – oder du kannst direkt alle <0>verfügbaren Leasingübernahmen durchsuchen</0>."
+                c={[<Link key={0} href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline" />]}
+              />
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
-                  Angebote durchsuchen
+                  {t("Angebote durchsuchen")}
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent transition-all">
                 <Link href="/inserat-erstellen">
-                  Inserat erstellen
+                  {t("Inserat erstellen")}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -928,6 +937,6 @@ export default function LeasingvertragUebertragenPage() {
 
 // Served via ISR (static + periodic revalidation) instead of a frozen build-time file,
 // so the page refreshes without a redeploy and shares the prerender path of its siblings.
-export const getStaticProps = async () => {
-  return { props: {}, revalidate: 300 };
+export const getStaticProps = async (context: GetStaticPropsContext) => {
+  return { props: { ...(await withI18n(context.locale, ["pages/leasingvertrag-uebertragen"])) }, revalidate: 300 };
 };

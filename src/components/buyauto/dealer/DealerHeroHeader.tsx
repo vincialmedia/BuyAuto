@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/runtime";
 
 interface DealerHeroHeaderProps {
   garageName: string;
@@ -38,6 +39,7 @@ export function DealerHeroHeader({
   services,
   className,
 }: DealerHeroHeaderProps) {
+  const t = useT();
   const telHref = phoneNumber?.trim() ? `tel:${formatPhoneForTel(phoneNumber)}` : null;
   const hasContact = Boolean(websiteUrl?.trim()) || Boolean(phoneNumber?.trim()) || Boolean(contactEmail?.trim());
   const safeServices = Array.isArray(services) ? services.filter((s) => typeof s === "string" && s.trim().length > 0) : [];
@@ -67,14 +69,14 @@ export function DealerHeroHeader({
               <div className="h-16 w-16 overflow-hidden rounded-2xl bg-white/20 ring-1 ring-white/30">
                 {logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={logoUrl} alt={`${garageName} Logo`} className="h-full w-full object-cover" />
+                  <img src={logoUrl} alt={t("{name} Logo", { name: garageName })} className="h-full w-full object-cover" />
                 ) : null}
               </div>
 
               <div className="min-w-0">
                 <div className="text-2xl font-bold tracking-tight text-white md:text-3xl">{garageName}</div>
                 <div className="mt-1 text-sm text-white/80">
-                  {city?.trim() ? `${city.trim()} • ` : ""}Fahrzeuge & Angebote
+                  {city?.trim() ? `${city.trim()} • ` : ""}{t("Fahrzeuge & Angebote")}
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -98,7 +100,7 @@ export function DealerHeroHeader({
                   rel="noreferrer"
                   className="rounded-2xl border border-white/30 bg-white/20 px-4 py-2 text-sm font-medium text-white hover:border-white/50 hover:bg-white/30"
                 >
-                  Website
+                  {t("Website")}
                 </a>
               ) : null}
 
@@ -107,7 +109,7 @@ export function DealerHeroHeader({
                   href={telHref}
                   className="rounded-2xl border border-white/30 bg-white/20 px-4 py-2 text-sm font-medium text-white hover:border-white/50 hover:bg-white/30"
                 >
-                  Anrufen
+                  {t("Anrufen")}
                 </a>
               ) : null}
 
@@ -115,7 +117,7 @@ export function DealerHeroHeader({
                 href="#inventory"
                 className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-white/90"
               >
-                Zum Inventar
+                {t("Zum Inventar")}
               </Link>
             </div>
           </div>

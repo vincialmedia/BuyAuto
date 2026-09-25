@@ -4,6 +4,8 @@ import AuthLayout from "@/components/buyauto/auth/AuthLayout";
 import AuthForm from "@/components/buyauto/auth/AuthForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useT } from "@/i18n/runtime";
+import { staticI18nProps } from "@/i18n/server";
 
 function safeInternalPath(raw?: string | string[] | null): string | null {
   if (!raw || Array.isArray(raw)) return null;
@@ -22,7 +24,10 @@ function safeInternalPath(raw?: string | string[] | null): string | null {
   return decoded;
 }
 
+export const getStaticProps = staticI18nProps(["auth"]);
+
 export default function AuthPage() {
+  const t = useT();
   const router = useRouter();
   const { user, loading, isAdmin, adminLoading } = useAuth();
   const [isRecovery, setIsRecovery] = useState(false);
@@ -98,7 +103,7 @@ export default function AuthPage() {
           <div className="text-center space-y-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
             <p className="text-neutral-600 text-sm">
-              {user && !isRecovery ? "Weiterleitung..." : "Wird geladen..."}
+              {user && !isRecovery ? t("Weiterleitung...") : t("Wird geladen...")}
             </p>
           </div>
         </div>

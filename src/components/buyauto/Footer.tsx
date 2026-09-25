@@ -4,6 +4,8 @@ import { useHasMounted } from "@/hooks/use-has-mounted";
 import { reopenConsent } from "@/lib/analytics/gtag";
 import Image from "next/image";
 import { NewsletterSignup } from "./NewsletterSignup";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useT } from "@/i18n/runtime";
 
 const footerSections = [
   {
@@ -56,6 +58,7 @@ const footerSections = [
 
 export function Footer() {
   const hasMounted = useHasMounted();
+  const t = useT();
 
   return (
     <footer id="kontakt" className="bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 text-white">
@@ -85,10 +88,10 @@ export function Footer() {
               />
             </Link>
             <p className="text-neutral-300 mb-3 leading-relaxed font-light text-base max-w-sm">
-              BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen.
+              {t("BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen.")}
             </p>
             <p className="text-neutral-400 text-sm leading-relaxed max-w-sm mb-6">
-              Leasing übernehmen oder ohne Verlust abgeben – daneben ausgewählte Fahrzeuge zum Direktkauf.
+              {t("Leasing übernehmen oder ohne Verlust abgeben – daneben ausgewählte Fahrzeuge zum Direktkauf.")}
             </p>
             
             {/* Contact info */}
@@ -103,7 +106,7 @@ export function Footer() {
                 <div className="w-8 h-8 bg-red-500/10 rounded-lg flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
                   <MapPin className="h-4 w-4 text-red-400" />
                 </div>
-                <span className="text-neutral-300 text-sm">Zürich, Schweiz</span>
+                <span className="text-neutral-300 text-sm">{t("Zürich, Schweiz")}</span>
               </div>
             </div>
           </div>
@@ -112,7 +115,7 @@ export function Footer() {
           {footerSections.map((section, index) => (
             <div key={index}>
               <h3 className="font-semibold text-white mb-4 text-sm tracking-wide uppercase">
-                {section.title}
+                {t(section.title)}
               </h3>
               <ul className="space-y-2.5">
                 {section.links.map((link, linkIndex) => (
@@ -121,7 +124,7 @@ export function Footer() {
                       href={link.href}
                       className="text-neutral-400 hover:text-white text-sm transition-colors duration-200 hover:text-red-400"
                     >
-                      {link.label}
+                      {t(link.label)}
                     </Link>
                   </li>
                 ))}
@@ -135,7 +138,7 @@ export function Footer() {
                       onClick={reopenConsent}
                       className="text-neutral-400 hover:text-white text-sm transition-colors duration-200 hover:text-red-400"
                     >
-                      Cookie-Einstellungen
+                      {t("Cookie-Einstellungen")}
                     </button>
                   </li>
                 )}
@@ -148,8 +151,10 @@ export function Footer() {
         <div className="border-t border-neutral-700/60 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
             <p className="text-neutral-500 text-sm">
-              © {hasMounted ? new Date().getFullYear() : 2025} BuyAuto. Alle Rechte vorbehalten.
+              © {hasMounted ? new Date().getFullYear() : 2025} BuyAuto. {t("Alle Rechte vorbehalten.")}
             </p>
+
+            <LanguageSwitcher />
             
             <a 
               href="https://www.vincialmedia.com/" 
@@ -161,7 +166,7 @@ export function Footer() {
             </a>
 
             <p className="text-neutral-500 text-sm font-medium">
-              Proudly Swiss 🇨🇭
+              {t("Proudly Swiss 🇨🇭")}
             </p>
           </div>
         </div>

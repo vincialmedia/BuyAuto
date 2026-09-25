@@ -12,6 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { registerSchema, type RegisterFormData } from "@/lib/buyauto/schemas";
 import { cn } from "@/lib/utils";
 import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
+import { useT } from "@/i18n/runtime";
+import { translatedResolver } from "./translatedResolver";
 
 interface RegisterFormProps {
   onRegister: (data: RegisterFormData) => void;
@@ -26,11 +28,12 @@ export default function RegisterForm({
   isLoading,
   initialAccountType,
 }: RegisterFormProps) {
+  const t = useT();
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
+    resolver: translatedResolver(zodResolver(registerSchema), t),
     shouldUnregister: true,
     defaultValues: {
       accountType: initialAccountType ?? "private",
@@ -85,10 +88,10 @@ export default function RegisterForm({
     const firstKey = Object.keys(errors)[0] as keyof RegisterFormData | undefined;
     const firstMessage =
       (firstKey && (errors[firstKey]?.message as string | undefined)) ||
-      "Bitte prüfe die markierten Felder.";
+      t("Bitte prüfe die markierten Felder.");
 
     setSubmitError(firstMessage);
-    toast.error("Bitte prüfe die markierten Felder.");
+    toast.error(t("Bitte prüfe die markierten Felder."));
     focusFirstError(errors);
   };
 
@@ -110,7 +113,7 @@ export default function RegisterForm({
           name="accountType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium">Kontotyp</FormLabel>
+              <FormLabel className="text-neutral-700 font-medium">{t("Kontotyp")}</FormLabel>
               <FormControl>
                 <div className="grid grid-cols-2 gap-3">
                   {/* Private User Card */}
@@ -136,7 +139,7 @@ export default function RegisterForm({
                       "text-sm font-medium",
                       selectedAccountType === "private" ? "text-red-600" : "text-neutral-700"
                     )}>
-                      Privatkunde
+                      {t("Privatkunde")}
                     </span>
                     {selectedAccountType === "private" && (
                       <div className="absolute top-2 right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center">
@@ -170,7 +173,7 @@ export default function RegisterForm({
                       "text-sm font-medium",
                       selectedAccountType === "garage" ? "text-red-600" : "text-neutral-700"
                     )}>
-                      Garage/Händler
+                      {t("Garage/Händler")}
                     </span>
                     {selectedAccountType === "garage" && (
                       <div className="absolute top-2 right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center">
@@ -193,11 +196,11 @@ export default function RegisterForm({
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-neutral-700 font-medium">Vorname</FormLabel>
+                <FormLabel className="text-neutral-700 font-medium">{t("Vorname")}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder="Max"
+                    placeholder={t("Max@@placeholder")}
                     className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                     disabled={isLoading}
                   />
@@ -212,11 +215,11 @@ export default function RegisterForm({
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-neutral-700 font-medium">Nachname</FormLabel>
+                <FormLabel className="text-neutral-700 font-medium">{t("Nachname")}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder="Muster"
+                    placeholder={t("Muster@@placeholder")}
                     className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                     disabled={isLoading}
                   />
@@ -232,12 +235,12 @@ export default function RegisterForm({
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium">E-Mail</FormLabel>
+              <FormLabel className="text-neutral-700 font-medium">{t("E-Mail")}</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   type="email"
-                  placeholder="max@beispiel.com"
+                  placeholder={t("max@beispiel.com")}
                   className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                   disabled={isLoading}
                 />
@@ -255,11 +258,11 @@ export default function RegisterForm({
               name="garageName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-700 font-medium">Garagenname / Firma</FormLabel>
+                  <FormLabel className="text-neutral-700 font-medium">{t("Garagenname / Firma")}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Auto Muster AG"
+                      placeholder={t("Auto Muster AG")}
                       className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                       disabled={isLoading}
                     />
@@ -274,13 +277,13 @@ export default function RegisterForm({
               name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-700 font-medium">Ort</FormLabel>
+                  <FormLabel className="text-neutral-700 font-medium">{t("Ort")}</FormLabel>
                   <FormControl>
                     <LocationAutocomplete
                       value={field.value ?? ""}
                       onValueChange={(next) => field.onChange(next)}
                       disabled={isLoading}
-                      placeholder="Zürich"
+                      placeholder={t("Zürich")}
                       inputClassName="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                       name={field.name}
                       inputRef={field.ref}
@@ -297,18 +300,18 @@ export default function RegisterForm({
               name="contactEmail"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-700 font-medium">E-Mail-Adresse für Kontaktanfragen</FormLabel>
+                  <FormLabel className="text-neutral-700 font-medium">{t("E-Mail-Adresse für Kontaktanfragen")}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       type="email"
-                      placeholder="info@muster-garage.ch"
+                      placeholder={t("info@muster-garage.ch")}
                       className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                       disabled={isLoading}
                     />
                   </FormControl>
                   <p className="text-xs text-neutral-500">
-                    An diese Adresse werden Kaufanfragen gesendet – unabhängig von Ihrer Login-E-Mail.
+                    {t("An diese Adresse werden Kaufanfragen gesendet – unabhängig von Ihrer Login-E-Mail.")}
                   </p>
                   <FormMessage className="text-red-500 text-sm" />
                 </FormItem>
@@ -322,13 +325,13 @@ export default function RegisterForm({
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium">Passwort</FormLabel>
+              <FormLabel className="text-neutral-700 font-medium">{t("Passwort")}</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
                     {...field}
                     type={showPassword ? "text" : "password"}
-                    placeholder="Mindestens 8 Zeichen"
+                    placeholder={t("Mindestens 8 Zeichen")}
                     className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20 pr-10"
                     disabled={isLoading}
                   />
@@ -358,12 +361,12 @@ export default function RegisterForm({
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium">Passwort bestätigen</FormLabel>
+              <FormLabel className="text-neutral-700 font-medium">{t("Passwort bestätigen")}</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   type="password"
-                  placeholder="Passwort wiederholen"
+                  placeholder={t("Passwort wiederholen")}
                   className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                   disabled={isLoading}
                 />
@@ -385,7 +388,7 @@ export default function RegisterForm({
             htmlFor="newsletter-consent-register"
             className="text-sm text-neutral-700 cursor-pointer leading-tight flex-1"
           >
-            Ich möchte Informationen und Angebote per E-Mail erhalten.
+            {t("Ich möchte Informationen und Angebote per E-Mail erhalten.")}
           </label>
         </div>
 
@@ -397,22 +400,22 @@ export default function RegisterForm({
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Wird erstellt...
+              {t("Wird erstellt...")}
             </>
           ) : (
-            "Konto erstellen"
+            t("Konto erstellen")
           )}
         </Button>
 
         <p className="text-center text-sm text-neutral-600">
-          Schon registriert?{" "}
+          {t("Schon registriert?")}{" "}
           <button
             type="button"
             onClick={onShowLogin}
             className="text-red-500 hover:text-red-600 font-medium transition-colors"
             disabled={isLoading}
           >
-            Hier anmelden
+            {t("Hier anmelden")}
           </button>
         </p>
       </form>

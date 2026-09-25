@@ -9,6 +9,10 @@ import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { debounce } from "@/lib/utils";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
+import { absoluteUrl } from "@/i18n/config";
+import { T, useLocale, useT, type I18nPageProps } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
+import { Hreflang } from "@/i18n/seo";
 
 const DynamicFilterBar = dynamic(() => import("@/components/buyauto/search/DynamicFilterBar"), {
   ssr: true,
@@ -17,9 +21,9 @@ const DynamicFilterBar = dynamic(() => import("@/components/buyauto/search/Dynam
   ),
 });
 
-const CANONICAL_SEARCH_URL = "https://www.buyauto.ch/suche";
+const SEARCH_PATH = "/suche";
 
-type SearchPageProps = {
+type SearchPageProps = I18nPageProps & {
   initialResults: SearchResult | null;
   initialQuery: SearchQuery;
 };
@@ -100,10 +104,11 @@ function isIndexableSearchQuery(q: SearchQuery): boolean {
   return isDefaultSearchQuery(q) || isSingleDealTypeQuery(q);
 }
 
-// Self-referencing canonical target for an indexable view.
-function canonicalUrlForQuery(q: SearchQuery): string {
-  if (isSingleDealTypeQuery(q)) return `${CANONICAL_SEARCH_URL}?dealType=${q.dealType}`;
-  return CANONICAL_SEARCH_URL;
+// Self-referencing canonical target (path + query) for an indexable view; made
+// absolute per language with absoluteUrl() (German: https://www.buyauto.ch/suche…).
+function canonicalPathForQuery(q: SearchQuery): string {
+  if (isSingleDealTypeQuery(q)) return `${SEARCH_PATH}?dealType=${q.dealType}`;
+  return SEARCH_PATH;
 }
 
 function getSaleTypeLabel(query: SearchQuery): string {
@@ -115,6 +120,8 @@ function getSaleTypeLabel(query: SearchQuery): string {
 
 export default function SearchPage({ initialResults, initialQuery }: SearchPageProps) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery ?? {});
   const [searchResults, setSearchResults] = useState<SearchResult | null>(initialResults);
   const [isLoading, setIsLoading] = useState(!initialResults);
@@ -237,22 +244,22 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
   }, [isDefaultView, saleTypeLabel]);
 
   const pageTitle = isDefaultView
-    ? "Auto kaufen oder Leasing übernehmen in der Schweiz | BuyAuto"
+    ? t("Auto kaufen oder Leasing übernehmen in der Schweiz | BuyAuto")
     : saleTypeLabel === "Leasingübernahme"
-      ? `Leasingübernahme Angebote – ${totalResults} Fahrzeuge in der Schweiz | BuyAuto`
+      ? t("Leasingübernahme Angebote – {n} Fahrzeuge in der Schweiz | BuyAuto", { n: totalResults })
       : totalResults > 0
-        ? `${saleTypeLabel} – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz`
-        : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
+        ? t("{label} – {n} Fahrzeuge gefunden | BuyAuto Schweiz", { label: t(saleTypeLabel), n: totalResults })
+        : t("{label} – Fahrzeuge suchen | BuyAuto Schweiz", { label: t(saleTypeLabel) });
 
   const metaDescription = isDefaultView
-    ? "Entdecke aktuelle Fahrzeuge in der Schweiz – direkt kaufen oder einen laufenden Leasingvertrag übernehmen. Geprüfte Angebote von Privatpersonen und Garagen auf BuyAuto."
+    ? t("Entdecke aktuelle Fahrzeuge in der Schweiz – direkt kaufen oder einen laufenden Leasingvertrag übernehmen. Geprüfte Angebote von Privatpersonen und Garagen auf BuyAuto.")
     : saleTypeLabel === "Leasingübernahme"
-      ? "Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto."
+      ? t("Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto.")
       : saleTypeLabel === "Leasing"
-        ? "Leasing in der Schweiz: Entdecke Fahrzeuge mit aktivem Leasing-Angebot von privaten Anbietern und Garagen – transparent, schnell und direkt über BuyAuto."
+        ? t("Leasing in der Schweiz: Entdecke Fahrzeuge mit aktivem Leasing-Angebot von privaten Anbietern und Garagen – transparent, schnell und direkt über BuyAuto.")
         : saleTypeLabel === "Direktkauf"
-          ? "Direktkauf in der Schweiz: Finde Fahrzeuge von privaten Anbietern und Garagen – transparent, schnell und direkt über BuyAuto."
-          : "Finde Fahrzeuge in der Schweiz: Leasingübernahme, Direktkauf und Leasing-Angebote – transparent, schnell und direkt über BuyAuto.";
+          ? t("Direktkauf in der Schweiz: Finde Fahrzeuge von privaten Anbietern und Garagen – transparent, schnell und direkt über BuyAuto.")
+          : t("Finde Fahrzeuge in der Schweiz: Leasingübernahme, Direktkauf und Leasing-Angebote – transparent, schnell und direkt über BuyAuto.");
 
   const generateJsonLd = () => {
     if (!searchResults || searchResults.items.length === 0) return null;
@@ -260,7 +267,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
     return {
       "@context": "https://schema.org",
       "@type": "ItemList",
-      "name": `BuyAuto Suchresultate – ${saleTypeLabel}`,
+      "name": t("BuyAuto Suchresultate – {label}", { label: t(saleTypeLabel) }),
       "description": metaDescription,
       "numberOfItems": totalResults,
       "itemListElement": searchResults.items.map((listing, index) => {
@@ -293,7 +300,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
               }
           : undefined;
 
-        const itemUrl = `https://www.buyauto.ch${buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}`;
+        const itemUrl = absoluteUrl(buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model }), locale);
 
         return {
           "@type": "ListItem",
@@ -308,8 +315,8 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
             ...(listing.mileageKm
               ? { "mileageFromOdometer": { "@type": "QuantitativeValue", "value": listing.mileageKm, "unitCode": "KMT" } }
               : {}),
-            ...(listing.fuel ? { "fuelType": listing.fuel } : {}),
-            ...(listing.gearbox ? { "vehicleTransmission": listing.gearbox } : {}),
+            ...(listing.fuel ? { "fuelType": t(listing.fuel) } : {}),
+            ...(listing.gearbox ? { "vehicleTransmission": t(listing.gearbox) } : {}),
             ...(offer ? { "offers": offer } : {}),
           },
         };
@@ -326,12 +333,15 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
         <meta name="description" content={metaDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         {isIndexable ? (
-          <link rel="canonical" href={canonicalUrlForQuery(searchQuery)} />
+          <link rel="canonical" href={absoluteUrl(canonicalPathForQuery(searchQuery), locale)} />
         ) : (
           <meta name="robots" content="noindex,follow" />
         )}
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
       </Head>
+      {/* /suche is excluded from the automatic hreflang in _app (its canonical depends
+          on the query): the indexable views emit their own language cluster. */}
+      {isIndexable ? <Hreflang path={canonicalPathForQuery(searchQuery)} /> : null}
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
         <div className={`transition-shadow duration-300 ${filterBarSticky ? "fixed top-0 left-0 right-0 z-50 shadow-lg" : "relative z-40"}`}>
@@ -347,19 +357,23 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
                 results grid below doesn't shift ~110px on every search (CLS). */}
             <div className="mb-8">
               <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
-                {!isLoading && searchResults && totalResults === 0 ? "Keine Ergebnisse" : heading}
+                {!isLoading && searchResults && totalResults === 0 ? t("Keine Ergebnisse") : t(heading)}
               </h1>
               <p className="text-sm text-neutral-600">
                 {isLoading && !searchResults ? (
-                  <>Fahrzeuge werden geladen…</>
+                  <>{t("Fahrzeuge werden geladen…")}</>
                 ) : totalResults > 0 ? (
                   <>
-                    <span className="font-semibold text-neutral-900">{totalResults.toLocaleString()}</span> {totalResults === 1 ? "Fahrzeug" : "Fahrzeuge"} verfügbar
+                    {totalResults === 1 ? (
+                      <T k="<0>{n}</0> Fahrzeug verfügbar" vars={{ n: totalResults.toLocaleString() }} c={[<span key="0" className="font-semibold text-neutral-900" />]} />
+                    ) : (
+                      <T k="<0>{n}</0> Fahrzeuge verfügbar" vars={{ n: totalResults.toLocaleString() }} c={[<span key="0" className="font-semibold text-neutral-900" />]} />
+                    )}
                     {currentPage > 1 && <span className="text-neutral-400 mx-2">·</span>}
-                    {currentPage > 1 && `Seite ${currentPage} von ${totalPages}`}
+                    {currentPage > 1 && t("Seite {page} von {total}", { page: currentPage, total: totalPages })}
                   </>
                 ) : (
-                  <>Passe deine Filter an, um Ergebnisse zu sehen</>
+                  <>{t("Passe deine Filter an, um Ergebnisse zu sehen")}</>
                 )}
               </p>
 
@@ -382,21 +396,20 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
             {isIndexable && saleTypeLabel === "Leasingübernahme" && (
               <section className="mt-12 border-t border-neutral-200 pt-8">
                 <h2 className="text-lg font-bold text-neutral-900 mb-3">
-                  Mehr zur Leasingübernahme in der Schweiz
+                  {t("Mehr zur Leasingübernahme in der Schweiz")}
                 </h2>
                 <p className="text-sm text-neutral-600 mb-4 max-w-2xl">
-                  Neu beim Thema? Im Ratgeber erfährst du Schritt für Schritt, wie eine
-                  Leasingübernahme abläuft, was sie kostet und worauf du achten musst.
+                  {t("Neu beim Thema? Im Ratgeber erfährst du Schritt für Schritt, wie eine Leasingübernahme abläuft, was sie kostet und worauf du achten musst.")}
                 </p>
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                   <Link href="/leasinguebernahme" className="font-semibold text-primary hover:underline">
-                    Leasingübernahme – kompletter Ratgeber
+                    {t("Leasingübernahme – kompletter Ratgeber")}
                   </Link>
                   <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline">
-                    Was kostet eine Leasingübernahme?
+                    {t("Was kostet eine Leasingübernahme?")}
                   </Link>
                   <Link href="/leasingvertrag-uebertragen" className="text-primary hover:underline">
-                    Leasingvertrag übertragen (für Abgeber)
+                    {t("Leasingvertrag übertragen (für Abgeber)")}
                   </Link>
                 </div>
               </section>
@@ -408,14 +421,15 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
   );
 }
 
-export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ query, res }) => {
+export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ query, res, locale }) => {
   const initialQuery = parseSearchQueryFromParams(query as Record<string, string | string[] | undefined>);
+  const i18n = await withI18n(locale, ["search"]);
 
   // The indexable views (bare hub + single dealType category views, incl. the
   // Leasingübernahme listings grid) are server-rendered so crawlers get the listings
   // in the initial HTML. Filtered / paginated drill-downs stay client-fetched (noindex).
   if (!isIndexableSearchQuery(initialQuery)) {
-    return { props: { initialResults: null, initialQuery } };
+    return { props: { initialResults: null, initialQuery, ...i18n } };
   }
 
   try {
@@ -424,9 +438,9 @@ export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ 
     const results = await searchListings(initialQuery);
     // Strip any `undefined` fields so Next can serialize the props.
     const initialResults = JSON.parse(JSON.stringify(results)) as SearchResult;
-    return { props: { initialResults, initialQuery } };
+    return { props: { initialResults, initialQuery, ...i18n } };
   } catch (error) {
     console.error("SSR /suche search failed:", error);
-    return { props: { initialResults: null, initialQuery } };
+    return { props: { initialResults: null, initialQuery, ...i18n } };
   }
 };

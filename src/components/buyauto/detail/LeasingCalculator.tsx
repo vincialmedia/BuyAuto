@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 // Single source of truth for the leasing math — the same functions the search
 // cards (teaser) and the garage offer form use. Never copy them inline here.
 import { estimateRestwert, estimateMonthlyLeasingRate } from "@/lib/buyauto/leasingMath";
+import { T, useT } from "@/i18n/runtime";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -28,6 +29,7 @@ export interface LeasingCalculatorProps {
 }
 
 export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingCalculatorProps) {
+  const t = useT();
   const kmOptions =
     Array.isArray(offer.km_options) && offer.km_options.length > 0 ? offer.km_options : [10000, 15000, 20000, 25000];
 
@@ -156,14 +158,14 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
     <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden">
       <CardContent className="p-6">
         <div className="mb-5">
-          <h3 className="text-lg font-semibold text-neutral-900 tracking-tight">Leasingrechner (Richtofferte)</h3>
+          <h3 className="text-lg font-semibold text-neutral-900 tracking-tight">{t("Leasingrechner (Richtofferte)")}</h3>
           <p className="text-sm text-neutral-600 mt-1">
-            Unverbindliche Richtofferte. Finale Rate hängt von Bonität, Leasingpartner und Fahrzeugbewertung ab.
+            {t("Unverbindliche Richtofferte. Finale Rate hängt von Bonität, Leasingpartner und Fahrzeugbewertung ab.")}
           </p>
         </div>
 
         <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-          <div className="text-sm font-medium text-neutral-600">Geschätzte Monatsrate</div>
+          <div className="text-sm font-medium text-neutral-600">{t("Geschätzte Monatsrate")}</div>
           <div className="mt-2 text-4xl sm:text-5xl font-bold tracking-tight text-neutral-900">
             CHF {formattedRate}.–
           </div>
@@ -172,20 +174,19 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
             Number.isFinite(Number(offer.interest_rate_pct)) ? (
             <div className="mt-3 flex items-center gap-2">
               <div className="rounded-full bg-primary/10 px-4 py-2 text-base font-semibold text-primary ring-1 ring-primary/25 shadow-[0_0_0_1px_rgba(0,0,0,0.02),0_10px_30px_rgba(0,0,0,0.08)] cursor-default select-none">
-                Garage-Zinssatz: {Number(offer.interest_rate_pct).toFixed(1)}%
+                {t("Garage-Zinssatz: {rate}%", { rate: Number(offer.interest_rate_pct).toFixed(1) })}
               </div>
             </div>
           ) : null}
 
           <p className="text-sm text-neutral-600 mt-2">
-            {isProviderAdjusted ? "Restwert (vom Anbieter angepasst): " : "Geschätzter Restwert: "}
+            {isProviderAdjusted ? t("Restwert (vom Anbieter angepasst): ") : t("Geschätzter Restwert: ")}
             <span className="font-medium text-neutral-900">CHF {formattedRestwert}.–</span>
             <span className="text-neutral-500"> (≈ {(displayedResidualPct * 100).toFixed(0)}%)</span>
             {isProviderAdjusted && (
               <span className="text-neutral-500">
                 {" "}
-                • Anbieter-Korrektur: {residualAdjPp > 0 ? "+" : ""}
-                {residualAdjPp}pp
+                {t("• Anbieter-Korrektur: {value}pp", { value: `${residualAdjPp > 0 ? "+" : ""}${residualAdjPp}` })}
               </span>
             )}
           </p>
@@ -197,42 +198,48 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
                   type="button"
                   className="text-xs font-medium text-primary underline underline-offset-4 hover:text-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-md"
                 >
-                  Wie berechnet sich die Monatsrate?
+                  {t("Wie berechnet sich die Monatsrate?")}
                 </button>
               </DialogTrigger>
               <DialogContent className="w-[calc(100vw-2rem)] max-w-[720px] max-h-[calc(100dvh-2rem)] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>So berechnen wir die Richtofferte</DialogTitle>
+                  <DialogTitle>{t("So berechnen wir die Richtofferte")}</DialogTitle>
                   <DialogDescription>
-                    Kurz erklärt: Die Monatsrate setzt sich aus <span className="font-medium">Abschreibung</span> (über die
-                    Laufzeit verteilt) und <span className="font-medium">Zins</span> (auf den durchschnittlich
-                    finanzierten Betrag) zusammen.
+                    <T
+                      k="Kurz erklärt: Die Monatsrate setzt sich aus <0>Abschreibung</0> (über die Laufzeit verteilt) und <1>Zins</1> (auf den durchschnittlich finanzierten Betrag) zusammen."
+                      c={[<span key="0" className="font-medium" />, <span key="1" className="font-medium" />]}
+                    />
                   </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-5">
                   <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-                    <div className="text-sm font-semibold text-neutral-900">In einfachen Worten</div>
+                    <div className="text-sm font-semibold text-neutral-900">{t("In einfachen Worten")}</div>
                     <ul className="mt-2 space-y-2 text-sm text-neutral-700 leading-relaxed list-disc pl-5">
                       <li>
-                        <span className="font-medium">Restwert</span> ist der geschätzte Wert des Autos am Ende der Laufzeit.
-                        Je länger die Laufzeit und je mehr KM/Jahr, desto tiefer ist der Restwert typischerweise.
+                        <T
+                          k="<0>Restwert</0> ist der geschätzte Wert des Autos am Ende der Laufzeit. Je länger die Laufzeit und je mehr KM/Jahr, desto tiefer ist der Restwert typischerweise."
+                          c={[<span key="0" className="font-medium" />]}
+                        />
                       </li>
                       <li>
-                        <span className="font-medium">Finanzierter Betrag (Abschreibung)</span> = Kaufpreis − Anzahlung − Restwert.
-                        Dieser Betrag wird gleichmässig auf die Monate verteilt.
+                        <T
+                          k="<0>Finanzierter Betrag (Abschreibung)</0> = Kaufpreis − Anzahlung − Restwert. Dieser Betrag wird gleichmässig auf die Monate verteilt."
+                          c={[<span key="0" className="font-medium" />]}
+                        />
                       </li>
                       <li>
-                        <span className="font-medium">Zins</span> fällt auf den durchschnittlich finanzierten Betrag an. Als
-                        einfache Näherung nutzen wir den Mittelwert aus Start- und Endsaldo.
+                        <T
+                          k="<0>Zins</0> fällt auf den durchschnittlich finanzierten Betrag an. Als einfache Näherung nutzen wir den Mittelwert aus Start- und Endsaldo."
+                          c={[<span key="0" className="font-medium" />]}
+                        />
                       </li>
                       <li>
-                        <span className="font-medium">Monatsrate</span> = Abschreibung/Monat + Zins/Monat.
+                        <T k="<0>Monatsrate</0> = Abschreibung/Monat + Zins/Monat." c={[<span key="0" className="font-medium" />]} />
                       </li>
                       {calculationBreakdown.principal <= 0 ? (
                         <li>
-                          In diesem Beispiel ist Kaufpreis − Anzahlung − Restwert ≈ 0. Dadurch ist die Abschreibung praktisch
-                          null und die Rate besteht fast nur aus Zins.
+                          {t("In diesem Beispiel ist Kaufpreis − Anzahlung − Restwert ≈ 0. Dadurch ist die Abschreibung praktisch null und die Rate besteht fast nur aus Zins.")}
                         </li>
                       ) : null}
                     </ul>
@@ -240,89 +247,89 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-2xl border border-neutral-200/60 p-4">
-                      <div className="text-sm font-semibold text-neutral-900">Inputs (aus Inserat + Auswahl)</div>
+                      <div className="text-sm font-semibold text-neutral-900">{t("Inputs (aus Inserat + Auswahl)")}</div>
                       <dl className="mt-3 space-y-2 text-sm">
                         <div className="flex items-center justify-between gap-3">
-                          <dt className="text-neutral-600">Kaufpreis</dt>
+                          <dt className="text-neutral-600">{t("Kaufpreis")}</dt>
                           <dd className="font-medium text-neutral-900">CHF {Math.round(calculationBreakdown.priceSafe).toLocaleString("de-CH")}</dd>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <dt className="text-neutral-600">Laufzeit</dt>
-                          <dd className="font-medium text-neutral-900">{calculationBreakdown.months} Monate</dd>
+                          <dt className="text-neutral-600">{t("Laufzeit")}</dt>
+                          <dd className="font-medium text-neutral-900">{t("{n} Monate", { n: calculationBreakdown.months })}</dd>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <dt className="text-neutral-600">Anzahlung</dt>
+                          <dt className="text-neutral-600">{t("Anzahlung")}</dt>
                           <dd className="font-medium text-neutral-900">
                             {calculationBreakdown.downPaymentPctSafe.toFixed(0)}% (CHF {Math.round(calculationBreakdown.downPaymentChf).toLocaleString("de-CH")})
                           </dd>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <dt className="text-neutral-600">Zinssatz</dt>
+                          <dt className="text-neutral-600">{t("Zinssatz")}</dt>
                           <dd className="font-medium text-neutral-900">{calculationBreakdown.interestRatePct.toFixed(1)}%</dd>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <dt className="text-neutral-600">KM/Jahr</dt>
+                          <dt className="text-neutral-600">{t("KM/Jahr")}</dt>
                           <dd className="font-medium text-neutral-900">{kmPerYear.toLocaleString("de-CH")} km</dd>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <dt className="text-neutral-600">Restwert (Endwert)</dt>
+                          <dt className="text-neutral-600">{t("Restwert (Endwert)")}</dt>
                           <dd className="font-medium text-neutral-900">CHF {Math.round(calculationBreakdown.restwertChf).toLocaleString("de-CH")}</dd>
                         </div>
                       </dl>
                     </div>
 
                     <div className="rounded-2xl border border-neutral-200/60 p-4">
-                      <div className="text-sm font-semibold text-neutral-900">Rechenweg (Näherung)</div>
+                      <div className="text-sm font-semibold text-neutral-900">{t("Rechenweg (Näherung)")}</div>
                       <dl className="mt-3 space-y-2 text-sm">
                         <div className="flex items-center justify-between gap-3">
-                          <dt className="text-neutral-600">Finanzierter Betrag</dt>
+                          <dt className="text-neutral-600">{t("Finanzierter Betrag")}</dt>
                           <dd className="font-medium text-neutral-900">
                             CHF {Math.round(calculationBreakdown.principal).toLocaleString("de-CH")}
                           </dd>
                         </div>
                         <div className="text-xs text-neutral-500 -mt-1">
-                          Kaufpreis − Anzahlung − Restwert
+                          {t("Kaufpreis − Anzahlung − Restwert")}
                         </div>
 
                         <div className="flex items-center justify-between gap-3 pt-1">
-                          <dt className="text-neutral-600">Abschreibung / Monat</dt>
+                          <dt className="text-neutral-600">{t("Abschreibung / Monat")}</dt>
                           <dd className="font-medium text-neutral-900">
                             CHF {Math.round(calculationBreakdown.monthlyAmort).toLocaleString("de-CH")}
                           </dd>
                         </div>
                         <div className="text-xs text-neutral-500 -mt-1">
-                          Finanzierter Betrag ÷ Laufzeit
+                          {t("Finanzierter Betrag ÷ Laufzeit")}
                         </div>
 
                         <div className="flex items-center justify-between gap-3 pt-1">
-                          <dt className="text-neutral-600">Zinsbasis (Ø Saldo)</dt>
+                          <dt className="text-neutral-600">{t("Zinsbasis (Ø Saldo)")}</dt>
                           <dd className="font-medium text-neutral-900">
                             CHF {Math.round(calculationBreakdown.interestBase).toLocaleString("de-CH")}
                           </dd>
                         </div>
                         <div className="text-xs text-neutral-500 -mt-1">
-                          (Kaufpreis − Anzahlung + Restwert) ÷ 2
+                          {t("(Kaufpreis − Anzahlung + Restwert) ÷ 2")}
                         </div>
 
                         <div className="flex items-center justify-between gap-3 pt-1">
-                          <dt className="text-neutral-600">Zins / Monat</dt>
+                          <dt className="text-neutral-600">{t("Zins / Monat")}</dt>
                           <dd className="font-medium text-neutral-900">
                             CHF {Math.round(calculationBreakdown.monthlyInterest).toLocaleString("de-CH")}
                           </dd>
                         </div>
                         <div className="text-xs text-neutral-500 -mt-1">
-                          Zinsbasis × (Zinssatz ÷ 12)
+                          {t("Zinsbasis × (Zinssatz ÷ 12)")}
                         </div>
 
                         <div className="mt-4 rounded-xl bg-neutral-50 border border-neutral-200/60 p-3">
                           <div className="flex items-center justify-between gap-3 text-sm">
-                            <div className="font-semibold text-neutral-900">Monatsrate</div>
+                            <div className="font-semibold text-neutral-900">{t("Monatsrate")}</div>
                             <div className="font-bold text-neutral-900">
                               CHF {Math.round(calculationBreakdown.monthlyRate).toLocaleString("de-CH")}
                             </div>
                           </div>
                           <div className="mt-1 text-xs text-neutral-500">
-                            Abschreibung/Monat + Zins/Monat
+                            {t("Abschreibung/Monat + Zins/Monat")}
                           </div>
                         </div>
                       </dl>
@@ -330,8 +337,7 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
                   </div>
 
                   <div className="text-xs text-neutral-500 leading-relaxed">
-                    Hinweis: Diese Berechnung ist eine vereinfachte Richtofferte. In der Praxis können Leasingpartner (Restwert)
-                    und Bonität (Zinssatz) die finale Rate beeinflussen.
+                    {t("Hinweis: Diese Berechnung ist eine vereinfachte Richtofferte. In der Praxis können Leasingpartner (Restwert) und Bonität (Zinssatz) die finale Rate beeinflussen.")}
                   </div>
                 </div>
               </DialogContent>
@@ -342,8 +348,8 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
         <div className="mt-6 space-y-5">
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-neutral-900">Laufzeit</p>
-              <p className="text-sm text-neutral-600">{termMonths} Monate</p>
+              <p className="text-sm font-medium text-neutral-900">{t("Laufzeit")}</p>
+              <p className="text-sm text-neutral-600">{t("{n} Monate", { n: termMonths })}</p>
             </div>
             <Slider
               value={[termMonths]}
@@ -353,13 +359,13 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
               onValueChange={(v) => setTermMonths(Math.floor(v[0] ?? termMonths))}
             />
             <p className="text-xs text-neutral-500">
-              Bereich: {minTerm}–{maxTerm} Monate
+              {t("Bereich: {min}–{max} Monate", { min: minTerm, max: maxTerm })}
             </p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-neutral-900">Anzahlung</p>
+              <p className="text-sm font-medium text-neutral-900">{t("Anzahlung")}</p>
               <p className="text-sm text-neutral-600">{estimate.effectiveDownPaymentPct.toFixed(0)}%</p>
             </div>
 
@@ -372,21 +378,22 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
             />
 
             <p className="text-xs text-neutral-500">
-              Minimum: {estimate.minDownPaymentPct}%
-              {estimate.minDownPaymentPct === 0 ? " (optional)" : ""} • Maximum: {estimate.maxDownPaymentPct}%
+              {estimate.minDownPaymentPct === 0
+                ? t("Minimum: {min}% (optional) • Maximum: {max}%", { min: estimate.minDownPaymentPct, max: estimate.maxDownPaymentPct })
+                : t("Minimum: {min}% • Maximum: {max}%", { min: estimate.minDownPaymentPct, max: estimate.maxDownPaymentPct })}
             </p>
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-neutral-900">KM/Jahr</p>
+            <p className="text-sm font-medium text-neutral-900">{t("KM/Jahr")}</p>
             <Select value={String(kmPerYear)} onValueChange={(v) => setKmPerYear(Number(v))}>
               <SelectTrigger className="bg-white border border-neutral-200/60">
-                <SelectValue placeholder="KM/Jahr wählen" />
+                <SelectValue placeholder={t("KM/Jahr wählen")} />
               </SelectTrigger>
               <SelectContent>
                 {kmOptions.map((km) => (
                   <SelectItem key={km} value={String(km)}>
-                    {km.toLocaleString("de-CH")} km/Jahr
+                    {t("{km} km/Jahr", { km: km.toLocaleString("de-CH") })}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -394,8 +401,11 @@ export function LeasingCalculator({ priceChf, year, mileageKm, offer }: LeasingC
           </div>
 
           <div className="pt-2 text-xs text-neutral-500 leading-relaxed">
-            Fixe Inputs aus Inserat: Kaufpreis CHF {Math.round(priceChf).toLocaleString("de-CH")} • Erstzulassung {year} •
-            Aktuell {Math.round(mileageKm).toLocaleString("de-CH")} km
+            {t("Fixe Inputs aus Inserat: Kaufpreis CHF {price} • Erstzulassung {year} • Aktuell {km} km", {
+              price: Math.round(priceChf).toLocaleString("de-CH"),
+              year,
+              km: Math.round(mileageKm).toLocaleString("de-CH"),
+            })}
           </div>
         </div>
       </CardContent>

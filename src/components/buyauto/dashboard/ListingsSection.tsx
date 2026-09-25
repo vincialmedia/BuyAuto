@@ -36,6 +36,8 @@ import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPr
 import { getMyGarage, type Garage } from "@/services/garageService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { hasEnabledTakeoverOffer } from "@/lib/buyauto/premiumListings";
+import { T, useLocale, useT } from "@/i18n/runtime";
+import { localizePath } from "@/i18n/config";
 
 function getDealTypeLabel(listing: ListingDetail): string {
   const dealType = listing.deal_type ?? "lease_takeover";
@@ -98,6 +100,8 @@ export interface ListingsSectionProps {
 
 export default function ListingsSection({ view }: ListingsSectionProps) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const { user } = useAuth();
   const [listings, setListings] = useState<ListingDetail[]>([]);
   const [tombstones, setTombstones] = useState<DashboardListingTombstone[]>([]);
@@ -286,12 +290,12 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       setDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting listing:", error);
-      alert("Fehler beim Löschen des Inserats.");
+      alert(t("Fehler beim Löschen des Inserats."));
     } finally {
       setActionLoading(null);
       setListingToDelete(null);
     }
-  }, []);
+  }, [t]);
 
   const handleEdit = (listingId: string) => {
     router.push(`/inserat-erstellen?edit=${listingId}`);
@@ -324,11 +328,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       window.location.href = json.url;
     } catch (error) {
       console.error("Error upgrading listing to premium:", error);
-      alert("Fehler beim Premium-Upgrade. Bitte versuche es erneut.");
+      alert(t("Fehler beim Premium-Upgrade. Bitte versuche es erneut."));
     } finally {
       setActionLoading(null);
     }
-  }, [premiumCredits?.remaining, loadPremiumCredits, loadUserListings]);
+  }, [premiumCredits?.remaining, loadPremiumCredits, loadUserListings, t]);
 
   const handleArchive = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
@@ -339,11 +343,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       setListingToArchive(null);
     } catch (error) {
       console.error("Error archiving listing:", error);
-      alert("Fehler beim Archivieren des Inserats.");
+      alert(t("Fehler beim Archivieren des Inserats."));
     } finally {
       setActionLoading(null);
     }
-  }, [loadUserListings]);
+  }, [loadUserListings, t]);
 
   const handlePause = useCallback(async (listingId: string, days: number) => {
     setActionLoading(listingId);
@@ -354,11 +358,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       setListingToPause(null);
     } catch (error) {
       console.error("Error pausing listing:", error);
-      alert("Fehler beim Pausieren des Inserats.");
+      alert(t("Fehler beim Pausieren des Inserats."));
     } finally {
       setActionLoading(null);
     }
-  }, [loadUserListings]);
+  }, [loadUserListings, t]);
 
   const handleUnpause = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
@@ -368,11 +372,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       setListingToUnpause(null);
     } catch (error) {
       console.error("Error unpausing listing:", error);
-      alert("Fehler beim Reaktivieren des Inserats.");
+      alert(t("Fehler beim Reaktivieren des Inserats."));
     } finally {
       setActionLoading(null);
     }
-  }, [loadUserListings]);
+  }, [loadUserListings, t]);
 
   // "Als verkauft markieren" from the overview goes through the buyer
   // chooser first: the seller says which chat belongs to the buyer, so that
@@ -400,11 +404,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       await Promise.all([loadUserListings(), loadTombstones()]);
     } catch (error) {
       console.error("Error marking listing sold (buyer selected):", error);
-      alert("Fehler beim Markieren als verkauft.");
+      alert(t("Fehler beim Markieren als verkauft."));
     } finally {
       setActionLoading(null);
     }
-  }, [listingToMarkSold?.id, loadUserListings, loadTombstones]);
+  }, [listingToMarkSold?.id, loadUserListings, loadTombstones, t]);
 
   const handleMarkSoldWithoutBuyer = useCallback(async () => {
     const listingId = listingToMarkSold?.id;
@@ -418,11 +422,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       await Promise.all([loadUserListings(), loadTombstones()]);
     } catch (error) {
       console.error("Error marking listing sold:", error);
-      alert("Fehler beim Markieren als verkauft.");
+      alert(t("Fehler beim Markieren als verkauft."));
     } finally {
       setActionLoading(null);
     }
-  }, [listingToMarkSold?.id, loadUserListings, loadTombstones]);
+  }, [listingToMarkSold?.id, loadUserListings, loadTombstones, t]);
 
   const handleMarkAvailable = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
@@ -431,11 +435,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       await Promise.all([loadUserListings(), loadTombstones()]);
     } catch (error) {
       console.error("Error marking listing available:", error);
-      alert("Fehler beim Reaktivieren des Inserats.");
+      alert(t("Fehler beim Reaktivieren des Inserats."));
     } finally {
       setActionLoading(null);
     }
-  }, [loadUserListings, loadTombstones]);
+  }, [loadUserListings, loadTombstones, t]);
 
   const handleRevertToDraft = useCallback(async (listingId: string) => {
     setActionLoading(listingId);
@@ -444,11 +448,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       await loadUserListings();
     } catch (error) {
       console.error("Error reverting listing to draft:", error);
-      alert("Fehler beim Zurücksetzen auf Entwurf.");
+      alert(t("Fehler beim Zurücksetzen auf Entwurf."));
     } finally {
       setActionLoading(null);
     }
-  }, [loadUserListings]);
+  }, [loadUserListings, t]);
 
   // Expired listings go live again through the relist flow: the CHF 30
   // checkout keeps the current plan, the upgrade variant relists as
@@ -482,15 +486,15 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       window.location.href = json.url;
     } catch (error) {
       console.error("Error starting relist:", error);
-      alert("Fehler bei der Wiederveröffentlichung. Bitte versuche es erneut.");
+      alert(t("Fehler bei der Wiederveröffentlichung. Bitte versuche es erneut."));
       setActionLoading(null);
     }
-  }, [loadUserListings]);
+  }, [loadUserListings, t]);
 
   const formatPrice = (price: number) => formatPriceCHF(price);
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Unlimitiert";
+    if (!dateString) return t("Unlimitiert");
     return new Date(dateString).toLocaleDateString("de-CH");
   };
 
@@ -520,13 +524,13 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
   const getPlanBadge = (listing: ListingDetail) => {
     if (listing.price_plan) {
       const planNames: { [key: string]: string } = {
-        "standard": "Standard",
-        "extended": "Verlängert",
-        "unlimited": "Unlimitiert",
+        "standard": t("Standard"),
+        "extended": t("Verlängert"),
+        "unlimited": t("Unlimitiert"),
       };
       return planNames[listing.price_plan] || listing.price_plan;
     }
-    return "N/A";
+    return t("N/A");
   };
 
   const soldListings = useMemo(() => listings.filter((l) => (l.status as any) === "sold"), [listings]);
@@ -557,7 +561,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold text-neutral-900">Meine Inserate</h2>
+          <h2 className="text-2xl font-bold text-neutral-900">{t("Meine Inserate")}</h2>
           <div className="w-32 h-10 bg-neutral-200 rounded animate-pulse"></div>
         </div>
         <div className="grid gap-6">
@@ -587,14 +591,16 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-neutral-900">Meine Inserate</h2>
+          <h2 className="text-2xl font-bold text-neutral-900">{t("Meine Inserate")}</h2>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
             <p>
-              {totalVisibleCards} {totalVisibleCards === 1 ? "Inserat" : "Inserate"}
+              {totalVisibleCards === 1
+                ? t("{n} Inserat", { n: totalVisibleCards })
+                : t("{n} Inserate", { n: totalVisibleCards })}
             </p>
             <span className="text-neutral-300">•</span>
             <p>
-              Premium inklusive:{" "}
+              {t("Premium inklusive:")}{" "}
               {premiumCreditsLoading ? (
                 <span className="inline-block h-4 w-12 rounded bg-neutral-200 align-middle animate-pulse" />
               ) : (
@@ -604,7 +610,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
               )}
             </p>
             <span className="text-neutral-300">•</span>
-            <p>Weitere Upgrades: CHF 30 / Inserat</p>
+            <p>{t("Weitere Upgrades: CHF 30 / Inserat")}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -615,7 +621,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
               className="rounded-2xl"
               onClick={() => setSoldOnly((v) => !v)}
             >
-              {soldOnly ? "Verkauft" : "Alle"}
+              {soldOnly ? t("Verkauft@@tab") : t("Alle")}
             </Button>
           )}
           <Button
@@ -628,14 +634,14 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
               if (effectiveView === "sold") void loadTombstones();
             }}
           >
-            Aktualisieren
+            {t("Aktualisieren")}
           </Button>
           <Button
             onClick={() => router.push("/inserat-erstellen")}
             className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Neues Inserat erstellen
+            {t("Neues Inserat erstellen")}
           </Button>
         </div>
       </div>
@@ -647,19 +653,19 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
               <AlertTriangle className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-              Keine Inserate gefunden
+              {t("Keine Inserate gefunden")}
             </h3>
             <p className="text-neutral-600 mb-6">
               {effectiveView === "sold"
-                ? "Du hast noch keine verkauften Inserate."
-                : "Erstellen Sie Ihr erstes Inserat und beginnen Sie Ihr Auto zu vermieten."}
+                ? t("Du hast noch keine verkauften Inserate.")
+                : t("Erstellen Sie Ihr erstes Inserat und beginnen Sie Ihr Auto zu vermieten.")}
             </p>
             {effectiveView !== "sold" && (
               <Button
                 onClick={() => router.push("/inserat-erstellen")}
                 className="bg-red-500 hover:bg-red-600 text-white rounded-2xl"
               >
-                Erstes Inserat erstellen
+                {t("Erstes Inserat erstellen")}
               </Button>
             )}
           </CardContent>
@@ -757,7 +763,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                         </div>
                       ) : (
                         <div className="w-full lg:w-32 h-48 lg:h-24 bg-neutral-200 rounded-lg flex items-center justify-center">
-                          <span className="text-neutral-400 text-sm">Kein Bild</span>
+                          <span className="text-neutral-400 text-sm">{t("Kein Bild")}</span>
                         </div>
                       )}
                       {premium && (
@@ -776,7 +782,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                           <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 mb-3">
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4" />
-                              <span>Bezahlt: {formatPrice(listing.price_paid_chf ?? 0)}</span>
+                              <span>{t("Bezahlt: {price}", { price: formatPrice(listing.price_paid_chf ?? 0) })}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <MapPin className="w-4 h-4" />
@@ -784,10 +790,10 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                             </div>
                             <div className="flex items-center gap-1">
                               <Eye className="w-4 h-4" />
-                              <span>{views} Aufrufe</span>
+                              <span>{t("{n} Aufrufe", { n: views })}</span>
                               {views > 0 ? (
                                 <Badge variant="secondary" className="ml-2 rounded-full">
-                                  Angesehen
+                                  {t("Angesehen")}
                                 </Badge>
                               ) : null}
                             </div>
@@ -798,54 +804,101 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               expiresAt={listing.expires_at}
                             />
                             <Badge variant="secondary" className="rounded-full">
-                              {getDealTypeLabel(listing)}
+                              {t(getDealTypeLabel(listing))}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
                               {getPlanBadge(listing)}
                             </Badge>
                             {typeof soldDaysRemaining === "number" && (
                               <span className="text-xs text-neutral-600">
-                                Wird in <span className="font-semibold text-neutral-900">{soldDaysRemaining}</span>{" "}
-                                {soldDaysRemaining === 1 ? "Tag" : "Tagen"} gelöscht
+                                {soldDaysRemaining === 1 ? (
+                                  <T
+                                    k="Wird in <0>{n}</0> Tag gelöscht"
+                                    vars={{ n: soldDaysRemaining }}
+                                    c={[<span key="0" className="font-semibold text-neutral-900" />]}
+                                  />
+                                ) : (
+                                  <T
+                                    k="Wird in <0>{n}</0> Tagen gelöscht"
+                                    vars={{ n: soldDaysRemaining }}
+                                    c={[<span key="0" className="font-semibold text-neutral-900" />]}
+                                  />
+                                )}
                               </span>
                             )}
                             {typeof deletionDaysRemaining === "number" && (
                               <span className="text-xs font-medium text-amber-700 flex items-center gap-1">
                                 <AlertTriangle className="w-3.5 h-3.5" />
-                                Wird in <span className="font-semibold">{deletionDaysRemaining}</span>{" "}
-                                {deletionDaysRemaining === 1 ? "Tag" : "Tagen"} endgültig gelöscht
+                                {deletionDaysRemaining === 1 ? (
+                                  <T
+                                    k="Wird in <0>{n}</0> Tag endgültig gelöscht"
+                                    vars={{ n: deletionDaysRemaining }}
+                                    c={[<span key="0" className="font-semibold" />]}
+                                  />
+                                ) : (
+                                  <T
+                                    k="Wird in <0>{n}</0> Tagen endgültig gelöscht"
+                                    vars={{ n: deletionDaysRemaining }}
+                                    c={[<span key="0" className="font-semibold" />]}
+                                  />
+                                )}
                               </span>
                             )}
                             {typeof archiveDaysRemaining === "number" && (
                               <span className="text-xs text-neutral-600 flex items-center gap-1">
                                 <Clock className="w-3.5 h-3.5" />
-                                Wird in <span className="font-semibold text-neutral-900">{archiveDaysRemaining}</span>{" "}
-                                {archiveDaysRemaining === 1 ? "Tag" : "Tagen"} archiviert
+                                {archiveDaysRemaining === 1 ? (
+                                  <T
+                                    k="Wird in <0>{n}</0> Tag archiviert"
+                                    vars={{ n: archiveDaysRemaining }}
+                                    c={[<span key="0" className="font-semibold text-neutral-900" />]}
+                                  />
+                                ) : (
+                                  <T
+                                    k="Wird in <0>{n}</0> Tagen archiviert"
+                                    vars={{ n: archiveDaysRemaining }}
+                                    c={[<span key="0" className="font-semibold text-neutral-900" />]}
+                                  />
+                                )}
                               </span>
                             )}
                             {typeof declineDaysRemaining === "number" && (
                               <span className="text-xs text-neutral-600 flex items-center gap-1">
                                 <Clock className="w-3.5 h-3.5" />
-                                Wird in <span className="font-semibold text-neutral-900">{declineDaysRemaining}</span>{" "}
-                                {declineDaysRemaining === 1 ? "Tag" : "Tagen"} gelöscht
+                                {declineDaysRemaining === 1 ? (
+                                  <T
+                                    k="Wird in <0>{n}</0> Tag gelöscht"
+                                    vars={{ n: declineDaysRemaining }}
+                                    c={[<span key="0" className="font-semibold text-neutral-900" />]}
+                                  />
+                                ) : (
+                                  <T
+                                    k="Wird in <0>{n}</0> Tagen gelöscht"
+                                    vars={{ n: declineDaysRemaining }}
+                                    c={[<span key="0" className="font-semibold text-neutral-900" />]}
+                                  />
+                                )}
                               </span>
                             )}
                             {isExpiredListing && (
                               <span className="text-xs text-neutral-600">
                                 {RELIST_PROMO_ACTIVE ? (
-                                  <>
-                                    Abgelaufen – Aktion: Wiederveröffentlichung{" "}
-                                    <s className="text-neutral-400">CHF {relistPrice}</s>{" "}
-                                    <span className="font-semibold text-emerald-700">gratis</span>
-                                  </>
+                                  <T
+                                    k="Abgelaufen – Aktion: Wiederveröffentlichung <0>CHF {price}</0> <1>gratis</1>"
+                                    vars={{ price: relistPrice }}
+                                    c={[
+                                      <s key="0" className="text-neutral-400" />,
+                                      <span key="1" className="font-semibold text-emerald-700" />,
+                                    ]}
+                                  />
                                 ) : (
-                                  <>Abgelaufen – Wiederveröffentlichung für CHF {relistPrice} möglich</>
+                                  <>{t("Abgelaufen – Wiederveröffentlichung für CHF {price} möglich", { price: relistPrice })}</>
                                 )}
                               </span>
                             )}
                             {premium && listing.premium_until && (
                               <span className="text-xs text-amber-700">
-                                Premium bis: {formatDate(listing.premium_until)}
+                                {t("Premium bis: {date}", { date: formatDate(listing.premium_until) })}
                               </span>
                             )}
                           </div>
@@ -856,7 +909,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                             <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50/60 px-3 py-2">
                               <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
                               <p className="text-xs text-amber-900">
-                                <span className="font-semibold">Rückmeldung der Prüfung:</span> {moderationNote}
+                                <span className="font-semibold">{t("Rückmeldung der Prüfung:")}</span> {moderationNote}
                               </p>
                             </div>
                           )}
@@ -869,7 +922,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                             className="rounded-2xl"
                             onClick={() => router.push(`${listingHref}?preview=true`)}
                           >
-                            <Eye className="w-4 h-4 mr-2" /> Vorschau
+                            <Eye className="w-4 h-4 mr-2" /> {t("Vorschau")}
                           </Button>
 
                           {isExpiredListing && (
@@ -882,17 +935,19 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               >
                                 <RefreshCw className="w-4 h-4 mr-2" />
                                 {RELIST_PROMO_ACTIVE ? (
-                                  <>
-                                    Wieder veröffentlichen –{" "}
-                                    <s className="opacity-70">CHF {relistPrice}</s>
-                                    <span className="ml-1 font-bold">Gratis</span>
-                                  </>
+                                  <T
+                                    k="Wieder veröffentlichen – <0>CHF {price}</0><1>Gratis</1>"
+                                    vars={{ price: relistPrice }}
+                                    c={[<s key="0" className="opacity-70" />, <span key="1" className="ml-1 font-bold" />]}
+                                  />
                                 ) : isExtendedListing ? (
-                                  <>
-                                    Verlängern – <s className="opacity-70 mx-1">CHF 30</s> CHF {relistPrice}
-                                  </>
+                                  <T
+                                    k="Verlängern – <0>CHF 30</0> CHF {price}"
+                                    vars={{ price: relistPrice }}
+                                    c={[<s key="0" className="opacity-70 mx-1" />]}
+                                  />
                                 ) : (
-                                  <>Wieder veröffentlichen – CHF {relistPrice}</>
+                                  <>{t("Wieder veröffentlichen – CHF {price}", { price: relistPrice })}</>
                                 )}
                               </Button>
                               {!RELIST_PROMO_ACTIVE && !isExtendedListing && (
@@ -904,7 +959,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Crown className="w-4 h-4 mr-2 text-amber-500" />
-                                  Verlängert – CHF 50 · 90 Tage + Premium
+                                  {t("Verlängert – CHF 50 · 90 Tage + Premium")}
                                 </Button>
                               )}
                             </div>
@@ -918,7 +973,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               onClick={() => handleEdit(listing.id)}
                             >
                               <Edit className="w-4 h-4 mr-2" />
-                              Bearbeiten
+                              {t("Bearbeiten")}
                             </Button>
                           )}
 
@@ -933,12 +988,12 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 <DropdownMenuItem
                                   onClick={() => {
                                     if (typeof window !== "undefined") {
-                                      window.open(listingHref, "_blank", "noopener,noreferrer");
+                                      window.open(localizePath(listingHref, locale), "_blank", "noopener,noreferrer");
                                     }
                                   }}
                                 >
                                   <ExternalLink className="w-4 h-4 mr-2 text-neutral-700" />
-                                  Öffentlich öffnen
+                                  {t("Öffentlich öffnen")}
                                 </DropdownMenuItem>
                               )}
 
@@ -948,7 +1003,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Undo2 className="w-4 h-4 mr-2 text-neutral-700" />
-                                  Auf Entwurf ändern
+                                  {t("Auf Entwurf ändern")}
                                 </DropdownMenuItem>
                               )}
 
@@ -957,8 +1012,8 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                   onClick={() => handleOpenMarkSold(listing)}
                                   disabled={actionLoading === listing.id}
                                 >
-                                  <Badge variant="secondary" className="mr-2">Verkauft</Badge>
-                                  Als verkauft markieren
+                                  <Badge variant="secondary" className="mr-2">{t("Verkauft")}</Badge>
+                                  {t("Als verkauft markieren")}
                                 </DropdownMenuItem>
                               )}
 
@@ -968,7 +1023,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Play className="w-4 h-4 mr-2 text-emerald-600" />
-                                  Reaktivieren
+                                  {t("Reaktivieren")}
                                 </DropdownMenuItem>
                               )}
 
@@ -980,7 +1035,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Play className="w-4 h-4 mr-2 text-emerald-600" />
-                                  Reaktivieren
+                                  {t("Reaktivieren")}
                                 </DropdownMenuItem>
                               )}
 
@@ -990,7 +1045,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Crown className="w-4 h-4 mr-2 text-amber-500" />
-                                  {((premiumCredits?.remaining ?? 0) > 0) ? "Upgrade auf Premium (inkl.)" : "Premium für CHF 30 kaufen"}
+                                  {((premiumCredits?.remaining ?? 0) > 0) ? t("Upgrade auf Premium (inkl.)") : t("Premium für CHF 30 kaufen")}
                                 </DropdownMenuItem>
                               )}
 
@@ -1004,7 +1059,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                   disabled={actionLoading === listing.id}
                                 >
                                   <Pause className="w-4 h-4 mr-2 text-neutral-700" />
-                                  Inserat pausieren
+                                  {t("Inserat pausieren")}
                                 </DropdownMenuItem>
                               )}
 
@@ -1018,7 +1073,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                   className="text-red-600 focus:text-red-600"
                                 >
                                   <Archive className="w-4 h-4 mr-2" />
-                                  Archivieren
+                                  {t("Archivieren")}
                                 </DropdownMenuItem>
                               )}
 
@@ -1031,7 +1086,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                                 className="text-red-600 focus:text-red-600"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Löschen
+                                {t("Löschen")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1048,34 +1103,36 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
               counted in the sold tab's header but never rendered, so the tab
               could claim «N Inserate» above an empty list. */}
           {effectiveView === "sold" &&
-            tombstoneCards.map((t) => (
-              <Card key={`tombstone-${t.id}`} className="border-neutral-200/60 rounded-3xl opacity-80">
+            tombstoneCards.map((tomb) => (
+              <Card key={`tombstone-${tomb.id}`} className="border-neutral-200/60 rounded-3xl opacity-80">
                 <CardContent className="p-6">
                   <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
                     <div className="w-full sm:w-40 h-28 rounded-2xl bg-neutral-100 overflow-hidden flex-shrink-0">
-                      {t.coverImageUrl ? (
+                      {tomb.coverImageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={t.coverImageUrl} alt={`${t.brand} ${t.model}`} className="w-full h-full object-cover" />
+                        <img src={tomb.coverImageUrl} alt={`${tomb.brand} ${tomb.model}`} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm">
-                          {t.brand} {t.model}
+                          {tomb.brand} {tomb.model}
                         </div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge className="bg-green-100 text-green-700 border-green-200">Verkauft</Badge>
+                        <Badge className="bg-green-100 text-green-700 border-green-200">{t("Verkauft")}</Badge>
                         <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200">
-                          Gelöscht
+                          {t("Gelöscht")}
                         </Badge>
                       </div>
                       <h3 className="text-lg font-semibold text-neutral-900 truncate">
-                        {t.brand} {t.model}
-                        {t.year ? ` (${t.year})` : ""}
+                        {tomb.brand} {tomb.model}
+                        {tomb.year ? ` (${tomb.year})` : ""}
                       </h3>
                       <p className="text-sm text-neutral-500">
-                        {t.soldAt ? `Verkauft am ${new Date(t.soldAt).toLocaleDateString("de-CH")}` : "Verkauft"}
-                        {t.location ? ` · ${t.location}` : ""}
+                        {tomb.soldAt
+                          ? t("Verkauft am {date}", { date: new Date(tomb.soldAt).toLocaleDateString("de-CH") })
+                          : t("Verkauft")}
+                        {tomb.location ? ` · ${tomb.location}` : ""}
                       </p>
                     </div>
                   </div>
@@ -1088,20 +1145,19 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Inserat löschen</AlertDialogTitle>
+            <AlertDialogTitle>{t("Inserat löschen")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie dieses Inserat dauerhaft löschen möchten?
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {t("Sind Sie sicher, dass Sie dieses Inserat dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => listingToDelete && handleDelete(listingToDelete)}
               className="bg-red-500 hover:bg-red-600"
               disabled={actionLoading === listingToDelete}
             >
-              {actionLoading === listingToDelete ? "Wird gelöscht..." : "Löschen"}
+              {actionLoading === listingToDelete ? t("Wird gelöscht...") : t("Löschen")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1110,21 +1166,21 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Inserat archivieren</AlertDialogTitle>
+            <AlertDialogTitle>{t("Inserat archivieren")}</AlertDialogTitle>
             <AlertDialogDescription>
               <span className="font-semibold text-neutral-900">
-                Dieses Inserat wird dauerhaft archiviert. Diese Aktion kann nicht rückgängig gemacht werden.
+                {t("Dieses Inserat wird dauerhaft archiviert. Diese Aktion kann nicht rückgängig gemacht werden.")}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setListingToArchive(null)}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setListingToArchive(null)}>{t("Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => listingToArchive && handleArchive(listingToArchive)}
               className="bg-red-500 hover:bg-red-600"
               disabled={actionLoading === listingToArchive}
             >
-              {actionLoading === listingToArchive ? "Wird archiviert..." : "Ja, archivieren"}
+              {actionLoading === listingToArchive ? t("Wird archiviert...") : t("Ja, archivieren")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1133,10 +1189,9 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       <AlertDialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Inserat pausieren</AlertDialogTitle>
+            <AlertDialogTitle>{t("Inserat pausieren")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Während der Pause ist das Inserat nicht sichtbar. Es wird nach Ablauf automatisch wieder aktiviert und die
-              Laufzeit um die Pausenzeit verlängert (max. 90 Tage).
+              {t("Während der Pause ist das Inserat nicht sichtbar. Es wird nach Ablauf automatisch wieder aktiviert und die Laufzeit um die Pausenzeit verlängert (max. 90 Tage).")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -1148,17 +1203,17 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                 className="rounded-2xl"
                 onClick={() => setPauseDays(d)}
               >
-                {d} Tage
+                {t("{n} Tage", { n: d })}
               </Button>
             ))}
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setListingToPause(null)}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setListingToPause(null)}>{t("Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => listingToPause && handlePause(listingToPause, pauseDays)}
               disabled={actionLoading === listingToPause}
             >
-              {actionLoading === listingToPause ? "Wird pausiert..." : "Pausieren"}
+              {actionLoading === listingToPause ? t("Wird pausiert...") : t("Pausieren")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1184,18 +1239,18 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       <AlertDialog open={Boolean(listingToUnpause)} onOpenChange={(open) => { if (!open) setListingToUnpause(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Inserat reaktivieren</AlertDialogTitle>
+            <AlertDialogTitle>{t("Inserat reaktivieren")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Wenn du das Inserat wieder aktivierst, verlängert sich das Ablaufdatum um die Pausenzeit.
+              {t("Wenn du das Inserat wieder aktivierst, verlängert sich das Ablaufdatum um die Pausenzeit.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => listingToUnpause && handleUnpause(listingToUnpause)}
               disabled={actionLoading === listingToUnpause}
             >
-              {actionLoading === listingToUnpause ? "Wird aktiviert..." : "Reaktivieren"}
+              {actionLoading === listingToUnpause ? t("Wird aktiviert...") : t("Reaktivieren")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

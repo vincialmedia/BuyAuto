@@ -13,6 +13,8 @@ import ResetPasswordForm from "./ResetPasswordForm";
 import UpdatePasswordForm from "./UpdatePasswordForm";
 import authService from "@/services/authService";
 import type { LoginFormData, RegisterFormData } from "@/lib/buyauto/schemas";
+import { useLocale, useT } from "@/i18n/runtime";
+import { localizePath } from "@/i18n/config";
 
 type AuthView = "login" | "register" | "reset-password" | "update-password";
 
@@ -25,6 +27,8 @@ export default function AuthForm({
   initialView = "login",
   initialAccountType,
 }: AuthFormProps = {}) {
+  const t = useT();
+  const locale = useLocale();
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,19 +48,19 @@ export default function AuthForm({
       await authService.signIn(signInData);
       console.log("AuthForm: Login successful");
       
-      toast.success("Erfolgreich angemeldet!");
+      toast.success(t("Erfolgreich angemeldet!"));
       
       // Don't redirect here - let the auth page handle it
       console.log("AuthForm: Login completed, waiting for auth context update");
       
     } catch (error: any) {
       console.error("Login error:", error);
-      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      let errorMessage = t("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
       
       if (error?.message?.includes("Invalid login credentials")) {
-        errorMessage = "Ungültige E-Mail oder Passwort.";
+        errorMessage = t("Ungültige E-Mail oder Passwort.");
       } else if (error?.message?.includes("Email not confirmed")) {
-        errorMessage = "Bitte bestätigen Sie Ihre E-Mail-Adresse.";
+        errorMessage = t("Bitte bestätigen Sie Ihre E-Mail-Adresse.");
       } else if (error?.message) {
         errorMessage = error.message;
       }
@@ -90,7 +94,7 @@ export default function AuthForm({
       await authService.signUp(signUpData);
       console.log("AuthForm: Registration successful");
       
-      toast.success("Registrierung erfolgreich! Überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen.");
+      toast.success(t("Registrierung erfolgreich! Überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen."));
       setCurrentView("login");
       
     } catch (error: any) {
@@ -102,7 +106,7 @@ export default function AuthForm({
         error?.message?.includes("already been registered");
 
       if (emailAlreadyExists) {
-        const errorMessage = "Diese E-Mail existiert bereits, bitte loggen Sie sich ein.";
+        const errorMessage = t("Diese E-Mail existiert bereits, bitte loggen Sie sich ein.");
         toast.error(errorMessage);
         setError(errorMessage);
         // Flip the toggle over to the login ("Einloggen") view so the user can
@@ -111,7 +115,7 @@ export default function AuthForm({
         return;
       }
 
-      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      let errorMessage = t("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
       if (error?.message) {
         errorMessage = error.message;
       }
@@ -131,12 +135,12 @@ export default function AuthForm({
       await authService.resetPassword(email);
       console.log("AuthForm: Password reset email sent");
       
-      toast.success("Passwort-Reset-Link wurde an Ihre E-Mail-Adresse gesendet.");
+      toast.success(t("Passwort-Reset-Link wurde an Ihre E-Mail-Adresse gesendet."));
       setCurrentView("login");
       
     } catch (error: any) {
       console.error("Reset password error:", error);
-      const errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      const errorMessage = t("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
       toast.error(errorMessage);
       setError(errorMessage);
     } finally {
@@ -153,7 +157,7 @@ export default function AuthForm({
       await authService.updatePassword(password);
       console.log("AuthForm: Password updated successfully");
       
-      toast.success("Passwort erfolgreich aktualisiert!");
+      toast.success(t("Passwort erfolgreich aktualisiert!"));
       
       // Clean up the URL hash so we don't stay in recovery mode
       if (typeof window !== 'undefined') {
@@ -161,11 +165,11 @@ export default function AuthForm({
       }
       
       // Redirect to dashboard
-      window.location.href = "/dashboard";
+      window.location.href = localizePath("/dashboard", locale);
       
     } catch (error: any) {
       console.error("Update password error:", error);
-      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      let errorMessage = t("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
       if (error?.message) {
         errorMessage = error.message;
       }
@@ -180,9 +184,9 @@ export default function AuthForm({
     return (
       <Card className="w-full max-w-md mx-auto shadow-xl shadow-neutral-900/5 border-neutral-200/60">
         <CardHeader className="space-y-1 text-center pb-4">
-          <h1 className="text-2xl font-semibold text-neutral-900">Passwort zurücksetzen</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900">{t("Passwort zurücksetzen")}</h1>
           <p className="text-sm text-neutral-600">
-            Geben Sie Ihre E-Mail-Adresse ein, um ein neues Passwort zu erhalten.
+            {t("Geben Sie Ihre E-Mail-Adresse ein, um ein neues Passwort zu erhalten.")}
           </p>
         </CardHeader>
         <CardContent className="pt-0">
@@ -200,16 +204,16 @@ export default function AuthForm({
     return (
       <Card className="w-full max-w-md mx-auto shadow-xl shadow-neutral-900/5 border-neutral-200/60">
         <CardHeader className="space-y-1 text-center pb-4">
-          <h1 className="text-2xl font-semibold text-neutral-900">Neues Passwort</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900">{t("Neues Passwort")}</h1>
           <p className="text-sm text-neutral-600">
-            Bitte vergeben Sie ein neues, sicheres Passwort für Ihr Konto.
+            {t("Bitte vergeben Sie ein neues, sicheres Passwort für Ihr Konto.")}
           </p>
         </CardHeader>
         <CardContent className="pt-0">
           {error && (
             <Alert variant="destructive" className="mb-4">
               <Terminal className="h-4 w-4" />
-              <AlertTitle>Fehler</AlertTitle>
+              <AlertTitle>{t("Fehler")}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -228,7 +232,7 @@ export default function AuthForm({
         {error && (
           <Alert variant="destructive" className="mb-4">
             <Terminal className="h-4 w-4" />
-            <AlertTitle>Fehler</AlertTitle>
+            <AlertTitle>{t("Fehler")}</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -246,14 +250,14 @@ export default function AuthForm({
               className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-red-500 data-[state=active]:shadow-sm"
               disabled={isLoading}
             >
-              Anmelden
+              {t("Anmelden")}
             </TabsTrigger>
             <TabsTrigger
               value="register"
               className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-red-500 data-[state=active]:shadow-sm"
               disabled={isLoading}
             >
-              Registrieren
+              {t("Registrieren")}
             </TabsTrigger>
           </TabsList>
 

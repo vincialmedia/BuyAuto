@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Repeat } from "lucide-react";
+import { T, useT } from "@/i18n/runtime";
 
 export function SeoCopyBlock() {
+  const t = useT();
   const internalLinks = [
     { label: "Leasingübernahme in der Schweiz", href: "/leasinguebernahme" },
     { label: "Leasing abgeben in der Schweiz", href: "/leasing-abgeben-schweiz" },
@@ -17,43 +19,43 @@ export function SeoCopyBlock() {
         <div className="mb-8">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-100 text-neutral-600 text-sm font-medium mb-4">
             <Repeat className="w-4 h-4" />
-            Leasingübernahme Schweiz
+            {t("Leasingübernahme Schweiz")}
           </span>
           <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
-            Leasingübernahme in der Schweiz – so funktioniert BuyAuto
+            {t("Leasingübernahme in der Schweiz – so funktioniert BuyAuto")}
           </h2>
         </div>
 
         {/* Body copy */}
         <div className="prose prose-lg max-w-none text-neutral-600 space-y-4">
           <p>
-            Eine{" "}
-            <Link href="/leasinguebernahme" className="text-red-600 font-semibold hover:underline">
-              Leasingübernahme
-            </Link>{" "}
-            bedeutet: Du übernimmst einen laufenden Leasingvertrag – inklusive Monatsrate, Restlaufzeit und Kilometerlimit – und die bisherige Leasingnehmerin oder der bisherige Leasingnehmer wird aus dem Vertrag entlassen.
+            <T
+              k="Eine <0>Leasingübernahme</0> bedeutet: Du übernimmst einen laufenden Leasingvertrag – inklusive Monatsrate, Restlaufzeit und Kilometerlimit – und die bisherige Leasingnehmerin oder der bisherige Leasingnehmer wird aus dem Vertrag entlassen."
+              c={[<Link key="0" href="/leasinguebernahme" className="text-red-600 font-semibold hover:underline" />]}
+            />
           </p>
 
           <p>
-            Für Abgeber entfällt damit die{" "}
-            <Link href="/leasing-abgeben-schweiz" className="text-red-600 font-semibold hover:underline">
-              teure vorzeitige Vertragsauflösung
-            </Link>{" "}
-            – statt einer Auflösungsentschädigung fällt nur die{" "}
-            <Link href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline">
-              Umschreibegebühr der Leasinggesellschaft
-            </Link>{" "}
-            an. Für Übernehmer heisst es: fahren ohne hohe Anzahlung und mit kurzer Restlaufzeit.
+            <T
+              k="Für Abgeber entfällt damit die <0>teure vorzeitige Vertragsauflösung</0> – statt einer Auflösungsentschädigung fällt nur die <1>Umschreibegebühr der Leasinggesellschaft</1> an. Für Übernehmer heisst es: fahren ohne hohe Anzahlung und mit kurzer Restlaufzeit."
+              c={[
+                <Link key="0" href="/leasing-abgeben-schweiz" className="text-red-600 font-semibold hover:underline" />,
+                <Link key="1" href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline" />,
+              ]}
+            />
           </p>
 
           <p>
-            BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. Die Inserate weisen Monatsrate und Restlaufzeit transparent aus, und du stehst direkt mit dem Anbieter in Kontakt. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum <strong>Direktkauf</strong>.
+            <T
+              k="BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. Die Inserate weisen Monatsrate und Restlaufzeit transparent aus, und du stehst direkt mit dem Anbieter in Kontakt. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum <0>Direktkauf</0>."
+              c={[<strong key="0" />]}
+            />
           </p>
         </div>
 
         {/* Internal links */}
         <div className="mt-10 pt-8 border-t border-neutral-200">
-          <p className="text-sm font-medium text-neutral-500 mb-4">Entdecke mehr auf BuyAuto:</p>
+          <p className="text-sm font-medium text-neutral-500 mb-4">{t("Entdecke mehr auf BuyAuto:")}</p>
           <div className="flex flex-wrap gap-3">
             {internalLinks.map((link, index) => (
               <Link
@@ -61,7 +63,7 @@ export function SeoCopyBlock() {
                 href={link.href}
                 className="inline-flex items-center px-4 py-2 rounded-full bg-neutral-100 text-neutral-700 text-sm font-medium hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
               >
-                {link.label}
+                {t(link.label)}
               </Link>
             ))}
           </div>

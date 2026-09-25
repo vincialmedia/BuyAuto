@@ -4,6 +4,9 @@
  * The garage tiers moved to `@/lib/buyauto/garagePlans` so API routes and lib
  * code can read the same numbers without importing from the component tree.
  * The re-exports below keep the old import path working.
+ *
+ * German copy: the UI renders it with translatePlanCopy(t, text) — dictionaries
+ * in src/i18n/messages/{fr,it,en}/pricing.json.
  */
 
 import {
@@ -13,6 +16,7 @@ import {
   pricingPlans,
   type Plan,
 } from "@/lib/buyauto/stripe_config";
+import { planCopy } from "@/lib/buyauto/garagePlans";
 
 export {
   GARAGE_CORE_FEATURES,
@@ -25,6 +29,8 @@ export {
   perVehicleLine,
   pricePerVehicleChf,
   formatChf,
+  planCopy,
+  translatePlanCopy,
   type GaragePlan,
   type GaragePlanCode,
   type GarageFeature,
@@ -58,8 +64,8 @@ export const PRIVATE_COMPARISON_ROWS: PrivateComparisonRow[] = [
     key: "duration",
     label: "Laufzeit",
     values: {
-      standard: `${pricingPlans.standard.duration_days} Tage`,
-      extended: `${pricingPlans.extended.duration_days} Tage`,
+      standard: planCopy("{n} Tage", { n: pricingPlans.standard.duration_days }),
+      extended: planCopy("{n} Tage", { n: pricingPlans.extended.duration_days }),
       unlimited: "online bis verkauft",
     },
   },
@@ -71,7 +77,10 @@ export const PRIVATE_COMPARISON_ROWS: PrivateComparisonRow[] = [
   {
     key: "premium",
     label: "Premium-Platzierung",
-    tooltip: `Ein Premium-Boost hebt dein Inserat 30 Tage zuoberst in der Suche hervor – einzeln CHF ${PREMIUM_BOOST_PRICE}.`,
+    tooltip: planCopy(
+      "Ein Premium-Boost hebt dein Inserat 30 Tage zuoberst in der Suche hervor – einzeln CHF {price}.",
+      { price: PREMIUM_BOOST_PRICE },
+    ),
     values: {
       standard: false,
       extended: "30 Tage inklusive",

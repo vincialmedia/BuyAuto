@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWizard } from "../ListingWizard";
+import { useT } from "@/i18n/runtime";
 import { createOrUpdateListing, vehicleCoreFieldsFromWizard, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 import {
@@ -128,6 +129,7 @@ export function LeaseTakeoverFinancingDetails() {
   const { data, updateData, nextStep, prevStep, draftId, setDraftId, registerDraftSnapshotter } = useWizard();
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const t = useT();
   const isGarage = profile?.role === "garage";
   const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
 
@@ -301,8 +303,8 @@ export function LeaseTakeoverFinancingDetails() {
         }
 
         toast({
-          title: "Gespeichert",
-          description: "Finanzierungsdetails wurden als Entwurf gespeichert.",
+          title: t("Gespeichert"),
+          description: t("Finanzierungsdetails wurden als Entwurf gespeichert."),
         });
 
         nextStep();
@@ -371,14 +373,14 @@ export function LeaseTakeoverFinancingDetails() {
       }
 
       toast({
-        title: "Gespeichert",
-        description: "Finanzierungsdetails wurden gespeichert.",
+        title: t("Gespeichert"),
+        description: t("Finanzierungsdetails wurden gespeichert."),
       });
 
       nextStep();
     } catch (error) {
       const details = getErrorDetailsForToast(error);
-      setSubmitError(details ?? "Unbekannter Fehler.");
+      setSubmitError(details ?? t("Unbekannter Fehler."));
 
       console.error("Error submitting Step 2 (lease takeover):", {
         message: (error as any)?.message,
@@ -389,10 +391,10 @@ export function LeaseTakeoverFinancingDetails() {
       });
 
       toast({
-        title: "Fehler beim Speichern",
+        title: t("Fehler beim Speichern"),
         description: details
-          ? `Finanzierungsdetails konnten nicht gespeichert werden: ${details}`
-          : "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfe die Angaben und versuche es erneut.",
+          ? t("Finanzierungsdetails konnten nicht gespeichert werden: {details}", { details })
+          : t("Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfe die Angaben und versuche es erneut."),
         variant: "destructive",
       });
     } finally {
@@ -406,8 +408,8 @@ export function LeaseTakeoverFinancingDetails() {
 
     focusFirstInvalidField(formErrors);
     toast({
-      title: "Bitte prüfe die Angaben",
-      description: "Einige Pflichtfelder sind noch nicht korrekt ausgefüllt.",
+      title: t("Bitte prüfe die Angaben"),
+      description: t("Einige Pflichtfelder sind noch nicht korrekt ausgefüllt."),
       variant: "destructive",
     });
   };

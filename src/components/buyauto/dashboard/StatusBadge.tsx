@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/runtime";
 
 interface StatusBadgeProps {
   status:
@@ -17,6 +18,7 @@ interface StatusBadgeProps {
 }
 
 export default function StatusBadge({ status, expiresAt, className }: StatusBadgeProps) {
+  const t = useT();
   const getStatusDisplay = () => {
     if (status === "published" && expiresAt) {
       const now = new Date();
@@ -78,7 +80,7 @@ export default function StatusBadge({ status, expiresAt, className }: StatusBadg
         className
       )}
     >
-      {text}
+      {t(text)}
     </span>
   );
 }

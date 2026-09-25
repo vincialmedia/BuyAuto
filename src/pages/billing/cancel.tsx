@@ -2,12 +2,17 @@ import Head from "next/head";
 import Link from "next/link";
 import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n/runtime";
+import { staticI18nProps } from "@/i18n/server";
+
+export const getStaticProps = staticI18nProps(["auth"]);
 
 export default function PaymentCancelledPage() {
+  const t = useT();
   return (
     <>
       <Head>
-        <title>Zahlung abgebrochen | BuyAuto</title>
+        <title>{t("Zahlung abgebrochen | BuyAuto")}</title>
         <meta name="robots" content="noindex" />
       </Head>
 
@@ -16,30 +21,30 @@ export default function PaymentCancelledPage() {
           <div className="flex justify-center mb-6">
             <div className="relative">
               <XCircle className="w-24 h-24 text-red-500" strokeWidth={1.5} />
-              <span className="absolute -bottom-2 -right-2 text-4xl" role="img" aria-label="Sad face">
+              <span className="absolute -bottom-2 -right-2 text-4xl" role="img" aria-label={t("Sad face")}>
                 😢
               </span>
             </div>
           </div>
 
           <h1 className="text-2xl font-bold text-neutral-900 mb-2">
-            Zahlung abgebrochen
+            {t("Zahlung abgebrochen")}
           </h1>
           
           <p className="text-neutral-600 mb-8">
-            Deine Transaktion wurde storniert. Es wurden keine Gebühren erhoben und es wurde kein Paket aktiviert.
+            {t("Deine Transaktion wurde storniert. Es wurden keine Gebühren erhoben und es wurde kein Paket aktiviert.")}
           </p>
 
           <div className="space-y-3">
             <Button asChild className="w-full" size="lg">
               <Link href="/garage-plan">
-                Zurück zu den Preisen
+                {t("Zurück zu den Preisen")}
               </Link>
             </Button>
             
             <Button asChild variant="ghost" className="w-full">
               <Link href="/dashboard/garage">
-                Zum Dashboard
+                {t("Zum Dashboard")}
               </Link>
             </Button>
           </div>

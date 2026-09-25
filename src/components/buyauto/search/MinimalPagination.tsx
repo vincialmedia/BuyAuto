@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useT } from "@/i18n/runtime";
 
 interface MinimalPaginationProps {
   currentPage: number;
@@ -12,6 +13,7 @@ export default function MinimalPagination({
   totalPages,
   onPageChange
 }: MinimalPaginationProps) {
+  const t = useT();
   const getVisiblePages = () => {
     const pages: (number | string)[] = [];
     const delta = 1;
@@ -34,7 +36,7 @@ export default function MinimalPagination({
   const visiblePages = getVisiblePages();
 
   return (
-    <nav className="flex items-center justify-center gap-1 sm:gap-2" aria-label="Pagination">
+    <nav className="flex items-center justify-center gap-1 sm:gap-2" aria-label={t("Pagination")}>
       {/* Previous Button */}
       <button
         onClick={() => onPageChange(currentPage - 1)}
@@ -44,10 +46,10 @@ export default function MinimalPagination({
             ? 'text-neutral-400 cursor-not-allowed bg-neutral-100'
             : 'text-neutral-700 hover:text-red-600 hover:bg-red-50 bg-white border border-neutral-200 hover:border-red-200 active:scale-95'
         }`}
-        aria-label="Vorherige Seite"
+        aria-label={t("Vorherige Seite")}
       >
         <ChevronLeft className="h-4 w-4" />
-        <span className="hidden sm:inline ml-1">Zurück</span>
+        <span className="hidden sm:inline ml-1">{t("Zurück@@pagination")}</span>
       </button>
 
       {/* Page Numbers */}
@@ -74,7 +76,7 @@ export default function MinimalPagination({
                   ? 'bg-red-600 text-white shadow-md shadow-red-600/20 hover:bg-red-700'
                   : 'text-neutral-700 hover:text-red-600 hover:bg-red-50 bg-white border border-neutral-200 hover:border-red-200'
               }`}
-              aria-label={`Seite ${page}`}
+              aria-label={t("Seite {n}", { n: page })}
               aria-current={isCurrentPage ? 'page' : undefined}
             >
               {page}
@@ -92,9 +94,9 @@ export default function MinimalPagination({
             ? 'text-neutral-400 cursor-not-allowed bg-neutral-100'
             : 'text-neutral-700 hover:text-red-600 hover:bg-red-50 bg-white border border-neutral-200 hover:border-red-200 active:scale-95'
         }`}
-        aria-label="Nächste Seite"
+        aria-label={t("Nächste Seite")}
       >
-        <span className="hidden sm:inline mr-1">Weiter</span>
+        <span className="hidden sm:inline mr-1">{t("Weiter@@pagination")}</span>
         <ChevronRight className="h-4 w-4" />
       </button>
     </nav>

@@ -15,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListings } from "@/services/listingsService";
 import { orderPremiumListings } from "@/lib/buyauto/premiumListings";
+import { OG_LOCALE, absoluteUrl } from "@/i18n/config";
+import { T, useLocale, useT } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
 
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"), {
   loading: () => <div className="h-96 bg-white animate-pulse" />,
@@ -31,37 +34,45 @@ interface HomePageProps {
 
 export default function HomePage({ premiumListings }: HomePageProps) {
   const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");
+  const t = useT();
+  const locale = useLocale();
+  const pageTitle = t("Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto");
+  const pageDescription = t(
+    "Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen.",
+  );
+  // German: exactly "https://www.buyauto.ch/" as before.
+  const canonicalUrl = absoluteUrl("/", locale);
 
   return (
     <div className="bg-[#fafafa] min-h-screen font-sans overflow-x-hidden">
       <Head>
-        <title>Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto</title>
+        <title>{pageTitle}</title>
         <meta
           name="description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
+          content={pageDescription}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/" />
+        <link rel="canonical" href={canonicalUrl} />
 
-        <meta property="og:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
+        <meta property="og:title" content={pageTitle} />
         <meta
           property="og:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
+          content={pageDescription}
         />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.buyauto.ch/" />
+        <meta property="og:url" content={canonicalUrl} />
         {/* key matches _app's fallback og:image so next/head dedupes them. */}
         <meta key="og:image" property="og:image" content="https://www.buyauto.ch/share-logo.jpg" />
         <meta property="og:image:width" content="1075" />
         <meta property="og:image:height" content="716" />
-        <meta property="og:image:alt" content="BuyAuto Logo" />
+        <meta property="og:image:alt" content={t("BuyAuto Logo")} />
         <meta property="og:site_name" content="BuyAuto" />
-        <meta property="og:locale" content="de_CH" />
+        <meta property="og:locale" content={OG_LOCALE[locale]} />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
+        <meta name="twitter:title" content={pageTitle} />
         <meta
           name="twitter:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
+          content={pageDescription}
         />
         <meta name="twitter:image" content="https://www.buyauto.ch/share-logo.jpg" />
 
@@ -112,7 +123,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
         <div className="absolute inset-0">
           <Image
             src="/Gemini_Generated_Image_rpm31frpm31frpm3.png"
-            alt="Red Porsche Macan on Swiss mountain road"
+            alt={t("Red Porsche Macan on Swiss mountain road")}
             fill
             priority
             fetchPriority="high"
@@ -128,12 +139,13 @@ export default function HomePage({ premiumListings }: HomePageProps) {
         <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center">
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
-              Raus aus dem Leasing.
-              <br />
-              Ohne <span className="text-red-500">Verlust.</span>
+              <T
+                k="Raus aus dem Leasing.<0/>Ohne <1>Verlust.</1>"
+                c={[<br key="0" />, <span key="1" className="text-red-500" />]}
+              />
             </h1>
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/90 font-medium max-w-2xl mx-auto drop-shadow-md">
-              Ein Schweizer Marktplatz für Leasingübernahmen – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.
+              {t("Ein Schweizer Marktplatz für Leasingübernahmen – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.")}
             </p>
           </div>
         </div>
@@ -188,10 +200,10 @@ export default function HomePage({ premiumListings }: HomePageProps) {
           <div className="text-center mb-14 md:mb-20">
             <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-700 text-sm font-bold uppercase tracking-wider mb-5 hover:bg-red-500/20 transition-colors cursor-default">
               <Zap className="w-4 h-4" />
-              So einfach geht&apos;s
+              {t("So einfach geht's")}
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-neutral-900 tracking-tight">
-              So funktioniert <span className="text-red-500">BuyAuto</span>
+              <T k="So funktioniert <0>BuyAuto</0>" c={[<span key="0" className="text-red-500" />]} />
             </h2>
           </div>
 
@@ -234,9 +246,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 
                     <div className="text-center relative z-10">
                       <h3 className="text-xl font-bold text-neutral-900 mb-3 group-hover:text-red-600 transition-colors duration-300">
-                        {item.title}
+                        {t(item.title)}
                       </h3>
-                      <p className="text-neutral-500 text-sm leading-relaxed max-w-[280px] mx-auto">{item.desc}</p>
+                      <p className="text-neutral-500 text-sm leading-relaxed max-w-[280px] mx-auto">{t(item.desc)}</p>
                     </div>
 
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
@@ -252,7 +264,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                 size="lg"
                 className="bg-neutral-900 text-white hover:bg-neutral-800 font-bold rounded-2xl px-10 shadow-xl hover:shadow-2xl h-14 text-base group hover:scale-105 transition-all duration-300"
               >
-                Jetzt Fahrzeuge entdecken
+                {t("Jetzt Fahrzeuge entdecken")}
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
@@ -274,9 +286,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
-                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3">Bereit loszufahren?</h2>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3">{t("Bereit loszufahren?")}</h2>
                 <p className="text-white/90 text-lg md:text-xl max-w-lg">
-                  Gib dein Leasing zur Übernahme frei oder steig in einen laufenden Vertrag ein.
+                  {t("Gib dein Leasing zur Übernahme frei oder steig in einen laufenden Vertrag ein.")}
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -285,7 +297,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                     size="lg"
                     className="bg-white text-red-600 hover:bg-neutral-100 font-bold rounded-2xl px-8 shadow-2xl shadow-black/20 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 group/btn"
                   >
-                    Inserat erstellen
+                    {t("Inserat erstellen")}
                     <Sparkles className="w-4 h-4 ml-2 group-hover/btn:rotate-12 transition-transform" />
                   </Button>
                 </Link>
@@ -294,7 +306,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                     size="lg"
                     className="bg-black/20 border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   >
-                    Alle Fahrzeuge
+                    {t("Alle Fahrzeuge")}
                     <ChevronRight className="w-5 h-5 ml-1" />
                   </Button>
                 </Link>
@@ -314,9 +326,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
       <LazyHydrate>
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-neutral-900">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Bereit, dein Leasing abzugeben?</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">{t("Bereit, dein Leasing abzugeben?")}</h2>
           <p className="text-lg md:text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
-            Erstelle dein Inserat in wenigen Minuten – oder übernimm einen laufenden Vertrag aus den aktuellen Angeboten.
+            {t("Erstelle dein Inserat in wenigen Minuten – oder übernimm einen laufenden Vertrag aus den aktuellen Angeboten.")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/inserat-erstellen">
@@ -324,7 +336,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                 size="lg"
                 className="bg-red-600 text-white hover:bg-red-700 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 shadow-lg shadow-red-500/25"
               >
-                Inserat erstellen
+                {t("Inserat erstellen")}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
@@ -334,7 +346,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                 variant="outline"
                 className="border-2 border-neutral-600 bg-white text-neutral-900 hover:bg-neutral-100 hover:text-neutral-900 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300"
               >
-                Fahrzeuge ansehen
+                {t("Fahrzeuge ansehen")}
               </Button>
             </Link>
           </div>
@@ -347,7 +359,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 
 // ISR: premium listings are part of the static HTML (no client fetch, no
 // layout shift) and refresh in the background every 5 minutes.
-export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
+export const getStaticProps: GetStaticProps<HomePageProps> = async (context) => {
   try {
     const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
       searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
@@ -361,9 +373,9 @@ export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
     // Strip undefined fields so Next can serialize.
     const premiumListings = JSON.parse(JSON.stringify(ordered)) as Listing[];
 
-    return { props: { premiumListings }, revalidate: 300 };
+    return { props: { premiumListings, ...(await withI18n(context.locale, ["home"])) }, revalidate: 300 };
   } catch (error) {
     console.error("Homepage premium listings fetch failed:", error);
-    return { props: { premiumListings: [] }, revalidate: 60 };
+    return { props: { premiumListings: [], ...(await withI18n(context.locale, ["home"])) }, revalidate: 60 };
   }
 };

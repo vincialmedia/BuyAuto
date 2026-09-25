@@ -13,6 +13,13 @@
 // Research base: Vince, Stand 13.08.2026. Kernbefund: nur Cembra publiziert
 // einen Übernahme-Tarif; AMAG, Multilease und BANK-now regeln die Übertragung
 // individuell auf Anfrage.
+//
+// i18n: all copy below stays German and is translated at render time by
+// LeasingCompanyPage — every German string (heroNote, descriptionDetail, fact
+// texts, sourceLinkText, financedBrands.lead/sourceLabel) is a key in the
+// "leasing" namespace (src/i18n/messages/{fr,it,en}/leasing.json). Editing a
+// German text changes its key: update the three dictionaries too, and keep each
+// translated sourceLinkText a verbatim substring of its translated text.
 
 export interface SourcedFact {
   /** Rendered German copy incl. the visible attribution («gemäss …, Stand …»). */

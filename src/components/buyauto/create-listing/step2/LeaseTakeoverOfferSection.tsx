@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enGB, frCH, itCH } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -11,6 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { useLocale, useT } from "@/i18n/runtime";
+
+// Month and weekday names in the date button and calendar follow the page language.
+const DATE_LOCALES = { de, fr: frCH, it: itCH, en: enGB };
 
 export interface LeaseTakeoverOfferFormValues {
   lease_takeover_enabled: boolean;
@@ -49,6 +53,8 @@ function calculateRemainingMonths(endDate: Date): number {
 
 export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues>(props: LeaseTakeoverOfferSectionProps<T>) {
   const { register, setValue, watch, errors } = props;
+  const t = useT();
+  const dateLocale = DATE_LOCALES[useLocale()];
 
   const enabled = Boolean(watch("lease_takeover_enabled" as any));
   const remainingMonths = Number(watch("lease_takeover_remaining_months" as any) ?? 0) || 0;
@@ -64,9 +70,9 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5 shadow-sm">
       <div className="space-y-2">
-        <p className="text-sm font-medium text-neutral-900">Leasingübernahme anbieten</p>
+        <p className="text-sm font-medium text-neutral-900">{t("Leasingübernahme anbieten")}</p>
         <p className="text-sm text-neutral-600">
-          Optional. Wenn aktiv, kannst du zusätzlich eine Leasingübernahme (Monatsrate & Restlaufzeit) angeben.
+          {t("Optional. Wenn aktiv, kannst du zusätzlich eine Leasingübernahme (Monatsrate & Restlaufzeit) angeben.")}
         </p>
 
         <RadioGroup
@@ -86,11 +92,11 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
         >
           <label className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 cursor-pointer hover:bg-neutral-50 transition-colors">
             <RadioGroupItem value="no" />
-            <span className="text-sm text-neutral-700">Nein</span>
+            <span className="text-sm text-neutral-700">{t("Nein")}</span>
           </label>
           <label className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 cursor-pointer hover:bg-neutral-50 transition-colors">
             <RadioGroupItem value="yes" />
-            <span className="text-sm text-neutral-700">Ja</span>
+            <span className="text-sm text-neutral-700">{t("Ja")}</span>
           </label>
         </RadioGroup>
 
@@ -98,7 +104,7 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="lease_takeover_price_per_month_chf" className="text-sm font-medium text-neutral-700">
-                Monatliche Rate *
+                {t("Monatliche Rate *")}
               </Label>
               <div className="relative">
                 <Input
@@ -107,19 +113,19 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
                   step="1"
                   inputMode="numeric"
                   {...register("lease_takeover_price_per_month_chf" as any, { valueAsNumber: true })}
-                  placeholder="z.B. 599"
+                  placeholder={t("z.B. 599")}
                   className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pl-12"
                 />
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-medium">CHF</span>
               </div>
               {(errors as any)?.lease_takeover_price_per_month_chf && (
-                <p className="text-sm text-red-500 font-light">{(errors as any).lease_takeover_price_per_month_chf.message}</p>
+                <p className="text-sm text-red-500 font-light">{t((errors as any).lease_takeover_price_per_month_chf.message ?? "")}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="lease_takeover_contract_end_date" className="text-sm font-medium text-neutral-700">
-                Vertragsende *
+                {t("Vertragsende *")}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -131,7 +137,7 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP", { locale: de }) : <span>Datum auswählen...</span>}
+                    {endDate ? format(endDate, "PPP", { locale: dateLocale }) : <span>{t("Datum auswählen...")}</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -147,25 +153,27 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
                     }}
                     disabled={(date) => date < new Date()}
                     initialFocus
-                    locale={de}
+                    locale={dateLocale}
                   />
                 </PopoverContent>
               </Popover>
 
               {remainingMonths > 0 ? (
                 <div className="text-xs text-neutral-500">
-                  {remainingMonths} {remainingMonths === 1 ? "Monat" : "Monate"} Restlaufzeit
+                  {remainingMonths === 1
+                    ? t("{n} Monat Restlaufzeit", { n: remainingMonths })
+                    : t("{n} Monate Restlaufzeit", { n: remainingMonths })}
                 </div>
               ) : null}
 
               {(errors as any)?.lease_takeover_remaining_months && (
-                <p className="text-sm text-red-500 font-light">{(errors as any).lease_takeover_remaining_months.message}</p>
+                <p className="text-sm text-red-500 font-light">{t((errors as any).lease_takeover_remaining_months.message ?? "")}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="lease_takeover_deposit_chf" className="text-sm font-medium text-neutral-700">
-                Kaution *
+                {t("Kaution *")}
               </Label>
               <div className="relative">
                 <Input
@@ -174,19 +182,19 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
                   step="1"
                   inputMode="numeric"
                   {...register("lease_takeover_deposit_chf" as any, { valueAsNumber: true })}
-                  placeholder="z.B. 2000"
+                  placeholder={t("z.B. 2000")}
                   className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pl-12"
                 />
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-medium">CHF</span>
               </div>
               {(errors as any)?.lease_takeover_deposit_chf && (
-                <p className="text-sm text-red-500 font-light">{(errors as any).lease_takeover_deposit_chf.message}</p>
+                <p className="text-sm text-red-500 font-light">{t((errors as any).lease_takeover_deposit_chf.message ?? "")}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="lease_takeover_remaining_km" className="text-sm font-medium text-neutral-700">
-                Verbleibende KM
+                {t("Verbleibende KM")}
               </Label>
               <div className="relative">
                 <Input
@@ -196,13 +204,13 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
                   step="1"
                   inputMode="numeric"
                   {...register("lease_takeover_remaining_km" as any, { valueAsNumber: true })}
-                  placeholder="z.B. 15000 (optional)"
+                  placeholder={t("z.B. 15000 (optional)")}
                   className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-12"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">km</span>
               </div>
               {(errors as any)?.lease_takeover_remaining_km && (
-                <p className="text-sm text-red-500 font-light">{(errors as any).lease_takeover_remaining_km.message}</p>
+                <p className="text-sm text-red-500 font-light">{t((errors as any).lease_takeover_remaining_km.message ?? "")}</p>
               )}
             </div>
           </div>

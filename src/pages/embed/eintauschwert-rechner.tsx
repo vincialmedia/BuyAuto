@@ -5,6 +5,9 @@ import dynamic from "next/dynamic";
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicGarageBySlug } from "@/services/garageService";
 import { EmbedLockedNotice } from "@/components/buyauto/dealer/EmbedLockedNotice";
+import { absoluteUrl } from "@/i18n/config";
+import { T, useLocale, useT, type I18nPageProps } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
 
 // Client-only chunk, same as the public page.
 const EintauschwertRechner = dynamic(
@@ -15,10 +18,12 @@ const EintauschwertRechner = dynamic(
   { ssr: false }
 );
 
-type PageProps =
+type PageProps = (
   | { status: "ok" }
   | { status: "locked"; garageName: string | null }
-  | { status: "missing_garage" };
+  | { status: "missing_garage" }
+) &
+  I18nPageProps;
 
 /**
  * The widget is a Growth+ website tool, so the iframe must identify which
@@ -28,13 +33,15 @@ type PageProps =
  * errors so a paying dealer's website never goes blank because of us.
  */
 export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
+  // The locked state renders EmbedLockedNotice, whose strings live in "dealer".
+  const i18n = await withI18n(ctx.locale, ["calculator", "dealer"]);
   const raw = ctx.query.garage;
   const slug = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
-  if (!slug) return { props: { status: "missing_garage" } };
+  if (!slug) return { props: { status: "missing_garage", ...i18n } };
 
   try {
     const garage = await getPublicGarageBySlug(slug);
-    if (!garage) return { props: { status: "missing_garage" } };
+    if (!garage) return { props: { status: "missing_garage", ...i18n } };
 
     const { data, error } = await supabase.rpc("get_garage_website_tools_enabled", {
       p_garage_id: garage.id,
@@ -42,12 +49,12 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
     if (error) throw error;
 
     if (data === false) {
-      return { props: { status: "locked", garageName: garage.garage_name ?? null } };
+      return { props: { status: "locked", garageName: garage.garage_name ?? null, ...i18n } };
     }
-    return { props: { status: "ok" } };
+    return { props: { status: "ok", ...i18n } };
   } catch (e) {
     console.error("calculator embed: website-tools check failed, failing open", e);
-    return { props: { status: "ok" } };
+    return { props: { status: "ok", ...i18n } };
   }
 };
 
@@ -55,6 +62,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 // garage's own website. Posts its height to the parent so the host iframe can
 // auto-size (same "buyauto:resize" protocol as the dealer-inventory embed).
 export default function EintauschwertRechnerEmbed(props: PageProps) {
+  const t = useT();
+  const locale = useLocale();
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -90,15 +99,17 @@ export default function EintauschwertRechnerEmbed(props: PageProps) {
     return (
       <>
         <Head>
-          <title>Eintauschwert-Rechner</title>
+          <title>{t("Eintauschwert-Rechner")}</title>
           <meta name="robots" content="noindex, nofollow" />
         </Head>
         <main className="min-h-[200px] bg-white">
           <div className="mx-auto max-w-xl px-4 py-10 text-center">
-            <p className="text-sm font-semibold text-neutral-900">Widget nicht konfiguriert</p>
+            <p className="text-sm font-semibold text-neutral-900">{t("Widget nicht konfiguriert")}</p>
             <p className="mt-2 text-sm text-neutral-600">
-              Dem Embed fehlt der Parameter <span className="font-mono">?garage=&lt;dein-slug&gt;</span>.
-              Den fertigen Code findest du im Garage-Dashboard unter «Rechner».
+              <T
+                k="Dem Embed fehlt der Parameter <0>?garage=<dein-slug></0>. Den fertigen Code findest du im Garage-Dashboard unter «Rechner»."
+                c={[<span key="0" className="font-mono" />]}
+              />
             </p>
           </div>
         </main>
@@ -109,22 +120,25 @@ export default function EintauschwertRechnerEmbed(props: PageProps) {
   return (
     <>
       <Head>
-        <title>Eintauschwert-Rechner</title>
+        <title>{t("Eintauschwert-Rechner")}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
       <main className="bg-white">
         <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4">
           <EintauschwertRechner />
           <p className="mt-6 text-center text-xs text-neutral-400">
-            Rechner von{" "}
-            <a
-              href="https://www.buyauto.ch/eintauschwert-rechner"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-neutral-500 hover:text-red-600"
-            >
-              BuyAuto.ch
-            </a>
+            <T
+              k="Rechner von <0>BuyAuto.ch</0>"
+              c={[
+                <a
+                  key="0"
+                  href={absoluteUrl("/eintauschwert-rechner", locale)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-neutral-500 hover:text-red-600"
+                />,
+              ]}
+            />
           </p>
         </div>
       </main>

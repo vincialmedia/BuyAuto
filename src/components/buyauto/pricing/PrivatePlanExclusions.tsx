@@ -5,6 +5,7 @@ import {
   RELIST_PROMO_ACTIVE,
   type Plan,
 } from "@/lib/buyauto/stripe_config";
+import { T, useT } from "@/i18n/runtime";
 
 /**
  * What a private plan does *not* include, rendered as grey X rows.
@@ -25,29 +26,30 @@ export function PrivatePlanExclusions({
   className?: string;
   itemClassName?: string;
 }) {
+  const t = useT();
   if (plan !== "standard") return null;
 
   return (
     <div className={cn("space-y-2", className)}>
       <div className={cn("flex items-start gap-2 text-sm text-neutral-400", itemClassName)}>
         <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
-        <span>Keine Premium-Platzierung</span>
+        <span>{t("Keine Premium-Platzierung")}</span>
       </div>
       <div className={cn("flex items-start gap-2 text-sm text-neutral-400", itemClassName)}>
         <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
-        <span>Maximal 5 Fotos</span>
+        <span>{t("Maximal 5 Fotos")}</span>
       </div>
       <div className={cn("flex items-start gap-2 text-sm text-neutral-400", itemClassName)}>
         <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
         <span>
-          Nach Ablauf: Wiedereinstellen{" "}
           {RELIST_PROMO_ACTIVE ? (
-            <>
-              <s>CHF {RELIST_PRICE_CHF}</s>{" "}
-              <span className="font-semibold text-emerald-700">zurzeit gratis</span>
-            </>
+            <T
+              k="Nach Ablauf: Wiedereinstellen <0>CHF {price}</0> <1>zurzeit gratis</1>"
+              vars={{ price: RELIST_PRICE_CHF }}
+              c={[<s key="price" />, <span key="promo" className="font-semibold text-emerald-700" />]}
+            />
           ) : (
-            <>für CHF {RELIST_PRICE_CHF}</>
+            t("Nach Ablauf: Wiedereinstellen für CHF {price}", { price: RELIST_PRICE_CHF })
           )}
         </span>
       </div>

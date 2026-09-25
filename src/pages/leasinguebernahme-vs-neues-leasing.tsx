@@ -29,6 +29,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Image from "next/image";
+import { useT, T, useLocale } from "@/i18n/runtime";
+import { absoluteUrl } from "@/i18n/config";
+import { staticI18nProps } from "@/i18n/server";
+
+export const getStaticProps = staticI18nProps(["pages/leasinguebernahme-vs-neues-leasing"]);
 
 // Dynamically import heavy interactive components
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -43,6 +48,8 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-vs-neues-leasing"];
 
 export default function LeasingubernahmeVsNeuesLeasingPage() {
+  const t = useT();
+  const locale = useLocale();
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -53,19 +60,19 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
   return (
     <>
       <Head>
-        <title>Leasingübernahme vs. Neues Leasing – Was lohnt sich mehr? | BuyAuto</title>
+        <title>{t("Leasingübernahme vs. Neues Leasing – Was lohnt sich mehr? | BuyAuto")}</title>
         <meta
           name="description"
-          content="Leasingübernahme vs. Neues Leasing: Detaillierter Vergleich der Kosten, Vorteile und Nachteile beider Optionen für Ihre Entscheidung."
+          content={t("Leasingübernahme vs. Neues Leasing: Detaillierter Vergleich der Kosten, Vorteile und Nachteile beider Optionen für Ihre Entscheidung.")}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-vs-neues-leasing" />
+        <link rel="canonical" href={absoluteUrl("/leasinguebernahme-vs-neues-leasing", locale)} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "Leasingübernahme vs. Neues Leasing",
+              headline: t("Leasingübernahme vs. Neues Leasing"),
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -73,25 +80,25 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
               dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme-vs-neues-leasing",
+              mainEntityOfPage: absoluteUrl("/leasinguebernahme-vs-neues-leasing", locale),
             }),
           }}
         />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingübernahme vs. Neues Leasing – Was lohnt sich mehr?" />
-        <meta property="og:description" content="Vergleichen Sie Leasingübernahme und Neues Leasing: Kosten, Vorteile und beste Option für Sie." />
+        <meta property="og:title" content={t("Leasingübernahme vs. Neues Leasing – Was lohnt sich mehr?")} />
+        <meta property="og:description" content={t("Vergleichen Sie Leasingübernahme und Neues Leasing: Kosten, Vorteile und beste Option für Sie.")} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-vs-neues-leasing" />
+        <meta property="og:url" content={absoluteUrl("/leasinguebernahme-vs-neues-leasing", locale)} />
       </Head>
 
       <main className="bg-neutral-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
           <Breadcrumbs
             items={[
-              { name: "Home", href: "/" },
-              { name: "Leasingübernahme", href: "/leasinguebernahme" },
-              { name: "Übernahme vs. neues Leasing", href: "/leasinguebernahme-vs-neues-leasing" },
+              { name: t("Home"), href: "/" },
+              { name: t("Leasingübernahme"), href: "/leasinguebernahme" },
+              { name: t("Übernahme vs. neues Leasing"), href: "/leasinguebernahme-vs-neues-leasing" },
             ]}
           />
         </div>
@@ -102,7 +109,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
           <div className="absolute inset-0">
             <Image
               src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=2400&q=80"
-              alt="Leasingübernahme vs Neues Leasing"
+              alt={t("Leasingübernahme vs Neues Leasing")}
               fill
               className="object-cover"
               priority
@@ -124,20 +131,16 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <FileCheck className="w-4 h-4" />
-                  Detaillierter Vergleich · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
+                  {t("Detaillierter Vergleich · Aktualisiert am {date}", { date: formatSwissDate(LAST_UPDATED_ISO) })}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
-                  Leasingübernahme vs. Neues Leasing
+                  {t("Leasingübernahme vs. Neues Leasing")}
                 </h1>
                 <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Welche Option lohnt sich?
+                  {t("Welche Option lohnt sich?")}
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Bei einer Leasingübernahme steigst du in einen laufenden Vertrag ein: keine hohe Anzahlung
-                  (0–2'000 CHF statt 5'000–15'000 CHF), kürzere Restlaufzeit, dafür sind Auto und Konditionen
-                  fix. Ein neues Leasing gibt dir freie Wahl bei Fahrzeug und Ausstattung, bindet dich aber
-                  36–48 Monate. Kurz: Übernahme für tiefe Einstiegskosten und Flexibilität, Neuleasing für das
-                  Wunschauto.
+                  {t("Bei einer Leasingübernahme steigst du in einen laufenden Vertrag ein: keine hohe Anzahlung (0–2'000 CHF statt 5'000–15'000 CHF), kürzere Restlaufzeit, dafür sind Auto und Konditionen fix. Ein neues Leasing gibt dir freie Wahl bei Fahrzeug und Ausstattung, bindet dich aber 36–48 Monate. Kurz: Übernahme für tiefe Einstiegskosten und Flexibilität, Neuleasing für das Wunschauto.")}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -147,7 +150,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
                   >
                     <Link href="/suche">
-                      Leasingübernahmen entdecken
+                      {t("Leasingübernahmen entdecken")}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
@@ -158,7 +161,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                     className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl bg-transparent"
                   >
                     <Link href="/inserat-erstellen">
-                      Inserat erstellen
+                      {t("Inserat erstellen")}
                     </Link>
                   </Button>
                 </div>
@@ -173,17 +176,22 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
             <div className="flex items-center gap-3 mb-6">
               <Info className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kurz gesagt: Der Hauptunterschied
+                {t("Kurz gesagt: Der Hauptunterschied")}
               </h2>
             </div>
             
             <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Bei einer <strong>Leasingübernahme</strong> übernehmen Sie einen bestehenden Vertrag mit verbleibender Laufzeit und oft günstigen Konditionen. Bei einem <strong>neuen Leasing</strong> starten Sie komplett neu mit individuell verhandelbaren Bedingungen.
+                <T
+                  k="Bei einer <0>Leasingübernahme</0> übernehmen Sie einen bestehenden Vertrag mit verbleibender Laufzeit und oft günstigen Konditionen. Bei einem <1>neuen Leasing</1> starten Sie komplett neu mit individuell verhandelbaren Bedingungen."
+                  c={[<strong key="0" />, <strong key="1" />]}
+                />
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
-                <strong>Leasingübernahme:</strong> Schneller Einstieg, oft ohne Anzahlung<br/>
-                <strong>Neues Leasing:</strong> Volle Flexibilität, langfristige Planung
+                <T
+                  k="<0>Leasingübernahme:</0> Schneller Einstieg, oft ohne Anzahlung<1/><2>Neues Leasing:</2> Volle Flexibilität, langfristige Planung"
+                  c={[<strong key="0" />, <br key="1" />, <strong key="2" />]}
+                />
               </p>
             </div>
           </div>
@@ -192,7 +200,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
         {/* TOC SECTION */}
         <section className="py-10 px-4 bg-neutral-50">
           <div className="max-w-4xl mx-auto">
-            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">Inhaltsverzeichnis</h3>
+            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">{t("Inhaltsverzeichnis")}</h3>
             <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
                 {[
@@ -211,7 +219,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                     className="flex items-center gap-2 text-neutral-600 hover:text-primary transition-colors text-left group"
                   >
                     <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium">{t(item.label)}</span>
                   </button>
                 ))}
               </div>
@@ -224,10 +232,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                Hauptunterschiede im Überblick
+                {t("Hauptunterschiede im Überblick")}
               </h2>
               <p className="text-lg text-neutral-600">
-                Zwei unterschiedliche Ansätze mit verschiedenen Vor- und Nachteilen
+                {t("Zwei unterschiedliche Ansätze mit verschiedenen Vor- und Nachteilen")}
               </p>
             </div>
 
@@ -239,7 +247,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                     <TrendingDown className="w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold text-neutral-900">
-                    Leasingübernahme
+                    {t("Leasingübernahme")}
                   </h3>
                 </div>
                 <ul className="space-y-4">
@@ -253,7 +261,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                      <span className="font-medium">{item}</span>
+                      <span className="font-medium">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -266,7 +274,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                     <TrendingUp className="w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold text-neutral-900">
-                    Neues Leasing
+                    {t("Neues Leasing")}
                   </h3>
                 </div>
                 <ul className="space-y-4">
@@ -280,7 +288,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
-                      <span className="font-medium">{item}</span>
+                      <span className="font-medium">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -295,7 +303,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
             <div className="flex items-center gap-3 mb-8">
               <DollarSign className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kostenvergleich
+                {t("Kostenvergleich")}
               </h2>
             </div>
             
@@ -303,36 +311,36 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
               <table className="w-full bg-white text-left">
                 <thead className="bg-primary text-white">
                   <tr>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenposition</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Leasingübernahme</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Neues Leasing</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Kostenposition")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Leasingübernahme")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Neues Leasing")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Anzahlung</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Anzahlung")}</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">0–2'000 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">5'000–15'000 CHF</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Übertragungsgebühr")}</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">–</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Monatliche Rate</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Oft günstiger</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Standard-Konditionen</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Monatliche Rate")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Oft günstiger")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Standard-Konditionen")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Laufzeit</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">6–24 Monate Rest</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">24–60 Monate</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Laufzeit")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("6–24 Monate Rest")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("24–60 Monate")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Gesamtkosten</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Niedriger</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Höher</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Gesamtkosten")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Niedriger")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Höher")}</td>
                   </tr>
                 </tbody>
               </table>
@@ -342,9 +350,12 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
               <div className="flex items-start gap-4">
                 <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-900 font-semibold mb-1">Spartipp</p>
+                  <p className="text-green-900 font-semibold mb-1">{t("Spartipp")}</p>
                   <p className="text-green-800">
-                    Bei Leasingübernahmen können Sie oft 30-50% der Gesamtkosten sparen, da die Anzahlung bereits geleistet wurde und die Restlaufzeit kürzer ist. Welche Gebühren im Einzelnen anfallen, zeigt unsere <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">detaillierte Kostenübersicht zur Leasingübernahme</Link>.
+                    <T
+                      k="Bei Leasingübernahmen können Sie oft 30-50% der Gesamtkosten sparen, da die Anzahlung bereits geleistet wurde und die Restlaufzeit kürzer ist. Welche Gebühren im Einzelnen anfallen, zeigt unsere <0>detaillierte Kostenübersicht zur Leasingübernahme</0>."
+                      c={[<Link key="0" href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline" />]}
+                    />
                   </p>
                 </div>
               </div>
@@ -358,10 +369,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
             <div className="bg-white rounded-2xl shadow-lg border-2 border-primary p-6 md:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
-                  Leasingübernahmen Entdecken
+                  {t("Leasingübernahmen Entdecken")}
                 </h2>
                 <p className="text-neutral-600 text-base md:text-lg">
-                  Finden Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
+                  {t("Finden Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.")}
                 </p>
               </div>
               <SearchForm />
@@ -376,10 +387,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
               <TrendingDown className="w-8 h-8 text-primary" />
               <div>
                 <h2 className="text-3xl font-bold text-neutral-900">
-                  Vorteile der Leasingübernahme
+                  {t("Vorteile der Leasingübernahme")}
                 </h2>
                 <Link href="/leasinguebernahme" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline text-sm mt-1">
-                  Mehr erfahren
+                  {t("Mehr erfahren")}
                   <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
@@ -426,8 +437,8 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                         <IconComponent className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-neutral-900 mb-2">{item.title}</h3>
-                        <p className="text-neutral-600">{item.desc}</p>
+                        <h3 className="font-bold text-neutral-900 mb-2">{t(item.title)}</h3>
+                        <p className="text-neutral-600">{t(item.desc)}</p>
                       </div>
                     </div>
                   </div>
@@ -443,7 +454,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
             <div className="flex items-center gap-3 mb-8">
               <TrendingUp className="w-8 h-8 text-neutral-700" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Vorteile Neues Leasing
+                {t("Vorteile Neues Leasing")}
               </h2>
             </div>
             
@@ -488,8 +499,8 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                         <IconComponent className="w-6 h-6 text-neutral-700" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-neutral-900 mb-2">{item.title}</h3>
-                        <p className="text-neutral-600">{item.desc}</p>
+                        <h3 className="font-bold text-neutral-900 mb-2">{t(item.title)}</h3>
+                        <p className="text-neutral-600">{t(item.desc)}</p>
                       </div>
                     </div>
                   </div>
@@ -504,10 +515,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                Für wen eignet sich was?
+                {t("Für wen eignet sich was?")}
               </h2>
               <p className="text-lg text-neutral-600">
-                Finden Sie die passende Option für Ihre Situation
+                {t("Finden Sie die passende Option für Ihre Situation")}
               </p>
             </div>
 
@@ -518,7 +529,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                   <div className="flex items-center gap-3 mb-6">
                     <Users className="w-7 h-7 text-primary" />
                     <h3 className="text-2xl font-bold text-neutral-900">
-                      Leasingübernahme passt zu Ihnen, wenn...
+                      {t("Leasingübernahme passt zu Ihnen, wenn...")}
                     </h3>
                   </div>
                   <ul className="space-y-4">
@@ -532,7 +543,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
                         <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="font-medium">{item}</span>
+                        <span className="font-medium">{t(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -545,7 +556,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                   <div className="flex items-center gap-3 mb-6">
                     <Users className="w-7 h-7 text-neutral-700" />
                     <h3 className="text-2xl font-bold text-neutral-900">
-                      Neues Leasing passt zu Ihnen, wenn...
+                      {t("Neues Leasing passt zu Ihnen, wenn...")}
                     </h3>
                   </div>
                   <ul className="space-y-4">
@@ -559,7 +570,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
                         <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
-                        <span className="font-medium">{item}</span>
+                        <span className="font-medium">{t(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -575,13 +586,13 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
             <div className="flex items-center gap-3 mb-8">
               <FileCheck className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Entscheidungshilfe: Ihre Checkliste
+                {t("Entscheidungshilfe: Ihre Checkliste")}
               </h2>
             </div>
             
             <div className="bg-neutral-50 border-2 border-primary rounded-xl p-8">
               <p className="text-lg text-neutral-700 mb-6">
-                Beantworten Sie diese Fragen, um die richtige Wahl zu treffen:
+                {t("Beantworten Sie diese Fragen, um die richtige Wahl zu treffen:")}
               </p>
               
               <div className="space-y-4">
@@ -599,7 +610,7 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                         <span className="text-primary font-bold text-sm">{i + 1}</span>
                       </div>
-                      <p className="text-neutral-900 font-medium">{question}</p>
+                      <p className="text-neutral-900 font-medium">{t(question)}</p>
                     </div>
                   </div>
                 ))}
@@ -607,10 +618,17 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
 
               <div className="mt-8 p-6 bg-primary/5 border border-primary/20 rounded-lg">
                 <p className="text-primary font-semibold mb-2">
-                  💡 Unser Tipp:
+                  {t("💡 Unser Tipp:")}
                 </p>
                 <p className="text-neutral-700">
-                  Wenn Sie bei den meisten Fragen auf "Budget", "Sofort" und "Kurz" antworten, ist eine <strong>Leasingübernahme</strong> ideal – werfen Sie am besten direkt einen Blick auf die <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">aktuellen Leasingübernahme-Angebote</Link>. Wenn Sie auf "Flexibilität", "Geduld" und "Lang" setzen, ist ein <strong>neues Leasing</strong> besser geeignet.
+                  <T
+                    k='Wenn Sie bei den meisten Fragen auf "Budget", "Sofort" und "Kurz" antworten, ist eine <0>Leasingübernahme</0> ideal – werfen Sie am besten direkt einen Blick auf die <1>aktuellen Leasingübernahme-Angebote</1>. Wenn Sie auf "Flexibilität", "Geduld" und "Lang" setzen, ist ein <2>neues Leasing</2> besser geeignet.'
+                    c={[
+                      <strong key="0" />,
+                      <Link key="1" href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline" />,
+                      <strong key="2" />,
+                    ]}
+                  />
                 </p>
               </div>
             </div>
@@ -622,10 +640,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                FAQ – Häufige Fragen
+                {t("FAQ – Häufige Fragen")}
               </h2>
               <p className="text-neutral-600 text-lg">
-                Die wichtigsten Fragen im Vergleich
+                {t("Die wichtigsten Fragen im Vergleich")}
               </p>
             </div>
             
@@ -635,10 +653,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Ist eine Leasingübernahme günstiger als ein neues Leasing?
+                  {t("Ist eine Leasingübernahme günstiger als ein neues Leasing?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, in den meisten Fällen sparen Sie durch die bereits geleistete Anzahlung und die kürzere Restlaufzeit erheblich. Die Gesamtkosten können 30-50% niedriger sein.
+                  {t("Ja, in den meisten Fällen sparen Sie durch die bereits geleistete Anzahlung und die kürzere Restlaufzeit erheblich. Die Gesamtkosten können 30-50% niedriger sein.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -647,10 +665,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Kann ich bei einer Leasingübernahme die Konditionen ändern?
+                  {t("Kann ich bei einer Leasingübernahme die Konditionen ändern?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Nein, bei einer Leasingübernahme übernehmen Sie den Vertrag mit allen bestehenden Konditionen. Änderungen sind nur in Ausnahmefällen und mit Zustimmung der Bank möglich.
+                  {t("Nein, bei einer Leasingübernahme übernehmen Sie den Vertrag mit allen bestehenden Konditionen. Änderungen sind nur in Ausnahmefällen und mit Zustimmung der Bank möglich.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -659,10 +677,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Welche Option ist besser für Fahranfänger?
+                  {t("Welche Option ist besser für Fahranfänger?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Für Fahranfänger ist eine Leasingübernahme oft ideal: Niedrige Einstiegskosten, kürzere Bindung und die Möglichkeit, verschiedene Fahrzeugtypen zu testen, bevor man sich langfristig festlegt.
+                  {t("Für Fahranfänger ist eine Leasingübernahme oft ideal: Niedrige Einstiegskosten, kürzere Bindung und die Möglichkeit, verschiedene Fahrzeugtypen zu testen, bevor man sich langfristig festlegt.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -671,10 +689,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Wie schnell kann ich ein Fahrzeug bei einer Leasingübernahme bekommen?
+                  {t("Wie schnell kann ich ein Fahrzeug bei einer Leasingübernahme bekommen?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Nach erfolgreicher Bonitätsprüfung und Vertragsübertragung (ca. 5-10 Werktage) können Sie das Fahrzeug sofort übernehmen. Bei neuem Leasing müssen Sie oft 3-6 Monate auf die Lieferung warten.
+                  {t("Nach erfolgreicher Bonitätsprüfung und Vertragsübertragung (ca. 5-10 Werktage) können Sie das Fahrzeug sofort übernehmen. Bei neuem Leasing müssen Sie oft 3-6 Monate auf die Lieferung warten.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -683,10 +701,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Was passiert am Ende einer Leasingübernahme?
+                  {t("Was passiert am Ende einer Leasingübernahme?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Am Ende der Laufzeit geben Sie das Fahrzeug wie bei jedem Leasing zurück. Sie haben die gleichen Optionen: Fahrzeug zurückgeben, verlängern oder (falls vereinbart) kaufen.
+                  {t("Am Ende der Laufzeit geben Sie das Fahrzeug wie bei jedem Leasing zurück. Sie haben die gleichen Optionen: Fahrzeug zurückgeben, verlängern oder (falls vereinbart) kaufen.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -695,10 +713,10 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Brauche ich bei einem neuen Leasing immer eine hohe Anzahlung?
+                  {t("Brauche ich bei einem neuen Leasing immer eine hohe Anzahlung?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Nicht zwingend, aber eine Anzahlung senkt die monatlichen Raten erheblich. Üblich sind 10-20% des Fahrzeugwertes. Ohne Anzahlung steigen die Monatsraten entsprechend.
+                  {t("Nicht zwingend, aber eine Anzahlung senkt die monatlichen Raten erheblich. Üblich sind 10-20% des Fahrzeugwertes. Ohne Anzahlung steigen die Monatsraten entsprechend.")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -709,21 +727,21 @@ export default function LeasingubernahmeVsNeuesLeasingPage() {
         <section className="py-20 bg-neutral-900 px-4">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Bereit für Ihr nächstes Fahrzeug?
+              {t("Bereit für Ihr nächstes Fahrzeug?")}
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Entdecken Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
+              {t("Entdecken Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
-                  Angebote durchsuchen
+                  {t("Angebote durchsuchen")}
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent transition-all">
                 <Link href="/inserat-erstellen">
-                  Inserat erstellen
+                  {t("Inserat erstellen")}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>

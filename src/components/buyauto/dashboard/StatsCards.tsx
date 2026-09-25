@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Car, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { useT } from "@/i18n/runtime";
 
 interface StatsCardsProps {
   stats: {
@@ -12,6 +13,7 @@ interface StatsCardsProps {
 }
 
 export function StatsCards({ stats, isLoading }: StatsCardsProps) {
+  const t = useT();
   // Handle null/undefined stats gracefully
   if (!stats || isLoading) {
     return (
@@ -52,7 +54,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
       description: "Warten auf Freigabe"
     },
     {
-      title: "Abgelaufen",
+      title: "Abgelaufen@@stats",
       value: stats.expired,
       icon: XCircle,
       color: "red",
@@ -96,10 +98,10 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
               </div>
               <div>
                 <h3 className="font-semibold text-neutral-900 mb-1">
-                  {card.title}
+                  {t(card.title)}
                 </h3>
                 <p className="text-sm text-neutral-500 leading-relaxed">
-                  {card.description}
+                  {t(card.description)}
                 </p>
               </div>
             </CardContent>

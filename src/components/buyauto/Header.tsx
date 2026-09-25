@@ -12,9 +12,11 @@ import {
   headerDropdownItemClass,
 } from "@/components/buyauto/HeaderDropdown";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/i18n/runtime";
 
 export default function Header() {
   const router = useRouter();
+  const t = useT();
   const { user, loading, messageCount, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -45,10 +47,10 @@ export default function Header() {
       ]);
       try {
         await authService.signOut();
-        toast.success("Erfolgreich abgemeldet!");
+        toast.success(t("Erfolgreich abgemeldet!"));
       } catch (error) {
         console.error("Sign out error:", error);
-        toast.error("Fehler beim Abmelden");
+        toast.error(t("Fehler beim Abmelden"));
       }
     } catch (error) {
       console.error("Sign out error:", error);
@@ -56,7 +58,7 @@ export default function Header() {
   };
 
   const firstName = user?.user_metadata?.first_name;
-  const displayName = firstName || user?.email?.split('@')[0] || 'Benutzer';
+  const displayName = firstName || user?.email?.split('@')[0] || t('Benutzer');
   const safeMessageCount = Math.max(0, messageCount);
 
   // Deferred login: guests go straight into the wizard and sign in at the
@@ -127,7 +129,7 @@ export default function Header() {
                   className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
-                  Inserat erstellen
+                  {t("Inserat erstellen")}
                 </Link>
                 <span className="absolute -top-2 left-full ml-1 text-red-600 font-scribble text-sm font-bold rotate-[-8deg] whitespace-nowrap pointer-events-none">
                   CHF0
@@ -143,27 +145,27 @@ export default function Header() {
                 trigger={
                   <>
                     <Car className="w-4 h-4" />
-                    Fahrzeuge Suchen
+                    {t("Fahrzeuge Suchen")}
                     <ChevronDown className="w-4 h-4" />
                   </>
                 }
               >
                 <Link href="/suche?dealType=lease_takeover" className={headerDropdownItemClass}>
-                  Leasingübernahmen
+                  {t("Leasingübernahmen")}
                 </Link>
                 <Link href="/suche?dealType=direct_purchase" className={headerDropdownItemClass}>
-                  Occasion & Neuwagen
+                  {t("Occasion & Neuwagen")}
                 </Link>
                 <Link href="/suche?dealType=direct_purchase&financingType=leasing" className={headerDropdownItemClass}>
-                  Leasing Suchen
+                  {t("Leasing Suchen")}
                 </Link>
                 <HeaderDropdownSeparator />
                 <Link href="/suche" className={`${headerDropdownItemClass} font-medium`}>
-                  Alle Fahrzeuge
+                  {t("Alle Fahrzeuge")}
                 </Link>
                 <HeaderDropdownSeparator />
                 <Link href="/leasinguebernahme" className={headerDropdownItemClass}>
-                  Leasingübernahme – Ratgeber
+                  {t("Leasingübernahme – Ratgeber")}
                 </Link>
               </HeaderDropdown>
               
@@ -173,7 +175,7 @@ export default function Header() {
                 className="text-neutral-600 hover:text-red-500 font-medium transition-colors flex items-center gap-1.5"
               >
                 <Coins className="w-4 h-4" />
-                Preise
+                {t("Preise")}
               </Link>
 
               {/* Für Garagen — supply-side entry point, visually secondary
@@ -182,7 +184,7 @@ export default function Header() {
                 href="/fuer-garagen"
                 className="text-neutral-500 hover:text-red-500 text-sm font-medium transition-colors"
               >
-                Für Garagen
+                {t("Für Garagen")}
               </Link>
             </nav>
 
@@ -194,8 +196,8 @@ export default function Header() {
                 onClick={handleCreateListingClick}
               >
                 <Plus className="h-4 w-4 mr-1 md:mr-1.5" />
-                <span className="hidden xs:inline">Inserat erstellen</span>
-                <span className="xs:hidden">Inserieren</span>
+                <span className="hidden xs:inline">{t("Inserat erstellen")}</span>
+                <span className="xs:hidden">{t("Inserieren")}</span>
                 <span className="ml-1 text-[10px] font-bold bg-white text-red-600 rounded px-1.5 py-0.5">
                   CHF0
                 </span>
@@ -234,7 +236,7 @@ export default function Header() {
                 >
                   <Link href="/dashboard" className={headerDropdownItemClass} onClick={handleDashboardClick}>
                     <BarChart3 className="mr-2 h-4 w-4" />
-                    Dashboard
+                    {t("Dashboard")}
                   </Link>
                   {/* Admin link - only show for admin users */}
                   {isAdmin && (
@@ -250,7 +252,7 @@ export default function Header() {
                     onClick={handleSignOut}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Abmelden
+                    {t("Abmelden")}
                   </button>
                 </HeaderDropdown>
               ) : (
@@ -258,7 +260,7 @@ export default function Header() {
                   asChild
                   className="bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
                 >
-                  <Link href="/auth">Anmelden</Link>
+                  <Link href="/auth">{t("Anmelden")}</Link>
                 </Button>
               )}
             </div>
@@ -270,7 +272,7 @@ export default function Header() {
                 size="sm"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2"
-                aria-label={isMenuOpen ? "Menü schliessen" : "Menü öffnen"}
+                aria-label={isMenuOpen ? t("Menü schliessen") : t("Menü öffnen")}
                 aria-expanded={isMenuOpen}
               >
                 <div className="w-6 h-6 flex flex-col justify-center items-center">
@@ -290,42 +292,42 @@ export default function Header() {
             <nav className="pb-4 pt-2 space-y-2 border-t border-neutral-200">
               {/* Fahrzeuge Suchen Section */}
               <div className="px-4 py-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                Fahrzeuge Suchen
+                {t("Fahrzeuge Suchen")}
               </div>
               <Link 
                 href="/suche?dealType=lease_takeover" 
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Leasingübernahmen
+                {t("Leasingübernahmen")}
               </Link>
               <Link 
                 href="/suche?dealType=direct_purchase" 
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Occasion & Neuwagen
+                {t("Occasion & Neuwagen")}
               </Link>
               <Link 
                 href="/suche?dealType=direct_purchase&financingType=leasing" 
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Leasing Suchen
+                {t("Leasing Suchen")}
               </Link>
               <Link
                 href="/suche"
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Alle Fahrzeuge
+                {t("Alle Fahrzeuge")}
               </Link>
               <Link
                 href="/leasinguebernahme"
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Leasingübernahme – Ratgeber
+                {t("Leasingübernahme – Ratgeber")}
               </Link>
 
               <div className="border-t border-neutral-100 my-2"></div>
@@ -336,7 +338,7 @@ export default function Header() {
                 className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Preise
+                {t("Preise")}
               </Link>
 
               {/* Für Garagen — muted like its desktop counterpart, but always
@@ -346,7 +348,7 @@ export default function Header() {
                 className="block px-4 py-2 text-neutral-500 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors text-sm"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Für Garagen
+                {t("Für Garagen")}
               </Link>
 
               <div className="border-t border-neutral-100 my-2"></div>
@@ -363,14 +365,14 @@ export default function Header() {
                     className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                     onClick={handleDashboardClick}
                   >
-                    Dashboard
+                    {t("Dashboard")}
                   </Link>
                   <Link
                     href="/dashboard/messages"
                     className="block px-4 py-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-50 rounded-lg transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Nachrichten
+                    {t("Nachrichten")}
                   </Link>
                   {/* Admin link in mobile menu - only show for admin users */}
                   {isAdmin && (
@@ -389,7 +391,7 @@ export default function Header() {
                     }}
                     className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    Abmelden
+                    {t("Abmelden")}
                   </button>
                 </>
               ) : (
@@ -398,7 +400,7 @@ export default function Header() {
                   className="block px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors text-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Anmelden
+                  {t("Anmelden")}
                 </Link>
               )}
             </nav>

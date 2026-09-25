@@ -26,12 +26,13 @@ import StatusBadge from "./StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DRAFT_ARCHIVE_AFTER_DAYS,
-  describeDraftLifecycle,
   formatDateDeCh,
   getDraftLifecycle,
+  type DraftLifecycle,
 } from "@/lib/buyauto/draftLifecycle";
+import { useT, type TFunction } from "@/i18n/runtime";
 
-const buildDraftTitle = (draft: ListingDraft) => {
+const buildDraftTitle = (draft: ListingDraft, t: TFunction) => {
   const brand = typeof draft.data.brand === "string" ? draft.data.brand.trim() : "";
   const model = typeof draft.data.model === "string" ? draft.data.model.trim() : "";
   const year = typeof draft.data.year === "number" ? draft.data.year : undefined;
@@ -39,11 +40,26 @@ const buildDraftTitle = (draft: ListingDraft) => {
   const base = [brand, model].filter(Boolean).join(" ");
   if (base && year) return `${base} (${year})`;
   if (base) return base;
-  return "Entwurf";
+  return t("Entwurf");
+};
+
+// Same labels as describeDraftLifecycle() (which stays German for the admin
+// table), rendered through t() — keep the two in step.
+const describeLifecycle = (lifecycle: DraftLifecycle, t: TFunction): string => {
+  if (lifecycle.archived) {
+    const days = lifecycle.daysUntilDelete ?? 0;
+    if (days <= 0) return t("Wird in Kürze gelöscht");
+    return days === 1 ? t("Wird in {n} Tag gelöscht", { n: days }) : t("Wird in {n} Tagen gelöscht", { n: days });
+  }
+
+  const days = lifecycle.daysUntilArchive ?? 0;
+  if (days <= 0) return t("Wird in Kürze archiviert");
+  return days === 1 ? t("Wird in {n} Tag archiviert", { n: days }) : t("Wird in {n} Tagen archiviert", { n: days });
 };
 
 export default function DraftsSection({ initialDrafts }: { initialDrafts?: ListingDraft[] }) {
   const router = useRouter();
+  const t = useT();
   const { user } = useAuth();
 
   const [drafts, setDrafts] = useState<ListingDraft[]>(() => initialDrafts ?? []);
@@ -155,11 +171,11 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
       setDraftToDelete(null);
     } catch (e) {
       console.error("Failed to delete listing draft:", e);
-      alert("Fehler beim Löschen des Entwurfs.");
+      alert(t("Fehler beim Löschen des Entwurfs."));
     } finally {
       setActionLoading(null);
     }
-  }, [draftToDelete, user]);
+  }, [draftToDelete, user, t]);
 
   if (!user) return null;
 
@@ -184,15 +200,17 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
   return (
     <div className="mb-8 space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="text-lg font-semibold text-neutral-900">Entwürfe</h3>
+        <h3 className="text-lg font-semibold text-neutral-900">{t("Entwürfe")}</h3>
         <span className="text-sm text-neutral-600">
-          {drafts.length} {drafts.length === 1 ? "Entwurf" : "Entwürfe"}
+          {drafts.length === 1
+            ? t("{n} Entwurf", { n: drafts.length })
+            : t("{n} Entwürfe", { n: drafts.length })}
         </span>
       </div>
 
       <div className="grid gap-4">
         {drafts.map((draft) => {
-          const title = buildDraftTitle(draft);
+          const title = buildDraftTitle(draft, t);
           const lifecycle = getDraftLifecycle(draft);
           const urgent = lifecycle.archived || (lifecycle.daysUntilArchive ?? Infinity) <= 5;
 
@@ -218,22 +236,22 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
                       ) : (
                         <Clock className="w-4 h-4 shrink-0" />
                       )}
-                      {describeDraftLifecycle(lifecycle)}
+                      {describeLifecycle(lifecycle, t)}
                       <span className="text-neutral-500 font-normal">
                         ({formatDateDeCh(lifecycle.deleteDueAt ?? lifecycle.archiveDueAt)})
                       </span>
                     </p>
                     <p className="text-sm text-neutral-600 mt-1">
                       {lifecycle.archived
-                        ? "Bearbeite den Entwurf, um ihn wiederherzustellen."
-                        : `Entwürfe werden nach ${DRAFT_ARCHIVE_AFTER_DAYS} Tagen ohne Bearbeitung archiviert.`}
+                        ? t("Bearbeite den Entwurf, um ihn wiederherzustellen.")
+                        : t("Entwürfe werden nach {n} Tagen ohne Bearbeitung archiviert.", { n: DRAFT_ARCHIVE_AFTER_DAYS })}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     <Button variant="outline" size="sm" onClick={() => onResume(draft.id)}>
                       <Pencil className="w-4 h-4 mr-2" />
-                      Bearbeiten
+                      {t("Bearbeiten")}
                     </Button>
 
                     <DropdownMenu>
@@ -245,7 +263,7 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
                       <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuItem onClick={() => onResume(draft.id)}>
                           <Pencil className="w-4 h-4 mr-2" />
-                          Fortsetzen
+                          {t("Fortsetzen")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -256,7 +274,7 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
                           className="text-red-600 focus:text-red-600"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Löschen
+                          {t("Löschen")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -271,19 +289,19 @@ export default function DraftsSection({ initialDrafts }: { initialDrafts?: Listi
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Entwurf löschen</AlertDialogTitle>
+            <AlertDialogTitle>{t("Entwurf löschen")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Möchtest du diesen Entwurf wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+              {t("Möchtest du diesen Entwurf wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={onConfirmDelete}
               className="bg-red-500 hover:bg-red-600"
               disabled={actionLoading === draftToDelete}
             >
-              {actionLoading === draftToDelete ? "Wird gelöscht..." : "Löschen"}
+              {actionLoading === draftToDelete ? t("Wird gelöscht...") : t("Löschen")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

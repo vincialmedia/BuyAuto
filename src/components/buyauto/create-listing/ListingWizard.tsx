@@ -21,6 +21,7 @@ import {
 import { Check, Loader2, Save } from "lucide-react";
 import { GARAGE_MAX_PHOTOS } from "@/lib/buyauto/garagePlans";
 import { GADS_LABEL_START, trackConversionOnce } from "@/lib/gads";
+import { useT } from "@/i18n/runtime";
 
 const StepLoading = () => (
   <div className="flex items-center justify-center py-12">
@@ -283,9 +284,17 @@ const rehydrateGuestImagesInData = async (
 export default function ListingWizard() {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useT();
   const { user, profile } = useAuth();
   const isGarage = profile?.role === "garage";
   const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
+
+  // The draft-loading effect reads the translator through a ref so a new
+  // dictionary never re-runs the load (and never re-applies a stored draft).
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
@@ -400,6 +409,7 @@ export default function ListingWizard() {
 
   useEffect(() => {
     if (!router.isReady) return;
+    const t = tRef.current;
 
     const run = async () => {
       try {
@@ -521,8 +531,8 @@ export default function ListingWizard() {
               console.warn("Could not migrate guest draft to a server draft:", e);
             }
             toast({
-              title: "Entwurf wiederhergestellt",
-              description: "Dein begonnenes Inserat wurde übernommen.",
+              title: t("Entwurf wiederhergestellt"),
+              description: t("Dein begonnenes Inserat wurde übernommen."),
             });
             setIsLoadingFromQuery(false);
             return;
@@ -549,8 +559,8 @@ export default function ListingWizard() {
                 { shallow: true }
               );
               toast({
-                title: "Entwurf wiederhergestellt",
-                description: "Du kannst dein begonnenes Inserat fortsetzen.",
+                title: t("Entwurf wiederhergestellt"),
+                description: t("Du kannst dein begonnenes Inserat fortsetzen."),
               });
               setIsLoadingFromQuery(false);
               return;
@@ -568,8 +578,8 @@ export default function ListingWizard() {
       } catch (e) {
         setIsLoadingFromQuery(false);
         toast({
-          title: "Entwurf konnte nicht geladen werden",
-          description: "Bitte versuche es erneut.",
+          title: t("Entwurf konnte nicht geladen werden"),
+          description: t("Bitte versuche es erneut."),
           variant: "destructive",
         });
       }
@@ -590,20 +600,20 @@ export default function ListingWizard() {
         const draftData = { ...data, ...livePatch };
         if (!hasAnyUserInput(draftData as ListingData)) {
           toast({
-            title: "Noch nichts zu speichern",
-            description: "Fülle mindestens ein Feld aus, um einen Entwurf zu speichern.",
+            title: t("Noch nichts zu speichern"),
+            description: t("Fülle mindestens ein Feld aus, um einen Entwurf zu speichern."),
           });
           return;
         }
         updateData(draftData);
         toast({
-          title: "Entwurf gespeichert",
-          description: "Dein Entwurf ist auf diesem Gerät gespeichert und wird beim Anmelden übernommen.",
+          title: t("Entwurf gespeichert"),
+          description: t("Dein Entwurf ist auf diesem Gerät gespeichert und wird beim Anmelden übernommen."),
         });
       } catch {
         toast({
-          title: "Entwurf konnte nicht gespeichert werden",
-          description: "Bitte versuche es erneut.",
+          title: t("Entwurf konnte nicht gespeichert werden"),
+          description: t("Bitte versuche es erneut."),
           variant: "destructive",
         });
       }
@@ -641,8 +651,8 @@ export default function ListingWizard() {
 
       if (!hasAnyUserInput(draftData as ListingData)) {
         toast({
-          title: "Noch nichts zu speichern",
-          description: "Fülle mindestens ein Feld aus, um einen Entwurf zu speichern.",
+          title: t("Noch nichts zu speichern"),
+          description: t("Fülle mindestens ein Feld aus, um einen Entwurf zu speichern."),
         });
         return;
       }
@@ -655,22 +665,22 @@ export default function ListingWizard() {
         await router.replace({ pathname: router.pathname, query: { ...router.query, draft: created.id } }, undefined, {
           shallow: true,
         });
-        toast({ title: "Entwurf gespeichert" });
+        toast({ title: t("Entwurf gespeichert") });
         return;
       }
 
       await updateListingDraft({ user, draftId, data: draftData });
-      toast({ title: "Entwurf gespeichert" });
+      toast({ title: t("Entwurf gespeichert") });
     } catch (e) {
       toast({
-        title: "Speichern fehlgeschlagen",
-        description: "Bitte versuche es erneut.",
+        title: t("Speichern fehlgeschlagen"),
+        description: t("Bitte versuche es erneut."),
         variant: "destructive",
       });
     } finally {
       setIsSavingDraft(false);
     }
-  }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, router, toast, updateData, user]);
+  }, [data, draftId, isEditingExistingListing, isGarage, isSavingDraft, router, t, toast, updateData, user]);
 
   // Continuous autosave: periodically capture the active step's live form values
   // (via the snapshotter) plus committed wizard data, and upsert the draft with
@@ -801,11 +811,11 @@ export default function ListingWizard() {
   const canSaveDraft = Boolean(user && !isLoadingFromQuery);
   const autosaveLabel =
     autosaveState === "saving"
-      ? "Speichert…"
+      ? t("Speichert…")
       : autosaveState === "saved"
-        ? "Automatisch gespeichert"
+        ? t("Automatisch gespeichert")
         : autosaveState === "error"
-          ? "Speichern fehlgeschlagen"
+          ? t("Speichern fehlgeschlagen")
           : "";
 
   return (
@@ -821,10 +831,10 @@ export default function ListingWizard() {
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="min-w-0">
                   <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
-                    Inserat erstellen
+                    {t("Inserat erstellen")}
                   </h1>
                   <p className="mt-2 text-sm sm:text-base text-neutral-600">
-                    Schritt für Schritt – klar, sicher, professionell.
+                    {t("Schritt für Schritt – klar, sicher, professionell.")}
                   </p>
                 </div>
 
@@ -852,8 +862,8 @@ export default function ListingWizard() {
                     disabled={!canSaveDraft || isSavingDraft}
                   >
                     <Save className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">{isSavingDraft ? "Speichern..." : "Entwurf speichern"}</span>
-                    <span className="sr-only sm:hidden">{isSavingDraft ? "Speichern..." : "Entwurf speichern"}</span>
+                    <span className="hidden sm:inline">{isSavingDraft ? t("Speichern...") : t("Entwurf speichern")}</span>
+                    <span className="sr-only sm:hidden">{isSavingDraft ? t("Speichern...") : t("Entwurf speichern")}</span>
                   </Button>
                 </div>
               </div>
@@ -865,7 +875,7 @@ export default function ListingWizard() {
 
             <div ref={stepsContainerRef} className="px-5 sm:px-8 py-6 sm:py-8">
               {isLoadingFromQuery ? (
-                <div className="text-sm text-neutral-600">Lade Entwurf...</div>
+                <div className="text-sm text-neutral-600">{t("Lade Entwurf...")}</div>
               ) : (
                 <>
                   {currentStep === 1 && <Step1_VehicleData />}
@@ -879,7 +889,7 @@ export default function ListingWizard() {
           </Card>
 
           <div className="mt-4 text-xs text-neutral-500">
-            Tipp: Speichere zwischendurch deinen Entwurf – du kannst später jederzeit weitermachen.
+            {t("Tipp: Speichere zwischendurch deinen Entwurf – du kannst später jederzeit weitermachen.")}
           </div>
         </div>
       </div>

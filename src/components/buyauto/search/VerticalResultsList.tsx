@@ -4,6 +4,7 @@ import MinimalPagination from "./MinimalPagination";
 import { Listing } from "@/lib/buyauto/types";
 import { Search, FilterX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { T, useT } from "@/i18n/runtime";
 
 interface VerticalResultsListProps {
   listings: Listing[];
@@ -24,6 +25,7 @@ export default function VerticalResultsList({
   totalResults = 0,
   onClearFilters
 }: VerticalResultsListProps) {
+  const t = useT();
   
   // Loading state with skeletons
   if (isLoading) {
@@ -46,11 +48,10 @@ export default function VerticalResultsList({
           <Search className="h-10 w-10 text-neutral-400" />
         </div>
         <h3 className="text-2xl font-bold text-neutral-900 mb-2">
-          Keine Fahrzeuge gefunden
+          {t("Keine Fahrzeuge gefunden")}
         </h3>
         <p className="text-neutral-600 text-center max-w-md mb-8">
-          Leider gibt es keine Ergebnisse für Ihre aktuelle Filterauswahl. 
-          Versuchen Sie, einige Filter zu entfernen.
+          {t("Leider gibt es keine Ergebnisse für Ihre aktuelle Filterauswahl. Versuchen Sie, einige Filter zu entfernen.")}
         </p>
         {onClearFilters && (
           <Button
@@ -59,7 +60,7 @@ export default function VerticalResultsList({
             className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
           >
             <FilterX className="h-4 w-4 mr-2" />
-            Alle Filter zurücksetzen
+            {t("Alle Filter zurücksetzen")}
           </Button>
         )}
       </div>
@@ -72,7 +73,11 @@ export default function VerticalResultsList({
       {totalResults > 0 && (
         <div className="flex items-center justify-between animate-in fade-in slide-in-from-bottom-4 duration-500">
           <p className="text-sm text-neutral-600 font-medium">
-            <span className="text-neutral-900 font-bold">{totalResults}</span> Fahrzeug{totalResults !== 1 ? "e" : ""} gefunden
+            {totalResults !== 1 ? (
+              <T k="<0>{n}</0> Fahrzeuge gefunden" vars={{ n: totalResults }} c={[<span key="0" className="text-neutral-900 font-bold" />]} />
+            ) : (
+              <T k="<0>{n}</0> Fahrzeug gefunden" vars={{ n: totalResults }} c={[<span key="0" className="text-neutral-900 font-bold" />]} />
+            )}
           </p>
         </div>
       )}

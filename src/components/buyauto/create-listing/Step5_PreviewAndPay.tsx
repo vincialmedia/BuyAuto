@@ -29,6 +29,7 @@ import { clearGuestImages } from "@/lib/buyauto/guestImageStore";
 import type { ListingUpdatePayload } from "@/services/createListingService";
 import { ADS_CONVERSIONS, trackAdsConversion, trackEvent } from "@/lib/analytics/gtag";
 import { GADS_LABEL_PUBLISH, trackConversionOnce } from "@/lib/gads";
+import { useT } from "@/i18n/runtime";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -37,16 +38,21 @@ interface PaymentIntentWithMetadata extends PaymentIntent {
   };
 }
 
+function PaymentWidgetLoading() {
+  const t = useT();
+  return (
+    <div className="text-center py-8">
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <p className="mt-2 text-neutral-600">{t("Loading payment form...")}</p>
+    </div>
+  );
+}
+
 const PaymentWidget = dynamic(
   () => import('./PaymentWidget'),
   { 
     ssr: false,
-    loading: () => (
-      <div className="text-center py-8">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p className="mt-2 text-neutral-600">Loading payment form...</p>
-      </div>
-    )
+    loading: () => <PaymentWidgetLoading />
   }
 );
 
@@ -109,6 +115,7 @@ export default function Step5_PreviewAndPay() {
   const { user, loading: userLoading, profile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const t = useT();
 
   const [mounted, setMounted] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -235,15 +242,15 @@ export default function Step5_PreviewAndPay() {
   // Compute capability label
   let capabilityLabel = "";
   if (dealType === "lease_takeover") {
-    capabilityLabel = "pro Monat";
+    capabilityLabel = t("pro Monat");
   } else {
     // direct purchase
     if (financingType === "leasing" && takeoverOfferEnabled) {
-      capabilityLabel = "Leasing & Leasing Übernahme möglich";
+      capabilityLabel = t("Leasing & Leasing Übernahme möglich");
     } else if (financingType === "leasing") {
-      capabilityLabel = "Leasing möglich";
+      capabilityLabel = t("Leasing möglich");
     } else if (takeoverOfferEnabled) {
-      capabilityLabel = "Leasing Übernahme möglich";
+      capabilityLabel = t("Leasing Übernahme möglich");
     }
     // cash only -> blank
   }
@@ -255,9 +262,9 @@ export default function Step5_PreviewAndPay() {
   const vehicleDetails = [
     { label: "Baujahr", value: data.year },
     { label: "Kilometer", value: formatMileage(data.km) },
-    { label: "Karosserie", value: data.body },
-    { label: "Antrieb", value: data.fuel },
-    { label: "Getriebe", value: data.gearbox },
+    { label: "Karosserie", value: data.body ? t(data.body) : data.body },
+    { label: "Antrieb@@fuel", value: data.fuel ? t(data.fuel) : data.fuel },
+    { label: "Getriebe", value: data.gearbox ? t(data.gearbox) : data.gearbox },
   ];
 
   const offerDetails =
@@ -342,8 +349,8 @@ export default function Step5_PreviewAndPay() {
     if (dealType === "lease_takeover") return null;
     if (!takeoverOfferEnabled) return null;
     if (typeof takeoverMonthlyRateChf !== "number") return null;
-    return `Leasingübernahme: CHF ${takeoverMonthlyRateChf.toLocaleString("de-CH")} / Monat`;
-  }, [dealType, takeoverMonthlyRateChf, takeoverOfferEnabled]);
+    return t("Leasingübernahme: CHF {amount} / Monat", { amount: takeoverMonthlyRateChf.toLocaleString("de-CH") });
+  }, [dealType, t, takeoverMonthlyRateChf, takeoverOfferEnabled]);
 
   const leasingTeaser = useMemo(() => {
     if (dealType === "direct_purchase" && financingType === "leasing" && purchasePriceForDisplayChf && data.year && data.km && leasingOffer) {
@@ -542,8 +549,8 @@ export default function Step5_PreviewAndPay() {
     if (!publishableKey) {
       console.error('❌ Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
       toast({ 
-        title: "Configuration Error", 
-        description: "Payment verification unavailable. Please contact support.", 
+        title: t("Configuration Error"), 
+        description: t("Payment verification unavailable. Please contact support."), 
         variant: 'destructive' 
       });
       return;
@@ -560,8 +567,8 @@ export default function Step5_PreviewAndPay() {
       if (!stripe) {
         console.error('❌ Failed to initialize Stripe');
         toast({ 
-          title: "Configuration Error", 
-          description: "Payment system unavailable. Please contact support.", 
+          title: t("Configuration Error"), 
+          description: t("Payment system unavailable. Please contact support."), 
           variant: 'destructive' 
         });
         return;
@@ -582,7 +589,7 @@ export default function Step5_PreviewAndPay() {
             console.error('Payment verification API failed:', e);
           }
 
-          toast({ title: "Zahlung erfolgreich!", description: "Dein Inserat wird bearbeitet." });
+          toast({ title: t("Zahlung erfolgreich!"), description: t("Dein Inserat wird bearbeitet.") });
 
           // Redirect-based checkout (TWINT, 3DS) completed — same funnel
           // events as the embedded path. Wizard state may be freshly restored
@@ -638,25 +645,25 @@ export default function Step5_PreviewAndPay() {
           setIsComplete(true);
           break;
         case 'processing':
-          toast({ title: "Zahlung wird verarbeitet.", description: "Wir informieren dich, sobald die Zahlung eingegangen ist." });
+          toast({ title: t("Zahlung wird verarbeitet."), description: t("Wir informieren dich, sobald die Zahlung eingegangen ist.") });
           break;
         case 'requires_payment_method':
-          toast({ title: "Zahlung fehlgeschlagen.", description: "Bitte versuche eine andere Zahlungsmethode.", variant: 'destructive' });
+          toast({ title: t("Zahlung fehlgeschlagen."), description: t("Bitte versuche eine andere Zahlungsmethode."), variant: 'destructive' });
           setClientSecret(paymentIntentClientSecret);
           break;
         default:
-          toast({ title: "Ein Fehler ist aufgetreten.", description: "Bitte versuche es erneut.", variant: 'destructive' });
+          toast({ title: t("Ein Fehler ist aufgetreten."), description: t("Bitte versuche es erneut."), variant: 'destructive' });
           break;
       }
     } catch (error) {
       console.error('Error verifying payment:', error);
       toast({ 
-        title: "Fehler", 
-        description: "Zahlungsstatus konnte nicht überprüft werden.", 
+        title: t("Fehler"), 
+        description: t("Zahlungsstatus konnte nicht überprüft werden."), 
         variant: 'destructive' 
       });
     }
-  }, [user, toast, updateData, setIsComplete, cleanupDraftAfterPublish, dealType, isPremium, premiumIncluded]);
+  }, [user, toast, updateData, setIsComplete, cleanupDraftAfterPublish, dealType, isPremium, premiumIncluded, t]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -677,7 +684,7 @@ export default function Step5_PreviewAndPay() {
   // EDIT MODE, plan unchanged: save the content, leave plan/expiry untouched.
   const handleSaveEdits = async () => {
     if (!mounted || !user) {
-      toast({ title: "Fehler", description: "Du musst angemeldet sein.", variant: "destructive" });
+      toast({ title: t("Fehler"), description: t("Du musst angemeldet sein."), variant: "destructive" });
       return;
     }
 
@@ -688,11 +695,11 @@ export default function Step5_PreviewAndPay() {
       // its expiry keep running (a plan CHANGE goes through payment instead).
       delete (payload as any).price_plan;
       await createOrUpdateListing(payload, user);
-      toast({ title: "Gespeichert", description: "Deine Änderungen wurden übernommen." });
+      toast({ title: t("Gespeichert"), description: t("Deine Änderungen wurden übernommen.") });
       void router.push("/dashboard");
     } catch (e: any) {
       const message = typeof e?.message === "string" ? e.message : "Änderungen konnten nicht gespeichert werden.";
-      toast({ title: "Fehler", description: message, variant: "destructive" });
+      toast({ title: t("Fehler"), description: t(message), variant: "destructive" });
     } finally {
       setIsPreparingPayment(false);
     }
@@ -702,8 +709,8 @@ export default function Step5_PreviewAndPay() {
   const handlePreparePayment = async () => {
     if (!mounted || !user) {
       toast({
-        title: "Fehler",
-        description: "Du musst angemeldet sein.",
+        title: t("Fehler"),
+        description: t("Du musst angemeldet sein."),
         variant: "destructive",
       });
       return;
@@ -711,8 +718,8 @@ export default function Step5_PreviewAndPay() {
 
     if (!selectedPlanId) {
       toast({
-        title: "Fehler",
-        description: "Bitte wähle einen Plan aus.",
+        title: t("Fehler"),
+        description: t("Bitte wähle einen Plan aus."),
         variant: "destructive",
       });
       return;
@@ -722,9 +729,9 @@ export default function Step5_PreviewAndPay() {
     // target — «downgrading» to the free plan would mean a free expiry reset.
     if (isEditingCompleted && planChanged && selectedPlanId === "standard") {
       toast({
-        title: "Nicht möglich",
+        title: t("Nicht möglich"),
         description:
-          "Ein Wechsel auf das Gratis-Inserat ist nicht möglich. Wähle den bisherigen Plan, um nur die Inhalte zu speichern.",
+          t("Ein Wechsel auf das Gratis-Inserat ist nicht möglich. Wähle den bisherigen Plan, um nur die Inhalte zu speichern."),
         variant: "destructive",
       });
       return;
@@ -761,14 +768,14 @@ export default function Step5_PreviewAndPay() {
         }
       } catch (e: any) {
         const message = typeof e?.message === "string" ? e.message : "Inserat konnte nicht gespeichert werden.";
-        toast({ title: "Fehler", description: message, variant: "destructive" });
+        toast({ title: t("Fehler"), description: t(message), variant: "destructive" });
         return;
       }
 
       if (!listingIdToUse) {
         toast({
-          title: "Fehler",
-          description: "Listing-ID nicht gefunden.",
+          title: t("Fehler"),
+          description: t("Listing-ID nicht gefunden."),
           variant: "destructive",
         });
         return;
@@ -801,7 +808,7 @@ export default function Step5_PreviewAndPay() {
           (result && (result.error || result.message)) ||
           (response.status === 401 || response.status === 403
             ? "Nicht autorisiert. Bitte Seite neu laden oder im neuen Tab öffnen und erneut versuchen."
-            : `Fehler bei der Vorbereitung (HTTP ${response.status}).`);
+            : t("Fehler bei der Vorbereitung (HTTP {status}).", { status: response.status }));
         throw new Error(msg);
       }
 
@@ -845,7 +852,7 @@ export default function Step5_PreviewAndPay() {
         });
         // Google Ads publish conversion — free tier, so no value.
         trackConversionOnce(`listing-publish:${listingIdToUse}`, GADS_LABEL_PUBLISH);
-        toast({ title: "Erfolgreich", description: "Dein kostenloses Inserat wird geprüft." });
+        toast({ title: t("Erfolgreich"), description: t("Dein kostenloses Inserat wird geprüft.") });
         setIsComplete(true);
         return;
       }
@@ -859,8 +866,8 @@ export default function Step5_PreviewAndPay() {
       setPaymentInitiated(true);
     } catch (error: any) {
       toast({
-        title: "Fehler",
-        description: error.message || "Ein unerwarteter Fehler ist aufgetreten.",
+        title: t("Fehler"),
+        description: t(error.message || "Ein unerwarteter Fehler ist aufgetreten."),
         variant: "destructive",
       });
     } finally {
@@ -890,18 +897,18 @@ export default function Step5_PreviewAndPay() {
         }
       } catch (e: any) {
         const message = typeof e?.message === "string" ? e.message : "Inserat konnte nicht gespeichert werden.";
-        toast({ title: "Fehler", description: message, variant: "destructive" });
+        toast({ title: t("Fehler"), description: t(message), variant: "destructive" });
         return;
       }
     }
 
     if (!listingIdToUse) {
-      toast({ title: "Fehler", description: "Keine Inserat-ID gefunden.", variant: "destructive" });
+      toast({ title: t("Fehler"), description: t("Keine Inserat-ID gefunden."), variant: "destructive" });
       return;
     }
 
     if (listingStatus === "published") {
-      toast({ title: "Inserat ist bereits veröffentlicht", description: "Du findest es im Dashboard." });
+      toast({ title: t("Inserat ist bereits veröffentlicht"), description: t("Du findest es im Dashboard.") });
       await cleanupDraftAfterPublish(listingIdToUse);
       setIsComplete(true);
       return;
@@ -914,7 +921,7 @@ export default function Step5_PreviewAndPay() {
         await createOrUpdateListing({ ...buildListingPayloadFromWizard(), id: listingIdToUse }, user);
       } catch (e: any) {
         const message = typeof e?.message === "string" ? e.message : "Inserat konnte nicht gespeichert werden.";
-        toast({ title: "Fehler", description: message, variant: "destructive" });
+        toast({ title: t("Fehler"), description: t(message), variant: "destructive" });
         return;
       }
 
@@ -939,10 +946,10 @@ export default function Step5_PreviewAndPay() {
 
         if (!updated?.id) {
           const message =
-            "Konnte garage_id nicht setzen. Inserat nicht gefunden oder keine Berechtigung.";
+            t("Konnte garage_id nicht setzen. Inserat nicht gefunden oder keine Berechtigung.");
           setGaragePublishError({ message });
           toast({
-            title: "Veröffentlichen fehlgeschlagen",
+            title: t("Veröffentlichen fehlgeschlagen"),
             description: message,
             variant: "destructive",
           });
@@ -965,8 +972,8 @@ export default function Step5_PreviewAndPay() {
           msg.toLowerCase().includes("quota");
 
         const description = isLimit
-          ? "Du hast das Inserate-Limit deines aktuellen Pakets erreicht. Bitte ändere dein Paket unter „Zahlung“."
-          : `Publizieren fehlgeschlagen: ${msg}`;
+          ? t("Du hast das Inserate-Limit deines aktuellen Pakets erreicht. Bitte ändere dein Paket unter „Zahlung“.")
+          : t("Publizieren fehlgeschlagen: {msg}", { msg: t(msg) });
 
         setGaragePublishError({
           message: description,
@@ -976,7 +983,7 @@ export default function Step5_PreviewAndPay() {
         });
 
         toast({
-          title: "Veröffentlichen fehlgeschlagen",
+          title: t("Veröffentlichen fehlgeschlagen"),
           description,
           variant: "destructive",
           action: (
@@ -985,7 +992,7 @@ export default function Step5_PreviewAndPay() {
               size="sm"
               onClick={() => router.push(isLimit ? `/garage-plan?next=${encodeURIComponent(`/inserat-erstellen?edit=${listingIdToUse}`)}` : "/dashboard/garage")}
             >
-              {isLimit ? "Paket upgraden" : "Verwalten"}
+              {isLimit ? t("Paket upgraden") : t("Verwalten")}
             </Button>
           ),
         });
@@ -1006,8 +1013,8 @@ export default function Step5_PreviewAndPay() {
       // (The "already published" early return above deliberately doesn't fire.)
       trackConversionOnce(`listing-publish:${listingIdToUse}`, GADS_LABEL_PUBLISH);
       toast({
-        title: "Inserat veröffentlicht!",
-        description: "Dein Inserat ist jetzt live.",
+        title: t("Inserat veröffentlicht!"),
+        description: t("Dein Inserat ist jetzt live."),
       });
       await cleanupDraftAfterPublish(listingIdToUse);
       setIsComplete(true);
@@ -1018,9 +1025,9 @@ export default function Step5_PreviewAndPay() {
       const message =
         typeof error?.message === "string"
           ? error.message
-          : "Bitte versuche es später erneut.";
+          : t("Bitte versuche es später erneut.");
 
-      const extra = [error?.code ? `Code: ${String(error.code)}` : null, error?.details ? `Details: ${String(error.details)}` : null, error?.hint ? `Hint: ${String(error.hint)}` : null]
+      const extra = [error?.code ? t("Code: {code}", { code: String(error.code) }) : null, error?.details ? t("Details: {details}", { details: String(error.details) }) : null, error?.hint ? t("Hint: {hint}", { hint: String(error.hint) }) : null]
         .filter(Boolean)
         .join(" · ");
 
@@ -1032,12 +1039,12 @@ export default function Step5_PreviewAndPay() {
       });
 
       toast({
-        title: "Fehler beim Veröffentlichen",
+        title: t("Fehler beim Veröffentlichen"),
         description: extra ? `${message} (${extra})` : message,
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/garage")}>
-            Verwalten
+            {t("Verwalten")}
           </Button>
         )
       });
@@ -1093,8 +1100,8 @@ export default function Step5_PreviewAndPay() {
     );
 
     toast({
-      title: "Zahlung erfolgreich!",
-      description: "Dein Inserat wird bearbeitet."
+      title: t("Zahlung erfolgreich!"),
+      description: t("Dein Inserat wird bearbeitet.")
     });
     await cleanupDraftAfterPublish();
     setIsComplete(true);
@@ -1104,7 +1111,7 @@ export default function Step5_PreviewAndPay() {
     return (
       <div className="text-center py-8">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p className="mt-2 text-neutral-600">Laden...</p>
+        <p className="mt-2 text-neutral-600">{t("Laden...")}</p>
       </div>
     );
   }
@@ -1122,14 +1129,14 @@ export default function Step5_PreviewAndPay() {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
-          {paymentInitiated ? 'Bezahlung abschliessen' : (isGarage ? 'Überprüfen & Veröffentlichen' : 'Vorschau & Bezahlung')}
+          {paymentInitiated ? t('Bezahlung abschliessen') : (isGarage ? t('Überprüfen & Veröffentlichen') : t('Vorschau & Bezahlung'))}
         </h2>
         <p className="text-neutral-600 font-light leading-relaxed">
           {paymentInitiated
-            ? 'Schliesse die Bezahlung ab, um dein Inserat zu veröffentlichen.'
+            ? t('Schliesse die Bezahlung ab, um dein Inserat zu veröffentlichen.')
             : (isGarage
-                ? 'Dein Inserat wird direkt veröffentlicht (sofern dein Limit nicht erreicht ist).'
-                : 'Überprüfe deine Angaben und schliesse die Bezahlung ab.')
+                ? t('Dein Inserat wird direkt veröffentlicht (sofern dein Limit nicht erreicht ist).')
+                : t('Überprüfe deine Angaben und schliesse die Bezahlung ab.'))
           }
         </p>
       </div>
@@ -1143,7 +1150,7 @@ export default function Step5_PreviewAndPay() {
                   <div className="relative aspect-[16/10] w-full bg-neutral-100">
                     <Image
                       src={mainImage}
-                      alt={`${data.brand} ${data.model}` || "Fahrzeugbild"}
+                      alt={`${data.brand} ${data.model}` || t("Fahrzeugbild")}
                       fill
                       className="object-cover"
                       sizes="(max-width: 1024px) 100vw, 66vw"
@@ -1153,7 +1160,7 @@ export default function Step5_PreviewAndPay() {
                     {isPremium && (
                       <Badge className="bg-gradient-to-r from-primary to-primary/80 text-white border-0">
                         <Star className="w-4 h-4 mr-1" />
-                        Premium
+                        {t("Premium")}
                       </Badge>
                     )}
                   </div>
@@ -1191,7 +1198,7 @@ export default function Step5_PreviewAndPay() {
                   <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-8">
                     {vehicleDetails.map(({ label, value }) => (
                       <div key={label} className="flex justify-between items-center">
-                        <span className="text-sm text-neutral-500">{label}</span>
+                        <span className="text-sm text-neutral-500">{t(label)}</span>
                         <span className="text-sm font-medium text-neutral-900 text-right">{value || '-'}</span>
                       </div>
                     ))}
@@ -1203,33 +1210,33 @@ export default function Step5_PreviewAndPay() {
                     {dealType === "direct_purchase" && financingType === "leasing" && leasingOffer && (
                       <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
                         <div className="flex justify-between items-baseline mb-4">
-                          <h4 className="font-semibold text-neutral-900 text-sm">Leasing-Konditionen</h4>
+                          <h4 className="font-semibold text-neutral-900 text-sm">{t("Leasing-Konditionen")}</h4>
                           {leasingTeaser && leasingTeaser > 0 && (
                             <span className="text-sm font-medium text-neutral-900">
-                              ab CHF {leasingTeaser.toLocaleString('de-CH')} / Monat
+                              {t("ab CHF {amount} / Monat", { amount: leasingTeaser.toLocaleString('de-CH') })}
                             </span>
                           )}
                         </div>
                         <div className="grid grid-cols-1 gap-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Zinssatz</span>
+                            <span className="text-neutral-500">{t("Zinssatz")}</span>
                             <span className="text-neutral-900">{leasingOffer.interest_rate_pct}%</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Anzahlung</span>
+                            <span className="text-neutral-500">{t("Anzahlung")}</span>
                             <span className="text-neutral-900">
-                              {leasingOffer.no_down_payment ? "Keine Anzahlung" : `${leasingOffer.down_payment_pct}%`}
+                              {leasingOffer.no_down_payment ? t("Keine Anzahlung") : `${leasingOffer.down_payment_pct}%`}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Laufzeit</span>
+                            <span className="text-neutral-500">{t("Laufzeit")}</span>
                             <span className="text-neutral-900">
-                              {leasingOffer.min_term_months}–{leasingOffer.max_term_months} Monate
+                              {t("{min}–{max} Monate", { min: leasingOffer.min_term_months ?? "", max: leasingOffer.max_term_months ?? "" })}
                             </span>
                           </div>
                           {leasingOffer.km_options && leasingOffer.km_options.length > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-neutral-500">KM-Optionen</span>
+                              <span className="text-neutral-500">{t("KM-Optionen")}</span>
                               <span className="text-neutral-900 text-right max-w-[50%] truncate">
                                 {leasingOffer.km_options.map(k => `${(k/1000).toFixed(0)}k`).join(', ')}
                               </span>
@@ -1242,31 +1249,31 @@ export default function Step5_PreviewAndPay() {
                     {/* Lease Takeover Offer Block */}
                     {takeoverOfferEnabled && takeoverOffer && (
                       <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
-                        <h4 className="font-semibold text-neutral-900 text-sm mb-4">Leasingübernahme-Angebot</h4>
+                        <h4 className="font-semibold text-neutral-900 text-sm mb-4">{t("Leasingübernahme-Angebot")}</h4>
                         <div className="grid grid-cols-1 gap-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Monatliche Rate</span>
+                            <span className="text-neutral-500">{t("Monatliche Rate")}</span>
                             <span className="text-neutral-900 font-medium">CHF {takeoverOffer.price_per_month_chf?.toLocaleString('de-CH')}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Restlaufzeit</span>
-                            <span className="text-neutral-900">{takeoverOffer.remaining_months} Monate</span>
+                            <span className="text-neutral-500">{t("Restlaufzeit")}</span>
+                            <span className="text-neutral-900">{t("{n} Monate", { n: takeoverOffer.remaining_months ?? "" })}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Depot / Anzahlung</span>
+                            <span className="text-neutral-500">{t("Depot / Anzahlung")}</span>
                             <span className="text-neutral-900">CHF {takeoverOffer.deposit_chf?.toLocaleString('de-CH') ?? '-'}</span>
                           </div>
                           {takeoverOffer.remaining_km && (
                             <div className="flex justify-between">
-                              <span className="text-neutral-500">Verbleibende KM</span>
+                              <span className="text-neutral-500">{t("Verbleibende KM")}</span>
                               <span className="text-neutral-900">{takeoverOffer.remaining_km.toLocaleString('de-CH')} km</span>
                             </div>
                           )}
                           {typeof takeoverOffer.pickup_canton_code === "string" &&
                             takeoverOffer.pickup_canton_code.trim().toUpperCase() !== "XX" && (
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-neutral-600">Abhol-Kanton</span>
-                              <span className="text-neutral-900">{getCantonName(takeoverOffer.pickup_canton_code)}</span>
+                              <span className="text-neutral-600">{t("Abhol-Kanton")}</span>
+                              <span className="text-neutral-900">{t(getCantonName(takeoverOffer.pickup_canton_code))}</span>
                             </div>
                           )}
                         </div>
@@ -1277,16 +1284,16 @@ export default function Step5_PreviewAndPay() {
                     {dealType === "lease_takeover" && (
                        <div className="grid grid-cols-1 gap-y-2 text-sm pt-2">
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Restlaufzeit</span>
-                            <span className="text-neutral-900">{data.remaining_months} Monate</span>
+                            <span className="text-neutral-500">{t("Restlaufzeit")}</span>
+                            <span className="text-neutral-900">{t("{n} Monate", { n: data.remaining_months ?? "" })}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Depot / Anzahlung</span>
+                            <span className="text-neutral-500">{t("Depot / Anzahlung")}</span>
                             <span className="text-neutral-900">CHF {data.deposit_chf?.toLocaleString('de-CH') ?? '-'}</span>
                           </div>
                           {data.remaining_km && (
                             <div className="flex justify-between">
-                              <span className="text-neutral-500">Verbleibende KM</span>
+                              <span className="text-neutral-500">{t("Verbleibende KM")}</span>
                               <span className="text-neutral-900">{data.remaining_km.toLocaleString('de-CH')} km</span>
                             </div>
                           )}
@@ -1303,33 +1310,33 @@ export default function Step5_PreviewAndPay() {
                 <Card>
                   <CardContent className="p-6">
                     <h3 className="font-bold text-lg mb-4 flex items-center">
-                      Gewählter Plan
+                      {t("Gewählter Plan")}
                     </h3>
                     
                     {planDetails ? (
                       <div className="space-y-3">
                         <div className="flex justify-between font-semibold">
-                          <span>{planDetails.name}</span>
+                          <span>{t(planDetails.name)}</span>
                           <span>CHF {planPrice.toFixed(2)}</span>
                         </div>
                         <p className="text-sm text-neutral-500 -mt-2">
-                          {planDetails.duration_days ? `${planDetails.duration_days} Tage` : "Online bis verkauft"}
+                          {planDetails.duration_days ? t("{n} Tage", { n: planDetails.duration_days }) : t("Online bis verkauft")}
                         </p>
 
                         {premiumIncluded ? (
                           <div className="flex justify-between items-center text-sm pt-2">
                             <div className="flex items-center text-emerald-700 font-semibold">
                               <Star className="w-4 h-4 mr-2" />
-                              <span>Premium-Platzierung</span>
+                              <span>{t("Premium-Platzierung")}</span>
                             </div>
-                            <span className="font-semibold text-emerald-700">inklusive</span>
+                            <span className="font-semibold text-emerald-700">{t("inklusive")}</span>
                           </div>
                         ) : (
                           isPremium && (
                             <div className="flex justify-between items-center text-sm pt-2">
                               <div className="flex items-center text-red-600 font-semibold">
                                 <Star className="w-4 h-4 mr-2" />
-                                <span>Premium Boost</span>
+                                <span>{t("Premium Boost")}</span>
                               </div>
                               <span className="font-semibold">+ CHF {PREMIUM_BOOST_PRICE.toFixed(2)}</span>
                             </div>
@@ -1339,7 +1346,7 @@ export default function Step5_PreviewAndPay() {
                         {donationEnabled && donationAmountChf > 0 && (
                           <div className="flex justify-between items-center text-sm pt-2">
                             <div className="flex items-center text-neutral-700 font-semibold">
-                              <span>Unterstützung</span>
+                              <span>{t("Unterstützung")}</span>
                             </div>
                             <span className="font-semibold">+ CHF {donationAmountChf.toFixed(2)}</span>
                           </div>
@@ -1348,13 +1355,13 @@ export default function Step5_PreviewAndPay() {
                         <hr className="border-t border-neutral-200 !my-4" />
 
                         <div className="flex justify-between font-bold text-lg">
-                          <span>Total</span>
+                          <span>{t("Total")}</span>
                           <span>CHF {total.toFixed(2)}</span>
                         </div>
 
                       </div>
                     ) : (
-                      <p className="text-neutral-500">Kein Plan ausgewählt.</p>
+                      <p className="text-neutral-500">{t("Kein Plan ausgewählt.")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -1367,24 +1374,24 @@ export default function Step5_PreviewAndPay() {
                     <>
                       <h3 className="font-bold text-lg mb-4 text-blue-600 flex items-center">
                         <Check className="w-5 h-5 mr-2" />
-                        Garage Upload
+                        {t("Garage Upload")}
                       </h3>
                       <ul className="space-y-2 text-sm text-neutral-600 list-disc list-inside">
-                        <li>Das Inserat wird deinem Garagen-Kontingent angerechnet.</li>
-                        <li>Veröffentlichung erfolgt sofort.</li>
-                        <li>Du kannst das Inserat jederzeit im Dashboard verwalten.</li>
+                        <li>{t("Das Inserat wird deinem Garagen-Kontingent angerechnet.")}</li>
+                        <li>{t("Veröffentlichung erfolgt sofort.")}</li>
+                        <li>{t("Du kannst das Inserat jederzeit im Dashboard verwalten.")}</li>
                       </ul>
                     </>
                   ) : (
                     <>
                       <h3 className="font-bold text-lg mb-4 text-red-600 flex items-center">
                         <Check className="w-5 h-5 mr-2 text-green-500" />
-                        Nach der Bezahlung
+                        {t("Nach der Bezahlung")}
                       </h3>
                       <ul className="space-y-2 text-sm text-neutral-600 list-disc list-inside">
-                        <li>Alle Angaben werden von unserem Team überprüft.</li>
-                        <li>Du erhältst eine Benachrichtigung, sobald dein Inserat live ist.</li>
-                        <li>Dies dauert in der Regel 2-4 Stunden.</li>
+                        <li>{t("Alle Angaben werden von unserem Team überprüft.")}</li>
+                        <li>{t("Du erhältst eine Benachrichtigung, sobald dein Inserat live ist.")}</li>
+                        <li>{t("Dies dauert in der Regel 2-4 Stunden.")}</li>
                       </ul>
                     </>
                   )}
@@ -1395,20 +1402,20 @@ export default function Step5_PreviewAndPay() {
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between pt-6">
             <Button variant="outline" onClick={prevStep} className="rounded-2xl w-full sm:w-auto">
-              Zurück
+              {t("Zurück")}
             </Button>
 
             {isGarage ? (
               <div className="flex flex-col items-stretch sm:items-end gap-3">
                 {garagePublishError && (
                   <Alert className="max-w-[520px]" variant="destructive">
-                    <AlertTitle>Veröffentlichen fehlgeschlagen</AlertTitle>
+                    <AlertTitle>{t("Veröffentlichen fehlgeschlagen")}</AlertTitle>
                     <AlertDescription>
                       <div className="space-y-1">
                         <div>{garagePublishError.message}</div>
                         {(garagePublishError.code || garagePublishError.details || garagePublishError.hint) && (
                           <div className="text-xs opacity-90">
-                            {[garagePublishError.code ? `Code: ${garagePublishError.code}` : null, garagePublishError.details ? `Details: ${garagePublishError.details}` : null, garagePublishError.hint ? `Hint: ${garagePublishError.hint}` : null]
+                            {[garagePublishError.code ? t("Code: {code}", { code: garagePublishError.code }) : null, garagePublishError.details ? t("Details: {details}", { details: garagePublishError.details }) : null, garagePublishError.hint ? t("Hint: {hint}", { hint: garagePublishError.hint }) : null]
                               .filter(Boolean)
                               .join(" · ")}
                           </div>
@@ -1426,12 +1433,12 @@ export default function Step5_PreviewAndPay() {
                   {isPublishingGarage ? (
                     <>
                       <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Veröffentlichen...
+                      {t("Veröffentlichen...")}
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4 mr-2" />
-                      Jetzt Veröffentlichen
+                      {t("Jetzt Veröffentlichen")}
                     </>
                   )}
                 </Button>
@@ -1445,12 +1452,12 @@ export default function Step5_PreviewAndPay() {
                 {isPreparingPayment ? (
                   <>
                     <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Wird gespeichert...
+                    {t("Wird gespeichert...")}
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    Änderungen speichern
+                    {t("Änderungen speichern")}
                   </>
                 )}
               </Button>
@@ -1463,14 +1470,14 @@ export default function Step5_PreviewAndPay() {
                 {isPreparingPayment ? (
                   <>
                     <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Wird geladen...
+                    {t("Wird geladen...")}
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
                     {isEditingCompleted && planChanged
-                      ? `Planwechsel bezahlen (CHF ${total.toFixed(2)})`
-                      : total === 0 ? 'Kostenlos Inserieren' : `Jetzt bezahlen (CHF ${total.toFixed(2)})`}
+                      ? t("Planwechsel bezahlen (CHF {amount})", { amount: total.toFixed(2) })
+                      : total === 0 ? t('Kostenlos Inserieren') : t("Jetzt bezahlen (CHF {amount})", { amount: total.toFixed(2) })}
                   </>
                 )}
               </Button>

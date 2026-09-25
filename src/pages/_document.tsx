@@ -1,8 +1,10 @@
-import { Html, Head, Main, NextScript } from "next/document";
+import { Html, Head, Main, NextScript, type DocumentProps } from "next/document";
+import { HTML_LANG, toLocale } from "@/i18n/config";
 
-export default function Document() {
+export default function Document({ locale }: DocumentProps) {
   return (
-    <Html lang="de-CH">
+    // German stays "de-CH" exactly as before; fr/it/en get their own tag.
+    <Html lang={HTML_LANG[toLocale(locale)]}>
       <Head>
         {/* Favicon - BuyAuto red car icon */}
         <link rel="icon" href="/favicon-car.svg" type="image/svg+xml" />

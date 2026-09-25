@@ -7,6 +7,7 @@ import Link from "next/link";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
+import { useT } from "@/i18n/runtime";
 
 interface ModernListingCardProps {
   listing: Listing;
@@ -15,6 +16,7 @@ interface ModernListingCardProps {
 }
 
 export function ModernListingCard({ listing, onDetailsClick, priority = false }: ModernListingCardProps) {
+  const t = useT();
   // Real, server-rendered href to the vehicle detail page. Crucial for SEO: Googlebot
   // follows <a href>, not onClick handlers — without this the entire detail-page layer
   // is orphaned from the crawl graph.
@@ -118,21 +120,21 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
   // and drop the Kaufpreis to the secondary line. Plain Direktkauf shows the price only.
   const primaryLine = isLeaseTakeover
     ? takeoverMonthlyChf
-      ? `CHF ${chf.format(Math.round(takeoverMonthlyChf))} / Monat`
-      : purchasePriceLine ?? "Preis auf Anfrage"
+      ? t("CHF {amount} / Monat", { amount: chf.format(Math.round(takeoverMonthlyChf)) })
+      : purchasePriceLine ?? t("Preis auf Anfrage")
     : isLeasing
       ? teaserMonthlyChf
-        ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
-        : purchasePriceLine ?? "Preis auf Anfrage"
-      : purchasePriceLine ?? "Preis auf Anfrage";
+        ? t("Ab CHF {amount} / Monat", { amount: chf.format(Math.round(teaserMonthlyChf)) })
+        : purchasePriceLine ?? t("Preis auf Anfrage")
+      : purchasePriceLine ?? t("Preis auf Anfrage");
 
   const secondaryLine = isLeaseTakeover
     ? takeoverMonthlyChf && purchasePriceLine
-      ? `Kaufpreis: ${purchasePriceLine}`
+      ? t("Kaufpreis: {price}", { price: purchasePriceLine })
       : null
     : isLeasing
       ? teaserMonthlyChf && purchasePriceLine
-        ? `Kaufpreis: ${purchasePriceLine}`
+        ? t("Kaufpreis: {price}", { price: purchasePriceLine })
         : null
       : null;
 
@@ -154,7 +156,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
 
   const sellerName =
     (typeof rawSellerName === "string" ? rawSellerName.trim() : "") ||
-    (isGarage ? "Garage" : "Privatanbieter");
+    (isGarage ? t("Garage") : t("Privatanbieter"));
 
   const sellerAvatarUrl = (listing as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
 
@@ -193,7 +195,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10">
             <Badge className="bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white border-0 shadow-lg shadow-amber-500/50 text-xs font-bold px-2.5 py-1 sm:px-3 sm:py-1.5 backdrop-blur-sm">
               <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 fill-current" />
-              Premium
+              {t("Premium")}
             </Badge>
           </div>
         )}
@@ -204,7 +206,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           if (sellerType !== "garage" || !garageLogoUrl) return null;
           return (
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 h-9 w-9 rounded-full bg-white/90 ring-1 ring-white/60 shadow overflow-hidden">
-              <img src={garageLogoUrl} alt="Garage Logo" className="h-full w-full object-cover" loading="lazy" />
+              <img src={garageLogoUrl} alt={t("Garage Logo")} className="h-full w-full object-cover" loading="lazy" />
             </div>
           );
         })()}
@@ -239,11 +241,11 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           </div>
           <div className="flex items-center text-xs text-neutral-600">
             <Fuel className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
-            <span className="font-medium truncate">{listing.fuel}</span>
+            <span className="font-medium truncate">{t(listing.fuel)}</span>
           </div>
           <div className="flex items-center text-xs text-neutral-600">
             <Settings className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
-            <span className="font-medium truncate">{listing.gearbox}</span>
+            <span className="font-medium truncate">{t(listing.gearbox)}</span>
           </div>
           <div className="flex items-center text-xs text-neutral-600">
             <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
@@ -254,13 +256,13 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         {dealType === "lease_takeover" && (
           <>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Restlaufzeit</span>
-              <span className="font-medium">{listing.remainingMonths} Monate</span>
+              <span className="text-muted-foreground">{t("Restlaufzeit")}</span>
+              <span className="font-medium">{t("{n} Monate", { n: listing.remainingMonths ?? "" })}</span>
             </div>
 
             {listing.remaining_km && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Verbleibende KM</span>
+                <span className="text-muted-foreground">{t("Verbleibende KM")}</span>
                 <span className="font-medium">{swissInt(listing.remaining_km)} km</span>
               </div>
             )}
@@ -297,7 +299,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         <div className="flex items-end justify-between gap-2">
           <div className="flex-1 min-w-0">
             <span className={`inline-flex items-center mb-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${dealChipClass}`}>
-              {dealLabel}
+              {t(dealLabel)}
             </span>
             <div className="text-xl sm:text-2xl font-bold text-red-600 truncate">{primaryLine}</div>
             {secondaryLine && <div className="text-xs text-neutral-500 font-medium mt-0.5 truncate">{secondaryLine}</div>}
@@ -308,8 +310,8 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
             variant="ghost"
             className="relative z-[2] flex-shrink-0 bg-transparent hover:bg-red-50 border border-neutral-200 text-neutral-700 hover:border-red-500 hover:text-red-600 text-sm font-semibold h-9 sm:h-10 px-4 sm:px-5 group-hover:border-red-500 group-hover:text-red-600 group-hover:bg-red-50 transition-all duration-200 active:scale-95"
           >
-            <Link href={href} onClick={handleAnchorClick} aria-label={`Details zu ${listing.brand} ${listing.model}`}>
-              Details
+            <Link href={href} onClick={handleAnchorClick} aria-label={t("Details zu {name}", { name: `${listing.brand} ${listing.model}` })}>
+              {t("Details")}
             </Link>
           </Button>
         </div>

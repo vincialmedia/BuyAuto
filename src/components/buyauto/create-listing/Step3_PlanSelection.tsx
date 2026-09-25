@@ -14,7 +14,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createOrUpdateListing } from "@/services/createListingService";
 import { privatePlanMarketingFeatures } from "@/components/buyauto/pricing/pricingData";
 import { PrivatePlanExclusions } from "@/components/buyauto/pricing/PrivatePlanExclusions";
+import { translatePlanCopy } from "@/lib/buyauto/garagePlans";
 import type { PricePlanId } from "@/lib/buyauto/types";
+import { T, useT } from "@/i18n/runtime";
 
 const planMapping: Record<Plan, PricePlanId> = {
   standard: "standard",
@@ -33,6 +35,7 @@ export default function Step3_PlanSelection() {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  const t = useT();
 
   // Verlängert is the default: pre-selection is the strongest single
   // conversion lever (default effect), and the /preise page already leads
@@ -132,9 +135,9 @@ export default function Step3_PlanSelection() {
 
     if (!(data as any).id) {
       toast({
-        title: "Fehler",
+        title: t("Fehler"),
         description:
-          "Listing-ID nicht gefunden. Bitte gehe zurück zum ersten Schritt und versuche es erneut.",
+          t("Listing-ID nicht gefunden. Bitte gehe zurück zum ersten Schritt und versuche es erneut."),
         variant: "destructive",
       });
       return;
@@ -168,16 +171,16 @@ export default function Step3_PlanSelection() {
       } as any);
 
       toast({
-        title: "Plan gespeichert",
-        description: "Deine Auswahl wurde gespeichert.",
+        title: t("Plan gespeichert"),
+        description: t("Deine Auswahl wurde gespeichert."),
       });
 
       nextStep();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Ein unerwarteter Fehler ist aufgetreten";
       toast({
-        title: "Fehler",
-        description: message,
+        title: t("Fehler"),
+        description: t(message),
         variant: "destructive",
       });
     } finally {
@@ -190,8 +193,8 @@ export default function Step3_PlanSelection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Inserat-Plan auswählen</h2>
-        <p className="text-neutral-600 font-light leading-relaxed">Wähle den passenden Plan für dein Inserat.</p>
+        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">{t("Inserat-Plan auswählen")}</h2>
+        <p className="text-neutral-600 font-light leading-relaxed">{t("Wähle den passenden Plan für dein Inserat.")}</p>
       </div>
 
       {/* No listing row yet is not a dead end anymore: the deferred branch in
@@ -208,7 +211,7 @@ export default function Step3_PlanSelection() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                   <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Beliebt
+                    {t("Beliebt")}
                   </span>
                 </div>
               )}
@@ -227,17 +230,17 @@ export default function Step3_PlanSelection() {
                 onClick={() => setSelectedPlan(planKey)}
               >
                 <CardHeader>
-                  <CardTitle>{pricingPlans[planKey].name}</CardTitle>
+                  <CardTitle>{t(pricingPlans[planKey].name)}</CardTitle>
                   <CardDescription className="text-2xl font-bold">
                     CHF {pricingPlans[planKey].price}
                     {isExtended && (
                       <span className="block text-xs font-normal text-neutral-500 mt-1">
-                        Premium im Wert von CHF {PREMIUM_BOOST_PRICE} inklusive · weniger als 60 Rappen pro Tag
+                        {t("Premium im Wert von CHF {price} inklusive · weniger als 60 Rappen pro Tag", { price: PREMIUM_BOOST_PRICE })}
                       </span>
                     )}
                     {planKey === "unlimited" && (
                       <span className="block text-xs font-normal text-neutral-500 mt-1">
-                        Premium-Wert CHF {PREMIUM_BOOST_PRICE}/Monat dauerhaft inklusive
+                        {t("Premium-Wert CHF {price}/Monat dauerhaft inklusive", { price: PREMIUM_BOOST_PRICE })}
                       </span>
                     )}
                   </CardDescription>
@@ -247,7 +250,7 @@ export default function Step3_PlanSelection() {
                     {planFeatures[planKey].map((feature) => (
                       <li key={feature} className="flex items-center">
                         <Check className="mr-2 h-4 w-4 text-green-600" />
-                        {feature}
+                        {translatePlanCopy(t, feature)}
                       </li>
                     ))}
                   </ul>
@@ -267,23 +270,23 @@ export default function Step3_PlanSelection() {
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <Label htmlFor="premium-boost" className="font-bold text-lg">
-                Premium Boost
+                {t("Premium Boost")}
               </Label>
               <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200/60">
-                Zuoberst in der Suche
+                {t("Zuoberst in der Suche")}
               </span>
             </div>
             <p className="text-neutral-600">
               {premiumIncluded
-                ? "In diesem Plan inklusive – dein Inserat wird während der gesamten Laufzeit hervorgehoben."
-                : "Dein Inserat wird für 30 Tage hervorgehoben."}
+                ? t("In diesem Plan inklusive – dein Inserat wird während der gesamten Laufzeit hervorgehoben.")
+                : t("Dein Inserat wird für 30 Tage hervorgehoben.")}
             </p>
           </div>
           <div className="flex items-center space-x-4 shrink-0">
             {premiumIncluded ? (
               <span className="inline-flex items-center gap-1.5 font-bold text-lg text-emerald-700">
                 <Check className="h-5 w-5" />
-                Inklusive
+                {t("Inklusive")}
               </span>
             ) : (
               <>
@@ -304,9 +307,11 @@ export default function Step3_PlanSelection() {
         {selectedPlan === "standard" && isPremium && (
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
             <p className="text-sm text-emerald-900">
-              Tipp: Für nur <strong>CHF {pricingPlans.extended.price - calculateTotal("standard", true)} mehr</strong>{" "}
-              erhältst du <strong>Verlängert</strong> – 90 Tage Laufzeit und Premium während der ganzen Laufzeit
-              statt 30 Tage.
+              <T
+                k="Tipp: Für nur <0>CHF {amount} mehr</0> erhältst du <1>Verlängert</1> – 90 Tage Laufzeit und Premium während der ganzen Laufzeit statt 30 Tage."
+                vars={{ amount: pricingPlans.extended.price - calculateTotal("standard", true) }}
+                c={[<strong key="amount" />, <strong key="plan" />]}
+              />
             </p>
             <Button
               type="button"
@@ -316,7 +321,7 @@ export default function Step3_PlanSelection() {
               onClick={() => setSelectedPlan("extended")}
               disabled={isLoading}
             >
-              Zu Verlängert wechseln
+              {t("Zu Verlängert wechseln")}
             </Button>
           </div>
         )}
@@ -327,22 +332,21 @@ export default function Step3_PlanSelection() {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Label htmlFor="donation-toggle" className="font-semibold text-neutral-900">
-                BuyAuto unterstützen
+                {t("BuyAuto unterstützen")}
               </Label>
               <span className="text-xs text-neutral-600 bg-white/70 border border-neutral-200/60 px-2 py-0.5 rounded-full">
-                optional
+                {t("optional")}
               </span>
             </div>
             <p className="mt-2 text-sm text-neutral-600 leading-relaxed max-w-[62ch]">
-              BuyAuto ist komplett selbstfinanziert und von einem Ein-Mann-Team gebaut. Wenn du magst,
-              hilf uns mit einer kleinen Spende, damit wir weiter verbessern können.
+              {t("BuyAuto ist komplett selbstfinanziert und von einem Ein-Mann-Team gebaut. Wenn du magst, hilf uns mit einer kleinen Spende, damit wir weiter verbessern können.")}
             </p>
           </div>
 
           <div className="shrink-0 w-full sm:w-auto">
             <div className="flex items-center justify-between sm:justify-end gap-4">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-neutral-700">Spende</span>
+                <span className="text-sm font-medium text-neutral-700">{t("Spende")}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-neutral-600">CHF</span>
                   <Input
@@ -396,7 +400,7 @@ export default function Step3_PlanSelection() {
               </div>
 
               <div className="text-xs text-neutral-500">
-                {donationEnabled ? `+ CHF ${donationAmountEffective}` : "Aus"}
+                {donationEnabled ? `+ CHF ${donationAmountEffective}` : t("Aus")}
               </div>
             </div>
           </div>
@@ -404,45 +408,45 @@ export default function Step3_PlanSelection() {
       </Card>
 
       <Card className="p-6 bg-neutral-50 rounded-3xl">
-        <h3 className="text-lg font-bold mb-4">Zusammenfassung</h3>
+        <h3 className="text-lg font-bold mb-4">{t("Zusammenfassung")}</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Plan: {pricingPlans[selectedPlan].name}</span>
+            <span>{t("Plan: {plan}", { plan: t(pricingPlans[selectedPlan].name) })}</span>
             <span>CHF {pricingPlans[selectedPlan].price}</span>
           </div>
           {premiumIncluded ? (
             <div className="flex justify-between text-emerald-700">
-              <span>Premium-Platzierung</span>
-              <span>inklusive</span>
+              <span>{t("Premium-Platzierung")}</span>
+              <span>{t("inklusive")}</span>
             </div>
           ) : (
             isPremium && (
               <div className="flex justify-between">
-                <span>Premium Boost</span>
+                <span>{t("Premium Boost")}</span>
                 <span>CHF {PREMIUM_BOOST_PRICE}</span>
               </div>
             )
           )}
           {donationEnabled && donationAmountEffective > 0 && (
             <div className="flex justify-between">
-              <span>Unterstützung</span>
+              <span>{t("Unterstützung")}</span>
               <span>CHF {donationAmountEffective}</span>
             </div>
           )}
           <hr className="my-2" />
           <div className="flex justify-between font-bold text-xl">
-            <span>Total</span>
+            <span>{t("Total")}</span>
             <span>CHF {total}</span>
           </div>
         </div>
         <p className="text-sm text-neutral-500 mt-4">
-          Die Bezahlung erfolgt im letzten Schritt nach der Vorschau.
+          {t("Die Bezahlung erfolgt im letzten Schritt nach der Vorschau.")}
         </p>
       </Card>
 
       <div className="flex justify-between pt-6">
         <Button variant="outline" onClick={prevStep} disabled={isLoading} className="rounded-2xl">
-          Zurück
+          {t("Zurück")}
         </Button>
 
         <Button
@@ -453,12 +457,12 @@ export default function Step3_PlanSelection() {
           {isLoading ? (
             <>
               <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Wird geladen...
+              {t("Wird geladen...")}
             </>
           ) : user && !(data as any).id ? (
-            "Listing-ID fehlt – bitte zurück"
+            t("Listing-ID fehlt – bitte zurück")
           ) : (
-            "Weiter zu den Bildern"
+            t("Weiter zu den Bildern")
           )}
         </Button>
       </div>

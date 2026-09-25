@@ -7,6 +7,9 @@ import { DealerHeroHeader } from "@/components/buyauto/dealer/DealerHeroHeader";
 import { DealerAboutAndMap } from "@/components/buyauto/dealer/DealerAboutAndMap";
 import { DealerTeamAndHours } from "@/components/buyauto/dealer/DealerTeamAndHours";
 import { StructuredData } from "@/components/buyauto/StructuredData";
+import { useT, type TFunction } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
+import { Hreflang } from "@/i18n/seo";
 
 type PublicGarage = NonNullable<Awaited<ReturnType<typeof getPublicGarageBySlug>>>;
 
@@ -21,9 +24,9 @@ type PageProps =
       ok: false;
     };
 
-function getSafeDescription(description: string | null): string {
+function getSafeDescription(description: string | null, t: TFunction): string {
   const d = (description ?? "").trim();
-  if (!d) return "Fahrzeuge & Angebote von diesem Händler auf BuyAuto entdecken.";
+  if (!d) return t("Fahrzeuge & Angebote von diesem Händler auf BuyAuto entdecken.");
   return d.length > 160 ? `${d.slice(0, 157)}...` : d;
 }
 
@@ -56,6 +59,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
         garage,
         logoUrl,
         absoluteUrl,
+        ...(await withI18n(ctx.locale, ["dealer"])),
       },
     };
   } catch {
@@ -65,22 +69,24 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       ctx.res.statusCode = 503;
       ctx.res.setHeader("Retry-After", "120");
     }
-    return { props: { ok: false } };
+    return { props: { ok: false, ...(await withI18n(ctx.locale, ["dealer"])) } };
   }
 };
 
 export default function DealerMicrositePage(props: PageProps) {
+  const t = useT();
+
   if (!props.ok) {
     return (
       <>
         <Head>
-          <title>Händlerprofil nicht verfügbar | BuyAuto</title>
+          <title>{t("Händlerprofil nicht verfügbar | BuyAuto")}</title>
           <meta name="robots" content="noindex" />
         </Head>
         <main className="min-h-screen bg-white">
           <div className="mx-auto max-w-4xl px-6 py-16">
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Händlerprofil nicht verfügbar</h1>
-            <p className="mt-3 text-neutral-600">Dieses Händlerprofil konnte nicht geladen werden.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t("Händlerprofil nicht verfügbar")}</h1>
+            <p className="mt-3 text-neutral-600">{t("Dieses Händlerprofil konnte nicht geladen werden.")}</p>
           </div>
         </main>
       </>
@@ -89,8 +95,8 @@ export default function DealerMicrositePage(props: PageProps) {
 
   const { garage, logoUrl, absoluteUrl } = props;
 
-  const title = `${garage.garage_name} – Fahrzeuge & Angebote | BuyAuto`;
-  const description = getSafeDescription(garage.description);
+  const title = t("{name} – Fahrzeuge & Angebote | BuyAuto", { name: garage.garage_name });
+  const description = getSafeDescription(garage.description, t);
   const image = garage.header_image_url || logoUrl || "/buyauto-logo.png";
 
   const openingHours = garage.opening_hours;
@@ -99,6 +105,7 @@ export default function DealerMicrositePage(props: PageProps) {
   return (
     <>
       <SEO title={title} description={description} image={image} url={absoluteUrl} />
+      <Hreflang path={`/${garage.slug}`} />
       <StructuredData
         type="dealer"
         dealerData={{
@@ -147,8 +154,8 @@ export default function DealerMicrositePage(props: PageProps) {
         <section id="inventory" className="mx-auto max-w-6xl px-6 pb-16 md:pb-24">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">Inventar</h2>
-              <p className="mt-2 text-sm text-neutral-600">Finde alle Fahrzeuge dieses Händlers – mit Filtern & Sortierung.</p>
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">{t("Inventar")}</h2>
+              <p className="mt-2 text-sm text-neutral-600">{t("Finde alle Fahrzeuge dieses Händlers – mit Filtern & Sortierung.")}</p>
             </div>
           </div>
 

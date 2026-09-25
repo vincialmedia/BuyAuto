@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/runtime";
 
 export type PricingPersona = "private" | "garage";
 
@@ -8,13 +9,14 @@ export interface PricingToggleProps {
 }
 
 export function PricingToggle({ value, onChange }: PricingToggleProps) {
+  const t = useT();
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-semibold text-white/90">Ich bin</span>
+      <span className="text-sm font-semibold text-white/90">{t("Ich bin")}</span>
 
       <div
         role="radiogroup"
-        aria-label="Kundentyp auswählen"
+        aria-label={t("Kundentyp auswählen")}
         className="relative flex w-full max-w-[340px] overflow-hidden rounded-full border border-white/30 bg-white/20 p-1 backdrop-blur-xl shadow-2xl"
       >
         <div
@@ -37,7 +39,7 @@ export function PricingToggle({ value, onChange }: PricingToggleProps) {
               : "text-white/80 hover:text-white"
           )}
         >
-          Privatkunde
+          {t("Privatkunde")}
         </button>
 
         <button
@@ -52,7 +54,7 @@ export function PricingToggle({ value, onChange }: PricingToggleProps) {
               : "text-white/80 hover:text-white"
           )}
         >
-          Garage
+          {t("Garage")}
         </button>
       </div>
     </div>

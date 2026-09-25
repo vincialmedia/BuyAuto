@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { StatsCards } from "@/components/buyauto/dashboard/StatsCards";
 import { useAuth } from "@/contexts/AuthContext";
 import { dashboardService, type DashboardStats } from "@/services/dashboardService";
+import { useT } from "@/i18n/runtime";
 
 export default function OverviewSection() {
   const router = useRouter();
+  const t = useT();
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,7 @@ export default function OverviewSection() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold tracking-tight text-neutral-900">Übersicht</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-neutral-900">{t("Übersicht")}</h2>
       </div>
 
       <StatsCards stats={stats} isLoading={loading} />

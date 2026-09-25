@@ -6,6 +6,7 @@ import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { useT, type TFunction } from "@/i18n/runtime";
 
 // listingsService drags the whole Supabase client into whatever bundle
 // imports it statically. The search bar sits above the fold on the homepage,
@@ -41,13 +42,13 @@ const FUEL_OPTIONS = [
 ];
 
 const GEARBOX_OPTIONS = [
-  { value: "", label: "Alle" },
+  { value: "", label: "Alle@@gearbox" },
   { value: "Automatik", label: "Automatik" },
   { value: "Manuell", label: "Manuell" },
 ];
 
 const BODY_OPTIONS = [
-  { value: "", label: "Alle" },
+  { value: "", label: "Alle@@body" },
   { value: "Limousine", label: "Limousine" },
   { value: "Kombi", label: "Kombi" },
   { value: "SUV", label: "SUV" },
@@ -70,7 +71,7 @@ const MONTHLY_PRICE_CONFIG = {
   max: 2000,
   step: 50,
   default: 2000,
-  formatLabel: (v: number) => v >= 2000 ? "CHF 2'000+/Mt." : `CHF ${v.toLocaleString("de-CH")}/Mt.`,
+  formatLabel: (v: number, t: TFunction) => v >= 2000 ? t("CHF 2'000+/Mt.") : t("CHF {amount}/Mt.", { amount: v.toLocaleString("de-CH") }),
   formatShort: (v: number) => v >= 2000 ? "2k+/Mt." : `${v}/Mt.`,
 };
 
@@ -166,6 +167,7 @@ function PriceFilter({
   className,
   compact
 }: PriceFilterProps) {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -176,16 +178,16 @@ function PriceFilter({
   // Get display label for the trigger button
   const getDisplayLabel = () => {
     if (compact) {
-      if (isDefault) return "Preis";
+      if (isDefault) return t("Preis");
       return isMonthlyMode 
-        ? `${currentValue}/Mt.`
+        ? t("{amount}/Mt.", { amount: currentValue })
         : `${Math.round(currentValue / 1000)}k`;
     }
-    if (isDefault && !isMonthlyMode) return "Alle Preise";
-    if (isDefault && isMonthlyMode) return "Alle Preise";
+    if (isDefault && !isMonthlyMode) return t("Alle Preise");
+    if (isDefault && isMonthlyMode) return t("Alle Preise");
     return isMonthlyMode 
-      ? `bis CHF ${currentValue.toLocaleString("de-CH")}/Mt.`
-      : `bis CHF ${currentValue.toLocaleString("de-CH")}`;
+      ? t("bis CHF {amount}/Mt.", { amount: currentValue.toLocaleString("de-CH") })
+      : t("bis CHF {amount}", { amount: currentValue.toLocaleString("de-CH") });
   };
 
   return (
@@ -220,8 +222,8 @@ function PriceFilter({
             {/* Mode Toggle */}
             <div className="flex items-center justify-between mb-5 pb-4 border-b border-neutral-100">
               <div className="flex-1">
-                <p className="text-sm font-semibold text-neutral-900">Leasing & Übernahme</p>
-                <p className="text-xs text-neutral-500 mt-0.5">Monatliche Rate anzeigen</p>
+                <p className="text-sm font-semibold text-neutral-900">{t("Leasing & Übernahme")}</p>
+                <p className="text-xs text-neutral-500 mt-0.5">{t("Monatliche Rate anzeigen")}</p>
               </div>
               <Switch
                 checked={isMonthlyMode}
@@ -233,10 +235,10 @@ function PriceFilter({
             {/* Price Type Label */}
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                {isMonthlyMode ? "Monatliche Rate" : "Kaufpreis"}
+                {isMonthlyMode ? t("Monatliche Rate") : t("Kaufpreis")}
               </span>
               <span className="text-sm font-bold text-neutral-900">
-                {config.formatLabel(currentValue)}
+                {config.formatLabel(currentValue, t)}
               </span>
             </div>
 
@@ -319,7 +321,7 @@ function PriceFilter({
                 }}
                 className="w-full mt-3 py-2 text-xs font-medium text-neutral-500 hover:text-neutral-700 transition-colors"
               >
-                Filter zurücksetzen
+                {t("Filter zurücksetzen")}
               </button>
             )}
           </div>
@@ -331,6 +333,7 @@ function PriceFilter({
 
 export function SearchBarV2() {
   const router = useRouter();
+  const t = useT();
 
   // Primary filters
   const [brand, setBrand] = useState("");
@@ -487,8 +490,11 @@ export function SearchBarV2() {
 
   const hasAnyFilter = brand || model || variant || dealType || isPriceFilterActive || yearMin || fuel || gearbox || body;
 
-  const brandOptions = [{ value: "", label: "Marke" }, ...brands.map(b => ({ value: b, label: b }))];
-  const modelOptions = [{ value: "", label: "Modell" }, ...models.map(m => ({ value: m, label: m }))];
+  const brandOptions = [{ value: "", label: t("Marke") }, ...brands.map(b => ({ value: b, label: b }))];
+  const modelOptions = [{ value: "", label: t("Modell") }, ...models.map(m => ({ value: m, label: m }))];
+  // Static option lists keep their German labels (module level); translate them for display only.
+  const translateOptions = (options: { value: string; label: string }[]) =>
+    options.map((o) => ({ ...o, label: t(o.label) }));
 
   return (
     <form onSubmit={handleSubmit} className="w-full relative" style={{ overflow: "visible" }}>
@@ -499,7 +505,7 @@ export function SearchBarV2() {
             value={brand}
             onChange={(v) => { setBrand(v); setModel(""); }}
             options={brandOptions}
-            placeholder="Marke"
+            placeholder={t("Marke")}
             compact
             className="flex-1 min-w-0"
           />
@@ -507,7 +513,7 @@ export function SearchBarV2() {
             value={model}
             onChange={(v) => { setModel(v); setVariant(""); }}
             options={modelOptions}
-            placeholder="Modell"
+            placeholder={t("Modell")}
             disabled={!brand || loadingModels}
             compact
             className="flex-1 min-w-0"
@@ -528,7 +534,7 @@ export function SearchBarV2() {
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          aria-label={showAdvanced ? "Erweiterte Filter ausblenden" : "Erweiterte Filter anzeigen"}
+          aria-label={showAdvanced ? t("Erweiterte Filter ausblenden") : t("Erweiterte Filter anzeigen")}
           aria-expanded={showAdvanced}
           className={cn(
             "relative h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 flex-shrink-0",
@@ -551,7 +557,7 @@ export function SearchBarV2() {
           className="h-9 px-4 flex items-center gap-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white flex-shrink-0"
         >
           <Search className="w-3.5 h-3.5" />
-          <span>Suchen</span>
+          <span>{t("Suchen")}</span>
         </button>
       </div>
 
@@ -562,23 +568,23 @@ export function SearchBarV2() {
           <SelectField
             value={brand}
             onChange={(v) => { setBrand(v); setModel(""); }}
-            options={[{ value: "", label: "Alle Marken" }, ...brands.map(b => ({ value: b, label: b }))]}
-            placeholder="Marke"
+            options={[{ value: "", label: t("Alle Marken") }, ...brands.map(b => ({ value: b, label: b }))]}
+            placeholder={t("Marke")}
             className="flex-1"
           />
           <SelectField
             value={model}
             onChange={(v) => { setModel(v); setVariant(""); }}
-            options={[{ value: "", label: "Alle Modelle" }, ...models.map(m => ({ value: m, label: m }))]}
-            placeholder="Modell"
+            options={[{ value: "", label: t("Alle Modelle") }, ...models.map(m => ({ value: m, label: m }))]}
+            placeholder={t("Modell")}
             disabled={!brand || loadingModels}
             className="flex-1"
           />
           <SelectField
             value={variant}
             onChange={setVariant}
-            options={[{ value: "", label: "Alle Ausführungen" }, ...variants.map(v => ({ value: v, label: v }))]}
-            placeholder="Ausführung"
+            options={[{ value: "", label: t("Alle Ausführungen") }, ...variants.map(v => ({ value: v, label: v }))]}
+            placeholder={t("Ausführung")}
             disabled={!model || loadingVariants}
             className="flex-1"
           />
@@ -594,8 +600,8 @@ export function SearchBarV2() {
           <SelectField
             value={dealType}
             onChange={(v) => setDealType(v as DealType)}
-            options={DEAL_TYPE_OPTIONS}
-            placeholder="Kaufart"
+            options={translateOptions(DEAL_TYPE_OPTIONS)}
+            placeholder={t("Kaufart")}
             className="flex-1"
           />
         </div>
@@ -615,7 +621,7 @@ export function SearchBarV2() {
             )}
           >
             <SlidersHorizontal className="w-4 h-4" />
-            <span>Filter</span>
+            <span>{t("Filter")}</span>
             {advancedFilterCount > 0 && (
               <span className="w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center">
                 {advancedFilterCount}
@@ -633,7 +639,7 @@ export function SearchBarV2() {
             )}
           >
             <Search className="w-4 h-4" />
-            <span>Suchen</span>
+            <span>{t("Suchen")}</span>
           </button>
         </div>
       </div>
@@ -647,7 +653,7 @@ export function SearchBarV2() {
           <div className="flex items-center justify-between mb-3">
             {/* Not a heading: "Erweiterte Filter" is a UI label, and an h4
                 directly after the page h1 broke the document outline. */}
-            <p className="text-sm font-semibold text-neutral-700">Erweiterte Filter</p>
+            <p className="text-sm font-semibold text-neutral-700">{t("Erweiterte Filter")}</p>
             {hasAnyFilter && (
               <button
                 type="button"
@@ -655,7 +661,7 @@ export function SearchBarV2() {
                 className="text-xs font-medium text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
               >
                 <X className="w-3 h-3" />
-                Alle zurücksetzen
+                {t("Alle zurücksetzen")}
               </button>
             )}
           </div>
@@ -663,63 +669,63 @@ export function SearchBarV2() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {/* Deal Type & Ausführung - Only shown in advanced on mobile (inline on desktop) */}
             <div className="lg:hidden">
-              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">Kaufart</label>
+              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">{t("Kaufart")}</label>
               <SelectField
                 value={dealType}
                 onChange={(v) => setDealType(v as DealType)}
-                options={DEAL_TYPE_OPTIONS}
-                placeholder="Alle"
+                options={translateOptions(DEAL_TYPE_OPTIONS)}
+                placeholder={t("Alle")}
                 className="bg-neutral-50 rounded-lg"
               />
             </div>
             <div className="lg:hidden">
-              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">Ausführung</label>
+              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">{t("Ausführung")}</label>
               <SelectField
                 value={variant}
                 onChange={setVariant}
-                options={[{ value: "", label: "Alle" }, ...variants.map(v => ({ value: v, label: v }))]}
-                placeholder="Alle"
+                options={[{ value: "", label: t("Alle@@variant") }, ...variants.map(v => ({ value: v, label: v }))]}
+                placeholder={t("Alle@@variant")}
                 disabled={!model || loadingVariants}
                 className="bg-neutral-50 rounded-lg"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">Jahrgang</label>
+              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">{t("Jahrgang")}</label>
               <SelectField
                 value={yearMin}
                 onChange={setYearMin}
-                options={YEAR_OPTIONS}
-                placeholder="Beliebig"
+                options={translateOptions(YEAR_OPTIONS)}
+                placeholder={t("Beliebig")}
                 className="bg-neutral-50 rounded-lg"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">Treibstoff</label>
+              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">{t("Treibstoff")}</label>
               <SelectField
                 value={fuel}
                 onChange={setFuel}
-                options={FUEL_OPTIONS}
-                placeholder="Alle"
+                options={translateOptions(FUEL_OPTIONS)}
+                placeholder={t("Alle")}
                 className="bg-neutral-50 rounded-lg"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">Getriebe</label>
+              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">{t("Getriebe")}</label>
               <SelectField
                 value={gearbox}
                 onChange={setGearbox}
-                options={GEARBOX_OPTIONS}
-                placeholder="Alle"
+                options={translateOptions(GEARBOX_OPTIONS)}
+                placeholder={t("Alle@@gearbox")}
                 className="bg-neutral-50 rounded-lg"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">Karosserie</label>
+              <label className="block text-xs font-medium text-neutral-500 mb-1 px-1">{t("Karosserie")}</label>
               <SelectField
                 value={body}
                 onChange={setBody}
-                options={BODY_OPTIONS}
-                placeholder="Alle"
+                options={translateOptions(BODY_OPTIONS)}
+                placeholder={t("Alle@@body")}
                 className="bg-neutral-50 rounded-lg"
               />
             </div>

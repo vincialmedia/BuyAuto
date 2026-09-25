@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
+import { useT } from "@/i18n/runtime";
 import { createOrUpdateListing, vehicleCoreFieldsFromWizard, type ListingUpdatePayload } from "@/services/createListingService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 
@@ -224,10 +225,11 @@ export function DirectPurchaseFinancingDetails() {
   const { user, profile, profileLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const t = useT();
 
   const isGarage = profile?.role === "garage";
   const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
-  const nextLabel = isGarage ? "Weiter zu Fotos" : "Weiter zu Plan-Auswahl";
+  const nextLabel = isGarage ? t("Weiter zu Fotos") : t("Weiter zu Plan-Auswahl");
 
   const existingOffer = useMemo(() => {
     const anyData = data as unknown as { leasing_offer?: any | null };
@@ -617,8 +619,8 @@ export function DirectPurchaseFinancingDetails() {
         }
 
         toast({
-          title: "Gespeichert",
-          description: "Finanzierungsdetails wurden als Entwurf gespeichert.",
+          title: t("Gespeichert"),
+          description: t("Finanzierungsdetails wurden als Entwurf gespeichert."),
         });
 
         nextStep();
@@ -686,14 +688,14 @@ export function DirectPurchaseFinancingDetails() {
       }
 
       toast({
-        title: "Gespeichert",
-        description: "Finanzierungsdetails wurden gespeichert.",
+        title: t("Gespeichert"),
+        description: t("Finanzierungsdetails wurden gespeichert."),
       });
 
       nextStep();
     } catch (error) {
       const details = getErrorDetailsForToast(error);
-      setSubmitError(details ?? "Unbekannter Fehler.");
+      setSubmitError(details ?? t("Unbekannter Fehler."));
 
       console.error("Error submitting Step 2 (direct purchase):", {
         message: (error as any)?.message,
@@ -704,10 +706,10 @@ export function DirectPurchaseFinancingDetails() {
       });
 
       toast({
-        title: "Fehler beim Speichern",
+        title: t("Fehler beim Speichern"),
         description: details
-          ? `Finanzierungsdetails konnten nicht gespeichert werden: ${details}`
-          : "Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfe die Angaben und versuche es erneut.",
+          ? t("Finanzierungsdetails konnten nicht gespeichert werden: {details}", { details })
+          : t("Finanzierungsdetails konnten nicht gespeichert werden. Bitte prüfe die Angaben und versuche es erneut."),
         variant: "destructive",
       });
     } finally {
@@ -716,27 +718,27 @@ export function DirectPurchaseFinancingDetails() {
   };
 
   if (profileLoading) {
-    return <div className="text-sm text-neutral-600">Lade Profil...</div>;
+    return <div className="text-sm text-neutral-600">{t("Lade Profil...")}</div>;
   }
 
   return (
     <div className="space-y-8">
       {submitError && (
         <Alert variant="destructive">
-          <AlertTitle>Fehler beim Speichern</AlertTitle>
+          <AlertTitle>{t("Fehler beim Speichern")}</AlertTitle>
           <AlertDescription>{submitError}</AlertDescription>
         </Alert>
       )}
 
       {submitAttempted && Object.keys(errors ?? {}).length > 0 && (
         <Alert variant="destructive">
-          <AlertTitle>Bitte prüfe die Angaben</AlertTitle>
+          <AlertTitle>{t("Bitte prüfe die Angaben")}</AlertTitle>
           <AlertDescription>
             <ul className="list-disc pl-5 space-y-1">
               {Object.entries(errors ?? {}).map(([key, value]) => {
                 const msg = (value as any)?.message as string | undefined;
                 if (!msg) return null;
-                return <li key={key}>{msg}</li>;
+                return <li key={key}>{t(msg)}</li>;
               })}
             </ul>
           </AlertDescription>
@@ -750,8 +752,8 @@ export function DirectPurchaseFinancingDetails() {
 
           focusFirstInvalidField(formErrors);
           toast({
-            title: "Bitte prüfe die Angaben",
-            description: "Einige Pflichtfelder sind noch nicht korrekt ausgefüllt.",
+            title: t("Bitte prüfe die Angaben"),
+            description: t("Einige Pflichtfelder sind noch nicht korrekt ausgefüllt."),
             variant: "destructive",
           });
         })}
@@ -759,7 +761,7 @@ export function DirectPurchaseFinancingDetails() {
       >
         <div className="space-y-2">
           <Label htmlFor="purchase_price_chf" className="text-sm font-medium text-neutral-700">
-            Direktkauf Preis (CHF) {leaseTakeoverEnabled ? "" : "*"}
+            {t("Direktkauf Preis (CHF)")} {leaseTakeoverEnabled ? "" : "*"}
           </Label>
           <div className="relative">
             <Input
@@ -767,7 +769,7 @@ export function DirectPurchaseFinancingDetails() {
               type="text"
               inputMode="numeric"
               {...register("purchase_price_chf", { valueAsNumber: true })}
-              placeholder="z.B. 25'900"
+              placeholder={t("z.B. 25'900")}
               className="bg-white border border-neutral-200/40 hover:border-neutral-300 focus:border-red-500 transition-colors shadow-sm pr-16"
               onChange={(e) => {
                 const raw = e.target.value.replace(/[^0-9]/g, "");
@@ -787,7 +789,7 @@ export function DirectPurchaseFinancingDetails() {
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 font-light">CHF</span>
           </div>
-          {(errors as any)?.purchase_price_chf && <p className="text-sm text-red-500 font-light">{(errors as any).purchase_price_chf.message}</p>}
+          {(errors as any)?.purchase_price_chf && <p className="text-sm text-red-500 font-light">{t((errors as any).purchase_price_chf.message ?? "")}</p>}
         </div>
 
         <LeaseTakeoverOfferSection<LeaseTakeoverOfferFormValues & DirectPurchaseFinancingForm>
@@ -813,10 +815,10 @@ export function DirectPurchaseFinancingDetails() {
 
         <div className="flex items-center justify-between pt-2">
           <Button type="button" variant="outline" onClick={prevStep} className="rounded-2xl">
-            Zurück
+            {t("Zurück")}
           </Button>
           <Button type="submit" className="rounded-2xl" disabled={isUpdatingListing}>
-            {isUpdatingListing ? "Speichern..." : nextLabel}
+            {isUpdatingListing ? t("Speichern...") : nextLabel}
           </Button>
         </div>
       </form>

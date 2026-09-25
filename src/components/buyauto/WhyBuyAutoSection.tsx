@@ -9,6 +9,7 @@ import {
   LucideIcon
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { T, useT } from "@/i18n/runtime";
 
 interface ValueCard {
   icon: LucideIcon;
@@ -65,6 +66,7 @@ const cardGroups: CardGroup[] = [
 ];
 
 export function WhyBuyAutoSection() {
+  const t = useT();
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -110,21 +112,23 @@ export function WhyBuyAutoSection() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
             </span>
-            <span className="text-neutral-700 font-semibold text-sm tracking-wide">Warum BuyAuto?</span>
+            <span className="text-neutral-700 font-semibold text-sm tracking-wide">{t("Warum BuyAuto?")}</span>
           </div>
           
           {/* Main Headline */}
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 mb-6 tracking-tight max-w-4xl mx-auto leading-tight">
-            Leasing übernehmen oder Leasing abgeben –{" "}
-            <span className="text-red-500">
-              ein Marktplatz für beide Seiten
-            </span>
+            <T
+              k="Leasing übernehmen oder Leasing abgeben – <0>ein Marktplatz für beide Seiten</0>"
+              c={[<span key="0" className="text-red-500" />]}
+            />
           </h2>
 
           {/* Supporting Text */}
           <p className="text-neutral-500 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            BuyAuto verbindet Menschen, die aus ihrem laufenden Leasingvertrag rauswollen, mit Menschen, die genau so einen Vertrag übernehmen möchten – ohne hohe Anzahlung, ohne Neuwagen-Wartezeit.
-            <span className="text-neutral-700 font-medium"> Einfach, transparent und für die Schweiz gebaut.</span>
+            <T
+              k="BuyAuto verbindet Menschen, die aus ihrem laufenden Leasingvertrag rauswollen, mit Menschen, die genau so einen Vertrag übernehmen möchten – ohne hohe Anzahlung, ohne Neuwagen-Wartezeit.<0> Einfach, transparent und für die Schweiz gebaut.</0>"
+              c={[<span key="0" className="text-neutral-700 font-medium" />]}
+            />
           </p>
         </div>
 
@@ -139,7 +143,7 @@ export function WhyBuyAutoSection() {
                 }`}
                 style={{ transitionDelay: `${groupIndex * 100 + 200}ms` }}
               >
-                {group.heading}
+                {t(group.heading)}
               </h3>
 
               {/* Cards */}
@@ -176,12 +180,12 @@ export function WhyBuyAutoSection() {
 
                         {/* Title */}
                         <h3 className="relative text-xl font-bold text-neutral-900 mb-3 leading-snug group-hover:text-neutral-800 transition-colors">
-                          {card.title}
+                          {t(card.title)}
                         </h3>
 
                         {/* Description */}
                         <p className="relative text-neutral-500 text-base leading-relaxed group-hover:text-neutral-600 transition-colors">
-                          {card.description}
+                          {t(card.description)}
                         </p>
 
                         {/* Bottom Accent Line - Red */}
