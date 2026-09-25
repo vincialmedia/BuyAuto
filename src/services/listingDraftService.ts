@@ -27,10 +27,11 @@ const coerceDraft = (row: ListingDraftRow): ListingDraft => {
   };
 };
 
-export async function createListingDraft(params: { user: any; data: any }) {
-  const { user, data } = params;
+export async function createListingDraft(params: { user: any; data: any; id?: string }) {
+  const { user, data, id } = params;
 
   const baseRow: Record<string, unknown> = {
+    ...(id ? { id } : {}),
     user_id: user.id,
     data,
   };

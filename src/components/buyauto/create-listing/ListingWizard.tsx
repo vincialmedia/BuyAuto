@@ -82,6 +82,23 @@ export const useWizard = () => {
 // listing is mirrored to localStorage and restored on return.
 const GUEST_DRAFT_KEY = "buyauto:guest-listing-draft";
 
+// The guest payload also carries the row id its server draft will get. After an
+// email-confirmation sign-up the original tab and the link's tab both migrate
+// the same localStorage draft; with a shared id the second insert collides
+// (23505) and adopts the first row instead of adding a duplicate.
+const readGuestDraftKey = (): string | null => {
+  try {
+    const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
+    const parsed = raw ? (JSON.parse(raw) as { draftKey?: unknown }) : null;
+    return typeof parsed?.draftKey === "string" && parsed.draftKey.length > 0 ? parsed.draftKey : null;
+  } catch {
+    return null;
+  }
+};
+
+const newGuestDraftKey = (): string | null =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : null;
+
 // Reported as listing_step.step_name (stable ids, not the German UI labels).
 const STEP_NAMES: Record<number, string> = {
   1: "vehicle",
@@ -322,12 +339,25 @@ export default function ListingWizard() {
   // guest-draft migration and the autosave tick each created one.
   const draftIdRef = useRef<string | null>(null);
   const draftCreateRef = useRef<Promise<string> | null>(null);
+  // Set when a step closes the draft (Step 5 clears it after publishing). An
+  // autosave tick landing between that and setIsComplete(true) would otherwise
+  // insert a fresh row for the listing that was just published.
+  const draftClosedRef = useRef(false);
 
   const setDraftIdSynced = useCallback((id: string | null) => {
     draftIdRef.current = id;
     if (id === null) draftCreateRef.current = null;
+    else draftClosedRef.current = false;
     setDraftId(id);
   }, []);
+
+  const setDraftIdFromStep = useCallback(
+    (id: string | null) => {
+      if (id === null) draftClosedRef.current = true;
+      setDraftIdSynced(id);
+    },
+    [setDraftIdSynced]
+  );
 
   const persistDraft = useCallback(
     async (draftData: Partial<ListingData>): Promise<string> => {
@@ -344,11 +374,28 @@ export default function ListingWizard() {
         return existingId;
       }
 
-      const createPromise = createListingDraft({ user, data: draftData }).then((created) => {
-        draftIdRef.current = created.id;
-        setDraftId(created.id);
-        return created.id;
-      });
+      // Reuse the pending guest draft's id (if any) so another tab migrating the
+      // same guest draft converges on this row. Read at insert time: every
+      // create in this tab — autosave or migration, whichever wins — uses it.
+      const preferredId = typeof window !== "undefined" ? readGuestDraftKey() : null;
+      const createPromise = (async () => {
+        let id: string;
+        try {
+          id = (await createListingDraft({ user, data: draftData, id: preferredId ?? undefined })).id;
+        } catch (e) {
+          if (!preferredId || (e as { code?: string } | null)?.code !== "23505") throw e;
+          // Another tab already migrated this guest draft: adopt its row. If it
+          // isn't ours to update (shouldn't happen), fall back to a fresh row.
+          try {
+            id = (await updateListingDraft({ user, draftId: preferredId, data: draftData })).id;
+          } catch {
+            id = (await createListingDraft({ user, data: draftData })).id;
+          }
+        }
+        draftIdRef.current = id;
+        setDraftId(id);
+        return id;
+      })();
       draftCreateRef.current = createPromise;
       try {
         const id = await createPromise;
@@ -445,7 +492,7 @@ export default function ListingWizard() {
       guestImageFiles,
       setGuestImageFiles,
       draftId,
-      setDraftId: setDraftIdSynced,
+      setDraftId: setDraftIdFromStep,
       persistDraft,
       registerDraftSnapshotter,
     }),
@@ -459,7 +506,7 @@ export default function ListingWizard() {
       getMaxPhotos,
       guestImageFiles,
       draftId,
-      setDraftIdSynced,
+      setDraftIdFromStep,
       persistDraft,
       registerDraftSnapshotter,
     ]
@@ -732,7 +779,7 @@ export default function ListingWizard() {
   // last-write-wins. Purely additive — the explicit "Entwurf speichern" button
   // and per-step draft writes keep working; this just means work is never lost.
   const runAutosave = useCallback(async () => {
-    if (isLoadingFromQuery || isEditingExistingListing || isComplete) return;
+    if (isLoadingFromQuery || isEditingExistingListing || isComplete || draftClosedRef.current) return;
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("payment_confirmed") === "true") {
       return;
     }
@@ -761,7 +808,11 @@ export default function ListingWizard() {
     // before they sign in at the final step. Server-side drafts need a user_id.
     if (!user) {
       try {
-        window.localStorage.setItem(GUEST_DRAFT_KEY, JSON.stringify({ savedAt: new Date().toISOString(), data: draftData }));
+        const draftKey = readGuestDraftKey() ?? newGuestDraftKey();
+        window.localStorage.setItem(
+          GUEST_DRAFT_KEY,
+          JSON.stringify({ savedAt: new Date().toISOString(), draftKey, data: draftData })
+        );
         lastAutosavedRef.current = snapshot;
         setAutosaveState("saved");
       } catch {

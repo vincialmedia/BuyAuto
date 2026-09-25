@@ -12,7 +12,6 @@ import { useWizard } from "./ListingWizard";
 import { useToast } from '@/hooks/use-toast';
 import { createOrUpdateListing } from '@/services/createListingService';
 import { uploadOptimizedImage } from "@/services/storageService";
-import { updateListingDraft } from "@/services/listingDraftService";
 import { removeGuestImage, saveGuestImages } from "@/lib/buyauto/guestImageStore";
 
 interface ImageItem {
