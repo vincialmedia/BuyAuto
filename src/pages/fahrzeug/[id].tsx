@@ -30,7 +30,6 @@ import { Hreflang } from "@/i18n/seo";
 import {
   getFreshTranslations,
   listingNeedsTranslation,
-  scheduleListingTranslation,
   type StoredTranslation,
   type TranslatedLocale,
 } from "@/lib/i18n/listingTranslations";
@@ -672,8 +671,8 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
 
     // Seller-written text (title + description) per language. German shows the
     // original and only needs to know which translations exist (hreflang);
-    // fr/it/en show the stored translation. A missing one is translated in the
-    // background: this response never waits for the model.
+    // fr/it/en show a stored translation when there is one, otherwise the
+    // original text, noindexed in that language.
     const sourceText = { title: listing.title ?? null, description: listing.description ?? null };
     const needsTranslation = listingNeedsTranslation(sourceText);
     const fresh = await (freshPromise ?? getFreshTranslations(listing.id, sourceText));
@@ -693,7 +692,6 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
         };
       } else if (needsTranslation) {
         descriptionIsOriginal = true;
-        scheduleListingTranslation(listing.id, locale, sourceText);
       }
     }
 
@@ -705,14 +703,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps & I18
     const serializedListing = serializeListing(listing);
 
     if (context.res) {
-      // An untranslated version is only cached briefly so the translation,
-      // typically ready seconds later, replaces it quickly.
-      context.res.setHeader(
-        "Cache-Control",
-        descriptionIsOriginal
-          ? "public, s-maxage=15, stale-while-revalidate=60"
-          : "public, s-maxage=60, stale-while-revalidate=600",
-      );
+      context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     }
 
     return {

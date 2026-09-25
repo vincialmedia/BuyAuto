@@ -1,25 +1,16 @@
-// Server-only. Translations of a listing's free text (title + description) for
-// the fr / it / en pages. The German original in `listings` is never touched.
+// Server-only. Stored translations of a listing's free text (title +
+// description) for the fr / it / en pages. The German original in `listings`
+// is never touched, and nothing here translates: rows in listing_translations
+// are written outside the app (currently a one-time set for the listings that
+// were live when the languages were added).
 //
-// Flow
-//  1. The listing page looks up `listing_translations`. A row counts only while
-//     its source_hash still matches the listing's current text: an edited
-//     listing falls back to the original until it is translated again.
-//  2. fr/it/en page without a fresh translation: the page renders at once with
-//     the original text, marked as such and noindexed in that language, and
-//     schedules the translation in the background (never inside the request).
-//     The next render after it is stored shows the translation.
-//  3. The nightly cron (/api/cron/translate-listings) backfills whatever no
-//     page view triggered.
-//  Every translation is "claimed" first (listing_translation_attempts), so
-//  parallel requests don't pay for the same text twice and a text that keeps
-//  failing is retried with backoff instead of on every page view.
-//
-// This module must not import the Anthropic SDK: German listing pages and the
-// sitemap import it. The translator is loaded lazily in translateAndStore().
+// A row counts only while its source_hash still matches the listing's current
+// text, so an edited listing falls back to the original. A listing without a
+// fresh translation shows its original text in fr/it/en, marked as such, and
+// that language version is noindexed (see the listing page) so Google never
+// indexes a page whose main content is untranslated.
 import { createHash } from "crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { runInBackground } from "@/lib/runInBackground";
 import type { Locale } from "@/i18n/config";
 
 export type TranslatedLocale = Exclude<Locale, "de">;
@@ -42,20 +33,9 @@ export function listingNeedsTranslation(text: ListingText): boolean {
   return (text.description ?? "").trim().length > 1;
 }
 
-export function translatorConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL);
-}
-
 function readClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
-function writeClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
@@ -86,97 +66,4 @@ export async function getFreshTranslations(
     }
   }
   return out;
-}
-
-export async function storeTranslation(
-  listingId: string,
-  locale: TranslatedLocale,
-  text: ListingText,
-  translated: { title: string; description: string },
-  provider: string,
-): Promise<void> {
-  const client = writeClient();
-  if (!client) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing");
-  const { error } = await client.from("listing_translations").upsert(
-    {
-      listing_id: listingId,
-      locale,
-      source_hash: listingSourceHash(text.title, text.description),
-      title: translated.title,
-      description: translated.description,
-      provider,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "listing_id,locale" },
-  );
-  if (error) throw new Error(error.message);
-}
-
-/**
- * Reserves one translation attempt for this listing, language and text
- * (public.claim_listing_translation). False while another attempt for the same
- * text is recent (in flight, done, or failed and backing off). Fails closed:
- * if the claim can't be recorded, nothing is translated or paid for.
- */
-async function claimTranslation(client: SupabaseClient, listingId: string, locale: TranslatedLocale, hash: string): Promise<boolean> {
-  const { data, error } = await client.rpc("claim_listing_translation", {
-    p_listing_id: listingId,
-    p_locale: locale,
-    p_source_hash: hash,
-  });
-  if (error) {
-    console.error(`Listing translation claim failed (${listingId}, ${locale}):`, error.message);
-    return false;
-  }
-  return data === true;
-}
-
-async function recordFailure(client: SupabaseClient, listingId: string, locale: TranslatedLocale, message: string): Promise<void> {
-  const { error } = await client
-    .from("listing_translation_attempts")
-    .update({ last_error: message.slice(0, 500) })
-    .eq("listing_id", listingId)
-    .eq("locale", locale);
-  if (error) console.error(`Recording listing translation failure failed (${listingId}, ${locale}):`, error.message);
-}
-
-export type TranslateOutcome = "translated" | "skipped" | "failed";
-
-/**
- * Claims, translates and stores one listing in one language. Never throws.
- * "skipped": nothing to translate, translator not configured, or another
- * attempt holds the claim.
- */
-export async function translateAndStore(
-  listingId: string,
-  locale: TranslatedLocale,
-  text: ListingText,
-  options: { timeoutMs: number },
-): Promise<{ outcome: TranslateOutcome; error?: string }> {
-  if (!listingNeedsTranslation(text) || !translatorConfigured()) return { outcome: "skipped" };
-  const client = writeClient();
-  if (!client) return { outcome: "skipped" };
-  if (!(await claimTranslation(client, listingId, locale, listingSourceHash(text.title, text.description)))) {
-    return { outcome: "skipped" };
-  }
-  try {
-    const { translateListingText, translationModel } = await import("./listingTranslator");
-    const translated = await translateListingText(text, locale, { timeoutMs: options.timeoutMs });
-    await storeTranslation(listingId, locale, text, translated, translationModel());
-    return { outcome: "translated" };
-  } catch (error) {
-    const message = (error as Error)?.message || String(error);
-    console.error(`Listing translation failed (${listingId}, ${locale}):`, message);
-    await recordFailure(client, listingId, locale, message);
-    return { outcome: "failed", error: message };
-  }
-}
-
-/**
- * Translates a listing in the background after the current response is sent.
- * Called by the fr/it/en listing page when no fresh translation exists.
- */
-export function scheduleListingTranslation(listingId: string, locale: TranslatedLocale, text: ListingText): void {
-  if (!listingNeedsTranslation(text) || !translatorConfigured()) return;
-  runInBackground(translateAndStore(listingId, locale, text, { timeoutMs: 45_000 }));
 }

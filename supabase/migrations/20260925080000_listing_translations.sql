@@ -5,7 +5,7 @@
 -- source_hash = listing_text_hash(title, description) of the listing at the
 -- moment it was translated. When the seller edits the text the hash no longer
 -- matches, the stored translation counts as missing, and the page shows the
--- original (noindexed in that language) until it is translated again.
+-- original (noindexed in that language) until a new translation is stored.
 create table if not exists public.listing_translations (
   listing_id uuid not null references public.listings(id) on delete cascade,
   locale text not null check (locale in ('fr', 'it', 'en')),
