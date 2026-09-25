@@ -26,6 +26,7 @@ import {
   composeListingTitle,
   sanitizeTitleSuffix,
   TITLE_SUFFIX_MAX,
+  tgDecodeUrl,
 } from "@/lib/buyauto/listingContract";
 
 const vehicleStepSchema = z.object({
@@ -469,7 +470,7 @@ export function Step1Form() {
     setTgLoading(true);
     setTgStatus("idle");
     try {
-      const resp = await fetch(`/api/vehicles/decode-tg?tg=${encodeURIComponent(tg)}`);
+      const resp = await fetch(tgDecodeUrl(tg));
       const json = (await resp.json().catch(() => ({}))) as {
         make_id?: string | null;
         model_id?: string | null;
