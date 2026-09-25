@@ -44,6 +44,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { FREE_MONTHLY_LIMIT, PAID_MONTHLY_LIMIT } from "@/lib/buyauto/valuationQuota";
 import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
+import { T, useT, type TFunction } from "@/i18n/runtime";
 import { track } from "@/lib/analytics";
 
 /** Biggest per-month valuation quota any public package includes. */
@@ -297,6 +298,58 @@ function compute(state: CalculatorState): CalcResult | null {
   };
 }
 
+// The valuation / Typenschein APIs answer in German. Fixed messages are
+// dictionary keys as they are; the few that embed a value (count, TG number,
+// model) are matched here so they translate as ONE key with placeholders.
+// Anything unknown falls back to the German text.
+const SERVER_MESSAGE_PATTERNS: Array<[RegExp, string, string[]]> = [
+  [
+    /^Keine Typengenehmigung (.+) gefunden – prüf Feld 24 im Fahrzeugausweis \(vor 1995 ist keine automatische Abfrage möglich\)\.$/,
+    "Keine Typengenehmigung {tg} gefunden – prüf Feld 24 im Fahrzeugausweis (vor 1995 ist keine automatische Abfrage möglich).",
+    ["tg"],
+  ],
+  [
+    /^Die Suche fand (\d+) Web-Treffer, aber keine einzelnen Inserate auf Occasions-Portalen\.$/,
+    "Die Suche fand {n} Web-Treffer, aber keine einzelnen Inserate auf Occasions-Portalen.",
+    ["n"],
+  ],
+  [
+    /^Die Suche fand (\d+) Inserat\(e\), auch nach Seitenabruf ohne lesbaren Preis \+ Kilometerstand\.$/,
+    "Die Suche fand {n} Inserat(e), auch nach Seitenabruf ohne lesbaren Preis + Kilometerstand.",
+    ["n"],
+  ],
+  [
+    /^Die Suche fand (\d+) Inserat\(e\) ohne lesbaren Preis \+ Kilometerstand\.$/,
+    "Die Suche fand {n} Inserat(e) ohne lesbaren Preis + Kilometerstand.",
+    ["n"],
+  ],
+  [
+    /^Es wurden (.+)-Inserate gefunden, aber keine mit passender Motorisierung \((.+)\)\. Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell\.$/,
+    "Es wurden {model}-Inserate gefunden, aber keine mit passender Motorisierung ({variant}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.",
+    ["model", "variant"],
+  ],
+  [
+    /^Es wurden (.+)-Inserate gefunden, aber keine mit passender Karosserie-Variante \((.+)\)\. Erfasse 3–5 passende Vergleichsfahrzeuge manuell\.$/,
+    "Es wurden {model}-Inserate gefunden, aber keine mit passender Karosserie-Variante ({variant}). Erfasse 3–5 passende Vergleichsfahrzeuge manuell.",
+    ["model", "variant"],
+  ],
+];
+
+function translateServerMessage(t: TFunction, message: string | null | undefined): string | undefined {
+  if (typeof message !== "string") return undefined;
+  for (const [pattern, key, names] of SERVER_MESSAGE_PATTERNS) {
+    const match = pattern.exec(message);
+    if (match) {
+      const vars: Record<string, string> = {};
+      names.forEach((name, i) => {
+        vars[name] = match[i + 1];
+      });
+      return t(key, vars);
+    }
+  }
+  return t(message);
+}
+
 // --- Helper Components ---
 
 const MoneyInput = ({
@@ -370,6 +423,7 @@ const CalculatorSkeleton = () => (
 export function EintauschwertRechner() {
   const { user, profile } = useAuth();
   const router = useRouter();
+  const t = useT();
   const isGarage = profile?.role === "garage";
   // After checkout the garage lands back where it hit the gate — the dashboard
   // Rechner tab when embedded there, the public page everywhere else.
@@ -549,8 +603,8 @@ export function EintauschwertRechner() {
     setModelId("");
     setVehicleFieldMode('text');
     setStep(2);
-    toast.success("Beispielwerte geladen", {
-      description: "Manuelle Vergleichswerte für einen VW Golf (2020).",
+    toast.success(t("Beispielwerte geladen"), {
+      description: t("Manuelle Vergleichswerte für einen VW Golf (2020)."),
     });
   };
 
@@ -621,8 +675,8 @@ export function EintauschwertRechner() {
     const tg = tgInput.trim().toUpperCase().replace(/[\s.\-]/g, "");
     setTgInput(tg);
     if (!/^[A-Z0-9]{6}$/.test(tg)) {
-      toast.error("Ungültige Typenschein-Nr.", {
-        description: "6 Zeichen aus Feld 24 des Fahrzeugausweises, z.B. 1TD812.",
+      toast.error(t("Ungültige Typenschein-Nr."), {
+        description: t("6 Zeichen aus Feld 24 des Fahrzeugausweises, z.B. 1TD812."),
       });
       return;
     }
@@ -638,8 +692,9 @@ export function EintauschwertRechner() {
         message?: string;
       };
       if (!res.ok) {
-        toast.error("Typenschein nicht gefunden", {
-          description: data?.message ?? "Prüf die Nummer oder erfasse das Fahrzeug manuell.",
+        toast.error(t("Typenschein nicht gefunden"), {
+          description:
+            translateServerMessage(t, data?.message) ?? t("Prüf die Nummer oder erfasse das Fahrzeug manuell."),
         });
         return;
       }
@@ -669,7 +724,7 @@ export function EintauschwertRechner() {
         bodyType: bodyKey,
         displacement: data.displacement_l ?? "",
       }));
-      toast.success("Typenschein erkannt", {
+      toast.success(t("Typenschein erkannt"), {
         description: [
           data.provider_make,
           model,
@@ -680,8 +735,8 @@ export function EintauschwertRechner() {
           .join(" · "),
       });
     } catch {
-      toast.error("Abfrage fehlgeschlagen", {
-        description: "Typenschein konnte nicht geladen werden – erfasse das Fahrzeug manuell.",
+      toast.error(t("Abfrage fehlgeschlagen"), {
+        description: t("Typenschein konnte nicht geladen werden – erfasse das Fahrzeug manuell."),
       });
     } finally {
       setTgLoading(false);
@@ -690,20 +745,20 @@ export function EintauschwertRechner() {
 
   const validateVehicle = (): boolean => {
     if (!state.make.trim() || !state.model.trim()) {
-      toast.error("Marke und Modell fehlen", {
-        description: "Marke und Modell sind Pflichtfelder.",
+      toast.error(t("Marke und Modell fehlen"), {
+        description: t("Marke und Modell sind Pflichtfelder."),
       });
       return false;
     }
     if (state.year < 1980 || state.year > CURRENT_YEAR + 1) {
-      toast.error("Jahrgang fehlt", {
-        description: `Gib einen Jahrgang zwischen 1980 und ${CURRENT_YEAR + 1} ein.`,
+      toast.error(t("Jahrgang fehlt"), {
+        description: t("Gib einen Jahrgang zwischen 1980 und {max} ein.", { max: CURRENT_YEAR + 1 }),
       });
       return false;
     }
     if (state.vehicleKm <= 0) {
-      toast.error("Kilometerstand fehlt", {
-        description: "Trag den Kilometerstand des Eintausch-Fahrzeugs ein.",
+      toast.error(t("Kilometerstand fehlt"), {
+        description: t("Trag den Kilometerstand des Eintausch-Fahrzeugs ein."),
       });
       return false;
     }
@@ -741,8 +796,8 @@ export function EintauschwertRechner() {
   const finishWithComputation = (nextState: CalculatorState) => {
     const computed = compute(nextState);
     if (!computed) {
-      toast.error("Keine Vergleichspreise vorhanden", {
-        description: "Trag mindestens ein Vergleichsfahrzeug mit Preis ein.",
+      toast.error(t("Keine Vergleichspreise vorhanden"), {
+        description: t("Trag mindestens ein Vergleichsfahrzeug mit Preis ein."),
       });
       return false;
     }
@@ -757,13 +812,13 @@ export function EintauschwertRechner() {
   const handleRecalculate = () => {
     const computed = compute(state);
     if (!computed) {
-      toast.error("Keine Vergleichspreise vorhanden", {
-        description: "Trag mindestens ein Vergleichsfahrzeug mit Preis ein.",
+      toast.error(t("Keine Vergleichspreise vorhanden"), {
+        description: t("Trag mindestens ein Vergleichsfahrzeug mit Preis ein."),
       });
       return;
     }
     setResult(computed);
-    toast.success("Neu berechnet");
+    toast.success(t("Neu berechnet"));
   };
 
   // Fresh car, same garage: vehicle and comps reset, the Abzüge (the garage's
@@ -801,8 +856,8 @@ export function EintauschwertRechner() {
     // one before advancing. Auto mode has no rows yet — the search runs on the
     // step-2 "Inserate suchen & Eintauschwert berechnen" button.
     if (compsMode === 'manual' && !state.comps.some((c) => c.price > 0)) {
-      toast.info("Noch keine Vergleichsfahrzeuge", {
-        description: "Trag den Inseratspreis von mindestens einem vergleichbaren Fahrzeug ein.",
+      toast.info(t("Noch keine Vergleichsfahrzeuge"), {
+        description: t("Trag den Inseratspreis von mindestens einem vergleichbaren Fahrzeug ein."),
       });
       return;
     }
@@ -826,14 +881,14 @@ export function EintauschwertRechner() {
   const handleCompute = () => {
     const validComps = state.comps.filter((c) => c.price > 0);
     if (validComps.length === 0) {
-      toast.error("Mindestens 1 Vergleichsfahrzeug nötig", {
-        description: "Trag den Inseratspreis von mindestens einem vergleichbaren Fahrzeug ein.",
+      toast.error(t("Mindestens 1 Vergleichsfahrzeug nötig"), {
+        description: t("Trag den Inseratspreis von mindestens einem vergleichbaren Fahrzeug ein."),
       });
       return;
     }
     if (validComps.length < 3) {
-      toast.info("Tipp: 3–5 Vergleichsfahrzeuge", {
-        description: "Je mehr Vergleichsinserate, desto belastbarer der Marktwert.",
+      toast.info(t("Tipp: 3–5 Vergleichsfahrzeuge"), {
+        description: t("Je mehr Vergleichsinserate, desto belastbarer der Marktwert."),
       });
     }
     finishWithComputation(state);
@@ -889,18 +944,20 @@ export function EintauschwertRechner() {
           setGateKind(body?.quota?.plan === "paid" ? "paid_limit" : "free_plan");
           setResult(null);
         } else if (res.status === 503) {
-          toast.error("Automatische Suche momentan nicht verfügbar", {
-            description: "Erfasse die Vergleichsfahrzeuge manuell – der Rechner funktioniert weiterhin.",
+          toast.error(t("Automatische Suche momentan nicht verfügbar"), {
+            description: t("Erfasse die Vergleichsfahrzeuge manuell – der Rechner funktioniert weiterhin."),
           });
           fallbackToManual();
         } else if (res.status === 429) {
-          toast.error("Zu viele Anfragen", {
-            description: body?.message ?? "Bitte versuch es in einer Stunde nochmals.",
+          toast.error(t("Zu viele Anfragen"), {
+            description:
+              translateServerMessage(t, body?.message) ?? t("Bitte versuch es in einer Stunde nochmals."),
           });
           fallbackToManual();
         } else {
-          toast.error("Suche fehlgeschlagen", {
-            description: body?.message ?? "Bitte prüf deine Eingaben und versuch es nochmals.",
+          toast.error(t("Suche fehlgeschlagen"), {
+            description:
+              translateServerMessage(t, body?.message) ?? t("Bitte prüf deine Eingaben und versuch es nochmals."),
           });
           fallbackToManual();
         }
@@ -935,10 +992,10 @@ export function EintauschwertRechner() {
       }
 
       if (comps.length === 0) {
-        toast.warning("Keine Vergleichsinserate gefunden", {
+        toast.warning(t("Keine Vergleichsinserate gefunden"), {
           description:
-            data.diagnosis ??
-            "Erfasse 3–5 Vergleichsfahrzeuge manuell – z.B. von AutoScout24 oder tutti.",
+            translateServerMessage(t, data.diagnosis) ??
+            t("Erfasse 3–5 Vergleichsfahrzeuge manuell – z.B. von AutoScout24 oder tutti."),
           duration: 10000,
         });
         fallbackToManual();
@@ -956,14 +1013,14 @@ export function EintauschwertRechner() {
       setState(nextState);
 
       if (data.warning) {
-        toast.warning("Wenige Treffer", { description: data.warning });
+        toast.warning(t("Wenige Treffer"), { description: translateServerMessage(t, data.warning) });
       } else {
-        toast.success(`${comps.length} Vergleichsinserate gefunden`);
+        toast.success(t("{n} Vergleichsinserate gefunden", { n: comps.length }));
       }
       finishWithComputation(nextState);
     } catch {
-      toast.error("Suche fehlgeschlagen", {
-        description: "Netzwerkfehler – erfasse die Vergleichsfahrzeuge manuell oder versuch es erneut.",
+      toast.error(t("Suche fehlgeschlagen"), {
+        description: t("Netzwerkfehler – erfasse die Vergleichsfahrzeuge manuell oder versuch es erneut."),
       });
       fallbackToManual();
     } finally {
@@ -982,14 +1039,14 @@ export function EintauschwertRechner() {
           <div key={i} className="flex items-end gap-2">
             <div className="flex-1">
               <MoneyInput
-                label={i === 0 ? "Inseratspreis" : ""}
+                label={i === 0 ? t("Inseratspreis") : ""}
                 value={comp.price}
                 onChange={(v) => updateComp(i, 'price', v)}
               />
             </div>
             <div className="flex-1">
               <MoneyInput
-                label={i === 0 ? "Kilometerstand" : ""}
+                label={i === 0 ? t("Kilometerstand") : ""}
                 value={comp.km}
                 onChange={(v) => updateComp(i, 'km', v)}
                 unit="km"
@@ -1001,7 +1058,7 @@ export function EintauschwertRechner() {
               className="shrink-0 text-neutral-400 hover:text-red-600"
               onClick={() => removeComp(i)}
               disabled={state.comps.length <= 1}
-              title="Zeile entfernen"
+              title={t("Zeile entfernen")}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -1017,7 +1074,7 @@ export function EintauschwertRechner() {
         className="border-neutral-300 text-neutral-700"
       >
         <Plus className="w-4 h-4 mr-2" />
-        Vergleichsfahrzeug
+        {t("Vergleichsfahrzeug")}
       </Button>
     </>
   );
@@ -1025,7 +1082,7 @@ export function EintauschwertRechner() {
   const foundListingsBlock = foundListings.length > 0 && (
     <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 space-y-2">
       <p className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-        Gefundene Inserate
+        {t("Gefundene Inserate")}
       </p>
       {foundListings.map((l, i) => (
         <a
@@ -1049,12 +1106,37 @@ export function EintauschwertRechner() {
   // factor confused every tester, so it's explained, not asked.
   const kmAdjustNote = (
     <p className="text-xs text-neutral-500 leading-relaxed">
-      <strong className="text-neutral-700">Kilometerstand wird automatisch berücksichtigt:</strong>{" "}
-      Vergleichsautos mit mehr Kilometern als deins sind entsprechend günstiger – der Rechner
-      gleicht das mit rund {KM_ADJUST_PCT_PER_10K}% des Inseratspreises pro 10&apos;000 km
-      Differenz aus. Beispiel: CHF 20&apos;000-Auto, 20&apos;000 km Unterschied ≈ CHF 2&apos;000.
+      <T
+        k="<0>Kilometerstand wird automatisch berücksichtigt:</0> Vergleichsautos mit mehr Kilometern als deins sind entsprechend günstiger – der Rechner gleicht das mit rund {pct}% des Inseratspreises pro 10'000 km Differenz aus. Beispiel: CHF 20'000-Auto, 20'000 km Unterschied ≈ CHF 2'000."
+        vars={{ pct: KM_ADJUST_PCT_PER_10K }}
+        c={[<strong key="0" className="text-neutral-700" />]}
+      />
     </p>
   );
+
+  // Remaining-search counter, shared by the step-1 note (which adds a period)
+  // and the step-2 line under the search button. Rendered only while > 0.
+  const searchesLeftStrong = <strong key="0" className="text-neutral-800" />;
+  const searchesLeftText =
+    searchesLimit !== null ? (
+      user ? (
+        <T
+          k="Noch <0>{n}</0> von {limit} Suchen diesen Monat übrig"
+          vars={{ n: searchesRemaining, limit: searchesLimit }}
+          c={[searchesLeftStrong]}
+        />
+      ) : (
+        <T
+          k="Noch <0>{n}</0> von {limit} gratis Suchen übrig"
+          vars={{ n: searchesRemaining, limit: searchesLimit }}
+          c={[searchesLeftStrong]}
+        />
+      )
+    ) : user ? (
+      <T k="Noch <0>{n}</0> Suchen diesen Monat übrig" vars={{ n: searchesRemaining }} c={[searchesLeftStrong]} />
+    ) : (
+      <T k="Noch <0>{n}</0> gratis Suchen übrig" vars={{ n: searchesRemaining }} c={[searchesLeftStrong]} />
+    );
 
   return (
     <div className="w-full space-y-8" id="calculator-tool">
@@ -1062,7 +1144,7 @@ export function EintauschwertRechner() {
       {/* --- PRESETS --- */}
       <div className="flex flex-wrap gap-3 items-center justify-center p-4 bg-neutral-50 rounded-xl border border-neutral-200">
         <span className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mr-2">
-          Beispiel laden:
+          {t("Beispiel laden:")}
         </span>
         <Button
           variant="outline"
@@ -1079,7 +1161,7 @@ export function EintauschwertRechner() {
           className="ml-auto text-neutral-500 hover:text-neutral-900"
           onClick={handleReset}
         >
-          <RotateCcw className="w-4 h-4 mr-2" /> Reset
+          <RotateCcw className="w-4 h-4 mr-2" /> {t("Reset")}
         </Button>
       </div>
 
@@ -1089,7 +1171,7 @@ export function EintauschwertRechner() {
           <CardHeader className="bg-neutral-50 border-b border-neutral-100 pb-4">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-full bg-neutral-900 text-white flex items-center justify-center text-sm font-bold">1</div>
-              Fahrzeug & Marktlage
+              {t("Fahrzeug & Marktlage")}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
@@ -1099,15 +1181,15 @@ export function EintauschwertRechner() {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-red-600" />
                 <Label className="text-sm font-bold text-neutral-900">
-                  Schnell-Erfassung mit Typenschein-Nr.
+                  {t("Schnell-Erfassung mit Typenschein-Nr.")}
                 </Label>
-                <span className="text-xs text-neutral-400">(optional)</span>
+                <span className="text-xs text-neutral-400">{t("(optional)")}</span>
               </div>
               <div className="flex gap-2">
                 <Input
                   value={tgInput}
                   onChange={(e) => setTgInput(e.target.value.toUpperCase())}
-                  placeholder="z.B. 1TD812"
+                  placeholder={t("z.B. 1TD812")}
                   className="uppercase bg-white"
                   maxLength={10}
                   autoComplete="off"
@@ -1120,23 +1202,21 @@ export function EintauschwertRechner() {
                   className="shrink-0 border-neutral-300"
                 >
                   {tgLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Übernehmen
+                  {t("Übernehmen")}
                 </Button>
               </div>
               <p className="text-xs text-neutral-500 leading-relaxed">
-                Feld 24 im Fahrzeugausweis – füllt Marke, Modell, Karosserie und Motorisierung
-                exakt aus (ASTRA-Typengenehmigung, gratis). Steht dort «IVI» oder «X», erfasse
-                das Fahrzeug manuell.
+                {t("Feld 24 im Fahrzeugausweis – füllt Marke, Modell, Karosserie und Motorisierung exakt aus (ASTRA-Typengenehmigung, gratis). Steht dort «IVI» oder «X», erfasse das Fahrzeug manuell.")}
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-sm font-bold text-neutral-900">Marke *</Label>
+                <Label className="text-sm font-bold text-neutral-900">{t("Marke *")}</Label>
                 {useSelectFields ? (
                   <Select value={makeId} onValueChange={handleMakeSelect}>
                     <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
-                      <SelectValue placeholder="Marke wählen" />
+                      <SelectValue placeholder={t("Marke wählen")} />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {makes.map((m) => (
@@ -1151,18 +1231,18 @@ export function EintauschwertRechner() {
                     type="text"
                     value={state.make}
                     onChange={(e) => updateState('make', e.target.value)}
-                    placeholder="z.B. VW"
+                    placeholder={t("z.B. VW")}
                     className="border-neutral-400 bg-white shadow-sm font-semibold"
                   />
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm font-bold text-neutral-900">Modell *</Label>
+                <Label className="text-sm font-bold text-neutral-900">{t("Modell *")}</Label>
                 {useSelectFields ? (
                   modelSelectReady ? (
                     <Select value={modelId} onValueChange={handleModelSelect}>
                       <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
-                        <SelectValue placeholder="Modell wählen" />
+                        <SelectValue placeholder={t("Modell wählen")} />
                       </SelectTrigger>
                       <SelectContent className="max-h-72">
                         {models.map((m) => (
@@ -1175,7 +1255,7 @@ export function EintauschwertRechner() {
                   ) : makeId && modelsLoading ? (
                     <Select value="" disabled>
                       <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
-                        <SelectValue placeholder="Modelle laden…" />
+                        <SelectValue placeholder={t("Modelle laden…")} />
                       </SelectTrigger>
                       <SelectContent />
                     </Select>
@@ -1184,13 +1264,13 @@ export function EintauschwertRechner() {
                       type="text"
                       value={state.model}
                       onChange={(e) => updateState('model', e.target.value)}
-                      placeholder="z.B. Golf"
+                      placeholder={t("z.B. Golf")}
                       className="border-neutral-400 bg-white shadow-sm font-semibold"
                     />
                   ) : (
                     <Select value="" disabled>
                       <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
-                        <SelectValue placeholder="Zuerst Marke wählen" />
+                        <SelectValue placeholder={t("Zuerst Marke wählen")} />
                       </SelectTrigger>
                       <SelectContent />
                     </Select>
@@ -1200,7 +1280,7 @@ export function EintauschwertRechner() {
                     type="text"
                     value={state.model}
                     onChange={(e) => updateState('model', e.target.value)}
-                    placeholder="z.B. Golf"
+                    placeholder={t("z.B. Golf")}
                     className="border-neutral-400 bg-white shadow-sm font-semibold"
                   />
                 )}
@@ -1212,7 +1292,7 @@ export function EintauschwertRechner() {
                     onClick={switchToTextFields}
                     className="text-xs text-neutral-400 hover:text-red-600 underline underline-offset-2 transition-colors"
                   >
-                    Marke oder Modell nicht in der Liste? Manuell eingeben
+                    {t("Marke oder Modell nicht in der Liste? Manuell eingeben")}
                   </button>
                 ) : makes.length > 0 ? (
                   <button
@@ -1220,35 +1300,35 @@ export function EintauschwertRechner() {
                     onClick={switchToSelectFields}
                     className="text-xs text-neutral-400 hover:text-red-600 underline underline-offset-2 transition-colors"
                   >
-                    Aus Liste wählen
+                    {t("Aus Liste wählen")}
                   </button>
                 ) : null}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm font-bold text-neutral-900">Jahrgang *</Label>
+                <Label className="text-sm font-bold text-neutral-900">{t("Jahrgang *")}</Label>
                 <Input
                   type="number"
                   min={1980}
                   max={CURRENT_YEAR + 1}
                   value={state.year === 0 ? "" : state.year}
                   onChange={(e) => updateState('year', Number(e.target.value))}
-                  placeholder={`z.B. ${CURRENT_YEAR - 5}`}
+                  placeholder={t("z.B. {year}", { year: CURRENT_YEAR - 5 })}
                   className="border-neutral-400 bg-white shadow-sm font-semibold"
                 />
               </div>
               <MoneyInput
-                label="Kilometerstand *"
+                label={t("Kilometerstand *")}
                 value={state.vehicleKm}
                 onChange={(v) => updateState('vehicleKm', v)}
                 unit="km"
                 highlight
-                placeholder="z.B. 80'000"
-                tooltip="Kilometerstand des Fahrzeugs, das du in Eintausch nimmst."
+                placeholder={t("z.B. 80'000")}
+                tooltip={t("Kilometerstand des Fahrzeugs, das du in Eintausch nimmst.")}
               />
               <div className="sm:col-span-2 space-y-1.5">
                 <div className="flex items-center gap-2">
                   <Label className="text-sm font-medium text-neutral-600">
-                    Karosserie (optional)
+                    {t("Karosserie (optional)")}
                   </Label>
                   <TooltipProvider>
                     <Tooltip delayDuration={300}>
@@ -1257,9 +1337,7 @@ export function EintauschwertRechner() {
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
                         <p className="text-xs">
-                          Existiert das Modell in mehreren Varianten (z.B. Coupé und Roadster),
-                          macht die Angabe die automatische Suche deutlich präziser – nur
-                          passende Varianten fliessen in die Bewertung ein.
+                          {t("Existiert das Modell in mehreren Varianten (z.B. Coupé und Roadster), macht die Angabe die automatische Suche deutlich präziser – nur passende Varianten fliessen in die Bewertung ein.")}
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -1270,13 +1348,13 @@ export function EintauschwertRechner() {
                   onValueChange={(v) => updateState('bodyType', v === "any" ? "" : v)}
                 >
                   <SelectTrigger className="bg-neutral-50/50">
-                    <SelectValue placeholder="Weiss nicht / egal" />
+                    <SelectValue placeholder={t("Weiss nicht / egal")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Weiss nicht / egal</SelectItem>
+                    <SelectItem value="any">{t("Weiss nicht / egal")}</SelectItem>
                     {BODY_TYPE_OPTIONS.map((o) => (
                       <SelectItem key={o.value} value={o.value}>
-                        {o.label}
+                        {t(o.label)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1289,7 +1367,7 @@ export function EintauschwertRechner() {
             <div id="comps-anchor" className="flex items-center justify-between gap-4 flex-wrap scroll-mt-4">
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-bold text-neutral-900">
-                  Vergleichsfahrzeuge
+                  {t("Vergleichsfahrzeuge")}
                 </Label>
                 <TooltipProvider>
                   <Tooltip delayDuration={300}>
@@ -1298,9 +1376,7 @@ export function EintauschwertRechner() {
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
                       <p className="text-xs">
-                        Automatisch: der Rechner durchsucht öffentliche Schweizer Occasions-Portale
-                        nach passenden Inseraten. Manuell: trag Preis und Kilometerstand von 3–5
-                        Inseraten selbst ein. Gefundene Werte kannst du immer noch anpassen.
+                        {t("Automatisch: der Rechner durchsucht öffentliche Schweizer Occasions-Portale nach passenden Inseraten. Manuell: trag Preis und Kilometerstand von 3–5 Inseraten selbst ein. Gefundene Werte kannst du immer noch anpassen.")}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -1339,13 +1415,13 @@ export function EintauschwertRechner() {
                     value="auto"
                     className="data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm font-semibold text-xs px-3"
                   >
-                    Automatisch suchen
+                    {t("Automatisch suchen")}
                   </TabsTrigger>
                   <TabsTrigger
                     value="manual"
                     className="data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm font-semibold text-xs px-3"
                   >
-                    Manuell erfassen
+                    {t("Manuell erfassen")}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -1357,21 +1433,14 @@ export function EintauschwertRechner() {
             {compsMode === 'auto' && (
               <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 text-sm text-neutral-600 leading-relaxed">
                 <Search className="w-4 h-4 inline-block mr-2 text-red-600" />
-                Sobald du auf «Inserate suchen &amp; Eintauschwert berechnen» klickst, durchsucht der
-                Rechner Schweizer Occasions-Portale (AutoScout24, tutti &amp; Co.), gleicht die
-                Kilometer an und berechnet den Eintauschwert – alles in einem Schritt.
+                {t("Sobald du auf «Inserate suchen & Eintauschwert berechnen» klickst, durchsucht der Rechner Schweizer Occasions-Portale (AutoScout24, tutti & Co.), gleicht die Kilometer an und berechnet den Eintauschwert – alles in einem Schritt.")}
                 {searchesRemaining !== null && (
                   <span className="block mt-2" aria-live="polite">
                     {searchesRemaining > 0 ? (
-                      <>
-                        Noch{" "}
-                        <strong className="text-neutral-800">{searchesRemaining}</strong>
-                        {searchesLimit !== null ? ` von ${searchesLimit}` : ""}{" "}
-                        {user ? "Suchen diesen Monat" : "gratis Suchen"} übrig.
-                      </>
+                      <>{searchesLeftText}.</>
                     ) : (
                       <strong className="text-red-600">
-                        {user ? "Monatskontingent aufgebraucht." : "Gratis-Suchen aufgebraucht."}
+                        {user ? t("Monatskontingent aufgebraucht") : t("Gratis-Suchen aufgebraucht")}.
                       </strong>
                     )}
                   </span>
@@ -1393,7 +1462,7 @@ export function EintauschwertRechner() {
               onClick={handleContinue}
               className="w-full bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 py-6 text-base font-semibold rounded-xl"
             >
-              Weiter zu den Abzügen
+              {t("Weiter zu den Abzügen")}
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </CardContent>
@@ -1411,9 +1480,9 @@ export function EintauschwertRechner() {
               <Car className="w-5 h-5 text-red-600" />
             </div>
             <div className="min-w-0">
-              <p className="font-bold text-neutral-900 truncate">{vehicleLabel || "Fahrzeug"}</p>
+              <p className="font-bold text-neutral-900 truncate">{vehicleLabel || t("Fahrzeug")}</p>
               <p className="text-xs text-neutral-500">
-                {chf(state.vehicleKm)} km · {compsMode === 'auto' ? "Automatische Suche" : "Manuelle Vergleichswerte"}
+                {chf(state.vehicleKm)} km · {compsMode === 'auto' ? t("Automatische Suche") : t("Manuelle Vergleichswerte")}
               </p>
             </div>
           </div>
@@ -1424,7 +1493,7 @@ export function EintauschwertRechner() {
             className="shrink-0 text-neutral-500 hover:text-red-600"
           >
             <Pencil className="w-4 h-4 mr-2" />
-            Bearbeiten
+            {t("Bearbeiten")}
           </Button>
         </div>
 
@@ -1432,29 +1501,29 @@ export function EintauschwertRechner() {
           <CardHeader className="bg-neutral-50 border-b border-neutral-100 pb-4">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-full bg-white border-2 border-neutral-900 text-neutral-900 flex items-center justify-center text-sm font-bold">2</div>
-              Deine Abzüge als Garage
+              {t("Deine Abzüge als Garage")}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <MoneyInput
-                label="Aufbereitung & Reparaturen"
+                label={t("Aufbereitung & Reparaturen")}
                 value={state.reconCost}
                 onChange={(v) => updateState('reconCost', v)}
-                tooltip="Reinigung, Politur, kleine Instandstellungen, MFK falls nötig. Üblich: 300–1'500 CHF."
+                tooltip={t("Reinigung, Politur, kleine Instandstellungen, MFK falls nötig. Üblich: 300–1'500 CHF.")}
               />
               <MoneyInput
-                label="Garantie-Rückstellung"
+                label={t("Garantie-Rückstellung")}
                 value={state.warrantyCost}
                 onChange={(v) => updateState('warrantyCost', v)}
-                tooltip="Rückstellung für die gesetzliche Gewährleistung beim Weiterverkauf. Üblich: 300–800 CHF."
+                tooltip={t("Rückstellung für die gesetzliche Gewährleistung beim Weiterverkauf. Üblich: 300–800 CHF.")}
               />
               <div className="sm:col-span-2">
                 <MoneyInput
-                  label="Standzeit & Kapitalbindung"
+                  label={t("Standzeit & Kapitalbindung")}
                   value={state.standingCost}
                   onChange={(v) => updateState('standingCost', v)}
-                  tooltip="Platzkosten, Inserate und gebundenes Kapital bis zum Weiterverkauf. Faustregel: ca. 10–30 CHF pro Standtag."
+                  tooltip={t("Platzkosten, Inserate und gebundenes Kapital bis zum Weiterverkauf. Faustregel: ca. 10–30 CHF pro Standtag.")}
                 />
               </div>
             </div>
@@ -1464,7 +1533,7 @@ export function EintauschwertRechner() {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Label className="text-sm font-bold text-neutral-900">Deine Marge</Label>
+                  <Label className="text-sm font-bold text-neutral-900">{t("Deine Marge")}</Label>
                   <TooltipProvider>
                     <Tooltip delayDuration={300}>
                       <TooltipTrigger asChild>
@@ -1472,9 +1541,7 @@ export function EintauschwertRechner() {
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
                         <p className="text-xs">
-                          Branchenüblich sind 10–20% vom Marktwert – oder ein fixes Ertragsziel
-                          pro Fahrzeug (z.B. 1'500 CHF). Prozent skaliert mit dem Fahrzeugwert,
-                          Fixbetrag eignet sich für günstige Fahrzeuge.
+                          {t("Branchenüblich sind 10–20% vom Marktwert – oder ein fixes Ertragsziel pro Fahrzeug (z.B. 1'500 CHF). Prozent skaliert mit dem Fahrzeugwert, Fixbetrag eignet sich für günstige Fahrzeuge.")}
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -1489,13 +1556,13 @@ export function EintauschwertRechner() {
                       value="percent"
                       className="data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm font-semibold text-xs px-3"
                     >
-                      Prozent
+                      {t("Prozent")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="fixed"
                       className="data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm font-semibold text-xs px-3"
                     >
-                      Fixbetrag
+                      {t("Fixbetrag")}
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -1503,7 +1570,7 @@ export function EintauschwertRechner() {
 
               {state.marginMode === 'percent' ? (
                 <MoneyInput
-                  label="Marge in % vom Marktwert"
+                  label={t("Marge in % vom Marktwert")}
                   value={state.marginPercent}
                   onChange={(v) => updateState('marginPercent', v)}
                   unit="%"
@@ -1511,7 +1578,7 @@ export function EintauschwertRechner() {
                 />
               ) : (
                 <MoneyInput
-                  label="Marge als Fixbetrag"
+                  label={t("Marge als Fixbetrag")}
                   value={state.marginFixed}
                   onChange={(v) => updateState('marginFixed', v)}
                   highlight
@@ -1521,9 +1588,10 @@ export function EintauschwertRechner() {
 
             <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
               <p className="text-xs text-neutral-500 leading-relaxed">
-                <strong className="text-neutral-700">Faustregel:</strong> Der Eintauschwert liegt
-                am Ende meist bei <strong className="text-neutral-700">80–90% des Marktwerts</strong>.
-                Liegt dein Ergebnis deutlich darunter oder darüber, prüfe Abzüge und Vergleichspreise.
+                <T
+                  k="<0>Faustregel:</0> Der Eintauschwert liegt am Ende meist bei <1>80–90% des Marktwerts</1>. Liegt dein Ergebnis deutlich darunter oder darüber, prüfe Abzüge und Vergleichspreise."
+                  c={[<strong key="0" className="text-neutral-700" />, <strong key="1" className="text-neutral-700" />]}
+                />
               </p>
             </div>
           </CardContent>
@@ -1534,7 +1602,7 @@ export function EintauschwertRechner() {
           <Card className="border-neutral-200 shadow-sm overflow-hidden">
             <CardHeader className="bg-neutral-50 border-b border-neutral-100 pb-4">
               <CardTitle className="text-base font-bold text-neutral-700">
-                Vergleichsinserate (anpassbar)
+                {t("Vergleichsinserate (anpassbar)")}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -1565,22 +1633,22 @@ export function EintauschwertRechner() {
             {searching ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Suche &amp; berechne…
+                {t("Suche & berechne…")}
               </>
             ) : result ? (
               <>
                 <RotateCcw className="w-5 h-5 mr-2" />
-                Neuberechnung
+                {t("Neuberechnung")}
               </>
             ) : compsMode === 'auto' ? (
               <>
                 <Search className="w-5 h-5 mr-2" />
-                Inserate suchen &amp; Eintauschwert berechnen
+                {t("Inserate suchen & Eintauschwert berechnen")}
               </>
             ) : (
               <>
                 <Calculator className="w-5 h-5 mr-2" />
-                Eintauschwert berechnen
+                {t("Eintauschwert berechnen")}
               </>
             )}
           </Button>
@@ -1588,15 +1656,10 @@ export function EintauschwertRechner() {
           {compsMode === 'auto' && !result && searchesRemaining !== null && (
             <p className="text-sm text-center" aria-live="polite">
               {searchesRemaining > 0 ? (
-                <span className="text-neutral-500">
-                  Noch{" "}
-                  <strong className="text-neutral-800">{searchesRemaining}</strong>
-                  {searchesLimit !== null ? ` von ${searchesLimit}` : ""}{" "}
-                  {user ? "Suchen diesen Monat" : "gratis Suchen"} übrig
-                </span>
+                <span className="text-neutral-500">{searchesLeftText}</span>
               ) : (
                 <span className="text-red-600 font-medium">
-                  {user ? "Monatskontingent aufgebraucht" : "Gratis-Suchen aufgebraucht"}
+                  {user ? t("Monatskontingent aufgebraucht") : t("Gratis-Suchen aufgebraucht")}
                 </span>
               )}
             </p>
@@ -1609,12 +1672,12 @@ export function EintauschwertRechner() {
               className="border-neutral-300 text-neutral-700 hover:text-red-600 hover:border-red-300 rounded-xl w-full max-w-md"
             >
               <Car className="w-5 h-5 mr-2" />
-              Neues Auto berechnen
+              {t("Neues Auto berechnen")}
             </Button>
           )}
           {result && (
             <p className="text-xs text-neutral-400 text-center">
-              Neuberechnungen mit angepassten Abzügen sind gratis und zählen nicht zu deinen Suchen.
+              {t("Neuberechnungen mit angepassten Abzügen sind gratis und zählen nicht zu deinen Suchen.")}
             </p>
           )}
         </div>
@@ -1633,57 +1696,62 @@ export function EintauschwertRechner() {
             {gateKind === "anon" && (
               <>
                 <h3 className="text-2xl md:text-3xl font-bold">
-                  {ANON_FREE_SEARCHES} gratis Suchen erreicht
+                  {t("{n} gratis Suchen erreicht", { n: ANON_FREE_SEARCHES })}
                 </h3>
                 <p className="text-neutral-300 leading-relaxed">
-                  Registriere dich kostenlos als Garage und rechne weiter – der Rechner ist
-                  dann auch direkt in deinem Konto verfügbar.
+                  {t("Registriere dich kostenlos als Garage und rechne weiter – der Rechner ist dann auch direkt in deinem Konto verfügbar.")}
                 </p>
                 <ul className="text-sm text-neutral-300 space-y-2 text-left max-w-sm mx-auto">
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    {FREE_MONTHLY_LIMIT} Suchen pro Monat gratis – mit einem Garagen-Paket bis zu{" "}
-                    {MAX_PLAN_VALUATIONS} pro Monat
+                    {t("{free} Suchen pro Monat gratis – mit einem Garagen-Paket bis zu {max} pro Monat", {
+                      free: FREE_MONTHLY_LIMIT,
+                      max: MAX_PLAN_VALUATIONS,
+                    })}
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Rechner in deinem Konto & manuelle Berechnung ohne Limit
+                    {t("Rechner in deinem Konto & manuelle Berechnung ohne Limit")}
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Fahrzeuge inserieren – plus eigene Garagen-Seite mit deinem ganzen Bestand
+                    {t("Fahrzeuge inserieren – plus eigene Garagen-Seite mit deinem ganzen Bestand")}
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Alle Informationen und Dokumente bleiben an einem zentralen Ort in der App
+                    {t("Alle Informationen und Dokumente bleiben an einem zentralen Ort in der App")}
                   </li>
                 </ul>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                   <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
-                    <Link href={SIGNUP_HREF}>Kostenlos als Garage registrieren</Link>
+                    <Link href={SIGNUP_HREF}>{t("Kostenlos als Garage registrieren")}</Link>
                   </Button>
                   <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
-                    <Link href="/auth?redirect=/eintauschwert-rechner">Ich habe schon ein Konto</Link>
+                    <Link href="/auth?redirect=/eintauschwert-rechner">{t("Ich habe schon ein Konto")}</Link>
                   </Button>
                 </div>
                 <p className="text-xs text-neutral-500">
-                  Automatische Suchen je nach Paket: Starter {GARAGE_PLANS.starter.valuationsPerMonth},
-                  Growth {GARAGE_PLANS.growth.valuationsPerMonth}, Pro {GARAGE_PLANS.pro.valuationsPerMonth} pro Monat.
-                  Manuelle Berechnungen immer unbegrenzt.
+                  {t(
+                    "Automatische Suchen je nach Paket: Starter {starter}, Growth {growth}, Pro {pro} pro Monat. Manuelle Berechnungen immer unbegrenzt.",
+                    {
+                      starter: GARAGE_PLANS.starter.valuationsPerMonth,
+                      growth: GARAGE_PLANS.growth.valuationsPerMonth,
+                      pro: GARAGE_PLANS.pro.valuationsPerMonth,
+                    }
+                  )}
                 </p>
               </>
             )}
 
             {gateKind === "free_plan" && (
               <>
-                <h3 className="text-2xl md:text-3xl font-bold">Monatslimit erreicht</h3>
+                <h3 className="text-2xl md:text-3xl font-bold">{t("Monatslimit erreicht")}</h3>
                 <p className="text-neutral-300 leading-relaxed">
-                  Du hast diesen Monat alle <strong className="text-white">{FREE_MONTHLY_LIMIT} Gratis-Suchen</strong>{" "}
-                  genutzt. Weitere automatische Suchen sind nicht gratis – mit einem{" "}
-                  <strong className="text-white">Garagen-Paket sind bis zu {MAX_PLAN_VALUATIONS} Suchen pro Monat</strong>{" "}
-                  inklusive. Dazu inserierst du deine Fahrzeuge und bekommst eine eigene Garagen-Seite
-                  mit deinem ganzen Bestand – alle Informationen und Dokumente bleiben an einem
-                  zentralen Ort in der App.
+                  <T
+                    k="Du hast diesen Monat alle <0>{free} Gratis-Suchen</0> genutzt. Weitere automatische Suchen sind nicht gratis – mit einem <1>Garagen-Paket sind bis zu {max} Suchen pro Monat</1> inklusive. Dazu inserierst du deine Fahrzeuge und bekommst eine eigene Garagen-Seite mit deinem ganzen Bestand – alle Informationen und Dokumente bleiben an einem zentralen Ort in der App."
+                    vars={{ free: FREE_MONTHLY_LIMIT, max: MAX_PLAN_VALUATIONS }}
+                    c={[<strong key="0" className="text-white" />, <strong key="1" className="text-white" />]}
+                  />
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                   {/* /garage-plan ejects non-garage accounts, so private users go
@@ -1691,38 +1759,43 @@ export function EintauschwertRechner() {
                   <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
                     {isGarage ? (
                       <Link href={`/garage-plan?redirect=${encodeURIComponent(gateReturnPath)}`}>
-                        Paket wählen
+                        {t("Paket wählen")}
                       </Link>
                     ) : (
-                      <Link href="/dashboard/private?upgrade=1">Jetzt Garage werden</Link>
+                      <Link href="/dashboard/private?upgrade=1">{t("Jetzt Garage werden")}</Link>
                     )}
                   </Button>
                   <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
-                    <Link href="/preise">Preise vergleichen</Link>
+                    <Link href="/preise">{t("Preise vergleichen")}</Link>
                   </Button>
                 </div>
                 <p className="text-xs text-neutral-500">
-                  Manuelle Berechnungen bleiben unbegrenzt gratis. Automatische Suchen je nach
-                  Paket: Starter {GARAGE_PLANS.starter.valuationsPerMonth}, Growth{" "}
-                  {GARAGE_PLANS.growth.valuationsPerMonth}, Pro {GARAGE_PLANS.pro.valuationsPerMonth} pro Monat.
+                  {t(
+                    "Manuelle Berechnungen bleiben unbegrenzt gratis. Automatische Suchen je nach Paket: Starter {starter}, Growth {growth}, Pro {pro} pro Monat.",
+                    {
+                      starter: GARAGE_PLANS.starter.valuationsPerMonth,
+                      growth: GARAGE_PLANS.growth.valuationsPerMonth,
+                      pro: GARAGE_PLANS.pro.valuationsPerMonth,
+                    }
+                  )}
                 </p>
               </>
             )}
 
             {gateKind === "paid_limit" && (
               <>
-                <h3 className="text-2xl md:text-3xl font-bold">Monatskontingent erreicht</h3>
+                <h3 className="text-2xl md:text-3xl font-bold">{t("Monatskontingent erreicht")}</h3>
                 <p className="text-neutral-300 leading-relaxed">
-                  Du hast diesen Monat {quota?.limit ?? PAID_MONTHLY_LIMIT} automatische Suchen
-                  genutzt – das Kontingent deines Pakets. Ein grösseres Paket bringt mehr
-                  Bewertungen; melde dich, wir schalten dir auch einzelne Kontingente frei.
-                  Manuelle Berechnungen bleiben unbegrenzt.
+                  {t(
+                    "Du hast diesen Monat {n} automatische Suchen genutzt – das Kontingent deines Pakets. Ein grösseres Paket bringt mehr Bewertungen; melde dich, wir schalten dir auch einzelne Kontingente frei. Manuelle Berechnungen bleiben unbegrenzt.",
+                    { n: quota?.limit ?? PAID_MONTHLY_LIMIT }
+                  )}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                   {isGarage && (
                     <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
                       <Link href={`/garage-plan?redirect=${encodeURIComponent(gateReturnPath)}`}>
-                        Paket vergrössern
+                        {t("Paket vergrössern")}
                       </Link>
                     </Button>
                   )}
@@ -1732,7 +1805,7 @@ export function EintauschwertRechner() {
                     variant="outline"
                     className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white"
                   >
-                    <Link href="/#kontakt">Kontakt aufnehmen</Link>
+                    <Link href="/#kontakt">{t("Kontakt aufnehmen")}</Link>
                   </Button>
                 </div>
               </>
@@ -1749,7 +1822,7 @@ export function EintauschwertRechner() {
 
           <div className="relative z-10">
             <h3 className="text-center text-neutral-400 font-medium uppercase tracking-widest text-sm mb-8">
-              Ergebnis{vehicleLabel ? ` – ${vehicleLabel}` : ""}
+              {vehicleLabel ? t("Ergebnis – {vehicle}", { vehicle: vehicleLabel }) : t("Ergebnis")}
             </h3>
 
             {/* Zu dünne oder zu breit streuende Datenbasis: die Spanne IST das
@@ -1759,16 +1832,22 @@ export function EintauschwertRechner() {
                 <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-sm text-neutral-200 leading-relaxed">
                   <p className="font-bold text-amber-300 mb-1">
-                    Unsichere Bewertung – nimm die Spanne, nicht den Mittelwert
+                    {t("Unsichere Bewertung – nimm die Spanne, nicht den Mittelwert")}
                   </p>
                   <p>
                     {result.compCount < MIN_CONFIDENT_COMPS &&
-                      `Nur ${result.compCount} Vergleichsfahrzeug${result.compCount === 1 ? "" : "e"} vorhanden. `}
+                      `${
+                        result.compCount === 1
+                          ? t("Nur {n} Vergleichsfahrzeug vorhanden.", { n: result.compCount })
+                          : t("Nur {n} Vergleichsfahrzeuge vorhanden.", { n: result.compCount })
+                      } `}
                     {result.spreadFactor !== null &&
                       result.spreadFactor > MAX_CONFIDENT_SPREAD &&
-                      `Die angeglichenen Preise liegen um Faktor ${result.spreadFactor.toFixed(1)} auseinander – vermutlich stecken unterschiedliche Varianten oder Ausstattungen in den Treffern. `}
-                    Prüf die Vergleichsinserate, entferne unpassende und ergänze 3–5 wirklich
-                    vergleichbare – die Neuberechnung ist gratis.
+                      `${t(
+                        "Die angeglichenen Preise liegen um Faktor {factor} auseinander – vermutlich stecken unterschiedliche Varianten oder Ausstattungen in den Treffern.",
+                        { factor: result.spreadFactor.toFixed(1) }
+                      )} `}
+                    {t("Prüf die Vergleichsinserate, entferne unpassende und ergänze 3–5 wirklich vergleichbare – die Neuberechnung ist gratis.")}
                   </p>
                 </div>
               </div>
@@ -1778,7 +1857,7 @@ export function EintauschwertRechner() {
               {/* MARKET VALUE */}
               <div className="flex-1 bg-white/5 rounded-xl p-6 border border-white/10">
                 <div className="text-sm font-medium text-neutral-400 mb-4">
-                  Marktwert (Verkaufspreis)
+                  {t("Marktwert (Verkaufspreis)")}
                 </div>
                 {result.lowConfidence ? (
                   <>
@@ -1786,14 +1865,19 @@ export function EintauschwertRechner() {
                       CHF {chf(result.marketMin)} – {chf(result.marketMax)}
                     </div>
                     <div className="text-xs text-neutral-500 mt-1">
-                      {result.bandIsIqr ? "Typische Spanne (P25–P75)" : "Spanne"} aus{" "}
-                      {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                      {result.bandIsIqr
+                        ? result.compCount === 1
+                          ? t("Typische Spanne (P25–P75) aus {n} Vergleichsfahrzeug, km-bereinigt", { n: result.compCount })
+                          : t("Typische Spanne (P25–P75) aus {n} Vergleichsfahrzeugen, km-bereinigt", { n: result.compCount })
+                        : result.compCount === 1
+                          ? t("Spanne aus {n} Vergleichsfahrzeug, km-bereinigt", { n: result.compCount })
+                          : t("Spanne aus {n} Vergleichsfahrzeugen, km-bereinigt", { n: result.compCount })}
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                      Median: CHF {chf(result.marketValue)}
+                      {t("Median: CHF {value}", { value: chf(result.marketValue) })}
                       {result.bandIsIqr && (
                         <span className="block text-xs text-neutral-500 mt-1">
-                          Alle Inserate: CHF {chf(result.fullMin)} – {chf(result.fullMax)}
+                          {t("Alle Inserate: CHF {min} – {max}", { min: chf(result.fullMin), max: chf(result.fullMax) })}
                         </span>
                       )}
                     </div>
@@ -1802,14 +1886,20 @@ export function EintauschwertRechner() {
                   <>
                     <div className="text-3xl font-bold">CHF {chf(result.marketValue)}</div>
                     <div className="text-xs text-neutral-500 mt-1">
-                      Median aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                      {result.compCount === 1
+                        ? t("Median aus {n} Vergleichsfahrzeug, km-bereinigt", { n: result.compCount })
+                        : t("Median aus {n} Vergleichsfahrzeugen, km-bereinigt", { n: result.compCount })}
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                      {result.bandIsIqr ? "Typische Spanne (P25–P75)" : "Spanne"}: CHF{" "}
-                      {chf(result.marketMin)} – {chf(result.marketMax)}
+                      {result.bandIsIqr
+                        ? t("Typische Spanne (P25–P75): CHF {min} – {max}", {
+                            min: chf(result.marketMin),
+                            max: chf(result.marketMax),
+                          })
+                        : t("Spanne: CHF {min} – {max}", { min: chf(result.marketMin), max: chf(result.marketMax) })}
                       {result.bandIsIqr && (
                         <span className="block text-xs text-neutral-500 mt-1">
-                          Alle Inserate: CHF {chf(result.fullMin)} – {chf(result.fullMax)}
+                          {t("Alle Inserate: CHF {min} – {max}", { min: chf(result.fullMin), max: chf(result.fullMax) })}
                         </span>
                       )}
                     </div>
@@ -1833,14 +1923,14 @@ export function EintauschwertRechner() {
                 }`}
               >
                 <div className="text-sm font-medium text-neutral-400 mb-4 flex justify-between items-start">
-                  {result.lowConfidence ? "Dein Eintauschwert (Spanne)" : "Dein Eintauschwert (Angebot)"}
+                  {result.lowConfidence ? t("Dein Eintauschwert (Spanne)") : t("Dein Eintauschwert (Angebot)")}
                   {result.lowConfidence ? (
                     <Badge className="bg-amber-500 hover:bg-amber-600 text-neutral-950 border-none">
-                      Grobe Schätzung
+                      {t("Grobe Schätzung")}
                     </Badge>
                   ) : (
                     <Badge className="bg-green-500 hover:bg-green-600 text-white border-none">
-                      {result.offerShare.toFixed(0)}% vom Marktwert
+                      {t("{pct}% vom Marktwert", { pct: result.offerShare.toFixed(0) })}
                     </Badge>
                   )}
                 </div>
@@ -1850,20 +1940,20 @@ export function EintauschwertRechner() {
                       CHF {chf(result.offerMin)} – {chf(result.offerMax)}
                     </div>
                     <div className="text-xs text-neutral-500 mt-1">
-                      Marktwert-Spanne minus Abzüge, gerundet auf CHF 50
+                      {t("Marktwert-Spanne minus Abzüge, gerundet auf CHF 50")}
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                      Rechnerischer Mittelwert: CHF {chf(result.offer)}
+                      {t("Rechnerischer Mittelwert: CHF {value}", { value: chf(result.offer) })}
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="text-4xl font-bold text-green-400">CHF {chf(result.offer)}</div>
                     <div className="text-xs text-neutral-500 mt-1">
-                      Marktwert minus Abzüge, gerundet auf CHF 50
+                      {t("Marktwert minus Abzüge, gerundet auf CHF 50")}
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
-                      Verhandlungs-Spanne: CHF {chf(result.offerMin)} – {chf(result.offerMax)}
+                      {t("Verhandlungs-Spanne: CHF {min} – {max}", { min: chf(result.offerMin), max: chf(result.offerMax) })}
                     </div>
                   </>
                 )}
@@ -1873,35 +1963,37 @@ export function EintauschwertRechner() {
             {/* BREAKDOWN TABLE */}
             <div className="max-w-2xl mx-auto text-sm bg-neutral-950/50 rounded-lg p-3 sm:p-4 md:p-6 border border-white/5">
               <div className="flex justify-between items-center text-neutral-500 font-bold uppercase text-xs tracking-wider mb-4 border-b border-white/10 pb-2">
-                <span>Rechenweg</span>
+                <span>{t("Rechenweg")}</span>
                 <span className="text-right">CHF</span>
               </div>
 
               <div className="flex justify-between items-center py-1.5 text-white font-medium">
-                <span>Marktwert (Median, km-bereinigt)</span>
+                <span>{t("Marktwert (Median, km-bereinigt)")}</span>
                 <span className="font-mono">{chf(result.marketValue)}</span>
               </div>
               <div className="flex justify-between items-center py-1.5 text-neutral-400">
-                <span>− Aufbereitung & Reparaturen</span>
+                <span>{t("− Aufbereitung & Reparaturen")}</span>
                 <span className="font-mono">{chf(result.reconCost)}</span>
               </div>
               <div className="flex justify-between items-center py-1.5 text-neutral-400">
-                <span>− Garantie-Rückstellung</span>
+                <span>{t("− Garantie-Rückstellung")}</span>
                 <span className="font-mono">{chf(result.warrantyCost)}</span>
               </div>
               <div className="flex justify-between items-center py-1.5 text-neutral-400">
-                <span>− Standzeit & Kapitalbindung</span>
+                <span>{t("− Standzeit & Kapitalbindung")}</span>
                 <span className="font-mono">{chf(result.standingCost)}</span>
               </div>
               <div className="flex justify-between items-center py-1.5 text-neutral-400">
                 <span>
-                  − Marge ({state.marginMode === 'percent' ? `${state.marginPercent}% vom Marktwert` : "Fixbetrag"})
+                  {state.marginMode === 'percent'
+                    ? t("− Marge ({pct}% vom Marktwert)", { pct: state.marginPercent })
+                    : t("− Marge (Fixbetrag)")}
                 </span>
                 <span className="font-mono">{chf(result.marginValue)}</span>
               </div>
 
               <div className="border-t border-white/20 mt-3 pt-3 flex justify-between items-center font-bold text-base">
-                <span>Eintauschwert (gerundet)</span>
+                <span>{t("Eintauschwert (gerundet)")}</span>
                 <span className="font-mono text-green-400">CHF {chf(result.offer)}</span>
               </div>
             </div>
@@ -1909,31 +2001,36 @@ export function EintauschwertRechner() {
             <div className="flex justify-center mt-6">
               <Button variant="link" className="text-neutral-400 hover:text-white" onClick={() => setShowFormulas(!showFormulas)}>
                 {showFormulas ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}
-                Berechnungsdetails anzeigen
+                {t("Berechnungsdetails anzeigen")}
               </Button>
             </div>
 
             {showFormulas && (
               <div className="max-w-2xl mx-auto mt-4 p-4 bg-black/20 rounded-lg text-xs text-neutral-400 font-mono">
-                <p className="mb-2 font-bold text-white">Berechnungslogik:</p>
+                <p className="mb-2 font-bold text-white">{t("Berechnungslogik:")}</p>
                 <div className="space-y-1">
                   <p>
-                    Angeglichener Preis = Inseratspreis ± {KM_ADJUST_PCT_PER_10K}% pro 10&apos;000 km
-                    Differenz (max. ±{Math.round(KM_ADJUST_CAP * 100)}%)
+                    {t("Angeglichener Preis = Inseratspreis ± {pct}% pro 10'000 km Differenz (max. ±{cap}%)", {
+                      pct: KM_ADJUST_PCT_PER_10K,
+                      cap: Math.round(KM_ADJUST_CAP * 100),
+                    })}
                   </p>
-                  <p>Marktwert = Median der angeglichenen Preise</p>
-                  <p>Eintauschwert = Marktwert − Aufbereitung − Garantie − Standzeit − Marge</p>
+                  <p>{t("Marktwert = Median der angeglichenen Preise")}</p>
+                  <p>{t("Eintauschwert = Marktwert − Aufbereitung − Garantie − Standzeit − Marge")}</p>
                   <p>
-                    Ab 4 Inseraten zeigt die Spanne das mittlere Preisfeld (P25–P75); die
-                    absolute Streuung aller Inserate bleibt separat sichtbar
+                    {t("Ab 4 Inseraten zeigt die Spanne das mittlere Preisfeld (P25–P75); die absolute Streuung aller Inserate bleibt separat sichtbar")}
                   </p>
                   <p>
-                    Unter {MIN_CONFIDENT_COMPS} Inseraten oder ab Faktor {MAX_CONFIDENT_SPREAD} zwischen
-                    günstigstem und teuerstem Inserat wird die Spanne statt des Medians gezeigt
+                    {t(
+                      "Unter {min} Inseraten oder ab Faktor {factor} zwischen günstigstem und teuerstem Inserat wird die Spanne statt des Medians gezeigt",
+                      { min: MIN_CONFIDENT_COMPS, factor: MAX_CONFIDENT_SPREAD }
+                    )}
                   </p>
                 </div>
                 <p className="mt-3 text-neutral-500">
-                  Angeglichene Vergleichspreise: {result.adjustedPrices.map((p) => chf(p)).join(" / ")}
+                  {t("Angeglichene Vergleichspreise: {prices}", {
+                    prices: result.adjustedPrices.map((p) => chf(p)).join(" / "),
+                  })}
                 </p>
               </div>
             )}
@@ -1941,17 +2038,17 @@ export function EintauschwertRechner() {
             {/* CTA */}
             <div className="max-w-2xl mx-auto mt-8 bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
               <p className="text-neutral-300 mb-4">
-                Fahrzeug übernommen? <strong className="text-white">Verkauf es schneller mit BuyAuto.</strong>{" "}
-                Als Garage zeigst du deinen ganzen Fahrzeugbestand auf einer eigenen Garagen-Seite
-                und erreichst tausende Käufer. Alle Informationen und Dokumente bleiben an einem
-                zentralen Ort in der App – kürzere Standzeit, mehr Marge.
+                <T
+                  k="Fahrzeug übernommen? <0>Verkauf es schneller mit BuyAuto.</0> Als Garage zeigst du deinen ganzen Fahrzeugbestand auf einer eigenen Garagen-Seite und erreichst tausende Käufer. Alle Informationen und Dokumente bleiben an einem zentralen Ort in der App – kürzere Standzeit, mehr Marge."
+                  c={[<strong key="0" className="text-white" />]}
+                />
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild className="bg-red-600 hover:bg-red-700 text-white border-none">
-                  <Link href="/preise#plaene">Garagen-Pakete & Preise</Link>
+                  <Link href="/preise#plaene">{t("Garagen-Pakete & Preise")}</Link>
                 </Button>
                 <Button asChild variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
-                  <Link href="/inserat-erstellen">Occasion inserieren</Link>
+                  <Link href="/inserat-erstellen">{t("Occasion inserieren")}</Link>
                 </Button>
               </div>
             </div>

@@ -1,7 +1,11 @@
 import Head from "next/head";
+import type { GetStaticPropsContext } from "next";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { LEASING_COMPANIES } from "@/lib/buyauto/leasingCompanies";
+import { useT, T, useLocale } from "@/i18n/runtime";
+import { absoluteUrl } from "@/i18n/config";
+import { withI18n } from "@/i18n/server";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -48,6 +52,8 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-kosten"];
 
 export default function LeasinguebernahmeKostenPage() {
+  const t = useT();
+  const locale = useLocale();
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -58,19 +64,19 @@ export default function LeasinguebernahmeKostenPage() {
   return (
     <>
       <Head>
-        <title>Leasingübernahme Kosten Schweiz: Gebühren-Überblick | BuyAuto</title>
+        <title>{t("Leasingübernahme Kosten Schweiz: Gebühren-Überblick | BuyAuto")}</title>
         <meta
           name="description"
-          content="Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail – transparent und verständlich erklärt."
+          content={t("Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail – transparent und verständlich erklärt.")}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-kosten" />
+        <link rel="canonical" href={absoluteUrl("/leasinguebernahme-kosten", locale)} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "Leasingübernahme Kosten in der Schweiz",
+              headline: t("Leasingübernahme Kosten in der Schweiz"),
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -78,7 +84,7 @@ export default function LeasinguebernahmeKostenPage() {
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
               dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme-kosten",
+              mainEntityOfPage: absoluteUrl("/leasinguebernahme-kosten", locale),
             }),
           }}
         />
@@ -91,50 +97,50 @@ export default function LeasinguebernahmeKostenPage() {
               mainEntity: [
                 {
                   "@type": "Question",
-                  name: "Wie viel kostet eine Leasingübernahme insgesamt?",
+                  name: t("Wie viel kostet eine Leasingübernahme insgesamt?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Die Gesamtkosten liegen typischerweise zwischen 200 und 650 CHF für den Einstieg (Transfer, Ummeldung, Administration). Hinzu kommen monatliche Kosten wie Leasingrate und Versicherung.",
+                    text: t("Die Gesamtkosten liegen typischerweise zwischen 200 und 650 CHF für den Einstieg (Transfer, Ummeldung, Administration). Hinzu kommen monatliche Kosten wie Leasingrate und Versicherung."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Wer zahlt die Transfergebühr?",
+                  name: t("Wer zahlt die Transfergebühr?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Das ist frei verhandelbar. In den meisten Fällen übernimmt der Abgeber die Transfergebühr, um den Vertrag attraktiver zu machen. Manchmal teilen sich beide Parteien die Kosten.",
+                    text: t("Das ist frei verhandelbar. In den meisten Fällen übernimmt der Abgeber die Transfergebühr, um den Vertrag attraktiver zu machen. Manchmal teilen sich beide Parteien die Kosten."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Gibt es versteckte Kosten?",
+                  name: t("Gibt es versteckte Kosten?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja, achte auf: eventuelle Reparaturen, fällige Services, Kilometerüberschreitungen und nicht übertragbare Servicepakete. Ein detailliertes Übergabeprotokoll schützt dich vor Überraschungen.",
+                    text: t("Ja, achte auf: eventuelle Reparaturen, fällige Services, Kilometerüberschreitungen und nicht übertragbare Servicepakete. Ein detailliertes Übergabeprotokoll schützt dich vor Überraschungen."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Ist eine Leasingübernahme günstiger als ein neues Leasing?",
+                  name: t("Ist eine Leasingübernahme günstiger als ein neues Leasing?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten.",
+                    text: t("Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Wie viel kostet die Ummeldung?",
+                  name: t("Wie viel kostet die Ummeldung?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Die Ummeldung beim Strassenverkehrsamt kostet je nach Kanton 50–150 CHF. Hinzu kommen eventuell Kosten für einen neuen Fahrzeugausweis (ca. 50 CHF).",
+                    text: t("Die Ummeldung beim Strassenverkehrsamt kostet je nach Kanton 50–150 CHF. Hinzu kommen eventuell Kosten für einen neuen Fahrzeugausweis (ca. 50 CHF)."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Kann ich die Kosten mit dem Abgeber teilen?",
+                  name: t("Kann ich die Kosten mit dem Abgeber teilen?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja, absolut. Die Kostenaufteilung ist Verhandlungssache. Viele Abgeber sind bereit, Kosten zu übernehmen, um den Transfer zu beschleunigen.",
+                    text: t("Ja, absolut. Die Kostenaufteilung ist Verhandlungssache. Viele Abgeber sind bereit, Kosten zu übernehmen, um den Transfer zu beschleunigen."),
                   },
                 },
               ],
@@ -143,19 +149,19 @@ export default function LeasinguebernahmeKostenPage() {
         />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingübernahme Kosten Schweiz – Kompletter Gebühren-Überblick" />
-        <meta property="og:description" content="Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail." />
+        <meta property="og:title" content={t("Leasingübernahme Kosten Schweiz – Kompletter Gebühren-Überblick")} />
+        <meta property="og:description" content={t("Was kostet eine Leasingübernahme in der Schweiz? Alle Gebühren, versteckte Kosten und Spartipps im Detail.")} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-kosten" />
+        <meta property="og:url" content={absoluteUrl("/leasinguebernahme-kosten", locale)} />
       </Head>
 
       <main className="bg-neutral-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
           <Breadcrumbs
             items={[
-              { name: "Home", href: "/" },
-              { name: "Leasingübernahme", href: "/leasinguebernahme" },
-              { name: "Kosten", href: "/leasinguebernahme-kosten" },
+              { name: t("Home"), href: "/" },
+              { name: t("Leasingübernahme"), href: "/leasinguebernahme" },
+              { name: t("Kosten"), href: "/leasinguebernahme-kosten" },
             ]}
           />
         </div>
@@ -166,7 +172,7 @@ export default function LeasinguebernahmeKostenPage() {
           <div className="absolute inset-0">
             <Image
               src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=2400&q=80"
-              alt="Leasingübernahme Kosten Schweiz"
+              alt={t("Leasingübernahme Kosten Schweiz")}
               fill
               className="object-cover"
               priority
@@ -188,19 +194,16 @@ export default function LeasinguebernahmeKostenPage() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <DollarSign className="w-4 h-4" />
-                  Kostenübersicht · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
+                  {t("Kostenübersicht · Aktualisiert am {date}", { date: formatSwissDate(LAST_UPDATED_ISO) })}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
-                  Leasingübernahme Kosten in der Schweiz
+                  {t("Leasingübernahme Kosten in der Schweiz")}
                 </h1>
                 <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Der komplette Gebühren-Überblick
+                  {t("Der komplette Gebühren-Überblick")}
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Eine Leasingübernahme kostet dich in der Schweiz einmalig rund 200–650 CHF – je nach
-                  Leasinggeber für Umschreibung, Bonitätsprüfung und Administration. Danach zahlst du einfach
-                  die bestehende Monatsrate weiter; eine Anzahlung wie beim Neuleasing entfällt. Alle Gebühren,
-                  versteckte Kosten und Spartipps findest du im Detail weiter unten.
+                  {t("Eine Leasingübernahme kostet dich in der Schweiz einmalig rund 200–650 CHF – je nach Leasinggeber für Umschreibung, Bonitätsprüfung und Administration. Danach zahlst du einfach die bestehende Monatsrate weiter; eine Anzahlung wie beim Neuleasing entfällt. Alle Gebühren, versteckte Kosten und Spartipps findest du im Detail weiter unten.")}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -210,7 +213,7 @@ export default function LeasinguebernahmeKostenPage() {
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
                   >
                     <Link href="/suche">
-                      Angebote durchsuchen
+                      {t("Angebote durchsuchen")}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
@@ -221,7 +224,7 @@ export default function LeasinguebernahmeKostenPage() {
                     className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl bg-transparent"
                   >
                     <Link href="/inserat-erstellen">
-                      Inserat erstellen
+                      {t("Inserat erstellen")}
                     </Link>
                   </Button>
                 </div>
@@ -236,29 +239,35 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-6">
               <Info className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kurz gesagt: Was kostet eine Leasingübernahme?
+                {t("Kurz gesagt: Was kostet eine Leasingübernahme?")}
               </h2>
             </div>
             
             <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Eine <strong>Leasingübernahme kostet in der Schweiz typischerweise zwischen 200–650 CHF</strong>, abhängig von der Bank, dem Fahrzeugtyp und eventuellen Zusatzleistungen.
+                <T
+                  k="Eine <0>Leasingübernahme kostet in der Schweiz typischerweise zwischen 200–650 CHF</0>, abhängig von der Bank, dem Fahrzeugtyp und eventuellen Zusatzleistungen."
+                  c={[<strong key={0} />]}
+                />
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
-                Viele Abgeber übernehmen diese Kosten freiwillig, um den Transfer attraktiver zu gestalten.
+                {t("Viele Abgeber übernehmen diese Kosten freiwillig, um den Transfer attraktiver zu gestalten.")}
               </p>
               
               <div className="mt-6 pt-6 border-t border-primary/20">
                 <p className="text-primary font-medium flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" />
-                  <strong>Wichtig:</strong> Versteckte Kosten wie Ummeldung, Versicherung und eventuelle Reparaturen können zusätzlich anfallen.
+                  <T
+                    k="<0>Wichtig:</0> Versteckte Kosten wie Ummeldung, Versicherung und eventuelle Reparaturen können zusätzlich anfallen."
+                    c={[<strong key={0} />]}
+                  />
                 </p>
               </div>
               
               <div className="mt-4">
                 <Link href="/leasinguebernahme" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
                   <ArrowRight className="w-4 h-4" />
-                  Alles zur Leasingübernahme
+                  {t("Alles zur Leasingübernahme")}
                 </Link>
               </div>
             </div>
@@ -268,7 +277,7 @@ export default function LeasinguebernahmeKostenPage() {
         {/* TOC SECTION */}
         <section className="py-10 px-4 bg-neutral-50">
           <div className="max-w-4xl mx-auto">
-            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">Inhaltsverzeichnis</h3>
+            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">{t("Inhaltsverzeichnis")}</h3>
             <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
                 {[
@@ -287,7 +296,7 @@ export default function LeasinguebernahmeKostenPage() {
                     className="flex items-center gap-2 text-neutral-600 hover:text-primary transition-colors text-left group"
                   >
                     <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium">{t(item.label)}</span>
                   </button>
                 ))}
               </div>
@@ -301,7 +310,7 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-8">
               <Calculator className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kostenübersicht im Detail
+                {t("Kostenübersicht im Detail")}
               </h2>
             </div>
             
@@ -309,46 +318,46 @@ export default function LeasinguebernahmeKostenPage() {
               <table className="w-full bg-white text-left">
                 <thead className="bg-primary text-white">
                   <tr>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Typische Kosten</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Wird bezahlt von</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Kostenart")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Typische Kosten")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Wird bezahlt von")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Transfergebühr (Bank)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Meist Abgeber oder frei verhandelbar</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Transfergebühr (Bank)")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("100–400 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Meist Abgeber oder frei verhandelbar")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Händler-/Wechselgebühr</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–250 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Optional (falls über Händler)</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Händler-/Wechselgebühr")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("100–250 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Optional (falls über Händler)")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung beim Strassenverkehrsamt</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Ummeldung beim Strassenverkehrsamt")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("50–150 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Übernehmer")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Neuer Fahrzeugausweis</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">ca. 50 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Neuer Fahrzeugausweis")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("ca. 50 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Übernehmer")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung (pro Monat)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel (150–400 CHF/Monat)</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Versicherung (pro Monat)")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("variabel (150–400 CHF/Monat)")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Übernehmer")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Eventuelle Reparaturen</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Nach Vereinbarung</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Eventuelle Reparaturen")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("variabel")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Nach Vereinbarung")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Administrationskosten (Bank)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">0–100 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Administrationskosten (Bank)")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("0–100 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">{t("Abgeber oder Übernehmer")}</td>
                   </tr>
                 </tbody>
               </table>
@@ -358,9 +367,9 @@ export default function LeasinguebernahmeKostenPage() {
               <div className="flex items-start gap-4">
                 <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-900 font-semibold mb-1">Spartipp</p>
+                  <p className="text-green-900 font-semibold mb-1">{t("Spartipp")}</p>
                   <p className="text-green-800">
-                    Verhandle mit dem Abgeber! Viele sind bereit, die Transfergebühr zu übernehmen, um den Vertrag schneller loszuwerden.
+                    {t("Verhandle mit dem Abgeber! Viele sind bereit, die Transfergebühr zu übernehmen, um den Vertrag schneller loszuwerden.")}
                   </p>
                 </div>
               </div>
@@ -374,7 +383,7 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-8">
               <DollarSign className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Transfergebühr im Detail
+                {t("Transfergebühr im Detail")}
               </h2>
             </div>
             
@@ -382,22 +391,25 @@ export default function LeasinguebernahmeKostenPage() {
               <Card className="border-2 border-primary/20">
                 <CardContent className="p-8">
                   <h3 className="text-2xl font-bold text-neutral-900 mb-4">
-                    Was ist die Transfergebühr?
+                    {t("Was ist die Transfergebühr?")}
                   </h3>
                   <p className="text-neutral-700 leading-relaxed mb-4">
-                    Die <strong>Transfergebühr</strong> ist die Hauptgebühr bei einer Leasingübernahme. Sie wird von der Leasingbank erhoben und deckt die administrativen Kosten der Vertragsübertragung ab.
+                    <T
+                      k="Die <0>Transfergebühr</0> ist die Hauptgebühr bei einer Leasingübernahme. Sie wird von der Leasingbank erhoben und deckt die administrativen Kosten der Vertragsübertragung ab."
+                      c={[<strong key={0} />]}
+                    />
                   </p>
                   <p className="text-neutral-700 leading-relaxed">
-                    Diese Gebühr variiert je nach Bank und kann zwischen <strong>100 und 400 CHF</strong> liegen. Wie die Übertragung selbst Schritt für Schritt abläuft, zeigt unser Ratgeber{" "}
-                    <Link href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline">
-                      Leasingvertrag übertragen – so funktioniert es
-                    </Link>.
+                    <T
+                      k="Diese Gebühr variiert je nach Bank und kann zwischen <0>100 und 400 CHF</0> liegen. Wie die Übertragung selbst Schritt für Schritt abläuft, zeigt unser Ratgeber <1>Leasingvertrag übertragen – so funktioniert es</1>."
+                      c={[<strong key={0} />, <Link key={1} href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline" />]}
+                    />
                   </p>
                 </CardContent>
               </Card>
 
               <div className="bg-white p-6 rounded-xl border border-neutral-200">
-                <h3 className="text-xl font-bold text-neutral-900 mb-4">Faktoren, die die Höhe beeinflussen:</h3>
+                <h3 className="text-xl font-bold text-neutral-900 mb-4">{t("Faktoren, die die Höhe beeinflussen:")}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { icon: BadgeCheck, text: "Leasingbank-Richtlinien" },
@@ -409,7 +421,7 @@ export default function LeasinguebernahmeKostenPage() {
                     return (
                       <div key={i} className="flex items-start gap-3 bg-neutral-50 border border-neutral-200 p-4 rounded-lg">
                         <IconComponent className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-neutral-700 font-medium">{item.text}</span>
+                        <span className="text-neutral-700 font-medium">{t(item.text)}</span>
                       </div>
                     );
                   })}
@@ -425,7 +437,7 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-8">
               <FileText className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Ummeldung & Fahrzeugausweis
+                {t("Ummeldung & Fahrzeugausweis")}
               </h2>
             </div>
             
@@ -433,14 +445,17 @@ export default function LeasinguebernahmeKostenPage() {
               <CardContent className="p-8">
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-bold text-neutral-900 mb-3">Was kostet die Ummeldung?</h3>
+                    <h3 className="text-xl font-bold text-neutral-900 mb-3">{t("Was kostet die Ummeldung?")}</h3>
                     <p className="text-neutral-700 leading-relaxed">
-                      Nach der Vertragsübertragung muss das Fahrzeug beim <strong>Strassenverkehrsamt</strong> auf den neuen Halter umgemeldet werden. Die Kosten variieren je nach Kanton, liegen aber typischerweise bei <strong>50–150 CHF</strong>.
+                      <T
+                        k="Nach der Vertragsübertragung muss das Fahrzeug beim <0>Strassenverkehrsamt</0> auf den neuen Halter umgemeldet werden. Die Kosten variieren je nach Kanton, liegen aber typischerweise bei <1>50–150 CHF</1>."
+                        c={[<strong key={0} />, <strong key={1} />]}
+                      />
                     </p>
                   </div>
 
                   <div className="bg-primary/5 p-6 rounded-lg">
-                    <h4 className="font-bold text-neutral-900 mb-3">Benötigte Dokumente:</h4>
+                    <h4 className="font-bold text-neutral-900 mb-3">{t("Benötigte Dokumente:")}</h4>
                     <ul className="space-y-2">
                       {[
                         "Fahrzeugausweis (Original)",
@@ -451,7 +466,7 @@ export default function LeasinguebernahmeKostenPage() {
                       ].map((doc, i) => (
                         <li key={i} className="flex items-start gap-2 text-neutral-700">
                           <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                          <span>{doc}</span>
+                          <span>{t(doc)}</span>
                         </li>
                       ))}
                     </ul>
@@ -461,9 +476,12 @@ export default function LeasinguebernahmeKostenPage() {
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-amber-900 font-semibold mb-1">Wichtig</p>
+                        <p className="text-amber-900 font-semibold mb-1">{t("Wichtig")}</p>
                         <p className="text-amber-800">
-                          Die Ummeldung muss innerhalb von <strong>14 Tagen</strong> nach der Übernahme erfolgen, sonst drohen Bussen.
+                          <T
+                            k="Die Ummeldung muss innerhalb von <0>14 Tagen</0> nach der Übernahme erfolgen, sonst drohen Bussen."
+                            c={[<strong key={0} />]}
+                          />
                         </p>
                       </div>
                     </div>
@@ -480,7 +498,7 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-8">
               <ShieldCheck className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Versicherungskosten
+                {t("Versicherungskosten")}
               </h2>
             </div>
             
@@ -488,7 +506,10 @@ export default function LeasinguebernahmeKostenPage() {
               <Card className="border-2 border-primary/20">
                 <CardContent className="p-8">
                   <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-                    Bei einer Leasingübernahme musst du eine <strong>eigene Vollkaskoversicherung</strong> abschliessen. Die Kosten hängen von mehreren Faktoren ab:
+                    <T
+                      k="Bei einer Leasingübernahme musst du eine <0>eigene Vollkaskoversicherung</0> abschliessen. Die Kosten hängen von mehreren Faktoren ab:"
+                      c={[<strong key={0} />]}
+                    />
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -503,9 +524,9 @@ export default function LeasinguebernahmeKostenPage() {
                         <div key={i} className="bg-white border border-neutral-200 p-5 rounded-lg">
                           <div className="flex items-center gap-3 mb-2">
                             <IconComponent className="w-6 h-6 text-primary" />
-                            <h4 className="font-bold text-neutral-900">{item.title}</h4>
+                            <h4 className="font-bold text-neutral-900">{t(item.title)}</h4>
                           </div>
-                          <p className="text-neutral-600 text-sm">{item.desc}</p>
+                          <p className="text-neutral-600 text-sm">{t(item.desc)}</p>
                         </div>
                       );
                     })}
@@ -517,9 +538,9 @@ export default function LeasinguebernahmeKostenPage() {
                 <div className="flex items-start gap-4">
                   <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-green-900 font-semibold mb-1">Spartipp</p>
+                    <p className="text-green-900 font-semibold mb-1">{t("Spartipp")}</p>
                     <p className="text-green-800">
-                      Vergleiche mehrere Versicherungsangebote! Die Prämien können um <strong>20–40%</strong> variieren.
+                      <T k="Vergleiche mehrere Versicherungsangebote! Die Prämien können um <0>20–40%</0> variieren." c={[<strong key={0} />]} />
                     </p>
                   </div>
                 </div>
@@ -534,7 +555,7 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-8">
               <AlertTriangle className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Versteckte Kosten – Darauf musst du achten
+                {t("Versteckte Kosten – Darauf musst du achten")}
               </h2>
             </div>
             
@@ -570,8 +591,8 @@ export default function LeasinguebernahmeKostenPage() {
                           <IconComponent className="w-6 h-6 text-amber-600" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-bold text-neutral-900 text-lg mb-2">{item.title}</h3>
-                          <p className="text-neutral-700">{item.desc}</p>
+                          <h3 className="font-bold text-neutral-900 text-lg mb-2">{t(item.title)}</h3>
+                          <p className="text-neutral-700">{t(item.desc)}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -581,9 +602,12 @@ export default function LeasinguebernahmeKostenPage() {
             </div>
 
             <div className="mt-8 bg-primary text-white p-8 rounded-xl">
-              <h3 className="text-xl font-bold mb-3">💡 Profi-Tipp</h3>
+              <h3 className="text-xl font-bold mb-3">{t("💡 Profi-Tipp")}</h3>
               <p className="leading-relaxed">
-                Erstelle vor der Übernahme ein <strong>detailliertes Übergabeprotokoll</strong> mit Fotos. So vermeidest du nachträgliche Überraschungen bei Schäden oder Mängeln.
+                <T
+                  k="Erstelle vor der Übernahme ein <0>detailliertes Übergabeprotokoll</0> mit Fotos. So vermeidest du nachträgliche Überraschungen bei Schäden oder Mängeln."
+                  c={[<strong key={0} />]}
+                />
               </p>
             </div>
           </div>
@@ -595,7 +619,7 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-8">
               <Zap className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Spartipps für die Leasingübernahme
+                {t("Spartipps für die Leasingübernahme")}
               </h2>
             </div>
             
@@ -641,8 +665,8 @@ export default function LeasinguebernahmeKostenPage() {
                           <IconComponent className="w-6 h-6 text-green-600" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-neutral-900 mb-2">{tip.title}</h3>
-                          <p className="text-neutral-700 text-sm">{tip.desc}</p>
+                          <h3 className="font-bold text-neutral-900 mb-2">{t(tip.title)}</h3>
+                          <p className="text-neutral-700 text-sm">{t(tip.desc)}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -659,7 +683,7 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="flex items-center gap-3 mb-8">
               <RefreshCw className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kostenvergleich: Leasingübernahme vs. Neues Leasing
+                {t("Kostenvergleich: Leasingübernahme vs. Neues Leasing")}
               </h2>
             </div>
             
@@ -667,41 +691,41 @@ export default function LeasinguebernahmeKostenPage() {
               <table className="w-full bg-white text-left">
                 <thead className="bg-primary text-white">
                   <tr>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Leasingübernahme</th>
-                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">Neues Leasing</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Kostenart")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Leasingübernahme")}</th>
+                    <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Neues Leasing")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Anzahlung</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">0–100 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">3'000–10'000 CHF</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Anzahlung")}</td>
+                    <td className="p-4 md:p-6 text-green-600 font-semibold">{t("0–100 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("3'000–10'000 CHF")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Transfergebühr</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Transfergebühr")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("100–400 CHF")}</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">—</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Ummeldung")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("50–150 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("50–150 CHF")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung (Monat)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">150–400 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">150–400 CHF</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Versicherung (Monat)")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("150–400 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("150–400 CHF")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Laufzeit</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">6–24 Monate (kürzer)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">36–48 Monate</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Laufzeit")}</td>
+                    <td className="p-4 md:p-6 text-green-600 font-semibold">{t("6–24 Monate (kürzer)")}</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("36–48 Monate")}</td>
                   </tr>
                   <tr className="bg-green-50 hover:bg-green-100 transition-colors">
-                    <td className="p-4 md:p-6 font-bold text-neutral-900">TOTAL (Einstieg)</td>
-                    <td className="p-4 md:p-6 text-green-600 font-bold text-lg">200–650 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-900 font-bold text-lg">3'200–10'550 CHF</td>
+                    <td className="p-4 md:p-6 font-bold text-neutral-900">{t("TOTAL (Einstieg)")}</td>
+                    <td className="p-4 md:p-6 text-green-600 font-bold text-lg">{t("200–650 CHF")}</td>
+                    <td className="p-4 md:p-6 text-neutral-900 font-bold text-lg">{t("3'200–10'550 CHF")}</td>
                   </tr>
                 </tbody>
               </table>
@@ -711,9 +735,12 @@ export default function LeasinguebernahmeKostenPage() {
               <div className="flex items-start gap-4">
                 <CheckCircle className="w-8 h-8 shrink-0" />
                 <div>
-                  <h3 className="text-xl font-bold mb-2">Fazit</h3>
+                  <h3 className="text-xl font-bold mb-2">{t("Fazit")}</h3>
                   <p className="leading-relaxed text-lg">
-                    Eine Leasingübernahme ist <strong>deutlich günstiger</strong> im Einstieg als ein neues Leasing. Du sparst die hohe Anzahlung und hast mehr Flexibilität durch kürzere Restlaufzeiten.
+                    <T
+                      k="Eine Leasingübernahme ist <0>deutlich günstiger</0> im Einstieg als ein neues Leasing. Du sparst die hohe Anzahlung und hast mehr Flexibilität durch kürzere Restlaufzeiten."
+                      c={[<strong key={0} />]}
+                    />
                   </p>
                 </div>
               </div>
@@ -727,14 +754,13 @@ export default function LeasinguebernahmeKostenPage() {
             <div className="bg-white rounded-2xl shadow-lg border-2 border-primary p-6 md:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
-                  Finde jetzt günstige Leasingübernahmen
+                  {t("Finde jetzt günstige Leasingübernahmen")}
                 </h2>
                 <p className="text-neutral-600 text-base md:text-lg">
-                  Durchsuche{" "}
-                  <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">
-                    aktuelle Leasingübernahme-Angebote
-                  </Link>{" "}
-                  und spare bei deinem nächsten Vertrag.
+                  <T
+                    k="Durchsuche <0>aktuelle Leasingübernahme-Angebote</0> und spare bei deinem nächsten Vertrag."
+                    c={[<Link key={0} href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline" />]}
+                  />
                 </p>
               </div>
               <SearchForm />
@@ -746,11 +772,10 @@ export default function LeasinguebernahmeKostenPage() {
         <section className="py-16 px-4 bg-neutral-50">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-              Konditionen nach Leasinggesellschaft
+              {t("Konditionen nach Leasinggesellschaft")}
             </h2>
             <p className="text-neutral-600 mb-8 max-w-2xl mx-auto">
-              Die Umschreibegebühr legt deine Leasinggesellschaft fest – hier findest du den Ablauf pro
-              Anbieter:
+              {t("Die Umschreibegebühr legt deine Leasinggesellschaft fest – hier findest du den Ablauf pro Anbieter:")}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {LEASING_COMPANIES.map((company) => (
@@ -771,10 +796,10 @@ export default function LeasinguebernahmeKostenPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                FAQ – Häufige Fragen zu Leasingübernahme-Kosten
+                {t("FAQ – Häufige Fragen zu Leasingübernahme-Kosten")}
               </h2>
               <p className="text-neutral-600 text-lg">
-                Die wichtigsten Antworten auf einen Blick
+                {t("Die wichtigsten Antworten auf einen Blick")}
               </p>
             </div>
             
@@ -784,10 +809,13 @@ export default function LeasinguebernahmeKostenPage() {
                 className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Wie viel kostet eine Leasingübernahme insgesamt?
+                  {t("Wie viel kostet eine Leasingübernahme insgesamt?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Die Gesamtkosten liegen typischerweise zwischen <strong>200 und 650 CHF</strong> für den Einstieg (Transfer, Ummeldung, Administration). Hinzu kommen monatliche Kosten wie Leasingrate und Versicherung.
+                  <T
+                    k="Die Gesamtkosten liegen typischerweise zwischen <0>200 und 650 CHF</0> für den Einstieg (Transfer, Ummeldung, Administration). Hinzu kommen monatliche Kosten wie Leasingrate und Versicherung."
+                    c={[<strong key={0} />]}
+                  />
                 </AccordionContent>
               </AccordionItem>
               
@@ -796,10 +824,13 @@ export default function LeasinguebernahmeKostenPage() {
                 className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Wer zahlt die Transfergebühr?
+                  {t("Wer zahlt die Transfergebühr?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Das ist frei verhandelbar. In den meisten Fällen übernimmt der <strong>Abgeber</strong> die Transfergebühr, um den Vertrag attraktiver zu machen. Manchmal teilen sich beide Parteien die Kosten.
+                  <T
+                    k="Das ist frei verhandelbar. In den meisten Fällen übernimmt der <0>Abgeber</0> die Transfergebühr, um den Vertrag attraktiver zu machen. Manchmal teilen sich beide Parteien die Kosten."
+                    c={[<strong key={0} />]}
+                  />
                 </AccordionContent>
               </AccordionItem>
               
@@ -808,10 +839,10 @@ export default function LeasinguebernahmeKostenPage() {
                 className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Gibt es versteckte Kosten?
+                  {t("Gibt es versteckte Kosten?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, achte auf: eventuelle Reparaturen, fällige Services, Kilometerüberschreitungen und nicht übertragbare Servicepakete. Ein detailliertes Übergabeprotokoll schützt dich vor Überraschungen.
+                  {t("Ja, achte auf: eventuelle Reparaturen, fällige Services, Kilometerüberschreitungen und nicht übertragbare Servicepakete. Ein detailliertes Übergabeprotokoll schützt dich vor Überraschungen.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -820,13 +851,13 @@ export default function LeasinguebernahmeKostenPage() {
                 className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Ist eine Leasingübernahme günstiger als ein neues Leasing?
+                  {t("Ist eine Leasingübernahme günstiger als ein neues Leasing?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten. Alle Unterschiede im Detail zeigt{" "}
-                  <Link href="/leasinguebernahme-vs-neues-leasing" className="text-primary font-semibold hover:underline">
-                    Leasingübernahme vs. neues Leasing im Vergleich
-                  </Link>.
+                  <T
+                    k="Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten. Alle Unterschiede im Detail zeigt <0>Leasingübernahme vs. neues Leasing im Vergleich</0>."
+                    c={[<Link key={0} href="/leasinguebernahme-vs-neues-leasing" className="text-primary font-semibold hover:underline" />]}
+                  />
                 </AccordionContent>
               </AccordionItem>
 
@@ -835,10 +866,13 @@ export default function LeasinguebernahmeKostenPage() {
                 className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Wie viel kostet die Ummeldung?
+                  {t("Wie viel kostet die Ummeldung?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Die Ummeldung beim Strassenverkehrsamt kostet je nach Kanton <strong>50–150 CHF</strong>. Hinzu kommen eventuell Kosten für einen neuen Fahrzeugausweis (ca. 50 CHF).
+                  <T
+                    k="Die Ummeldung beim Strassenverkehrsamt kostet je nach Kanton <0>50–150 CHF</0>. Hinzu kommen eventuell Kosten für einen neuen Fahrzeugausweis (ca. 50 CHF)."
+                    c={[<strong key={0} />]}
+                  />
                 </AccordionContent>
               </AccordionItem>
 
@@ -847,10 +881,10 @@ export default function LeasinguebernahmeKostenPage() {
                 className="bg-neutral-50 rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Kann ich die Kosten mit dem Abgeber teilen?
+                  {t("Kann ich die Kosten mit dem Abgeber teilen?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, absolut. Die Kostenaufteilung ist Verhandlungssache. Viele Abgeber sind bereit, Kosten zu übernehmen, um den Transfer zu beschleunigen.
+                  {t("Ja, absolut. Die Kostenaufteilung ist Verhandlungssache. Viele Abgeber sind bereit, Kosten zu übernehmen, um den Transfer zu beschleunigen.")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -861,21 +895,21 @@ export default function LeasinguebernahmeKostenPage() {
         <section className="py-20 bg-neutral-900 px-4">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Spare jetzt bei deiner Leasingübernahme
+              {t("Spare jetzt bei deiner Leasingübernahme")}
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Finde transparente Angebote ohne versteckte Kosten oder erstelle dein eigenes Inserat – kostenlos und unkompliziert.
+              {t("Finde transparente Angebote ohne versteckte Kosten oder erstelle dein eigenes Inserat – kostenlos und unkompliziert.")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
-                  Angebote durchsuchen
+                  {t("Angebote durchsuchen")}
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent transition-all">
                 <Link href="/inserat-erstellen">
-                  Inserat erstellen
+                  {t("Inserat erstellen")}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -893,6 +927,6 @@ export default function LeasinguebernahmeKostenPage() {
 
 // Served via ISR (static + periodic revalidation) instead of a frozen build-time file,
 // so the page refreshes without a redeploy and shares the prerender path of its siblings.
-export const getStaticProps = async () => {
-  return { props: {}, revalidate: 300 };
+export const getStaticProps = async (context: GetStaticPropsContext) => {
+  return { props: { ...(await withI18n(context.locale, ["pages/leasinguebernahme-kosten"])) }, revalidate: 300 };
 };

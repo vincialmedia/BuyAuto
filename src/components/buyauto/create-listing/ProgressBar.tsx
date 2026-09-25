@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWizard } from "./ListingWizard";
+import { useT } from "@/i18n/runtime";
 
 interface StepDef {
   id: number;
@@ -11,6 +12,7 @@ interface StepDef {
 export default function ProgressBar() {
   const { currentStep, setCurrentStep } = useWizard();
   const { profile } = useAuth();
+  const t = useT();
   const isGarage = profile?.role === "garage";
 
   const steps = useMemo<StepDef[]>(() => {
@@ -37,7 +39,7 @@ export default function ProgressBar() {
     return idx >= 0 ? idx : 0;
   }, [currentStep, steps]);
 
-  const currentLabel = steps[currentIndex]?.label ?? "Schritt";
+  const currentLabel = t(steps[currentIndex]?.label ?? "Schritt");
   const isNearGoal = currentIndex >= steps.length - 2;
   const isLastStep = currentIndex === steps.length - 1;
 
@@ -55,7 +57,7 @@ export default function ProgressBar() {
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-neutral-900">
-            Schritt {currentIndex + 1} von {steps.length}
+            {t("Schritt {current} von {total}", { current: currentIndex + 1, total: steps.length })}
           </p>
           <p
             className={[
@@ -64,9 +66,9 @@ export default function ProgressBar() {
             ].join(" ")}
           >
             {isLastStep
-              ? "Fast geschafft – nur noch veröffentlichen 🎉"
+              ? t("Fast geschafft – nur noch veröffentlichen 🎉")
               : isNearGoal
-                ? `Fast geschafft! Weiter mit: ${currentLabel}`
+                ? t("Fast geschafft! Weiter mit: {step}", { step: currentLabel })
                 : currentLabel}
           </p>
         </div>
@@ -100,7 +102,7 @@ export default function ProgressBar() {
                 canJump ? "cursor-pointer group" : "cursor-default",
               ].join(" ")}
               aria-current={isActive ? "step" : undefined}
-              aria-label={canJump ? `Zurück zu Schritt: ${step.label}` : step.label}
+              aria-label={canJump ? t("Zurück zu Schritt: {step}", { step: t(step.label) }) : t(step.label)}
             >
               <div
                 className={[
@@ -120,7 +122,7 @@ export default function ProgressBar() {
                   isActive ? "text-neutral-900 font-semibold" : isDone ? "text-neutral-600" : "text-neutral-400",
                 ].join(" ")}
               >
-                {step.label}
+                {t(step.label)}
               </span>
             </button>
           );

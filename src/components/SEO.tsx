@@ -1,11 +1,15 @@
 import Head from "next/head";
 import type { ReactNode } from "react";
+import { DEFAULT_LOCALE, localizePath, stripLocale, type Locale } from "@/i18n/config";
+import { useLocale, useT, type TFunction } from "@/i18n/runtime";
 
 export interface SEOProps {
   title?: string;
   description?: string;
   image?: string;
   url?: string;
+  /** Keep this page out of the index: robots noindex,follow and NO canonical (never both together). */
+  noindex?: boolean;
 }
 
 function getAbsoluteUrl(pathOrUrl: string | undefined): string | undefined {
@@ -20,19 +24,33 @@ function getAbsoluteUrl(pathOrUrl: string | undefined): string | undefined {
   return `${cleanBase}${cleanPath}`;
 }
 
-function buildMeta({ title, description, image, url }: SEOProps): Required<
+/**
+ * Canonical / og:url in the page's language. German keeps the URL exactly as
+ * passed; fr/it/en get their /fr, /it, /en prefix after the origin. Idempotent:
+ * a URL that is already localized is not prefixed twice.
+ */
+function localizeUrl(pathOrUrl: string, locale: Locale): string {
+  if (locale === DEFAULT_LOCALE) return pathOrUrl;
+  const match = /^(https?:\/\/[^/?#]+)?(.*)$/.exec(pathOrUrl);
+  const origin = match?.[1] ?? "";
+  const rest = match?.[2] || "/";
+  return `${origin}${localizePath(stripLocale(rest), locale)}`;
+}
+
+function buildMeta({ title, description, image, url }: SEOProps, t: TFunction, locale: Locale): Required<
   Pick<SEOProps, "title" | "description" | "image" | "url">
 > {
-  const fallbackTitle = "Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto";
-  const fallbackDescription =
-    "Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto.";
+  const fallbackTitle = t("Auto kaufen Schweiz | Leasing, Occasionen & Abo – BuyAuto");
+  const fallbackDescription = t(
+    "Auto kaufen in der Schweiz – Occasionen, Neuwagen, Leasing, Auto-Abo & Leasingübernahmen auf einer Plattform. Finde jetzt dein passendes Auto mit BuyAuto.",
+  );
   const fallbackUrl = getAbsoluteUrl("/") ?? "/";
   const fallbackImage = getAbsoluteUrl("/buyauto-logo.jpg") ?? "/buyauto-logo.jpg";
 
   const resolvedTitle = (title ?? "").trim() || fallbackTitle;
   const resolvedDescription = (description ?? "").trim() || fallbackDescription;
 
-  const resolvedUrl = getAbsoluteUrl(url) ?? fallbackUrl;
+  const resolvedUrl = localizeUrl(getAbsoluteUrl(url) ?? fallbackUrl, locale);
   const resolvedImage = getAbsoluteUrl(image) ?? fallbackImage;
 
   return {
@@ -43,7 +61,7 @@ function buildMeta({ title, description, image, url }: SEOProps): Required<
   };
 }
 
-function renderMetaTags(meta: ReturnType<typeof buildMeta>): ReactNode[] {
+function renderMetaTags(meta: ReturnType<typeof buildMeta>, noindex = false): ReactNode[] {
   return [
     <title key="title">{meta.title}</title>,
     <meta key="desc" name="description" content={meta.description} />,
@@ -60,16 +78,24 @@ function renderMetaTags(meta: ReturnType<typeof buildMeta>): ReactNode[] {
     <meta key="tw:desc" name="twitter:description" content={meta.description} />,
     <meta key="tw:image" name="twitter:image" content={meta.image} />,
 
-    <link key="canonical" rel="canonical" href={meta.url} />,
+    noindex ? (
+      <meta key="robots" name="robots" content="noindex,follow" />
+    ) : (
+      <link key="canonical" rel="canonical" href={meta.url} />
+    ),
   ];
 }
 
 export function SEOElements(props: SEOProps) {
-  const meta = buildMeta(props);
-  return <>{renderMetaTags(meta)}</>;
+  const t = useT();
+  const locale = useLocale();
+  const meta = buildMeta(props, t, locale);
+  return <>{renderMetaTags(meta, props.noindex)}</>;
 }
 
 export function SEO(props: SEOProps) {
-  const meta = buildMeta(props);
-  return <Head>{renderMetaTags(meta)}</Head>;
+  const t = useT();
+  const locale = useLocale();
+  const meta = buildMeta(props, t, locale);
+  return <Head>{renderMetaTags(meta, props.noindex)}</Head>;
 }

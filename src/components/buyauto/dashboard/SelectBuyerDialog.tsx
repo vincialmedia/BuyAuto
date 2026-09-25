@@ -15,6 +15,7 @@ import {
   getListingConversationsForSeller,
   type ListingConversationItem,
 } from "@/services/messagingService";
+import { T, useT } from "@/i18n/runtime";
 
 export interface SelectBuyerDialogProps {
   open: boolean;
@@ -55,6 +56,7 @@ export default function SelectBuyerDialog({
   onConfirmWithoutBuyer,
   busy,
 }: SelectBuyerDialogProps) {
+  const t = useT();
   const [conversations, setConversations] = useState<ListingConversationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -98,11 +100,18 @@ export default function SelectBuyerDialog({
     <Dialog open={open} onOpenChange={(next) => { if (!busy) onOpenChange(next); }}>
       <DialogContent className="rounded-3xl w-[calc(100vw-2rem)] max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden break-words p-5 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Als verkauft markieren</DialogTitle>
+          <DialogTitle>{t("Als verkauft markieren")}</DialogTitle>
           <DialogDescription>
-            Wer hat {listingLabel ? <span className="font-semibold text-neutral-900">{listingLabel}</span> : "das Fahrzeug"} gekauft?
-            Wähle die Käuferin oder den Käufer aus deinen Chats. Der gewählte Chat bleibt für euch beide offen,
-            alle anderen Chats zu diesem Inserat werden archiviert.
+            {listingLabel ? (
+              <T
+                k="Wer hat <0>{label}</0> gekauft?"
+                vars={{ label: listingLabel }}
+                c={[<span key="0" className="font-semibold text-neutral-900" />]}
+              />
+            ) : (
+              t("Wer hat das Fahrzeug gekauft?")
+            )}{" "}
+            {t("Wähle die Käuferin oder den Käufer aus deinen Chats. Der gewählte Chat bleibt für euch beide offen, alle anderen Chats zu diesem Inserat werden archiviert.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,9 +148,9 @@ export default function SelectBuyerDialog({
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="truncate text-sm font-semibold text-neutral-900">{c.buyerName}</span>
+                            <span className="truncate text-sm font-semibold text-neutral-900">{c.buyerName === "Interessent" ? t("Interessent") : c.buyerName}</span>
                             {c.conversationStatus === "archived" ? (
-                              <Badge variant="outline" className="text-[10px]">Archiviert</Badge>
+                              <Badge variant="outline" className="text-[10px]">{t("Archiviert")}</Badge>
                             ) : null}
                           </div>
                           {c.lastMessagePreview ? (
@@ -161,7 +170,7 @@ export default function SelectBuyerDialog({
           ) : (
             <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm text-neutral-600 flex items-start gap-3">
               <MessageSquare className="h-4 w-4 mt-0.5 shrink-0 text-neutral-400" />
-              <span>Zu diesem Inserat gibt es noch keine Chats. Du kannst das Inserat trotzdem als verkauft markieren.</span>
+              <span>{t("Zu diesem Inserat gibt es noch keine Chats. Du kannst das Inserat trotzdem als verkauft markieren.")}</span>
             </div>
           )}
 
@@ -181,9 +190,9 @@ export default function SelectBuyerDialog({
           >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-neutral-900">Käufer ist nicht auf BuyAuto</div>
+                <div className="text-sm font-semibold text-neutral-900">{t("Käufer ist nicht auf BuyAuto")}</div>
                 <div className="text-xs text-neutral-500 mt-0.5">
-                  Das Fahrzeug wurde ausserhalb der Plattform verkauft. Alle Chats werden schreibgeschützt.
+                  {t("Das Fahrzeug wurde ausserhalb der Plattform verkauft. Alle Chats werden schreibgeschützt.")}
                 </div>
               </div>
               {noBuyerSelected ? <CheckCircle2 className="h-5 w-5 shrink-0 text-neutral-900" /> : null}
@@ -199,7 +208,7 @@ export default function SelectBuyerDialog({
             onClick={() => onOpenChange(false)}
             disabled={busy}
           >
-            Abbrechen
+            {t("Abbrechen")}
           </Button>
           <Button
             type="button"
@@ -207,7 +216,7 @@ export default function SelectBuyerDialog({
             onClick={handleConfirm}
             disabled={!canConfirm}
           >
-            {busy ? "Wird markiert…" : "Als verkauft markieren"}
+            {busy ? t("Wird markiert…") : t("Als verkauft markieren")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { ListingDetail, LeasingOffer } from "@/lib/buyauto/types";
 import { Banknote, CalendarClock, CreditCard, Gauge, Percent, ShieldCheck, Timer, Wallet } from "lucide-react";
+import { T, useT } from "@/i18n/runtime";
 
 function formatChf(value: number): string {
   return new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(value);
@@ -26,6 +27,7 @@ export function ListingDealTerms({
   purchasePriceChf: number | null;
   teaserMonthlyLabel: string | null;
 }) {
+  const t = useT();
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
   const financingType = (listing.financing_type ?? null) as "cash" | "leasing" | null;
   const leasingOffer = asLeasingOffer(listing);
@@ -39,11 +41,11 @@ export function ListingDealTerms({
       <section className="bg-white rounded-3xl border border-neutral-200/60 shadow-sm p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">Konditionen</h2>
-            <p className="mt-1 text-sm text-neutral-600">Leasingübernahme</p>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">{t("Konditionen")}</h2>
+            <p className="mt-1 text-sm text-neutral-600">{t("Leasingübernahme")}</p>
           </div>
           <Badge className="rounded-full px-3 py-1 text-xs" variant="secondary">
-            Lease Takeover
+            {t("Lease Takeover")}
           </Badge>
         </div>
 
@@ -51,7 +53,7 @@ export function ListingDealTerms({
           <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
             <div className="flex items-center gap-2 text-sm text-neutral-600">
               <CreditCard className="h-4 w-4" />
-              Monatspreis
+              {t("Monatspreis")}
             </div>
             <div className="mt-1 text-2xl font-bold text-neutral-900">{formatChf(monthly)}</div>
           </div>
@@ -59,18 +61,18 @@ export function ListingDealTerms({
           <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
             <div className="flex items-center gap-2 text-sm text-neutral-600">
               <Timer className="h-4 w-4" />
-              Restlaufzeit
+              {t("Restlaufzeit")}
             </div>
-            <div className="mt-1 text-2xl font-bold text-neutral-900">{formatNumber(months)} Monate</div>
+            <div className="mt-1 text-2xl font-bold text-neutral-900">{t("{n} Monate", { n: formatNumber(months) })}</div>
           </div>
 
           <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
             <div className="flex items-center gap-2 text-sm text-neutral-600">
               <Wallet className="h-4 w-4" />
-              Kaution
+              {t("Kaution")}
             </div>
             <div className="mt-1 text-lg font-semibold text-neutral-900">
-              {typeof deposit === "number" && deposit > 0 ? formatChf(deposit) : "Keine"}
+              {typeof deposit === "number" && deposit > 0 ? formatChf(deposit) : t("Keine")}
             </div>
           </div>
 
@@ -78,7 +80,7 @@ export function ListingDealTerms({
             <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
               <div className="flex items-center gap-2 text-sm text-neutral-600">
                 <Gauge className="h-4 w-4" />
-                Verbleibende KM
+                {t("Verbleibende KM")}
               </div>
               <div className="mt-1 text-lg font-semibold text-neutral-900">{formatNumber(listing.remaining_km)} km</div>
             </div>
@@ -88,7 +90,7 @@ export function ListingDealTerms({
         <Separator className="my-6" />
 
         <div className="text-sm text-neutral-600 leading-relaxed">
-          Alle Konditionen basieren auf den Angaben beim Inserat-Erstellen. Details werden im Austausch mit Anbieter:in final bestätigt.
+          {t("Alle Konditionen basieren auf den Angaben beim Inserat-Erstellen. Details werden im Austausch mit Anbieter:in final bestätigt.")}
         </div>
       </section>
     );
@@ -100,11 +102,11 @@ export function ListingDealTerms({
     <section className="bg-white rounded-3xl border border-neutral-200/60 shadow-sm p-6 sm:p-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">Konditionen</h2>
-          <p className="mt-1 text-sm text-neutral-600">Direktkauf</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">{t("Konditionen")}</h2>
+          <p className="mt-1 text-sm text-neutral-600">{t("Direktkauf")}</p>
         </div>
         <Badge className="rounded-full px-3 py-1 text-xs" variant="secondary">
-          Direct Purchase
+          {t("Direct Purchase")}
         </Badge>
       </div>
 
@@ -112,20 +114,20 @@ export function ListingDealTerms({
         <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
           <div className="flex items-center gap-2 text-sm text-neutral-600">
             <Banknote className="h-4 w-4" />
-            Kaufpreis
+            {t("Kaufpreis")}
           </div>
           <div className="mt-1 text-xl font-bold text-neutral-900">
-            {typeof purchasePriceChf === "number" ? formatChf(purchasePriceChf) : "Preis auf Anfrage"}
+            {typeof purchasePriceChf === "number" ? formatChf(purchasePriceChf) : t("Preis auf Anfrage")}
           </div>
         </div>
 
         <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
           <div className="flex items-center gap-2 text-sm text-neutral-600">
             <ShieldCheck className="h-4 w-4" />
-            Finanzierung
+            {t("Finanzierung")}
           </div>
           <div className="mt-1 text-lg font-semibold text-neutral-900">
-            {financingType === "leasing" ? "Leasing" : "Bar / Überweisung"}
+            {financingType === "leasing" ? t("Leasing") : t("Bar / Überweisung")}
           </div>
           {showLeasingDetails && teaserMonthlyLabel && (
             <div className="mt-2 text-sm text-neutral-600">{teaserMonthlyLabel}</div>
@@ -135,14 +137,14 @@ export function ListingDealTerms({
 
       {showLeasingDetails && leasingOffer && (
         <div className="mt-6 rounded-2xl border border-neutral-200/60 bg-white p-5">
-          <div className="text-sm font-semibold text-neutral-900">Leasing-Parameter (vom Anbieter)</div>
+          <div className="text-sm font-semibold text-neutral-900">{t("Leasing-Parameter (vom Anbieter)")}</div>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 rounded-xl bg-neutral-100 p-2">
                 <Percent className="h-4 w-4 text-neutral-700" />
               </div>
               <div>
-                <div className="text-neutral-600">Zins</div>
+                <div className="text-neutral-600">{t("Zins")}</div>
                 <div className="font-semibold text-neutral-900">{formatNumber(Number(leasingOffer.interest_rate_pct))}%</div>
               </div>
             </div>
@@ -152,9 +154,9 @@ export function ListingDealTerms({
                 <CreditCard className="h-4 w-4 text-neutral-700" />
               </div>
               <div>
-                <div className="text-neutral-600">Anzahlung</div>
+                <div className="text-neutral-600">{t("Anzahlung")}</div>
                 <div className="font-semibold text-neutral-900">
-                  {leasingOffer.no_down_payment ? "Keine Anzahlung" : `${formatNumber(Number(leasingOffer.down_payment_pct))}%`}
+                  {leasingOffer.no_down_payment ? t("Keine Anzahlung") : `${formatNumber(Number(leasingOffer.down_payment_pct))}%`}
                 </div>
               </div>
             </div>
@@ -164,9 +166,12 @@ export function ListingDealTerms({
                 <CalendarClock className="h-4 w-4 text-neutral-700" />
               </div>
               <div>
-                <div className="text-neutral-600">Laufzeit</div>
+                <div className="text-neutral-600">{t("Laufzeit")}</div>
                 <div className="font-semibold text-neutral-900">
-                  {formatNumber(Number(leasingOffer.min_term_months))}–{formatNumber(Number(leasingOffer.max_term_months))} Monate
+                  {t("{min}–{max} Monate", {
+                    min: formatNumber(Number(leasingOffer.min_term_months)),
+                    max: formatNumber(Number(leasingOffer.max_term_months)),
+                  })}
                 </div>
               </div>
             </div>
@@ -177,7 +182,7 @@ export function ListingDealTerms({
                   <Gauge className="h-4 w-4 text-neutral-700" />
                 </div>
                 <div>
-                  <div className="text-neutral-600">KM/Jahr Optionen</div>
+                  <div className="text-neutral-600">{t("KM/Jahr Optionen")}</div>
                   <div className="font-semibold text-neutral-900">{leasingOffer.km_options.map((v) => formatNumber(v)).join(", ")}</div>
                 </div>
               </div>
@@ -186,7 +191,11 @@ export function ListingDealTerms({
 
           {typeof leasingOffer.residual_pct_adjustment_pp === "number" && (
             <div className="mt-4 text-sm text-neutral-600">
-              Residual-Adjustment: <span className="font-semibold text-neutral-900">{leasingOffer.residual_pct_adjustment_pp}pp</span>
+              <T
+                k="Residual-Adjustment: <0>{value}pp</0>"
+                c={[<span key="0" className="font-semibold text-neutral-900" />]}
+                vars={{ value: leasingOffer.residual_pct_adjustment_pp }}
+              />
             </div>
           )}
         </div>

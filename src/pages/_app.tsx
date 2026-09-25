@@ -9,6 +9,10 @@ import AuthProvider from "@/contexts/AuthContext";
 import "@/styles/globals.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useEffect } from "react";
+import { MessagesProvider, translateWith, type I18nPageProps } from "@/i18n/runtime";
+import { HTML_LANG, toLocale } from "@/i18n/config";
+import { Hreflang, AUTO_HREFLANG_ROUTES } from "@/i18n/seo";
 
 // Both toast systems stay mounted (11 files — the whole create-listing wizard
 // among them — fire through @/hooks/use-toast and the rest through sonner),
@@ -22,6 +26,13 @@ const Toaster = dynamic(
 );
 const RadixToaster = dynamic(
   () => import("@/components/ui/toaster").then((m) => m.Toaster),
+  { ssr: false },
+);
+// Browser-language hint for visitors on the "wrong" language version. Client
+// only by nature (reads navigator.languages), and never rendered for crawlers'
+// benefit — it is a dismissible suggestion, not a redirect.
+const LanguageSuggestion = dynamic(
+  () => import("@/components/i18n/LanguageSuggestion").then((m) => m.LanguageSuggestion),
   { ssr: false },
 );
 
@@ -41,14 +52,16 @@ const caveat = Caveat({
   preload: false,
 });
 
+const ORGANIZATION_DESCRIPTION =
+  "Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen – Leasing übernehmen oder ohne Verlust abgeben.";
+
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "BuyAuto",
   url: "https://www.buyauto.ch",
   logo: "https://www.buyauto.ch/share-logo.jpg",
-  description:
-    "Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen – Leasing übernehmen oder ohne Verlust abgeben.",
+  description: ORGANIZATION_DESCRIPTION,
   founder: { "@type": "Person", name: "Vincent Hänggi" },
   sameAs: [],
 };
@@ -70,8 +83,30 @@ const websiteSchema = {
   },
 };
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App({ Component, pageProps }: AppProps<I18nPageProps>) {
   const router = useRouter();
+  // Dictionary of the current language, delivered by the page's data function
+  // (src/i18n/server.ts). German pages have none: t() returns the German key.
+  const messages = pageProps.__i18n?.messages;
+  const localizedOrganizationSchema = messages
+    ? { ...organizationSchema, description: translateWith(messages, ORGANIZATION_DESCRIPTION) }
+    : organizationSchema;
+  const isEmbed = router.pathname === "/embed" || router.pathname.startsWith("/embed/");
+
+  // With i18n enabled, Next's router overwrites <html lang> with the bare
+  // locale ("de") on every client-side route change. Keep the regional tag the
+  // server rendered ("de-CH", as before i18n; "fr-CH", "it-CH", "en").
+  const htmlLang = HTML_LANG[toLocale(router.locale)];
+  useEffect(() => {
+    const root = document.documentElement;
+    const enforce = () => {
+      if (root.lang !== htmlLang) root.lang = htmlLang;
+    };
+    enforce();
+    const observer = new MutationObserver(enforce);
+    observer.observe(root, { attributes: true, attributeFilter: ["lang"] });
+    return () => observer.disconnect();
+  }, [htmlLang]);
 
   const isListingDetailPage = router.pathname === "/fahrzeug/[id]";
 
@@ -114,6 +149,7 @@ export default function App({ Component, pageProps }: AppProps) {
           }}
         />
       </Head>
+      <MessagesProvider messages={messages}>
       <AuthProvider>
         <MainLayout>
           <Head>
@@ -128,13 +164,14 @@ export default function App({ Component, pageProps }: AppProps) {
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <script
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedOrganizationSchema) }}
             />
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
             />
           </Head>
+          {AUTO_HREFLANG_ROUTES.has(router.pathname) ? <Hreflang path={router.pathname} /> : null}
           <Component {...pageProps} />
 
           {!isListingDetailPage ? (
@@ -147,12 +184,14 @@ export default function App({ Component, pageProps }: AppProps) {
         </MainLayout>
         {/* Same carve-out as MainLayout: embeds are iframed on third-party
             sites and must stay free of BuyAuto chrome. */}
-        {router.pathname === "/embed" || router.pathname.startsWith("/embed/") ? null : <RouteProgress />}
+        {isEmbed ? null : <RouteProgress />}
+        {isEmbed ? null : <LanguageSuggestion />}
         <Toaster />
         <RadixToaster />
         <Analytics />
         <AnalyticsProvider />
       </AuthProvider>
+      </MessagesProvider>
     </div>
   );
 }

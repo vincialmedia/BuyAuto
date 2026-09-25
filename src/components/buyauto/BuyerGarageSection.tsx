@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import { T, useT } from "@/i18n/runtime";
 
 export function BuyerGarageSection() {
+  const t = useT();
   return (
     <section className="relative py-16 sm:py-20 bg-white overflow-hidden">
       {/* Subtle background decorations */}
@@ -22,10 +24,10 @@ export function BuyerGarageSection() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-neutral-900 tracking-tight mb-4">
-            Fahrzeuge von Garagen und Privatpersonen
+            {t("Fahrzeuge von Garagen und Privatpersonen")}
           </h2>
           <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto">
-            Jedes Übernahme-Inserat weist Monatsrate und Restlaufzeit transparent aus – und die Übertragung läuft immer über die Leasinggesellschaft.
+            {t("Jedes Übernahme-Inserat weist Monatsrate und Restlaufzeit transparent aus – und die Übertragung läuft immer über die Leasinggesellschaft.")}
           </p>
         </div>
 
@@ -48,12 +50,12 @@ export function BuyerGarageSection() {
 
               {/* Title */}
               <h3 className="text-2xl font-bold text-neutral-900 mb-4">
-                Für Übernehmer
+                {t("Für Übernehmer")}
               </h3>
 
               {/* Description */}
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                Entdecke Leasingübernahmen von Schweizer Garagen und privaten Anbietern – jedes Angebot mit klarer Monatsrate und Restlaufzeit.
+                {t("Entdecke Leasingübernahmen von Schweizer Garagen und privaten Anbietern – jedes Angebot mit klarer Monatsrate und Restlaufzeit.")}
               </p>
 
               {/* Bullet Points */}
@@ -63,7 +65,7 @@ export function BuyerGarageSection() {
                     <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center group-hover/item:bg-red-500/20 transition-colors duration-300">
                       <Check className="w-3.5 h-3.5 text-red-500" />
                     </span>
-                    <span className="text-neutral-700 font-medium">{item}</span>
+                    <span className="text-neutral-700 font-medium">{t(item)}</span>
                   </li>
                 ))}
               </ul>
@@ -74,7 +76,7 @@ export function BuyerGarageSection() {
                 className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 text-white font-semibold rounded-xl hover:bg-neutral-800 transition-all duration-300 group/btn hover:shadow-lg hover:shadow-neutral-900/20"
               >
                 <Car className="w-5 h-5" />
-                Fahrzeuge entdecken
+                {t("Fahrzeuge entdecken")}
                 <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
               </Link>
             </div>
@@ -96,12 +98,12 @@ export function BuyerGarageSection() {
 
               {/* Title */}
               <h3 className="text-2xl font-bold text-white mb-4">
-                Für Abgeber
+                {t("Für Abgeber")}
               </h3>
 
               {/* Description */}
               <p className="text-neutral-400 mb-6 leading-relaxed">
-                Präsentiere dein Leasing oder deine Fahrzeuge dort, wo Menschen gezielt nach Leasingübernahmen suchen.
+                {t("Präsentiere dein Leasing oder deine Fahrzeuge dort, wo Menschen gezielt nach Leasingübernahmen suchen.")}
               </p>
 
               {/* Bullet Points */}
@@ -110,7 +112,7 @@ export function BuyerGarageSection() {
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
                     <Check className="w-3.5 h-3.5 text-red-400" />
                   </span>
-                  <span className="text-neutral-300 font-medium">Qualifizierte Anfragen</span>
+                  <span className="text-neutral-300 font-medium">{t("Qualifizierte Anfragen")}</span>
                 </li>
                 
                 <li className="flex items-center gap-3 group/item">
@@ -118,15 +120,15 @@ export function BuyerGarageSection() {
                     <Check className="w-3.5 h-3.5 text-red-400" />
                   </span>
                   <span className="text-neutral-300 font-medium flex items-center gap-1.5">
-                    Eingebauter Chat
+                    {t("Eingebauter Chat")}
                     <HoverTooltip
                       side="top"
-                      content={<p>Chat Daten in CH gespeichert</p>}
+                      content={<p>{t("Chat Daten in CH gespeichert")}</p>}
                       contentClassName="text-sm"
                     >
                       <button
                         type="button"
-                        aria-label="Info: Eingebauter Chat"
+                        aria-label={t("Info: Eingebauter Chat")}
                         className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-help"
                       >
                         <span className="text-[10px] text-neutral-400">*</span>
@@ -139,7 +141,7 @@ export function BuyerGarageSection() {
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
                     <Check className="w-3.5 h-3.5 text-red-400" />
                   </span>
-                  <span className="text-neutral-300 font-medium">Mehr Sichtbarkeit</span>
+                  <span className="text-neutral-300 font-medium">{t("Mehr Sichtbarkeit")}</span>
                 </li>
               </ul>
 
@@ -149,7 +151,7 @@ export function BuyerGarageSection() {
                 className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-all duration-300 group/btn hover:shadow-lg hover:shadow-red-500/30"
               >
                 <PenLine className="w-5 h-5" />
-                Jetzt Inserieren
+                {t("Jetzt Inserieren")}
                 <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
               </Link>
             </div>
@@ -159,10 +161,10 @@ export function BuyerGarageSection() {
 
         {/* Quiet B2B pointer */}
         <p className="mt-10 text-center text-sm text-neutral-600">
-          Du bist eine Garage?{" "}
-          <Link href="/fuer-garagen" className="text-red-600 font-semibold hover:underline">
-            So nutzt du BuyAuto für deine Kunden
-          </Link>
+          <T
+            k="Du bist eine Garage? <0>So nutzt du BuyAuto für deine Kunden</0>"
+            c={[<Link key="0" href="/fuer-garagen" className="text-red-600 font-semibold hover:underline" />]}
+          />
         </p>
       </div>
     </section>

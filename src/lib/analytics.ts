@@ -175,7 +175,9 @@ let currentRole: UserRole | null = null;
 
 // /admin, iframe embeds (no consent banner there, so consent can never be
 // given) and throwaway test pages such as the removed /tg-test.
-function isExcludedPath(pathname: string): boolean {
+function isExcludedPath(pathWithLocale: string): boolean {
+  // Same rules in every language: /fr/admin is /admin.
+  const pathname = pathWithLocale.replace(/^\/(?:de|fr|it|en)(?=\/|$)/, "") || "/";
   if (/^\/(admin|embed)(\/|$)/.test(pathname)) return true;
   if (/^\/(?:[a-z0-9]+-)?test(?:-[a-z0-9-]+)?(\/|$)/i.test(pathname)) return true;
   return false;

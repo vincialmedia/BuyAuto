@@ -1,187 +1,221 @@
 import Head from "next/head";
+import { absoluteUrl } from "@/i18n/config";
+import { T, useLocale, useT } from "@/i18n/runtime";
+import { staticI18nProps } from "@/i18n/server";
 
 // Fixed revision date (see agb.tsx): a privacy policy carries the date it was
 // last changed, and a static value avoids a post-hydration text swap.
 const DATENSCHUTZ_STAND = "26.11.2025";
 
 export default function Datenschutz() {
+  const t = useT();
+  const locale = useLocale();
   return (
     <div className="min-h-screen bg-neutral-50 font-sans text-neutral-900">
       <Head>
-        <title>Datenschutz & Impressum | BuyAuto</title>
-        <meta name="description" content="Datenschutzerklärung und Impressum von BuyAuto" />
+        <title>{t("Datenschutz & Impressum | BuyAuto")}</title>
+        <meta name="description" content={t("Datenschutzerklärung und Impressum von BuyAuto")} />
+        <link rel="canonical" href={absoluteUrl("/datenschutz", locale)} />
       </Head>
 
       <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-neutral-200">
-          <h1 className="text-3xl font-bold mb-8 text-neutral-900">Datenschutz / Impressum</h1>
+          <h1 className="text-3xl font-bold mb-8 text-neutral-900">{t("Datenschutz / Impressum")}</h1>
 
           <div className="prose prose-neutral max-w-none">
+            {locale !== "de" && (
+              <p className="mb-6 text-sm text-neutral-600 bg-neutral-50 border border-neutral-200 rounded-lg p-3">
+                {t("Diese Übersetzung dient nur zur Information. Massgebend ist ausschliesslich die deutsche Fassung.")}
+              </p>
+            )}
             <p className="text-sm text-neutral-500 mb-8">
-              Stand: {DATENSCHUTZ_STAND}
+              {t("Stand: {date}", { date: DATENSCHUTZ_STAND })}
             </p>
 
             <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4">1. Einleitung und Überblick</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("1. Einleitung und Überblick")}</h2>
               <p className="mb-4">
-                Der Schutz Ihrer persönlichen Daten ist uns ein wichtiges Anliegen. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend der gesetzlichen Datenschutzvorschriften (insb. Schweizer Datenschutzgesetz (nDSG) und, sofern anwendbar, DSGVO) sowie dieser Datenschutzerklärung.
+                {t("Der Schutz Ihrer persönlichen Daten ist uns ein wichtiges Anliegen. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend der gesetzlichen Datenschutzvorschriften (insb. Schweizer Datenschutzgesetz (nDSG) und, sofern anwendbar, DSGVO) sowie dieser Datenschutzerklärung.")}
               </p>
               <p>
-                In dieser Datenschutzerklärung erläutern wir Ihnen, welche Daten wir erheben, wie wir sie verwenden und welche Rechte Sie haben.
+                {t("In dieser Datenschutzerklärung erläutern wir Ihnen, welche Daten wir erheben, wie wir sie verwenden und welche Rechte Sie haben.")}
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4">2. Verantwortliche Stelle</h2>
-              <p className="mb-2">Verantwortlich für die Datenverarbeitung auf dieser Website ist:</p>
+              <h2 className="text-xl font-semibold mb-4">{t("2. Verantwortliche Stelle")}</h2>
+              <p className="mb-2">{t("Verantwortlich für die Datenverarbeitung auf dieser Website ist:")}</p>
               <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-100">
                 <p className="font-medium">BuyAuto</p>
                 <p>Vincent Hänggi</p>
                 <p>Brandstrasse 21</p>
                 <p>8952 Schlieren (Zürich)</p>
-                <p className="mt-2">E-Mail: <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a></p>
+                <p className="mt-2">{t("E-Mail:")} <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a></p>
               </div>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4">3. Erhebung und Bearbeitung von Daten</h2>
-              <h3 className="text-lg font-medium mb-2">Beim Besuch der Website</h3>
+              <h2 className="text-xl font-semibold mb-4">{t("3. Erhebung und Bearbeitung von Daten")}</h2>
+              <h3 className="text-lg font-medium mb-2">{t("Beim Besuch der Website")}</h3>
               <p className="mb-4">
-                Beim Aufrufen unserer Website werden durch den auf Ihrem Endgerät zum Einsatz kommenden Browser automatisch Informationen an den Server unserer Website gesendet. Diese Informationen werden temporär in einem sog. Logfile gespeichert. Folgende Informationen werden dabei ohne Ihr Zutun erfasst und bis zur automatisierten Löschung gespeichert:
+                {t("Beim Aufrufen unserer Website werden durch den auf Ihrem Endgerät zum Einsatz kommenden Browser automatisch Informationen an den Server unserer Website gesendet. Diese Informationen werden temporär in einem sog. Logfile gespeichert. Folgende Informationen werden dabei ohne Ihr Zutun erfasst und bis zur automatisierten Löschung gespeichert:")}
               </p>
               <ul className="list-disc pl-5 mb-4 space-y-1">
-                <li>IP-Adresse des anfragenden Rechners</li>
-                <li>Datum und Uhrzeit des Zugriffs</li>
-                <li>Name und URL der abgerufenen Datei</li>
-                <li>Website, von der aus der Zugriff erfolgt (Referrer-URL)</li>
-                <li>Verwendeter Browser und ggf. das Betriebssystem Ihres Rechners sowie der Name Ihres Access-Providers</li>
+                <li>{t("IP-Adresse des anfragenden Rechners")}</li>
+                <li>{t("Datum und Uhrzeit des Zugriffs")}</li>
+                <li>{t("Name und URL der abgerufenen Datei")}</li>
+                <li>{t("Website, von der aus der Zugriff erfolgt (Referrer-URL)")}</li>
+                <li>{t("Verwendeter Browser und ggf. das Betriebssystem Ihres Rechners sowie der Name Ihres Access-Providers")}</li>
               </ul>
               <p className="mb-4">
-                Diese Daten werden durch unseren Hosting-Provider <strong>Vercel Inc.</strong> (USA) verarbeitet. Wir haben mit Vercel entsprechende Vereinbarungen zur Auftragsverarbeitung abgeschlossen.
+                <T
+                  k="Diese Daten werden durch unseren Hosting-Provider <0>Vercel Inc.</0> (USA) verarbeitet. Wir haben mit Vercel entsprechende Vereinbarungen zur Auftragsverarbeitung abgeschlossen."
+                  c={[<strong key="vercel" />]}
+                />
               </p>
 
-              <h3 className="text-lg font-medium mb-2">Bei Registrierung und Nutzung der Plattform</h3>
+              <h3 className="text-lg font-medium mb-2">{t("Bei Registrierung und Nutzung der Plattform")}</h3>
               <p className="mb-4">
-                Wenn Sie sich auf unserer Plattform registrieren, Inserate erstellen oder Anfragen senden, verarbeiten wir folgende Daten:
+                {t("Wenn Sie sich auf unserer Plattform registrieren, Inserate erstellen oder Anfragen senden, verarbeiten wir folgende Daten:")}
               </p>
               <ul className="list-disc pl-5 mb-4 space-y-1">
-                <li>Kontaktdaten (Name, E-Mail-Adresse, Telefonnummer, Adresse)</li>
-                <li>Login-Daten (verschlüsseltes Passwort)</li>
-                <li>Vertragsdaten (Angaben zu Leasingfahrzeugen, Laufzeiten, Raten)</li>
-                <li>Zahlungsdaten (werden direkt an unseren Zahlungsdienstleister übermittelt)</li>
-                <li>Bilder und Dokumente, die Sie hochladen</li>
+                <li>{t("Kontaktdaten (Name, E-Mail-Adresse, Telefonnummer, Adresse)")}</li>
+                <li>{t("Login-Daten (verschlüsseltes Passwort)")}</li>
+                <li>{t("Vertragsdaten (Angaben zu Leasingfahrzeugen, Laufzeiten, Raten)")}</li>
+                <li>{t("Zahlungsdaten (werden direkt an unseren Zahlungsdienstleister übermittelt)")}</li>
+                <li>{t("Bilder und Dokumente, die Sie hochladen")}</li>
               </ul>
               <p className="mb-4">
-                Diese Daten werden in unserer Datenbank bei <strong>Supabase</strong> gespeichert. Die Datenhaltung erfolgt auf Servern in der Schweiz (Zürich, AWS-Infrastruktur).
+                <T
+                  k="Diese Daten werden in unserer Datenbank bei <0>Supabase</0> gespeichert. Die Datenhaltung erfolgt auf Servern in der Schweiz (Zürich, AWS-Infrastruktur)."
+                  c={[<strong key="supabase" />]}
+                />
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4">4. Cookies und Tracking</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("4. Cookies und Tracking")}</h2>
               <p className="mb-4">
-                Wir setzen auf unserer Website Cookies ein. Hierbei handelt es sich um kleine Dateien, die Ihr Browser automatisch erstellt und die auf Ihrem Endgerät (Laptop, Tablet, Smartphone o.ä.) gespeichert werden, wenn Sie unsere Seite besuchen.
+                {t("Wir setzen auf unserer Website Cookies ein. Hierbei handelt es sich um kleine Dateien, die Ihr Browser automatisch erstellt und die auf Ihrem Endgerät (Laptop, Tablet, Smartphone o.ä.) gespeichert werden, wenn Sie unsere Seite besuchen.")}
               </p>
-              <h3 className="text-lg font-medium mb-2">Technisch notwendige Cookies</h3>
+              <h3 className="text-lg font-medium mb-2">{t("Technisch notwendige Cookies")}</h3>
               <p className="mb-4">
-                Der Einsatz dieser Cookies dient dazu, die Nutzung unseres Angebots für Sie angenehmer zu gestalten. So setzen wir sogenannte Session-Cookies ein, um zu erkennen, dass Sie einzelne Seiten unserer Website bereits besucht haben oder in Ihrem Benutzerkonto eingeloggt sind. Diese werden nach Verlassen unserer Seite automatisch gelöscht.
+                {t("Der Einsatz dieser Cookies dient dazu, die Nutzung unseres Angebots für Sie angenehmer zu gestalten. So setzen wir sogenannte Session-Cookies ein, um zu erkennen, dass Sie einzelne Seiten unserer Website bereits besucht haben oder in Ihrem Benutzerkonto eingeloggt sind. Diese werden nach Verlassen unserer Seite automatisch gelöscht.")}
               </p>
-              <h3 className="text-lg font-medium mb-2">Analyse-Tools (Google Analytics 4)</h3>
+              <h3 className="text-lg font-medium mb-2">{t("Analyse-Tools (Google Analytics 4)")}</h3>
               <p className="mb-4">
-                Wir nutzen Google Analytics 4, einen Webanalysedienst der Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland). Google Analytics verwendet Methoden, die eine Analyse der Benutzung der Website durch Sie ermöglichen, wie zum Beispiel Cookies. Die erzeugten Informationen über Ihre Benutzung dieser Website können an einen Server von Google, auch in den USA, übertragen und dort gespeichert werden. Ihre IP-Adresse wird dabei gekürzt (IP-Anonymisierung).
-              </p>
-              <p className="mb-4">
-                Analyse-Cookies werden erst gesetzt, nachdem Sie im Cookie-Banner auf «Einverstanden» geklickt haben. Bis dahin – und wenn Sie «Ablehnen» wählen – werden über den Google-Consent-Modus ausschliesslich cookielose, nicht auf Sie zurückführbare Signale übermittelt. Rechtsgrundlage der Bearbeitung ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 DSG).
+                {t("Wir nutzen Google Analytics 4, einen Webanalysedienst der Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland). Google Analytics verwendet Methoden, die eine Analyse der Benutzung der Website durch Sie ermöglichen, wie zum Beispiel Cookies. Die erzeugten Informationen über Ihre Benutzung dieser Website können an einen Server von Google, auch in den USA, übertragen und dort gespeichert werden. Ihre IP-Adresse wird dabei gekürzt (IP-Anonymisierung).")}
               </p>
               <p className="mb-4">
-                Sind Sie in Ihrem Benutzerkonto angemeldet und haben Sie eingewilligt, übermitteln wir zusätzlich eine pseudonyme Kennung Ihres Kontos (eine zufällige ID, nicht Ihren Namen oder Ihre E-Mail-Adresse) sowie Ihre Kontoart (privat oder Garage) an Google Analytics. So können wir Ihre Nutzung über mehrere Geräte hinweg zusammenfassen. Name, E-Mail-Adresse, Telefonnummer oder Inhalte Ihrer Nachrichten werden nicht an Google Analytics übermittelt.
+                {t("Analyse-Cookies werden erst gesetzt, nachdem Sie im Cookie-Banner auf «Einverstanden» geklickt haben. Bis dahin – und wenn Sie «Ablehnen» wählen – werden über den Google-Consent-Modus ausschliesslich cookielose, nicht auf Sie zurückführbare Signale übermittelt. Rechtsgrundlage der Bearbeitung ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 DSG).")}
               </p>
               <p className="mb-4">
-                Sie können Ihre Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, indem Sie die in Ihrem Browser für diese Website gespeicherten Daten (Cookies und lokaler Speicher) löschen. Beim nächsten Besuch erscheint das Cookie-Banner erneut und Sie können neu entscheiden. Zusätzlich können Sie die Erfassung durch das Browser-Add-on von Google unter{" "}
-                <a
-                  href="https://tools.google.com/dlpage/gaoptout"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-red-600 hover:underline"
-                >
-                  tools.google.com/dlpage/gaoptout
-                </a>{" "}
-                unterbinden.
-              </p>
-              <h3 className="text-lg font-medium mb-2">Google Ads (Conversion-Tracking und Remarketing)</h3>
-              <p className="mb-4">
-                Wir bewerben unser Angebot über Google Ads und setzen dazu das Google-Ads-Tag der Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland) ein. Damit können wir messen, welche Anzeige zu einer Aktion auf unserer Website geführt hat (Conversion-Tracking), und Ihnen unsere Anzeigen im Google-Werbenetzwerk erneut anzeigen (Remarketing). Gelangen Sie über eine unserer Anzeigen auf diese Website, wird dabei eine Klick-Kennung (Google Click Identifier) verarbeitet.
+                {t("Sind Sie in Ihrem Benutzerkonto angemeldet und haben Sie eingewilligt, übermitteln wir zusätzlich eine pseudonyme Kennung Ihres Kontos (eine zufällige ID, nicht Ihren Namen oder Ihre E-Mail-Adresse) sowie Ihre Kontoart (privat oder Garage) an Google Analytics. So können wir Ihre Nutzung über mehrere Geräte hinweg zusammenfassen. Name, E-Mail-Adresse, Telefonnummer oder Inhalte Ihrer Nachrichten werden nicht an Google Analytics übermittelt.")}
               </p>
               <p className="mb-4">
-                Werbe-Cookies werden – wie die Analyse-Cookies – erst nach Ihrer Zustimmung im Cookie-Banner gesetzt. Solange Sie nicht zugestimmt oder «Ablehnen» gewählt haben, übermittelt der Google-Consent-Modus ausschliesslich cookielose Signale ohne Zugriff auf Ihr Endgerät. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 DSG); Sie können sie jederzeit über den Link «Cookie-Einstellungen» im Footer oder durch Löschen der gespeicherten Website-Daten widerrufen. Personalisierte Werbung können Sie zusätzlich in den{" "}
-                <a
-                  href="https://myadcenter.google.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-red-600 hover:underline"
-                >
-                  Google-Werbeeinstellungen
-                </a>{" "}
-                deaktivieren.
+                <T
+                  k="Sie können Ihre Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, indem Sie die in Ihrem Browser für diese Website gespeicherten Daten (Cookies und lokaler Speicher) löschen. Beim nächsten Besuch erscheint das Cookie-Banner erneut und Sie können neu entscheiden. Zusätzlich können Sie die Erfassung durch das Browser-Add-on von Google unter <0>tools.google.com/dlpage/gaoptout</0> unterbinden."
+                  c={[
+                    <a
+                      key="gaoptout"
+                      href="https://tools.google.com/dlpage/gaoptout"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-red-600 hover:underline"
+                    />,
+                  ]}
+                />
+              </p>
+              <h3 className="text-lg font-medium mb-2">{t("Google Ads (Conversion-Tracking und Remarketing)")}</h3>
+              <p className="mb-4">
+                {t("Wir bewerben unser Angebot über Google Ads und setzen dazu das Google-Ads-Tag der Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland) ein. Damit können wir messen, welche Anzeige zu einer Aktion auf unserer Website geführt hat (Conversion-Tracking), und Ihnen unsere Anzeigen im Google-Werbenetzwerk erneut anzeigen (Remarketing). Gelangen Sie über eine unserer Anzeigen auf diese Website, wird dabei eine Klick-Kennung (Google Click Identifier) verarbeitet.")}
+              </p>
+              <p className="mb-4">
+                <T
+                  k="Werbe-Cookies werden – wie die Analyse-Cookies – erst nach Ihrer Zustimmung im Cookie-Banner gesetzt. Solange Sie nicht zugestimmt oder «Ablehnen» gewählt haben, übermittelt der Google-Consent-Modus ausschliesslich cookielose Signale ohne Zugriff auf Ihr Endgerät. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 DSG); Sie können sie jederzeit über den Link «Cookie-Einstellungen» im Footer oder durch Löschen der gespeicherten Website-Daten widerrufen. Personalisierte Werbung können Sie zusätzlich in den <0>Google-Werbeeinstellungen</0> deaktivieren."
+                  c={[
+                    <a
+                      key="adsettings"
+                      href="https://myadcenter.google.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-red-600 hover:underline"
+                    />,
+                  ]}
+                />
               </p>
               <h3 className="text-lg font-medium mb-2">Vercel Analytics</h3>
               <p className="mb-4">
-                Zur Messung der Seitenaufrufe und der Ladeperformance setzen wir zusätzlich Vercel Analytics (Vercel Inc.) ein. Dieser Dienst arbeitet cookielos und erhebt keine personenbezogenen Profile.
+                {t("Zur Messung der Seitenaufrufe und der Ladeperformance setzen wir zusätzlich Vercel Analytics (Vercel Inc.) ein. Dieser Dienst arbeitet cookielos und erhebt keine personenbezogenen Profile.")}
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4">5. Newsletter</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("5. Newsletter")}</h2>
               <p className="mb-4">
-                Sofern Sie nach Art. 6 Abs. 1 S. 1 lit. a DSGVO ausdrücklich eingewilligt haben, verwenden wir Ihre E-Mail-Adresse dafür, Ihnen regelmässig unseren Newsletter zu übersenden. Für den Empfang des Newsletters ist die Angabe einer E-Mail-Adresse ausreichend.
+                {t("Sofern Sie nach Art. 6 Abs. 1 S. 1 lit. a DSGVO ausdrücklich eingewilligt haben, verwenden wir Ihre E-Mail-Adresse dafür, Ihnen regelmässig unseren Newsletter zu übersenden. Für den Empfang des Newsletters ist die Angabe einer E-Mail-Adresse ausreichend.")}
               </p>
               <p>
-                Die Abmeldung ist jederzeit möglich, zum Beispiel über einen Link am Ende eines jeden Newsletters. Alternativ können Sie Ihren Abmeldewunsch gerne jederzeit an <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a> senden.
+                <T
+                  k="Die Abmeldung ist jederzeit möglich, zum Beispiel über einen Link am Ende eines jeden Newsletters. Alternativ können Sie Ihren Abmeldewunsch gerne jederzeit an <0>hello@buyauto.ch</0> senden."
+                  c={[<a key="mail" href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline" />]}
+                />
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4">6. Weitergabe von Daten (Drittanbieter)</h2>
-              <p className="mb-4">Eine Übermittlung Ihrer persönlichen Daten an Dritte zu anderen als den im Folgenden aufgeführten Zwecken findet nicht statt.</p>
+              <h2 className="text-xl font-semibold mb-4">{t("6. Weitergabe von Daten (Drittanbieter)")}</h2>
+              <p className="mb-4">{t("Eine Übermittlung Ihrer persönlichen Daten an Dritte zu anderen als den im Folgenden aufgeführten Zwecken findet nicht statt.")}</p>
               <ul className="list-disc pl-5 mb-4 space-y-2">
                 <li>
-                  <strong>Supabase:</strong> Für Datenbank-Hosting und Authentifizierung (Serverstandort: Zürich, Schweiz).
+                  <T
+                    k="<0>Supabase:</0> Für Datenbank-Hosting und Authentifizierung (Serverstandort: Zürich, Schweiz)."
+                    c={[<strong key="supabase" />]}
+                  />
                 </li>
                 <li>
-                  <strong>Stripe:</strong> Für die Abwicklung von Zahlungen. Dies umfasst Inserats-Gebühren,
-                  Premium-Platzierungen, Gebühren für die Wiederveröffentlichung abgelaufener Inserate sowie
-                  freiwillige Unterstützungsbeiträge (Spenden). Zahlungsdaten werden direkt von Stripe verarbeitet
-                  und nicht auf unseren Servern gespeichert.
+                  <T
+                    k="<0>Stripe:</0> Für die Abwicklung von Zahlungen. Dies umfasst Inserats-Gebühren, Premium-Platzierungen, Gebühren für die Wiederveröffentlichung abgelaufener Inserate sowie freiwillige Unterstützungsbeiträge (Spenden). Zahlungsdaten werden direkt von Stripe verarbeitet und nicht auf unseren Servern gespeichert."
+                    c={[<strong key="stripe" />]}
+                  />
                 </li>
                 <li>
-                  <strong>Resend:</strong> Für den Versand von Transaktions- und Erinnerungs-E-Mails, etwa zu neuen
-                  Nachrichten, unvollständigen Inserats-Entwürfen oder ablaufenden Inseraten. Dabei werden Ihre
-                  E-Mail-Adresse, Ihr Name und die für die jeweilige E-Mail nötigen Inseratsangaben verarbeitet.
+                  <T
+                    k="<0>Resend:</0> Für den Versand von Transaktions- und Erinnerungs-E-Mails, etwa zu neuen Nachrichten, unvollständigen Inserats-Entwürfen oder ablaufenden Inseraten. Dabei werden Ihre E-Mail-Adresse, Ihr Name und die für die jeweilige E-Mail nötigen Inseratsangaben verarbeitet."
+                    c={[<strong key="resend" />]}
+                  />
                 </li>
                 <li>
-                  <strong>Vercel:</strong> Für das Hosting der Website und die Auslieferung von Inhalten.
+                  <T
+                    k="<0>Vercel:</0> Für das Hosting der Website und die Auslieferung von Inhalten."
+                    c={[<strong key="vercel" />]}
+                  />
                 </li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4">7. Datensicherheit</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("7. Datensicherheit")}</h2>
               <p className="mb-4">
-                Wir verwenden innerhalb des Website-Besuchs das verbreitete SSL-Verfahren (Secure Socket Layer) in Verbindung mit der jeweils höchsten Verschlüsselungsstufe, die von Ihrem Browser unterstützt wird. Ob eine einzelne Seite unseres Internetauftrittes verschlüsselt übertragen wird, erkennen Sie an der geschlossenen Darstellung des Schüssel- beziehungsweise Schloss-Symbols in der Statusleiste Ihres Browsers.
+                {t("Wir verwenden innerhalb des Website-Besuchs das verbreitete SSL-Verfahren (Secure Socket Layer) in Verbindung mit der jeweils höchsten Verschlüsselungsstufe, die von Ihrem Browser unterstützt wird. Ob eine einzelne Seite unseres Internetauftrittes verschlüsselt übertragen wird, erkennen Sie an der geschlossenen Darstellung des Schüssel- beziehungsweise Schloss-Symbols in der Statusleiste Ihres Browsers.")}
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4">8. Ihre Rechte</h2>
-              <p className="mb-4">Sie haben das Recht:</p>
+              <h2 className="text-xl font-semibold mb-4">{t("8. Ihre Rechte")}</h2>
+              <p className="mb-4">{t("Sie haben das Recht:")}</p>
               <ul className="list-disc pl-5 mb-4 space-y-1">
-                <li>Auskunft über Ihre von uns verarbeiteten personenbezogenen Daten zu verlangen;</li>
-                <li>unverzüglich die Berichtigung unrichtiger oder Vervollständigung Ihrer bei uns gespeicherten personenbezogenen Daten zu verlangen;</li>
-                <li>die Löschung Ihrer bei uns gespeicherten personenbezogenen Daten zu verlangen;</li>
-                <li>die Einschränkung der Verarbeitung Ihrer personenbezogenen Daten zu verlangen;</li>
-                <li>Ihre einmal erteilte Einwilligung jederzeit gegenüber uns zu widerrufen.</li>
+                <li>{t("Auskunft über Ihre von uns verarbeiteten personenbezogenen Daten zu verlangen;")}</li>
+                <li>{t("unverzüglich die Berichtigung unrichtiger oder Vervollständigung Ihrer bei uns gespeicherten personenbezogenen Daten zu verlangen;")}</li>
+                <li>{t("die Löschung Ihrer bei uns gespeicherten personenbezogenen Daten zu verlangen;")}</li>
+                <li>{t("die Einschränkung der Verarbeitung Ihrer personenbezogenen Daten zu verlangen;")}</li>
+                <li>{t("Ihre einmal erteilte Einwilligung jederzeit gegenüber uns zu widerrufen.")}</li>
               </ul>
               <p>
-                Möchten Sie von Ihrem Widerrufs- oder Widerspruchsrecht Gebrauch machen, genügt eine E-Mail an <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a>.
+                <T
+                  k="Möchten Sie von Ihrem Widerrufs- oder Widerspruchsrecht Gebrauch machen, genügt eine E-Mail an <0>hello@buyauto.ch</0>."
+                  c={[<a key="mail" href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline" />]}
+                />
               </p>
             </section>
           </div>
@@ -190,3 +224,5 @@ export default function Datenschutz() {
     </div>
   );
 }
+
+export const getStaticProps = staticI18nProps(["pages/datenschutz"]);

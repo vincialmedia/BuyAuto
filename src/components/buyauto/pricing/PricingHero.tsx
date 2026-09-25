@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { PricingToggle, type PricingPersona } from "@/components/buyauto/pricing/PricingToggle";
+import { useT } from "@/i18n/runtime";
 
 export interface PricingHeroProps {
   persona: PricingPersona;
@@ -38,6 +39,7 @@ const PRIVATE_USPS = [
 ];
 
 export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
+  const t = useT();
   return (
     <section className="relative overflow-hidden pt-24 pb-16 sm:pt-28 sm:pb-20">
       <div
@@ -80,17 +82,17 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
       <div className="relative container">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-white/85 text-sm font-semibold tracking-wide">
-            BuyAuto Preise
+            {t("BuyAuto Preise")}
           </p>
 
           <h1 className="mt-3 text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white">
-            Klar. Fair. Swiss-clean.
+            {t("Klar. Fair. Swiss-clean.")}
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-white/80">
             {persona === "garage"
-              ? "Ein Fixpreis pro Monat für deine Garage – Profilseite, Inserate, Leasing-Rechner und Deal-Chat inklusive. Monatlich kündbar."
-              : "Ein Inserat, ein Preis, keine Abo-Falle. Wähle Laufzeit und Sichtbarkeit – Premium kannst du jederzeit dazunehmen."}
+              ? t("Ein Fixpreis pro Monat für deine Garage – Profilseite, Inserate, Leasing-Rechner und Deal-Chat inklusive. Monatlich kündbar.")
+              : t("Ein Inserat, ein Preis, keine Abo-Falle. Wähle Laufzeit und Sichtbarkeit – Premium kannst du jederzeit dazunehmen.")}
           </p>
 
           <div className="mt-8 flex justify-center">
@@ -98,7 +100,7 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
               <div className="flex flex-col items-center gap-3">
                 <PricingToggle value={persona} onChange={onPersonaChange} />
                 <p className="text-xs text-white/70">
-                  Du kannst jederzeit wechseln – Preise & Inhalte passen sich an.
+                  {t("Du kannst jederzeit wechseln – Preise & Inhalte passen sich an.")}
                 </p>
               </div>
             </div>
@@ -111,10 +113,10 @@ export function PricingHero({ persona, onPersonaChange }: PricingHeroProps) {
                 className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur px-4 py-4 text-left"
               >
                 <div className="text-sm font-semibold text-white">
-                  {item.title}
+                  {t(item.title)}
                 </div>
                 <div className="mt-1 text-xs leading-relaxed text-white/75">
-                  {item.body}
+                  {t(item.body)}
                 </div>
               </div>
             ))}

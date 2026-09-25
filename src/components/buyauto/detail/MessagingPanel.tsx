@@ -15,6 +15,7 @@ import {
 } from "@/services/messagingService";
 import { LogIn, SendHorizontal, Paperclip, X } from "lucide-react";
 import { useRouter } from "next/router";
+import { useT } from "@/i18n/runtime";
 import { trackOnce } from "@/lib/analytics";
 
 export interface MessagingPanelProps {
@@ -77,6 +78,7 @@ function formatBytes(value: number | null | undefined): string {
 export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, className }: MessagingPanelProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const t = useT();
 
   const isSeller = Boolean(user?.id && ownerId && user.id === ownerId);
 
@@ -104,29 +106,29 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
   }, [busy, draft, isAuthed, isSeller, readOnly, soldBlocked, messagingUnavailable, selectedFiles.length]);
 
   const counterpartyLabel = useMemo(() => {
-    if (counterpartyRole === "seller") return "Anbieter";
-    if (counterpartyRole === "buyer") return "Interessent";
-    return "Kontakt";
-  }, [counterpartyRole]);
+    if (counterpartyRole === "seller") return t("Anbieter");
+    if (counterpartyRole === "buyer") return t("Interessent");
+    return t("Kontakt");
+  }, [counterpartyRole, t]);
 
   const notice: Notice | null = useMemo(() => {
     if (isSeller) {
-      return { kind: "info", text: "Dies ist dein eigenes Inserat. Du kannst dir selbst keine Nachrichten senden." };
+      return { kind: "info", text: t("Dies ist dein eigenes Inserat. Du kannst dir selbst keine Nachrichten senden.") };
     }
     if (!isAuthed) {
-      return { kind: "info", text: "Bitte logge Dich ein oder registriere Dich, um Nachrichten zu schicken." };
+      return { kind: "info", text: t("Bitte logge Dich ein oder registriere Dich, um Nachrichten zu schicken.") };
     }
     if (soldBlocked) {
-      return { kind: "warning", text: "Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich." };
+      return { kind: "warning", text: t("Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich.") };
     }
     if (readOnly) {
-      return { kind: "info", text: "Dieser Chat ist archiviert. Weitere Nachrichten sind nicht möglich." };
+      return { kind: "info", text: t("Dieser Chat ist archiviert. Weitere Nachrichten sind nicht möglich.") };
     }
     if (messagingUnavailable) {
-      return { kind: "info", text: "Nachrichten sind momentan nicht verfügbar." };
+      return { kind: "info", text: t("Nachrichten sind momentan nicht verfügbar.") };
     }
     return null;
-  }, [isAuthed, isSeller, messagingUnavailable, readOnly, soldBlocked]);
+  }, [isAuthed, isSeller, messagingUnavailable, readOnly, soldBlocked, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -331,8 +333,8 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
       <CardContent className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Nachricht Schreiben</h3>
-            <p className="text-sm text-neutral-600 mt-1">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">{t("Nachricht Schreiben")}</h3>
+            <p className="text-sm text-neutral-600 mt-1">{t("Chat-Verlauf bleibt beim Inserat „{title}“ gespeichert.", { title: listingTitle })}</p>
             {counterpartyName ? (
               <p className="text-sm text-neutral-600 mt-1">
                 <span className="font-semibold text-neutral-900">{counterpartyLabel}:</span> {counterpartyName}
@@ -346,7 +348,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
               onClick={() => router.push("/auth?redirect=" + encodeURIComponent(router.asPath))}
             >
               <LogIn className="h-4 w-4 mr-2" />
-              Einloggen
+              {t("Einloggen")}
             </Button>
           ) : null}
         </div>
@@ -373,7 +375,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
                 <div className="h-10 bg-white rounded-xl border border-neutral-200 animate-pulse" />
               </div>
             ) : messages.length === 0 ? (
-              <div className="text-sm text-neutral-600">Noch keine Nachrichten. Starte die Unterhaltung.</div>
+              <div className="text-sm text-neutral-600">{t("Noch keine Nachrichten. Starte die Unterhaltung.")}</div>
             ) : (
               messages.map((m) => {
                 const isSystem = m.sender_user_id === null;
@@ -420,11 +422,11 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
                                     {a.file_name}
                                   </div>
                                   <div className={cn("text-[11px] mt-0.5", isMe ? "text-white/70" : "text-neutral-500")}>
-                                    {a.mime_type || "Datei"}{a.size_bytes ? ` · ${formatBytes(a.size_bytes)}` : ""}
+                                    {a.mime_type || t("Datei")}{a.size_bytes ? ` · ${formatBytes(a.size_bytes)}` : ""}
                                   </div>
                                 </div>
                                 <div className={cn("text-[11px] font-semibold", isMe ? "text-white/80" : "text-neutral-600")}>
-                                  Öffnen
+                                  {t("Öffnen")}
                                 </div>
                               </div>
                             </button>
@@ -460,12 +462,14 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
                 onClick={() => document.getElementById(fileInputId)?.click()}
               >
                 <Paperclip className="h-4 w-4 mr-2" />
-                Datei anhängen
+                {t("Datei anhängen")}
               </Button>
 
               {selectedFiles.length > 0 ? (
                 <div className="text-xs text-neutral-600">
-                  {selectedFiles.length} Datei{selectedFiles.length === 1 ? "" : "en"}
+                  {selectedFiles.length === 1
+                    ? t("{n} Datei", { n: selectedFiles.length })
+                    : t("{n} Dateien", { n: selectedFiles.length })}
                 </div>
               ) : null}
             </div>
@@ -495,7 +499,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
             <Textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Nachricht schreiben…"
+              placeholder={t("Nachricht schreiben…")}
               className="min-h-[92px] rounded-2xl border-neutral-200 focus:border-neutral-400"
               disabled={!isAuthed || isSeller || readOnly || soldBlocked || messagingUnavailable}
             />
@@ -506,7 +510,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
                 className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl"
               >
                 <SendHorizontal className="h-4 w-4 mr-2" />
-                Senden
+                {t("Senden")}
               </Button>
             </div>
           </div>

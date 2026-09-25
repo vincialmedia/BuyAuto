@@ -4,6 +4,8 @@ import { useRouter } from "next/router";
 import ListingWizard from "@/components/buyauto/create-listing/ListingWizard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useT } from "@/i18n/runtime";
+import { staticI18nProps } from "@/i18n/server";
 
 type GateState =
   | { kind: "checking" }
@@ -20,6 +22,7 @@ function sleep(ms: number): Promise<void> {
 
 export default function CreateListingPage() {
   const router = useRouter();
+  const t = useT();
   const { user, loading, profile, profileLoading } = useAuth();
   const [gate, setGate] = useState<GateState>({ kind: "checking" });
 
@@ -123,13 +126,13 @@ export default function CreateListingPage() {
     return (
       <>
         <Head>
-          <title>Inserat erstellen | BuyAuto Schweiz</title>
+          <title>{t("Inserat erstellen | BuyAuto Schweiz")}</title>
           <meta name="robots" content="noindex, nofollow" />
         </Head>
         <div className="min-h-[60vh] flex items-center justify-center px-6">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <p className="mt-3 text-neutral-600">{gate.kind === "checking" ? "Prüfe Garage-Paket…" : "Weiterleitung…"}</p>
+            <p className="mt-3 text-neutral-600">{gate.kind === "checking" ? t("Prüfe Garage-Paket…") : t("Weiterleitung…")}</p>
           </div>
         </div>
       </>
@@ -139,10 +142,10 @@ export default function CreateListingPage() {
   return (
     <>
       <Head>
-        <title>Inserat erstellen | BuyAuto Schweiz</title>
+        <title>{t("Inserat erstellen | BuyAuto Schweiz")}</title>
         <meta
           name="description"
-          content="Erstelle dein Auto-Leasing-Inserat auf BuyAuto. Gratis oder Premium, 60 Tage, 90 Tage oder Unlimitiert."
+          content={t("Erstelle dein Auto-Leasing-Inserat auf BuyAuto. Gratis oder Premium, 60 Tage, 90 Tage oder Unlimitiert.")}
         />
         <meta name="robots" content="index, follow" />
       </Head>
@@ -151,3 +154,7 @@ export default function CreateListingPage() {
     </>
   );
 }
+
+// Steps 3–5 render pricing components (plan features/exclusions), so the page
+// also loads "pricing"; the wizard's own namespaces come last so they win.
+export const getStaticProps = staticI18nProps(["pricing", "auth", "wizard", "wizard-publish"]);

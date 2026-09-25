@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { getMyMessageThreads, type MessageThreadItem } from "@/services/messagingService";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/i18n/runtime";
 
 function formatTimeCH(value: string): string {
   const date = new Date(value);
@@ -27,6 +28,7 @@ function formatUnread(count: number): string {
 
 export function MessageCenterRail() {
   const router = useRouter();
+  const t = useT();
   const { user, loading: authLoading, profileLoading, messageCount } = useAuth();
   const [threads, setThreads] = useState<MessageThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,8 +79,8 @@ export function MessageCenterRail() {
           <MessageSquare className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <div className="text-sm font-bold tracking-tight text-neutral-900">Message Center</div>
-          <div className="text-xs text-neutral-600">Kommunikation pro Inserat</div>
+          <div className="text-sm font-bold tracking-tight text-neutral-900">{t("Message Center")}</div>
+          <div className="text-xs text-neutral-600">{t("Kommunikation pro Inserat")}</div>
         </div>
       </div>
 
@@ -90,17 +92,17 @@ export function MessageCenterRail() {
           </div>
         ) : threads.length === 0 ? (
           <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50/50 p-4">
-            <div className="text-sm text-neutral-700">Keine Nachrichten im Message Center</div>
+            <div className="text-sm text-neutral-700">{t("Keine Nachrichten im Message Center")}</div>
           </div>
         ) : (
-          threads.map((t) => {
-            const isActive = activeConversationId === t.conversationId;
-            const unreadLabel = formatUnread(t.unreadCount);
-            const isUnread = t.unreadCount > 0;
+          threads.map((thread) => {
+            const isActive = activeConversationId === thread.conversationId;
+            const unreadLabel = formatUnread(thread.unreadCount);
+            const isUnread = thread.unreadCount > 0;
 
             return (
               <button
-                key={t.conversationId}
+                key={thread.conversationId}
                 className={cn(
                   "w-full text-left rounded-3xl border p-4 shadow-sm transition-all",
                   isActive
@@ -110,15 +112,15 @@ export function MessageCenterRail() {
                       : "border-neutral-200/60 bg-white hover:shadow-md"
                 )}
                 type="button"
-                onClick={() => router.push(`/dashboard/messages/${t.conversationId}`)}
+                onClick={() => router.push(`/dashboard/messages/${thread.conversationId}`)}
               >
                 <div className="flex gap-3">
                   <div className="relative h-14 w-20 overflow-hidden rounded-2xl bg-neutral-100">
-                    {t.coverImageUrl ? (
-                      <Image src={t.coverImageUrl} alt={t.listingMakeModel} fill className="object-cover" sizes="80px" />
+                    {thread.coverImageUrl ? (
+                      <Image src={thread.coverImageUrl} alt={thread.listingMakeModel} fill className="object-cover" sizes="80px" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-neutral-400">
-                        Foto
+                        {t("Foto")}
                       </div>
                     )}
                   </div>
@@ -127,10 +129,10 @@ export function MessageCenterRail() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className={cn("truncate text-sm font-bold tracking-tight", isActive ? "text-white" : "text-neutral-900")}>
-                          {t.title}
+                          {thread.title}
                         </div>
                         <div className={cn("mt-1 line-clamp-1 text-xs", isActive ? "text-white/80" : "text-neutral-600")}>
-                          {t.lastMessagePreview || " "}
+                          {thread.lastMessagePreview || " "}
                         </div>
                       </div>
 
@@ -140,27 +142,27 @@ export function MessageCenterRail() {
                             "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold",
                             isActive ? "bg-white/15 text-white" : "bg-red-50 text-red-700"
                           )}
-                          aria-label="Ungelesene Nachrichten"
+                          aria-label={t("Ungelesene Nachrichten")}
                         >
                           {unreadLabel}
                         </div>
                       ) : null}
                     </div>
 
-                    {t.lastMessageAt ? (
+                    {thread.lastMessageAt ? (
                       <div className={cn("mt-2 text-[11px]", isActive ? "text-white/70" : "text-neutral-500")}>
-                        {formatTimeCH(t.lastMessageAt)}
+                        {formatTimeCH(thread.lastMessageAt)}
                       </div>
                     ) : null}
 
                     <div className="mt-2">
-                      {t.conversationStatus === "archived" ? (
+                      {thread.conversationStatus === "archived" ? (
                         <span className={cn("text-[11px] font-semibold", isActive ? "text-white/70" : "text-neutral-500")}>
-                          Archiviert
+                          {t("Archiviert")}
                         </span>
-                      ) : t.conversationStatus === "buyer_selected" ? (
+                      ) : thread.conversationStatus === "buyer_selected" ? (
                         <span className={cn("text-[11px] font-semibold", isActive ? "text-white/70" : "text-neutral-500")}>
-                          Käufer ausgewählt
+                          {t("Käufer ausgewählt")}
                         </span>
                       ) : null}
                     </div>

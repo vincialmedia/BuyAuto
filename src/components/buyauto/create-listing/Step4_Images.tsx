@@ -14,6 +14,7 @@ import { createOrUpdateListing } from '@/services/createListingService';
 import { uploadOptimizedImage } from "@/services/storageService";
 import { createListingDraft, updateListingDraft } from "@/services/listingDraftService";
 import { removeGuestImage, saveGuestImages } from "@/lib/buyauto/guestImageStore";
+import { useT } from "@/i18n/runtime";
 
 interface ImageItem {
   id: string;
@@ -28,6 +29,7 @@ export function Step4_Images() {
   const { user, profile } = useAuth();
   const isGarage = profile?.role === "garage";
   const router = useRouter();
+  const t = useT();
   const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
   const maxPhotos = getMaxPhotos();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -41,8 +43,8 @@ export function Step4_Images() {
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if ((imageItems.length + acceptedFiles.length) > maxPhotos) {
       toast({
-        title: "Limit erreicht",
-        description: `Du kannst maximal ${maxPhotos} Bilder hochladen.`,
+        title: t("Limit erreicht"),
+        description: t("Du kannst maximal {n} Bilder hochladen.", { n: maxPhotos }),
         variant: "destructive",
       });
       return;
@@ -68,8 +70,8 @@ export function Step4_Images() {
       });
 
       toast({
-        title: "Bilder hinzugefügt",
-        description: `${acceptedFiles.length} Bild(er) werden beim Veröffentlichen hochgeladen.`,
+        title: t("Bilder hinzugefügt"),
+        description: t("{n} Bild(er) werden beim Veröffentlichen hochgeladen.", { n: acceptedFiles.length }),
       });
       return;
     }
@@ -89,20 +91,20 @@ export function Step4_Images() {
       });
 
       toast({
-        title: "Upload erfolgreich",
-        description: `${acceptedFiles.length} Bild(er) erfolgreich hochgeladen.`,
+        title: t("Upload erfolgreich"),
+        description: t("{n} Bild(er) erfolgreich hochgeladen.", { n: acceptedFiles.length }),
       });
     } catch (error) {
       console.error("Upload failed:", error);
       toast({
-        title: "Upload Fehler",
-        description: "Fehler beim Hochladen der Bilder. Bitte versuche es erneut.",
+        title: t("Upload Fehler"),
+        description: t("Fehler beim Hochladen der Bilder. Bitte versuche es erneut."),
         variant: "destructive",
       });
     } finally {
       setIsUploading(false);
     }
-  }, [user, imageItems, maxPhotos, updateData, coverImageIndex, toast, guestImageFiles, setGuestImageFiles]);
+  }, [user, imageItems, maxPhotos, updateData, coverImageIndex, toast, guestImageFiles, setGuestImageFiles, t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -156,8 +158,8 @@ export function Step4_Images() {
   const handleNext = async () => {
     if (!data.images || data.images.length === 0) {
       toast({ 
-        title: "Keine Bilder", 
-        description: "Bitte lade mindestens ein Bild hoch.",
+        title: t("Keine Bilder"), 
+        description: t("Bitte lade mindestens ein Bild hoch."),
         variant: "destructive" 
       });
       return;
@@ -206,15 +208,15 @@ export function Step4_Images() {
       }
 
       toast({
-        title: "Bilder gespeichert",
-        description: "Deine Bilder wurden dem Inserat hinzugefügt.",
+        title: t("Bilder gespeichert"),
+        description: t("Deine Bilder wurden dem Inserat hinzugefügt."),
       });
       nextStep();
     } catch (error) {
       console.error("Fehler beim Speichern der Bilder:", error);
       toast({ 
-        title: "Fehler", 
-        description: "Bilder konnten nicht gespeichert werden.", 
+        title: t("Fehler"), 
+        description: t("Bilder konnten nicht gespeichert werden."), 
         variant: "destructive" 
       });
     } finally {
@@ -249,14 +251,14 @@ export function Step4_Images() {
       });
 
       toast({
-        title: "Bild hochgeladen",
-        description: "Das Bild wurde erfolgreich optimiert und hochgeladen.",
+        title: t("Bild hochgeladen"),
+        description: t("Das Bild wurde erfolgreich optimiert und hochgeladen."),
       });
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
-        title: "Fehler",
-        description: "Beim Hochladen des Bildes ist ein Fehler aufgetreten.",
+        title: t("Fehler"),
+        description: t("Beim Hochladen des Bildes ist ein Fehler aufgetreten."),
         variant: "destructive",
       });
     } finally {
@@ -268,10 +270,10 @@ export function Step4_Images() {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">
-          Bilder hochladen
+          {t("Bilder hochladen")}
         </h2>
         <p className="text-neutral-600 font-light leading-relaxed">
-          Lade bis zu {maxPhotos} Bilder deines Fahrzeugs hoch
+          {t("Lade bis zu {n} Bilder deines Fahrzeugs hoch", { n: maxPhotos })}
         </p>
       </div>
 
@@ -290,16 +292,16 @@ export function Step4_Images() {
               {isUploading ? (
                 <>
                   <Loader2 className="h-12 w-12 animate-spin text-red-500" />
-                  <p className="font-medium">Bilder werden hochgeladen...</p>
+                  <p className="font-medium">{t("Bilder werden hochgeladen...")}</p>
                 </>
               ) : (
                 <>
                   <UploadCloud className="h-12 w-12 text-neutral-400" />
                   <div className="space-y-1">
-                    <p className="font-medium text-neutral-900">Klicke oder ziehe Bilder hierher</p>
-                    <p className="text-sm font-light">PNG, JPG, WEBP bis zu 10MB pro Bild</p>
+                    <p className="font-medium text-neutral-900">{t("Klicke oder ziehe Bilder hierher")}</p>
+                    <p className="text-sm font-light">{t("PNG, JPG, WEBP bis zu 10MB pro Bild")}</p>
                     <p className="text-xs text-neutral-500">
-                      Maximal {maxPhotos} Bilder · {imageItems.length} von {maxPhotos} hochgeladen
+                      {t("Maximal {max} Bilder · {count} von {max} hochgeladen", { max: maxPhotos, count: imageItems.length })}
                     </p>
                   </div>
                 </>
@@ -310,9 +312,9 @@ export function Step4_Images() {
           {imageItems.length > 0 && (
             <div className="mt-8">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-neutral-900">Deine Bilder ({imageItems.length})</h3>
+                <h3 className="font-medium text-neutral-900">{t("Deine Bilder ({n})", { n: imageItems.length })}</h3>
                 <p className="text-xs text-neutral-500 font-light">
-                  Ziehe die Bilder, um die Reihenfolge zu ändern
+                  {t("Ziehe die Bilder, um die Reihenfolge zu ändern")}
                 </p>
               </div>
               
@@ -328,20 +330,20 @@ export function Step4_Images() {
                     <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-neutral-200">
                       <Image 
                         src={item.url} 
-                        alt={`Fahrzeugbild ${index + 1}`} 
+                        alt={t("Fahrzeugbild {n}", { n: index + 1 })} 
                         fill
                         className="object-cover" 
                         sizes="80px"
                       />
                       {coverImageIndex === index && (
                         <div className="absolute top-1 left-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                          Titel
+                          {t("Titel@@cover")}
                         </div>
                       )}
                     </div>
                     
                     <div className="flex-grow">
-                      <p className="text-sm font-medium text-neutral-900">Bild {index + 1}</p>
+                      <p className="text-sm font-medium text-neutral-900">{t("Bild {n}", { n: index + 1 })}</p>
                       <p className="text-xs text-neutral-500 font-light truncate">
                         {item.url.split("/").pop()}
                       </p>
@@ -358,7 +360,7 @@ export function Step4_Images() {
                             : "border-neutral-200/40 text-neutral-600 hover:bg-neutral-50"
                         }
                       >
-                        {coverImageIndex === index ? "Titelbild" : "Als Titel"}
+                        {coverImageIndex === index ? t("Titelbild") : t("Als Titel")}
                       </Button>
                       
                       <Button 
@@ -380,19 +382,19 @@ export function Step4_Images() {
 
       {/* Plan info */}
       <div className="bg-gradient-to-br from-neutral-50 to-red-50/30 rounded-lg p-6 border border-neutral-200/40">
-        <h3 className="text-lg font-medium text-neutral-900 mb-3 tracking-tight">Bilderlimit</h3>
+        <h3 className="text-lg font-medium text-neutral-900 mb-3 tracking-tight">{t("Bilderlimit")}</h3>
         <div className="flex justify-between items-center">
           <div>
             <p className="text-sm font-medium text-neutral-900">
-              {data.price_plan === 'standard' ? 'Standard Plan' : 'Premium Plan'}
+              {data.price_plan === 'standard' ? t('Standard Plan') : t('Premium Plan')}
             </p>
             <p className="text-xs text-neutral-600 font-light">
-              {maxPhotos} Bilder möglich
+              {t("{n} Bilder möglich", { n: maxPhotos })}
             </p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-neutral-900">{imageItems.length}/{maxPhotos}</p>
-            <p className="text-xs text-neutral-500 font-light">hochgeladen</p>
+            <p className="text-xs text-neutral-500 font-light">{t("hochgeladen")}</p>
           </div>
         </div>
       </div>
@@ -406,7 +408,7 @@ export function Step4_Images() {
           className="px-6 py-3 bg-transparent hover:bg-neutral-50 border-neutral-200/40 text-neutral-600 rounded-lg transition-all duration-200"
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
-          Zurück
+          {t("Zurück")}
         </Button>
         
         <Button
@@ -415,7 +417,7 @@ export function Step4_Images() {
           className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white"
           disabled={isUpdating}
         >
-          {isUpdating ? "Speichern..." : "Weiter zur Vorschau"}
+          {isUpdating ? t("Speichern...") : t("Weiter zur Vorschau")}
         </Button>
       </div>
     </div>

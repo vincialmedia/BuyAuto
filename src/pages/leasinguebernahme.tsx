@@ -45,6 +45,9 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
+import { useT, T, useLocale } from "@/i18n/runtime";
+import { absoluteUrl } from "@/i18n/config";
+import { withI18n } from "@/i18n/server";
 
 // Dynamically import heavy interactive components that are below the fold
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -69,6 +72,8 @@ const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme"];
 export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal, availableBrands }: LeasingUebernahmePageProps) {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const hasTakeoverListings = Array.isArray(takeoverListings) && takeoverListings.length > 0;
+  const t = useT();
+  const locale = useLocale();
 
   // Handle sticky CTA visibility
   useEffect(() => {
@@ -91,19 +96,19 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
   return (
     <>
       <Head>
-        <title>Leasingübernahme: Ablauf, Voraussetzungen & Kosten – Ratgeber | BuyAuto</title>
+        <title>{t("Leasingübernahme: Ablauf, Voraussetzungen & Kosten – Ratgeber | BuyAuto")}</title>
         <meta
           name="description"
-          content="Leasingübernahme in der Schweiz Schritt für Schritt: Ablauf, Voraussetzungen, Kosten und Tipps, um einen laufenden Leasingvertrag ohne hohe Anzahlung zu übernehmen – der Ratgeber von BuyAuto."
+          content={t("Leasingübernahme in der Schweiz Schritt für Schritt: Ablauf, Voraussetzungen, Kosten und Tipps, um einen laufenden Leasingvertrag ohne hohe Anzahlung zu übernehmen – der Ratgeber von BuyAuto.")}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme" />
+        <link rel="canonical" href={absoluteUrl("/leasinguebernahme", locale)} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "Leasingübernahme & Leasing Transfer in der Schweiz",
+              headline: t("Leasingübernahme & Leasing Transfer in der Schweiz"),
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -111,7 +116,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
               dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/leasinguebernahme",
+              mainEntityOfPage: absoluteUrl("/leasinguebernahme", locale),
             }),
           }}
         />
@@ -124,50 +129,50 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               mainEntity: [
                 {
                   "@type": "Question",
-                  name: "Gibt es einen Unterschied zwischen Leasingübernahme und Leasing Transfer?",
+                  name: t("Gibt es einen Unterschied zwischen Leasingübernahme und Leasing Transfer?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung. „Leasingübernahme“ ist der gängige Verbraucherbegriff, während „Leasing Transfer“ der formale Begriff ist, der oft von Banken und Leasinggesellschaften verwendet wird.",
+                    text: t("Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung. „Leasingübernahme“ ist der gängige Verbraucherbegriff, während „Leasing Transfer“ der formale Begriff ist, der oft von Banken und Leasinggesellschaften verwendet wird."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Wie lange dauert der Prozess?",
+                  name: t("Wie lange dauert der Prozess?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Meist 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Leasingbank.",
+                    text: t("Meist 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Leasingbank."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Wer übernimmt die Gebühren?",
+                  name: t("Wer übernimmt die Gebühren?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Das wird frei vereinbart. Oft übernimmt der Abgeber die Transferkosten, um den Transfer attraktiver zu machen.",
+                    text: t("Das wird frei vereinbart. Oft übernimmt der Abgeber die Transferkosten, um den Transfer attraktiver zu machen."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Kann ich ein Leasingauto verkaufen?",
+                  name: t("Kann ich ein Leasingauto verkaufen?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Nein. Du bist nicht Eigentümer. Aber du kannst den Vertrag übertragen – genau darum geht es beim Leasing Transfer bzw. der Leasingübernahme.",
+                    text: t("Nein. Du bist nicht Eigentümer. Aber du kannst den Vertrag übertragen – genau darum geht es beim Leasing Transfer bzw. der Leasingübernahme."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Was passiert mit der Anzahlung?",
+                  name: t("Was passiert mit der Anzahlung?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Sie bleibt im Vertrag und kommt dem Übernehmer zugute. Die Anzahlung wird nicht ausbezahlt oder zurückerstattet.",
+                    text: t("Sie bleibt im Vertrag und kommt dem Übernehmer zugute. Die Anzahlung wird nicht ausbezahlt oder zurückerstattet."),
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Kann eine Leasingübernahme abgelehnt werden?",
+                  name: t("Kann eine Leasingübernahme abgelehnt werden?"),
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja – meistens wegen fehlender Bonität oder offener Zahlungen. Die Leasingbank hat immer das letzte Wort bei der Genehmigung.",
+                    text: t("Ja – meistens wegen fehlender Bonität oder offener Zahlungen. Die Leasingbank hat immer das letzte Wort bei der Genehmigung."),
                   },
                 },
               ],
@@ -181,7 +186,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "ItemList",
-                name: "Aktuelle Leasingübernahme-Angebote in der Schweiz",
+                name: t("Aktuelle Leasingübernahme-Angebote in der Schweiz"),
                 numberOfItems: takeoverListings.length,
                 itemListElement: takeoverListings.map((l, index) => {
                   const price = typeof l.pricePerMonthCHF === "number" && l.pricePerMonthCHF > 0 ? l.pricePerMonthCHF : null;
@@ -197,8 +202,8 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       ...(l.mileageKm
                         ? { mileageFromOdometer: { "@type": "QuantitativeValue", value: l.mileageKm, unitCode: "KMT" } }
                         : {}),
-                      ...(l.fuel ? { fuelType: l.fuel } : {}),
-                      ...(l.gearbox ? { vehicleTransmission: l.gearbox } : {}),
+                      ...(l.fuel ? { fuelType: t(l.fuel) } : {}),
+                      ...(l.gearbox ? { vehicleTransmission: t(l.gearbox) } : {}),
                       ...(price
                         ? {
                             offers: {
@@ -225,17 +230,17 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
         )}
 
         {/* Open Graph */}
-        <meta property="og:title" content="Leasingübernahme: Ablauf, Voraussetzungen & Kosten – Ratgeber" />
-        <meta property="og:description" content="Leasingübernahme in der Schweiz Schritt für Schritt: Ablauf, Voraussetzungen, Kosten und Tipps, um einen laufenden Leasingvertrag ohne hohe Anzahlung zu übernehmen." />
+        <meta property="og:title" content={t("Leasingübernahme: Ablauf, Voraussetzungen & Kosten – Ratgeber")} />
+        <meta property="og:description" content={t("Leasingübernahme in der Schweiz Schritt für Schritt: Ablauf, Voraussetzungen, Kosten und Tipps, um einen laufenden Leasingvertrag ohne hohe Anzahlung zu übernehmen.")} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme" />
+        <meta property="og:url" content={absoluteUrl("/leasinguebernahme", locale)} />
       </Head>
 
       {/* Schema-only: hero layout has no room for a visible crumb bar. */}
       <BreadcrumbJsonLd
         items={[
-          { name: "Home", href: "/" },
-          { name: "Leasingübernahme", href: "/leasinguebernahme" },
+          { name: t("Home"), href: "/" },
+          { name: t("Leasingübernahme"), href: "/leasinguebernahme" },
         ]}
       />
 
@@ -251,8 +256,8 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="max-w-7xl mx-auto px-4 py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="hidden md:block">
-                  <p className="text-white font-bold text-lg">Bereit für deine Leasingübernahme?</p>
-                  <p className="text-white/80 text-sm">Schnell, legal & kostengünstig</p>
+                  <p className="text-white font-bold text-lg">{t("Bereit für deine Leasingübernahme?")}</p>
+                  <p className="text-white/80 text-sm">{t("Schnell, legal & kostengünstig")}</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                   <Button
@@ -261,14 +266,14 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                     className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl whitespace-normal h-auto px-4 sm:px-8 py-6 rounded-xl"
                   >
                     <Link href="/suche?dealType=lease_takeover">
-                      Jetzt Angebote durchsuchen
+                      {t("Jetzt Angebote durchsuchen")}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
                   <button
                     onClick={() => setShowStickyCTA(false)}
                     className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                    aria-label="Schliessen"
+                    aria-label={t("Schliessen")}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -284,7 +289,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
           <div className="absolute inset-0">
             <Image
               src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=2400&q=80"
-              alt="Leasingübernahme & Leasing Transfer Schweiz"
+              alt={t("Leasingübernahme & Leasing Transfer Schweiz")}
               fill
               className="object-cover"
               priority
@@ -309,20 +314,16 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               <div className="max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-white px-5 py-2 rounded-full text-sm font-semibold mb-6 backdrop-blur-sm border border-primary/20">
                   <Sparkles className="w-4 h-4" />
-                  Kompletter Leitfaden · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
+                  {t("Kompletter Leitfaden · Aktualisiert am {date}", { date: formatSwissDate(LAST_UPDATED_ISO) })}
                 </div>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-6">
-                  Leasingübernahme & Leasing Transfer in der Schweiz
+                  {t("Leasingübernahme & Leasing Transfer in der Schweiz")}
                 </h1>
                 <p className="text-xl md:text-2xl text-white font-semibold mb-4">
-                  Der komplette Leitfaden zur Vertragsübertragung
+                  {t("Der komplette Leitfaden zur Vertragsübertragung")}
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8">
-                  Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag samt Monatsrate und
-                  Restlaufzeit von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer. Die
-                  Leasinggesellschaft prüft deine Bonität und stimmt der Übernahme zu – eine hohe Anzahlung wie
-                  beim Neuleasing entfällt. Einmalig fallen je nach Leasinggeber rund 200–650 CHF für Transfer
-                  und Umschreibung an.
+                  {t("Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag samt Monatsrate und Restlaufzeit von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer. Die Leasinggesellschaft prüft deine Bonität und stimmt der Übernahme zu – eine hohe Anzahlung wie beim Neuleasing entfällt. Einmalig fallen je nach Leasinggeber rund 200–650 CHF für Transfer und Umschreibung an.")}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -332,7 +333,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 whitespace-normal h-auto px-6 sm:px-8 py-7 text-base sm:text-lg font-bold rounded-2xl"
                   >
                     <Link href="/suche?dealType=lease_takeover">
-                      Jetzt Leasingübernahme starten
+                      {t("Jetzt Leasingübernahme starten")}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
@@ -343,7 +344,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                     className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl bg-transparent backdrop-blur-sm"
                   >
                     <Link href="/inserat-erstellen">
-                      Leasingvertrag übertragen
+                      {t("Leasingvertrag übertragen")}
                     </Link>
                   </Button>
                 </div>
@@ -358,26 +359,32 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 <Info className="w-4 h-4" />
-                Kurz erklärt
+                {t("Kurz erklärt")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Was ist eine Leasingübernahme?
+                {t("Was ist eine Leasingübernahme?")}
               </h2>
             </div>
             
             <div className="bg-white border-2 border-primary/20 p-8 md:p-12 rounded-3xl shadow-lg">
               <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-                Eine <strong>Leasingübernahme</strong> bedeutet, dass eine Person oder Firma einen bestehenden Leasingvertrag vollständig übernimmt – inklusive monatlicher Raten, Kilometerlimit, Restlaufzeit und Pflichten.
+                <T
+                  k="Eine <0>Leasingübernahme</0> bedeutet, dass eine Person oder Firma einen bestehenden Leasingvertrag vollständig übernimmt – inklusive monatlicher Raten, Kilometerlimit, Restlaufzeit und Pflichten."
+                  c={[<strong key={0} />]}
+                />
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed mb-8">
-                Der ursprüngliche Leasingnehmer wird aus dem Vertrag entlassen und der neue Vertragspartner tritt ein.
+                {t("Der ursprüngliche Leasingnehmer wird aus dem Vertrag entlassen und der neue Vertragspartner tritt ein.")}
               </p>
               
               <div className="bg-primary/5 border-l-4 border-primary p-6 rounded-r-2xl">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                   <p className="text-primary font-semibold text-lg">
-                    <strong>Leasing Transfer</strong> und <strong>Leasingübernahme</strong> bedeuten das Gleiche – beide Begriffe beschreiben die Übertragung eines bestehenden Vertrags.
+                    <T
+                      k="<0>Leasing Transfer</0> und <1>Leasingübernahme</1> bedeuten das Gleiche – beide Begriffe beschreiben die Übertragung eines bestehenden Vertrags."
+                      c={[<strong key={0} />, <strong key={1} />]}
+                    />
                   </p>
                 </div>
               </div>
@@ -392,15 +399,15 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               <div className="text-center mb-12">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                   <Zap className="w-4 h-4" />
-                  Live auf BuyAuto
+                  {t("Live auf BuyAuto")}
                 </div>
                 <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                  Aktuelle Leasingübernahme-Angebote
+                  {t("Aktuelle Leasingübernahme-Angebote")}
                 </h2>
                 <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                  {takeoverTotal}{" "}
-                  {takeoverTotal === 1 ? "laufender Leasingvertrag wartet" : "laufende Leasingverträge warten"} auf eine
-                  Übernahme – ohne hohe Anzahlung, mit kurzer Restlaufzeit.
+                  {takeoverTotal === 1
+                    ? t("{n} laufender Leasingvertrag wartet auf eine Übernahme – ohne hohe Anzahlung, mit kurzer Restlaufzeit.", { n: takeoverTotal })
+                    : t("{n} laufende Leasingverträge warten auf eine Übernahme – ohne hohe Anzahlung, mit kurzer Restlaufzeit.", { n: takeoverTotal })}
                 </p>
               </div>
 
@@ -417,7 +424,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                   className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 whitespace-normal h-auto px-6 sm:px-8 py-7 text-base sm:text-lg font-bold rounded-2xl"
                 >
                   <Link href="/suche?dealType=lease_takeover">
-                    Alle Leasingübernahmen ansehen
+                    {t("Alle Leasingübernahmen ansehen")}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
                 </Button>
@@ -428,7 +435,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               {availableBrands.length > 0 && (
                 <div className="mt-12 border-t border-neutral-200 pt-8">
                   <h3 className="text-xl font-bold text-neutral-900 mb-4 text-center">
-                    Leasingübernahme nach Marke
+                    {t("Leasingübernahme nach Marke")}
                   </h3>
                   <div className="flex flex-wrap justify-center gap-3">
                     {availableBrands.map((b) => (
@@ -437,7 +444,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                         href={`/leasinguebernahme/${b.slug}`}
                         className="inline-flex items-center gap-1.5 bg-neutral-50 border-2 border-neutral-200 hover:border-primary hover:text-primary transition-colors rounded-full px-5 py-2.5 text-sm font-semibold text-neutral-700"
                       >
-                        Leasingübernahme {b.name}
+                        {t("Leasingübernahme {brand}", { brand: b.name })}
                         <ChevronRight className="w-4 h-4" />
                       </Link>
                     ))}
@@ -451,7 +458,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
         {/* TOC SECTION */}
         <section className="py-16 px-4 bg-white">
           <div className="max-w-4xl mx-auto">
-            <h3 className="font-bold text-neutral-900 mb-8 text-2xl text-center">Inhaltsverzeichnis</h3>
+            <h3 className="font-bold text-neutral-900 mb-8 text-2xl text-center">{t("Inhaltsverzeichnis")}</h3>
             <div className="bg-neutral-50 p-8 rounded-3xl border-2 border-neutral-200 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
@@ -472,7 +479,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                     className="flex items-center gap-3 text-neutral-600 hover:text-primary transition-colors text-left group p-4 rounded-2xl hover:bg-white"
                   >
                     <ChevronRight className="w-5 h-5 text-primary/60 group-hover:text-primary transition-colors" />
-                    <span className="font-semibold">{item.label}</span>
+                    <span className="font-semibold">{t(item.label)}</span>
                   </button>
                 ))}
               </div>
@@ -486,17 +493,20 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 <FileCheck className="w-4 h-4" />
-                Definition
+                {t("Definition")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Was bedeutet eine Leasingübernahme?
+                {t("Was bedeutet eine Leasingübernahme?")}
               </h2>
             </div>
 
             <Card className="border-2 border-primary/20 mb-12 rounded-3xl shadow-lg">
               <CardContent className="p-8 md:p-12">
                 <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-                  Bei einer <strong>Leasingübernahme</strong> (auch <strong>Leasing Transfer</strong> genannt) wird ein laufender Leasingvertrag vollständig auf eine neue Person übertragen. Diese übernimmt:
+                  <T
+                    k="Bei einer <0>Leasingübernahme</0> (auch <1>Leasing Transfer</1> genannt) wird ein laufender Leasingvertrag vollständig auf eine neue Person übertragen. Diese übernimmt:"
+                    c={[<strong key={0} />, <strong key={1} />]}
+                  />
                 </p>
                 <ul className="space-y-4">
                   {[
@@ -509,7 +519,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <div className="bg-primary/10 p-1 rounded-full mt-0.5">
                         <Check className="w-5 h-5 text-primary shrink-0" />
                       </div>
-                      <span className="font-medium text-lg">{item}</span>
+                      <span className="font-medium text-lg">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -517,7 +527,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             </Card>
 
             <h3 className="text-3xl font-black text-neutral-900 mb-8 text-center">
-              Typische Gründe für eine Leasingübernahme:
+              {t("Typische Gründe für eine Leasingübernahme:")}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
@@ -534,7 +544,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                     <div className="bg-primary/10 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                       <IconComponent className="w-7 h-7 text-primary" />
                     </div>
-                    <span className="text-neutral-700 font-semibold">{item.text}</span>
+                    <span className="text-neutral-700 font-semibold">{t(item.text)}</span>
                   </div>
                 );
               })}
@@ -548,39 +558,42 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 <RefreshCw className="w-4 h-4" />
-                Synonym erklärt
+                {t("Synonym erklärt")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Leasing Transfer (Synonym von Leasingübernahme)
+                {t("Leasing Transfer (Synonym von Leasingübernahme)")}
               </h2>
             </div>
             
             <div className="bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary rounded-3xl p-8 md:p-12 shadow-lg">
               <div className="text-center mb-8">
-                <p className="text-3xl font-black text-primary mb-2">Leasing Transfer und Leasingübernahme bedeuten das Gleiche.</p>
+                <p className="text-3xl font-black text-primary mb-2">{t("Leasing Transfer und Leasingübernahme bedeuten das Gleiche.")}</p>
               </div>
               
               <div className="space-y-6 max-w-2xl mx-auto mb-8">
                 <div className="flex items-start gap-4 p-6 bg-white rounded-2xl border-2 border-primary/20">
                   <CheckCircle className="w-7 h-7 text-green-600 shrink-0 mt-1" />
                   <div>
-                    <p className="font-black text-neutral-900 mb-2 text-lg">„Leasingübernahme"</p>
-                    <p className="text-neutral-600">ist der übliche Verbrauchsbegriff in der Schweiz.</p>
+                    <p className="font-black text-neutral-900 mb-2 text-lg">{t("„Leasingübernahme\"")}</p>
+                    <p className="text-neutral-600">{t("ist der übliche Verbrauchsbegriff in der Schweiz.")}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4 p-6 bg-white rounded-2xl border-2 border-primary/20">
                   <CheckCircle className="w-7 h-7 text-green-600 shrink-0 mt-1" />
                   <div>
-                    <p className="font-black text-neutral-900 mb-2 text-lg">„Leasing Transfer"</p>
-                    <p className="text-neutral-600">ist der formale/englische Begriff und wird oft von Banken, Garagen und Plattformen verwendet.</p>
+                    <p className="font-black text-neutral-900 mb-2 text-lg">{t("„Leasing Transfer\"")}</p>
+                    <p className="text-neutral-600">{t("ist der formale/englische Begriff und wird oft von Banken, Garagen und Plattformen verwendet.")}</p>
                   </div>
                 </div>
               </div>
 
               <div className="p-6 bg-white border-2 border-primary rounded-2xl mb-8">
                 <p className="text-xl text-neutral-900 font-bold text-center">
-                  Beide Begriffe beschreiben: <span className="text-primary">Die Übertragung eines bestehenden Leasingvertrags auf eine neue Person.</span>
+                  <T
+                    k="Beide Begriffe beschreiben: <0>Die Übertragung eines bestehenden Leasingvertrags auf eine neue Person.</0>"
+                    c={[<span key={0} className="text-primary" />]}
+                  />
                 </p>
               </div>
 
@@ -588,11 +601,9 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 <div className="flex items-start gap-4">
                   <Info className="w-7 h-7 text-blue-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-blue-900 font-black mb-2 text-lg">Warum zwei Begriffe?</p>
+                    <p className="text-blue-900 font-black mb-2 text-lg">{t("Warum zwei Begriffe?")}</p>
                     <p className="text-blue-800 leading-relaxed">
-                      Der Begriff „Transfer" stammt aus dem Finanzwesen und wird besonders im professionellen Kontext (Banken, Leasinggesellschaften) verwendet. 
-                      „Übernahme" ist hingegen das deutsche Wort, das Verbraucher intuitiv verstehen. 
-                      In der Praxis werden beide Begriffe synonym verwendet – der Prozess, die Voraussetzungen und die Kosten sind identisch.
+                      {t('Der Begriff „Transfer" stammt aus dem Finanzwesen und wird besonders im professionellen Kontext (Banken, Leasinggesellschaften) verwendet. „Übernahme" ist hingegen das deutsche Wort, das Verbraucher intuitiv verstehen. In der Praxis werden beide Begriffe synonym verwendet – der Prozess, die Voraussetzungen und die Kosten sind identisch.')}
                     </p>
                   </div>
                 </div>
@@ -608,13 +619,13 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                   <Search className="w-4 h-4" />
-                  Jetzt starten
+                  {t("Jetzt starten")}
                 </div>
                 <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-4 tracking-tight">
-                  Angebote Entdecken
+                  {t("Angebote Entdecken")}
                 </h2>
                 <p className="text-neutral-600 text-lg">
-                  Finde jetzt verfügbare Leasingübernahmen oder erstelle dein eigenes Inserat.
+                  {t("Finde jetzt verfügbare Leasingübernahmen oder erstelle dein eigenes Inserat.")}
                 </p>
               </div>
               <SearchForm />
@@ -628,13 +639,13 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 <ChevronRight className="w-4 h-4" />
-                Schritt für Schritt
+                {t("Schritt für Schritt")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Ablauf: So funktioniert die Leasingübernahme
+                {t("Ablauf: So funktioniert die Leasingübernahme")}
               </h2>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                Schritt für Schritt zur erfolgreichen Vertragsübertragung
+                {t("Schritt für Schritt zur erfolgreichen Vertragsübertragung")}
               </p>
             </div>
 
@@ -706,16 +717,16 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                           <div className="bg-primary/10 p-2 rounded-xl group-hover:bg-primary/20 transition-colors">
                             <IconComponent className="w-6 h-6 text-primary" />
                           </div>
-                          <h3 className="text-2xl font-black text-neutral-900">{item.title}</h3>
+                          <h3 className="text-2xl font-black text-neutral-900">{t(item.title)}</h3>
                         </div>
-                        <p className="text-neutral-700 mb-4 text-lg">{item.desc}</p>
+                        <p className="text-neutral-700 mb-4 text-lg">{t(item.desc)}</p>
                         
                         {item.items.length > 0 && (
                           <ul className="space-y-2">
                             {item.items.map((listItem, i) => (
                               <li key={i} className="flex items-start gap-2 text-neutral-600">
                                 <span className="text-primary mt-1 font-bold">•</span>
-                                <span>{listItem}</span>
+                                <span>{t(listItem)}</span>
                               </li>
                             ))}
                           </ul>
@@ -739,10 +750,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 <BadgeCheck className="w-4 h-4" />
-                Checkliste
+                {t("Checkliste")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Voraussetzungen für eine Leasingübernahme
+                {t("Voraussetzungen für eine Leasingübernahme")}
               </h2>
             </div>
             
@@ -766,7 +777,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       </div>
                       <div className="flex-1 flex items-center gap-3">
                         <IconComponent className="w-6 h-6 text-primary" />
-                        <p className="text-neutral-900 font-bold text-lg">{item.text}</p>
+                        <p className="text-neutral-900 font-bold text-lg">{t(item.text)}</p>
                       </div>
                     </div>
                   );
@@ -782,13 +793,13 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 <DollarSign className="w-4 h-4" />
-                Transparenz
+                {t("Transparenz")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Kosten der Leasingübernahme
+                {t("Kosten der Leasingübernahme")}
               </h2>
               <p className="text-lg text-neutral-600">
-                Dies ist ein zentraler Punkt für alle, die eine Vertragsübertragung planen:
+                {t("Dies ist ein zentraler Punkt für alle, die eine Vertragsübertragung planen:")}
               </p>
             </div>
             
@@ -796,36 +807,36 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               <table className="w-full bg-white text-left">
                 <thead className="bg-gradient-to-r from-primary to-primary/90 text-white">
                   <tr>
-                    <th className="p-6 font-black text-lg">Kostenart</th>
-                    <th className="p-6 font-black text-lg">Typische Kosten</th>
-                    <th className="p-6 font-black text-lg">Wird bezahlt von</th>
+                    <th className="p-6 font-black text-lg">{t("Kostenart")}</th>
+                    <th className="p-6 font-black text-lg">{t("Typische Kosten")}</th>
+                    <th className="p-6 font-black text-lg">{t("Wird bezahlt von")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Übernahme-/Transfergebühr</td>
-                    <td className="p-6 text-neutral-700 font-bold">100–400 CHF</td>
-                    <td className="p-6 text-neutral-700">Abgeber oder Übernehmer</td>
+                    <td className="p-6 font-semibold text-neutral-900">{t("Übernahme-/Transfergebühr")}</td>
+                    <td className="p-6 text-neutral-700 font-bold">{t("100–400 CHF")}</td>
+                    <td className="p-6 text-neutral-700">{t("Abgeber oder Übernehmer")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Händler-/Wechselgebühr</td>
-                    <td className="p-6 text-neutral-700 font-bold">100–250 CHF</td>
-                    <td className="p-6 text-neutral-700">Optional</td>
+                    <td className="p-6 font-semibold text-neutral-900">{t("Händler-/Wechselgebühr")}</td>
+                    <td className="p-6 text-neutral-700 font-bold">{t("100–250 CHF")}</td>
+                    <td className="p-6 text-neutral-700">{t("Optional")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Ummeldung / Fahrzeugausweis</td>
-                    <td className="p-6 text-neutral-700 font-bold">50–150 CHF</td>
-                    <td className="p-6 text-neutral-700">Übernehmer</td>
+                    <td className="p-6 font-semibold text-neutral-900">{t("Ummeldung / Fahrzeugausweis")}</td>
+                    <td className="p-6 text-neutral-700 font-bold">{t("50–150 CHF")}</td>
+                    <td className="p-6 text-neutral-700">{t("Übernehmer")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Versicherungskosten</td>
-                    <td className="p-6 text-neutral-700 font-bold">variabel</td>
-                    <td className="p-6 text-neutral-700">Übernehmer</td>
+                    <td className="p-6 font-semibold text-neutral-900">{t("Versicherungskosten")}</td>
+                    <td className="p-6 text-neutral-700 font-bold">{t("variabel")}</td>
+                    <td className="p-6 text-neutral-700">{t("Übernehmer")}</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Administrationskosten</td>
-                    <td className="p-6 text-neutral-700 font-bold">je nach Bank</td>
-                    <td className="p-6 text-neutral-700">Abgeber oder Übernehmer</td>
+                    <td className="p-6 font-semibold text-neutral-900">{t("Administrationskosten")}</td>
+                    <td className="p-6 text-neutral-700 font-bold">{t("je nach Bank")}</td>
+                    <td className="p-6 text-neutral-700">{t("Abgeber oder Übernehmer")}</td>
                   </tr>
                 </tbody>
               </table>
@@ -835,14 +846,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
               <div className="flex items-start gap-4">
                 <Info className="w-7 h-7 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-900 font-black mb-2 text-lg">Hinweis</p>
+                  <p className="text-green-900 font-black mb-2 text-lg">{t("Hinweis")}</p>
                   <p className="text-green-800 text-lg">
-                    Viele Abgeber übernehmen die Gebühren, um den Transfer attraktiver zu machen. Eine
-                    detaillierte Aufschlüsselung aller Gebühren und Spartipps findest du im{" "}
-                    <Link href="/leasinguebernahme-kosten" className="font-bold underline hover:text-green-700">
-                      kompletten Kosten-Überblick zur Leasingübernahme
-                    </Link>
-                    .
+                    <T
+                      k="Viele Abgeber übernehmen die Gebühren, um den Transfer attraktiver zu machen. Eine detaillierte Aufschlüsselung aller Gebühren und Spartipps findest du im <0>kompletten Kosten-Überblick zur Leasingübernahme</0>."
+                      c={[<Link key={0} href="/leasinguebernahme-kosten" className="font-bold underline hover:text-green-700" />]}
+                    />
                   </p>
                 </div>
               </div>
@@ -856,13 +865,13 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 <CheckCircle className="w-4 h-4" />
-                Win-Win
+                {t("Win-Win")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Vorteile der Leasingübernahme
+                {t("Vorteile der Leasingübernahme")}
               </h2>
               <p className="text-lg text-neutral-600">
-                Warum sich die Vertragsübertragung für beide Seiten lohnt
+                {t("Warum sich die Vertragsübertragung für beide Seiten lohnt")}
               </p>
             </div>
 
@@ -874,7 +883,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                     <Users className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-2xl font-black text-neutral-900">
-                    Vorteile für Übernehmer
+                    {t("Vorteile für Übernehmer")}
                   </h3>
                 </div>
                 <ul className="space-y-5">
@@ -889,7 +898,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <div className="bg-green-100 p-1 rounded-full mt-0.5">
                         <Check className="w-5 h-5 text-green-600 shrink-0" />
                       </div>
-                      <span className="font-medium text-lg">{item}</span>
+                      <span className="font-medium text-lg">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -902,7 +911,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                     <RefreshCw className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-2xl font-black text-neutral-900">
-                    Vorteile für Abgeber
+                    {t("Vorteile für Abgeber")}
                   </h3>
                 </div>
                 <ul className="space-y-5">
@@ -916,7 +925,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <div className="bg-green-100 p-1 rounded-full mt-0.5">
                         <Check className="w-5 h-5 text-green-600 shrink-0" />
                       </div>
-                      <span className="font-medium text-lg">{item}</span>
+                      <span className="font-medium text-lg">{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -936,10 +945,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold mb-4 backdrop-blur-sm">
                 <ShieldCheck className="w-4 h-4" />
-                Wichtig zu wissen
+                {t("Wichtig zu wissen")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
-                Rechtliche Hinweise
+                {t("Rechtliche Hinweise")}
               </h2>
             </div>
             
@@ -979,8 +988,8 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                         <IconComponent className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-black text-white text-xl mb-2">{item.title}</h3>
-                        <p className="text-neutral-300 text-lg">{item.text}</p>
+                        <h3 className="font-black text-white text-xl mb-2">{t(item.title)}</h3>
+                        <p className="text-neutral-300 text-lg">{t(item.text)}</p>
                       </div>
                     </div>
                   );
@@ -999,10 +1008,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 FAQ
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Häufige Fragen zur Leasingübernahme
+                {t("Häufige Fragen zur Leasingübernahme")}
               </h2>
               <p className="text-neutral-600 text-lg">
-                Die wichtigsten Antworten auf einen Blick
+                {t("Die wichtigsten Antworten auf einen Blick")}
               </p>
             </div>
             
@@ -1012,10 +1021,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 className="bg-neutral-50 rounded-3xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:bg-white data-[state=open]:shadow-lg"
               >
                 <AccordionTrigger className="text-left font-black text-neutral-900 hover:no-underline py-6 text-lg">
-                  Gibt es einen Unterschied zwischen Leasingübernahme und Leasing Transfer?
+                  {t("Gibt es einen Unterschied zwischen Leasingübernahme und Leasing Transfer?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung. „Leasingübernahme" ist der gängige Verbraucherbegriff, während „Leasing Transfer" der formale Begriff ist, der oft von Banken und Leasinggesellschaften verwendet wird.
+                  {t("Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung. „Leasingübernahme\" ist der gängige Verbraucherbegriff, während „Leasing Transfer\" der formale Begriff ist, der oft von Banken und Leasinggesellschaften verwendet wird.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -1024,10 +1033,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 className="bg-neutral-50 rounded-3xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:bg-white data-[state=open]:shadow-lg"
               >
                 <AccordionTrigger className="text-left font-black text-neutral-900 hover:no-underline py-6 text-lg">
-                  Wie lange dauert der Prozess?
+                  {t("Wie lange dauert der Prozess?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Meist 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Leasingbank.
+                  {t("Meist 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Leasingbank.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -1036,10 +1045,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 className="bg-neutral-50 rounded-3xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:bg-white data-[state=open]:shadow-lg"
               >
                 <AccordionTrigger className="text-left font-black text-neutral-900 hover:no-underline py-6 text-lg">
-                  Wer übernimmt die Gebühren?
+                  {t("Wer übernimmt die Gebühren?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Das wird frei vereinbart. Oft übernimmt der Abgeber die Transferkosten, um den Transfer attraktiver zu machen.
+                  {t("Das wird frei vereinbart. Oft übernimmt der Abgeber die Transferkosten, um den Transfer attraktiver zu machen.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -1048,10 +1057,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 className="bg-neutral-50 rounded-3xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:bg-white data-[state=open]:shadow-lg"
               >
                 <AccordionTrigger className="text-left font-black text-neutral-900 hover:no-underline py-6 text-lg">
-                  Kann ich ein Leasingauto verkaufen?
+                  {t("Kann ich ein Leasingauto verkaufen?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Nein. Du bist nicht Eigentümer. Aber du kannst den Vertrag übertragen – genau darum geht es beim Leasing Transfer bzw. der Leasingübernahme.
+                  {t("Nein. Du bist nicht Eigentümer. Aber du kannst den Vertrag übertragen – genau darum geht es beim Leasing Transfer bzw. der Leasingübernahme.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -1060,10 +1069,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 className="bg-neutral-50 rounded-3xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:bg-white data-[state=open]:shadow-lg"
               >
                 <AccordionTrigger className="text-left font-black text-neutral-900 hover:no-underline py-6 text-lg">
-                  Was passiert mit der Anzahlung?
+                  {t("Was passiert mit der Anzahlung?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Sie bleibt im Vertrag und kommt dem Übernehmer zugute. Die Anzahlung wird nicht ausbezahlt oder zurückerstattet.
+                  {t("Sie bleibt im Vertrag und kommt dem Übernehmer zugute. Die Anzahlung wird nicht ausbezahlt oder zurückerstattet.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -1072,10 +1081,10 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 className="bg-neutral-50 rounded-3xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:bg-white data-[state=open]:shadow-lg"
               >
                 <AccordionTrigger className="text-left font-black text-neutral-900 hover:no-underline py-6 text-lg">
-                  Kann eine Leasingübernahme abgelehnt werden?
+                  {t("Kann eine Leasingübernahme abgelehnt werden?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Ja – meistens wegen fehlender Bonität oder offener Zahlungen. Die Leasingbank hat immer das letzte Wort bei der Genehmigung.
+                  {t("Ja – meistens wegen fehlender Bonität oder offener Zahlungen. Die Leasingbank hat immer das letzte Wort bei der Genehmigung.")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -1092,24 +1101,24 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
           <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
             <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold mb-4 backdrop-blur-sm">
               <Sparkles className="w-4 h-4" />
-              Bereit für den nächsten Schritt?
+              {t("Bereit für den nächsten Schritt?")}
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">
-              Starte jetzt deine Leasingübernahme
+              {t("Starte jetzt deine Leasingübernahme")}
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-xl leading-relaxed">
-              Kostenloses Inserat erstellen, Übernehmer finden oder Angebote entdecken – schnell, transparent und unkompliziert.
+              {t("Kostenloses Inserat erstellen, Übernehmer finden oder Angebote entdecken – schnell, transparent und unkompliziert.")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Button asChild size="lg" className="w-full sm:w-auto h-16 px-6 sm:px-10 text-lg sm:text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/40 transition-all group">
                 <Link href="/suche">
                   <Search className="w-6 h-6 mr-2" />
-                  Angebote durchsuchen
+                  {t("Angebote durchsuchen")}
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-16 px-6 sm:px-10 text-lg sm:text-xl font-black border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-2xl transition-all">
                 <Link href="/inserat-erstellen">
-                  Jetzt starten
+                  {t("Jetzt starten")}
                   <ArrowRight className="w-6 h-6 ml-2" />
                 </Link>
               </Button>
@@ -1119,15 +1128,15 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-neutral-400 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-400" />
-                <span>100% legal</span>
+                <span>{t("100% legal")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-green-400" />
-                <span>Sicher & geprüft</span>
+                <span>{t("Sicher & geprüft")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-green-400" />
-                <span>In wenigen Tagen</span>
+                <span>{t("In wenigen Tagen")}</span>
               </div>
             </div>
           </div>
@@ -1139,13 +1148,13 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 <FileText className="w-4 h-4" />
-                Weiterführende Artikel
+                {t("Weiterführende Artikel")}
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-4">
-                Mehr zum Thema Leasing & Auto-Abo
+                {t("Mehr zum Thema Leasing & Auto-Abo")}
               </h2>
               <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-                Hier findest du alle wichtigen Themen rund um Leasingübernahme, Kosten, Alternativen und Vergleiche – kompakt erklärt.
+                {t("Hier findest du alle wichtigen Themen rund um Leasingübernahme, Kosten, Alternativen und Vergleiche – kompakt erklärt.")}
               </p>
             </div>
 
@@ -1153,7 +1162,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="mb-14">
               <h3 className="text-xl font-black text-neutral-900 mb-6 flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-primary" />
-                Leasingübernahme Ratgeber
+                {t("Leasingübernahme Ratgeber")}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <article className="bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
@@ -1162,12 +1171,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <DollarSign className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Kosten einer Leasingübernahme in der Schweiz</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Kosten einer Leasingübernahme in der Schweiz")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Erfahre, welche Gebühren bei einer Leasingübernahme anfallen – von der Transfergebühr bis zur Ummeldung. So planst du dein Budget richtig.
+                        {t("Erfahre, welche Gebühren bei einer Leasingübernahme anfallen – von der Transfergebühr bis zur Ummeldung. So planst du dein Budget richtig.")}
                       </p>
                       <Link href="/leasinguebernahme-kosten" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Leasingübernahme Kosten im Detail
+                        {t("Leasingübernahme Kosten im Detail")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1180,12 +1189,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <UserCheck className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasing abgeben in der Schweiz</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Leasing abgeben in der Schweiz")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Du möchtest deinen Leasingvertrag loswerden? Hier erfährst du, wie du dein Leasing legal und ohne hohe Kosten abgeben kannst.
+                        {t("Du möchtest deinen Leasingvertrag loswerden? Hier erfährst du, wie du dein Leasing legal und ohne hohe Kosten abgeben kannst.")}
                       </p>
                       <Link href="/leasing-abgeben-schweiz" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Leasing abgeben Schweiz: Ablauf & Tipps
+                        {t("Leasing abgeben Schweiz: Ablauf & Tipps")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1198,12 +1207,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <FileCheck className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasingvertrag übertragen – Schritt für Schritt</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Leasingvertrag übertragen – Schritt für Schritt")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Die komplette Anleitung zur Vertragsübertragung: Welche Dokumente du brauchst, wie die Bank zustimmt und was du beachten musst.
+                        {t("Die komplette Anleitung zur Vertragsübertragung: Welche Dokumente du brauchst, wie die Bank zustimmt und was du beachten musst.")}
                       </p>
                       <Link href="/leasingvertrag-uebertragen" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Leasingvertrag übertragen: Anleitung
+                        {t("Leasingvertrag übertragen: Anleitung")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1216,12 +1225,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <BadgeCheck className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasing abgeben in der Schweiz</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Leasing abgeben in der Schweiz")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Du willst raus aus deinem Vertrag? Der Leitfaden zeigt alle legalen Wege aus dem Leasing – und was sie kosten.
+                        {t("Du willst raus aus deinem Vertrag? Der Leitfaden zeigt alle legalen Wege aus dem Leasing – und was sie kosten.")}
                       </p>
                       <Link href="/leasing-abgeben-schweiz" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Leasing abgeben: der Leitfaden
+                        {t("Leasing abgeben: der Leitfaden")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1234,7 +1243,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div className="mb-14">
               <h3 className="text-xl font-black text-neutral-900 mb-6 flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-primary" />
-                Vergleiche
+                {t("Vergleiche")}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <article className="bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
@@ -1243,12 +1252,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <Zap className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasingübernahme vs. Auto-Abo</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Leasingübernahme vs. Auto-Abo")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Was lohnt sich mehr – ein bestehendes Leasing übernehmen oder ein flexibles Auto-Abo? Wir vergleichen Kosten, Laufzeit und Flexibilität.
+                        {t("Was lohnt sich mehr – ein bestehendes Leasing übernehmen oder ein flexibles Auto-Abo? Wir vergleichen Kosten, Laufzeit und Flexibilität.")}
                       </p>
                       <Link href="/leasinguebernahme-vs-autoabo" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Auto-Abo vs. Leasingübernahme Vergleich
+                        {t("Auto-Abo vs. Leasingübernahme Vergleich")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1261,12 +1270,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <RefreshCw className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasingübernahme vs. Neues Leasing</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Leasingübernahme vs. Neues Leasing")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Lohnt sich ein neuer Leasingvertrag oder ist die Übernahme günstiger? Hier findest du alle Vor- und Nachteile im direkten Vergleich.
+                        {t("Lohnt sich ein neuer Leasingvertrag oder ist die Übernahme günstiger? Hier findest du alle Vor- und Nachteile im direkten Vergleich.")}
                       </p>
                       <Link href="/leasinguebernahme-vs-neues-leasing" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Neues Leasing vs. Übernahme
+                        {t("Neues Leasing vs. Übernahme")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1279,12 +1288,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <DollarSign className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Auto-Abo vs. Leasing Kosten</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Auto-Abo vs. Leasing Kosten")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Was kostet mehr – Auto-Abo oder Leasing? Nutze unseren Kostenrechner und finde die günstigste Option für dein Budget.
+                        {t("Was kostet mehr – Auto-Abo oder Leasing? Nutze unseren Kostenrechner und finde die günstigste Option für dein Budget.")}
                       </p>
                       <Link href="/auto-abo-vs-leasing-kosten" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Kostenvergleich Auto-Abo & Leasing
+                        {t("Kostenvergleich Auto-Abo & Leasing")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1297,7 +1306,7 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
             <div>
               <h3 className="text-xl font-black text-neutral-900 mb-6 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-primary" />
-                Auto-Abo Ratgeber
+                {t("Auto-Abo Ratgeber")}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <article className="bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
@@ -1306,12 +1315,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <Search className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Auto-Abos im Vergleich Schweiz</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Auto-Abos im Vergleich Schweiz")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Welcher Auto-Abo-Anbieter ist der beste? Wir vergleichen Preise, Fahrzeuge und Konditionen der grössten Anbieter in der Schweiz.
+                        {t("Welcher Auto-Abo-Anbieter ist der beste? Wir vergleichen Preise, Fahrzeuge und Konditionen der grössten Anbieter in der Schweiz.")}
                       </p>
                       <Link href="/auto-abos-im-vergleich" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Beste Auto-Abo Anbieter Schweiz
+                        {t("Beste Auto-Abo Anbieter Schweiz")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1324,12 +1333,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <XCircle className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Auto-Abo kündigen</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Auto-Abo kündigen")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Du willst dein Auto-Abo beenden? Hier erfährst du, wie du richtig kündigst und welche Alternativen es gibt.
+                        {t("Du willst dein Auto-Abo beenden? Hier erfährst du, wie du richtig kündigst und welche Alternativen es gibt.")}
                       </p>
                       <Link href="/auto-abo-kuendigen" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Auto-Abo kündigen: Anleitung & Alternativen
+                        {t("Auto-Abo kündigen: Anleitung & Alternativen")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1342,12 +1351,12 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                       <Users className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Carify Alternativen</h4>
+                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">{t("Carify Alternativen")}</h4>
                       <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Carify ist nicht die einzige Option. Entdecke die besten Alternativen für Auto-Abos und Leasingübernahmen in der Schweiz.
+                        {t("Carify ist nicht die einzige Option. Entdecke die besten Alternativen für Auto-Abos und Leasingübernahmen in der Schweiz.")}
                       </p>
                       <Link href="/carify-alternativen" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Carify Alternativen im Überblick
+                        {t("Carify Alternativen im Überblick")}
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1366,7 +1375,8 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
   );
 }
 
-export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async () => {
+export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async (context) => {
+  const i18n = await withI18n(context.locale, ["pages/leasinguebernahme"]);
   try {
     const [results, brandRows] = await Promise.all([
       searchListings({ dealType: "lease_takeover", sort: "dateDesc" }),
@@ -1383,9 +1393,9 @@ export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async 
 
     // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
     const takeoverListings = JSON.parse(JSON.stringify(results.items.slice(0, 6))) as Listing[];
-    return { props: { takeoverListings, takeoverTotal: results.total, availableBrands }, revalidate: 300 };
+    return { props: { takeoverListings, takeoverTotal: results.total, availableBrands, ...i18n }, revalidate: 300 };
   } catch (error) {
     console.error("Leasinguebernahme hub SSR search failed:", error);
-    return { props: { takeoverListings: [], takeoverTotal: 0, availableBrands: [] }, revalidate: 300 };
+    return { props: { takeoverListings: [], takeoverTotal: 0, availableBrands: [], ...i18n }, revalidate: 300 };
   }
 };

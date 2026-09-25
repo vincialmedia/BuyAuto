@@ -13,7 +13,7 @@ import {
   Zap,
   MapPin,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import type { GaragePublicInfo } from "@/services/garageService";
 import { OwnerMiniProfile } from "@/components/buyauto/detail/OwnerMiniProfile";
@@ -24,6 +24,7 @@ import dynamic from "next/dynamic";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 import { cn } from "@/lib/utils";
 import { GarageMiniBanner } from "@/components/buyauto/detail/GarageMiniBanner";
+import { T, useT } from "@/i18n/runtime";
 
 const LeasingCalculator = dynamic<LeasingCalculatorProps>(
   () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
@@ -63,6 +64,30 @@ function getGoogleMapsOpenUrl(locationText: string): string | null {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
+/** Shown under a machine-translated description (fr/it/en pages only). */
+function OriginalTextToggle({ original }: { original: string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-4 border-t border-neutral-100 pt-3">
+      <p className="text-xs text-neutral-500">
+        {t("Automatisch aus dem Original übersetzt.")}{" "}
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="font-medium text-neutral-700 underline underline-offset-2 hover:text-neutral-900"
+        >
+          {open ? t("Original ausblenden") : t("Original anzeigen")}
+        </button>
+      </p>
+      {open ? (
+        <p className="mt-3 rounded-2xl bg-neutral-50 p-4 text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">{original}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function FactGrid({
   items,
 }: {
@@ -99,6 +124,8 @@ export function ListingDetailV2({
   purchasePriceChf,
   childrenBelowFold,
   bottomContent,
+  originalDescription = null,
+  descriptionIsOriginal = false,
 }: {
   listing: ListingDetail;
   images: string[];
@@ -108,7 +135,12 @@ export function ListingDetailV2({
   purchasePriceChf: number | null;
   childrenBelowFold?: React.ReactNode;
   bottomContent?: React.ReactNode;
+  /** fr/it/en: the seller's original text when `listing.description` is a translation. */
+  originalDescription?: string | null;
+  /** fr/it/en: the description could not be translated yet and is shown as written. */
+  descriptionIsOriginal?: boolean;
 }) {
+  const t = useT();
   const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
   const isSold = (listing.status as any) === "sold";
 
@@ -127,10 +159,10 @@ export function ListingDetailV2({
     dealType === "direct_purchase"
       ? typeof purchasePriceChf === "number"
         ? formatChf(purchasePriceChf)
-        : "Preis auf Anfrage"
+        : t("Preis auf Anfrage")
       : formatChf(listing.pricePerMonthCHF);
 
-  const primaryPriceSub = dealType === "direct_purchase" ? "Kaufpreis" : "pro Monat";
+  const primaryPriceSub = dealType === "direct_purchase" ? t("Kaufpreis") : t("pro Monat");
 
   const chatScroll = () => {
     const el = document.getElementById("messages");
@@ -171,13 +203,13 @@ export function ListingDetailV2({
   const vehicleFacts = useMemo(() => {
     const items: Array<{ key: string; label: string; value: string; Icon: ComponentType<{ className?: string }> }> = [];
 
-    if (listing.year) items.push({ key: "year", label: "Baujahr", value: String(listing.year), Icon: Calendar });
+    if (listing.year) items.push({ key: "year", label: t("Baujahr"), value: String(listing.year), Icon: Calendar });
 
     const firstRegistration = (listing as unknown as { firstRegistration?: string | null }).firstRegistration ?? null;
     if (firstRegistration && firstRegistration.trim()) {
       items.push({
         key: "first-registration",
-        label: "Erstzulassung",
+        label: t("Erstzulassung"),
         value: formatDateDeCh(firstRegistration),
         Icon: Calendar,
       });
@@ -186,26 +218,27 @@ export function ListingDetailV2({
     if (typeof listing.mileageKm === "number") {
       items.push({
         key: "mileage",
-        label: "Kilometerstand",
+        label: t("Kilometerstand"),
         value: `${formatNumber(listing.mileageKm)} km`,
         Icon: Gauge,
       });
     }
 
-    if (listing.fuel) items.push({ key: "fuel", label: "Treibstoff", value: String(listing.fuel), Icon: Fuel });
-    if (listing.gearbox) items.push({ key: "gearbox", label: "Getriebe", value: String(listing.gearbox), Icon: Settings2 });
+    // Stored values are German enums; their labels come from the "cards" dictionary.
+    if (listing.fuel) items.push({ key: "fuel", label: t("Treibstoff"), value: t(String(listing.fuel)), Icon: Fuel });
+    if (listing.gearbox) items.push({ key: "gearbox", label: t("Getriebe"), value: t(String(listing.gearbox)), Icon: Settings2 });
 
     const body = (listing as unknown as { body?: string | null }).body ?? null;
-    if (body) items.push({ key: "body", label: "Karosserie", value: String(body), Icon: Car });
+    if (body) items.push({ key: "body", label: t("Karosserie"), value: t(String(body)), Icon: Car });
 
     const drivetrain = (listing as unknown as { drivetrain?: string | null }).drivetrain ?? null;
     if (drivetrain && drivetrain.trim()) {
-      items.push({ key: "drivetrain", label: "Antrieb", value: drivetrain, Icon: GitBranch });
+      items.push({ key: "drivetrain", label: t("Antrieb"), value: t(drivetrain), Icon: GitBranch });
     }
 
     const powerHp = (listing as unknown as { powerHp?: number | null }).powerHp ?? null;
     if (typeof powerHp === "number" && powerHp > 0) {
-      items.push({ key: "power", label: "Leistung", value: `${formatNumber(powerHp)} PS`, Icon: Zap });
+      items.push({ key: "power", label: t("Leistung"), value: t("{n} PS", { n: formatNumber(powerHp) }), Icon: Zap });
     }
 
     // Lease-takeover only: on a Direktkauf with takeover offer the column
@@ -215,14 +248,14 @@ export function ListingDetailV2({
     if (dealType === "lease_takeover" && typeof remainingKm === "number" && remainingKm > 0) {
       items.push({
         key: "remaining-km",
-        label: "Restkilometer",
+        label: t("Restkilometer"),
         value: `${formatNumber(remainingKm)} km`,
         Icon: Gauge,
       });
     }
 
     return items;
-  }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing, dealType]);
+  }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing, dealType, t]);
 
   return (
     <div className={cn("min-h-screen bg-neutral-50 pb-24", isSold ? "grayscale-[0.2]" : "")}>
@@ -231,7 +264,7 @@ export function ListingDetailV2({
       {isOwnerPreview && (
         <div className="bg-amber-50 border-b border-amber-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="text-sm text-amber-900">Vorschau: Dieses Inserat ist noch nicht veröffentlicht und nur für dich sichtbar.</div>
+            <div className="text-sm text-amber-900">{t("Vorschau: Dieses Inserat ist noch nicht veröffentlicht und nur für dich sichtbar.")}</div>
           </div>
         </div>
       )}
@@ -239,7 +272,7 @@ export function ListingDetailV2({
       {isSold && (
         <div className="bg-neutral-900/90 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-sm">
-            <span className="font-semibold">Verkauft.</span> Dieses Inserat ist nicht mehr verfügbar.
+            <T k="<0>Verkauft.</0> Dieses Inserat ist nicht mehr verfügbar." c={[<span key="0" className="font-semibold" />]} />
           </div>
         </div>
       )}
@@ -276,7 +309,7 @@ export function ListingDetailV2({
                   <div className="flex items-center justify-between gap-4">
                     <div className="text-xs font-semibold uppercase tracking-wide text-white/70">{primaryPriceSub}</div>
                     {dealType !== "direct_purchase" && typeof listing.remainingMonths === "number" && listing.remainingMonths > 0 && (
-                      <div className="text-xs text-white/70">Restlaufzeit: {listing.remainingMonths}M</div>
+                      <div className="text-xs text-white/70">{t("Restlaufzeit: {n}M", { n: listing.remainingMonths })}</div>
                     )}
                   </div>
 
@@ -284,16 +317,16 @@ export function ListingDetailV2({
 
                   {dealType !== "direct_purchase" && typeof listing.depositCHF === "number" && (
                     <div className="mt-2 text-sm text-white/75">
-                      Kaution:{" "}
-                      <span className="font-semibold text-white">{listing.depositCHF > 0 ? formatChf(listing.depositCHF) : "Keine"}</span>
+                      {t("Kaution:")}{" "}
+                      <span className="font-semibold text-white">{listing.depositCHF > 0 ? formatChf(listing.depositCHF) : t("Keine")}</span>
                     </div>
                   )}
 
                   {dealType === "direct_purchase" && leaseTakeoverMonthlyChf !== null && (
                     <div className="mt-3 rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/85">
-                      Leasingübernahme:{" "}
+                      {t("Leasingübernahme:")}{" "}
                       <span className="font-semibold text-white">
-                        {formatChf(Math.round(leaseTakeoverMonthlyChf))} / Monat
+                        {t("{price} / Monat", { price: formatChf(Math.round(leaseTakeoverMonthlyChf)) })}
                       </span>
                     </div>
                   )}
@@ -301,21 +334,21 @@ export function ListingDetailV2({
                   {dealType === "direct_purchase" && leaseTakeoverEnabled && (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
-                        <div className="text-[11px] uppercase tracking-wide text-white/60">Restlaufzeit</div>
+                        <div className="text-[11px] uppercase tracking-wide text-white/60">{t("Restlaufzeit")}</div>
                         <div className="mt-0.5 font-semibold text-white">
                           {typeof leaseTakeoverRemainingMonths === "number" && leaseTakeoverRemainingMonths > 0
-                            ? `${leaseTakeoverRemainingMonths} Monate`
+                            ? t("{n} Monate", { n: leaseTakeoverRemainingMonths })
                             : "—"}
                         </div>
                       </div>
                       <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
-                        <div className="text-[11px] uppercase tracking-wide text-white/60">Kaution</div>
+                        <div className="text-[11px] uppercase tracking-wide text-white/60">{t("Kaution")}</div>
                         <div className="mt-0.5 font-semibold text-white">
-                          {typeof leaseTakeoverDepositChf === "number" ? (leaseTakeoverDepositChf > 0 ? formatChf(leaseTakeoverDepositChf) : "Keine") : "—"}
+                          {typeof leaseTakeoverDepositChf === "number" ? (leaseTakeoverDepositChf > 0 ? formatChf(leaseTakeoverDepositChf) : t("Keine")) : "—"}
                         </div>
                       </div>
                       <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
-                        <div className="text-[11px] uppercase tracking-wide text-white/60">Restkilometer</div>
+                        <div className="text-[11px] uppercase tracking-wide text-white/60">{t("Restkilometer")}</div>
                         <div className="mt-0.5 font-semibold text-white">
                           {typeof leaseTakeoverRemainingKm === "number" && leaseTakeoverRemainingKm > 0
                             ? `${formatNumber(leaseTakeoverRemainingKm)} km`
@@ -335,7 +368,7 @@ export function ListingDetailV2({
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/10">
                       <FileText className="h-3.5 w-3.5" />
                     </span>
-                    <span>Alle Angaben gemäss Inserat.</span>
+                    <span>{t("Alle Angaben gemäss Inserat.")}</span>
                   </div>
                 </div>
 
@@ -344,15 +377,15 @@ export function ListingDetailV2({
                     <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
                     {dealType === "direct_purchase"
                       ? leaseTakeoverEnabled
-                        ? "Direktkauf + Leasingübernahme"
-                        : "Direktkauf"
-                      : "Leasingübernahme"}
+                        ? t("Direktkauf + Leasingübernahme")
+                        : t("Direktkauf")
+                      : t("Leasingübernahme")}
                   </span>
 
                   {dealType === "direct_purchase" && hasLeasing && !leaseTakeoverEnabled && (
                     <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
                       <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
-                      Leasing
+                      {t("Leasing")}
                     </span>
                   )}
                 </div>
@@ -367,9 +400,13 @@ export function ListingDetailV2({
                   <div className="w-10 h-10 bg-neutral-100 rounded-2xl flex items-center justify-center">
                     <FileText className="w-5 h-5 text-neutral-700" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">Beschreibung</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">{t("Beschreibung")}</h2>
                 </div>
                 <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
+                {originalDescription ? <OriginalTextToggle original={originalDescription} /> : null}
+                {descriptionIsOriginal ? (
+                  <p className="mt-4 text-xs text-neutral-500">{t("Die Beschreibung wird in der Originalsprache des Inserats angezeigt.")}</p>
+                ) : null}
               </section>
             )}
 
@@ -380,10 +417,10 @@ export function ListingDetailV2({
             <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl">
               <CardContent className="p-6 sm:p-8">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="text-sm font-semibold text-neutral-900">Anbieter</div>
+                  <div className="text-sm font-semibold text-neutral-900">{t("Anbieter")}</div>
                 </div>
 
-                <div className="mt-3 text-sm text-neutral-600">Du schreibst direkt dem Anbieter. Verlauf bleibt bei diesem Inserat gespeichert.</div>
+                <div className="mt-3 text-sm text-neutral-600">{t("Du schreibst direkt dem Anbieter. Verlauf bleibt bei diesem Inserat gespeichert.")}</div>
 
                 <div className="mt-5">
                   {(() => {
@@ -419,7 +456,7 @@ export function ListingDetailV2({
                             {headerImageUrl && headerImageUrl.trim() ? (
                               <Image
                                 src={headerImageUrl}
-                                alt={`${name} Header`}
+                                alt={t("{name} Header", { name })}
                                 fill
                                 className="object-cover"
                                 sizes="(max-width: 1024px) 100vw, 480px"
@@ -435,7 +472,7 @@ export function ListingDetailV2({
                                   {logoUrl ? (
                                     <Image
                                       src={logoUrl}
-                                      alt={`${name} Logo`}
+                                      alt={t("{name} Logo", { name })}
                                       width={56}
                                       height={56}
                                       className="h-14 w-14 rounded-2xl object-cover bg-white ring-2 ring-white shadow"
@@ -469,7 +506,7 @@ export function ListingDetailV2({
                                       href={`/${slug}`}
                                       className="inline-flex items-center rounded-2xl border border-white/25 bg-white/10 backdrop-blur px-3 py-2 text-sm font-semibold text-white hover:bg-white/15 hover:border-white/40 transition-colors"
                                     >
-                                      Profil ansehen
+                                      {t("Profil ansehen")}
                                     </Link>
                                   </div>
                                 )}
@@ -538,11 +575,11 @@ export function ListingDetailV2({
                   <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl">
                     <CardContent className="p-6 sm:p-8">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="text-sm font-semibold text-neutral-900">Standort</div>
+                        <div className="text-sm font-semibold text-neutral-900">{t("Standort")}</div>
                       </div>
                       <div className="mt-3 flex items-start gap-2 text-sm text-neutral-600">
                         <MapPin className="h-4 w-4 mt-0.5 text-neutral-500" />
-                        <span>Standort nicht angegeben</span>
+                        <span>{t("Standort nicht angegeben")}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -553,7 +590,7 @@ export function ListingDetailV2({
                 <Card className="border-neutral-200/60 shadow-sm bg-white rounded-3xl">
                   <CardContent className="p-6 sm:p-8">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="text-sm font-semibold text-neutral-900">Standort</div>
+                      <div className="text-sm font-semibold text-neutral-900">{t("Standort")}</div>
                       {openUrl && (
                         <a
                           href={openUrl}
@@ -561,7 +598,7 @@ export function ListingDetailV2({
                           rel="noreferrer"
                           className="text-sm font-medium text-neutral-900 hover:text-neutral-700 underline underline-offset-4"
                         >
-                          In Google Maps öffnen
+                          {t("In Google Maps öffnen")}
                         </a>
                       )}
                     </div>
@@ -573,7 +610,7 @@ export function ListingDetailV2({
 
                     <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50">
                       <iframe
-                        title={`Karte Standort ${loc}`}
+                        title={t("Karte Standort {location}", { location: loc })}
                         src={embedUrl}
                         className="h-64 w-full"
                         loading="lazy"
@@ -581,7 +618,7 @@ export function ListingDetailV2({
                       />
                     </div>
 
-                    <div className="mt-3 text-xs text-neutral-500">Hinweis: Standort gemäss Inserat.</div>
+                    <div className="mt-3 text-xs text-neutral-500">{t("Hinweis: Standort gemäss Inserat.")}</div>
                   </CardContent>
                 </Card>
               );

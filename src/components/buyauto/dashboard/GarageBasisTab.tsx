@@ -8,6 +8,7 @@ import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { Garage } from "@/services/garageService";
+import { useT } from "@/i18n/runtime";
 
 interface GarageBasisTabProps {
   garage: Garage | null;
@@ -31,6 +32,7 @@ function getSiteOrigin(): string {
 }
 
 export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
+  const t = useT();
   const [user, setUser] = useState<User | null>(null);
 
   const [draft, setDraft] = useState({
@@ -103,9 +105,9 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
         slug: draft.slug.trim(),
         city: draft.city.trim() || null,
       });
-      setBanner({ kind: "success", message: "Basis-Daten gespeichert." });
+      setBanner({ kind: "success", message: t("Basis-Daten gespeichert.") });
     } catch (e) {
-      setBanner({ kind: "error", message: `Speichern fehlgeschlagen: ${getErrorMessage(e)}` });
+      setBanner({ kind: "error", message: t("Speichern fehlgeschlagen: {error}", { error: t(getErrorMessage(e)) }) });
     } finally {
       setSaving(false);
     }
@@ -116,7 +118,7 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
 
     const email = user?.email;
     if (!email) {
-      setBanner({ kind: "error", message: "Kein Login-E-Mail gefunden. Bitte erneut einloggen." });
+      setBanner({ kind: "error", message: t("Kein Login-E-Mail gefunden. Bitte erneut einloggen.") });
       return;
     }
 
@@ -124,13 +126,16 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
     try {
       // Same canonical marker as authService.resetPassword — auth.tsx only
       // recognizes type=recovery (plus the PASSWORD_RECOVERY event).
+      // Deliberately unprefixed: this URL must match Supabase Auth's redirect
+      // allow-list, which only the German /auth path is known to be on. A
+      // /fr/auth link could be rejected and silently fall back to the Site URL.
       const redirectTo = `${getSiteOrigin()}/auth?type=recovery`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
 
-      setBanner({ kind: "success", message: "Passwort-Reset E-Mail wurde gesendet." });
+      setBanner({ kind: "success", message: t("Passwort-Reset E-Mail wurde gesendet.") });
     } catch (e) {
-      setBanner({ kind: "error", message: `Passwort-Reset fehlgeschlagen: ${getErrorMessage(e)}` });
+      setBanner({ kind: "error", message: t("Passwort-Reset fehlgeschlagen: {error}", { error: t(getErrorMessage(e)) }) });
     } finally {
       setResetSending(false);
     }
@@ -152,25 +157,25 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
       )}
 
       <div>
-        <h2 className="text-lg font-bold tracking-tight text-neutral-900">Basis-Informationen</h2>
-        <p className="text-sm text-neutral-600 mt-1">Name, URL und Standort</p>
+        <h2 className="text-lg font-bold tracking-tight text-neutral-900">{t("Basis-Informationen")}</h2>
+        <p className="text-sm text-neutral-600 mt-1">{t("Name, URL und Standort")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="garage_name">Garagenname *</Label>
+          <Label htmlFor="garage_name">{t("Garagenname *")}</Label>
           <Input
             id="garage_name"
             value={draft.garage_name}
             onChange={(e) => setDraft((p) => ({ ...p, garage_name: e.target.value }))}
-            placeholder="z.B. Garage Muster AG"
+            placeholder={t("z.B. Garage Muster AG")}
             className="rounded-2xl"
           />
         </div>
 
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="slug">
-            Profil-URL * <span className="text-xs text-neutral-500">(buyauto.ch/{draft.slug || "ihr-name"})</span>
+            {t("Profil-URL *")} <span className="text-xs text-neutral-500">(buyauto.ch/{draft.slug || t("ihr-name")})</span>
           </Label>
           <Input
             id="slug"
@@ -179,27 +184,27 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
               setSlugManuallyEdited(true);
               setDraft((p) => ({ ...p, slug: e.target.value }));
             }}
-            placeholder="z.B. garage-muster"
+            placeholder={t("z.B. garage-muster")}
             className="rounded-2xl"
           />
-          <p className="text-xs text-neutral-500">Nur Kleinbuchstaben, Zahlen und Bindestriche</p>
+          <p className="text-xs text-neutral-500">{t("Nur Kleinbuchstaben, Zahlen und Bindestriche")}</p>
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="city">Standort</Label>
+          <Label htmlFor="city">{t("Standort")}</Label>
           <LocationAutocomplete
             value={draft.city}
             onValueChange={(next) => setDraft((p) => ({ ...p, city: next }))}
-            placeholder="z.B. Zürich"
+            placeholder={t("z.B. Zürich")}
             inputClassName="rounded-2xl"
           />
-          <p className="text-xs text-neutral-500">Dieser Standort wird als Standard für zukünftige Inserate verwendet.</p>
+          <p className="text-xs text-neutral-500">{t("Dieser Standort wird als Standard für zukünftige Inserate verwendet.")}</p>
 
           {mapsPreviewUrl ? (
             <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
               <div className="aspect-[16/10] w-full bg-neutral-100">
                 <iframe
-                  title="Standort Vorschau"
+                  title={t("Standort Vorschau")}
                   src={mapsPreviewUrl}
                   className="h-full w-full"
                   loading="lazy"
@@ -221,10 +226,10 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Speichern…
+              {t("Speichern…")}
             </>
           ) : (
-            "Basis-Daten speichern"
+            t("Basis-Daten speichern")
           )}
         </Button>
 
@@ -237,12 +242,12 @@ export function GarageBasisTab({ garage, onUpdate }: GarageBasisTabProps) {
           {resetSending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Sende…
+              {t("Sende…")}
             </>
           ) : (
             <>
               <Shield className="h-4 w-4 mr-2" />
-              Passwort zurücksetzen
+              {t("Passwort zurücksetzen")}
             </>
           )}
         </Button>

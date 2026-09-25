@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import { useT } from "@/i18n/runtime";
+import { translatedResolver } from "./translatedResolver";
 
 const updatePasswordSchema = z.object({
   password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein"),
@@ -34,8 +36,9 @@ export default function UpdatePasswordForm({
   onUpdatePassword,
   isLoading,
 }: UpdatePasswordFormProps) {
+  const t = useT();
   const form = useForm<UpdatePasswordFormData>({
-    resolver: zodResolver(updatePasswordSchema),
+    resolver: translatedResolver(zodResolver(updatePasswordSchema), t),
     defaultValues: {
       password: "",
       confirmPassword: "",
@@ -54,7 +57,7 @@ export default function UpdatePasswordForm({
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Neues Passwort</FormLabel>
+              <FormLabel>{t("Neues Passwort")}</FormLabel>
               <FormControl>
                 <Input
                   type="password"
@@ -73,7 +76,7 @@ export default function UpdatePasswordForm({
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Passwort bestätigen</FormLabel>
+              <FormLabel>{t("Passwort bestätigen")}</FormLabel>
               <FormControl>
                 <Input
                   type="password"
@@ -95,10 +98,10 @@ export default function UpdatePasswordForm({
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Wird aktualisiert...
+              {t("Wird aktualisiert...")}
             </>
           ) : (
-            "Passwort speichern"
+            t("Passwort speichern")
           )}
         </Button>
       </form>

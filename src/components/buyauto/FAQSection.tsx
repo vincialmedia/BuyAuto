@@ -8,8 +8,10 @@ import { HelpCircle, ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { pricingPlans } from "@/lib/buyauto/stripe_config";
 import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
+import { T, useT, type TranslateVars } from "@/i18n/runtime";
 
-const faqs = [
+// German source text; translated at render time (answer placeholders filled from `vars`).
+const faqs: { id: string; question: string; answer: string; vars?: TranslateVars }[] = [
   {
     id: "faq-1",
     question: "Was ist eine Leasingübernahme?",
@@ -55,17 +57,33 @@ const faqs = [
     question: "Was kostet ein Inserat auf BuyAuto?",
     // Prices and durations interpolated from the pricing configs so this
     // answer (and its FAQPage JSON-LD) can never drift from /preise.
-    answer: `Für Private ist das Standard-Inserat gratis: ${pricingPlans.standard.duration_days} Tage online, bis 5 Fotos. Wer länger und sichtbarer inserieren will, wählt Verlängert (CHF ${pricingPlans.extended.price}, ${pricingPlans.extended.duration_days} Tage, Premium-Platzierung und 15 Fotos inklusive) oder Unlimitiert (CHF ${pricingPlans.unlimited.price}, online bis verkauft). Garagen buchen ein Monatspaket ab CHF ${GARAGE_PLANS.starter.monthlyPriceChf}. Alle Preise stehen offen auf der Preisseite.`
+    answer: "Für Private ist das Standard-Inserat gratis: {standardDays} Tage online, bis 5 Fotos. Wer länger und sichtbarer inserieren will, wählt Verlängert (CHF {extendedPrice}, {extendedDays} Tage, Premium-Platzierung und 15 Fotos inklusive) oder Unlimitiert (CHF {unlimitedPrice}, online bis verkauft). Garagen buchen ein Monatspaket ab CHF {garagePrice}. Alle Preise stehen offen auf der Preisseite.",
+    vars: {
+      standardDays: pricingPlans.standard.duration_days,
+      extendedPrice: pricingPlans.extended.price,
+      extendedDays: pricingPlans.extended.duration_days,
+      unlimitedPrice: pricingPlans.unlimited.price,
+      garagePrice: GARAGE_PLANS.starter.monthlyPriceChf,
+    }
   }
 ];
 
 export default function FAQSection() {
+  const t = useT();
   const [openItem, setOpenItem] = useState<string | undefined>(undefined);
+  
+  // One translated list feeds both the accordion and the FAQPage JSON-LD, so
+  // the structured data always matches the visible text.
+  const localizedFaqs = faqs.map((faq) => ({
+    id: faq.id,
+    question: t(faq.question),
+    answer: t(faq.answer, faq.vars),
+  }));
   
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": faqs.map(faq => ({
+    "mainEntity": localizedFaqs.map(faq => ({
       "@type": "Question",
       "name": faq.question,
       "acceptedAnswer": {
@@ -94,14 +112,13 @@ export default function FAQSection() {
           <div className="text-center mb-12">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-4">
               <HelpCircle className="w-4 h-4" />
-              FAQ
+              {t("FAQ")}
             </span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-neutral-900 mb-4 tracking-tight">
-              Häufig gestellte{" "}
-              <span className="text-red-500">Fragen</span>
+              <T k="Häufig gestellte <0>Fragen</0>" c={[<span key="0" className="text-red-500" />]} />
             </h2>
             <p className="text-lg text-neutral-500 max-w-2xl mx-auto">
-              Antworten auf die wichtigsten Fragen rund um Leasingübernahme und Leasingabgabe in der Schweiz
+              {t("Antworten auf die wichtigsten Fragen rund um Leasingübernahme und Leasingabgabe in der Schweiz")}
             </p>
           </div>
 
@@ -113,7 +130,7 @@ export default function FAQSection() {
             value={openItem}
             onValueChange={setOpenItem}
           >
-            {faqs.map((faq) => (
+            {localizedFaqs.map((faq) => (
               <AccordionItem 
                 key={faq.id} 
                 value={faq.id}
@@ -133,20 +150,20 @@ export default function FAQSection() {
           {/* Bottom helper text and CTAs */}
           <div className="mt-12 text-center">
             <p className="text-neutral-500 mb-6">
-              <span className="font-semibold text-neutral-700">Noch Fragen?</span>
+              <span className="font-semibold text-neutral-700">{t("Noch Fragen?")}</span>
               <br />
-              Dann entdecke alle Fahrzeuge oder erstelle dein eigenes Inserat auf BuyAuto.
+              {t("Dann entdecke alle Fahrzeuge oder erstelle dein eigenes Inserat auf BuyAuto.")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/suche">
                 <Button size="lg" className="bg-neutral-900 text-white hover:bg-neutral-800 font-bold rounded-xl px-8 h-12 w-full sm:w-auto hover:scale-105 transition-all duration-300">
-                  Alle Fahrzeuge ansehen
+                  {t("Alle Fahrzeuge ansehen")}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
               <Link href="/inserat-erstellen">
                 <Button size="lg" variant="outline" className="border-2 border-neutral-300 text-neutral-700 hover:border-red-500 hover:text-red-600 font-bold rounded-xl px-8 h-12 w-full sm:w-auto hover:scale-105 transition-all duration-300">
-                  Inserat erstellen
+                  {t("Inserat erstellen")}
                 </Button>
               </Link>
             </div>

@@ -1,12 +1,15 @@
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import { SEO } from "@/components/SEO";
-import { getPublicGarageBySlug } from "@/services/garageService";
+import { garageNeedsTranslation, getPublicGarageBySlug } from "@/services/garageService";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
 import { DealerHeroHeader } from "@/components/buyauto/dealer/DealerHeroHeader";
 import { DealerAboutAndMap } from "@/components/buyauto/dealer/DealerAboutAndMap";
 import { DealerTeamAndHours } from "@/components/buyauto/dealer/DealerTeamAndHours";
 import { StructuredData } from "@/components/buyauto/StructuredData";
+import { useLocale, useT, type TFunction } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
+import { Hreflang } from "@/i18n/seo";
 
 type PublicGarage = NonNullable<Awaited<ReturnType<typeof getPublicGarageBySlug>>>;
 
@@ -21,9 +24,9 @@ type PageProps =
       ok: false;
     };
 
-function getSafeDescription(description: string | null): string {
+function getSafeDescription(description: string | null, t: TFunction): string {
   const d = (description ?? "").trim();
-  if (!d) return "Fahrzeuge & Angebote von diesem Händler auf BuyAuto entdecken.";
+  if (!d) return t("Fahrzeuge & Angebote von diesem Händler auf BuyAuto entdecken.");
   return d.length > 160 ? `${d.slice(0, 157)}...` : d;
 }
 
@@ -56,6 +59,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
         garage,
         logoUrl,
         absoluteUrl,
+        ...(await withI18n(ctx.locale, ["dealer"])),
       },
     };
   } catch {
@@ -65,22 +69,25 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       ctx.res.statusCode = 503;
       ctx.res.setHeader("Retry-After", "120");
     }
-    return { props: { ok: false } };
+    return { props: { ok: false, ...(await withI18n(ctx.locale, ["dealer"])) } };
   }
 };
 
 export default function DealerMicrositePage(props: PageProps) {
+  const t = useT();
+  const locale = useLocale();
+
   if (!props.ok) {
     return (
       <>
         <Head>
-          <title>Händlerprofil nicht verfügbar | BuyAuto</title>
+          <title>{t("Händlerprofil nicht verfügbar | BuyAuto")}</title>
           <meta name="robots" content="noindex" />
         </Head>
         <main className="min-h-screen bg-white">
           <div className="mx-auto max-w-4xl px-6 py-16">
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Händlerprofil nicht verfügbar</h1>
-            <p className="mt-3 text-neutral-600">Dieses Händlerprofil konnte nicht geladen werden.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t("Händlerprofil nicht verfügbar")}</h1>
+            <p className="mt-3 text-neutral-600">{t("Dieses Händlerprofil konnte nicht geladen werden.")}</p>
           </div>
         </main>
       </>
@@ -89,8 +96,17 @@ export default function DealerMicrositePage(props: PageProps) {
 
   const { garage, logoUrl, absoluteUrl } = props;
 
-  const title = `${garage.garage_name} – Fahrzeuge & Angebote | BuyAuto`;
-  const description = getSafeDescription(garage.description);
+  // Garage-written text (description, services, team) exists in German only.
+  // Such a profile forms no hreflang cluster (German alone is not one) and its
+  // fr/it/en versions are noindex,follow without canonical — the same rule and
+  // predicate that keep them out of the fr/it/en sitemaps. German keeps its
+  // canonical unchanged.
+  const needsTranslation = garageNeedsTranslation(garage);
+  const untranslated = needsTranslation && locale !== "de";
+
+  const title = t("{name} – Fahrzeuge & Angebote | BuyAuto", { name: garage.garage_name });
+  // fr/it/en: the translated generic description, never the German free text.
+  const description = getSafeDescription(untranslated ? null : garage.description, t);
   const image = garage.header_image_url || logoUrl || "/buyauto-logo.png";
 
   const openingHours = garage.opening_hours;
@@ -98,7 +114,8 @@ export default function DealerMicrositePage(props: PageProps) {
 
   return (
     <>
-      <SEO title={title} description={description} image={image} url={absoluteUrl} />
+      <SEO title={title} description={description} image={image} url={absoluteUrl} noindex={untranslated} />
+      {needsTranslation ? null : <Hreflang path={`/${garage.slug}`} />}
       <StructuredData
         type="dealer"
         dealerData={{
@@ -147,8 +164,8 @@ export default function DealerMicrositePage(props: PageProps) {
         <section id="inventory" className="mx-auto max-w-6xl px-6 pb-16 md:pb-24">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">Inventar</h2>
-              <p className="mt-2 text-sm text-neutral-600">Finde alle Fahrzeuge dieses Händlers – mit Filtern & Sortierung.</p>
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">{t("Inventar")}</h2>
+              <p className="mt-2 text-sm text-neutral-600">{t("Finde alle Fahrzeuge dieses Händlers – mit Filtern & Sortierung.")}</p>
             </div>
           </div>
 

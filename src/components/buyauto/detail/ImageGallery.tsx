@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Loader2, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
+import { useT } from "@/i18n/runtime";
 
 interface ImageGalleryProps {
   images: string[];
@@ -19,6 +20,7 @@ const LIGHTBOX_SIZES = "(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 85vw
 const IMAGE_QUALITY = 85;
 
 export default function ImageGallery({ images, brand = "", model = "", premium = false }: ImageGalleryProps) {
+  const t = useT();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -46,7 +48,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
       <div className="aspect-video bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-3xl flex items-center justify-center">
         <div className="text-center space-y-2 text-neutral-500">
           <div className="text-6xl">📸</div>
-          <p className="text-sm">Keine Bilder verfügbar</p>
+          <p className="text-sm">{t("Keine Bilder verfügbar")}</p>
         </div>
       </div>
     );
@@ -202,7 +204,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
                       ? "bg-white shadow-lg scale-125"
                       : "bg-white/60 hover:bg-white/80"
                   }`}
-                  aria-label={`Bild ${index + 1} anzeigen`}
+                  aria-label={t("Bild {n} anzeigen", { n: index + 1 })}
                 />
               ))}
             </div>
@@ -224,7 +226,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
               >
                 <Image
                   src={getImageVariant(image, "thumbnail")}
-                  alt={`${alt} - Bild ${index + 1}`}
+                  alt={t("{alt} - Bild {n}", { alt, n: index + 1 })}
                   fill
                   className="object-cover"
                   sizes="150px"
@@ -253,7 +255,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
             <button
               onClick={closeLightbox}
               className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
-              aria-label="Galerie schliessen"
+              aria-label={t("Galerie schliessen")}
             >
               <X size={32} />
             </button>
@@ -263,7 +265,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
               <button
                 onClick={prevLightboxImage}
                 className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
-                aria-label="Vorheriges Bild"
+                aria-label={t("Vorheriges Bild")}
               >
                 <ChevronLeft size={48} />
               </button>
@@ -291,7 +293,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
               )}
               <Image
                 src={validImages[lightboxIndex]}
-                alt={`${alt} - Bild ${lightboxIndex + 1}`}
+                alt={t("{alt} - Bild {n}", { alt, n: lightboxIndex + 1 })}
                 fill
                 className={`object-contain transition-opacity duration-200 ${lightboxLoaded ? "opacity-100" : "opacity-0"}`}
                 sizes={LIGHTBOX_SIZES}
@@ -316,7 +318,7 @@ export default function ImageGallery({ images, brand = "", model = "", premium =
               <button
                 onClick={nextLightboxImage}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
-                aria-label="Nächstes Bild"
+                aria-label={t("Nächstes Bild")}
               >
                 <ChevronRight size={48} />
               </button>

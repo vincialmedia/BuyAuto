@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useT } from "@/i18n/runtime";
 
 function initialsFromName(name: string): string {
   const parts = name
@@ -13,6 +14,7 @@ function initialsFromName(name: string): string {
 }
 
 export function GarageMiniBanner({ garage }: { garage: { id: string; name: string; slug: string | null; city: string | null; bio: string | null; headerImageUrl?: string | null } }) {
+  const t = useT();
   const header = typeof garage.headerImageUrl === "string" && garage.headerImageUrl.trim() ? garage.headerImageUrl : null;
   const href = garage.slug ? `/${garage.slug}` : null;
 
@@ -36,7 +38,7 @@ export function GarageMiniBanner({ garage }: { garage: { id: string; name: strin
               href={href}
               className="shrink-0 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur-xl border border-white/25 hover:bg-white/25 hover:border-white/40 transition"
             >
-              Profil ansehen
+              {t("Profil ansehen")}
             </Link>
           ) : null}
         </div>

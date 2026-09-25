@@ -5,6 +5,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { getStripe, isStripeAvailable } from '@/lib/stripe';
 import CheckoutForm from './CheckoutForm';
 import type { Stripe } from '@stripe/stripe-js';
+import { useT } from '@/i18n/runtime';
 
 interface PaymentWidgetProps {
   clientSecret: string;
@@ -17,6 +18,7 @@ export default function PaymentWidget({ clientSecret, totalAmount, onSuccess }: 
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     setMounted(true);
@@ -69,8 +71,8 @@ export default function PaymentWidget({ clientSecret, totalAmount, onSuccess }: 
     return (
       <div className="max-w-md mx-auto">
         <div className="bg-red-50 border border-red-200 p-6 rounded-lg text-center">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Payment Error</h3>
-          <p className="text-red-700">{error}</p>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">{t("Payment Error")}</h3>
+          <p className="text-red-700">{t(error)}</p>
         </div>
       </div>
     );
@@ -82,7 +84,7 @@ export default function PaymentWidget({ clientSecret, totalAmount, onSuccess }: 
       <div className="max-w-md mx-auto">
         <div className="bg-white p-6 rounded-lg border border-neutral-200 shadow-sm text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mb-4"></div>
-          <p className="text-neutral-600">Loading secure payment form...</p>
+          <p className="text-neutral-600">{t("Loading secure payment form...")}</p>
         </div>
       </div>
     );
@@ -105,7 +107,7 @@ export default function PaymentWidget({ clientSecret, totalAmount, onSuccess }: 
     <div className="max-w-md mx-auto">
       <div className="bg-white p-6 rounded-lg border border-neutral-200 shadow-sm">
         <h3 className="text-xl font-semibold mb-4 text-center text-neutral-900">
-          Sichere Zahlung - CHF {totalAmount}
+          {t("Sichere Zahlung - CHF {amount}", { amount: totalAmount })}
         </h3>
         <Elements 
           stripe={stripe} 

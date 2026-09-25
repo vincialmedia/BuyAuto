@@ -28,6 +28,9 @@ import {
 } from "@/components/ui/accordion";
 import Image from "next/image";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
+import { T, useLocale, useT } from "@/i18n/runtime";
+import { absoluteUrl } from "@/i18n/config";
+import { staticI18nProps } from "@/i18n/server";
 
 // Dynamically import heavy interactive components
 const SearchForm = dynamic(() => import("@/components/buyauto/SearchForm"), {
@@ -42,6 +45,8 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/auto-abo-kuendigen"];
 
 export default function AutoAboKuendigenPage() {
+  const t = useT();
+  const locale = useLocale();
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -52,19 +57,19 @@ export default function AutoAboKuendigenPage() {
   return (
     <>
       <Head>
-        <title>Auto-Abo kündigen in der Schweiz – Fristen, Kosten & Tipps | BuyAuto</title>
+        <title>{t("Auto-Abo kündigen in der Schweiz – Fristen, Kosten & Tipps | BuyAuto")}</title>
         <meta
           name="description"
-          content="Auto-Abo kündigen: Alle Fristen, Kosten und wichtige Tipps für eine reibungslose Kündigung. Jetzt informieren und Alternativen entdecken."
+          content={t("Auto-Abo kündigen: Alle Fristen, Kosten und wichtige Tipps für eine reibungslose Kündigung. Jetzt informieren und Alternativen entdecken.")}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/auto-abo-kuendigen" />
+        <link rel="canonical" href={absoluteUrl("/auto-abo-kuendigen", locale)} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "Auto-Abo kündigen",
+              headline: t("Auto-Abo kündigen"),
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -72,24 +77,24 @@ export default function AutoAboKuendigenPage() {
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
               dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/auto-abo-kuendigen",
+              mainEntityOfPage: absoluteUrl("/auto-abo-kuendigen", locale),
             }),
           }}
         />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Auto-Abo kündigen in der Schweiz – Fristen, Kosten & Tipps" />
-        <meta property="og:description" content="Erfahren Sie alles über Kündigungsfristen, Kosten und Tipps für Ihr Auto-Abo." />
+        <meta property="og:title" content={t("Auto-Abo kündigen in der Schweiz – Fristen, Kosten & Tipps")} />
+        <meta property="og:description" content={t("Erfahren Sie alles über Kündigungsfristen, Kosten und Tipps für Ihr Auto-Abo.")} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/auto-abo-kuendigen" />
+        <meta property="og:url" content={absoluteUrl("/auto-abo-kuendigen", locale)} />
       </Head>
 
       {/* Schema-only: hero layout has no room for a visible crumb bar. */}
       <BreadcrumbJsonLd
         items={[
-          { name: "Home", href: "/" },
-          { name: "Auto-Abos im Vergleich", href: "/auto-abos-im-vergleich" },
-          { name: "Auto-Abo kündigen", href: "/auto-abo-kuendigen" },
+          { name: t("Home"), href: "/" },
+          { name: t("Auto-Abos im Vergleich"), href: "/auto-abos-im-vergleich" },
+          { name: t("Auto-Abo kündigen"), href: "/auto-abo-kuendigen" },
         ]}
       />
 
@@ -101,7 +106,7 @@ export default function AutoAboKuendigenPage() {
           <div className="absolute inset-0">
             <Image
               src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=2400&q=80"
-              alt="Auto-Abo kündigen"
+              alt={t("Auto-Abo kündigen")}
               fill
               className="object-cover"
               priority
@@ -123,19 +128,18 @@ export default function AutoAboKuendigenPage() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold mb-6">
                   <FileCheck className="w-4 h-4" />
-                  Kündigungsratgeber · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
+                  {t("Kündigungsratgeber · Aktualisiert am {date}", { date: formatSwissDate(LAST_UPDATED_ISO) })}
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
-                  Auto-Abo kündigen
+                  {t("Auto-Abo kündigen")}
                 </h1>
                 <p className="text-xl md:text-2xl text-primary-foreground font-semibold mb-4">
-                  Fristen, Kosten & Alternativen
+                  {t("Fristen, Kosten & Alternativen")}
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Die Kündigungsfrist bei Auto-Abos in der Schweiz beträgt üblicherweise 1–3 Monate; kündigen
-                  musst du schriftlich, meist per E-Mail oder direkt im Kundenkonto. Prüfe vorher dein
-                  Vertragsende und allfällige Mindestlaufzeiten, sonst drohen Zusatzkosten. Danach lohnt sich
-                  der Vergleich: Eine Leasingübernahme ist oft die günstigere Alternative.
+                  {t(
+                    "Die Kündigungsfrist bei Auto-Abos in der Schweiz beträgt üblicherweise 1–3 Monate; kündigen musst du schriftlich, meist per E-Mail oder direkt im Kundenkonto. Prüfe vorher dein Vertragsende und allfällige Mindestlaufzeiten, sonst drohen Zusatzkosten. Danach lohnt sich der Vergleich: Eine Leasingübernahme ist oft die günstigere Alternative.",
+                  )}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -145,7 +149,7 @@ export default function AutoAboKuendigenPage() {
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl"
                   >
                     <Link href="/suche">
-                      Leasingübernahmen entdecken
+                      {t("Leasingübernahmen entdecken")}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
@@ -156,7 +160,7 @@ export default function AutoAboKuendigenPage() {
                     className="border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 px-8 py-6 text-base font-semibold rounded-xl bg-transparent"
                   >
                     <Link href="/inserat-erstellen">
-                      Inserat erstellen
+                      {t("Inserat erstellen")}
                     </Link>
                   </Button>
                 </div>
@@ -171,16 +175,22 @@ export default function AutoAboKuendigenPage() {
             <div className="flex items-center gap-3 mb-6">
               <Info className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kurz gesagt: Auto-Abo kündigen
+                {t("Kurz gesagt: Auto-Abo kündigen")}
               </h2>
             </div>
             
             <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Die <strong>Kündigungsfrist</strong> bei Auto-Abos beträgt in der Schweiz üblicherweise <strong>1-3 Monate</strong>. Sie müssen die Kündigung <strong>schriftlich</strong> einreichen und auf die <strong>Mindestlaufzeit</strong> (oft 6-12 Monate) achten.
+                <T
+                  k="Die <0>Kündigungsfrist</0> bei Auto-Abos beträgt in der Schweiz üblicherweise <1>1-3 Monate</1>. Sie müssen die Kündigung <2>schriftlich</2> einreichen und auf die <3>Mindestlaufzeit</3> (oft 6-12 Monate) achten."
+                  c={[<strong key="0" />, <strong key="1" />, <strong key="2" />, <strong key="3" />]}
+                />
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
-                <strong>Wichtig:</strong> Prüfen Sie Ihren Vertrag auf vorzeitige Kündigungsgebühren und planen Sie die Fahrzeugrückgabe rechtzeitig.
+                <T
+                  k="<0>Wichtig:</0> Prüfen Sie Ihren Vertrag auf vorzeitige Kündigungsgebühren und planen Sie die Fahrzeugrückgabe rechtzeitig."
+                  c={[<strong key="0" />]}
+                />
               </p>
             </div>
           </div>
@@ -189,7 +199,7 @@ export default function AutoAboKuendigenPage() {
         {/* TOC SECTION */}
         <section className="py-10 px-4 bg-neutral-50">
           <div className="max-w-4xl mx-auto">
-            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">Inhaltsverzeichnis</h3>
+            <h3 className="font-bold text-neutral-900 mb-6 text-xl text-center">{t("Inhaltsverzeichnis")}</h3>
             <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8">
                 {[
@@ -208,7 +218,7 @@ export default function AutoAboKuendigenPage() {
                     className="flex items-center gap-2 text-neutral-600 hover:text-primary transition-colors text-left group"
                   >
                     <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium">{t(item.label)}</span>
                   </button>
                 ))}
               </div>
@@ -222,17 +232,16 @@ export default function AutoAboKuendigenPage() {
             <div className="flex items-center gap-3 mb-8">
               <Clock className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kündigungsfristen bei Auto-Abos
+                {t("Kündigungsfristen bei Auto-Abos")}
               </h2>
             </div>
             
             <div className="space-y-6">
               <p className="text-lg text-neutral-700 leading-relaxed">
-                Die Kündigungsfrist variiert je nach Anbieter und Vertragsmodell – falls Sie nach der Kündigung den Anbieter wechseln möchten, lohnt sich ein Blick auf die{" "}
-                <Link href="/auto-abos-im-vergleich" className="text-primary font-semibold hover:underline">
-                  Auto-Abo-Anbieter im Vergleich
-                </Link>
-                . In der Schweiz gelten folgende Richtwerte:
+                <T
+                  k="Die Kündigungsfrist variiert je nach Anbieter und Vertragsmodell – falls Sie nach der Kündigung den Anbieter wechseln möchten, lohnt sich ein Blick auf die <0>Auto-Abo-Anbieter im Vergleich</0>. In der Schweiz gelten folgende Richtwerte:"
+                  c={[<Link key="0" href="/auto-abos-im-vergleich" className="text-primary font-semibold hover:underline" />]}
+                />
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -241,9 +250,9 @@ export default function AutoAboKuendigenPage() {
                     <div className="bg-primary/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
                       <Clock className="w-6 h-6 text-primary" />
                     </div>
-                    <h3 className="font-bold text-neutral-900 mb-2 text-xl">1 Monat</h3>
+                    <h3 className="font-bold text-neutral-900 mb-2 text-xl">{t("1 Monat")}</h3>
                     <p className="text-neutral-600">
-                      Flexible Modelle mit kürzester Kündigungsfrist
+                      {t("Flexible Modelle mit kürzester Kündigungsfrist")}
                     </p>
                   </CardContent>
                 </Card>
@@ -253,9 +262,9 @@ export default function AutoAboKuendigenPage() {
                     <div className="bg-primary/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
                       <Calendar className="w-6 h-6 text-primary" />
                     </div>
-                    <h3 className="font-bold text-neutral-900 mb-2 text-xl">2-3 Monate</h3>
+                    <h3 className="font-bold text-neutral-900 mb-2 text-xl">{t("2-3 Monate")}</h3>
                     <p className="text-neutral-600">
-                      Standard bei den meisten Anbietern
+                      {t("Standard bei den meisten Anbietern")}
                     </p>
                   </CardContent>
                 </Card>
@@ -265,9 +274,9 @@ export default function AutoAboKuendigenPage() {
                     <div className="bg-neutral-200 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
                       <AlertTriangle className="w-6 h-6 text-neutral-700" />
                     </div>
-                    <h3 className="font-bold text-neutral-900 mb-2 text-xl">6+ Monate</h3>
+                    <h3 className="font-bold text-neutral-900 mb-2 text-xl">{t("6+ Monate")}</h3>
                     <p className="text-neutral-600">
-                      Mindestlaufzeit oft 6-12 Monate
+                      {t("Mindestlaufzeit oft 6-12 Monate")}
                     </p>
                   </CardContent>
                 </Card>
@@ -277,9 +286,12 @@ export default function AutoAboKuendigenPage() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-6 h-6 text-yellow-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-yellow-900 font-semibold mb-1">Wichtig</p>
+                    <p className="text-yellow-900 font-semibold mb-1">{t("Wichtig")}</p>
                     <p className="text-yellow-800">
-                      Beachten Sie die <strong>Mindestlaufzeit</strong> Ihres Vertrags. Eine vorzeitige Kündigung kann mit erheblichen Gebühren verbunden sein (oft 30-50% der Restkosten).
+                      <T
+                        k="Beachten Sie die <0>Mindestlaufzeit</0> Ihres Vertrags. Eine vorzeitige Kündigung kann mit erheblichen Gebühren verbunden sein (oft 30-50% der Restkosten)."
+                        c={[<strong key="0" />]}
+                      />
                     </p>
                   </div>
                 </div>
@@ -294,7 +306,7 @@ export default function AutoAboKuendigenPage() {
             <div className="flex items-center gap-3 mb-8">
               <FileText className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                So kündigen Sie Ihr Auto-Abo richtig
+                {t("So kündigen Sie Ihr Auto-Abo richtig")}
               </h2>
             </div>
             
@@ -347,9 +359,9 @@ export default function AutoAboKuendigenPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <IconComponent className="w-5 h-5 text-primary" />
-                          <h3 className="font-bold text-neutral-900 text-lg">{item.title}</h3>
+                          <h3 className="font-bold text-neutral-900 text-lg">{t(item.title)}</h3>
                         </div>
-                        <p className="text-neutral-600">{item.desc}</p>
+                        <p className="text-neutral-600">{t(item.desc)}</p>
                       </div>
                     </div>
                   </div>
@@ -365,49 +377,49 @@ export default function AutoAboKuendigenPage() {
             <div className="flex items-center gap-3 mb-8">
               <DollarSign className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Kosten bei der Kündigung
+                {t("Kosten bei der Kündigung")}
               </h2>
             </div>
             
             <div className="space-y-6">
               <p className="text-lg text-neutral-700 leading-relaxed">
-                Folgende Kosten können bei der Kündigung eines Auto-Abos anfallen:
+                {t("Folgende Kosten können bei der Kündigung eines Auto-Abos anfallen:")}
               </p>
 
               <div className="overflow-x-auto rounded-xl border-2 border-primary shadow-lg">
                 <table className="w-full bg-white text-left">
                   <thead className="bg-primary text-white">
                     <tr>
-                      <th className="p-4 md:p-6 font-bold text-base md:text-lg">Kostenart</th>
-                      <th className="p-4 md:p-6 font-bold text-base md:text-lg">Typischer Betrag</th>
-                      <th className="p-4 md:p-6 font-bold text-base md:text-lg">Hinweise</th>
+                      <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Kostenart")}</th>
+                      <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Typischer Betrag")}</th>
+                      <th className="p-4 md:p-6 font-bold text-base md:text-lg">{t("Hinweise")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-200">
                     <tr className="hover:bg-primary/5 transition-colors">
-                      <td className="p-4 md:p-6 font-medium text-neutral-900">Vorzeitige Kündigung</td>
-                      <td className="p-4 md:p-6 text-neutral-700 font-semibold">30-50% Restkosten</td>
-                      <td className="p-4 md:p-6 text-neutral-600">Nur bei Kündigung vor Mindestlaufzeit</td>
+                      <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Vorzeitige Kündigung")}</td>
+                      <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("30-50% Restkosten")}</td>
+                      <td className="p-4 md:p-6 text-neutral-600">{t("Nur bei Kündigung vor Mindestlaufzeit")}</td>
                     </tr>
                     <tr className="hover:bg-primary/5 transition-colors">
-                      <td className="p-4 md:p-6 font-medium text-neutral-900">Reinigungsgebühren</td>
+                      <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Reinigungsgebühren")}</td>
                       <td className="p-4 md:p-6 text-neutral-700 font-semibold">50-200 CHF</td>
-                      <td className="p-4 md:p-6 text-neutral-600">Falls Fahrzeug stark verschmutzt</td>
+                      <td className="p-4 md:p-6 text-neutral-600">{t("Falls Fahrzeug stark verschmutzt")}</td>
                     </tr>
                     <tr className="hover:bg-primary/5 transition-colors">
-                      <td className="p-4 md:p-6 font-medium text-neutral-900">Reparaturkosten</td>
-                      <td className="p-4 md:p-6 text-neutral-700 font-semibold">Nach Aufwand</td>
-                      <td className="p-4 md:p-6 text-neutral-600">Bei Schäden über normale Abnutzung hinaus</td>
+                      <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Reparaturkosten")}</td>
+                      <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Nach Aufwand")}</td>
+                      <td className="p-4 md:p-6 text-neutral-600">{t("Bei Schäden über normale Abnutzung hinaus")}</td>
                     </tr>
                     <tr className="hover:bg-primary/5 transition-colors">
-                      <td className="p-4 md:p-6 font-medium text-neutral-900">Kilometer-Überschreitung</td>
+                      <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Kilometer-Überschreitung")}</td>
                       <td className="p-4 md:p-6 text-neutral-700 font-semibold">0.50-1.00 CHF/km</td>
-                      <td className="p-4 md:p-6 text-neutral-600">Falls vereinbarte KM überschritten</td>
+                      <td className="p-4 md:p-6 text-neutral-600">{t("Falls vereinbarte KM überschritten")}</td>
                     </tr>
                     <tr className="hover:bg-primary/5 transition-colors">
-                      <td className="p-4 md:p-6 font-medium text-neutral-900">Restrate</td>
-                      <td className="p-4 md:p-6 text-neutral-700 font-semibold">Volle Monatsrate</td>
-                      <td className="p-4 md:p-6 text-neutral-600">Für den laufenden Monat</td>
+                      <td className="p-4 md:p-6 font-medium text-neutral-900">{t("Restrate")}</td>
+                      <td className="p-4 md:p-6 text-neutral-700 font-semibold">{t("Volle Monatsrate")}</td>
+                      <td className="p-4 md:p-6 text-neutral-600">{t("Für den laufenden Monat")}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -417,9 +429,9 @@ export default function AutoAboKuendigenPage() {
                 <div className="flex items-start gap-4">
                   <Info className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-green-900 font-semibold mb-1">Spartipp</p>
+                    <p className="text-green-900 font-semibold mb-1">{t("Spartipp")}</p>
                     <p className="text-green-800">
-                      Kündigen Sie rechtzeitig und halten Sie die Kündigungsfrist ein, um unnötige Kosten zu vermeiden. Dokumentieren Sie den Fahrzeugzustand bei der Rückgabe.
+                      {t("Kündigen Sie rechtzeitig und halten Sie die Kündigungsfrist ein, um unnötige Kosten zu vermeiden. Dokumentieren Sie den Fahrzeugzustand bei der Rückgabe.")}
                     </p>
                   </div>
                 </div>
@@ -434,14 +446,13 @@ export default function AutoAboKuendigenPage() {
             <div className="bg-white rounded-2xl shadow-lg border-2 border-primary p-6 md:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3">
-                  Alternative: Leasingübernahme
+                  {t("Alternative: Leasingübernahme")}
                 </h2>
                 <p className="text-neutral-600 text-base md:text-lg">
-                  Günstiger und flexibler als ein neues Auto-Abo – entdecken Sie{" "}
-                  <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">
-                    aktuelle Leasingübernahme-Angebote
-                  </Link>
-                  .
+                  <T
+                    k="Günstiger und flexibler als ein neues Auto-Abo – entdecken Sie <0>aktuelle Leasingübernahme-Angebote</0>."
+                    c={[<Link key="0" href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline" />]}
+                  />
                 </p>
               </div>
               <SearchForm />
@@ -455,7 +466,7 @@ export default function AutoAboKuendigenPage() {
             <div className="flex items-center gap-3 mb-8">
               <Shield className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Checkliste für die Fahrzeugrückgabe
+                {t("Checkliste für die Fahrzeugrückgabe")}
               </h2>
             </div>
             
@@ -476,7 +487,7 @@ export default function AutoAboKuendigenPage() {
                     <div className="bg-primary/10 p-2 rounded-lg shrink-0">
                       <Check className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="text-neutral-700 font-medium">{item}</p>
+                    <p className="text-neutral-700 font-medium">{t(item)}</p>
                   </div>
                 </div>
               ))}
@@ -486,9 +497,9 @@ export default function AutoAboKuendigenPage() {
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-6 h-6 text-yellow-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-yellow-900 font-semibold mb-1">Wichtig</p>
+                  <p className="text-yellow-900 font-semibold mb-1">{t("Wichtig")}</p>
                   <p className="text-yellow-800">
-                    Fotografieren Sie das Fahrzeug bei der Rückgabe aus allen Winkeln und dokumentieren Sie eventuelle Schäden. Dies schützt Sie vor ungerechtfertigten Nachforderungen.
+                    {t("Fotografieren Sie das Fahrzeug bei der Rückgabe aus allen Winkeln und dokumentieren Sie eventuelle Schäden. Dies schützt Sie vor ungerechtfertigten Nachforderungen.")}
                   </p>
                 </div>
               </div>
@@ -502,13 +513,13 @@ export default function AutoAboKuendigenPage() {
             <div className="flex items-center gap-3 mb-8">
               <AlertTriangle className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Sonderkündigung: Wann ist sie möglich?
+                {t("Sonderkündigung: Wann ist sie möglich?")}
               </h2>
             </div>
             
             <div className="space-y-6">
               <p className="text-lg text-neutral-700 leading-relaxed">
-                In bestimmten Fällen können Sie Ihr Auto-Abo ausserordentlich kündigen:
+                {t("In bestimmten Fällen können Sie Ihr Auto-Abo ausserordentlich kündigen:")}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -542,8 +553,8 @@ export default function AutoAboKuendigenPage() {
                           <IconComponent className="w-6 h-6 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-neutral-900 mb-2">{item.title}</h3>
-                          <p className="text-neutral-600">{item.desc}</p>
+                          <h3 className="font-bold text-neutral-900 mb-2">{t(item.title)}</h3>
+                          <p className="text-neutral-600">{t(item.desc)}</p>
                         </div>
                       </div>
                     </div>
@@ -553,7 +564,10 @@ export default function AutoAboKuendigenPage() {
 
               <div className="bg-primary/5 border-l-4 border-primary p-6 rounded-r-xl">
                 <p className="text-neutral-700 font-medium">
-                  <strong>Hinweis:</strong> Bei Sonderkündigungen müssen Sie entsprechende Nachweise vorlegen. Kontaktieren Sie Ihren Anbieter und erkundigen Sie sich nach den genauen Voraussetzungen.
+                  <T
+                    k="<0>Hinweis:</0> Bei Sonderkündigungen müssen Sie entsprechende Nachweise vorlegen. Kontaktieren Sie Ihren Anbieter und erkundigen Sie sich nach den genauen Voraussetzungen."
+                    c={[<strong key="0" />]}
+                  />
                 </p>
               </div>
             </div>
@@ -566,14 +580,14 @@ export default function AutoAboKuendigenPage() {
             <div className="flex items-center gap-3 mb-8">
               <Zap className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Alternativen zum Auto-Abo
+                {t("Alternativen zum Auto-Abo")}
               </h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-2 border-primary shadow-lg">
                 <CardContent className="p-8">
-                  <h3 className="text-2xl font-bold text-neutral-900 mb-4">Leasingübernahme</h3>
+                  <h3 className="text-2xl font-bold text-neutral-900 mb-4">{t("Leasingübernahme")}</h3>
                   <ul className="space-y-3 mb-6">
                     {[
                       "20-30% günstiger als Auto-Abo",
@@ -584,13 +598,13 @@ export default function AutoAboKuendigenPage() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-2 text-neutral-700">
                         <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="font-medium">{item}</span>
+                        <span className="font-medium">{t(item)}</span>
                       </li>
                     ))}
                   </ul>
                   <Button asChild className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl">
                     <Link href="/leasinguebernahme">
-                      Mehr zur Leasingübernahme
+                      {t("Mehr zur Leasingübernahme")}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>
@@ -599,7 +613,7 @@ export default function AutoAboKuendigenPage() {
 
               <Card className="border-2 border-neutral-300 shadow-lg">
                 <CardContent className="p-8">
-                  <h3 className="text-2xl font-bold text-neutral-900 mb-4">Neues Leasing</h3>
+                  <h3 className="text-2xl font-bold text-neutral-900 mb-4">{t("Neues Leasing")}</h3>
                   <ul className="space-y-3 mb-6">
                     {[
                       "Wunschfahrzeug konfigurieren",
@@ -610,13 +624,13 @@ export default function AutoAboKuendigenPage() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-2 text-neutral-700">
                         <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
-                        <span className="font-medium">{item}</span>
+                        <span className="font-medium">{t(item)}</span>
                       </li>
                     ))}
                   </ul>
                   <Button asChild variant="outline" className="w-full border-2 border-neutral-300 hover:bg-neutral-100 rounded-xl">
                     <Link href="/suche">
-                      Leasingangebote vergleichen
+                      {t("Leasingangebote vergleichen")}
                     </Link>
                   </Button>
                 </CardContent>
@@ -630,10 +644,10 @@ export default function AutoAboKuendigenPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                FAQ – Häufige Fragen
+                {t("FAQ – Häufige Fragen")}
               </h2>
               <p className="text-neutral-600 text-lg">
-                Antworten auf die wichtigsten Fragen zur Auto-Abo Kündigung
+                {t("Antworten auf die wichtigsten Fragen zur Auto-Abo Kündigung")}
               </p>
             </div>
             
@@ -643,10 +657,10 @@ export default function AutoAboKuendigenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Kann ich mein Auto-Abo vorzeitig kündigen?
+                  {t("Kann ich mein Auto-Abo vorzeitig kündigen?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, aber meist nur gegen Zahlung einer Vorfälligkeitsentschädigung (oft 30-50% der Restkosten). Prüfen Sie Ihren Vertrag auf die genauen Bedingungen.
+                  {t("Ja, aber meist nur gegen Zahlung einer Vorfälligkeitsentschädigung (oft 30-50% der Restkosten). Prüfen Sie Ihren Vertrag auf die genauen Bedingungen.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -655,10 +669,10 @@ export default function AutoAboKuendigenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Wie lange ist die Kündigungsfrist bei Auto-Abos?
+                  {t("Wie lange ist die Kündigungsfrist bei Auto-Abos?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Die Kündigungsfrist beträgt in der Schweiz üblicherweise 1-3 Monate. Die genaue Frist finden Sie in Ihrem Vertrag.
+                  {t("Die Kündigungsfrist beträgt in der Schweiz üblicherweise 1-3 Monate. Die genaue Frist finden Sie in Ihrem Vertrag.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -667,10 +681,10 @@ export default function AutoAboKuendigenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Muss die Kündigung schriftlich erfolgen?
+                  {t("Muss die Kündigung schriftlich erfolgen?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, Kündigungen müssen in der Regel schriftlich eingereicht werden (E-Mail, Brief oder Online-Portal). Bewahren Sie eine Kopie und Kündigungsbestätigung auf.
+                  {t("Ja, Kündigungen müssen in der Regel schriftlich eingereicht werden (E-Mail, Brief oder Online-Portal). Bewahren Sie eine Kopie und Kündigungsbestätigung auf.")}
                 </AccordionContent>
               </AccordionItem>
               
@@ -679,10 +693,10 @@ export default function AutoAboKuendigenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Was passiert, wenn ich die Kündigungsfrist verpasse?
+                  {t("Was passiert, wenn ich die Kündigungsfrist verpasse?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Der Vertrag verlängert sich automatisch um den vereinbarten Zeitraum (oft 6-12 Monate). Achten Sie daher genau auf die Fristen.
+                  {t("Der Vertrag verlängert sich automatisch um den vereinbarten Zeitraum (oft 6-12 Monate). Achten Sie daher genau auf die Fristen.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -691,10 +705,10 @@ export default function AutoAboKuendigenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Welche Kosten entstehen bei der Fahrzeugrückgabe?
+                  {t("Welche Kosten entstehen bei der Fahrzeugrückgabe?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Mögliche Kosten: Reinigungsgebühren (50-200 CHF), Reparaturkosten bei Schäden, Kilometer-Überschreitung (0.50-1.00 CHF/km) und die Restrate für den laufenden Monat.
+                  {t("Mögliche Kosten: Reinigungsgebühren (50-200 CHF), Reparaturkosten bei Schäden, Kilometer-Überschreitung (0.50-1.00 CHF/km) und die Restrate für den laufenden Monat.")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -703,10 +717,10 @@ export default function AutoAboKuendigenPage() {
                 className="bg-white rounded-xl border border-neutral-200 px-6 md:px-8 hover:border-primary transition-colors"
               >
                 <AccordionTrigger className="text-left font-semibold text-neutral-900 hover:no-underline py-6 text-base md:text-lg">
-                  Kann ich mein Auto-Abo an jemanden anderen übertragen?
+                  {t("Kann ich mein Auto-Abo an jemanden anderen übertragen?")}
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Dies hängt vom Anbieter ab. Einige erlauben eine Vertragsübernahme, andere nicht. Kontaktieren Sie Ihren Anbieter für Details.
+                  {t("Dies hängt vom Anbieter ab. Einige erlauben eine Vertragsübernahme, andere nicht. Kontaktieren Sie Ihren Anbieter für Details.")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -717,21 +731,21 @@ export default function AutoAboKuendigenPage() {
         <section className="py-20 bg-neutral-900 px-4">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Bereit für eine günstigere Alternative?
+              {t("Bereit für eine günstigere Alternative?")}
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-lg leading-relaxed">
-              Entdecken Sie Leasingübernahmen als kostengünstige Alternative zum Auto-Abo.
+              {t("Entdecken Sie Leasingübernahmen als kostengünstige Alternative zum Auto-Abo.")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/30 transition-all">
                 <Link href="/suche">
                   <Search className="w-5 h-5 mr-2" />
-                  Angebote durchsuchen
+                  {t("Angebote durchsuchen")}
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-semibold border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-xl bg-transparent transition-all">
                 <Link href="/inserat-erstellen">
-                  Inserat erstellen
+                  {t("Inserat erstellen")}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -746,3 +760,6 @@ export default function AutoAboKuendigenPage() {
     </>
   );
 }
+
+// SearchForm and PremiumListings translate from the always-loaded "cards" namespace.
+export const getStaticProps = staticI18nProps(["pages/auto-abo-kuendigen"]);

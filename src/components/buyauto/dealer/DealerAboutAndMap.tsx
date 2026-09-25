@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useLocale, useT } from "@/i18n/runtime";
 
 interface DealerAboutAndMapProps {
   garageName: string;
@@ -12,8 +13,8 @@ interface DealerAboutAndMapProps {
   className?: string;
 }
 
-function buildGoogleMapsQuery(garageName: string, city: string | null | undefined): string {
-  const parts = [garageName, city?.trim() || null, "Schweiz"].filter(Boolean) as string[];
+function buildGoogleMapsQuery(garageName: string, city: string | null | undefined, country: string): string {
+  const parts = [garageName, city?.trim() || null, country].filter(Boolean) as string[];
   return parts.join(", ");
 }
 
@@ -27,9 +28,12 @@ export function DealerAboutAndMap({
   contactEmail,
   className,
 }: DealerAboutAndMapProps) {
+  const t = useT();
+  const locale = useLocale();
   const safeServices = Array.isArray(services) ? services.filter((s) => typeof s === "string" && s.trim().length > 0) : [];
-  const mapQuery = buildGoogleMapsQuery(garageName, city);
-  const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed&z=14&hl=de&gl=CH`;
+  const mapQuery = buildGoogleMapsQuery(garageName, city, t("Schweiz"));
+  // hl = map UI language (German: "de" as before).
+  const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed&z=14&hl=${locale}&gl=CH`;
   const openInMapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
 
   return (
@@ -37,16 +41,18 @@ export function DealerAboutAndMap({
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="lg:col-span-7">
           <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-lg">
-            <h2 className="text-xl font-bold tracking-tight text-neutral-900">Über {garageName}</h2>
+            <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t("Über {name}", { name: garageName })}</h2>
             <p className="mt-3 text-sm leading-relaxed text-neutral-600">
               {description?.trim()
                 ? description.trim()
-                : `Entdecke Fahrzeuge und Angebote von ${garageName}. Dieses Profil wird laufend mit weiteren Informationen ergänzt.`}
+                : t("Entdecke Fahrzeuge und Angebote von {name}. Dieses Profil wird laufend mit weiteren Informationen ergänzt.", {
+                    name: garageName,
+                  })}
             </p>
 
             {safeServices.length > 0 ? (
               <div className="mt-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Dienstleistungen</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("Dienstleistungen")}</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {safeServices.slice(0, 18).map((service) => (
                     <span key={service} className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
@@ -60,14 +66,14 @@ export function DealerAboutAndMap({
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {city?.trim() ? (
                 <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Ort</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("Ort")}</div>
                   <div className="mt-1 text-sm font-semibold text-neutral-900">{city.trim()}</div>
                 </div>
               ) : null}
 
               {phoneNumber?.trim() ? (
                 <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Telefon</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("Telefon")}</div>
                   <div className="mt-1 text-sm">
                     <a className="font-semibold text-neutral-900 underline underline-offset-4" href={`tel:${phoneNumber.trim()}`}>
                       {phoneNumber.trim()}
@@ -78,7 +84,7 @@ export function DealerAboutAndMap({
 
               {contactEmail?.trim() ? (
                 <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">E-Mail</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("E-Mail")}</div>
                   <div className="mt-1 text-sm">
                     <a
                       className="break-words font-semibold text-neutral-900 underline underline-offset-4"
@@ -92,7 +98,7 @@ export function DealerAboutAndMap({
 
               {websiteUrl?.trim() ? (
                 <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Website</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("Website")}</div>
                   <div className="mt-1 text-sm">
                     <a
                       className="break-all font-semibold text-neutral-900 underline underline-offset-4"
@@ -109,7 +115,7 @@ export function DealerAboutAndMap({
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link href="/suche" className="inline-flex text-sm font-semibold text-primary underline underline-offset-4">
-                Fahrzeuge auf BuyAuto suchen
+                {t("Fahrzeuge auf BuyAuto suchen")}
               </Link>
             </div>
           </div>
@@ -118,7 +124,7 @@ export function DealerAboutAndMap({
         <div className="lg:col-span-5">
           <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-lg">
             <div className="border-b border-neutral-200 px-5 py-4">
-              <div className="text-sm font-bold tracking-tight text-neutral-900">Standort</div>
+              <div className="text-sm font-bold tracking-tight text-neutral-900">{t("Standort")}</div>
               <div className="mt-1 text-xs text-neutral-600">{mapQuery}</div>
             </div>
 
@@ -134,7 +140,7 @@ export function DealerAboutAndMap({
           </div>
 
           <p className="mt-3 text-xs text-neutral-500">
-            Hinweis: Die Karte basiert auf den öffentlich verfügbaren Profilangaben und kann je nach Eingabe leicht abweichen.
+            {t("Hinweis: Die Karte basiert auf den öffentlich verfügbaren Profilangaben und kann je nach Eingabe leicht abweichen.")}
           </p>
         </div>
       </div>

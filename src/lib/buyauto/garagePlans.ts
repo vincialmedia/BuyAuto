@@ -18,6 +18,10 @@
  *
  * Deliberately framework-free so API routes and lib code can import it without
  * dragging React in.
+ *
+ * The copy is German. The UI renders it with translatePlanCopy(t, text); the
+ * translations live in src/i18n/messages/{fr,it,en}/pricing.json, keyed by the
+ * German text — change a string here and update those three files too.
  */
 
 import { PREMIUM_BOOST_PRICE } from "@/lib/buyauto/stripe_config";
@@ -49,6 +53,41 @@ export interface GaragePlan {
   notIncluded: string[];
 }
 
+/* ------------------------------------------------------------------ *
+ * Translatable copy with numbers in it
+ * ------------------------------------------------------------------ */
+
+type PlanCopyVars = Record<string, string | number | null | undefined>;
+
+/** German text built by planCopy() → its template (the dictionary key) and values. */
+const PLAN_COPY_TEMPLATES = new Map<string, { key: string; vars: PlanCopyVars }>();
+
+/**
+ * Fills a German template such as "bis {n} Fotos" (same placeholder rules as
+ * t() in src/i18n/runtime.tsx) and remembers the template. The copy stays a
+ * plain German string; translatePlanCopy() maps it back to the template, so
+ * the dictionaries are keyed by "bis {n} Fotos" rather than by today's numbers
+ * and a price or quota change never orphans a translation.
+ */
+export function planCopy(key: string, vars: PlanCopyVars): string {
+  const text = key.replace(/\{(\w+)\}/g, (match, name: string) => {
+    const value = vars[name];
+    return value === undefined || value === null ? match : String(value);
+  });
+  PLAN_COPY_TEMPLATES.set(text, { key, vars });
+  return text;
+}
+
+/**
+ * Renders a German string of the plan/pricing copy in the current language:
+ * `translatePlanCopy(t, plan.tagline)`. Plain strings are their own key;
+ * strings built with planCopy() resolve to their template.
+ */
+export function translatePlanCopy(t: (key: string, vars?: PlanCopyVars) => string, text: string): string {
+  const template = PLAN_COPY_TEMPLATES.get(text);
+  return template ? t(template.key, template.vars) : t(text);
+}
+
 export const GARAGE_PLAN_ORDER: GaragePlanCode[] = ["starter", "growth", "pro"];
 
 export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
@@ -65,7 +104,7 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     supportLevel: "E-Mail-Support",
     cta: "Mit Starter loslegen",
     highlights: [
-      `1 Premium-Boost pro Monat inklusive – einzeln CHF ${PREMIUM_BOOST_PRICE}`,
+      planCopy("1 Premium-Boost pro Monat inklusive – einzeln CHF {price}", { price: PREMIUM_BOOST_PRICE }),
       "Eigene Garage-Profilseite mit SEO",
       "25 Eintauschwert-Bewertungen pro Monat",
     ],
@@ -88,7 +127,7 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     popular: true,
     cta: "Growth wählen",
     highlights: [
-      `3 Premium-Boosts pro Monat inklusive – Wert CHF ${3 * PREMIUM_BOOST_PRICE}`,
+      planCopy("{n} Premium-Boosts pro Monat inklusive – Wert CHF {value}", { n: 3, value: 3 * PREMIUM_BOOST_PRICE }),
       "Website-Tools: Inventar- & Eintauschwert-Widget auf deiner eigenen Seite",
       "60 Eintauschwert-Bewertungen pro Monat, priorisierter Support",
     ],
@@ -108,7 +147,7 @@ export const GARAGE_PLANS: Record<GaragePlanCode, GaragePlan> = {
     cta: "Pro wählen",
     highlights: [
       "Personalisiertes Onboarding: wir richten dich ein und laden bis zu 100 Fahrzeuge hoch",
-      `6 Premium-Boosts pro Monat inklusive – Wert CHF ${6 * PREMIUM_BOOST_PRICE}`,
+      planCopy("{n} Premium-Boosts pro Monat inklusive – Wert CHF {value}", { n: 6, value: 6 * PREMIUM_BOOST_PRICE }),
       "150 Eintauschwert-Bewertungen pro Monat, persönlicher Ansprechpartner",
     ],
     notIncluded: [],
@@ -166,7 +205,7 @@ export function formatChf(value: number, decimals = 0): string {
  * the boost value now lives in a plain highlight bullet with its unit price.
  */
 export function perVehicleLine(plan: GaragePlan): string {
-  return `= CHF ${formatChf(pricePerVehicleChf(plan), 2)} pro Fahrzeug und Monat`;
+  return planCopy("= CHF {price} pro Fahrzeug und Monat", { price: formatChf(pricePerVehicleChf(plan), 2) });
 }
 
 /* ------------------------------------------------------------------ *
@@ -189,7 +228,7 @@ export const GARAGE_CORE_FEATURES: GarageFeature[] = [
   },
   {
     key: "manage_listings",
-    label: `Inserate erstellen & verwalten – bis ${GARAGE_MAX_PHOTOS} Fotos pro Fahrzeug`,
+    label: planCopy("Inserate erstellen & verwalten – bis {n} Fotos pro Fahrzeug", { n: GARAGE_MAX_PHOTOS }),
   },
   {
     key: "vin_prefill",
@@ -248,15 +287,17 @@ export const GARAGE_COMPARISON_ROWS: GarageComparisonRow[] = [
     key: "listings",
     label: "Aktive Inserate",
     values: {
-      starter: `bis ${GARAGE_PLANS.starter.listingLimit}`,
-      growth: `bis ${GARAGE_PLANS.growth.listingLimit}`,
-      pro: `bis ${GARAGE_PLANS.pro.listingLimit}`,
+      starter: planCopy("bis {n}", { n: GARAGE_PLANS.starter.listingLimit }),
+      growth: planCopy("bis {n}", { n: GARAGE_PLANS.growth.listingLimit }),
+      pro: planCopy("bis {n}", { n: GARAGE_PLANS.pro.listingLimit }),
     },
   },
   {
     key: "premium",
     label: "Premium-Boosts pro Monat",
-    tooltip: `Ein Premium-Boost hebt ein Fahrzeug 30 Tage hervor – einzeln CHF ${PREMIUM_BOOST_PRICE}.`,
+    tooltip: planCopy("Ein Premium-Boost hebt ein Fahrzeug 30 Tage hervor – einzeln CHF {price}.", {
+      price: PREMIUM_BOOST_PRICE,
+    }),
     values: {
       starter: `${GARAGE_PLANS.starter.premiumPerMonth}`,
       growth: `${GARAGE_PLANS.growth.premiumPerMonth}`,
@@ -303,7 +344,7 @@ export const GARAGE_COMPARISON_ROWS: GarageComparisonRow[] = [
     values: {
       starter: false,
       growth: false,
-      pro: `bis ${GARAGE_PLANS.pro.onboardingVehicles} Fahrzeuge`,
+      pro: planCopy("bis {n} Fahrzeuge", { n: GARAGE_PLANS.pro.onboardingVehicles }),
     },
   },
   {

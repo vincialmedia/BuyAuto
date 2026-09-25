@@ -9,12 +9,14 @@ import { Listing, ListingDetail } from "@/lib/buyauto/types";
 import { getSimilarListings } from "@/services/listingsService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
+import { useT, type TFunction } from "@/i18n/runtime";
 
 interface SimilarListingsProps {
   listing: ListingDetail;
 }
 
 export default function SimilarListings({ listing }: SimilarListingsProps) {
+  const t = useT();
   const [listings, setListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -68,11 +70,11 @@ export default function SimilarListings({ listing }: SimilarListingsProps) {
     <section className="space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-neutral-900">
-          Ähnliche Fahrzeuge
+          {t("Ähnliche Fahrzeuge")}
         </h2>
         <Button variant="outline" asChild className="bg-transparent hover:bg-neutral-50">
           <Link href="/suche">
-            Alle ansehen
+            {t("Alle ansehen")}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Link>
         </Button>
@@ -129,7 +131,7 @@ function SimilarListingCardSkeleton({ className }: { className?: string }) {
  * the monthly rate and Restlaufzeit. Everything else is a Direktkauf and shows
  * the purchase price (never the mirrored monthly columns as "pro Monat").
  */
-function cardPriceInfo(listing: Listing): { price: string; priceSub: string; months: number | null } {
+function cardPriceInfo(listing: Listing, t: TFunction): { price: string; priceSub: string; months: number | null } {
   const chf = (v: number) => `CHF ${v.toLocaleString("de-CH")}`;
   const dealType = listing.deal_type ?? "lease_takeover";
 
@@ -154,16 +156,17 @@ function cardPriceInfo(listing: Listing): { price: string; priceSub: string; mon
         : typeof takeover?.remaining_months === "number" && takeover.remaining_months > 0
           ? takeover.remaining_months
           : null;
-    return { price: chf(Math.round(monthly)), priceSub: "pro Monat", months };
+    return { price: chf(Math.round(monthly)), priceSub: t("pro Monat"), months };
   }
 
   const purchase = typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0 ? listing.purchasePriceCHF : null;
-  return { price: purchase ? chf(Math.round(purchase)) : "Preis auf Anfrage", priceSub: purchase ? "Kaufpreis" : "", months: null };
+  return { price: purchase ? chf(Math.round(purchase)) : t("Preis auf Anfrage"), priceSub: purchase ? t("Kaufpreis") : "", months: null };
 }
 
 function SimilarListingCard({ listing }: { listing: Listing }) {
+  const t = useT();
   const formatMileage = (km: number) => `${km.toLocaleString("de-CH")} km`;
-  const { price, priceSub, months } = cardPriceInfo(listing);
+  const { price, priceSub, months } = cardPriceInfo(listing, t);
 
   return (
     <Card className="group border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -183,7 +186,7 @@ function SimilarListingCard({ listing }: { listing: Listing }) {
             <div className="absolute inset-0 flex items-center justify-center text-neutral-500">
               <div className="text-center">
                 <div className="text-4xl mb-2">🚗</div>
-                <p className="text-sm">Bild nicht verfügbar</p>
+                <p className="text-sm">{t("Bild nicht verfügbar")}</p>
               </div>
             </div>
           )}
@@ -212,7 +215,7 @@ function SimilarListingCard({ listing }: { listing: Listing }) {
               {priceSub && <div className="text-xs text-neutral-500">{priceSub}</div>}
             </div>
             <div className="text-right text-sm text-neutral-600">
-              {months !== null && <div>{months} Mon.</div>}
+              {months !== null && <div>{t("{n} Mon.", { n: months })}</div>}
               <div className="flex items-center gap-1 text-xs">
                 <MapPin className="w-3 h-3" />
                 {listing.location}
@@ -226,8 +229,9 @@ function SimilarListingCard({ listing }: { listing: Listing }) {
 }
 
 function SimilarListingCardMobile({ listing }: { listing: Listing }) {
+  const t = useT();
   const formatMileage = (km: number) => `${km.toLocaleString("de-CH")} km`;
-  const { price, priceSub, months } = cardPriceInfo(listing);
+  const { price, priceSub, months } = cardPriceInfo(listing, t);
 
   return (
     <Card className="group flex-shrink-0 w-72 border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden snap-start">
@@ -247,7 +251,7 @@ function SimilarListingCardMobile({ listing }: { listing: Listing }) {
             <div className="absolute inset-0 flex items-center justify-center text-neutral-500">
               <div className="text-center">
                 <div className="text-4xl mb-2">🚗</div>
-                <p className="text-sm">Bild nicht verfügbar</p>
+                <p className="text-sm">{t("Bild nicht verfügbar")}</p>
               </div>
             </div>
           )}
@@ -276,7 +280,7 @@ function SimilarListingCardMobile({ listing }: { listing: Listing }) {
               {priceSub && <div className="text-xs text-neutral-500">{priceSub}</div>}
             </div>
             <div className="text-right text-sm text-neutral-600">
-              {months !== null && <div>{months} Mon.</div>}
+              {months !== null && <div>{t("{n} Mon.", { n: months })}</div>}
               <div className="flex items-center gap-1 text-xs">
                 <MapPin className="w-3 h-3" />
                 {listing.location}

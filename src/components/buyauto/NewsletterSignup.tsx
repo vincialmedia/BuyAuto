@@ -3,8 +3,10 @@ import { Mail, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useT } from "@/i18n/runtime";
 
 export function NewsletterSignup() {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -17,12 +19,12 @@ export function NewsletterSignup() {
     setSuccess(false);
 
     if (!email) {
-      setError("Bitte gib deine E-Mail-Adresse ein");
+      setError(t("Bitte gib deine E-Mail-Adresse ein"));
       return;
     }
 
     if (!consent) {
-      setError("Bitte bestätige, dass du E-Mails erhalten möchtest");
+      setError(t("Bitte bestätige, dass du E-Mails erhalten möchtest"));
       return;
     }
 
@@ -45,10 +47,10 @@ export function NewsletterSignup() {
         setConsent(false);
         setTimeout(() => setSuccess(false), 5000);
       } else {
-        setError(data.error || "Ein Fehler ist aufgetreten");
+        setError(data.error ? t(data.error) : t("Ein Fehler ist aufgetreten"));
       }
     } catch (err) {
-      setError("Ein Fehler ist aufgetreten. Bitte versuche es später erneut.");
+      setError(t("Ein Fehler ist aufgetreten. Bitte versuche es später erneut."));
     } finally {
       setLoading(false);
     }
@@ -58,23 +60,23 @@ export function NewsletterSignup() {
     <div className="w-full">
       <div className="flex items-center gap-2 mb-4">
         <Mail className="h-5 w-5 text-red-500" />
-        <h3 className="text-lg font-semibold text-gray-900">Newsletter abonnieren</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t("Newsletter abonnieren")}</h3>
       </div>
       
       <p className="text-sm text-gray-600 mb-4">
-        Bleib informiert über neue Leasingübernahmen und exklusive Angebote.
+        {t("Bleib informiert über neue Leasingübernahmen und exklusive Angebote.")}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
             type="email"
-            placeholder="Deine E-Mail-Adresse"
+            placeholder={t("Deine E-Mail-Adresse")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading || success}
             className="flex-1 text-gray-900 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
-            aria-label="E-Mail-Adresse für Newsletter"
+            aria-label={t("E-Mail-Adresse für Newsletter")}
           />
           <Button
             type="submit"
@@ -84,15 +86,15 @@ export function NewsletterSignup() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Wird gesendet...
+                {t("Wird gesendet...")}
               </>
             ) : success ? (
               <>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                Angemeldet!
+                {t("Angemeldet!")}
               </>
             ) : (
-              "Anmelden"
+              t("Anmelden@@newsletter")
             )}
           </Button>
         </div>
@@ -109,7 +111,7 @@ export function NewsletterSignup() {
             htmlFor="newsletter-consent"
             className="text-sm text-gray-600 cursor-pointer leading-tight"
           >
-            Ich möchte Informationen und Angebote per E-Mail erhalten.
+            {t("Ich möchte Informationen und Angebote per E-Mail erhalten.")}
           </label>
         </div>
 
@@ -121,7 +123,7 @@ export function NewsletterSignup() {
 
         {success && (
           <div className="text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3">
-            Erfolgreich angemeldet! Vielen Dank für deine Anmeldung.
+            {t("Erfolgreich angemeldet! Vielen Dank für deine Anmeldung.")}
           </div>
         )}
       </form>

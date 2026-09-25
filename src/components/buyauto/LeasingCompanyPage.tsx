@@ -28,6 +28,8 @@ import {
   type LeasingCompany,
   type SourcedFact,
 } from "@/lib/buyauto/leasingCompanies";
+import { absoluteUrl } from "@/i18n/config";
+import { T, useLocale, useT, type TFunction } from "@/i18n/runtime";
 
 // Template for the per-Leasinggesellschaft pages. Everything company-specific
 // (Gebühren, Dauer, Dokumente, Übertragungsweg) comes from the registry in
@@ -65,14 +67,20 @@ function withInlineLink(text: string, href?: string, linkText?: string) {
 
 // Renders a SourcedFact: the visible attribution phrase inside the text
 // becomes an external source link (Quellenangabe — exempt from the
-// no-external-contacts rule for body copy).
+// no-external-contacts rule for body copy). Text and link phrase are
+// translated separately (both are keys in the "leasing" namespace); every
+// translation of the text must contain the translated link phrase verbatim,
+// otherwise the fact renders without its link.
 function SourcedText({ fact }: { fact: SourcedFact }) {
-  if (!fact.sourceUrl || !fact.sourceLinkText || !fact.text.includes(fact.sourceLinkText)) {
-    return <>{fact.text}</>;
+  const t = useT();
+  const text = t(fact.text);
+  const sourceLinkText = fact.sourceLinkText ? t(fact.sourceLinkText) : undefined;
+  if (!fact.sourceUrl || !sourceLinkText || !text.includes(sourceLinkText)) {
+    return <>{text}</>;
   }
   return (
     <>
-      {fact.text.split(fact.sourceLinkText).map((part, i, parts) => (
+      {text.split(sourceLinkText).map((part, i, parts) => (
         <span key={i}>
           {part}
           {i < parts.length - 1 && (
@@ -82,7 +90,7 @@ function SourcedText({ fact }: { fact: SourcedFact }) {
               rel="noopener noreferrer nofollow"
               className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
             >
-              {fact.sourceLinkText}
+              {sourceLinkText}
             </a>
           )}
         </span>
@@ -91,72 +99,108 @@ function SourcedText({ fact }: { fact: SourcedFact }) {
   );
 }
 
-function buildFaqs(company: LeasingCompany): Faq[] {
+function buildFaqs(company: LeasingCompany, t: TFunction): Faq[] {
   const { name, compoundName } = company;
   return [
     {
-      q: `Kann ich meinen ${compoundName}-Leasingvertrag auf eine andere Person übertragen?`,
-      a: `Eine Übertragung ist grundsätzlich nur mit Zustimmung von ${name} möglich. Die Übernehmerin oder der Übernehmer durchläuft die gleiche Bonitätsprüfung wie bei einem Neuvertrag – erst nach der Bewilligung wird der Vertrag umgeschrieben.`,
+      q: t("Kann ich meinen {compoundName}-Leasingvertrag auf eine andere Person übertragen?", { compoundName }),
+      a: t(
+        "Eine Übertragung ist grundsätzlich nur mit Zustimmung von {name} möglich. Die Übernehmerin oder der Übernehmer durchläuft die gleiche Bonitätsprüfung wie bei einem Neuvertrag – erst nach der Bewilligung wird der Vertrag umgeschrieben.",
+        { name }
+      ),
     },
     {
-      q: "Wer prüft die Bonität des Übernehmers?",
+      q: t("Wer prüft die Bonität des Übernehmers?"),
       // Company-specific where sourced facts exist — keeps the FAQ schema of
       // the four pages from being name-swapped duplicates of each other.
       a: company.facts.documents
-        ? `${name} selbst – wie bei jedem neuen Leasingvertrag. ${company.facts.documents.text} BuyAuto ersetzt diese Prüfung nicht.`
-        : `${name} selbst – wie bei jedem neuen Leasingvertrag. BuyAuto ersetzt diese Prüfung nicht.`,
+        ? t("{name} selbst – wie bei jedem neuen Leasingvertrag. {documents} BuyAuto ersetzt diese Prüfung nicht.", {
+            name,
+            documents: t(company.facts.documents.text),
+          })
+        : t("{name} selbst – wie bei jedem neuen Leasingvertrag. BuyAuto ersetzt diese Prüfung nicht.", { name }),
     },
     {
-      q: `Was kostet die Übertragung bei ${name}?`,
+      q: t("Was kostet die Übertragung bei {name}?", { name }),
       a: company.facts.transferFee
-        ? `${company.facts.transferFee.text} Welche Kostenblöcke bei einer Leasingübernahme generell anfallen, zeigt unser Ratgeber zu den Leasingübernahme-Kosten.`
-        : `Die Umschreibegebühr legt ${name} fest – sie steht in deinem Leasingvertrag oder du erfragst sie direkt bei der Gesellschaft. Welche Kostenblöcke bei einer Leasingübernahme generell anfallen, zeigt unser Ratgeber zu den Leasingübernahme-Kosten.`,
+        ? t(
+            "{transferFee} Welche Kostenblöcke bei einer Leasingübernahme generell anfallen, zeigt unser Ratgeber zu den Leasingübernahme-Kosten.",
+            { transferFee: t(company.facts.transferFee.text) }
+          )
+        : t(
+            "Die Umschreibegebühr legt {name} fest – sie steht in deinem Leasingvertrag oder du erfragst sie direkt bei der Gesellschaft. Welche Kostenblöcke bei einer Leasingübernahme generell anfallen, zeigt unser Ratgeber zu den Leasingübernahme-Kosten.",
+            { name }
+          ),
       href: "/leasinguebernahme-kosten",
-      linkText: "Leasingübernahme-Kosten",
+      // In-sentence form of the link phrase; every translation of the two
+      // answers above must contain it verbatim.
+      linkText: t("Leasingübernahme-Kosten@@faq"),
     },
     {
-      q: `Wie inseriere ich meinen ${compoundName}-Vertrag auf BuyAuto?`,
-      a: `Erstelle in wenigen Minuten ein Inserat mit Monatsrate, Restlaufzeit und Kilometerstand. Interessenten melden sich direkt bei dir – die eigentliche Übertragung läuft anschliessend über ${name}.`,
+      q: t("Wie inseriere ich meinen {compoundName}-Vertrag auf BuyAuto?", { compoundName }),
+      a: t(
+        "Erstelle in wenigen Minuten ein Inserat mit Monatsrate, Restlaufzeit und Kilometerstand. Interessenten melden sich direkt bei dir – die eigentliche Übertragung läuft anschliessend über {name}.",
+        { name }
+      ),
     },
   ];
 }
 
 export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
+  const t = useT();
+  const locale = useLocale();
   const { name, compoundName, slug, facts } = company;
   const path = `/${slug}`;
-  const url = `https://www.buyauto.ch${path}`;
+  const url = absoluteUrl(path, locale);
   const lastUpdatedIso = CONTENT_LAST_UPDATED[path];
 
-  const title = `${compoundName}-Leasing übernehmen oder abgeben | BuyAuto`;
-  const description = `So überträgst du einen ${compoundName}-Leasingvertrag: ${company.descriptionDetail} – was Abgeber wie Übernehmer wissen müssen.`;
+  const title = t("{compoundName}-Leasing übernehmen oder abgeben | BuyAuto", { compoundName });
+  const headline = t("{compoundName}-Leasing übernehmen oder abgeben", { compoundName });
+  const description = t(
+    "So überträgst du einen {compoundName}-Leasingvertrag: {detail} – was Abgeber wie Übernehmer wissen müssen.",
+    { compoundName, detail: t(company.descriptionDetail) }
+  );
 
-  const faqs = buildFaqs(company);
+  const faqs = buildFaqs(company, t);
 
   const steps = [
     {
       icon: ClipboardList,
-      title: "Inserat erstellen oder Angebot finden",
-      text: `Als Abgeber inserierst du deinen ${compoundName}-Vertrag mit Monatsrate, Restlaufzeit und Kilometerstand auf BuyAuto. Als Übernehmer durchsuchst du die aktuellen Angebote.`,
+      title: t("Inserat erstellen oder Angebot finden"),
+      text: t(
+        "Als Abgeber inserierst du deinen {compoundName}-Vertrag mit Monatsrate, Restlaufzeit und Kilometerstand auf BuyAuto. Als Übernehmer durchsuchst du die aktuellen Angebote.",
+        { compoundName }
+      ),
     },
     {
       icon: Handshake,
-      title: "Sich einig werden",
-      text: "Abgeber und Übernehmer klären die Eckpunkte: Übergabetermin, Zustand des Fahrzeugs und wer eine allfällige Umschreibegebühr trägt – das ist Verhandlungssache.",
+      title: t("Sich einig werden"),
+      text: t(
+        "Abgeber und Übernehmer klären die Eckpunkte: Übergabetermin, Zustand des Fahrzeugs und wer eine allfällige Umschreibegebühr trägt – das ist Verhandlungssache."
+      ),
     },
     {
       icon: FileText,
-      title: `Übertragung bei ${name} beantragen`,
-      text: `Beide Seiten melden die geplante Übernahme bei ${name} an. Die Gesellschaft nennt euch die nötigen Angaben und Unterlagen für den Antrag.`,
+      title: t("Übertragung bei {name} beantragen", { name }),
+      text: t(
+        "Beide Seiten melden die geplante Übernahme bei {name} an. Die Gesellschaft nennt euch die nötigen Angaben und Unterlagen für den Antrag.",
+        { name }
+      ),
     },
     {
       icon: ShieldCheck,
-      title: "Bonitätsprüfung",
-      text: `${name} prüft die Übernehmerin oder den Übernehmer wie bei jedem Neuvertrag. Erst mit der Bewilligung ist die Übertragung verbindlich.`,
+      title: t("Bonitätsprüfung"),
+      text: t(
+        "{name} prüft die Übernehmerin oder den Übernehmer wie bei jedem Neuvertrag. Erst mit der Bewilligung ist die Übertragung verbindlich.",
+        { name }
+      ),
     },
     {
       icon: BadgeCheck,
-      title: "Umschreibung und Übergabe",
-      text: "Nach der Bewilligung wird der Vertrag umgeschrieben: Die bisherige Leasingnehmerin oder der bisherige Leasingnehmer wird entlassen, danach wird das Fahrzeug übergeben.",
+      title: t("Umschreibung und Übergabe"),
+      text: t(
+        "Nach der Bewilligung wird der Vertrag umgeschrieben: Die bisherige Leasingnehmerin oder der bisherige Leasingnehmer wird entlassen, danach wird das Fahrzeug übergeben."
+      ),
     },
   ];
 
@@ -172,7 +216,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: `${compoundName}-Leasing übernehmen oder abgeben`,
+              headline,
               description,
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
@@ -202,7 +246,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
         />
 
         {/* Open Graph */}
-        <meta property="og:title" content={`${compoundName}-Leasing übernehmen oder abgeben`} />
+        <meta property="og:title" content={headline} />
         <meta property="og:description" content={description} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={url} />
@@ -213,8 +257,8 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
           <Breadcrumbs
             items={[
-              { name: "Home", href: "/" },
-              { name: "Leasingübernahme", href: "/leasinguebernahme" },
+              { name: t("Home"), href: "/" },
+              { name: t("Leasingübernahme"), href: "/leasinguebernahme" },
               { name: name, href: path },
             ]}
           />
@@ -225,27 +269,31 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
           <div className="max-w-4xl mx-auto">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-600 text-sm font-bold uppercase tracking-wider mb-5">
               <BadgeCheck className="w-4 h-4" />
-              Leasinggesellschaft
-              {lastUpdatedIso ? ` · Aktualisiert am ${formatSwissDate(lastUpdatedIso)}` : null}
+              {t("Leasinggesellschaft")}
+              {lastUpdatedIso
+                ? ` · ${t("Aktualisiert am {date}", { date: formatSwissDate(lastUpdatedIso) })}`
+                : null}
             </span>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-neutral-900 tracking-tight leading-[1.05] mb-6">
-              {compoundName}-Leasing <span className="text-red-500">übernehmen oder abgeben</span>
+              <T
+                k="{compoundName}-Leasing <0>übernehmen oder abgeben</0>"
+                vars={{ compoundName }}
+                c={[<span key="accent" className="text-red-500" />]}
+              />
             </h1>
             {/* Answer-first: the first sentences answer «wie funktioniert die
                 Übertragung eines Vertrags bei dieser Gesellschaft». */}
             <p className="text-lg sm:text-xl text-neutral-600 leading-relaxed max-w-3xl">
-              Einen laufenden {compoundName}-Leasingvertrag kannst du übernehmen oder an eine Nachfolgerin
-              oder einen Nachfolger übertragen – grundsätzlich nur mit Zustimmung von {name}. Die Übernehmerin
-              oder der Übernehmer durchläuft die gleiche Bonitätsprüfung wie bei einem Neuvertrag; erst nach
-              der Bewilligung wird der Vertrag umgeschrieben. Auf BuyAuto findest du beide Seiten: aktuelle
-              Leasingübernahmen aller Gesellschaften und einen einfachen Weg, deinen eigenen Vertrag zur
-              Übernahme auszuschreiben.
+              {t(
+                "Einen laufenden {compoundName}-Leasingvertrag kannst du übernehmen oder an eine Nachfolgerin oder einen Nachfolger übertragen – grundsätzlich nur mit Zustimmung von {name}. Die Übernehmerin oder der Übernehmer durchläuft die gleiche Bonitätsprüfung wie bei einem Neuvertrag; erst nach der Bewilligung wird der Vertrag umgeschrieben. Auf BuyAuto findest du beide Seiten: aktuelle Leasingübernahmen aller Gesellschaften und einen einfachen Weg, deinen eigenen Vertrag zur Übernahme auszuschreiben.",
+                { compoundName, name }
+              )}
             </p>
 
             {/* Per-company differentiator — derived from the sourced facts so
                 the answer-first block isn't identical across the four pages. */}
             <p className="mt-4 text-lg text-neutral-700 font-medium leading-relaxed max-w-3xl">
-              {company.heroNote}
+              {t(company.heroNote)}
             </p>
 
             {company.introNote && (
@@ -256,17 +304,17 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
 
             {company.financedBrands && (
               <p className="mt-3 text-base text-neutral-500 leading-relaxed max-w-3xl">
-                {company.financedBrands.lead}{" "}
+                {t(company.financedBrands.lead)}{" "}
                 {company.financedBrands.brands.map((brand, i, arr) => (
                   <span key={brand.name}>
                     {brand.href ? (
                       <Link href={brand.href} className="text-red-600 font-semibold hover:underline">
-                        {brand.name}
+                        {t(brand.name)}
                       </Link>
                     ) : (
-                      brand.name
+                      t(brand.name)
                     )}
-                    {i < arr.length - 2 ? ", " : i === arr.length - 2 ? " und " : ""}
+                    {i < arr.length - 2 ? ", " : i === arr.length - 2 ? ` ${t("und")} ` : ""}
                   </span>
                 ))}{" "}
                 (
@@ -276,7 +324,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                   rel="noopener noreferrer nofollow"
                   className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
                 >
-                  {company.financedBrands.sourceLabel}
+                  {t(company.financedBrands.sourceLabel)}
                 </a>
                 ).
               </p>
@@ -290,7 +338,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               >
                 <Link href="/inserat-erstellen">
                   <PenLine className="w-5 h-5 mr-2" />
-                  Leasing abgeben
+                  {t("Leasing abgeben")}
                 </Link>
               </Button>
               <Button
@@ -301,7 +349,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               >
                 <Link href="/suche?dealType=lease_takeover">
                   <Search className="w-5 h-5 mr-2" />
-                  Leasing übernehmen
+                  {t("Leasing übernehmen")}
                 </Link>
               </Button>
             </div>
@@ -312,7 +360,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
         <section id="prozess" className="py-16 px-4 sm:px-6 lg:px-8 bg-neutral-50 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight mb-10">
-              So läuft die Übertragung bei {name}
+              {t("So läuft die Übertragung bei {name}", { name })}
             </h2>
             <ol className="space-y-6">
               {steps.map((step, index) => (
@@ -337,18 +385,23 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
             </ol>
             {facts.transferProcess && (
               <div className="mt-8 bg-red-500/5 border-l-4 border-red-500 p-6 rounded-r-xl">
-                <h3 className="text-lg font-bold text-neutral-900 mb-2">So regelt es {name}</h3>
+                <h3 className="text-lg font-bold text-neutral-900 mb-2">{t("So regelt es {name}", { name })}</h3>
                 <p className="text-neutral-600 leading-relaxed">
                   <SourcedText fact={facts.transferProcess} />
                 </p>
               </div>
             )}
             <p className="mt-8 text-neutral-600">
-              Den allgemeinen Ablauf mit allen Details findest du im Ratgeber{" "}
-              <Link href="/leasingvertrag-uebertragen" className="text-red-600 font-semibold hover:underline">
-                Leasingvertrag übertragen
-              </Link>
-              .
+              <T
+                k="Den allgemeinen Ablauf mit allen Details findest du im Ratgeber <0>Leasingvertrag übertragen</0>."
+                c={[
+                  <Link
+                    key="ratgeber"
+                    href="/leasingvertrag-uebertragen"
+                    className="text-red-600 font-semibold hover:underline"
+                  />,
+                ]}
+              />
             </p>
           </div>
         </section>
@@ -357,23 +410,28 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
         <section id="konditionen" className="py-16 px-4 sm:px-6 lg:px-8 bg-white scroll-mt-20">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight mb-4">
-              Gebühren, Dauer und Dokumente bei {name}
+              {t("Gebühren, Dauer und Dokumente bei {name}", { name })}
             </h2>
             <p className="text-neutral-600 mb-10 max-w-3xl">
-              Massgebend sind dein Leasingvertrag und die Auskunft von {name} – wir nennen hier bewusst nur,
-              was verbindlich belegt ist.
+              {t(
+                "Massgebend sind dein Leasingvertrag und die Auskunft von {name} – wir nennen hier bewusst nur, was verbindlich belegt ist.",
+                { name }
+              )}
             </p>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="bg-neutral-50 rounded-2xl p-6 border border-neutral-200">
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-4">
                   <Wallet className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="text-lg font-bold text-neutral-900 mb-2">Gebühren</h3>
+                <h3 className="text-lg font-bold text-neutral-900 mb-2">{t("Gebühren")}</h3>
                 <p className="text-neutral-600 leading-relaxed">
                   {facts.transferFee ? (
                     <SourcedText fact={facts.transferFee} />
                   ) : (
-                    `Die Umschreibegebühr legt ${name} fest – sie steht in deinem Leasingvertrag oder du erfragst sie direkt bei der Gesellschaft. Alle generellen Kostenblöcke zeigt unser Kosten-Ratgeber.`
+                    t(
+                      "Die Umschreibegebühr legt {name} fest – sie steht in deinem Leasingvertrag oder du erfragst sie direkt bei der Gesellschaft. Alle generellen Kostenblöcke zeigt unser Kosten-Ratgeber.",
+                      { name }
+                    )
                   )}
                 </p>
               </div>
@@ -381,14 +439,17 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-4">
                   <CalendarClock className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="text-lg font-bold text-neutral-900 mb-2">Typische Dauer</h3>
+                <h3 className="text-lg font-bold text-neutral-900 mb-2">{t("Typische Dauer")}</h3>
                 {/* ERFAHRUNGSWERT-VINCE: typische Übertragungsdauer — bleibt
                     beim generischen Fallback, bis ein belegter Wert vorliegt. */}
                 <p className="text-neutral-600 leading-relaxed">
                   {facts.typicalDuration ? (
                     <SourcedText fact={facts.typicalDuration} />
                   ) : (
-                    `Die Dauer hängt vor allem von der Bonitätsprüfung und der Rückmeldung von ${name} ab. Plane die Fahrzeugübergabe erst nach der Bewilligung.`
+                    t(
+                      "Die Dauer hängt vor allem von der Bonitätsprüfung und der Rückmeldung von {name} ab. Plane die Fahrzeugübergabe erst nach der Bewilligung.",
+                      { name }
+                    )
                   )}
                 </p>
               </div>
@@ -396,12 +457,15 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-4">
                   <FileText className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="text-lg font-bold text-neutral-900 mb-2">Benötigte Dokumente</h3>
+                <h3 className="text-lg font-bold text-neutral-900 mb-2">{t("Benötigte Dokumente")}</h3>
                 <p className="text-neutral-600 leading-relaxed">
                   {facts.documents ? (
                     <SourcedText fact={facts.documents} />
                   ) : (
-                    `Für die Bonitätsprüfung verlangt ${name} in der Regel Angaben zu Identität, Einkommen und Wohnsitz. Die verbindliche Liste bekommst du direkt von ${name}.`
+                    t(
+                      "Für die Bonitätsprüfung verlangt {name} in der Regel Angaben zu Identität, Einkommen und Wohnsitz. Die verbindliche Liste bekommst du direkt von {name}.",
+                      { name }
+                    )
                   )}
                 </p>
               </div>
@@ -411,13 +475,20 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                 Stand derives from CONTENT_LAST_UPDATED so it can never
                 contradict the «Aktualisiert am» badge or the Article schema. */}
             <p className="mt-8 text-sm text-neutral-500">
-              Massgeblich sind die aktuellen Bedingungen der Leasinggesellschaft.
-              {lastUpdatedIso ? ` Stand der Angaben: ${formatSwissDate(lastUpdatedIso)}.` : null} Die
-              kantonalen Gebühren des Strassenverkehrsamts kommen hinzu – Details im Ratgeber{" "}
-              <Link href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline">
-                Leasingübernahme-Kosten
-              </Link>
-              .
+              {t("Massgeblich sind die aktuellen Bedingungen der Leasinggesellschaft.")}
+              {lastUpdatedIso
+                ? ` ${t("Stand der Angaben: {date}.", { date: formatSwissDate(lastUpdatedIso) })}`
+                : null}{" "}
+              <T
+                k="Die kantonalen Gebühren des Strassenverkehrsamts kommen hinzu – Details im Ratgeber <0>Leasingübernahme-Kosten</0>."
+                c={[
+                  <Link
+                    key="kosten"
+                    href="/leasinguebernahme-kosten"
+                    className="text-red-600 font-semibold hover:underline"
+                  />,
+                ]}
+              />
             </p>
           </div>
         </section>
@@ -427,11 +498,12 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
         <section className="py-16 px-4 sm:px-6 lg:px-8 bg-neutral-50">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight mb-4">
-              Aktuelle Leasingübernahmen auf BuyAuto
+              {t("Aktuelle Leasingübernahmen auf BuyAuto")}
             </h2>
             <p className="text-neutral-600 mb-8 max-w-2xl mx-auto">
-              Durchsuche alle Übernahme-Angebote – jedes Inserat weist Monatsrate und Restlaufzeit
-              transparent aus.
+              {t(
+                "Durchsuche alle Übernahme-Angebote – jedes Inserat weist Monatsrate und Restlaufzeit transparent aus."
+              )}
             </p>
             <Button
               asChild
@@ -439,7 +511,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
               className="bg-red-500 text-white hover:bg-red-600 font-bold rounded-xl px-8 h-14 shadow-lg shadow-red-500/25 hover:scale-105 transition-all duration-300"
             >
               <Link href="/suche?dealType=lease_takeover">
-                Angebote durchsuchen
+                {t("Angebote durchsuchen")}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </Button>
@@ -450,7 +522,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
         <section id="faq" className="py-16 px-4 sm:px-6 lg:px-8 bg-white scroll-mt-20">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight mb-10 text-center">
-              Häufige Fragen zu {name}
+              {t("Häufige Fragen zu {name}", { name })}
             </h2>
             <Accordion type="single" collapsible className="w-full space-y-3">
               {faqs.map((faq, index) => (
@@ -477,10 +549,10 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-neutral-800 rounded-3xl p-8 border border-neutral-700">
                 <h3 className="text-2xl font-bold text-white mb-3">
-                  Du willst deinen {compoundName}-Vertrag abgeben?
+                  {t("Du willst deinen {compoundName}-Vertrag abgeben?", { compoundName })}
                 </h3>
                 <p className="text-neutral-300 mb-6">
-                  Erstelle dein Inserat in wenigen Minuten – Interessenten melden sich direkt bei dir.
+                  {t("Erstelle dein Inserat in wenigen Minuten – Interessenten melden sich direkt bei dir.")}
                 </p>
                 <Button
                   asChild
@@ -488,18 +560,19 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                   className="bg-red-500 text-white hover:bg-red-600 font-bold rounded-xl px-8 h-12"
                 >
                   <Link href="/inserat-erstellen">
-                    Inserat erstellen
+                    {t("Inserat erstellen")}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
               </div>
               <div className="bg-neutral-800 rounded-3xl p-8 border border-neutral-700">
                 <h3 className="text-2xl font-bold text-white mb-3">
-                  Du willst ein {compoundName}-Leasing übernehmen?
+                  {t("Du willst ein {compoundName}-Leasing übernehmen?", { compoundName })}
                 </h3>
                 <p className="text-neutral-300 mb-6">
-                  Durchsuche die aktuellen Übernahme-Angebote – oft ohne hohe Anzahlung und mit kürzerer
-                  Laufzeit als bei einem Neuvertrag.
+                  {t(
+                    "Durchsuche die aktuellen Übernahme-Angebote – oft ohne hohe Anzahlung und mit kürzerer Laufzeit als bei einem Neuvertrag."
+                  )}
                 </p>
                 <Button
                   asChild
@@ -508,7 +581,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                   className="border-2 border-neutral-500 bg-white text-neutral-900 hover:bg-neutral-100 font-bold rounded-xl px-8 h-12"
                 >
                   <Link href="/suche?dealType=lease_takeover">
-                    Angebote ansehen
+                    {t("Angebote ansehen")}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
@@ -520,33 +593,33 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                 erst das BuyAuto-Inserat, dann externe Nachfrage). */}
             <div className="mt-10 text-center text-sm text-neutral-400 space-y-3">
               <p>
-                Direkt bei der Gesellschaft nachfragen:{" "}
+                {t("Direkt bei der Gesellschaft nachfragen:")}{" "}
                 <a
                   href={company.infoUrl ?? company.officialSite}
                   target="_blank"
                   rel="noopener noreferrer nofollow"
                   className="text-neutral-300 underline hover:text-white inline-flex items-center gap-1"
                 >
-                  offizielle Website von {name}
+                  {t("offizielle Website von {name}", { name })}
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </p>
               <p>
-                Mehr zum Thema:{" "}
+                {t("Mehr zum Thema:")}{" "}
                 <Link href="/leasingvertrag-uebertragen" className="text-neutral-300 underline hover:text-white">
-                  Leasingvertrag übertragen
+                  {t("Leasingvertrag übertragen")}
                 </Link>{" "}
                 ·{" "}
                 <Link href="/leasinguebernahme-kosten" className="text-neutral-300 underline hover:text-white">
-                  Leasingübernahme-Kosten
+                  {t("Leasingübernahme-Kosten")}
                 </Link>{" "}
                 ·{" "}
                 <Link href="/leasinguebernahme" className="text-neutral-300 underline hover:text-white">
-                  Leasingübernahme nach Marke
+                  {t("Leasingübernahme nach Marke")}
                 </Link>
               </p>
               <p>
-                Andere Leasinggesellschaften:{" "}
+                {t("Andere Leasinggesellschaften:")}{" "}
                 {otherLeasingCompanies(slug).map((other, index, arr) => (
                   <span key={other.slug}>
                     <Link href={`/${other.slug}`} className="text-neutral-300 underline hover:text-white">

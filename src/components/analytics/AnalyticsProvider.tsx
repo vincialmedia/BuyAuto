@@ -12,6 +12,7 @@ import {
   updatePageLocation,
 } from "@/lib/analytics";
 import { extractListingIdFromParam } from "@/lib/buyauto/listingUrl";
+import { localizePath, toLocale } from "@/i18n/config";
 
 /**
  * Loads GA4 once and sends exactly one page_view per page.
@@ -64,7 +65,10 @@ export function AnalyticsProvider() {
 
   useEffect(() => {
     if (!authResolved || !router.isReady) return;
-    const path = router.asPath;
+    // router.asPath has no language prefix (/fr/preise reads "/preise"); put it
+    // back so fr/it/en page views keep their real URL, like the landing view,
+    // which is read from window.location.
+    const path = localizePath(router.asPath, toLocale(router.locale));
 
     if (initAnalytics()) {
       lastTrackedPath.current = path;
@@ -78,7 +82,7 @@ export function AnalyticsProvider() {
     // Hash-only changes and shallow query updates are not new pages.
     if (pendingNavigationIsShallow.current) return;
     trackPageView(path);
-  }, [router.asPath, router.isReady, authResolved]);
+  }, [router.asPath, router.locale, router.isReady, authResolved]);
 
   // tel:, mailto: and WhatsApp links on listing and dealer pages. One
   // delegated listener instead of per-link handlers, so contact options added

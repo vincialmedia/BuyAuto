@@ -31,6 +31,7 @@ import {
   isCantonCode,
   type CantonCode,
 } from "@/lib/buyauto/listingContract";
+import { T, useT } from "@/i18n/runtime";
 
 export interface CanonicalOption {
   id: string;
@@ -90,6 +91,7 @@ function Field({
   children: React.ReactNode;
   className?: string;
 }) {
+  const t = useT();
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
       <Label className="flex items-center gap-1.5 text-sm font-medium text-neutral-700">
@@ -99,7 +101,7 @@ function Field({
       </Label>
       {children}
       {hint ? <p className="text-xs text-neutral-500 font-light">{hint}</p> : null}
-      {error ? <p className="text-sm text-red-500 font-light">{error}</p> : null}
+      {error ? <p className="text-sm text-red-500 font-light">{t(error)}</p> : null}
     </div>
   );
 }
@@ -156,6 +158,8 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
     locationRequired = true,
   } = props;
 
+  const t = useT();
+
   const selectedMakeId = watch("make_id");
   const selectedModelId = watch("model_id");
   const selectedVariantId = watch("variant_id");
@@ -189,7 +193,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
       {disableAllFields ? (
         <div className="absolute inset-0 z-10 flex items-start justify-center pt-8">
           <div className="rounded-2xl border border-neutral-200 bg-white/90 backdrop-blur px-4 py-3 shadow-sm text-sm text-neutral-700">
-            Bitte zuerst die VIN eingeben und <span className="font-medium">„Daten laden“</span> klicken.
+            <T k="Bitte zuerst die VIN eingeben und <0>„Daten laden“</0> klicken." c={[<span key="0" className="font-medium" />]} />
           </div>
         </div>
       ) : null}
@@ -197,8 +201,8 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
       <div className={disableAllFields ? "opacity-50 pointer-events-none select-none" : ""}>
         <div className="space-y-9">
           {/* ── Fahrzeug ─────────────────────────────────────────────── */}
-          <Section icon={Car} title="Fahrzeug">
-            <Field icon={Car} label="Marke" required error={errors.make_id?.message as string | undefined}>
+          <Section icon={Car} title={t("Fahrzeug")}>
+            <Field icon={Car} label={t("Marke")} required error={errors.make_id?.message as string | undefined}>
               <Select
                 value={selectedMakeId || ""}
                 onValueChange={(value) => {
@@ -209,7 +213,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 disabled={disableAllFields}
               >
                 <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder={loadingMakes ? "Lädt..." : "Marke auswählen"} />
+                  <SelectValue placeholder={loadingMakes ? t("Lädt...") : t("Marke auswählen")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(makes ?? []).map((m) => (
@@ -221,7 +225,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               </Select>
             </Field>
 
-            <Field icon={CarFront} label="Modell" required error={errors.model_id?.message as string | undefined}>
+            <Field icon={CarFront} label={t("Modell")} required error={errors.model_id?.message as string | undefined}>
               <Select
                 value={selectedModelId || ""}
                 onValueChange={(value) => {
@@ -231,7 +235,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 disabled={disableAllFields || !selectedMakeId || loadingModels}
               >
                 <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder={!selectedMakeId ? "Zuerst Marke wählen" : loadingModels ? "Lädt..." : "Modell auswählen"} />
+                  <SelectValue placeholder={!selectedMakeId ? t("Zuerst Marke wählen") : loadingModels ? t("Lädt...") : t("Modell auswählen")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(models ?? []).map((m) => (
@@ -245,8 +249,8 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
 
             <Field
               icon={Cog}
-              label="Ausführung"
-              hint="Motorisierung bzw. Version – hilft Käufern, dein Fahrzeug genau zu finden."
+              label={t("Ausführung")}
+              hint={t("Motorisierung bzw. Version – hilft Käufern, dein Fahrzeug genau zu finden.")}
               error={errors.variant_id?.message as string | undefined}
             >
               <Select
@@ -259,12 +263,12 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 <SelectTrigger className={selectTriggerCls}>
                   <SelectValue
                     placeholder={
-                      !selectedModelId ? "Zuerst Modell wählen" : loadingVariants ? "Lädt..." : "Ausführung auswählen (optional)"
+                      !selectedModelId ? t("Zuerst Modell wählen") : loadingVariants ? t("Lädt...") : t("Ausführung auswählen (optional)")
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Keine Angabe</SelectItem>
+                  <SelectItem value="none">{t("Keine Angabe")}</SelectItem>
                   {(variants ?? []).map((v) => (
                     <SelectItem key={v.id} value={v.id}>
                       {v.name}
@@ -276,8 +280,8 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
 
             <Field
               icon={Check}
-              label="Titel-Zusatz"
-              hint='Erscheint hinter dem automatischen Titel, z.B. «… | Yamaha Monster Edition · Frisch ab MFK». Nur Text, keine Links.'
+              label={t("Titel-Zusatz")}
+              hint={t("Erscheint hinter dem automatischen Titel, z.B. «… | Yamaha Monster Edition · Frisch ab MFK». Nur Text, keine Links.")}
               error={errors.title_suffix?.message as string | undefined}
             >
               <div className="relative">
@@ -285,7 +289,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                   {...register("title_suffix")}
                   type="text"
                   maxLength={TITLE_SUFFIX_MAX}
-                  placeholder="z.B. Frisch ab MFK (optional)"
+                  placeholder={t("z.B. Frisch ab MFK (optional)")}
                   disabled={disableAllFields}
                   className={`${selectTriggerCls} pr-14`}
                 />
@@ -298,14 +302,14 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               </div>
             </Field>
 
-            <Field icon={Calendar} label="Baujahr" required error={errors.year?.message as string | undefined}>
+            <Field icon={Calendar} label={t("Baujahr")} required error={errors.year?.message as string | undefined}>
               <Select
                 value={String(watch("year") ?? "")}
                 onValueChange={(value) => setValue("year", parseInt(value, 10), { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
                 <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder="Jahr auswählen" />
+                  <SelectValue placeholder={t("Jahr auswählen")} />
                 </SelectTrigger>
                 <SelectContent>
                   {years.map((year) => (
@@ -317,13 +321,13 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               </Select>
             </Field>
 
-            <Field icon={Gauge} label="Kilometerstand" required error={errors.km?.message as string | undefined}>
+            <Field icon={Gauge} label={t("Kilometerstand")} required error={errors.km?.message as string | undefined}>
               <div className="relative">
                 <Input
                   id="km"
                   {...register("km")}
                   type="text"
-                  placeholder="z.B. 35'000"
+                  placeholder={t("z.B. 35'000")}
                   disabled={disableAllFields}
                   className={`${selectTriggerCls} pr-12`}
                   onChange={(e) => {
@@ -350,69 +354,69 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
           </Section>
 
           {/* ── Motor & Technik ──────────────────────────────────────── */}
-          <Section icon={Cog} title="Motor & Technik">
-            <Field icon={Fuel} label="Treibstoff" required error={errors.fuel?.message as string | undefined}>
+          <Section icon={Cog} title={t("Motor & Technik")}>
+            <Field icon={Fuel} label={t("Treibstoff")} required error={errors.fuel?.message as string | undefined}>
               <Select
                 value={watch("fuel")}
                 onValueChange={(value) => setValue("fuel", value, { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
                 <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder="Treibstoff auswählen" />
+                  <SelectValue placeholder={t("Treibstoff auswählen")} />
                 </SelectTrigger>
                 <SelectContent>
                   {fuelTypes.map((f) => (
                     <SelectItem key={f} value={f}>
-                      {f}
+                      {t(f)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
 
-            <Field icon={Cog} label="Getriebe" required error={errors.gearbox?.message as string | undefined}>
+            <Field icon={Cog} label={t("Getriebe")} required error={errors.gearbox?.message as string | undefined}>
               <Select
                 value={watch("gearbox")}
                 onValueChange={(value) => setValue("gearbox", value, { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
                 <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder="Getriebe auswählen" />
+                  <SelectValue placeholder={t("Getriebe auswählen")} />
                 </SelectTrigger>
                 <SelectContent>
                   {gearboxTypes.map((g) => (
                     <SelectItem key={g} value={g}>
-                      {g}
+                      {t(g)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
 
-            <Field icon={Car} label="Karosserie" required error={errors.body?.message as string | undefined}>
+            <Field icon={Car} label={t("Karosserie")} required error={errors.body?.message as string | undefined}>
               <Select
                 value={watch("body")}
                 onValueChange={(value) => setValue("body", value, { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
                 <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder="Karosserie auswählen" />
+                  <SelectValue placeholder={t("Karosserie auswählen")} />
                 </SelectTrigger>
                 <SelectContent>
                   {bodyTypes.map((b) => (
                     <SelectItem key={b} value={b}>
-                      {b}
+                      {t(b)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
 
-            <Field icon={Zap} label="Leistung (PS)" required error={errors.power_hp?.message as string | undefined}>
+            <Field icon={Zap} label={t("Leistung (PS)")} required error={errors.power_hp?.message as string | undefined}>
               <Input
                 type="number"
                 inputMode="numeric"
-                placeholder="z.B. 306"
+                placeholder={t("z.B. 306")}
                 disabled={disableAllFields}
                 className={selectTriggerCls}
                 value={watch("power_hp") == null ? "" : String(watch("power_hp"))}
@@ -423,26 +427,26 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               />
             </Field>
 
-            <Field icon={Route} label="Antrieb" required error={errors.drivetrain?.message as string | undefined}>
+            <Field icon={Route} label={t("Antrieb")} required error={errors.drivetrain?.message as string | undefined}>
               <Select
                 value={watch("drivetrain") ?? ""}
                 onValueChange={(value) => setValue("drivetrain", value, { shouldValidate: true, shouldDirty: true })}
                 disabled={disableAllFields}
               >
                 <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder="Antrieb auswählen" />
+                  <SelectValue placeholder={t("Antrieb auswählen")} />
                 </SelectTrigger>
                 <SelectContent>
                   {drivetrainTypes.map((d) => (
                     <SelectItem key={d} value={d}>
-                      {d}
+                      {t(d)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
 
-            <Field icon={CalendarClock} label="Erstzulassung" error={errors.first_registration?.message as string | undefined}>
+            <Field icon={CalendarClock} label={t("Erstzulassung")} error={errors.first_registration?.message as string | undefined}>
               <VehicleFirstRegistrationField
                 value={watch("first_registration")}
                 disabled={disableAllFields}
@@ -454,12 +458,12 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
           </Section>
 
           {/* ── Standort ─────────────────────────────────────────────── */}
-          <Section icon={MapPin} title="Standort">
+          <Section icon={MapPin} title={t("Standort")}>
             <Field
               icon={MapPin}
-              label="Standort"
+              label={t("Standort")}
               required={locationRequired}
-              hint="Ort eingeben und aus der Liste wählen – der Kanton wird automatisch erkannt."
+              hint={t("Ort eingeben und aus der Liste wählen – der Kanton wird automatisch erkannt.")}
               error={
                 (errors.location?.message as string | undefined) ??
                 (errors.canton_code?.message as string | undefined)
@@ -470,7 +474,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
                 name={register("location").name}
                 inputRef={register("location").ref}
                 value={String(watch("location") ?? "")}
-                placeholder="z.B. Schlieren"
+                placeholder={t("z.B. Schlieren")}
                 disabled={disableAllFields}
                 inputClassName={`${selectTriggerCls} placeholder:text-neutral-400`}
                 onValueChange={(next) => setValue("location", next, { shouldValidate: true, shouldDirty: true })}
@@ -482,7 +486,7 @@ export function VehicleBasicsSection(props: VehicleBasicsSectionProps) {
               {cantonLabel ? (
                 <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
                   <Check className="h-3.5 w-3.5" aria-hidden />
-                  Kanton erkannt: {cantonLabel} ({cantonCode})
+                  {t("Kanton erkannt: {canton} ({code})", { canton: t(cantonLabel), code: cantonCode })}
                 </div>
               ) : null}
             </Field>

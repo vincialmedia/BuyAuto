@@ -12,6 +12,8 @@ import { getListingByIdForOwner } from "@/services/createListingService";
 import type { ListingData } from "@/lib/buyauto/types";
 import { SuccessListingSummary, type SuccessListingSummaryInput } from "@/components/buyauto/create-listing/SuccessListingSummary";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { useLocale, useT, type TFunction } from "@/i18n/runtime";
+import { localizePath } from "@/i18n/config";
 
 const useConfetti = () => {
   const hasMounted = useHasMounted();
@@ -57,14 +59,16 @@ function normalizeCompletedListingData(raw: unknown): CompletedListingData | nul
   return obj as CompletedListingData;
 }
 
-function getPlanLabel(args: { completed: CompletedListingData | null; listing: SuccessListingSummaryInput | null }): string | null {
-  const { completed, listing } = args;
+function getPlanLabel(args: { completed: CompletedListingData | null; listing: SuccessListingSummaryInput | null; t: TFunction }): string | null {
+  const { completed, listing, t } = args;
 
   const planKey = completed?.price_plan ?? (listing?.price_plan ? (listing.price_plan as Plan) : null);
   if (!planKey || !(planKey in pricingPlans)) return null;
 
   const plan = pricingPlans[planKey];
-  return plan.duration_days ? `${plan.name} · ${plan.duration_days} Tage` : `${plan.name} · Online bis verkauft`;
+  return plan.duration_days
+    ? `${t(plan.name)} · ${t("{n} Tage", { n: plan.duration_days })}`
+    : `${t(plan.name)} · ${t("Online bis verkauft")}`;
 }
 
 function isOnlineStatus(status: string | null | undefined): boolean {
@@ -77,6 +81,8 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
   const hasMounted = useHasMounted();
   const confetti = useConfetti();
   const { user, profile } = useAuth();
+  const t = useT();
+  const locale = useLocale();
 
   const [completed, setCompleted] = useState<CompletedListingData | null>(null);
   const [resolvedListing, setResolvedListing] = useState<SuccessListingSummaryInput | null>(draft ? (draft as unknown as SuccessListingSummaryInput) : null);
@@ -160,7 +166,7 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
     void run();
   }, [draft, hasMounted, listingId, user]);
 
-  const planLabel = useMemo(() => getPlanLabel({ completed, listing: resolvedListing }), [completed, resolvedListing]);
+  const planLabel = useMemo(() => getPlanLabel({ completed, listing: resolvedListing, t }), [completed, resolvedListing, t]);
 
   const handleCreateNew = () => {
     if (typeof window !== "undefined") {
@@ -178,19 +184,19 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
 
   const title = isGarage
     ? isPublished
-      ? "Inserat veröffentlicht"
-      : "Inserat übermittelt"
+      ? t("Inserat veröffentlicht")
+      : t("Inserat übermittelt")
     : isPublished
-      ? "Inserat veröffentlicht"
-      : "Inserat eingereicht";
+      ? t("Inserat veröffentlicht")
+      : t("Inserat eingereicht");
 
   const description = isGarage
     ? isPublished
-      ? "Dein Inserat ist jetzt live."
-      : "Dein Inserat wurde erfolgreich übermittelt und wird in Kürze veröffentlicht."
+      ? t("Dein Inserat ist jetzt live.")
+      : t("Dein Inserat wurde erfolgreich übermittelt und wird in Kürze veröffentlicht.")
     : isPublished
-      ? "Hier ist die Zusammenfassung deines Inserats."
-      : "Dein Inserat wurde zur Überprüfung eingereicht. Du wirst benachrichtigt, sobald es veröffentlicht wird. Dies dauert in der Regel 2-4 Stunden.";
+      ? t("Hier ist die Zusammenfassung deines Inserats.")
+      : t("Dein Inserat wurde zur Überprüfung eingereicht. Du wirst benachrichtigt, sobald es veröffentlicht wird. Dies dauert in der Regel 2-4 Stunden.");
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
@@ -216,7 +222,7 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
         ) : (
           <Card className="rounded-3xl border-neutral-200/60 shadow-sm">
             <CardContent className="p-6 text-sm text-neutral-600">
-              {isLoadingListing ? "Lade Zusammenfassung..." : "Zusammenfassung ist derzeit nicht verfügbar."}
+              {isLoadingListing ? t("Lade Zusammenfassung...") : t("Zusammenfassung ist derzeit nicht verfügbar.")}
             </CardContent>
           </Card>
         )}
@@ -224,19 +230,19 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
         {completed?.id ? (
           <Card className="rounded-3xl border-neutral-200/60 shadow-sm">
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Preisübersicht</h3>
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">{t("Preisübersicht")}</h3>
 
               <div className="space-y-2">
                 {completed.price_plan && pricingPlans[completed.price_plan] ? (
                   <div className="flex justify-between items-center text-neutral-700">
-                    <span>{pricingPlans[completed.price_plan].name}</span>
+                    <span>{t(pricingPlans[completed.price_plan].name)}</span>
                     <span>CHF {pricingPlans[completed.price_plan].price.toFixed(2)}</span>
                   </div>
                 ) : null}
 
                 {completed.premium ? (
                   <div className="flex justify-between items-center text-neutral-700">
-                    <span>Premium Platzierung Aktiv (CHF 30)</span>
+                    <span>{t("Premium Platzierung Aktiv (CHF 30)")}</span>
                     <span>+ CHF {PREMIUM_BOOST_PRICE.toFixed(2)}</span>
                   </div>
                 ) : null}
@@ -244,7 +250,7 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
                 <hr className="border-t border-neutral-200 my-2" />
 
                 <div className="flex justify-between items-center text-xl font-bold">
-                  <span className="text-neutral-800">Gesamtbetrag bezahlt:</span>
+                  <span className="text-neutral-800">{t("Gesamtbetrag bezahlt:")}</span>
                   <span className="text-red-600">CHF {completed.price_paid_chf.toFixed(2)}</span>
                 </div>
               </div>
@@ -255,13 +261,13 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
                     onClick={() => {
                       if (typeof window !== "undefined") {
                         sessionStorage.removeItem("completedListingData");
-                        window.location.href = `${buildListingHref({ id: listingId })}?preview=true`;
+                        window.location.href = localizePath(`${buildListingHref({ id: listingId })}?preview=true`, locale);
                       }
                     }}
                     className="w-full bg-neutral-900 hover:bg-neutral-800"
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    Inserat ansehen
+                    {t("Inserat ansehen")}
                   </Button>
                 </div>
               ) : null}
@@ -273,13 +279,13 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
               <Button
                 onClick={() => {
                   if (typeof window !== "undefined") {
-                    window.location.href = `${buildListingHref({ id: listingId })}?preview=true`;
+                    window.location.href = localizePath(`${buildListingHref({ id: listingId })}?preview=true`, locale);
                   }
                 }}
                 className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
-                Inserat ansehen
+                {t("Inserat ansehen")}
               </Button>
             </div>
           ) : null
@@ -291,14 +297,14 @@ export default function SuccessScreen({ draft = null }: SuccessScreenProps) {
             onClick={() => {
               if (typeof window !== "undefined") {
                 sessionStorage.removeItem("completedListingData");
-                window.location.href = "/dashboard";
+                window.location.href = localizePath("/dashboard", locale);
               }
             }}
           >
-            Zum Dashboard
+            {t("Zum Dashboard")}
           </Button>
           <Button variant="secondary" className="w-full sm:w-auto" onClick={handleCreateNew}>
-            Neues Inserat erstellen
+            {t("Neues Inserat erstellen")}
           </Button>
         </div>
       </div>

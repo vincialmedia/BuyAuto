@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-
-const SITE_URL = "https://www.buyauto.ch";
+import { absoluteUrl } from "@/i18n/config";
+import { useLocale } from "@/i18n/runtime";
 
 export interface Crumb {
   name: string;
@@ -14,6 +14,8 @@ export interface Crumb {
  * consistent whichever variant a page uses.
  */
 export function BreadcrumbJsonLd({ items }: { items: Crumb[] }) {
+  // Crumb hrefs are locale-less; each language's JSON-LD points at its own URLs.
+  const locale = useLocale();
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -21,7 +23,7 @@ export function BreadcrumbJsonLd({ items }: { items: Crumb[] }) {
       "@type": "ListItem",
       position: i + 1,
       name: c.name,
-      item: `${SITE_URL}${c.href}`,
+      item: absoluteUrl(c.href, locale),
     })),
   };
 

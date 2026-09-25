@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { GetStaticPropsContext } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { AnimatePresence } from "framer-motion";
@@ -11,14 +12,19 @@ import { PrivatePricingSection } from "@/components/buyauto/pricing/PrivatePrici
 import { GaragePricingSection } from "@/components/buyauto/pricing/GaragePricingSection";
 import { PrivatVsGarageSection } from "@/components/buyauto/pricing/PrivatVsGarageSection";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
+import { absoluteUrl } from "@/i18n/config";
+import { useLocale, useT } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
 
 export default function GaragePreisePage() {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
 
   const initialPersona = useMemo<PricingPersona>(() => {
-    const t = router.query.type;
-    if (t === "garage") return "garage";
-    if (t === "private") return "private";
+    const type = router.query.type;
+    if (type === "garage") return "garage";
+    if (type === "private") return "private";
     return "private";
   }, [router.query.type]);
 
@@ -38,24 +44,29 @@ export default function GaragePreisePage() {
   return (
     <>
       <Head>
-        <title>Preise – Inserate & Pakete für Private & Garagen | BuyAuto</title>
+        <title>{t("Preise – Inserate & Pakete für Private & Garagen | BuyAuto")}</title>
         <meta
           name="description"
-          content="BuyAuto Preise für Privatkunden & Garagen. Transparente Pakete für Inserate, Premium Boost, Garage-Profil & Deal-Chat pro Fahrzeug."
+          content={t(
+            "BuyAuto Preise für Privatkunden & Garagen. Transparente Pakete für Inserate, Premium Boost, Garage-Profil & Deal-Chat pro Fahrzeug."
+          )}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/preise" />
-        <meta property="og:title" content="Preise – Inserate & Pakete für Private & Garagen | BuyAuto" />
-        <meta property="og:description" content="Transparente Pakete für Inserate, Premium Boost, Garage-Profil & Deal-Chat pro Fahrzeug." />
+        <link rel="canonical" href={absoluteUrl("/preise", locale)} />
+        <meta property="og:title" content={t("Preise – Inserate & Pakete für Private & Garagen | BuyAuto")} />
+        <meta
+          property="og:description"
+          content={t("Transparente Pakete für Inserate, Premium Boost, Garage-Profil & Deal-Chat pro Fahrzeug.")}
+        />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.buyauto.ch/preise" />
+        <meta property="og:url" content={absoluteUrl("/preise", locale)} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       {/* Schema-only: hero layout has no room for a visible crumb bar. */}
       <BreadcrumbJsonLd
         items={[
-          { name: "Home", href: "/" },
-          { name: "Preise", href: "/preise" },
+          { name: t("Home"), href: "/" },
+          { name: t("Preise"), href: "/preise" },
         ]}
       />
 
@@ -93,6 +104,6 @@ export default function GaragePreisePage() {
 }
 
 // ISR so /preise joins the prerender path (was served as a frozen static file).
-export const getStaticProps = async () => {
-  return { props: {}, revalidate: 300 };
+export const getStaticProps = async (context: GetStaticPropsContext) => {
+  return { props: { ...(await withI18n(context.locale, ["pricing"])) }, revalidate: 300 };
 };

@@ -11,6 +11,7 @@ import type { Listing } from "@/lib/buyauto/types";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
 import { hasEnabledTakeoverOffer, isLeaseTakeoverListing, orderPremiumListings } from "@/lib/buyauto/premiumListings";
+import { T, useT } from "@/i18n/runtime";
 
 type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme";
 type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
@@ -58,6 +59,7 @@ interface PremiumListingsProps {
 }
 
 export default function PremiumListings({ externalFilter, onFilterChange, initialListings }: PremiumListingsProps) {
+  const t = useT();
   const [listings, setListings] = useState<Listing[]>(initialListings ?? []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(initialListings === undefined);
@@ -211,11 +213,11 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
           <div className="bg-white rounded-3xl shadow-2xl shadow-neutral-900/10 border border-neutral-100 p-6 sm:p-10 text-center">
             <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-5 py-2 mb-5">
               <Crown className="w-4 h-4 text-amber-600" />
-              <span className="text-amber-700 font-medium text-sm">Premium Inserate</span>
+              <span className="text-amber-700 font-medium text-sm">{t("Premium Inserate")}</span>
             </div>
-            <h2 className="text-2xl font-bold text-neutral-900 mb-3">Derzeit keine Premium-Angebote</h2>
+            <h2 className="text-2xl font-bold text-neutral-900 mb-3">{t("Derzeit keine Premium-Angebote")}</h2>
             <p className="text-neutral-500 text-base max-w-lg mx-auto">
-              Schauen Sie bald wieder vorbei für exklusive Premium-Fahrzeuge.
+              {t("Schauen Sie bald wieder vorbei für exklusive Premium-Fahrzeuge.")}
             </p>
           </div>
         </div>
@@ -243,13 +245,17 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     if (takeoverMonthly !== null) {
       return (
         <div className="text-right">
-          <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Leasingübernahme</div>
+          <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">{t("Leasingübernahme")}</div>
           <div className="text-xl font-bold text-red-600">{formatPrice(takeoverMonthly)}</div>
-          <div className="text-xs text-neutral-500">/ Monat{takeoverMonths !== null ? ` · ${takeoverMonths} Mt.` : ""}</div>
+          <div className="text-xs text-neutral-500">{takeoverMonths !== null ? t("/ Monat · {n} Mt.", { n: takeoverMonths }) : t("/ Monat")}</div>
 
           {hasPurchasePrice && (
             <div className="mt-1 text-xs text-neutral-500">
-              Kaufpreis: <span className="font-semibold text-neutral-700">{formatPrice(listing.purchasePriceCHF as number)}</span>
+              <T
+                k="Kaufpreis: <0>{price}</0>"
+                vars={{ price: formatPrice(listing.purchasePriceCHF as number) }}
+                c={[<span key="0" className="font-semibold text-neutral-700" />]}
+              />
             </div>
           )}
         </div>
@@ -259,14 +265,18 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     if (hasPurchasePrice) {
       return (
         <div className="text-right">
-          <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Kaufpreis</div>
+          <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">{t("Kaufpreis")}</div>
           <div className="text-xl font-bold tracking-tight text-neutral-900">{formatPrice(listing.purchasePriceCHF as number)}</div>
 
           {/* Only reachable without an Übernahme-Angebot (those lead with the
               rate above), so a monthly figure here is a real Leasing rate. */}
           {hasLeasingMonthly && (
             <div className="mt-1 text-xs text-neutral-500">
-              Leasing: <span className="font-semibold text-neutral-700">{formatPrice(listing.pricePerMonthCHF)}/Mt.</span>
+              <T
+                k="Leasing: <0>{price}/Mt.</0>"
+                vars={{ price: formatPrice(listing.pricePerMonthCHF) }}
+                c={[<span key="0" className="font-semibold text-neutral-700" />]}
+              />
             </div>
           )}
         </div>
@@ -278,12 +288,12 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
 
     return (
       <div className="text-right">
-        <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">{getDealTypeLabel(listing)}</div>
+        <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">{t(getDealTypeLabel(listing))}</div>
         <div className="text-xl font-bold text-red-600">{formatPrice(mainMonthly)}</div>
-        <div className="text-xs text-neutral-500">/ Monat</div>
+        <div className="text-xs text-neutral-500">{t("/ Monat")}</div>
 
         <div className="text-xs text-neutral-500 mt-0.5">
-          {deposit ? `Kaution: ${formatPrice(deposit)}` : "Keine Kaution"}
+          {deposit ? t("Kaution: {amount}", { amount: formatPrice(deposit) }) : t("Keine Kaution")}
         </div>
       </div>
     );
@@ -305,13 +315,13 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
             <div className="text-center mb-8 sm:mb-10">
               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200/60 rounded-full px-5 py-2.5 mb-5 shadow-sm">
                 <Crown className="w-4 h-4 text-amber-600" />
-                <span className="text-amber-700 font-semibold text-sm">Premium Inserate</span>
+                <span className="text-amber-700 font-semibold text-sm">{t("Premium Inserate")}</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 mb-3">
-                Aktuelle Leasingübernahmen
+                {t("Aktuelle Leasingübernahmen")}
               </h2>
               <p className="text-neutral-500 text-base max-w-xl mx-auto mb-6">
-                Premium-Angebote mit erhöhter Sichtbarkeit.
+                {t("Premium-Angebote mit erhöhter Sichtbarkeit.")}
               </p>
               
               {/* Category Filter Tabs */}
@@ -326,7 +336,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                         : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-800"
                     }`}
                   >
-                    {option.label}
+                    {t(option.label)}
                   </button>
                 ))}
               </div>
@@ -342,7 +352,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                     className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 sm:-translate-x-5 z-10 bg-white/90 backdrop-blur-sm border-neutral-200 hover:bg-white text-neutral-700 shadow-lg h-10 w-10 rounded-full"
                     onClick={prevSlide}
                     disabled={!canGoPrev}
-                    aria-label="Vorherige Premium-Inserate"
+                    aria-label={t("Vorherige Premium-Inserate")}
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
@@ -352,7 +362,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                     className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 sm:translate-x-5 z-10 bg-white/90 backdrop-blur-sm border-neutral-200 hover:bg-white text-neutral-700 shadow-lg h-10 w-10 rounded-full"
                     onClick={nextSlide}
                     disabled={!canGoNext}
-                    aria-label="Nächste Premium-Inserate"
+                    aria-label={t("Nächste Premium-Inserate")}
                   >
                     <ChevronRight className="w-5 h-5" />
                   </Button>
@@ -362,8 +372,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
               {/* Empty tab: keep the section frame, explain instead of a blank grid */}
               {filteredListings.length === 0 && (
                 <p className="text-center text-neutral-500 py-10">
-                  In dieser Kategorie gibt es aktuell keine Premium-Angebote – schau dir alle Fahrzeuge in der
-                  Suche an.
+                  {t("In dieser Kategorie gibt es aktuell keine Premium-Angebote – schau dir alle Fahrzeuge in der Suche an.")}
                 </p>
               )}
 
@@ -388,14 +397,14 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                           <div className="absolute top-3 left-3 z-10">
                             <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-md text-xs font-semibold">
                               <Crown className="w-3 h-3 mr-1" />
-                              Premium
+                              {t("Premium")}
                             </Badge>
                           </div>
 
                           {/* Deal Type Badge */}
                           <div className="absolute top-3 right-3 z-10">
                             <Badge variant="secondary" className="bg-white/90 text-neutral-700 border border-neutral-200 shadow-sm backdrop-blur-sm text-xs">
-                              {dealTypeLabel}
+                              {t(dealTypeLabel)}
                             </Badge>
                           </div>
 
@@ -442,13 +451,13 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
 
                               <div className="flex items-center gap-1.5">
                                 <Fuel className="w-3.5 h-3.5 text-neutral-400" />
-                                <span>{listing.fuel}</span>
+                                <span>{t(listing.fuel)}</span>
                               </div>
 
                               {showLegacyRemainingMonths ? (
                                 <div className="flex items-center gap-1.5">
                                   <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                                  <span>{listing.remainingMonths} Mt.</span>
+                                  <span>{t("{n} Mt.", { n: listing.remainingMonths ?? "" })}</span>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1.5">
@@ -479,7 +488,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                           : "bg-neutral-300 hover:bg-neutral-400 w-2"
                       }`}
                       onClick={() => setCurrentIndex(i * pageSize)}
-                      aria-label={`Premium-Seite ${i + 1}`}
+                      aria-label={t("Premium-Seite {n}", { n: i + 1 })}
                     />
                   ))}
                 </div>
@@ -493,7 +502,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
                 size="lg"
                 className="bg-red-500 hover:bg-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all rounded-xl px-8"
               >
-                <Link href="/suche?dealType=lease_takeover">Alle Leasingübernahmen ansehen</Link>
+                <Link href="/suche?dealType=lease_takeover">{t("Alle Leasingübernahmen ansehen")}</Link>
               </Button>
             </div>
           </div>

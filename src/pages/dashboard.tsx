@@ -1,6 +1,7 @@
 
 import { GetServerSideProps } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import { localizePath, toLocale } from "@/i18n/config";
 
 /**
  * Main Dashboard Entry Point (Router)
@@ -13,7 +14,9 @@ export default function DashboardRouter() {
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const supabase = createPagesServerClient(ctx);
-  
+  // GSSP redirects are not locale-prefixed by Next — keep /fr, /it, /en.
+  const locale = toLocale(ctx.locale);
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -21,7 +24,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (!session) {
     return {
       redirect: {
-        destination: "/auth",
+        destination: localizePath("/auth", locale),
         permanent: false,
       },
     };
@@ -42,14 +45,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (role === "garage") {
     return {
       redirect: {
-        destination: "/dashboard/garage",
+        destination: localizePath("/dashboard/garage", locale),
         permanent: false,
       },
     };
   } else {
     return {
       redirect: {
-        destination: "/dashboard/private",
+        destination: localizePath("/dashboard/private", locale),
         permanent: false,
       },
     };

@@ -8,8 +8,10 @@ import {
   GARAGE_PLANS,
   formatChf,
   perVehicleLine,
+  translatePlanCopy,
   type GaragePlanCode,
 } from "@/lib/buyauto/garagePlans";
+import { useT } from "@/i18n/runtime";
 
 export interface GaragePlanCardsProps {
   /** Where the CTA links to. Omit when using onSelect (button instead of link). */
@@ -39,6 +41,7 @@ export function GaragePlanCards({
   loadingCode = null,
   disabled = false,
 }: GaragePlanCardsProps) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-5 md:grid md:grid-cols-3">
       {GARAGE_PLAN_ORDER.map((code) => {
@@ -62,7 +65,7 @@ export function GaragePlanCards({
               <div className="absolute -top-3 left-6 z-10">
                 <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-semibold px-3 py-1 shadow-sm">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Beliebt
+                  {t("Beliebt")}
                 </span>
               </div>
             )}
@@ -71,7 +74,7 @@ export function GaragePlanCards({
               <div className="absolute -top-3 left-6 z-10">
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1 shadow-sm">
                   <Check className="h-3.5 w-3.5" />
-                  Aktiv
+                  {t("Aktiv@@plan")}
                 </span>
               </div>
             )}
@@ -91,14 +94,14 @@ export function GaragePlanCards({
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <h3 className="text-lg font-bold text-neutral-900">{plan.name}</h3>
-                    <p className="mt-1 text-sm text-neutral-500">{plan.tagline}</p>
+                    <p className="mt-1 text-sm text-neutral-500">{translatePlanCopy(t, plan.tagline)}</p>
                   </div>
 
                   <div className="text-right shrink-0">
                     <div className="text-3xl font-bold tracking-tight text-neutral-900">
                       CHF {formatChf(plan.monthlyPriceChf)}
                     </div>
-                    <div className="text-xs text-neutral-500">pro Monat</div>
+                    <div className="text-xs text-neutral-500">{t("pro Monat")}</div>
                   </div>
                 </div>
 
@@ -106,7 +109,7 @@ export function GaragePlanCards({
                 <div className="mt-5 grid grid-cols-2 gap-2">
                   <div className="rounded-2xl bg-neutral-900/5 px-3 py-2.5 text-center">
                     <div className="text-lg font-bold text-neutral-900">{plan.listingLimit}</div>
-                    <div className="text-[11px] leading-tight text-neutral-600">Fahrzeuge online</div>
+                    <div className="text-[11px] leading-tight text-neutral-600">{t("Fahrzeuge online")}</div>
                   </div>
                   <div
                     className={cn(
@@ -122,11 +125,11 @@ export function GaragePlanCards({
                     >
                       {plan.premiumPerMonth}
                     </div>
-                    <div className="text-[11px] leading-tight text-neutral-600">Premium-Boosts / Mt.</div>
+                    <div className="text-[11px] leading-tight text-neutral-600">{t("Premium-Boosts / Mt.")}</div>
                   </div>
                 </div>
 
-                <p className="mt-3 text-xs text-neutral-500">{perVehicleLine(plan)}</p>
+                <p className="mt-3 text-xs text-neutral-500">{translatePlanCopy(t, perVehicleLine(plan))}</p>
 
                 <div className="mt-5 space-y-2">
                   {plan.highlights.map((feature) => (
@@ -135,7 +138,7 @@ export function GaragePlanCards({
                       className="flex items-start gap-2 text-sm text-neutral-700"
                     >
                       <Check className="mt-0.5 h-4 w-4 text-primary flex-shrink-0" />
-                      <span>{feature}</span>
+                      <span>{translatePlanCopy(t, feature)}</span>
                     </div>
                   ))}
 
@@ -145,7 +148,7 @@ export function GaragePlanCards({
                       className="flex items-start gap-2 text-sm text-neutral-400"
                     >
                       <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <span>{feature}</span>
+                      <span>{translatePlanCopy(t, feature)}</span>
                     </div>
                   ))}
                 </div>
@@ -158,7 +161,7 @@ export function GaragePlanCards({
                       className="h-11 w-full rounded-full bg-emerald-600 text-white hover:bg-emerald-600"
                     >
                       <Check className="h-4 w-4 mr-2" />
-                      Aktives Paket
+                      {t("Aktives Paket")}
                     </Button>
                   ) : onSelect ? (
                     <Button
@@ -173,7 +176,7 @@ export function GaragePlanCards({
                       )}
                       variant={isPopular ? "default" : "outline"}
                     >
-                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : plan.cta}
+                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : translatePlanCopy(t, plan.cta)}
                     </Button>
                   ) : (
                     <Button
@@ -188,7 +191,7 @@ export function GaragePlanCards({
                       variant={isPopular ? "default" : "outline"}
                     >
                       <Link href={hrefFor ? hrefFor(code) : "/auth?view=register&type=garage"}>
-                        {plan.cta}
+                        {translatePlanCopy(t, plan.cta)}
                       </Link>
                     </Button>
                   )}

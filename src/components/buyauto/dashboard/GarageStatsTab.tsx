@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ListingDetail } from "@/lib/buyauto/types";
 import type { ListingInquiryCounts } from "@/services/dashboardService";
+import { T, useT, type TFunction } from "@/i18n/runtime";
 
 interface GarageStatsTabProps {
   listings: ListingDetail[];
@@ -26,11 +27,11 @@ function isPremiumListing(listing: ListingDetail): boolean {
   return new Date(listing.premium_until) > new Date();
 }
 
-function formatVehicleName(listing: ListingDetail): string {
+function formatVehicleName(listing: ListingDetail, t: TFunction): string {
   const brand = String(listing.brand ?? "").trim();
   const model = String(listing.model ?? "").trim();
   const combined = `${brand} ${model}`.trim();
-  return combined || "Fahrzeug";
+  return combined || t("Fahrzeug");
 }
 
 function formatNumber(n: number): string {
@@ -60,6 +61,7 @@ type TopRow = {
 };
 
 export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps) {
+  const t = useT();
   const counts = inquiryCounts ?? {};
 
   const activeListings = useMemo(() => {
@@ -96,7 +98,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
       const views = safeViews(l);
       return {
         id: l.id,
-        name: formatVehicleName(l),
+        name: formatVehicleName(l, t),
         year: typeof l.year === "number" ? l.year : null,
         views,
         inquiries30d: counts[l.id]?.last30d ?? 0,
@@ -106,7 +108,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
 
     rows.sort((a, b) => b.views - a.views);
     return rows.slice(0, 5);
-  }, [activeListings, counts]);
+  }, [activeListings, counts, t]);
 
   const maxTopViews = useMemo(() => {
     const max = topPerformance.reduce((m, r) => Math.max(m, r.views), 0);
@@ -123,9 +125,9 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
         <div className="mx-auto w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
           <TrendingUp className="w-6 h-6 text-neutral-400" />
         </div>
-        <h3 className="text-lg font-medium text-neutral-900">Keine Statistiken verfügbar</h3>
+        <h3 className="text-lg font-medium text-neutral-900">{t("Keine Statistiken verfügbar")}</h3>
         <p className="text-neutral-500 mt-1 max-w-sm mx-auto">
-          Sobald Ihre Inserate online sind und aufgerufen werden, sehen Sie hier eine Performance-Übersicht.
+          {t("Sobald Ihre Inserate online sind und aufgerufen werden, sehen Sie hier eine Performance-Übersicht.")}
         </p>
       </div>
     );
@@ -138,8 +140,8 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <CardTitle className="text-base sm:text-lg">Top Performance</CardTitle>
-                <CardDescription>Meistgesehene Fahrzeuge (aktiv)</CardDescription>
+                <CardTitle className="text-base sm:text-lg">{t("Top Performance")}</CardTitle>
+                <CardDescription>{t("Meistgesehene Fahrzeuge (aktiv)")}</CardDescription>
               </div>
               <div className="shrink-0 rounded-2xl border border-neutral-200 bg-white p-2">
                 <Eye className="h-5 w-5 text-neutral-700" />
@@ -160,7 +162,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
                         {row.premium ? (
                           <Badge className="rounded-full bg-amber-50 text-amber-900 border border-amber-200">
                             <Sparkles className="h-3.5 w-3.5 mr-1" />
-                            Premium
+                            {t("Premium")}
                           </Badge>
                         ) : null}
                       </div>
@@ -168,13 +170,13 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
                       <div className="mt-0.5 text-xs text-neutral-500">
                         {row.year ? `${row.year}` : "—"}
                         <span className="mx-2 text-neutral-300">•</span>
-                        <span className="tabular-nums">{formatNumber(row.inquiries30d)} Anfragen (30d)</span>
+                        <span className="tabular-nums">{t("{n} Anfragen (30d)", { n: formatNumber(row.inquiries30d) })}</span>
                       </div>
                     </div>
 
                     <div className="shrink-0 text-right">
                       <div className="text-sm font-bold text-neutral-900 tabular-nums">{formatNumber(row.views)}</div>
-                      <div className="text-[11px] text-neutral-500">Aufrufe</div>
+                      <div className="text-[11px] text-neutral-500">{t("Aufrufe")}</div>
                     </div>
                   </div>
 
@@ -195,8 +197,8 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <CardTitle className="text-base sm:text-lg">Premium vs Standard</CardTitle>
-                <CardDescription>Ø Aufrufe pro aktivem Inserat</CardDescription>
+                <CardTitle className="text-base sm:text-lg">{t("Premium vs Standard")}</CardTitle>
+                <CardDescription>{t("Ø Aufrufe pro aktivem Inserat")}</CardDescription>
               </div>
               <div className="shrink-0 rounded-2xl border border-neutral-200 bg-white p-2">
                 <Sparkles className="h-5 w-5 text-amber-700" />
@@ -207,24 +209,24 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-neutral-200/70 bg-white p-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-neutral-900">Premium</div>
+                <div className="text-sm font-semibold text-neutral-900">{t("Premium")}</div>
                 <Badge className="rounded-full bg-amber-50 text-amber-900 border border-amber-200">
                   {formatNumber(premiumListings.length)}
                 </Badge>
               </div>
               <div className="mt-2 text-3xl font-bold text-neutral-900 tabular-nums">{formatNumber(premiumAvgViews)}</div>
-              <div className="text-xs text-neutral-500 mt-1">Ø Aufrufe</div>
+              <div className="text-xs text-neutral-500 mt-1">{t("Ø Aufrufe")}</div>
             </div>
 
             <div className="rounded-2xl border border-neutral-200/70 bg-white p-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-neutral-900">Standard</div>
+                <div className="text-sm font-semibold text-neutral-900">{t("Standard")}</div>
                 <Badge variant="outline" className="rounded-full border-neutral-300 bg-neutral-50 text-neutral-700">
                   {formatNumber(standardListings.length)}
                 </Badge>
               </div>
               <div className="mt-2 text-3xl font-bold text-neutral-900 tabular-nums">{formatNumber(standardAvgViews)}</div>
-              <div className="text-xs text-neutral-500 mt-1">Ø Aufrufe</div>
+              <div className="text-xs text-neutral-500 mt-1">{t("Ø Aufrufe")}</div>
             </div>
           </CardContent>
         </Card>
@@ -233,8 +235,8 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <CardTitle className="text-base sm:text-lg">Lead Rate</CardTitle>
-                <CardDescription>Anfragen (30d) ÷ Aufrufe (aktiv)</CardDescription>
+                <CardTitle className="text-base sm:text-lg">{t("Lead Rate")}</CardTitle>
+                <CardDescription>{t("Anfragen (30d) ÷ Aufrufe (aktiv)")}</CardDescription>
               </div>
               <div className="shrink-0 rounded-2xl border border-neutral-200 bg-white p-2">
                 <Target className="h-5 w-5 text-neutral-700" />
@@ -246,21 +248,25 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
             <div className="rounded-2xl border border-neutral-200/70 bg-white p-4">
               <div className="flex items-end justify-between gap-4">
                 <div>
-                  <div className="text-xs text-neutral-500">Lead Rate (30 Tage)</div>
+                  <div className="text-xs text-neutral-500">{t("Lead Rate (30 Tage)")}</div>
                   <div className="mt-1 text-4xl font-bold tracking-tight text-neutral-900 tabular-nums">
                     {formatPct1(leadRate30dPctApprox)}
                   </div>
                 </div>
                 <div className="text-right text-xs text-neutral-500">
                   <div>
-                    <span className="font-semibold text-neutral-700 tabular-nums">
-                      {formatNumber(inquiriesTotal30dActive)}
-                    </span>{" "}
-                    Anfragen
+                    <T
+                      k="<0>{n}</0> Anfragen"
+                      vars={{ n: formatNumber(inquiriesTotal30dActive) }}
+                      c={[<span key="0" className="font-semibold text-neutral-700 tabular-nums" />]}
+                    />
                   </div>
                   <div>
-                    <span className="font-semibold text-neutral-700 tabular-nums">{formatNumber(totalViewsActive)}</span>{" "}
-                    Aufrufe
+                    <T
+                      k="<0>{n}</0> Aufrufe"
+                      vars={{ n: formatNumber(totalViewsActive) }}
+                      c={[<span key="0" className="font-semibold text-neutral-700 tabular-nums" />]}
+                    />
                   </div>
                 </div>
               </div>
@@ -274,8 +280,7 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
               </div>
 
               <div className="mt-2 text-xs text-neutral-500">
-                Hinweis: Aufrufe sind lifetime; Anfragen sind 30 Tage. Für Trends können wir View-Events als Phase 2
-                erfassen.
+                {t("Hinweis: Aufrufe sind lifetime; Anfragen sind 30 Tage. Für Trends können wir View-Events als Phase 2 erfassen.")}
               </div>
             </div>
 
@@ -285,10 +290,9 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
                   <TrendingUp className="h-4 w-4 text-neutral-700" />
                 </div>
                 <div className="text-sm text-neutral-700">
-                  <div className="font-semibold text-neutral-900">Schneller Hebel</div>
+                  <div className="font-semibold text-neutral-900">{t("Schneller Hebel")}</div>
                   <div className="mt-1 text-neutral-600">
-                    Steigt die Lead Rate nicht, lohnt sich oft: bessere Titel + Fotos, klarere Konditionen und ggf.
-                    Premium für mehr Reichweite.
+                    {t("Steigt die Lead Rate nicht, lohnt sich oft: bessere Titel + Fotos, klarere Konditionen und ggf. Premium für mehr Reichweite.")}
                   </div>
                 </div>
               </div>
@@ -298,8 +302,11 @@ export function GarageStatsTab({ listings, inquiryCounts }: GarageStatsTabProps)
       </div>
 
       <div className="text-xs text-neutral-500">
-        <span className="font-semibold text-neutral-700">{formatNumber(activeListings.length)}</span> aktive Inserate in
-        dieser Übersicht.
+        <T
+          k="<0>{n}</0> aktive Inserate in dieser Übersicht."
+          vars={{ n: formatNumber(activeListings.length) }}
+          c={[<span key="0" className="font-semibold text-neutral-700" />]}
+        />
       </div>
     </div>
   );

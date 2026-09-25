@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { useWizard } from "../ListingWizard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useT } from "@/i18n/runtime";
 
 import { supabase } from "@/integrations/supabase/client";
 import { createOrUpdateListing, type ListingUpdatePayload } from "@/services/createListingService";
@@ -140,6 +141,7 @@ function joinModelAndVariant(modelName: string, variantName: string): string {
 export function Step1Form() {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useT();
   const { user, profile, profileLoading } = useAuth();
   const isGarage = profile?.role === "garage";
   const isEditingExistingListing = typeof router.query.edit === "string" && router.query.edit.length > 0;
@@ -243,8 +245,8 @@ export function Step1Form() {
         setMakes(Array.isArray(res) ? res : (res?.makes ?? []));
       } catch {
         toast({
-          title: "Fehler",
-          description: "Fehler beim Laden der Fahrzeugmarken.",
+          title: t("Fehler"),
+          description: t("Fehler beim Laden der Fahrzeugmarken."),
           variant: "destructive",
         });
       } finally {
@@ -252,7 +254,7 @@ export function Step1Form() {
       }
     };
     void loadMakes();
-  }, [toast]);
+  }, [t, toast]);
 
   useEffect(() => {
     // The cancelled flag drops out-of-order responses: without it, a slow
@@ -274,8 +276,8 @@ export function Step1Form() {
       } catch {
         if (cancelled) return;
         toast({
-          title: "Fehler",
-          description: "Fehler beim Laden der Fahrzeugmodelle.",
+          title: t("Fehler"),
+          description: t("Fehler beim Laden der Fahrzeugmodelle."),
           variant: "destructive",
         });
       } finally {
@@ -287,7 +289,7 @@ export function Step1Form() {
     return () => {
       cancelled = true;
     };
-  }, [selectedMakeId, toast]);
+  }, [selectedMakeId, t, toast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -461,9 +463,9 @@ export function Step1Form() {
 
     if (!/^[A-Z0-9]{6}$/.test(tg)) {
       setTgStatus("error");
-      const msg = "Die Typenschein-Nr. hat 6 Zeichen, z.B. 1TD812 (Fahrzeugausweis Feld 24).";
+      const msg = t("Die Typenschein-Nr. hat 6 Zeichen, z.B. 1TD812 (Fahrzeugausweis Feld 24).");
       setTgError(msg);
-      toast({ title: "Ungültige Typenschein-Nr.", description: msg, variant: "destructive" });
+      toast({ title: t("Ungültige Typenschein-Nr."), description: msg, variant: "destructive" });
       return;
     }
 
@@ -487,10 +489,15 @@ export function Step1Form() {
       };
 
       if (!resp.ok) {
-        const msg = json?.message || "Typenschein konnte nicht abgefragt werden.";
+        // The API answers in German; its "not found" message embeds the number,
+        // so the lookup key carries a {tg} placeholder (German renders unchanged).
+        const apiMessage = typeof json?.message === "string" ? json.message : "";
+        const msg = apiMessage
+          ? t(apiMessage.replace(tg, "{tg}"), { tg })
+          : t("Typenschein konnte nicht abgefragt werden.");
         setTgStatus("error");
         setTgError(msg);
-        toast({ title: "Typenschein nicht gefunden", description: msg, variant: "destructive" });
+        toast({ title: t("Typenschein nicht gefunden"), description: msg, variant: "destructive" });
         return;
       }
 
@@ -527,23 +534,23 @@ export function Step1Form() {
 
       setTgStatus("success");
       toast({
-        title: "Typenschein-Daten geladen",
+        title: t("Typenschein-Daten geladen"),
         description: [json.provider_make, json.provider_model].filter(Boolean).join(" ") || tg,
       });
 
       if (!json.make_id || !json.model_id) {
         toast({
-          title: "Bitte prüfen",
-          description: "Marke/Modell konnten nicht eindeutig zugeordnet werden. Bitte wähle sie manuell aus.",
+          title: t("Bitte prüfen"),
+          description: t("Marke/Modell konnten nicht eindeutig zugeordnet werden. Bitte wähle sie manuell aus."),
           variant: "destructive",
         });
       }
     } catch {
       setTgStatus("error");
-      setTgError("Typenschein-Daten konnten nicht geladen werden.");
+      setTgError(t("Typenschein-Daten konnten nicht geladen werden."));
       toast({
-        title: "Abfrage fehlgeschlagen",
-        description: "Typenschein-Daten konnten nicht geladen werden. Bitte versuche es erneut.",
+        title: t("Abfrage fehlgeschlagen"),
+        description: t("Typenschein-Daten konnten nicht geladen werden. Bitte versuche es erneut."),
         variant: "destructive",
       });
     } finally {
@@ -646,8 +653,8 @@ export function Step1Form() {
     if (nextDealType !== "lease_takeover" && normalizedLocation.length === 0) {
       setError("location", { type: "manual", message: "Standort ist erforderlich" });
       toast({
-        title: "Standort fehlt",
-        description: "Bitte gib den Standort an, um fortzufahren.",
+        title: t("Standort fehlt"),
+        description: t("Bitte gib den Standort an, um fortzufahren."),
         variant: "destructive",
       });
       return;
@@ -660,8 +667,8 @@ export function Step1Form() {
         : null;
     if (normalizedVin.length > 0 && !/^[A-Z0-9]{17}$/.test(normalizedVin)) {
       toast({
-        title: "Ungültige VIN",
-        description: "Bitte gib eine gültige VIN ein (17 Zeichen) oder lasse das Feld leer.",
+        title: t("Ungültige VIN"),
+        description: t("Bitte gib eine gültige VIN ein (17 Zeichen) oder lasse das Feld leer."),
         variant: "destructive",
       });
       return;
@@ -669,8 +676,8 @@ export function Step1Form() {
 
     if (!values.make_id || !values.model_id) {
       toast({
-        title: "Fahrzeugdaten fehlen",
-        description: "Bitte wähle mindestens Marke und Modell aus (oder lade sie per Typenschein-Nr.).",
+        title: t("Fahrzeugdaten fehlen"),
+        description: t("Bitte wähle mindestens Marke und Modell aus (oder lade sie per Typenschein-Nr.)."),
         variant: "destructive",
       });
       return;
@@ -816,8 +823,8 @@ export function Step1Form() {
         }
 
         toast({
-          title: "Gespeichert",
-          description: "Fahrzeugdaten wurden gespeichert.",
+          title: t("Gespeichert"),
+          description: t("Fahrzeugdaten wurden gespeichert."),
         });
 
         nextStep();
@@ -871,8 +878,8 @@ export function Step1Form() {
         }
 
         toast({
-          title: "Gespeichert",
-          description: "Fahrzeugdaten wurden gespeichert.",
+          title: t("Gespeichert"),
+          description: t("Fahrzeugdaten wurden gespeichert."),
         });
 
         nextStep();
@@ -917,8 +924,8 @@ export function Step1Form() {
       } as any);
 
       toast({
-        title: "Gespeichert",
-        description: "Fahrzeugdaten wurden gespeichert.",
+        title: t("Gespeichert"),
+        description: t("Fahrzeugdaten wurden gespeichert."),
       });
 
       if (draftId) {
@@ -934,8 +941,8 @@ export function Step1Form() {
     } catch (error) {
       console.error("Error submitting step 1:", error);
       toast({
-        title: "Fehler",
-        description: "Bitte versuche es erneut.",
+        title: t("Fehler"),
+        description: t("Bitte versuche es erneut."),
         variant: "destructive",
       });
     } finally {
@@ -976,17 +983,17 @@ export function Step1Form() {
     );
 
     toast({
-      title: "Bitte noch ausfüllen",
+      title: t("Bitte noch ausfüllen"),
       description:
         missing.length > 0
-          ? `Es fehlt noch: ${missing.join(", ")}.`
-          : "Bitte fülle alle rot markierten Pflichtfelder aus, um fortzufahren.",
+          ? t("Es fehlt noch: {fields}.", { fields: missing.map((label) => t(label)).join(", ") })
+          : t("Bitte fülle alle rot markierten Pflichtfelder aus, um fortzufahren."),
       variant: "destructive",
     });
   };
 
   if (profileLoading) {
-    return <div className="text-sm text-neutral-600">Lade Profil...</div>;
+    return <div className="text-sm text-neutral-600">{t("Lade Profil...")}</div>;
   }
 
   const canProceed = Boolean(watch("make_id")) && Boolean(watch("model_id"));
@@ -995,17 +1002,16 @@ export function Step1Form() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">Fahrzeugdaten</h2>
+        <h2 className="text-2xl font-light text-neutral-900 mb-2 tracking-tight">{t("Fahrzeugdaten")}</h2>
         <p className="text-neutral-600 font-light leading-relaxed">
-          Gib die Typenschein-Nr. aus Feld 24 deines Fahrzeugausweises ein – wir füllen so viele
-          Felder wie möglich automatisch aus. Nicht zur Hand? Erfasse die Daten einfach manuell.
+          {t("Gib die Typenschein-Nr. aus Feld 24 deines Fahrzeugausweises ein – wir füllen so viele Felder wie möglich automatisch aus. Nicht zur Hand? Erfasse die Daten einfach manuell.")}
         </p>
       </div>
 
       <div className="rounded-3xl border border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 p-4 md:p-6 shadow-sm space-y-3">
         <div className="space-y-2">
           <div className="text-sm font-medium text-neutral-900">
-            Typenschein-Nr. (Fahrzeugausweis Feld 24)
+            {t("Typenschein-Nr. (Fahrzeugausweis Feld 24)")}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -1013,7 +1019,7 @@ export function Step1Form() {
               <Input
                 value={tgInput}
                 onChange={(e) => setTgInput(e.target.value.toUpperCase())}
-                placeholder="z.B. 1TD812 (6 Zeichen)"
+                placeholder={t("z.B. 1TD812 (6 Zeichen)")}
                 className="uppercase bg-white border border-primary/30 hover:border-primary/50 focus:border-primary transition-colors shadow-sm h-12 text-base rounded-2xl w-full"
                 autoComplete="off"
                 inputMode="text"
@@ -1026,18 +1032,16 @@ export function Step1Form() {
                 disabled={tgLoading}
                 className="rounded-2xl h-12 px-6 w-full md:w-auto whitespace-nowrap"
               >
-                {tgLoading ? "Lade..." : "Daten laden"}
+                {tgLoading ? t("Lade...") : t("Daten laden")}
               </Button>
             </div>
 
             <div className="text-xs text-neutral-700/80 font-light">
-              Die 6-stellige Nummer aus Feld 24 des Fahrzeugausweises – erkennt Marke, Modell,
-              Karosserie, Treibstoff und Leistung aus der offiziellen ASTRA-Typengenehmigung.
-              Steht dort «IVI» oder «X» (Direktimport), erfasse die Daten unten manuell.
+              {t("Die 6-stellige Nummer aus Feld 24 des Fahrzeugausweises – erkennt Marke, Modell, Karosserie, Treibstoff und Leistung aus der offiziellen ASTRA-Typengenehmigung. Steht dort «IVI» oder «X» (Direktimport), erfasse die Daten unten manuell.")}
             </div>
             {tgStatus === "success" ? (
               <div className="text-xs text-emerald-700 font-light">
-                Typenschein erkannt – Felder wurden automatisch vorausgefüllt.
+                {t("Typenschein erkannt – Felder wurden automatisch vorausgefüllt.")}
               </div>
             ) : null}
             {tgError ? <div className="text-sm text-red-600">{tgError}</div> : null}
@@ -1064,16 +1068,16 @@ export function Step1Form() {
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
           <Button type="button" variant="outline" onClick={onBack} className="rounded-2xl w-full sm:w-auto">
-            Zurück
+            {t("Zurück")}
           </Button>
           <Button type="submit" className="rounded-2xl w-full sm:w-auto" disabled={isSubmitting || !canProceed}>
-            {isSubmitting ? "Speichern..." : "Weiter zu Finanzierungsdetails"}
+            {isSubmitting ? t("Speichern...") : t("Weiter zu Finanzierungsdetails")}
           </Button>
         </div>
 
         {!canProceed ? (
           <div className="text-sm text-neutral-600">
-            Bitte wähle mindestens Marke und Modell aus, bevor du weitergehst.
+            {t("Bitte wähle mindestens Marke und Modell aus, bevor du weitergehst.")}
           </div>
         ) : null}
       </form>

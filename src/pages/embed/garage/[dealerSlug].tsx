@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPublicGarageBySlug } from "@/services/garageService";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
 import { EmbedLockedNotice } from "@/components/buyauto/dealer/EmbedLockedNotice";
+import { localizePath, toLocale } from "@/i18n/config";
+import { useT } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
 
 type PublicGarage = NonNullable<Awaited<ReturnType<typeof getPublicGarageBySlug>>>;
 
@@ -59,7 +62,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
   const dealerSlugRaw = ctx.params?.dealerSlug;
   const dealerSlug = typeof dealerSlugRaw === "string" ? dealerSlugRaw : null;
 
-  if (!dealerSlug) return { props: { status: "error" } };
+  if (!dealerSlug) return { props: { status: "error", ...(await withI18n(ctx.locale, ["dealer"])) } };
 
   try {
     const garage = await getPublicGarageBySlug(dealerSlug);
@@ -68,7 +71,9 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
     // The slug is public (it's the profile URL), so without this check the
     // "Website-Tools" fence would be dashboard-cosmetics only.
     if (!(await websiteToolsEnabled(garage.id))) {
-      return { props: { status: "locked", garageName: garage.garage_name ?? null } };
+      return {
+        props: { status: "locked", garageName: garage.garage_name ?? null, ...(await withI18n(ctx.locale, ["dealer"])) },
+      };
     }
 
     const base =
@@ -77,7 +82,9 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 
     const cleanedBase = base.replace(/\/$/, "");
     const embedId = parseString(ctx.query.embedId) ?? "buyauto-dealer-inventory";
-    const absoluteUrl = `${cleanedBase}/embed/garage/${garage.slug}?embedId=${encodeURIComponent(embedId)}`;
+    // German keeps the unprefixed embed URL; fr/it/en embed their own language version.
+    const embedPath = localizePath(`/embed/garage/${garage.slug}`, toLocale(ctx.locale));
+    const absoluteUrl = `${cleanedBase}${embedPath}?embedId=${encodeURIComponent(embedId)}`;
 
     const initialQuery: Record<string, string | number | boolean> = {};
     const saleType = parseString(ctx.query.saleType);
@@ -101,14 +108,17 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
         absoluteUrl,
         initialQuery,
         embedId,
+        ...(await withI18n(ctx.locale, ["dealer"])),
       },
     };
   } catch {
-    return { props: { status: "error" } };
+    return { props: { status: "error", ...(await withI18n(ctx.locale, ["dealer"])) } };
   }
 };
 
 export default function DealerInventoryEmbedPage(props: PageProps) {
+  const t = useT();
+
   if (props.status === "locked") {
     return <EmbedLockedNotice garageName={props.garageName} />;
   }
@@ -117,7 +127,7 @@ export default function DealerInventoryEmbedPage(props: PageProps) {
     return (
       <main className="min-h-screen bg-white">
         <div className="mx-auto max-w-4xl px-4 py-10">
-          <p className="text-sm text-neutral-600">Embed nicht verfügbar.</p>
+          <p className="text-sm text-neutral-600">{t("Embed nicht verfügbar.")}</p>
         </div>
       </main>
     );
@@ -129,7 +139,11 @@ export default function DealerInventoryEmbedPage(props: PageProps) {
         <meta name="robots" content="noindex, nofollow" />
       </Head>
 
-      <SEO title={`${props.garage.garage_name} – Fahrzeuge | BuyAuto`} description="Fahrzeuge auf BuyAuto" url={props.absoluteUrl} />
+      <SEO
+        title={t("{name} – Fahrzeuge | BuyAuto", { name: props.garage.garage_name })}
+        description={t("Fahrzeuge auf BuyAuto")}
+        url={props.absoluteUrl}
+      />
 
       <main className="min-h-screen bg-white">
         <div className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
@@ -144,10 +158,10 @@ export default function DealerInventoryEmbedPage(props: PageProps) {
         <div className="px-3 pb-6">
           <div className="mx-auto max-w-6xl">
             <details className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
-              <summary className="cursor-pointer select-none font-medium text-neutral-900">Embed-Code (Auto-Höhe)</summary>
+              <summary className="cursor-pointer select-none font-medium text-neutral-900">{t("Embed-Code (Auto-Höhe)")}</summary>
               <div className="mt-3 space-y-3">
                 <p className="text-neutral-600">
-                  Füge diesen Code auf deiner Website ein. Er passt die Höhe automatisch an (mobilfreundlich).
+                  {t("Füge diesen Code auf deiner Website ein. Er passt die Höhe automatisch an (mobilfreundlich).")}
                 </p>
                 <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-xs text-white">
 {`<iframe

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { loginSchema, type LoginFormData } from "@/lib/buyauto/schemas";
+import { useT } from "@/i18n/runtime";
+import { translatedResolver } from "./translatedResolver";
 
 interface LoginFormProps {
   onLogin: (data: LoginFormData) => void;
@@ -23,10 +25,11 @@ export default function LoginForm({
   onShowResetPassword,
   isLoading 
 }: LoginFormProps) {
+  const t = useT();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: translatedResolver(zodResolver(loginSchema), t),
     defaultValues: {
       email: "",
       password: "",
@@ -45,12 +48,12 @@ export default function LoginForm({
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium">E-Mail</FormLabel>
+              <FormLabel className="text-neutral-700 font-medium">{t("E-Mail")}</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   type="email"
-                  placeholder="ihre@email.com"
+                  placeholder={t("ihre@email.com")}
                   className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                   disabled={isLoading}
                 />
@@ -65,13 +68,13 @@ export default function LoginForm({
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium">Passwort</FormLabel>
+              <FormLabel className="text-neutral-700 font-medium">{t("Passwort")}</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
                     {...field}
                     type={showPassword ? "text" : "password"}
-                    placeholder="Ihr Passwort"
+                    placeholder={t("Ihr Passwort")}
                     className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20 pr-10"
                     disabled={isLoading}
                   />
@@ -104,7 +107,7 @@ export default function LoginForm({
             className="text-sm text-neutral-600 hover:text-red-500 p-0 h-auto"
             disabled={isLoading}
           >
-            Passwort vergessen?
+            {t("Passwort vergessen?")}
           </Button>
         </div>
 
@@ -116,22 +119,22 @@ export default function LoginForm({
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Wird angemeldet...
+              {t("Wird angemeldet...")}
             </>
           ) : (
-            "Anmelden"
+            t("Anmelden")
           )}
         </Button>
 
         <p className="text-center text-sm text-neutral-600">
-          Noch kein Konto?{" "}
+          {t("Noch kein Konto?")}{" "}
           <button
             type="button"
             onClick={onShowRegister}
             className="text-red-500 hover:text-red-600 font-medium transition-colors"
             disabled={isLoading}
           >
-            Jetzt registrieren
+            {t("Jetzt registrieren")}
           </button>
         </p>
       </form>

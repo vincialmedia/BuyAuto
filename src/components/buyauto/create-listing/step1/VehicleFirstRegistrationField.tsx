@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/i18n/runtime";
 
 export interface VehicleFirstRegistrationFieldProps {
   value: string | null | undefined;
@@ -12,6 +13,7 @@ export interface VehicleFirstRegistrationFieldProps {
 
 export function VehicleFirstRegistrationField(props: VehicleFirstRegistrationFieldProps) {
   const { value, onChange, disabled = false, error, hideLabel = false } = props;
+  const t = useT();
 
   const input = (
     <Input
@@ -28,9 +30,9 @@ export function VehicleFirstRegistrationField(props: VehicleFirstRegistrationFie
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium text-neutral-700">Erstzulassung (optional)</Label>
+      <Label className="text-sm font-medium text-neutral-700">{t("Erstzulassung (optional)")}</Label>
       {input}
-      {error ? <p className="text-sm text-red-500 font-light">{error}</p> : null}
+      {error ? <p className="text-sm text-red-500 font-light">{t(error)}</p> : null}
     </div>
   );
 }

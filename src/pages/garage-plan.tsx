@@ -14,6 +14,8 @@ import {
   pricePerVehicleChf,
   type GaragePlanCode,
 } from "@/lib/buyauto/garagePlans";
+import { T, useT } from "@/i18n/runtime";
+import { staticI18nProps } from "@/i18n/server";
 
 function isSafeNextPath(input: unknown): input is string {
   return typeof input === "string" && input.startsWith("/") && !input.startsWith("//");
@@ -21,6 +23,7 @@ function isSafeNextPath(input: unknown): input is string {
 
 export default function GaragePlanPage() {
   const router = useRouter();
+  const t = useT();
   const { user, profile, loading: authLoading, profileLoading } = useAuth();
   const userRole = profile?.role;
   const [loading, setLoading] = useState(false);
@@ -43,13 +46,13 @@ export default function GaragePlanPage() {
     }
 
     if (userRole !== "garage") {
-      toast.error("Zugriff verweigert", {
-        description: "Diese Seite ist nur für Garagen verfügbar.",
+      toast.error(t("Zugriff verweigert"), {
+        description: t("Diese Seite ist nur für Garagen verfügbar."),
       });
       router.replace("/");
       return;
     }
-  }, [user, userRole, router, profile]);
+  }, [user, userRole, router, profile, t]);
 
   const handleSelectPlan = async (planCode: GaragePlanCode) => {
     if (!user) return;
@@ -93,8 +96,8 @@ export default function GaragePlanPage() {
       window.location.href = url;
     } catch (error: any) {
       console.error("Plan selection error:", error);
-      toast.error("Fehler", {
-        description: error.message || "Bitte versuche es später erneut.",
+      toast.error(t("Fehler"), {
+        description: t(error.message || "Bitte versuche es später erneut."),
       });
       setLoading(false);
       setSelectedPlan(null);
@@ -110,7 +113,7 @@ export default function GaragePlanPage() {
   return (
     <>
       <Head>
-        <title>BuyAuto – Wähle dein Paket</title>
+        <title>{t("BuyAuto – Wähle dein Paket")}</title>
         {/* Conversion-funnel step (package selection), not a destination to rank — keep it
             out of the index but crawlable. */}
         <meta name="robots" content="noindex,follow" />
@@ -120,11 +123,12 @@ export default function GaragePlanPage() {
       <div className="min-h-screen bg-neutral-50 pb-20">
         <div className="bg-white border-b border-neutral-200 py-8 px-4 text-center">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-neutral-900">
-            Wähle dein Paket
+            {t("Wähle dein Paket")}
           </h1>
           <p className="text-neutral-500 text-sm mt-2">
-            Monatlich kündbar. Keine Setup-Gebühr. Ab CHF{" "}
-            {formatChf(pricePerVehicleChf(GARAGE_PLANS.pro), 2)} pro Fahrzeug und Monat.
+            {t("Monatlich kündbar. Keine Setup-Gebühr. Ab CHF {price} pro Fahrzeug und Monat.", {
+              price: formatChf(pricePerVehicleChf(GARAGE_PLANS.pro), 2),
+            })}
           </p>
         </div>
 
@@ -141,14 +145,17 @@ export default function GaragePlanPage() {
 
           <div className="text-center">
             <p className="text-xs text-neutral-400">
-              Mehr als {GARAGE_CUSTOM_THRESHOLD} Fahrzeuge?{" "}
-              <a
-                href="mailto:hello@buyauto.ch"
-                className="text-neutral-600 underline hover:text-neutral-900"
-              >
-                Kontaktiere uns
-              </a>{" "}
-              für ein individuelles Angebot ab CHF {formatChf(GARAGE_CUSTOM_FROM_CHF)}/Monat.
+              <T
+                k="Mehr als {n} Fahrzeuge? <0>Kontaktiere uns</0> für ein individuelles Angebot ab CHF {price}/Monat."
+                vars={{ n: GARAGE_CUSTOM_THRESHOLD, price: formatChf(GARAGE_CUSTOM_FROM_CHF) }}
+                c={[
+                  <a
+                    key="contact"
+                    href="mailto:hello@buyauto.ch"
+                    className="text-neutral-600 underline hover:text-neutral-900"
+                  />,
+                ]}
+              />
             </p>
           </div>
         </div>
@@ -156,3 +163,5 @@ export default function GaragePlanPage() {
     </>
   );
 }
+
+export const getStaticProps = staticI18nProps(["pricing"]);

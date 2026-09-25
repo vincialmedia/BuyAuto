@@ -2,6 +2,8 @@
 // real DB values 1:1 — a helper returns null when the source field is missing or
 // malformed, and the caller omits the property. Nothing is ever guessed or defaulted.
 
+import type { TFunction } from "@/i18n/runtime";
+
 const SWISS_CANTON_CODES = new Set([
   "AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE",
   "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH",
@@ -89,6 +91,14 @@ export function parseListingPlace(
 
 const chf = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
 
+// German fallback when no translator is passed: fills the {placeholders} of the
+// German key, exactly like useT() does on German pages.
+const germanT: TFunction = (key, vars) =>
+  key.replace(/\{(\w+)\}/g, (match, name: string) => {
+    const value = vars?.[name];
+    return value === undefined || value === null ? match : String(value);
+  });
+
 export interface VehicleDescriptionInput {
   dealType: "lease_takeover" | "direct_purchase";
   brand: string;
@@ -107,8 +117,11 @@ export interface VehicleDescriptionInput {
  * Direktkauf the one-time price is. On direct-purchase rows the monthly columns either
  * mirror an optional Leasingübernahme add-on offer or are null — the description models
  * the sale itself, so they are deliberately never used there.
+ *
+ * `t` localizes the sentences (pass the page's useT()); without it the German text is
+ * returned. Numbers keep the Swiss de-CH format in every language.
  */
-export function buildVehicleDescription(input: VehicleDescriptionInput): string | null {
+export function buildVehicleDescription(input: VehicleDescriptionInput, t: TFunction = germanT): string | null {
   const name = [input.brand, input.model].filter(Boolean).join(" ").trim();
   if (!name) return null;
   const vehicle = input.year > 0 ? `${name} (${input.year})` : name;
@@ -120,24 +133,34 @@ export function buildVehicleDescription(input: VehicleDescriptionInput): string 
     const months = typeof input.remainingMonths === "number" && input.remainingMonths > 0 ? input.remainingMonths : null;
 
     if (rate && months) {
-      parts.push(`Leasingübernahme: ${vehicle} für CHF ${chf.format(rate)} pro Monat bei ${months} Monaten Restlaufzeit.`);
+      parts.push(
+        t("Leasingübernahme: {vehicle} für CHF {rate} pro Monat bei {months} Monaten Restlaufzeit.", {
+          vehicle,
+          rate: chf.format(rate),
+          months,
+        })
+      );
     } else if (rate) {
-      parts.push(`Leasingübernahme: ${vehicle} für CHF ${chf.format(rate)} pro Monat.`);
+      parts.push(t("Leasingübernahme: {vehicle} für CHF {rate} pro Monat.", { vehicle, rate: chf.format(rate) }));
     } else {
-      parts.push(`Leasingübernahme: ${vehicle}.`);
+      parts.push(t("Leasingübernahme: {vehicle}.", { vehicle }));
     }
 
-    if (input.depositCHF === 0) parts.push("Keine Kaution.");
+    if (input.depositCHF === 0) parts.push(t("Keine Kaution."));
     else if (typeof input.depositCHF === "number" && input.depositCHF > 0) {
-      parts.push(`Kaution: CHF ${chf.format(input.depositCHF)}.`);
+      parts.push(t("Kaution: CHF {amount}.", { amount: chf.format(input.depositCHF) }));
     }
   } else {
     const price = typeof input.purchasePriceCHF === "number" && input.purchasePriceCHF > 0 ? input.purchasePriceCHF : null;
-    parts.push(price ? `Direktkauf: ${vehicle} für CHF ${chf.format(price)}.` : `Direktkauf: ${vehicle}.`);
+    parts.push(
+      price
+        ? t("Direktkauf: {vehicle} für CHF {price}.", { vehicle, price: chf.format(price) })
+        : t("Direktkauf: {vehicle}.", { vehicle })
+    );
   }
 
   if (typeof input.mileageKm === "number" && input.mileageKm > 0) {
-    parts.push(`Kilometerstand: ${chf.format(input.mileageKm)} km.`);
+    parts.push(t("Kilometerstand: {km} km.", { km: chf.format(input.mileageKm) }));
   }
 
   return parts.join(" ");

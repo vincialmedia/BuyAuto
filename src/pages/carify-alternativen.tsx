@@ -48,12 +48,22 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { absoluteUrl } from "@/i18n/config";
+import { T, useLocale, useT } from "@/i18n/runtime";
+import { staticI18nProps } from "@/i18n/server";
 
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/carify-alternativen"];
 
 export default function CarifyAlternativen() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
+  const t = useT();
+  const locale = useLocale();
+  const pageUrl = absoluteUrl("/carify-alternativen", locale);
+  const pageTitle = t("Carify Alternativen 2026: Auto-Abo Anbieter im Vergleich | BuyAuto");
+  const pageDescription = t(
+    "Carify Alternativen in der Schweiz: Vergleich von Auto-Abo Anbietern (Carvolution, Clyde, FlatDrive, SIXT+ & mehr) + warum Leasingübernahme oft smarter ist.",
+  );
   
   // Handle sticky CTA visibility
   useEffect(() => {
@@ -83,20 +93,21 @@ export default function CarifyAlternativen() {
           {
             "@type": "ListItem",
             "position": 1,
-            "name": "Home",
-            "item": "https://www.buyauto.ch"
+            "name": t("Home"),
+            // German keeps its historical form without trailing slash.
+            "item": absoluteUrl("/", locale).replace(/\/$/, "")
           },
           {
             "@type": "ListItem",
             "position": 2,
-            "name": "Auto-Abos im Vergleich",
-            "item": "https://www.buyauto.ch/auto-abos-im-vergleich"
+            "name": t("Auto-Abos im Vergleich"),
+            "item": absoluteUrl("/auto-abos-im-vergleich", locale)
           },
           {
             "@type": "ListItem",
             "position": 3,
-            "name": "Carify Alternativen",
-            "item": "https://www.buyauto.ch/carify-alternativen"
+            "name": t("Carify Alternativen"),
+            "item": pageUrl
           }
         ]
       },
@@ -105,66 +116,66 @@ export default function CarifyAlternativen() {
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "Was sind die besten Carify Alternativen in der Schweiz?",
+            "name": t("Was sind die besten Carify Alternativen in der Schweiz?"),
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Zu den bekanntesten Alternativen gehören Carvolution, Clyde, FlatDrive und SIXT+. Wer jedoch primär auf den Preis achtet und flexible Laufzeiten sucht, sollte auch Leasingübernahmen (z.B. via BuyAuto) prüfen, da diese oft günstigere Raten ohne 'Paket-Aufschlag' bieten."
+              "text": t("Zu den bekanntesten Alternativen gehören Carvolution, Clyde, FlatDrive und SIXT+. Wer jedoch primär auf den Preis achtet und flexible Laufzeiten sucht, sollte auch Leasingübernahmen (z.B. via BuyAuto) prüfen, da diese oft günstigere Raten ohne 'Paket-Aufschlag' bieten.")
             }
           },
           {
             "@type": "Question",
-            "name": "Was ist bei Carify im Preis enthalten?",
+            "name": t("Was ist bei Carify im Preis enthalten?"),
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Carify bietet klassische Auto-Abos an: Versicherung, Steuern, Zulassung, Service und Wartung sind in der monatlichen Rate enthalten. Nur Tanken/Laden musst du selbst bezahlen. Das ist bequem, aber diese Bequemlichkeit zahlst du über die monatliche Rate mit."
+              "text": t("Carify bietet klassische Auto-Abos an: Versicherung, Steuern, Zulassung, Service und Wartung sind in der monatlichen Rate enthalten. Nur Tanken/Laden musst du selbst bezahlen. Das ist bequem, aber diese Bequemlichkeit zahlst du über die monatliche Rate mit.")
             }
           },
           {
             "@type": "Question",
-            "name": "Ist ein Auto-Abo günstiger als Leasing?",
+            "name": t("Ist ein Auto-Abo günstiger als Leasing?"),
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Nicht zwingend. Auto-Abos wirken auf den ersten Blick teurer, weil alles inklusive ist. Reines Leasing hat niedrigere Raten, aber du zahlst Versicherung und Service separat. Unterm Strich ist Leasing (oder eine Leasingübernahme) oft günstiger, wenn du Versicherung und Unterhalt selbst optimierst."
+              "text": t("Nicht zwingend. Auto-Abos wirken auf den ersten Blick teurer, weil alles inklusive ist. Reines Leasing hat niedrigere Raten, aber du zahlst Versicherung und Service separat. Unterm Strich ist Leasing (oder eine Leasingübernahme) oft günstiger, wenn du Versicherung und Unterhalt selbst optimierst.")
             }
           },
           {
             "@type": "Question",
-            "name": "Warum sind Auto-Abos oft teurer pro Monat?",
+            "name": t("Warum sind Auto-Abos oft teurer pro Monat?"),
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Du zahlst für Flexibilität (kurze Laufzeiten) und das 'Sorglos-Paket'. Die Anbieter kalkulieren Risiken und Administrationsaufwand in die Rate ein. Bei einer Leasingübernahme fallen diese Zusatzmargen weg, da du einen bestehenden Vertrag 1:1 übernimmst."
+              "text": t("Du zahlst für Flexibilität (kurze Laufzeiten) und das 'Sorglos-Paket'. Die Anbieter kalkulieren Risiken und Administrationsaufwand in die Rate ein. Bei einer Leasingübernahme fallen diese Zusatzmargen weg, da du einen bestehenden Vertrag 1:1 übernimmst.")
             }
           },
           {
             "@type": "Question",
-            "name": "Welche Carify Alternative ist am flexibelsten?",
+            "name": t("Welche Carify Alternative ist am flexibelsten?"),
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "SIXT+ oder Enterprise Minilease bieten sehr flexible Modelle (oft monatlich kündbar). Carvolution und Clyde haben feste Laufzeiten (3-48 Monate). Leasingübernahmen sind ebenfalls flexibel, da du Verträge mit kurzen Restlaufzeiten (z.B. 12 Monate) gezielt suchen kannst."
+              "text": t("SIXT+ oder Enterprise Minilease bieten sehr flexible Modelle (oft monatlich kündbar). Carvolution und Clyde haben feste Laufzeiten (3-48 Monate). Leasingübernahmen sind ebenfalls flexibel, da du Verträge mit kurzen Restlaufzeiten (z.B. 12 Monate) gezielt suchen kannst.")
             }
           },
           {
             "@type": "Question",
-            "name": "Was ist eine Leasingübernahme?",
+            "name": t("Was ist eine Leasingübernahme?"),
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag von einer anderen Person. Du steigst zu den bestehenden (oft alten, günstigen) Konditionen ein und übernimmst das Auto für die Restlaufzeit. Ideal für kurze Laufzeiten ohne Anzahlung."
+              "text": t("Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag von einer anderen Person. Du steigst zu den bestehenden (oft alten, günstigen) Konditionen ein und übernimmst das Auto für die Restlaufzeit. Ideal für kurze Laufzeiten ohne Anzahlung.")
             }
           },
           {
             "@type": "Question",
-            "name": "Ist Leasingübernahme riskant?",
+            "name": t("Ist Leasingübernahme riskant?"),
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Nein, wenn man es richtig macht. Der Vertrag wird offiziell über die Leasingbank umgeschrieben. Du solltest das Auto vor Übernahme prüfen (Zustand, Kilometer). BuyAuto hilft dir, transparente Angebote zu finden."
+              "text": t("Nein, wenn man es richtig macht. Der Vertrag wird offiziell über die Leasingbank umgeschrieben. Du solltest das Auto vor Übernahme prüfen (Zustand, Kilometer). BuyAuto hilft dir, transparente Angebote zu finden.")
             }
           },
           {
             "@type": "Question",
-            "name": "Wie finde ich eine Leasingübernahme mit kurzer Restlaufzeit?",
+            "name": t("Wie finde ich eine Leasingübernahme mit kurzer Restlaufzeit?"),
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Auf Plattformen wie BuyAuto.ch kannst du gezielt nach Restlaufzeit filtern. Viele Inserenten wollen ihr Leasing nach 1-2 Jahren abgeben, sodass du perfekte Laufzeiten für den Übergang findest."
+              "text": t("Auf Plattformen wie BuyAuto.ch kannst du gezielt nach Restlaufzeit filtern. Viele Inserenten wollen ihr Leasing nach 1-2 Jahren abgeben, sodass du perfekte Laufzeiten für den Übergang findest.")
             }
           }
         ]
@@ -175,19 +186,19 @@ export default function CarifyAlternativen() {
   return (
     <>
       <Head>
-        <title>Carify Alternativen 2026: Auto-Abo Anbieter im Vergleich | BuyAuto</title>
+        <title>{pageTitle}</title>
         <meta
           name="description"
-          content="Carify Alternativen in der Schweiz: Vergleich von Auto-Abo Anbietern (Carvolution, Clyde, FlatDrive, SIXT+ & mehr) + warum Leasingübernahme oft smarter ist."
+          content={pageDescription}
         />
-        <link rel="canonical" href="https://www.buyauto.ch/carify-alternativen" />
+        <link rel="canonical" href={pageUrl} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "Carify Alternativen: Anbieter im Vergleich.",
+              headline: t("Carify Alternativen: Anbieter im Vergleich."),
               author: { "@type": "Person", name: "Vincent Hänggi" },
               publisher: {
                 "@type": "Organization",
@@ -195,16 +206,16 @@ export default function CarifyAlternativen() {
                 logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
               },
               dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/carify-alternativen",
+              mainEntityOfPage: pageUrl,
             }),
           }}
         />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Carify Alternativen 2026: Auto-Abo Anbieter im Vergleich | BuyAuto" />
-        <meta property="og:description" content="Carify Alternativen in der Schweiz: Vergleich von Auto-Abo Anbietern (Carvolution, Clyde, FlatDrive, SIXT+ & mehr) + warum Leasingübernahme oft smarter ist." />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/carify-alternativen" />
+        <meta property="og:url" content={pageUrl} />
 
         {/* JSON-LD Schema */}
         <script
@@ -225,8 +236,8 @@ export default function CarifyAlternativen() {
             <div className="max-w-7xl mx-auto px-4 py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="hidden md:block">
-                  <p className="text-white font-bold text-lg">Carify Alternative gesucht?</p>
-                  <p className="text-white/80 text-sm">Vergleiche Auto-Abos oder finde Leasingübernahmen</p>
+                  <p className="text-white font-bold text-lg">{t("Carify Alternative gesucht?")}</p>
+                  <p className="text-white/80 text-sm">{t("Vergleiche Auto-Abos oder finde Leasingübernahmen")}</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                   <Button
@@ -235,14 +246,14 @@ export default function CarifyAlternativen() {
                     className="flex-1 md:flex-none bg-white hover:bg-white/90 text-primary font-black shadow-xl px-8 py-6 rounded-xl"
                   >
                     <Link href="/leasinguebernahme">
-                      Leasingübernahmen ansehen
+                      {t("Leasingübernahmen ansehen")}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </Button>
                   <button
                     onClick={() => setShowStickyCTA(false)}
                     className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                    aria-label="Schliessen"
+                    aria-label={t("Schliessen")}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -260,7 +271,7 @@ export default function CarifyAlternativen() {
             <div className="absolute inset-0">
               <Image
                 src="/20251209_0003_Handshake_in_Zurich_simple_compose_01kc036j1cff881r0wzwemf48h.png"
-                alt="Autoübergabe Schweiz"
+                alt={t("Autoübergabe Schweiz")}
                 fill
                 className="object-cover object-center"
                 priority
@@ -287,17 +298,16 @@ export default function CarifyAlternativen() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-primary/20 backdrop-blur-sm">
                   <Sparkles className="w-4 h-4" />
-                  Auto-Abo Vergleich Schweiz (2026) · Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
+                  {t("Auto-Abo Vergleich Schweiz (2026) · Aktualisiert am {date}", { date: formatSwissDate(LAST_UPDATED_ISO) })}
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-neutral-900 tracking-tight leading-[1.1] mb-6">
-                  Carify Alternativen:<br />
-                  <span className="text-primary">Anbieter im Vergleich.</span>
+                  <T
+                    k="Carify Alternativen:<0/><1>Anbieter im Vergleich.</1>"
+                    c={[<br key="0" />, <span key="1" className="text-primary" />]}
+                  />
                 </h1>
                 <p className="text-xl md:text-2xl text-neutral-600 font-medium mb-8 leading-relaxed">
-                  Die wichtigsten Carify-Alternativen in der Schweiz sind Carvolution, Clyde, FlatDrive und
-                  SIXT+ – plus die Leasingübernahme, wenn du günstiger fahren willst. Carify ist ein starkes
-                  Sorglos-Paket; wer aber Preise, Laufzeiten und Bedingungen vergleicht, findet oft ein
-                  besseres Angebot. Der Vergleich unten zeigt die Unterschiede.
+                  {t("Die wichtigsten Carify-Alternativen in der Schweiz sind Carvolution, Clyde, FlatDrive und SIXT+ – plus die Leasingübernahme, wenn du günstiger fahren willst. Carify ist ein starkes Sorglos-Paket; wer aber Preise, Laufzeiten und Bedingungen vergleicht, findet oft ein besseres Angebot. Der Vergleich unten zeigt die Unterschiede.")}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -307,7 +317,7 @@ export default function CarifyAlternativen() {
                     className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl group"
                   >
                     <Link href="/leasinguebernahme">
-                      Leasingübernahmen ansehen
+                      {t("Leasingübernahmen ansehen")}
                       <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </Button>
@@ -318,14 +328,14 @@ export default function CarifyAlternativen() {
                     className="border-2 border-neutral-300 text-neutral-900 hover:bg-neutral-100 transition-all duration-300 px-8 py-7 text-lg font-bold rounded-2xl backdrop-blur-sm bg-white/80"
                   >
                     <Link href="/inserat-erstellen">
-                      Leasing abgeben
+                      {t("Leasing abgeben")}
                     </Link>
                   </Button>
                 </div>
 
                 <div className="text-sm text-neutral-500 max-w-lg bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-neutral-200">
                   <Info className="w-4 h-4 inline-block mr-2 text-primary" />
-                  Auto-Abos bündeln oft Versicherung, Service/Wartung und Steuern in einer Monatsrate. Das schafft Komfort – aber du zahlst dafür meist eine Paketlogik.
+                  {t("Auto-Abos bündeln oft Versicherung, Service/Wartung und Steuern in einer Monatsrate. Das schafft Komfort – aber du zahlst dafür meist eine Paketlogik.")}
                 </div>
               </div>
             </div>
@@ -337,10 +347,10 @@ export default function CarifyAlternativen() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
-                Warum suchen Leute nach Carify Alternativen?
+                {t("Warum suchen Leute nach Carify Alternativen?")}
               </h2>
               <p className="text-neutral-600 text-lg max-w-2xl mx-auto">
-                Ein Auto-Abo ist wie ein Hotel mit Frühstück: entspannter — aber du zahlst halt auch für Dinge, die du vielleicht gar nicht brauchst.
+                {t("Ein Auto-Abo ist wie ein Hotel mit Frühstück: entspannter — aber du zahlst halt auch für Dinge, die du vielleicht gar nicht brauchst.")}
               </p>
             </div>
             
@@ -360,8 +370,8 @@ export default function CarifyAlternativen() {
                   <div className="bg-white w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
                     <item.icon className="w-7 h-7 text-primary" />
                   </div>
-                  <h3 className="text-xl font-black text-neutral-900 mb-3">{item.title}</h3>
-                  <p className="text-neutral-600 leading-relaxed">{item.desc}</p>
+                  <h3 className="text-xl font-black text-neutral-900 mb-3">{t(item.title)}</h3>
+                  <p className="text-neutral-600 leading-relaxed">{t(item.desc)}</p>
                 </div>
               ))}
             </div>
@@ -373,10 +383,13 @@ export default function CarifyAlternativen() {
           <div className="max-w-6xl mx-auto">
             <div className="mb-16">
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
-                Die wichtigsten Carify Alternativen (Schweiz)
+                {t("Die wichtigsten Carify Alternativen (Schweiz)")}
               </h2>
               <p className="text-neutral-600 text-lg">
-                Der Markt ist dynamisch: Angebote, Mindestlaufzeiten und Inklusivleistungen ändern sich je nach Anbieter und Paket — <Link href="/auto-abos-im-vergleich" className="text-primary font-semibold hover:underline">alle Auto-Abo-Anbieter im Vergleich</Link> findest du in unserer laufend aktualisierten Übersicht.
+                <T
+                  k="Der Markt ist dynamisch: Angebote, Mindestlaufzeiten und Inklusivleistungen ändern sich je nach Anbieter und Paket — <0>alle Auto-Abo-Anbieter im Vergleich</0> findest du in unserer laufend aktualisierten Übersicht."
+                  c={[<Link key="0" href="/auto-abos-im-vergleich" className="text-primary font-semibold hover:underline" />]}
+                />
               </p>
             </div>
 
@@ -438,12 +451,12 @@ export default function CarifyAlternativen() {
                 }
               ].map((provider, i) => (
                 <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 hover:border-primary/50 transition-colors">
-                  <div className="text-xs font-bold text-primary uppercase tracking-wider mb-2">{provider.type}</div>
-                  <h3 className="text-2xl font-black text-neutral-900 mb-2">{provider.name}</h3>
-                  <p className="text-neutral-600 text-sm mb-4">{provider.desc}</p>
+                  <div className="text-xs font-bold text-primary uppercase tracking-wider mb-2">{t(provider.type)}</div>
+                  <h3 className="text-2xl font-black text-neutral-900 mb-2">{t(provider.name)}</h3>
+                  <p className="text-neutral-600 text-sm mb-4">{t(provider.desc)}</p>
                   <div className="pt-4 border-t border-neutral-100 flex items-center gap-2 text-sm font-medium text-neutral-800">
                     <ThumbsUp className="w-4 h-4 text-green-500" />
-                    {provider.fit}
+                    {t(provider.fit)}
                   </div>
                 </div>
               ))}
@@ -456,10 +469,10 @@ export default function CarifyAlternativen() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
-                Vergleich: Carify vs. Alternativen
+                {t("Vergleich: Carify vs. Alternativen")}
               </h2>
               <p className="text-neutral-600 text-lg">
-                Auf einen Blick (Preise & Verfügbarkeiten variieren je nach Angebot)
+                {t("Auf einen Blick (Preise & Verfügbarkeiten variieren je nach Angebot)")}
               </p>
             </div>
 
@@ -468,11 +481,11 @@ export default function CarifyAlternativen() {
               <table className="w-full text-left border-collapse bg-white">
                 <thead>
                   <tr className="bg-neutral-50 border-b border-neutral-200">
-                    <th className="p-6 font-black text-neutral-900 w-1/5">Anbieter</th>
-                    <th className="p-6 font-bold text-neutral-600 w-1/5">Modell</th>
-                    <th className="p-6 font-bold text-neutral-600 w-1/5">Stärke</th>
-                    <th className="p-6 font-bold text-neutral-600 w-1/5">Haken (neutral)</th>
-                    <th className="p-6 font-bold text-neutral-600 w-1/5">Für wen?</th>
+                    <th className="p-6 font-black text-neutral-900 w-1/5">{t("Anbieter@@provider")}</th>
+                    <th className="p-6 font-bold text-neutral-600 w-1/5">{t("Modell")}</th>
+                    <th className="p-6 font-bold text-neutral-600 w-1/5">{t("Stärke")}</th>
+                    <th className="p-6 font-bold text-neutral-600 w-1/5">{t("Haken (neutral)")}</th>
+                    <th className="p-6 font-bold text-neutral-600 w-1/5">{t("Für wen?")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -486,10 +499,10 @@ export default function CarifyAlternativen() {
                   ].map((row, i) => (
                     <tr key={i} className={`hover:bg-neutral-50/50 ${row.name === "BuyAuto" ? "bg-primary/5" : ""}`}>
                       <td className={`p-6 font-black ${row.name === "BuyAuto" ? "text-primary" : "text-neutral-900"}`}>{row.name}</td>
-                      <td className="p-6 text-neutral-700">{row.model}</td>
-                      <td className="p-6 text-neutral-700 font-medium text-green-700">{row.strength}</td>
-                      <td className="p-6 text-neutral-500">{row.hook}</td>
-                      <td className="p-6 text-neutral-700 font-medium">{row.target}</td>
+                      <td className="p-6 text-neutral-700">{t(row.model)}</td>
+                      <td className="p-6 text-neutral-700 font-medium text-green-700">{t(row.strength)}</td>
+                      <td className="p-6 text-neutral-500">{t(row.hook)}</td>
+                      <td className="p-6 text-neutral-700 font-medium">{t(row.target)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -506,10 +519,10 @@ export default function CarifyAlternativen() {
               ].map((card, i) => (
                 <div key={i} className={`p-6 rounded-2xl border ${card.highlight ? "border-primary bg-primary/5" : "border-neutral-200 bg-white"} shadow-sm`}>
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className={`text-xl font-black ${card.highlight ? "text-primary" : "text-neutral-900"}`}>{card.name}</h3>
-                    <span className="text-xs font-bold uppercase tracking-wider bg-neutral-100 px-2 py-1 rounded text-neutral-600">{card.model}</span>
+                    <h3 className={`text-xl font-black ${card.highlight ? "text-primary" : "text-neutral-900"}`}>{t(card.name)}</h3>
+                    <span className="text-xs font-bold uppercase tracking-wider bg-neutral-100 px-2 py-1 rounded text-neutral-600">{t(card.model)}</span>
                   </div>
-                  <p className="text-neutral-600">{card.text}</p>
+                  <p className="text-neutral-600">{t(card.text)}</p>
                 </div>
               ))}
             </div>
@@ -521,7 +534,7 @@ export default function CarifyAlternativen() {
                 className="bg-primary hover:bg-primary/90 text-white font-bold px-8 py-6 text-lg rounded-xl shadow-lg"
               >
                 <Link href="/leasinguebernahme">
-                  Leasingübernahmen ansehen
+                  {t("Leasingübernahmen ansehen")}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -532,7 +545,7 @@ export default function CarifyAlternativen() {
                 className="text-neutral-600 hover:text-neutral-900 font-medium"
               >
                 <Link href="/inserat-erstellen">
-                  Leasing abgeben
+                  {t("Leasing abgeben")}
                 </Link>
               </Button>
             </div>
@@ -549,24 +562,26 @@ export default function CarifyAlternativen() {
           <div className="max-w-4xl mx-auto text-center relative z-10">
             <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-white/20">
               <Zap className="w-4 h-4" />
-              Der Geheimtipp
+              {t("Der Geheimtipp")}
             </div>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight">
-              Die oft günstigere Alternative:<br />
-              <span className="text-primary">Leasingübernahme.</span>
+              <T
+                k="Die oft günstigere Alternative:<0/><1>Leasingübernahme.</1>"
+                c={[<br key="0" />, <span key="1" className="text-primary" />]}
+              />
             </h2>
             <p className="text-xl text-neutral-300 leading-relaxed mb-8 max-w-2xl mx-auto">
-              Auto-Abo ist ein Paket (Komfort, alles gebündelt). Bei der Leasingübernahme übernimmst du einen bestehenden Vertrag, organisierst die Versicherung selbst und hast dadurch volle Kontrolle über dein Budget.
+              {t("Auto-Abo ist ein Paket (Komfort, alles gebündelt). Bei der Leasingübernahme übernimmst du einen bestehenden Vertrag, organisierst die Versicherung selbst und hast dadurch volle Kontrolle über dein Budget.")}
             </p>
             
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 max-w-2xl mx-auto transform hover:scale-[1.02] transition-transform duration-300">
               <p className="text-lg md:text-xl font-bold text-white italic">
-                "Wenn du keine Lust hast, die Komfort-Steuer zu zahlen: Leasingübernahme ist für viele der Cheatcode."
+                {t('"Wenn du keine Lust hast, die Komfort-Steuer zu zahlen: Leasingübernahme ist für viele der Cheatcode."')}
               </p>
             </div>
 
             <div className="mt-8 text-neutral-400 text-sm font-medium">
-              Ob das günstiger ist, hängt vom Fahrzeug, Vertrag und deiner Versicherung ab — aber wenn du den reinen Monatsbetrag optimieren willst, lohnt sich der Vergleich fast immer.
+              {t("Ob das günstiger ist, hängt vom Fahrzeug, Vertrag und deiner Versicherung ab — aber wenn du den reinen Monatsbetrag optimieren willst, lohnt sich der Vergleich fast immer.")}
             </div>
           </div>
         </section>
@@ -576,9 +591,9 @@ export default function CarifyAlternativen() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
-                Auto-Abo oder Leasingübernahme?
+                {t("Auto-Abo oder Leasingübernahme?")}
               </h2>
-              <p className="text-neutral-600 text-lg">Der ehrliche Vergleich.</p>
+              <p className="text-neutral-600 text-lg">{t("Der ehrliche Vergleich.")}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -589,26 +604,26 @@ export default function CarifyAlternativen() {
                     <div className="bg-blue-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
                       <Sparkles className="w-6 h-6" />
                     </div>
-                    <h3 className="text-2xl font-black text-neutral-900 mb-2">Auto-Abo</h3>
-                    <div className="text-sm font-bold text-blue-600 bg-blue-200 inline-block px-3 py-1 rounded-full">SORGLOS-MODUS ✅</div>
+                    <h3 className="text-2xl font-black text-neutral-900 mb-2">{t("Auto-Abo")}</h3>
+                    <div className="text-sm font-bold text-blue-600 bg-blue-200 inline-block px-3 py-1 rounded-full">{t("SORGLOS-MODUS ✅")}</div>
                   </div>
                   <div className="p-8 bg-white h-full">
                     <div className="space-y-4 mb-8">
                       <div className="flex items-start gap-3">
                         <Check className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-                        <span className="text-neutral-700">Fixpreis-Logik: viele Kosten sind gebündelt</span>
+                        <span className="text-neutral-700">{t("Fixpreis-Logik: viele Kosten sind gebündelt")}</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <Check className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-                        <span className="text-neutral-700">Bequem: weniger Organisieren (Versicherung/Service inkl.)</span>
+                        <span className="text-neutral-700">{t("Bequem: weniger Organisieren (Versicherung/Service inkl.)")}</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <Check className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-                        <span className="text-neutral-700">Passt, wenn du Komfort & Planbarkeit priorisierst</span>
+                        <span className="text-neutral-700">{t("Passt, wenn du Komfort & Planbarkeit priorisierst")}</span>
                       </div>
                     </div>
                     <p className="text-sm text-neutral-500 italic border-t border-neutral-100 pt-4">
-                      Komfort ist selten gratis: du zahlst oft eine Paketlogik, auch wenn du nicht alles ausnutzt.
+                      {t("Komfort ist selten gratis: du zahlst oft eine Paketlogik, auch wenn du nicht alles ausnutzt.")}
                     </p>
                   </div>
                 </CardContent>
@@ -619,7 +634,7 @@ export default function CarifyAlternativen() {
                 <div className="absolute top-4 right-4 z-10">
                   <div className="bg-primary text-white text-xs font-black px-4 py-2 rounded-full flex items-center gap-1">
                     <ThumbsUp className="w-3 h-3" />
-                    PREIS-TIPP
+                    {t("PREIS-TIPP")}
                   </div>
                 </div>
                 <CardContent className="p-0">
@@ -627,26 +642,26 @@ export default function CarifyAlternativen() {
                     <div className="bg-primary text-white w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
                       <DollarSign className="w-6 h-6" />
                     </div>
-                    <h3 className="text-2xl font-black text-neutral-900 mb-2">Leasingübernahme</h3>
-                    <div className="text-sm font-bold text-primary bg-white inline-block px-3 py-1 rounded-full border border-primary/20">PREIS-OPTIMIERER 🧠</div>
+                    <h3 className="text-2xl font-black text-neutral-900 mb-2">{t("Leasingübernahme")}</h3>
+                    <div className="text-sm font-bold text-primary bg-white inline-block px-3 py-1 rounded-full border border-primary/20">{t("PREIS-OPTIMIERER 🧠")}</div>
                   </div>
                   <div className="p-8 bg-white h-full">
                     <div className="space-y-4 mb-8">
                       <div className="flex items-start gap-3">
                         <Check className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                        <span className="text-neutral-700 font-medium">Vertrag übernehmen (Restlaufzeit + Konditionen)</span>
+                        <span className="text-neutral-700 font-medium">{t("Vertrag übernehmen (Restlaufzeit + Konditionen)")}</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <Check className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                        <span className="text-neutral-700 font-medium">Mehr Kontrolle: Rate/Laufzeit/KM selbst wählen</span>
+                        <span className="text-neutral-700 font-medium">{t("Mehr Kontrolle: Rate/Laufzeit/KM selbst wählen")}</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <Check className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                        <span className="text-neutral-700 font-medium">Oft günstiger, wenn du Versicherung separat regelst</span>
+                        <span className="text-neutral-700 font-medium">{t("Oft günstiger, wenn du Versicherung separat regelst")}</span>
                       </div>
                     </div>
                     <p className="text-sm text-neutral-500 italic border-t border-neutral-100 pt-4">
-                      Konditionen hängen vom Inserat & Vertrag ab — darum lohnt sich Vergleich.
+                      {t("Konditionen hängen vom Inserat & Vertrag ab — darum lohnt sich Vergleich.")}
                     </p>
                   </div>
                 </CardContent>
@@ -655,7 +670,10 @@ export default function CarifyAlternativen() {
 
             <div className="mt-12 text-center bg-neutral-50 rounded-2xl p-6 md:p-8 border border-neutral-200">
               <p className="text-lg md:text-xl font-bold text-neutral-800">
-                Auto-Abo ist wie Hotel mit Frühstück. Leasingübernahme ist wie eine gute Wohnung: weniger inklusive — aber oft günstiger, wenn du's schlau machst. Wie sich die Kosten konkret unterscheiden, zeigt unser ausführlicher <Link href="/leasinguebernahme-vs-autoabo" className="text-primary font-semibold hover:underline">Vergleich Leasingübernahme vs. Auto-Abo</Link>.
+                <T
+                  k="Auto-Abo ist wie Hotel mit Frühstück. Leasingübernahme ist wie eine gute Wohnung: weniger inklusive — aber oft günstiger, wenn du's schlau machst. Wie sich die Kosten konkret unterscheiden, zeigt unser ausführlicher <0>Vergleich Leasingübernahme vs. Auto-Abo</0>."
+                  c={[<Link key="0" href="/leasinguebernahme-vs-autoabo" className="text-primary font-semibold hover:underline" />]}
+                />
               </p>
               <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
                 <Button
@@ -664,7 +682,7 @@ export default function CarifyAlternativen() {
                   className="bg-primary hover:bg-primary/90 text-white font-bold px-8 py-6 rounded-xl"
                 >
                   <Link href="/leasinguebernahme">
-                    Leasingübernahmen ansehen
+                    {t("Leasingübernahmen ansehen")}
                   </Link>
                 </Button>
                 <Button
@@ -674,7 +692,7 @@ export default function CarifyAlternativen() {
                   className="border-neutral-300 text-neutral-700 hover:bg-neutral-100 px-8 py-6 rounded-xl"
                 >
                   <Link href="/inserat-erstellen">
-                    Leasing abgeben
+                    {t("Leasing abgeben")}
                   </Link>
                 </Button>
               </div>
@@ -687,9 +705,9 @@ export default function CarifyAlternativen() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
-                Schnell entscheiden
+                {t("Schnell entscheiden")}
               </h2>
-              <p className="text-neutral-600 text-lg">Auto-Abo oder Leasingübernahme?</p>
+              <p className="text-neutral-600 text-lg">{t("Auto-Abo oder Leasingübernahme?")}</p>
             </div>
 
             <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-neutral-200">
@@ -706,9 +724,9 @@ export default function CarifyAlternativen() {
                       <div className="bg-neutral-100 p-2 rounded-lg hidden sm:block">
                         <item.icon className="w-5 h-5 text-neutral-600" />
                       </div>
-                      <span className="text-lg md:text-xl font-medium text-neutral-800">{item.q}</span>
+                      <span className="text-lg md:text-xl font-medium text-neutral-800">{t(item.q)}</span>
                     </div>
-                    <span className="text-primary font-black text-right sm:min-w-[140px]">{item.a}</span>
+                    <span className="text-primary font-black text-right sm:min-w-[140px]">{t(item.a)}</span>
                   </div>
                 ))}
               </div>
@@ -720,21 +738,23 @@ export default function CarifyAlternativen() {
         <section className="py-20 px-4 bg-white">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-6">
-              Warum BuyAuto hier überhaupt mitredet
+              {t("Warum BuyAuto hier überhaupt mitredet")}
             </h2>
             <div className="prose prose-lg mx-auto text-neutral-600 leading-relaxed">
               <p>
-                BuyAuto ist auf Leasingübernahmen spezialisiert. Wir helfen Leuten, Leasingverträge abzugeben oder zu übernehmen — transparent, modern und ohne Marktplatz-Umwege.
+                {t("BuyAuto ist auf Leasingübernahmen spezialisiert. Wir helfen Leuten, Leasingverträge abzugeben oder zu übernehmen — transparent, modern und ohne Marktplatz-Umwege.")}
               </p>
               <p>
-                Wenn du nach Carify Alternativen suchst, ist das oft die gleiche Frage dahinter: "Wie komme ich günstig und flexibel zu einem Auto?"
-                Und genau da ist Leasingübernahme für viele die unterschätzte Option — ein Blick auf die <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">aktuellen Leasingübernahme-Angebote</Link> lohnt sich fast immer.
+                <T
+                  k={'Wenn du nach Carify Alternativen suchst, ist das oft die gleiche Frage dahinter: "Wie komme ich günstig und flexibel zu einem Auto?" Und genau da ist Leasingübernahme für viele die unterschätzte Option — ein Blick auf die <0>aktuellen Leasingübernahme-Angebote</0> lohnt sich fast immer.'}
+                  c={[<Link key="0" href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline" />]}
+                />
               </p>
               <div className="mt-8 font-serif italic text-neutral-800 text-xl">
-                — Vincent Hänggi, Gründer von BuyAuto
+                {t("— Vincent Hänggi, Gründer von BuyAuto")}
               </div>
               <p className="mt-12 text-xs text-neutral-400">
-                Disclaimer: BuyAuto ist unabhängig und steht in keiner Verbindung zu Carify oder den genannten Anbietern.
+                {t("Disclaimer: BuyAuto ist unabhängig und steht in keiner Verbindung zu Carify oder den genannten Anbietern.")}
               </p>
             </div>
           </div>
@@ -745,9 +765,9 @@ export default function CarifyAlternativen() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-black text-neutral-900 mb-4">
-                FAQ zu Carify Alternativen
+                {t("FAQ zu Carify Alternativen")}
               </h2>
-              <p className="text-neutral-600 text-lg">Alles Wichtige in Kürze</p>
+              <p className="text-neutral-600 text-lg">{t("Alles Wichtige in Kürze")}</p>
             </div>
             
             <Accordion type="single" collapsible className="w-full space-y-4">
@@ -791,10 +811,10 @@ export default function CarifyAlternativen() {
                   className="bg-white rounded-2xl border-2 border-neutral-200 px-8 hover:border-primary/50 transition-all duration-300 data-[state=open]:shadow-lg"
                 >
                   <AccordionTrigger className="text-left font-bold text-neutral-900 hover:no-underline py-6 text-lg">
-                    {faq.q}
+                    {t(faq.q)}
                   </AccordionTrigger>
                   <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                    <div dangerouslySetInnerHTML={{ __html: faq.a }} />
+                    <div dangerouslySetInnerHTML={{ __html: t(faq.a) }} />
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -812,10 +832,10 @@ export default function CarifyAlternativen() {
           <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
             <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold mb-4">
               <CheckCircle className="w-4 h-4" />
-              Vergleich fertig?
+              {t("Vergleich fertig?")}
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">
-              Jetzt die günstige Option checken.
+              {t("Jetzt die günstige Option checken.")}
             </h2>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Button 
@@ -824,7 +844,7 @@ export default function CarifyAlternativen() {
                 className="w-full sm:w-auto h-16 px-10 text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/40 transition-all group"
               >
                 <Link href="/leasinguebernahme">
-                  Leasingübernahmen ansehen
+                  {t("Leasingübernahmen ansehen")}
                   <ArrowRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
@@ -835,7 +855,7 @@ export default function CarifyAlternativen() {
                 className="w-full sm:w-auto h-16 px-10 text-xl font-black border-2 border-white text-white hover:bg-white hover:text-neutral-900 rounded-2xl bg-transparent transition-all"
               >
                 <Link href="/inserat-erstellen">
-                  Leasing abgeben
+                  {t("Leasing abgeben")}
                 </Link>
               </Button>
             </div>
@@ -849,3 +869,5 @@ export default function CarifyAlternativen() {
     </>
   );
 }
+
+export const getStaticProps = staticI18nProps(["pages/carify-alternativen"]);

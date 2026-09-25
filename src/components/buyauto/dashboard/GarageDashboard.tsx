@@ -17,11 +17,13 @@ import { dashboardService, type DashboardStats, type ListingInquiryCounts } from
 import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageService";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { ListingDetail } from "@/lib/buyauto/types";
-import { formatDealerEntitlementLabel, formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
+import { formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
 import { GARAGE_PLANS, garagePlanFor } from "@/lib/buyauto/garagePlans";
 import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { GarageBasisTab } from "@/components/buyauto/dashboard/GarageBasisTab";
+import { localizePath } from "@/i18n/config";
+import { T, useLocale, useT, type TFunction } from "@/i18n/runtime";
 
 // Client-only chunk, kept out of the dashboard's initial bundle.
 const EintauschwertRechner = dynamic(
@@ -45,6 +47,26 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   return "Unbekannter Fehler";
+}
+
+// Same text as formatDealerEntitlementLabel (German output unchanged), with
+// the words translated for fr/it/en. Dates stay numeric de-CH.
+function formatEntitlementLabel(entitlement: DealerEntitlement, t: TFunction): string {
+  if (entitlement.kind === "trial") {
+    const name = entitlement.planName ?? entitlement.planCode;
+    return t("{name} (Trial bis {date})", { name, date: formatDateTimeDeCH(entitlement.endsAt) });
+  }
+
+  if (entitlement.kind === "subscription") {
+    const name = entitlement.planName ?? entitlement.planCode;
+    return entitlement.endsAt ? t("{name} (bis {date})", { name, date: formatDateTimeDeCH(entitlement.endsAt) }) : name;
+  }
+
+  if (entitlement.kind === "garage_plan_field") {
+    return entitlement.planName ?? entitlement.planCode;
+  }
+
+  return t("Kein Plan");
 }
 
 function isListingPausedForStats(listing: ListingDetail): boolean {
@@ -98,6 +120,8 @@ function appendCacheBuster(url: string | null | undefined, version?: number): st
 
 export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const hasMounted = useHasMounted();
   const { messageCount } = useAuth();
 
@@ -150,8 +174,8 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
   const [inventorySubTab, setInventorySubTab] = useState<"active" | "drafts" | "sold">("active");
 
   const planLabel = useMemo(() => {
-    return formatDealerEntitlementLabel(entitlement);
-  }, [entitlement]);
+    return formatEntitlementLabel(entitlement, t);
+  }, [entitlement, t]);
 
   const logoUrl = useMemo(() => {
     return appendCacheBuster(garage?.logo_url, logoVersion);
@@ -188,7 +212,10 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
         setGarage(g);
       } catch (e) {
         if (cancelled) return;
-        setBanner({ kind: "error", message: `Garage-Profil konnte nicht geladen werden: ${getErrorMessage(e)}` });
+        setBanner({
+          kind: "error",
+          message: t("Garage-Profil konnte nicht geladen werden: {error}", { error: t(getErrorMessage(e)) }),
+        });
       } finally {
         if (!cancelled) setGarageLoading(false);
       }
@@ -363,18 +390,18 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     try {
       const updated = await updateMyGarage(updates);
       setGarage(updated);
-      setBanner({ kind: "success", message: "Garage-Daten gespeichert." });
+      setBanner({ kind: "success", message: t("Garage-Daten gespeichert.") });
     } catch (e) {
-      setBanner({ kind: "error", message: `Speichern fehlgeschlagen: ${getErrorMessage(e)}` });
+      setBanner({ kind: "error", message: t("Speichern fehlgeschlagen: {error}", { error: t(getErrorMessage(e)) }) });
       throw e;
     }
   }
 
   const statCards = [
-    { label: "Aktiv", value: stats?.active ?? 0 },
-    { label: "In Prüfung", value: stats?.pending ?? 0 },
-    { label: "Verkauft", value: stats?.sold ?? 0 },
-    { label: "Aufrufe", value: stats?.totalViews ?? 0 }, // Updated to use totalViews from service
+    { label: t("Aktiv@@plural"), value: stats?.active ?? 0 },
+    { label: t("In Prüfung"), value: stats?.pending ?? 0 },
+    { label: t("Verkauft@@plural"), value: stats?.sold ?? 0 },
+    { label: t("Aufrufe"), value: stats?.totalViews ?? 0 }, // Updated to use totalViews from service
   ];
 
   return (
@@ -397,7 +424,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
                 <Avatar className="h-14 w-14 border border-white/25 bg-white/10">
-                  <AvatarImage src={logoUrl} alt={garage?.garage_name ?? "Garage"} />
+                  <AvatarImage src={logoUrl} alt={garage?.garage_name ?? t("Garage")} />
                   <AvatarFallback className="bg-white/10 text-white">
                     <Building2 className="h-5 w-5" />
                   </AvatarFallback>
@@ -406,14 +433,14 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white truncate">
-                      {garage?.garage_name ?? "Garage Dashboard"}
+                      {garage?.garage_name ?? t("Garage Dashboard")}
                     </h1>
                     <Badge className="bg-white/15 text-white border-white/25 rounded-full">
                       <Crown className="h-3.5 w-3.5 mr-1" />
                       {planLabel}
                     </Badge>
                   </div>
-                  <p className="text-white/80 text-sm mt-1">Inventar verwalten, Profil pflegen und Plan anpassen.</p>
+                  <p className="text-white/80 text-sm mt-1">{t("Inventar verwalten, Profil pflegen und Plan anpassen.")}</p>
                 </div>
               </div>
 
@@ -454,22 +481,22 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
             <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "inventory" | "basis" | "profile" | "subscription" | "stats" | "rechner")} className="w-full">
               <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-neutral-100 p-1.5 h-auto">
                 <TabsTrigger value="inventory" className="rounded-xl px-6 py-3 text-base font-semibold">
-                  Inventar
+                  {t("Inventar")}
                 </TabsTrigger>
                 <TabsTrigger value="rechner" className="rounded-xl px-6 py-3 text-base font-semibold">
-                  Eintausch-Rechner
+                  {t("Eintausch-Rechner")}
                 </TabsTrigger>
                 <TabsTrigger value="basis" className="rounded-xl px-6 py-3 text-base font-semibold">
-                  Basis Daten
+                  {t("Basis Daten")}
                 </TabsTrigger>
                 <TabsTrigger value="profile" className="rounded-xl px-6 py-3 text-base font-semibold">
-                  Profil Informationen
+                  {t("Profil Informationen")}
                 </TabsTrigger>
                 <TabsTrigger value="subscription" className="rounded-xl px-6 py-3 text-base font-semibold">
-                  Abonnemente
+                  {t("Abonnemente")}
                 </TabsTrigger>
                 <TabsTrigger value="stats" className="rounded-xl px-6 py-3 text-base font-semibold">
-                  Statistiken
+                  {t("Statistiken")}
                 </TabsTrigger>
               </TabsList>
 
@@ -477,8 +504,8 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                 <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-4 sm:p-6">
                   <div className="flex items-start justify-between gap-4 mb-6">
                     <div>
-                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">Inserate Verwalten</h2>
-                      <p className="text-sm text-neutral-600 mt-1">Status, Laufzeit und Premium-Optionen.</p>
+                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">{t("Inserate Verwalten")}</h2>
+                      <p className="text-sm text-neutral-600 mt-1">{t("Status, Laufzeit und Premium-Optionen.")}</p>
                     </div>
                   </div>
 
@@ -490,7 +517,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                       className="rounded-2xl px-4 py-2 sm:px-8 sm:py-6 text-base font-semibold"
                       size="lg"
                     >
-                      Aktive Inserate
+                      {t("Aktive Inserate")}
                     </Button>
                     <Button
                       onClick={() => setInventorySubTab("drafts")}
@@ -498,7 +525,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                       className="rounded-2xl px-4 py-2 sm:px-8 sm:py-6 text-base font-semibold"
                       size="lg"
                     >
-                      Entwürfe
+                      {t("Entwürfe")}
                     </Button>
                     <Button
                       onClick={() => setInventorySubTab("sold")}
@@ -506,7 +533,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                       className="rounded-2xl px-4 py-2 sm:px-8 sm:py-6 text-base font-semibold"
                       size="lg"
                     >
-                      Verkauft
+                      {t("Verkauft@@plural")}
                     </Button>
                   </div>
 
@@ -527,10 +554,9 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                       <Calculator className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">Eintauschwert-Rechner</h2>
+                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">{t("Eintauschwert-Rechner")}</h2>
                       <p className="text-sm text-neutral-600 mt-1">
-                        Marktwert aus echten Vergleichsinseraten, minus deine Abzüge. Automatische
-                        Suchen zählen zu deinem Monatskontingent; manuelle Berechnungen sind unbegrenzt.
+                        {t("Marktwert aus echten Vergleichsinseraten, minus deine Abzüge. Automatische Suchen zählen zu deinem Monatskontingent; manuelle Berechnungen sind unbegrenzt.")}
                       </p>
                     </div>
                   </div>
@@ -546,34 +572,37 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                         <Lock className="h-4 w-4 text-amber-700 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
                           <div className="text-sm font-semibold text-amber-900">
-                            Rechner-Widget ab {GARAGE_PLANS.growth.name}
+                            {t("Rechner-Widget ab {plan}", { plan: t(GARAGE_PLANS.growth.name) })}
                           </div>
                           <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
-                            Mit {GARAGE_PLANS.growth.name} bindest du den Eintauschwert-Rechner
-                            als Widget direkt auf deiner eigenen Website ein – ein Snippet
-                            einfügen, fertig. Hier im Dashboard rechnest du in jedem Paket.
+                            {t(
+                              "Mit {plan} bindest du den Eintauschwert-Rechner als Widget direkt auf deiner eigenen Website ein – ein Snippet einfügen, fertig. Hier im Dashboard rechnest du in jedem Paket.",
+                              { plan: t(GARAGE_PLANS.growth.name) }
+                            )}
                           </p>
                         </div>
                       </div>
                     </div>
                   ) : !garage?.slug ? (
                     <div className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-                      Speichere zuerst deine <span className="font-semibold">Profil-URL</span> (Slug)
-                      im Profil-Tab – danach erscheint hier dein Embed-Code für den Rechner.
+                      <T
+                        k="Speichere zuerst deine <0>Profil-URL</0> (Slug) im Profil-Tab – danach erscheint hier dein Embed-Code für den Rechner."
+                        c={[<span key="0" className="font-semibold" />]}
+                      />
                     </div>
                   ) : (
                     <details className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
                       <summary className="cursor-pointer select-none font-medium text-neutral-900">
-                        Rechner auf der eigenen Website einbetten
+                        {t("Rechner auf der eigenen Website einbetten")}
                       </summary>
                       <div className="mt-3 space-y-3">
                         <p className="text-neutral-600">
-                          Füge diesen Code auf deiner Website ein – die Höhe passt sich automatisch an.
+                          {t("Füge diesen Code auf deiner Website ein – die Höhe passt sich automatisch an.")}
                         </p>
                         <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-xs text-white">
 {`<iframe
   id="buyauto-eintauschwert-rechner"
-  src="https://www.buyauto.ch/embed/eintauschwert-rechner?garage=${encodeURIComponent(garage.slug)}&embedId=buyauto-eintauschwert-rechner"
+  src="https://www.buyauto.ch${localizePath("/embed/eintauschwert-rechner", locale)}?garage=${encodeURIComponent(garage.slug)}&embedId=buyauto-eintauschwert-rechner"
   style="width:100%;border:0;display:block;min-height:640px;"
   loading="lazy"
 ></iframe>
@@ -614,8 +643,8 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                 <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-4 sm:p-6">
                   <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">Statistiken</h2>
-                      <p className="text-sm text-neutral-600 mt-1">Detaillierte Einblicke in Ihre Inserate.</p>
+                      <h2 className="text-lg font-bold tracking-tight text-neutral-900">{t("Statistiken")}</h2>
+                      <p className="text-sm text-neutral-600 mt-1">{t("Detaillierte Einblicke in Ihre Inserate.")}</p>
                     </div>
                     <Button
                       variant="outline"
@@ -623,7 +652,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                       className="rounded-2xl"
                       disabled={statsLoading}
                     >
-                      {statsLoading ? "Aktualisieren…" : "Aktualisieren"}
+                      {statsLoading ? t("Aktualisieren…") : t("Aktualisieren")}
                     </Button>
                   </div>
                   <GarageStatsTab listings={allListingsForStats} inquiryCounts={inquiryCounts} />
@@ -638,7 +667,7 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
         <div className="rounded-3xl border border-neutral-200/60 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3 text-sm text-neutral-600">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Garage-Profil wird geladen…
+            {t("Garage-Profil wird geladen…")}
           </div>
         </div>
       )}

@@ -8,6 +8,7 @@ import type { SearchQuery } from "@/lib/buyauto/search";
 import { Filter, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBrands, getModelsForBrand, getVariantsForBrandModel } from "@/services/listingsService";
+import { useT } from "@/i18n/runtime";
 
 interface DynamicFilterBarProps {
   searchQuery: SearchQuery;
@@ -53,6 +54,7 @@ export default function DynamicFilterBar({
   onSearchQueryChange,
   className,
 }: DynamicFilterBarProps) {
+  const t = useT();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const [brands, setBrands] = useState<string[]>([]);
@@ -215,23 +217,23 @@ export default function DynamicFilterBar({
     const chips: FilterChip[] = [];
 
     if (saleType !== "all") {
-      chips.push({ key: "saleType", label: "Verkaufsart", value: getSaleTypeLabel(saleType) });
+      chips.push({ key: "saleType", label: t("Verkaufsart"), value: t(getSaleTypeLabel(saleType)) });
     }
 
-    if (searchQuery.query) chips.push({ key: "query", label: "Suche", value: searchQuery.query });
-    if (searchQuery.brand) chips.push({ key: "brand", label: "Marke", value: searchQuery.brand });
-    if (searchQuery.model) chips.push({ key: "model", label: "Modell", value: searchQuery.model });
-    if (searchQuery.variant) chips.push({ key: "variant", label: "Ausführung", value: searchQuery.variant });
-    if (searchQuery.yearMin) chips.push({ key: "yearMin", label: "Ab Jahr", value: searchQuery.yearMin.toString() });
+    if (searchQuery.query) chips.push({ key: "query", label: t("Suche"), value: searchQuery.query });
+    if (searchQuery.brand) chips.push({ key: "brand", label: t("Marke"), value: searchQuery.brand });
+    if (searchQuery.model) chips.push({ key: "model", label: t("Modell"), value: searchQuery.model });
+    if (searchQuery.variant) chips.push({ key: "variant", label: t("Ausführung"), value: searchQuery.variant });
+    if (searchQuery.yearMin) chips.push({ key: "yearMin", label: t("Ab Jahr"), value: searchQuery.yearMin.toString() });
 
-    const minLabel = isDirectPurchase ? "Min. Kaufpreis" : "Min. Rate";
-    const maxLabel = isDirectPurchase ? "Max. Kaufpreis" : "Max. Rate";
+    const minLabel = isDirectPurchase ? t("Min. Kaufpreis") : t("Min. Rate");
+    const maxLabel = isDirectPurchase ? t("Max. Kaufpreis") : t("Max. Rate");
 
     if (!isMixed && searchQuery.priceMin) chips.push({ key: "priceMin", label: minLabel, value: formatChf(searchQuery.priceMin) });
     if (!isMixed && searchQuery.priceMax) chips.push({ key: "priceMax", label: maxLabel, value: formatChf(searchQuery.priceMax) });
 
     if (isLeaseTakeover && searchQuery.monthsMax) {
-      chips.push({ key: "monthsMax", label: "Restlaufzeit", value: `bis ${searchQuery.monthsMax} Mon.` });
+      chips.push({ key: "monthsMax", label: t("Restlaufzeit"), value: t("bis {n} Mon.", { n: searchQuery.monthsMax }) });
     }
 
     return chips;
@@ -266,8 +268,8 @@ export default function DynamicFilterBar({
 
   const activeChips = getActiveFilterChips();
 
-  const priceMinPlaceholder = isDirectPurchase ? "Min. Kaufpreis" : "Min. Rate";
-  const priceMaxPlaceholder = isDirectPurchase ? "Max. Kaufpreis" : "Max. Rate";
+  const priceMinPlaceholder = isDirectPurchase ? t("Min. Kaufpreis") : t("Min. Rate");
+  const priceMaxPlaceholder = isDirectPurchase ? t("Max. Kaufpreis") : t("Max. Rate");
 
   // Inline JSX (not inner components): declaring these as components inside the render
   // body gives them a new identity every render, remounting the whole Radix Select subtree.
@@ -276,9 +278,9 @@ export default function DynamicFilterBar({
       <div className="grid grid-cols-9 items-center gap-4">
         <div className="col-span-1">
           <Select value={searchQuery.brand || "all"} onValueChange={handleBrandChange} disabled={loadingBrands}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Marke" /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t("Marke")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Marken</SelectItem>
+              <SelectItem value="all">{t("Alle Marken")}</SelectItem>
               {brands.map((brand) => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -286,9 +288,9 @@ export default function DynamicFilterBar({
 
         <div className="col-span-1">
           <Select value={searchQuery.model || "all"} onValueChange={handleModelChange} disabled={!searchQuery.brand || loadingModels}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={searchQuery.brand ? "Modell" : "Erst Marke"} /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={searchQuery.brand ? t("Modell") : t("Erst Marke")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Modelle</SelectItem>
+              <SelectItem value="all">{t("Alle Modelle")}</SelectItem>
               {models.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -300,9 +302,9 @@ export default function DynamicFilterBar({
             onValueChange={handleVariantChange}
             disabled={!searchQuery.model || loadingVariants}
           >
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={searchQuery.model ? "Ausführung" : "Erst Modell"} /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={searchQuery.model ? t("Ausführung") : t("Erst Modell")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Ausführungen</SelectItem>
+              <SelectItem value="all">{t("Alle Ausführungen")}</SelectItem>
               {variants.map((variant) => <SelectItem key={variant} value={variant}>{variant}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -310,9 +312,9 @@ export default function DynamicFilterBar({
 
         <div className="col-span-1">
           <Select value={searchQuery.yearMin ? searchQuery.yearMin.toString() : "all"} onValueChange={handleYearChange}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jahr" /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t("Jahr")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Jahre</SelectItem>
+              <SelectItem value="all">{t("Alle Jahre")}</SelectItem>
               {yearOptions.map((year) => <SelectItem key={year} value={year.toString()}>{year}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -326,7 +328,7 @@ export default function DynamicFilterBar({
           >
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={priceMinPlaceholder} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Kein Min.</SelectItem>
+              <SelectItem value="all">{t("Kein Min.")}</SelectItem>
               {priceOptions.map((price) => (
                 <SelectItem key={price} value={price.toString()}>{formatChf(price)}</SelectItem>
               ))}
@@ -342,7 +344,7 @@ export default function DynamicFilterBar({
           >
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={priceMaxPlaceholder} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Kein Max.</SelectItem>
+              <SelectItem value="all">{t("Kein Max.")}</SelectItem>
               {priceOptions.map((price) => (
                 <SelectItem key={price} value={price.toString()}>{formatChf(price)}</SelectItem>
               ))}
@@ -360,14 +362,14 @@ export default function DynamicFilterBar({
             disabled={!isLeaseTakeover}
           >
             <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder={isLeaseTakeover ? "Max. Laufzeit" : "Nur Leasingübernahme"} />
+              <SelectValue placeholder={isLeaseTakeover ? t("Max. Laufzeit") : t("Nur Leasingübernahme")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle</SelectItem>
-              <SelectItem value="6">bis 6 Mon.</SelectItem>
-              <SelectItem value="12">bis 12 Mon.</SelectItem>
-              <SelectItem value="24">bis 24 Mon.</SelectItem>
-              <SelectItem value="36">bis 36 Mon.</SelectItem>
+              <SelectItem value="all">{t("Alle@@term")}</SelectItem>
+              <SelectItem value="6">{t("bis {n} Mon.", { n: 6 })}</SelectItem>
+              <SelectItem value="12">{t("bis {n} Mon.", { n: 12 })}</SelectItem>
+              <SelectItem value="24">{t("bis {n} Mon.", { n: 24 })}</SelectItem>
+              <SelectItem value="36">{t("bis {n} Mon.", { n: 36 })}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -375,13 +377,13 @@ export default function DynamicFilterBar({
         <div className="col-span-1">
           <Select value={saleType} onValueChange={handleSaleTypeChange}>
             <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Verkaufsart" />
+              <SelectValue placeholder={t("Verkaufsart")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle</SelectItem>
-              <SelectItem value="lease_takeover">Leasingübernahme</SelectItem>
-              <SelectItem value="direct_purchase">Direktkauf</SelectItem>
-              <SelectItem value="leasing">Leasing</SelectItem>
+              <SelectItem value="all">{t("Alle")}</SelectItem>
+              <SelectItem value="lease_takeover">{t("Leasingübernahme")}</SelectItem>
+              <SelectItem value="direct_purchase">{t("Direktkauf")}</SelectItem>
+              <SelectItem value="leasing">{t("Leasing")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -393,20 +395,20 @@ export default function DynamicFilterBar({
           >
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="relevance">Relevanz</SelectItem>
-              <SelectItem value="dateDesc">Neueste</SelectItem>
-              <SelectItem value="yearDesc">Baujahr ↓</SelectItem>
-              <SelectItem value="kmAsc">KM ↑</SelectItem>
+              <SelectItem value="relevance">{t("Relevanz")}</SelectItem>
+              <SelectItem value="dateDesc">{t("Neueste")}</SelectItem>
+              <SelectItem value="yearDesc">{t("Baujahr ↓")}</SelectItem>
+              <SelectItem value="kmAsc">{t("KM ↑")}</SelectItem>
               {!isMixed && (
                 <>
-                  <SelectItem value="priceAsc">Preis ↑</SelectItem>
-                  <SelectItem value="priceDesc">Preis ↓</SelectItem>
+                  <SelectItem value="priceAsc">{t("Preis ↑")}</SelectItem>
+                  <SelectItem value="priceDesc">{t("Preis ↓")}</SelectItem>
                 </>
               )}
               {isLeaseTakeover && (
                 <>
-                  <SelectItem value="monthsAsc">Kurze Laufzeit</SelectItem>
-                  <SelectItem value="monthsDesc">Lange Laufzeit</SelectItem>
+                  <SelectItem value="monthsAsc">{t("Kurze Laufzeit")}</SelectItem>
+                  <SelectItem value="monthsDesc">{t("Lange Laufzeit")}</SelectItem>
                 </>
               )}
             </SelectContent>
@@ -421,7 +423,7 @@ export default function DynamicFilterBar({
               key={chip.key}
               className="inline-flex items-center space-x-1 px-2 py-1 bg-red-50 border border-red-200 rounded-full text-xs text-red-700 transition-all hover:bg-red-100"
             >
-              <span className="font-medium">{chip.label}:</span>
+              <span className="font-medium">{t("{label}:", { label: chip.label })}</span>
               <span>{chip.value}</span>
               <button onClick={() => removeFilter(chip.key)} className="ml-1 p-0.5 hover:bg-red-200 rounded-full transition-colors">
                 <X className="h-2.5 w-2.5" />
@@ -436,91 +438,91 @@ export default function DynamicFilterBar({
   const mobileFilters = (
     <div className="space-y-6 py-4">
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Verkaufsart</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{t("Verkaufsart")}</label>
         <Select value={saleType} onValueChange={handleSaleTypeChange}>
           <SelectTrigger className="h-11 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle</SelectItem>
-            <SelectItem value="lease_takeover">Leasingübernahme</SelectItem>
-            <SelectItem value="direct_purchase">Direktkauf</SelectItem>
-            <SelectItem value="leasing">Leasing</SelectItem>
+            <SelectItem value="all">{t("Alle")}</SelectItem>
+            <SelectItem value="lease_takeover">{t("Leasingübernahme")}</SelectItem>
+            <SelectItem value="direct_purchase">{t("Direktkauf")}</SelectItem>
+            <SelectItem value="leasing">{t("Leasing")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Marke</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{t("Marke")}</label>
         <Select value={searchQuery.brand || "all"} onValueChange={handleBrandChange} disabled={loadingBrands}>
           <SelectTrigger className="h-11 text-sm">
-            <SelectValue placeholder="Alle Marken" />
+            <SelectValue placeholder={t("Alle Marken")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Marken</SelectItem>
+            <SelectItem value="all">{t("Alle Marken")}</SelectItem>
             {brands.map((brand) => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Modell</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{t("Modell")}</label>
         <Select value={searchQuery.model || "all"} onValueChange={handleModelChange} disabled={!searchQuery.brand || loadingModels}>
           <SelectTrigger className="h-11 text-sm">
-            <SelectValue placeholder={searchQuery.brand ? "Alle Modelle" : "Erst Marke wählen"} />
+            <SelectValue placeholder={searchQuery.brand ? t("Alle Modelle") : t("Erst Marke wählen")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Modelle</SelectItem>
+            <SelectItem value="all">{t("Alle Modelle")}</SelectItem>
             {models.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Ausführung</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{t("Ausführung")}</label>
         <Select
           value={searchQuery.variant || "all"}
           onValueChange={handleVariantChange}
           disabled={!searchQuery.model || loadingVariants}
         >
           <SelectTrigger className="h-11 text-sm">
-            <SelectValue placeholder={searchQuery.model ? "Alle Ausführungen" : "Erst Modell wählen"} />
+            <SelectValue placeholder={searchQuery.model ? t("Alle Ausführungen") : t("Erst Modell wählen")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Ausführungen</SelectItem>
+            <SelectItem value="all">{t("Alle Ausführungen")}</SelectItem>
             {variants.map((variant) => <SelectItem key={variant} value={variant}>{variant}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Baujahr (ab)</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{t("Baujahr (ab)")}</label>
         <Select value={searchQuery.yearMin ? searchQuery.yearMin.toString() : "all"} onValueChange={handleYearChange}>
           <SelectTrigger className="h-11 text-sm">
-            <SelectValue placeholder="Alle Jahre" />
+            <SelectValue placeholder={t("Alle Jahre")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Jahre</SelectItem>
+            <SelectItem value="all">{t("Alle Jahre")}</SelectItem>
             {yearOptions.map((year) => <SelectItem key={year} value={year.toString()}>{year}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{isDirectPurchase ? "Kaufpreis" : "Preis pro Monat"}</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{isDirectPurchase ? t("Kaufpreis") : t("Preis pro Monat")}</label>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-neutral-600 mb-1 block">Min.</label>
+            <label className="text-xs text-neutral-600 mb-1 block">{t("Min.")}</label>
             <Select
               value={searchQuery.priceMin ? searchQuery.priceMin.toString() : "all"}
               onValueChange={(value) => handlePriceChange(value, "min")}
               disabled={isMixed}
             >
               <SelectTrigger className="h-11 text-sm">
-                <SelectValue placeholder="Kein Min." />
+                <SelectValue placeholder={t("Kein Min.")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Kein Min.</SelectItem>
+                <SelectItem value="all">{t("Kein Min.")}</SelectItem>
                 {priceOptions.map((price) => (
                   <SelectItem key={price} value={price.toString()}>{formatChf(price)}</SelectItem>
                 ))}
@@ -528,17 +530,17 @@ export default function DynamicFilterBar({
             </Select>
           </div>
           <div>
-            <label className="text-xs text-neutral-600 mb-1 block">Max.</label>
+            <label className="text-xs text-neutral-600 mb-1 block">{t("Max.")}</label>
             <Select
               value={searchQuery.priceMax ? searchQuery.priceMax.toString() : "all"}
               onValueChange={(value) => handlePriceChange(value, "max")}
               disabled={isMixed}
             >
               <SelectTrigger className="h-11 text-sm">
-                <SelectValue placeholder="Kein Max." />
+                <SelectValue placeholder={t("Kein Max.")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Kein Max.</SelectItem>
+                <SelectItem value="all">{t("Kein Max.")}</SelectItem>
                 {priceOptions.map((price) => (
                   <SelectItem key={price} value={price.toString()}>{formatChf(price)}</SelectItem>
                 ))}
@@ -548,13 +550,13 @@ export default function DynamicFilterBar({
         </div>
         {isMixed && (
           <p className="mt-2 text-xs text-neutral-500">
-            Wähle zuerst eine Verkaufsart, um Preise zu filtern.
+            {t("Wähle zuerst eine Verkaufsart, um Preise zu filtern.")}
           </p>
         )}
       </div>
 
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Restlaufzeit (max.)</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{t("Restlaufzeit (max.)")}</label>
         <Select
           value={isLeaseTakeover && searchQuery.monthsMax ? `${searchQuery.monthsMax}` : "all"}
           onValueChange={(value) => {
@@ -564,20 +566,20 @@ export default function DynamicFilterBar({
           disabled={!isLeaseTakeover}
         >
           <SelectTrigger className="h-11 text-sm">
-            <SelectValue placeholder={isLeaseTakeover ? "Alle Laufzeiten" : "Nur Leasingübernahme"} />
+            <SelectValue placeholder={isLeaseTakeover ? t("Alle Laufzeiten") : t("Nur Leasingübernahme")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle</SelectItem>
-            <SelectItem value="6">bis 6 Monate</SelectItem>
-            <SelectItem value="12">bis 12 Monate</SelectItem>
-            <SelectItem value="24">bis 24 Monate</SelectItem>
-            <SelectItem value="36">bis 36 Monate</SelectItem>
+            <SelectItem value="all">{t("Alle@@term")}</SelectItem>
+            <SelectItem value="6">{t("bis {n} Monate", { n: 6 })}</SelectItem>
+            <SelectItem value="12">{t("bis {n} Monate", { n: 12 })}</SelectItem>
+            <SelectItem value="24">{t("bis {n} Monate", { n: 24 })}</SelectItem>
+            <SelectItem value="36">{t("bis {n} Monate", { n: 36 })}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div>
-        <label className="text-sm font-semibold text-neutral-900 mb-2 block">Sortierung</label>
+        <label className="text-sm font-semibold text-neutral-900 mb-2 block">{t("Sortierung")}</label>
         <Select
           value={searchQuery.sort || "relevance"}
           onValueChange={(value) => onSearchQueryChange({ ...searchQuery, sort: value as SearchQuery["sort"] })}
@@ -586,20 +588,20 @@ export default function DynamicFilterBar({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="relevance">Relevanz</SelectItem>
-            <SelectItem value="dateDesc">Neueste zuerst</SelectItem>
-            <SelectItem value="yearDesc">Baujahr ↓</SelectItem>
-            <SelectItem value="kmAsc">KM ↑</SelectItem>
+            <SelectItem value="relevance">{t("Relevanz")}</SelectItem>
+            <SelectItem value="dateDesc">{t("Neueste zuerst")}</SelectItem>
+            <SelectItem value="yearDesc">{t("Baujahr ↓")}</SelectItem>
+            <SelectItem value="kmAsc">{t("KM ↑")}</SelectItem>
             {!isMixed && (
               <>
-                <SelectItem value="priceAsc">Preis aufsteigend</SelectItem>
-                <SelectItem value="priceDesc">Preis absteigend</SelectItem>
+                <SelectItem value="priceAsc">{t("Preis aufsteigend")}</SelectItem>
+                <SelectItem value="priceDesc">{t("Preis absteigend")}</SelectItem>
               </>
             )}
             {isLeaseTakeover && (
               <>
-                <SelectItem value="monthsAsc">Kurze Laufzeit zuerst</SelectItem>
-                <SelectItem value="monthsDesc">Lange Laufzeit zuerst</SelectItem>
+                <SelectItem value="monthsAsc">{t("Kurze Laufzeit zuerst")}</SelectItem>
+                <SelectItem value="monthsDesc">{t("Lange Laufzeit zuerst")}</SelectItem>
               </>
             )}
           </SelectContent>
@@ -612,7 +614,7 @@ export default function DynamicFilterBar({
           className="flex-1 bg-red-600 hover:bg-red-700 text-white h-11"
         >
           <ChevronRight className="h-4 w-4 mr-2" />
-          Ergebnisse anzeigen
+          {t("Ergebnisse anzeigen")}
         </Button>
         {activeChips.length > 0 && (
           <Button
@@ -623,7 +625,7 @@ export default function DynamicFilterBar({
             }}
             className="h-11 px-6 border-neutral-300 text-neutral-700 hover:bg-neutral-50"
           >
-            Zurücksetzen
+            {t("Zurücksetzen")}
           </Button>
         )}
       </div>
@@ -643,12 +645,12 @@ export default function DynamicFilterBar({
               <SheetTrigger asChild>
                 <Button variant="outline" className="h-9 text-sm font-semibold border-neutral-300 hover:bg-neutral-50">
                   <Filter className="h-4 w-4 mr-2" />
-                  Filter {activeChips.length > 0 && `(${activeChips.length})`}
+                  {t("Filter")} {activeChips.length > 0 && `(${activeChips.length})`}
                 </Button>
               </SheetTrigger>
               <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
                 <SheetHeader className="border-b border-neutral-200 pb-4 mb-2">
-                  <SheetTitle className="text-lg font-bold">Fahrzeuge filtern</SheetTitle>
+                  <SheetTitle className="text-lg font-bold">{t("Fahrzeuge filtern")}</SheetTitle>
                 </SheetHeader>
                 {mobileFilters}
               </SheetContent>
@@ -660,7 +662,7 @@ export default function DynamicFilterBar({
                 onClick={() => onSearchQueryChange({})}
                 className="h-9 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold"
               >
-                Alle löschen
+                {t("Alle löschen")}
               </Button>
             )}
           </div>

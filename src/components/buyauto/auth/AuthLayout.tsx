@@ -1,6 +1,7 @@
 
 import Head from "next/head";
 import Link from "next/link";
+import { useT } from "@/i18n/runtime";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -10,14 +11,18 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ 
   children, 
-  title = "Login & Registrierung | BuyAuto",
-  description = "Melde dich bei BuyAuto an oder erstelle ein Konto, um deine Auto-Leasing-Inserate zu verwalten."
+  title,
+  description
 }: AuthLayoutProps) {
+  const t = useT();
+  const pageTitle = title ?? t("Login & Registrierung | BuyAuto");
+  const pageDescription =
+    description ?? t("Melde dich bei BuyAuto an oder erstelle ein Konto, um deine Auto-Leasing-Inserate zu verwalten.");
   return (
     <>
       <Head>
-        <title>{title}</title>
-        <meta name="description" content={description} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
         <meta name="robots" content="noindex, nofollow" />
       </Head>
 
@@ -52,7 +57,7 @@ export default function AuthLayout({
 
         {/* Subtle Footer */}
         <footer className="text-center py-8 text-neutral-500 text-sm">
-          <p>© {new Date().getFullYear()} BuyAuto. Sicher und vertrauensvoll.</p>
+          <p>{t("© {year} BuyAuto. Sicher und vertrauensvoll.", { year: new Date().getFullYear() })}</p>
         </footer>
       </div>
     </>

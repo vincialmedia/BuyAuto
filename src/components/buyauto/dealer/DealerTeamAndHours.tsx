@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useT, type TFunction } from "@/i18n/runtime";
 
 type OpeningHoursDay = {
   from?: string | null;
@@ -37,9 +38,9 @@ function normalizeTeam(value: unknown): TeamMember[] {
     .filter((m) => (m.name ?? "").toString().trim().length > 0);
 }
 
-function formatHours(day: OpeningHoursDay | undefined): string {
+function formatHours(day: OpeningHoursDay | undefined, t: TFunction): string {
   if (!day) return "—";
-  if (day.closed) return "Geschlossen";
+  if (day.closed) return t("Geschlossen");
   const from = (day.from ?? "").toString().trim();
   const to = (day.to ?? "").toString().trim();
   if (!from && !to) return "—";
@@ -54,6 +55,7 @@ interface DealerTeamAndHoursProps {
 }
 
 export function DealerTeamAndHours({ teamMembers, openingHours, className }: DealerTeamAndHoursProps) {
+  const t = useT();
   const hours = normalizeOpeningHours(openingHours);
   const team = normalizeTeam(teamMembers);
 
@@ -62,11 +64,11 @@ export function DealerTeamAndHours({ teamMembers, openingHours, className }: Dea
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="lg:col-span-7">
           <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-lg">
-            <h2 className="text-xl font-bold tracking-tight text-neutral-900">Team</h2>
+            <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t("Team")}</h2>
 
             {team.length === 0 ? (
               <p className="mt-3 text-sm text-neutral-600">
-                Dieses Team-Profil wird vom Händler ergänzt. In der Garage-Übersicht können Teammitglieder gepflegt werden.
+                {t("Dieses Team-Profil wird vom Händler ergänzt. In der Garage-Übersicht können Teammitglieder gepflegt werden.")}
               </p>
             ) : (
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -78,7 +80,7 @@ export function DealerTeamAndHours({ teamMembers, openingHours, className }: Dea
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={m.image_url}
-                            alt={m.name ?? "Team"}
+                            alt={m.name ?? t("Team")}
                             width={48}
                             height={48}
                             loading="lazy"
@@ -102,20 +104,20 @@ export function DealerTeamAndHours({ teamMembers, openingHours, className }: Dea
 
         <div className="lg:col-span-5">
           <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-lg">
-            <h2 className="text-xl font-bold tracking-tight text-neutral-900">Öffnungszeiten</h2>
+            <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t("Öffnungszeiten")}</h2>
             {hours ? (
               <div className="mt-4 space-y-3">
                 {DAYS.map((d) => (
                   <div key={d.key} className="flex items-center justify-between gap-4">
-                    <div className="text-sm font-medium text-neutral-700">{d.label}</div>
-                    <div className="text-sm font-semibold text-neutral-900">{formatHours(hours[d.key])}</div>
+                    <div className="text-sm font-medium text-neutral-700">{t(d.label)}</div>
+                    <div className="text-sm font-semibold text-neutral-900">{formatHours(hours[d.key], t)}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-neutral-600">Keine Öffnungszeiten hinterlegt.</p>
+              <p className="mt-3 text-sm text-neutral-600">{t("Keine Öffnungszeiten hinterlegt.")}</p>
             )}
-            <p className="mt-4 text-xs text-neutral-500">Angaben ohne Gewähr. Bei Unsicherheit bitte direkt beim Händler nachfragen.</p>
+            <p className="mt-4 text-xs text-neutral-500">{t("Angaben ohne Gewähr. Bei Unsicherheit bitte direkt beim Händler nachfragen.")}</p>
           </div>
         </div>
       </div>

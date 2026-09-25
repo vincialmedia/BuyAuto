@@ -1,4 +1,6 @@
 import Head from "next/head";
+import { DEFAULT_LOCALE, localizePath } from "@/i18n/config";
+import { useLocale, useT } from "@/i18n/runtime";
 
 interface StructuredDataProps {
   type?: "homepage" | "listing" | "search" | "dealer";
@@ -36,6 +38,8 @@ function normalizeOpeningHours(value: unknown): Record<string, { from?: string |
 }
 
 export function StructuredData({ type = "homepage", listingData, dealerData }: StructuredDataProps) {
+  const t = useT();
+  const locale = useLocale();
   const baseUrl = getBaseUrl();
 
   const organizationSchema = {
@@ -46,8 +50,9 @@ export function StructuredData({ type = "homepage", listingData, dealerData }: S
     url: baseUrl,
     logo: `${baseUrl}/buyauto-logo.png`,
     image: `${baseUrl}/buyauto-logo.png`,
-    description:
+    description: t(
       "Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto.",
+    ),
     address: {
       "@type": "PostalAddress",
       addressCountry: "CH",
@@ -83,8 +88,9 @@ export function StructuredData({ type = "homepage", listingData, dealerData }: S
       {
         "@type": "ListItem",
         position: 1,
-        name: "Home",
-        item: baseUrl,
+        name: t("Home"),
+        // German keeps baseUrl as before; fr/it/en point at their home (/fr, /it, /en).
+        item: locale === DEFAULT_LOCALE ? baseUrl : `${baseUrl}${localizePath("/", locale)}`,
       },
     ],
   };
@@ -117,7 +123,7 @@ export function StructuredData({ type = "homepage", listingData, dealerData }: S
 
   const dealerSchema = dealerData
     ? (() => {
-        const url = `${baseUrl}/${dealerData.slug}`;
+        const url = `${baseUrl}${localizePath(`/${dealerData.slug}`, locale)}`;
         const hours = normalizeOpeningHours(dealerData.openingHours);
 
         const openingHoursSpecification = hours

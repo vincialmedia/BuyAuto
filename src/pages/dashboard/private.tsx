@@ -22,6 +22,9 @@ import DraftsSection from "@/components/buyauto/dashboard/DraftsSection";
 import type { ListingDraft } from "@/services/listingDraftService";
 import { MessageCenterRail } from "@/components/buyauto/messages/MessageCenterRail";
 import { MessageCenterSheet } from "@/components/buyauto/messages/MessageCenterSheet";
+import { useT } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
+import { localizePath, toLocale } from "@/i18n/config";
 
 export default function PrivateDashboardPage({
   initialDrafts,
@@ -31,6 +34,7 @@ export default function PrivateDashboardPage({
   accountRole: string;
 }) {
   const router = useRouter();
+  const t = useT();
   const { user, loading: authLoading, refreshProfile, messageCount } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -73,7 +77,7 @@ export default function PrivateDashboardPage({
 
     // The location field uses the autocomplete (no native "required"), so guard here.
     if (!upgradeForm.city.trim()) {
-      toast.error("Bitte wählen Sie einen Standort aus der Liste.");
+      toast.error(t("Bitte wählen Sie einen Standort aus der Liste."));
       return;
     }
 
@@ -83,11 +87,11 @@ export default function PrivateDashboardPage({
         ...upgradeForm,
         city: upgradeForm.city.trim(),
       });
-      toast.success("Erfolgreich zum Garage-Konto gewechselt!");
+      toast.success(t("Erfolgreich zum Garage-Konto gewechselt!"));
       await refreshProfile();
       router.push("/dashboard/garage");
     } catch (error: any) {
-      toast.error("Fehler beim Upgrade: " + error.message);
+      toast.error(t("Fehler beim Upgrade: {message}", { message: t(String(error.message)) }));
     } finally {
       setIsUpgrading(false);
       setShowUpgradeModal(false);
@@ -100,7 +104,7 @@ export default function PrivateDashboardPage({
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p>Lade Dashboard...</p>
+            <p>{t("Lade Dashboard...")}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -112,7 +116,7 @@ export default function PrivateDashboardPage({
   return (
     <>
       <Head>
-        <title>Dashboard - Buy-Auto.ch</title>
+        <title>{t("Dashboard - Buy-Auto.ch")}</title>
         <meta name="robots" content="noindex,nofollow" />
       </Head>
 
@@ -140,8 +144,8 @@ export default function PrivateDashboardPage({
                   <Building2 size={24} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-neutral-900">Sind Sie ein Händler?</h3>
-                  <p className="text-neutral-600 text-sm">Wechseln Sie zum Garage-Profil, um mehrere Fahrzeuge und Ihr Inventar zu verwalten.</p>
+                  <h3 className="font-semibold text-lg text-neutral-900">{t("Sind Sie ein Händler?")}</h3>
+                  <p className="text-neutral-600 text-sm">{t("Wechseln Sie zum Garage-Profil, um mehrere Fahrzeuge und Ihr Inventar zu verwalten.")}</p>
                 </div>
               </div>
 
@@ -150,7 +154,7 @@ export default function PrivateDashboardPage({
                   onClick={() => setShowUpgradeModal(true)}
                   className="w-full sm:w-auto h-12 rounded-2xl"
                 >
-                  Zur Garage wechseln
+                  {t("Zur Garage wechseln")}
                 </Button>
               </div>
             </div>
@@ -170,7 +174,7 @@ export default function PrivateDashboardPage({
               variant={inventoryTab === "active" ? "default" : "outline"}
               className="rounded-2xl"
             >
-              Aktive Inserate
+              {t("Aktive Inserate")}
             </Button>
             <Button
               type="button"
@@ -178,7 +182,7 @@ export default function PrivateDashboardPage({
               variant={inventoryTab === "sold" ? "default" : "outline"}
               className="rounded-2xl"
             >
-              Verkauft
+              {t("Verkauft@@tab")}
             </Button>
             <Button
               type="button"
@@ -186,7 +190,7 @@ export default function PrivateDashboardPage({
               variant={inventoryTab === "drafts" ? "default" : "outline"}
               className="rounded-2xl"
             >
-              Entwürfe
+              {t("Entwürfe")}
             </Button>
           </div>
 
@@ -201,36 +205,36 @@ export default function PrivateDashboardPage({
         <Dialog open={showUpgradeModal && canUpgradeToGarage} onOpenChange={setShowUpgradeModal}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Garage Profil erstellen</DialogTitle>
+              <DialogTitle>{t("Garage Profil erstellen")}</DialogTitle>
               <DialogDescription>
-                Erweitern Sie Ihr Konto, um als Händler aufzutreten. Dies ermöglicht Ihnen erweiterte Funktionen.
+                {t("Erweitern Sie Ihr Konto, um als Händler aufzutreten. Dies ermöglicht Ihnen erweiterte Funktionen.")}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpgradeSubmit} className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="garage_name">Name der Garage / Firma</Label>
+                <Label htmlFor="garage_name">{t("Name der Garage / Firma")}</Label>
                 <Input 
                   id="garage_name" 
                   required 
                   value={upgradeForm.garage_name}
                   onChange={(e) => setUpgradeForm({...upgradeForm, garage_name: e.target.value})}
-                  placeholder="Auto Muster AG"
+                  placeholder={t("Auto Muster AG")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">Standort</Label>
+                <Label htmlFor="city">{t("Standort")}</Label>
                 <LocationAutocomplete
                   value={upgradeForm.city}
                   onValueChange={(next) => setUpgradeForm({ ...upgradeForm, city: next })}
-                  placeholder="Zürich"
+                  placeholder={t("Zürich")}
                   name="city"
                 />
                 <p className="text-xs text-neutral-500">
-                  Dieser Standort wird als Standard für Ihre Einstellungen und zukünftige Inserate verwendet.
+                  {t("Dieser Standort wird als Standard für Ihre Einstellungen und zukünftige Inserate verwendet.")}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact_email">E-Mail-Adresse für Kontaktanfragen</Label>
+                <Label htmlFor="contact_email">{t("E-Mail-Adresse für Kontaktanfragen")}</Label>
                 <Input
                   id="contact_email"
                   type="email"
@@ -240,13 +244,13 @@ export default function PrivateDashboardPage({
                   placeholder="info@muster-garage.ch"
                 />
                 <p className="text-xs text-neutral-500">
-                  An diese Adresse werden Kaufanfragen gesendet – unabhängig von Ihrer Login-E-Mail.
+                  {t("An diese Adresse werden Kaufanfragen gesendet – unabhängig von Ihrer Login-E-Mail.")}
                 </p>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setShowUpgradeModal(false)}>Abbrechen</Button>
+                <Button type="button" variant="outline" onClick={() => setShowUpgradeModal(false)}>{t("Abbrechen")}</Button>
                 <Button type="submit" disabled={isUpgrading}>
-                  {isUpgrading ? "Wird erstellt..." : "Kostenlos upgraden"}
+                  {isUpgrading ? t("Wird erstellt...") : t("Kostenlos upgraden")}
                 </Button>
               </DialogFooter>
             </form>
@@ -259,6 +263,8 @@ export default function PrivateDashboardPage({
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const supabase = createPagesServerClient<Database>(ctx);
+  // GSSP redirects are not locale-prefixed by Next — keep /fr, /it, /en.
+  const locale = toLocale(ctx.locale);
 
   const {
     data: { session },
@@ -267,7 +273,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (!session) {
     return {
       redirect: {
-        destination: "/auth",
+        destination: localizePath("/auth", locale),
         permanent: false,
       },
     };
@@ -294,7 +300,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (role === "garage") {
     return {
       redirect: {
-        destination: "/dashboard/garage",
+        destination: localizePath("/dashboard/garage", locale),
         permanent: false,
       },
     };
@@ -315,5 +321,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     archived_at: row.archived_at ?? null,
   }));
 
-  return { props: { initialDrafts, accountRole: role } };
+  // "wizard": LocationAutocomplete (upgrade modal). "dashboard" last so its
+  // entries win if a key exists in both.
+  return {
+    props: { initialDrafts, accountRole: role, ...(await withI18n(ctx.locale, ["wizard", "dashboard"])) },
+  };
 };

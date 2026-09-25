@@ -28,6 +28,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { useT } from "@/i18n/runtime";
+import { withI18n } from "@/i18n/server";
+import { localizePath, toLocale } from "@/i18n/config";
 
 type UiAttachment = {
   id: string;
@@ -81,6 +84,7 @@ function formatBytes(value: number | null | undefined): string {
 
 export default function DashboardConversationPage() {
   const router = useRouter();
+  const t = useT();
   const conversationIdRaw = router.query.conversationId;
   const conversationId = typeof conversationIdRaw === "string" ? conversationIdRaw : null;
 
@@ -90,7 +94,7 @@ export default function DashboardConversationPage() {
   const [loadingMessages, setLoadingMessages] = useState(true);
 
   const [ctxLoading, setCtxLoading] = useState(true);
-  const [title, setTitle] = useState("Unterhaltung");
+  const [title, setTitle] = useState(() => t("Unterhaltung"));
   const [context, setContext] = useState<Awaited<ReturnType<typeof getConversationContext>>>(null);
 
   const [draft, setDraft] = useState("");
@@ -125,13 +129,13 @@ export default function DashboardConversationPage() {
       if (cancelled) return;
 
       if (!ctx) {
-        toast.error("Unterhaltung nicht gefunden oder kein Zugriff.");
+        toast.error(t("Unterhaltung nicht gefunden oder kein Zugriff."));
         router.push("/dashboard/messages");
         return;
       }
 
       setContext(ctx);
-      setTitle(ctx.title || "Unterhaltung");
+      setTitle(ctx.title || t("Unterhaltung"));
       setCtxLoading(false);
 
       await markConversationRead(conversationId);
@@ -143,7 +147,7 @@ export default function DashboardConversationPage() {
     return () => {
       cancelled = true;
     };
-  }, [conversationId, refreshMessageCount, router]);
+  }, [conversationId, refreshMessageCount, router, t]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -186,7 +190,7 @@ export default function DashboardConversationPage() {
   async function handleOpenAttachment(att: UiAttachment) {
     const url = await createSignedAttachmentUrl(att.storage_path, { expiresInSeconds: 90 });
     if (!url) {
-      toast.error("Download-Link konnte nicht erstellt werden.");
+      toast.error(t("Download-Link konnte nicht erstellt werden."));
       return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
@@ -221,7 +225,7 @@ export default function DashboardConversationPage() {
       : await sendMessage(conversationId, body);
 
     if (!ok) {
-      toast.error(readOnly ? "Nachrichten sind in diesem Chat nicht möglich." : "Nachricht konnte nicht gesendet werden.");
+      toast.error(readOnly ? t("Nachrichten sind in diesem Chat nicht möglich.") : t("Nachricht konnte nicht gesendet werden."));
       setBusy(false);
       return;
     }
@@ -270,10 +274,10 @@ export default function DashboardConversationPage() {
 
   const counterpartyLabel =
     context?.counterparty?.role === "seller"
-      ? "Anbieter"
+      ? t("Anbieter")
       : context?.counterparty?.role === "buyer"
-        ? "Interessent"
-        : "Kontakt";
+        ? t("Interessent")
+        : t("Kontakt");
 
   const showSoldNotice = listing?.status === "sold" && context?.conversation.status !== "buyer_selected";
 
@@ -287,11 +291,11 @@ export default function DashboardConversationPage() {
     setBusy(false);
 
     if (!ok) {
-      toast.error("Chat konnte nicht archiviert werden.");
+      toast.error(t("Chat konnte nicht archiviert werden."));
       return;
     }
 
-    toast.success("Chat archiviert.");
+    toast.success(t("Chat archiviert."));
     const nextCtx = await getConversationContext(conversationId);
     if (nextCtx) setContext(nextCtx);
     await refreshMessageCount();
@@ -304,11 +308,11 @@ export default function DashboardConversationPage() {
     setBusy(false);
 
     if (!ok) {
-      toast.error("Käufer konnte nicht ausgewählt werden.");
+      toast.error(t("Käufer konnte nicht ausgewählt werden."));
       return;
     }
 
-    toast.success("Käufer ausgewählt. Fahrzeug wurde als verkauft markiert.");
+    toast.success(t("Käufer ausgewählt. Fahrzeug wurde als verkauft markiert."));
     const nextCtx = await getConversationContext(conversationId);
     if (nextCtx) setContext(nextCtx);
     await refreshMessageCount();
@@ -329,7 +333,7 @@ export default function DashboardConversationPage() {
                 <Button asChild variant="ghost" className="rounded-2xl px-2 -ml-2 text-neutral-700 hover:bg-neutral-100">
                   <Link href="/dashboard">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Zurück zum Dashboard
+                    {t("Zurück zum Dashboard")}
                   </Link>
                 </Button>
               </div>
@@ -337,14 +341,14 @@ export default function DashboardConversationPage() {
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="min-w-0">
                   <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 truncate">
-                    {ctxLoading ? "Unterhaltung" : title}
+                    {ctxLoading ? t("Unterhaltung") : title}
                   </h1>
-                  <p className="mt-1 text-sm text-neutral-600">Verlauf und Antworten</p>
+                  <p className="mt-1 text-sm text-neutral-600">{t("Verlauf und Antworten")}</p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {context?.conversation.status === "archived" ? <Badge variant="secondary">Archiviert</Badge> : null}
-                    {context?.conversation.status === "buyer_selected" ? <Badge variant="secondary">Käufer ausgewählt</Badge> : null}
-                    {listing?.status === "sold" ? <Badge variant="secondary">Verkauft</Badge> : null}
+                    {context?.conversation.status === "archived" ? <Badge variant="secondary">{t("Archiviert")}</Badge> : null}
+                    {context?.conversation.status === "buyer_selected" ? <Badge variant="secondary">{t("Käufer ausgewählt")}</Badge> : null}
+                    {listing?.status === "sold" ? <Badge variant="secondary">{t("Verkauft")}</Badge> : null}
                   </div>
                 </div>
 
@@ -354,19 +358,19 @@ export default function DashboardConversationPage() {
                       <AlertDialogTrigger asChild>
                         <Button variant="outline" className="rounded-2xl" disabled={busy}>
                           <Archive className="h-4 w-4 mr-2" />
-                          Archivieren
+                          {t("Archivieren")}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="rounded-3xl">
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Chat archivieren?</AlertDialogTitle>
+                          <AlertDialogTitle>{t("Chat archivieren?")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Archivierte Chats sind im MVP nur lesbar und können nicht reaktiviert werden.
+                            {t("Archivierte Chats sind im MVP nur lesbar und können nicht reaktiviert werden.")}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleArchive}>Archivieren</AlertDialogAction>
+                          <AlertDialogCancel>{t("Abbrechen")}</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleArchive}>{t("Archivieren")}</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -377,19 +381,19 @@ export default function DashboardConversationPage() {
                       <AlertDialogTrigger asChild>
                         <Button className="rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-white" disabled={busy}>
                           <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Als Käufer auswählen
+                          {t("Als Käufer auswählen")}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="rounded-3xl">
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Käufer auswählen und Fahrzeug als verkauft markieren?</AlertDialogTitle>
+                          <AlertDialogTitle>{t("Käufer auswählen und Fahrzeug als verkauft markieren?")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Wenn Du diesen Nutzer als Käufer auswählst, wird das Fahrzeug als verkauft markiert und der Käufer per E-Mail informiert. Dieser Chat bleibt für euch beide offen. Alle anderen Chats zu diesem Fahrzeug werden automatisch archiviert und können nicht mehr reaktiviert werden. Archivierte Chats bleiben noch 30 Tage lang lesbar und werden danach dauerhaft gelöscht. Weitere neue Nachrichten von anderen Interessenten sind nicht mehr möglich.
+                            {t("Wenn Du diesen Nutzer als Käufer auswählst, wird das Fahrzeug als verkauft markiert und der Käufer per E-Mail informiert. Dieser Chat bleibt für euch beide offen. Alle anderen Chats zu diesem Fahrzeug werden automatisch archiviert und können nicht mehr reaktiviert werden. Archivierte Chats bleiben noch 30 Tage lang lesbar und werden danach dauerhaft gelöscht. Weitere neue Nachrichten von anderen Interessenten sind nicht mehr möglich.")}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleSelectBuyer}>Käufer auswählen</AlertDialogAction>
+                          <AlertDialogCancel>{t("Abbrechen")}</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleSelectBuyer}>{t("Käufer auswählen")}</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -412,7 +416,7 @@ export default function DashboardConversationPage() {
                 <Link
                   href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}
                   className="block rounded-3xl border border-neutral-200/60 bg-neutral-50 p-4 sm:p-5 transition hover:bg-neutral-100/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/20"
-                  aria-label="Zum Inserat"
+                  aria-label={t("Zum Inserat")}
                 >
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative h-28 w-full sm:w-44 overflow-hidden rounded-2xl bg-white border border-neutral-200/60">
@@ -426,26 +430,26 @@ export default function DashboardConversationPage() {
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-neutral-400">
-                          Foto
+                          {t("Foto")}
                         </div>
                       )}
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-neutral-900">{`${listing.brand} ${listing.model}`.trim() || "Fahrzeug"}</div>
+                      <div className="text-sm font-semibold text-neutral-900">{`${listing.brand} ${listing.model}`.trim() || t("Fahrzeug")}</div>
                       <div className="mt-1 text-sm text-neutral-600">
-                        {listing.year ? `Jahr ${listing.year}` : null}
+                        {listing.year ? t("Jahr {year}", { year: listing.year }) : null}
                         {listing.year && listing.mileage_km ? " · " : null}
                         {listing.mileage_km ? `${formatChf(listing.mileage_km)} km` : null}
                       </div>
 
                       <div className="mt-2 text-sm text-neutral-700">
                         {listing.price_per_month_chf ? (
-                          <span>{formatChf(listing.price_per_month_chf)} CHF / Monat</span>
+                          <span>{t("{price} CHF / Monat", { price: formatChf(listing.price_per_month_chf) })}</span>
                         ) : listing.purchase_price_chf ? (
-                          <span>{formatChf(listing.purchase_price_chf)} CHF Kaufpreis</span>
+                          <span>{t("{price} CHF Kaufpreis", { price: formatChf(listing.purchase_price_chf) })}</span>
                         ) : (
-                          <span className="text-neutral-500">Preis nicht verfügbar</span>
+                          <span className="text-neutral-500">{t("Preis nicht verfügbar")}</span>
                         )}
                       </div>
 
@@ -460,13 +464,13 @@ export default function DashboardConversationPage() {
 
                   {showSoldNotice ? (
                     <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 text-sm text-neutral-700">
-                      Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich.
+                      {t("Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich.")}
                     </div>
                   ) : null}
 
                   {context?.conversation.status === "archived" ? (
                     <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 text-sm text-neutral-700">
-                      Dieser Chat ist archiviert und nur noch lesbar.
+                      {t("Dieser Chat ist archiviert und nur noch lesbar.")}
                     </div>
                   ) : null}
                 </Link>
@@ -481,7 +485,7 @@ export default function DashboardConversationPage() {
                       <div className="h-10 bg-white rounded-xl border border-neutral-200 animate-pulse" />
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="text-sm text-neutral-600">Noch keine Nachrichten.</div>
+                    <div className="text-sm text-neutral-600">{t("Noch keine Nachrichten.")}</div>
                   ) : (
                     messages.map((m) => {
                       const isSystem = m.sender_user_id === null;
@@ -528,11 +532,11 @@ export default function DashboardConversationPage() {
                                           {a.file_name}
                                         </div>
                                         <div className={cn("text-[11px] mt-0.5", isMe ? "text-white/70" : "text-neutral-500")}>
-                                          {a.mime_type || "Datei"}{a.size_bytes ? ` · ${formatBytes(a.size_bytes)}` : ""}
+                                          {a.mime_type || t("Datei")}{a.size_bytes ? ` · ${formatBytes(a.size_bytes)}` : ""}
                                         </div>
                                       </div>
                                       <div className={cn("text-[11px] font-semibold", isMe ? "text-white/80" : "text-neutral-600")}>
-                                        Öffnen
+                                        {t("Öffnen")}
                                       </div>
                                     </div>
                                   </button>
@@ -568,12 +572,14 @@ export default function DashboardConversationPage() {
                       onClick={() => document.getElementById(fileInputId)?.click()}
                     >
                       <Paperclip className="h-4 w-4 mr-2" />
-                      Datei anhängen
+                      {t("Datei anhängen")}
                     </Button>
 
                     {selectedFiles.length > 0 ? (
                       <div className="text-xs text-neutral-600">
-                        {selectedFiles.length} Datei{selectedFiles.length === 1 ? "" : "en"}
+                        {selectedFiles.length === 1
+                          ? t("{n} Datei", { n: selectedFiles.length })
+                          : t("{n} Dateien", { n: selectedFiles.length })}
                       </div>
                     ) : null}
                   </div>
@@ -603,7 +609,7 @@ export default function DashboardConversationPage() {
                   <Textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
-                    placeholder="Nachricht schreiben…"
+                    placeholder={t("Nachricht schreiben…")}
                     className="min-h-[92px] rounded-2xl border-neutral-200 focus:border-neutral-400"
                     disabled={!isAuthed || readOnly}
                   />
@@ -615,7 +621,7 @@ export default function DashboardConversationPage() {
                       className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl"
                     >
                       <SendHorizontal className="h-4 w-4 mr-2" />
-                      Senden
+                      {t("Senden")}
                     </Button>
                   </div>
                 </div>
@@ -630,6 +636,8 @@ export default function DashboardConversationPage() {
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const supabase = createPagesServerClient<Database>(ctx);
+  // GSSP redirects are not locale-prefixed by Next — keep /fr, /it, /en.
+  const locale = toLocale(ctx.locale);
 
   const {
     data: { session },
@@ -639,11 +647,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const redirectUrl = encodeURIComponent(ctx.resolvedUrl);
     return {
       redirect: {
-        destination: `/auth?redirect=${redirectUrl}`,
+        destination: localizePath(`/auth?redirect=${redirectUrl}`, locale),
         permanent: false,
       },
     };
   }
 
-  return { props: {} };
+  return { props: { ...(await withI18n(ctx.locale, ["dashboard"])) } };
 };

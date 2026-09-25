@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/runtime";
 
 export interface OwnerMiniProfileProps {
   sellerType?: string | null;
@@ -22,9 +23,10 @@ function getInitials(name?: string | null): string {
 }
 
 export function OwnerMiniProfile({ sellerType, name, location, avatarUrl, badgeText }: OwnerMiniProfileProps) {
+  const t = useT();
   const isGarage = (sellerType ?? "") === "garage";
-  const title = (name ?? "").trim() || (isGarage ? "Garage" : "Privatanbieter");
-  const subtitle = (location ?? "").trim() || "Standort nicht angegeben";
+  const title = (name ?? "").trim() || (isGarage ? "Garage" : t("Privatanbieter"));
+  const subtitle = (location ?? "").trim() || t("Standort nicht angegeben");
   const fallback = getInitials(title);
 
   return (
@@ -63,7 +65,7 @@ export function OwnerMiniProfile({ sellerType, name, location, avatarUrl, badgeT
             </div>
 
             <p className="mt-3 text-xs text-neutral-500">
-              Du schreibst direkt dem Anbieter. Verlauf bleibt bei diesem Inserat gespeichert.
+              {t("Du schreibst direkt dem Anbieter. Verlauf bleibt bei diesem Inserat gespeichert.")}
             </p>
           </div>
         </div>

@@ -80,7 +80,10 @@ export function getDraftLifecycle(draft: DraftLifecycleInput, now: Date = new Da
   };
 }
 
-/** German label for the dashboard and admin table. */
+/**
+ * German label for the admin table. The dashboard (DraftsSection) renders the
+ * same labels through t() — keep the two in step.
+ */
 export function describeDraftLifecycle(lifecycle: DraftLifecycle): string {
   if (lifecycle.archived) {
     const days = lifecycle.daysUntilDelete ?? 0;

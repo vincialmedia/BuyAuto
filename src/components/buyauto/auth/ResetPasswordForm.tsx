@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { resetPasswordSchema, type ResetPasswordFormData } from "@/lib/buyauto/schemas";
+import { useT } from "@/i18n/runtime";
+import { translatedResolver } from "./translatedResolver";
 
 interface ResetPasswordFormProps {
   onResetPassword: (email: string) => void;
@@ -20,8 +22,9 @@ export default function ResetPasswordForm({
   onShowLogin,
   isLoading 
 }: ResetPasswordFormProps) {
+  const t = useT();
   const form = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: translatedResolver(zodResolver(resetPasswordSchema), t),
     defaultValues: {
       email: "",
     },
@@ -39,12 +42,12 @@ export default function ResetPasswordForm({
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium">E-Mail</FormLabel>
+              <FormLabel className="text-neutral-700 font-medium">{t("E-Mail")}</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   type="email"
-                  placeholder="ihre@email.com"
+                  placeholder={t("ihre@email.com")}
                   className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                   disabled={isLoading}
                 />
@@ -59,10 +62,10 @@ export default function ResetPasswordForm({
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Link wird gesendet...
+                {t("Link wird gesendet...")}
               </>
             ) : (
-              "Link anfordern"
+              t("Link anfordern")
             )}
           </Button>
           <Button
@@ -72,7 +75,7 @@ export default function ResetPasswordForm({
             className="w-full h-11 border-neutral-300 hover:bg-neutral-50"
             disabled={isLoading}
           >
-            Zurück zur Anmeldung
+            {t("Zurück zur Anmeldung")}
           </Button>
         </div>
       </form>

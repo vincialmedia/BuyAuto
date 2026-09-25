@@ -13,6 +13,8 @@ import { generateSlugFromName, type Garage, type TeamMember } from "@/services/g
 import { LocationAutocomplete } from "@/components/buyauto/create-listing/step1/LocationAutocomplete";
 import { useDealerPlan } from "@/hooks/use-dealer-plan";
 import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
+import { localizePath } from "@/i18n/config";
+import { T, useLocale, useT } from "@/i18n/runtime";
 
 interface GarageProfileTabProps {
   garage: Garage | null;
@@ -130,6 +132,8 @@ export function GarageProfileTab({
   logoVersion,
   onLogoVersionChange,
 }: GarageProfileTabProps) {
+  const t = useT();
+  const locale = useLocale();
   const [profileDraft, setProfileDraft] = useState({
     contact_email: garage?.contact_email ?? "",
     phone_number: garage?.phone_number ?? "",
@@ -192,8 +196,8 @@ export function GarageProfileTab({
   const hasWebsiteTools = planResolved && Boolean(dealerPlan?.websiteTools);
 
   const dealerSlug = garage?.slug?.trim() ?? "";
-  const publicProfileUrl = dealerSlug ? `${shareOrigin}/${dealerSlug}` : "";
-  const embedUrl = dealerSlug ? `${shareOrigin}/embed/garage/${dealerSlug}` : "";
+  const publicProfileUrl = dealerSlug ? `${shareOrigin}${localizePath(`/${dealerSlug}`, locale)}` : "";
+  const embedUrl = dealerSlug ? `${shareOrigin}${localizePath(`/embed/garage/${dealerSlug}`, locale)}` : "";
 
   const embedSnippet = useMemo(() => {
     if (!dealerSlug) return "";
@@ -236,7 +240,7 @@ export function GarageProfileTab({
     setCopyingPublicUrl(true);
     const ok = await copyToClipboard(publicProfileUrl);
     setCopyingPublicUrl(false);
-    setBanner(ok ? { kind: "success", message: "Profil-Link kopiert." } : { kind: "error", message: "Kopieren fehlgeschlagen." });
+    setBanner(ok ? { kind: "success", message: t("Profil-Link kopiert.") } : { kind: "error", message: t("Kopieren fehlgeschlagen.") });
   }
 
   async function handleCopyEmbed() {
@@ -244,7 +248,7 @@ export function GarageProfileTab({
     setCopyingEmbed(true);
     const ok = await copyToClipboard(embedSnippet);
     setCopyingEmbed(false);
-    setBanner(ok ? { kind: "success", message: "Embed-Code kopiert." } : { kind: "error", message: "Kopieren fehlgeschlagen." });
+    setBanner(ok ? { kind: "success", message: t("Embed-Code kopiert.") } : { kind: "error", message: t("Kopieren fehlgeschlagen.") });
   }
 
   function addTeamMember() {
@@ -312,7 +316,7 @@ export function GarageProfileTab({
         team_members: sanitizedTeam.length > 0 ? sanitizedTeam : [],
       });
 
-      setBanner({ kind: "success", message: "Profil-Daten gespeichert." });
+      setBanner({ kind: "success", message: t("Profil-Daten gespeichert.") });
     } catch (e) {
       const msg = getErrorMessage(e);
       const looksLikeMissingTeamColumn =
@@ -324,13 +328,13 @@ export function GarageProfileTab({
           await onUpdate(baseUpdates);
           setBanner({
             kind: "success",
-            message: "Profil-Daten gespeichert. Team wird aktiv, sobald das Update im Backend ausgerollt ist.",
+            message: t("Profil-Daten gespeichert. Team wird aktiv, sobald das Update im Backend ausgerollt ist."),
           });
         } catch (e2) {
-          setBanner({ kind: "error", message: `Speichern fehlgeschlagen: ${getErrorMessage(e2)}` });
+          setBanner({ kind: "error", message: t("Speichern fehlgeschlagen: {error}", { error: t(getErrorMessage(e2)) }) });
         }
       } else {
-        setBanner({ kind: "error", message: `Speichern fehlgeschlagen: ${msg}` });
+        setBanner({ kind: "error", message: t("Speichern fehlgeschlagen: {error}", { error: t(msg) }) });
       }
     } finally {
       setProfileSaving(false);
@@ -339,7 +343,7 @@ export function GarageProfileTab({
 
   async function handlePickLogo(file: File) {
     if (!garage?.id) {
-      setBanner({ kind: "error", message: "Kein Garage-Profil gefunden." });
+      setBanner({ kind: "error", message: t("Kein Garage-Profil gefunden.") });
       return;
     }
 
@@ -351,9 +355,9 @@ export function GarageProfileTab({
       const url = await uploadGarageLogo(file, garage.id, setLogoProgress);
       await onUpdate({ logo_url: url });
       onLogoVersionChange(Date.now());
-      setBanner({ kind: "success", message: "Logo aktualisiert." });
+      setBanner({ kind: "success", message: t("Logo aktualisiert.") });
     } catch (e) {
-      setBanner({ kind: "error", message: `Logo-Upload fehlgeschlagen: ${getErrorMessage(e)}` });
+      setBanner({ kind: "error", message: t("Logo-Upload fehlgeschlagen: {error}", { error: t(getErrorMessage(e)) }) });
     } finally {
       setLogoUploading(false);
       setLogoProgress(0);
@@ -362,7 +366,7 @@ export function GarageProfileTab({
 
   async function handlePickHeader(file: File) {
     if (!garage?.id) {
-      setBanner({ kind: "error", message: "Kein Garage-Profil gefunden." });
+      setBanner({ kind: "error", message: t("Kein Garage-Profil gefunden.") });
       return;
     }
 
@@ -373,9 +377,9 @@ export function GarageProfileTab({
     try {
       const url = await uploadGarageHeaderImage(file, garage.id, setHeaderProgress);
       setHeaderImageUrl(url);
-      setBanner({ kind: "success", message: "Header-Bild hochgeladen." });
+      setBanner({ kind: "success", message: t("Header-Bild hochgeladen.") });
     } catch (e) {
-      setBanner({ kind: "error", message: `Header-Upload fehlgeschlagen: ${getErrorMessage(e)}` });
+      setBanner({ kind: "error", message: t("Header-Upload fehlgeschlagen: {error}", { error: t(getErrorMessage(e)) }) });
     } finally {
       setHeaderUploading(false);
       setHeaderProgress(0);
@@ -392,9 +396,9 @@ export function GarageProfileTab({
     try {
       const url = await uploadGarageTeamMemberPhoto(file, garage.id, memberId, setTeamUploadProgress);
       updateTeamMember(memberId, { image_url: url });
-      setBanner({ kind: "success", message: "Teamfoto hochgeladen (nicht vergessen: Profil speichern)." });
+      setBanner({ kind: "success", message: t("Teamfoto hochgeladen (nicht vergessen: Profil speichern).") });
     } catch (e) {
-      setBanner({ kind: "error", message: `Teamfoto-Upload fehlgeschlagen: ${getErrorMessage(e)}` });
+      setBanner({ kind: "error", message: t("Teamfoto-Upload fehlgeschlagen: {error}", { error: t(getErrorMessage(e)) }) });
     } finally {
       setTeamUploadingId(null);
       setTeamUploadProgress(0);
@@ -445,8 +449,8 @@ export function GarageProfileTab({
         <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold tracking-tight text-neutral-900">Logo</h3>
-              <p className="text-sm text-neutral-600 mt-1">Wird auf Inseraten angezeigt</p>
+              <h3 className="text-lg font-bold tracking-tight text-neutral-900">{t("Logo")}</h3>
+              <p className="text-sm text-neutral-600 mt-1">{t("Wird auf Inseraten angezeigt")}</p>
             </div>
             <Button
               variant="outline"
@@ -457,12 +461,12 @@ export function GarageProfileTab({
               {logoUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Upload…
+                  {t("Upload…")}
                 </>
               ) : (
                 <>
                   <Camera className="h-4 w-4 mr-2" />
-                  Logo wählen
+                  {t("Logo wählen")}
                 </>
               )}
             </Button>
@@ -482,7 +486,7 @@ export function GarageProfileTab({
 
           <div className="mt-5 flex items-center gap-4">
             <Avatar className="h-20 w-20 rounded-3xl border border-neutral-200/60">
-              <AvatarImage src={logoUrl} alt={garage?.garage_name ?? "Logo"} />
+              <AvatarImage src={logoUrl} alt={garage?.garage_name ?? t("Logo")} />
               <AvatarFallback className="bg-neutral-100 text-neutral-700">
                 <Building2 className="h-6 w-6" />
               </AvatarFallback>
@@ -502,8 +506,8 @@ export function GarageProfileTab({
           </div>
 
           <div className="mt-5 rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-            <div className="text-sm font-semibold text-neutral-900">Tipp</div>
-            <div className="text-sm text-neutral-600 mt-1">Quadratisch (800×800px) wirkt am besten.</div>
+            <div className="text-sm font-semibold text-neutral-900">{t("Tipp")}</div>
+            <div className="text-sm text-neutral-600 mt-1">{t("Quadratisch (800×800px) wirkt am besten.")}</div>
           </div>
         </div>
 
@@ -511,8 +515,8 @@ export function GarageProfileTab({
         <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold tracking-tight text-neutral-900">Header-Bild</h3>
-              <p className="text-sm text-neutral-600 mt-1">Wird auf Profil-Seite angezeigt</p>
+              <h3 className="text-lg font-bold tracking-tight text-neutral-900">{t("Header-Bild")}</h3>
+              <p className="text-sm text-neutral-600 mt-1">{t("Wird auf Profil-Seite angezeigt")}</p>
             </div>
             <Button
               variant="outline"
@@ -523,12 +527,12 @@ export function GarageProfileTab({
               {headerUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Upload…
+                  {t("Upload…")}
                 </>
               ) : (
                 <>
                   <Camera className="h-4 w-4 mr-2" />
-                  Bild wählen
+                  {t("Bild wählen")}
                 </>
               )}
             </Button>
@@ -549,7 +553,7 @@ export function GarageProfileTab({
           <div className="mt-5">
             <div className="aspect-[3/1] rounded-2xl border border-neutral-200/60 bg-neutral-100 overflow-hidden">
               {headerImageUrl ? (
-                <img src={headerImageUrl} alt="Header" className="w-full h-full object-cover" />
+                <img src={headerImageUrl} alt={t("Header")} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-neutral-400">
                   <Camera className="h-8 w-8" />
@@ -571,8 +575,8 @@ export function GarageProfileTab({
           </div>
 
           <div className="mt-5 rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4">
-            <div className="text-sm font-semibold text-neutral-900">Tipp</div>
-            <div className="text-sm text-neutral-600 mt-1">Querformat (1200×400px) sieht professionell aus.</div>
+            <div className="text-sm font-semibold text-neutral-900">{t("Tipp")}</div>
+            <div className="text-sm text-neutral-600 mt-1">{t("Querformat (1200×400px) sieht professionell aus.")}</div>
           </div>
         </div>
       </div>
@@ -581,56 +585,56 @@ export function GarageProfileTab({
       <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Kontakt & Beschreibung</h3>
-            <p className="text-sm text-neutral-600 mt-1">Wie können Kunden Sie erreichen?</p>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">{t("Kontakt & Beschreibung")}</h3>
+            <p className="text-sm text-neutral-600 mt-1">{t("Wie können Kunden Sie erreichen?")}</p>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="contact_email">E-Mail</Label>
+            <Label htmlFor="contact_email">{t("E-Mail")}</Label>
             <Input
               id="contact_email"
               type="email"
               value={profileDraft.contact_email}
               onChange={(e) => setProfileDraft((p) => ({ ...p, contact_email: e.target.value }))}
-              placeholder="z.B. info@garage.ch"
+              placeholder={t("z.B. info@garage.ch")}
               className="rounded-2xl"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone_number">Telefon</Label>
+            <Label htmlFor="phone_number">{t("Telefon")}</Label>
             <Input
               id="phone_number"
               value={profileDraft.phone_number}
               onChange={(e) => setProfileDraft((p) => ({ ...p, phone_number: e.target.value }))}
-              placeholder="z.B. +41 44 123 45 67"
+              placeholder={t("z.B. +41 44 123 45 67")}
               className="rounded-2xl"
             />
           </div>
 
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="website_url">Webseite</Label>
+            <Label htmlFor="website_url">{t("Webseite")}</Label>
             <Input
               id="website_url"
               value={profileDraft.website_url}
               onChange={(e) => setProfileDraft((p) => ({ ...p, website_url: e.target.value }))}
-              placeholder="z.B. https://www.ihre-garage.ch"
+              placeholder={t("z.B. https://www.ihre-garage.ch")}
               className="rounded-2xl"
             />
           </div>
 
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="description">Beschreibung / Bio</Label>
+            <Label htmlFor="description">{t("Beschreibung / Bio")}</Label>
             <Textarea
               id="description"
               value={profileDraft.description}
               onChange={(e) => setProfileDraft((p) => ({ ...p, description: e.target.value }))}
-              placeholder="Beschreiben Sie Ihre Garage und Ihre Dienstleistungen..."
+              placeholder={t("Beschreiben Sie Ihre Garage und Ihre Dienstleistungen...")}
               className="rounded-2xl min-h-[120px]"
             />
-            <p className="text-xs text-neutral-500">Wird auf Ihrer öffentlichen Profil-Seite angezeigt</p>
+            <p className="text-xs text-neutral-500">{t("Wird auf Ihrer öffentlichen Profil-Seite angezeigt")}</p>
           </div>
         </div>
       </div>
@@ -639,8 +643,8 @@ export function GarageProfileTab({
       <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Dienstleistungen</h3>
-            <p className="text-sm text-neutral-600 mt-1">Was bieten Sie an?</p>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">{t("Dienstleistungen")}</h3>
+            <p className="text-sm text-neutral-600 mt-1">{t("Was bieten Sie an?")}</p>
           </div>
         </div>
 
@@ -655,11 +659,11 @@ export function GarageProfileTab({
                   addService();
                 }
               }}
-              placeholder="z.B. Werkstatt, Reifenwechsel, Autoverkauf..."
+              placeholder={t("z.B. Werkstatt, Reifenwechsel, Autoverkauf...")}
               className="rounded-2xl"
             />
             <Button onClick={addService} className="rounded-2xl">
-              Hinzufügen
+              {t("Hinzufügen")}
             </Button>
           </div>
 
@@ -684,8 +688,8 @@ export function GarageProfileTab({
       <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Öffnungszeiten</h3>
-            <p className="text-sm text-neutral-600 mt-1">Wann sind Sie für Kunden erreichbar?</p>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">{t("Öffnungszeiten")}</h3>
+            <p className="text-sm text-neutral-600 mt-1">{t("Wann sind Sie für Kunden erreichbar?")}</p>
           </div>
         </div>
 
@@ -694,7 +698,7 @@ export function GarageProfileTab({
             const hours = profileDraft.opening_hours[day.key] || { from: "", to: "", closed: false };
             return (
               <div key={day.key} className="grid grid-cols-2 gap-3 items-center sm:grid-cols-[120px_1fr_1fr_auto]">
-                <Label className="col-span-2 text-sm font-medium sm:col-span-1">{day.label}</Label>
+                <Label className="col-span-2 text-sm font-medium sm:col-span-1">{t(day.label)}</Label>
                 <Input
                   type="time"
                   value={hours.from}
@@ -715,7 +719,7 @@ export function GarageProfileTab({
                   onClick={() => updateOpeningHours(day.key, "closed", !hours.closed)}
                   className="col-span-2 rounded-2xl whitespace-nowrap sm:col-span-1"
                 >
-                  {hours.closed ? "Öffnen" : "Geschlossen"}
+                  {hours.closed ? t("Öffnen") : t("Geschlossen")}
                 </Button>
               </div>
             );
@@ -727,17 +731,17 @@ export function GarageProfileTab({
       <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Team</h3>
-            <p className="text-sm text-neutral-600 mt-1">Zeigen Sie Ihr Team auf der öffentlichen Profil-Seite.</p>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">{t("Team")}</h3>
+            <p className="text-sm text-neutral-600 mt-1">{t("Zeigen Sie Ihr Team auf der öffentlichen Profil-Seite.")}</p>
           </div>
           <Button onClick={addTeamMember} className="rounded-2xl">
-            Teammitglied hinzufügen
+            {t("Teammitglied hinzufügen")}
           </Button>
         </div>
 
         {teamDraft.length === 0 ? (
           <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 text-sm text-neutral-700">
-            Noch keine Teammitglieder hinterlegt.
+            {t("Noch keine Teammitglieder hinterlegt.")}
           </div>
         ) : (
           <div className="space-y-3">
@@ -746,34 +750,34 @@ export function GarageProfileTab({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="grid flex-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor={`team_${m.id}_name`}>Name</Label>
+                      <Label htmlFor={`team_${m.id}_name`}>{t("Name")}</Label>
                       <Input
                         id={`team_${m.id}_name`}
                         value={m.name ?? ""}
                         onChange={(e) => updateTeamMember(m.id, { name: e.target.value })}
-                        placeholder="z.B. Max Muster"
+                        placeholder={t("z.B. Max Muster")}
                         className="rounded-2xl"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor={`team_${m.id}_role`}>Rolle</Label>
+                      <Label htmlFor={`team_${m.id}_role`}>{t("Rolle")}</Label>
                       <Input
                         id={`team_${m.id}_role`}
                         value={m.role ?? ""}
                         onChange={(e) => updateTeamMember(m.id, { role: e.target.value })}
-                        placeholder="z.B. Verkauf / Werkstatt"
+                        placeholder={t("z.B. Verkauf / Werkstatt")}
                         className="rounded-2xl"
                       />
                     </div>
 
                     <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor={`team_${m.id}_bio`}>Kurzbeschreibung</Label>
+                      <Label htmlFor={`team_${m.id}_bio`}>{t("Kurzbeschreibung")}</Label>
                       <Textarea
                         id={`team_${m.id}_bio`}
                         value={m.bio ?? ""}
                         onChange={(e) => updateTeamMember(m.id, { bio: e.target.value })}
-                        placeholder="Optional – 1–2 Sätze"
+                        placeholder={t("Optional – 1–2 Sätze")}
                         className="rounded-2xl min-h-[90px]"
                       />
                     </div>
@@ -783,7 +787,7 @@ export function GarageProfileTab({
                     <div className="flex items-center gap-3 sm:flex-col sm:items-end">
                       <div className="h-12 w-12 overflow-hidden rounded-2xl bg-neutral-100 border border-neutral-200/60">
                         {m.image_url ? (
-                          <img src={m.image_url} alt={m.name ?? "Team"} className="h-full w-full object-cover" />
+                          <img src={m.image_url} alt={m.name ?? t("Team")} className="h-full w-full object-cover" />
                         ) : null}
                       </div>
 
@@ -799,7 +803,7 @@ export function GarageProfileTab({
                           }}
                         />
                         <span className="inline-flex items-center rounded-2xl border border-neutral-200/60 bg-white px-3 py-2 text-xs font-semibold text-neutral-900 hover:bg-neutral-50">
-                          Foto wählen
+                          {t("Foto wählen")}
                         </span>
                       </label>
 
@@ -814,10 +818,10 @@ export function GarageProfileTab({
                     </div>
 
                     <Button variant="outline" className="rounded-2xl" onClick={() => removeTeamMember(m.id)}>
-                      Entfernen
+                      {t("Entfernen")}
                     </Button>
                     <div className="text-xs text-neutral-500 sm:text-right">
-                      Position: {typeof m.order === "number" ? m.order : idx + 1}
+                      {t("Position: {n}", { n: typeof m.order === "number" ? m.order : idx + 1 })}
                     </div>
                   </div>
                 </div>
@@ -827,7 +831,7 @@ export function GarageProfileTab({
         )}
 
         <p className="mt-3 text-xs text-neutral-500">
-          Tipp: Teammitglieder erscheinen öffentlich erst, nachdem Sie “Profil-Daten speichern” gedrückt haben.
+          {t("Tipp: Teammitglieder erscheinen öffentlich erst, nachdem Sie “Profil-Daten speichern” gedrückt haben.")}
         </p>
       </div>
 
@@ -835,8 +839,8 @@ export function GarageProfileTab({
       <div className="rounded-3xl border border-neutral-200/60 bg-white shadow-sm p-5">
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Öffentliches Profil & Embed</h3>
-            <p className="text-sm text-neutral-600 mt-1">Teilen Sie Ihren Profil-Link oder binden Sie Ihr Inserate-Widget ein</p>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">{t("Öffentliches Profil & Embed")}</h3>
+            <p className="text-sm text-neutral-600 mt-1">{t("Teilen Sie Ihren Profil-Link oder binden Sie Ihr Inserate-Widget ein")}</p>
           </div>
         </div>
 
@@ -844,7 +848,7 @@ export function GarageProfileTab({
           <div className="space-y-4">
             <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-neutral-900">Profil-Link</div>
+                <div className="text-sm font-semibold text-neutral-900">{t("Profil-Link")}</div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -852,11 +856,11 @@ export function GarageProfileTab({
                     onClick={() => void handleCopyPublicUrl()}
                     disabled={copyingPublicUrl}
                   >
-                    {copyingPublicUrl ? "Kopiere…" : "Kopieren"}
+                    {copyingPublicUrl ? t("Kopiere…") : t("Kopieren")}
                   </Button>
                   <Button asChild className="rounded-2xl">
                     <a href={publicProfileUrl} target="_blank" rel="noreferrer">
-                      Öffnen <ExternalLink className="h-4 w-4 ml-2" />
+                      {t("Öffnen")} <ExternalLink className="h-4 w-4 ml-2" />
                     </a>
                   </Button>
                 </div>
@@ -867,18 +871,22 @@ export function GarageProfileTab({
             {hasWebsiteTools ? (
               <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-semibold text-neutral-900">White-Label Embed (auto Höhe)</div>
+                  <div className="text-sm font-semibold text-neutral-900">{t("White-Label Embed (auto Höhe)")}</div>
                   <Button
                     variant="outline"
                     className="rounded-2xl"
                     onClick={() => void handleCopyEmbed()}
                     disabled={copyingEmbed}
                   >
-                    {copyingEmbed ? "Kopiere…" : "Code kopieren"}
+                    {copyingEmbed ? t("Kopiere…") : t("Code kopieren")}
                   </Button>
                 </div>
                 <div className="text-xs text-neutral-600">
-                  Tipp: Sie können Standard-Filter via URL setzen, z.B. <span className="font-mono">{embedUrl}?saleType=leasing</span>
+                  <T
+                    k="Tipp: Sie können Standard-Filter via URL setzen, z.B. <0>{url}</0>"
+                    vars={{ url: `${embedUrl}?saleType=leasing` }}
+                    c={[<span key="0" className="font-mono" />]}
+                  />
                 </div>
                 <pre className="max-h-[260px] overflow-auto rounded-2xl border border-neutral-200/60 bg-white p-3 text-xs text-neutral-800 whitespace-pre-wrap break-words">
                   {embedSnippet}
@@ -890,16 +898,17 @@ export function GarageProfileTab({
                   <Lock className="h-4 w-4 text-amber-700 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <div className="text-sm font-semibold text-amber-900">
-                      Website-Tools ab {GARAGE_PLANS.growth.name}
+                      {t("Website-Tools ab {plan}", { plan: t(GARAGE_PLANS.growth.name) })}
                     </div>
                     <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
-                      Mit {GARAGE_PLANS.growth.name} binden Sie Ihr Inventar und den
-                      Eintauschwert-Rechner als Widget direkt auf Ihrer eigenen Website ein –
-                      ein Snippet einfügen, fertig.
+                      {t(
+                        "Mit {plan} binden Sie Ihr Inventar und den Eintauschwert-Rechner als Widget direkt auf Ihrer eigenen Website ein – ein Snippet einfügen, fertig.",
+                        { plan: t(GARAGE_PLANS.growth.name) }
+                      )}
                     </p>
                     <Button asChild className="mt-3 rounded-2xl" size="sm">
                       <Link href="/garage-plan?redirect=/dashboard/garage">
-                        Paket ansehen
+                        {t("Paket ansehen")}
                       </Link>
                     </Button>
                   </div>
@@ -909,7 +918,10 @@ export function GarageProfileTab({
           </div>
         ) : (
           <div className="rounded-2xl border border-neutral-200/60 bg-neutral-50 p-4 text-sm text-neutral-700">
-            Speichern Sie zuerst Ihre <span className="font-semibold">Profil-URL</span> (Slug). Danach erscheint hier Ihr öffentlicher Profil-Link und der Embed-Code.
+            <T
+              k="Speichern Sie zuerst Ihre <0>Profil-URL</0> (Slug). Danach erscheint hier Ihr öffentlicher Profil-Link und der Embed-Code."
+              c={[<span key="0" className="font-semibold" />]}
+            />
           </div>
         )}
       </div>
@@ -925,10 +937,10 @@ export function GarageProfileTab({
           {profileSaving ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Speichern…
+              {t("Speichern…")}
             </>
           ) : (
-            "Profil-Daten speichern"
+            t("Profil-Daten speichern")
           )}
         </Button>
       </div>

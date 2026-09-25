@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadOptimizedImage } from "@/services/storageService";
 import { toast } from "sonner";
+import { useT } from "@/i18n/runtime";
 
 function safeString(input: unknown): string {
   return typeof input === "string" ? input : "";
@@ -33,6 +34,7 @@ function getInitials(firstName: string, lastName: string, email: string): string
 }
 
 export default function UserDetailsSection() {
+  const t = useT();
   const { user, profile, refreshProfile } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -86,7 +88,7 @@ export default function UserDetailsSection() {
     if (!file) return;
 
     if (!user) {
-      toast.error("Bitte zuerst anmelden.");
+      toast.error(t("Bitte zuerst anmelden."));
       return;
     }
 
@@ -102,10 +104,10 @@ export default function UserDetailsSection() {
       if (error) throw error;
 
       await refreshProfile();
-      toast.success("Profilbild aktualisiert.");
+      toast.success(t("Profilbild aktualisiert."));
     } catch (err) {
       console.error("Avatar upload error:", err);
-      toast.error("Fehler beim Hochladen des Profilbilds.");
+      toast.error(t("Fehler beim Hochladen des Profilbilds."));
     } finally {
       setIsUpdating(false);
     }
@@ -138,11 +140,11 @@ export default function UserDetailsSection() {
       if (profileError) throw profileError;
 
       await refreshProfile();
-      toast.success("Profil gespeichert.");
+      toast.success(t("Profil gespeichert."));
       setIsOpen(false);
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Fehler beim Aktualisieren des Profils.");
+      toast.error(t("Fehler beim Aktualisieren des Profils."));
     } finally {
       setIsUpdating(false);
     }
@@ -163,14 +165,14 @@ export default function UserDetailsSection() {
       await refreshProfile();
       toast.success(
         anonymous
-          ? "Du wirst auf deinen Inseraten als «Privatanbieter» angezeigt."
+          ? t("Du wirst auf deinen Inseraten als «Privatanbieter» angezeigt.")
           : hasPublicName
-            ? "Dein Name wird jetzt auf deinen Inseraten angezeigt."
-            : "Sobald du deinen Namen ergänzt, wird er auf deinen Inseraten angezeigt."
+            ? t("Dein Name wird jetzt auf deinen Inseraten angezeigt.")
+            : t("Sobald du deinen Namen ergänzt, wird er auf deinen Inseraten angezeigt.")
       );
     } catch (err) {
       console.error("Error updating seller visibility:", err);
-      toast.error("Fehler beim Speichern der Einstellung.");
+      toast.error(t("Fehler beim Speichern der Einstellung."));
     } finally {
       setIsUpdating(false);
     }
@@ -178,7 +180,7 @@ export default function UserDetailsSection() {
 
   const handlePasswordReset = async () => {
     if (!user?.email) {
-      toast.error("Keine E-Mail-Adresse gefunden.");
+      toast.error(t("Keine E-Mail-Adresse gefunden."));
       return;
     }
 
@@ -190,10 +192,10 @@ export default function UserDetailsSection() {
 
       if (error) throw error;
 
-      toast.success("Passwort-Reset-Link wurde an deine E-Mail-Adresse gesendet.");
+      toast.success(t("Passwort-Reset-Link wurde an deine E-Mail-Adresse gesendet."));
     } catch (error) {
       console.error("Error sending password reset:", error);
-      toast.error("Fehler beim Senden des Reset-Links.");
+      toast.error(t("Fehler beim Senden des Reset-Links."));
     } finally {
       setIsUpdating(false);
     }
@@ -210,7 +212,7 @@ export default function UserDetailsSection() {
           <div className="relative">
             <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
               {avatarUrl ? (
-                <Image src={avatarUrl} alt="Profilbild" fill className="object-cover" sizes="80px" />
+                <Image src={avatarUrl} alt={t("Profilbild")} fill className="object-cover" sizes="80px" />
               ) : (
                 initials
               )}
@@ -232,7 +234,7 @@ export default function UserDetailsSection() {
               className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-sm"
               onClick={handlePickAvatar}
               disabled={isUpdating}
-              aria-label="Profilbild ändern"
+              aria-label={t("Profilbild ändern")}
             >
               <Camera className="h-4 w-4" />
             </Button>
@@ -257,7 +259,7 @@ export default function UserDetailsSection() {
                     onClick={handlePasswordReset}
                     disabled={isUpdating || !email}
                   >
-                    Passwort zurücksetzen
+                    {t("Passwort zurücksetzen")}
                   </Button>
                 </div>
               </div>
@@ -268,7 +270,7 @@ export default function UserDetailsSection() {
                     variant="ghost"
                     size="icon"
                     className="text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-2xl"
-                    aria-label="Profil bearbeiten"
+                    aria-label={t("Profil bearbeiten")}
                   >
                     <Pencil className="w-5 h-5" />
                   </Button>
@@ -276,13 +278,13 @@ export default function UserDetailsSection() {
 
                 <DialogContent className="sm:max-w-[480px] rounded-3xl">
                   <DialogHeader>
-                    <DialogTitle>Profil bearbeiten</DialogTitle>
-                    <DialogDescription>Aktualisiere deine persönlichen Informationen.</DialogDescription>
+                    <DialogTitle>{t("Profil bearbeiten")}</DialogTitle>
+                    <DialogDescription>{t("Aktualisiere deine persönlichen Informationen.")}</DialogDescription>
                   </DialogHeader>
 
                   <div className="space-y-4 py-2">
                     <div className="space-y-2">
-                      <Label htmlFor="edit-firstName">Vorname</Label>
+                      <Label htmlFor="edit-firstName">{t("Vorname")}</Label>
                       <Input
                         id="edit-firstName"
                         value={firstName}
@@ -292,7 +294,7 @@ export default function UserDetailsSection() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="edit-lastName">Nachname</Label>
+                      <Label htmlFor="edit-lastName">{t("Nachname")}</Label>
                       <Input
                         id="edit-lastName"
                         value={lastName}
@@ -302,14 +304,14 @@ export default function UserDetailsSection() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="edit-email">E-Mail-Adresse</Label>
+                      <Label htmlFor="edit-email">{t("E-Mail-Adresse")}</Label>
                       <Input id="edit-email" type="email" value={email} disabled className="bg-neutral-50" />
                     </div>
                   </div>
 
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isUpdating}>
-                      Abbrechen
+                      {t("Abbrechen")}
                     </Button>
                     <Button
                       type="button"
@@ -317,7 +319,7 @@ export default function UserDetailsSection() {
                       disabled={isUpdating}
                       className="bg-red-500 hover:bg-red-600"
                     >
-                      {isUpdating ? "Wird gespeichert..." : "Änderungen speichern"}
+                      {isUpdating ? t("Wird gespeichert...") : t("Änderungen speichern")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -334,16 +336,14 @@ export default function UserDetailsSection() {
               </div>
               <div className="min-w-0">
                 <Label htmlFor="anonymous-seller-toggle" className="text-sm font-semibold text-neutral-900">
-                  Als «Privatanbieter» anzeigen
+                  {t("Als «Privatanbieter» anzeigen")}
                 </Label>
                 <p className="mt-1 text-sm text-neutral-600">
-                  Verbirgt deinen Namen und dein Profilbild auf deinen Inseraten. Interessenten sehen
-                  stattdessen «Privatanbieter».
+                  {t("Verbirgt deinen Namen und dein Profilbild auf deinen Inseraten. Interessenten sehen stattdessen «Privatanbieter».")}
                 </p>
                 {showNamePublicly && !hasPublicName && (
                   <p className="mt-2 text-xs text-amber-600">
-                    Noch kein Name hinterlegt – deine Inserate zeigen «Privatanbieter», bis du deinen
-                    Namen über «Profil bearbeiten» ergänzt.
+                    {t("Noch kein Name hinterlegt – deine Inserate zeigen «Privatanbieter», bis du deinen Namen über «Profil bearbeiten» ergänzt.")}
                   </p>
                 )}
               </div>
@@ -353,7 +353,7 @@ export default function UserDetailsSection() {
               checked={!showNamePublicly}
               onCheckedChange={handleToggleAnonymous}
               disabled={isUpdating}
-              aria-label="Als Privatanbieter anzeigen"
+              aria-label={t("Als Privatanbieter anzeigen")}
             />
           </div>
         </div>
