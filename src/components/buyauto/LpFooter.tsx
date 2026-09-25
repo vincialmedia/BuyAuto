@@ -2,7 +2,7 @@ import { Mail, MapPin } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useHasMounted } from "@/hooks/use-has-mounted";
-import { reopenConsent } from "@/lib/analytics/gtag";
+import { reopenConsent } from "@/lib/analytics";
 
 /**
  * Minimal footer for paid landing pages (see MainLayout's FUNNEL_ROUTES):

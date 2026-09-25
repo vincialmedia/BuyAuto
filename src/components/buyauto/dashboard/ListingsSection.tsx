@@ -30,7 +30,8 @@ import SelectBuyerDialog from "./SelectBuyerDialog";
 import { dashboardService, type DashboardListingTombstone } from "@/services/dashboardService";
 import { selectBuyerAndMarkListingSold } from "@/services/messagingService";
 import { PREMIUM_BOOST_PRICE, RELIST_PROMO_ACTIVE, relistPriceChf } from "@/lib/buyauto/stripe_config";
-import { GADS_LABEL_PUBLISH, trackConversionOnce } from "@/lib/gads";
+import { trackOnce } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
 import { DECLINE_DELETE_AFTER_DAYS, DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyauto/draftLifecycle";
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
@@ -47,6 +48,49 @@ function getDealTypeLabel(listing: ListingDetail): string {
     return "Direktkauf · Barzahlung";
   }
   return "Leasingübernahme";
+}
+
+/**
+ * GA4 purchase for a dashboard checkout (Premium boost or relist). Only after
+ * the verify endpoint confirmed the Stripe session as paid AND the listing row
+ * reflects what was bought; transaction_id is the Stripe Checkout Session id,
+ * so reloading the return URL cannot count it twice.
+ */
+async function reportDashboardPurchase(opts: {
+  sessionId: string;
+  listingId: string | null;
+  amountChf: number | null;
+  kind: "premium_upgrade" | "relist";
+}) {
+  const { sessionId, listingId, amountChf, kind } = opts;
+  if (!listingId || typeof amountChf !== "number" || !(amountChf > 0)) return;
+
+  const { data } = await supabase
+    .from("listings")
+    .select("id, status, premium, price_plan")
+    .eq("id", listingId)
+    .maybeSingle();
+  const row = data as { id: string; status: string | null; premium: boolean | null; price_plan: string | null } | null;
+  if (!row) return;
+  if (kind === "premium_upgrade" && row.premium !== true) return;
+  if (kind === "relist" && row.status !== "published") return;
+
+  trackOnce(`ba_purchase_${sessionId}`, "purchase", {
+    transaction_id: sessionId,
+    value: amountChf,
+    currency: "CHF",
+    items: [
+      kind === "premium_upgrade"
+        ? { item_name: "Premium Inserat", item_id: row.id, item_variant: "boost_upgrade", price: amountChf, quantity: 1 }
+        : {
+            item_name: "Inserat Reaktivierung",
+            item_id: row.id,
+            item_variant: `relist_${row.price_plan ?? "standard"}`,
+            price: amountChf,
+            quantity: 1,
+          },
+    ],
+  });
 }
 
 function getPeriodYYYYMMUtc(date = new Date()): string {
@@ -198,6 +242,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     // the RPC dedupes on the checkout session, so webhook + verify can both
     // run), then reload so the granted boost is visible immediately.
     const sessionId = typeof router.query.session_id === "string" ? router.query.session_id : null;
+    const upgradedListingId = typeof router.query.listingId === "string" ? router.query.listingId : null;
     const run = async () => {
       if (status === "success" && sessionId) {
         try {
@@ -214,15 +259,12 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             } catch {
               /* body is optional — fall back to the configured boost price */
             }
-            // Google Ads: a paid listing upgrade counts as the same conversion
-            // action as a paid publish. Keyed by the checkout session, so a
-            // reload of this URL (the query params survive) or a payment the
-            // publish flow already reported cannot double-count.
-            trackConversionOnce(
-              `listing-payment:${sessionId}`,
-              GADS_LABEL_PUBLISH,
-              amountChf ?? PREMIUM_BOOST_PRICE,
-            );
+            void reportDashboardPurchase({
+              sessionId,
+              listingId: upgradedListingId,
+              amountChf: amountChf ?? PREMIUM_BOOST_PRICE,
+              kind: "premium_upgrade",
+            });
           }
         } catch (error) {
           console.error("Error verifying premium upgrade payment:", error);
@@ -232,7 +274,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       loadPremiumCredits();
     };
     void run();
-  }, [router.query.premium_upgrade, router.query.session_id, loadUserListings, loadPremiumCredits]);
+  }, [router.query.premium_upgrade, router.query.session_id, router.query.listingId, loadUserListings, loadPremiumCredits]);
 
   useEffect(() => {
     const status = typeof router.query.relist === "string" ? router.query.relist : null;
@@ -244,6 +286,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
     // idempotent, so whichever path runs first republishes and the other is a
     // no-op — and then reloads the list.
     const sessionId = typeof router.query.session_id === "string" ? router.query.session_id : null;
+    const relistedListingId = typeof router.query.listingId === "string" ? router.query.listingId : null;
     const run = async () => {
       if (status === "success" && sessionId) {
         try {
@@ -260,11 +303,14 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             } catch {
               /* body is optional */
             }
-            // Google Ads: paid relist = paid listing upgrade, same conversion
-            // action as a paid publish, session-keyed against double-firing.
             // The relist price varies by plan, so only the server-reported
-            // amount is trusted — without it the conversion fires value-less.
-            trackConversionOnce(`listing-payment:${sessionId}`, GADS_LABEL_PUBLISH, amountChf);
+            // amount is trusted — without it no purchase is sent.
+            void reportDashboardPurchase({
+              sessionId,
+              listingId: relistedListingId,
+              amountChf: amountChf ?? null,
+              kind: "relist",
+            });
           }
         } catch (error) {
           console.error("Error verifying relist payment:", error);
@@ -273,7 +319,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
       loadUserListings();
     };
     void run();
-  }, [router.query.relist, router.query.session_id, loadUserListings]);
+  }, [router.query.relist, router.query.session_id, router.query.listingId, loadUserListings]);
 
   const handleDelete = useCallback(async (listingId: string) => {
     setActionLoading(listingId);

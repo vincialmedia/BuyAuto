@@ -31,7 +31,7 @@ import { searchListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { trackEvent } from "@/lib/analytics/gtag";
+import { track } from "@/lib/analytics";
 import {
   Accordion,
   AccordionContent,
@@ -111,7 +111,7 @@ function CtaButton({
     <Button asChild size="lg" className={className}>
       <Link
         href={CTA_HREF}
-        onClick={() => trackEvent("cta_click", { cta_location: location, page: "leasing-abgeben-schweiz" })}
+        onClick={() => track("cta_click", { cta_id: location, page_path: "/leasing-abgeben-schweiz" })}
       >
         {children}
         <ArrowRight className="w-5 h-5 ml-2" />

@@ -27,8 +27,7 @@ import {
 import { uploadListingImages } from "@/services/storageService";
 import { clearGuestImages } from "@/lib/buyauto/guestImageStore";
 import type { ListingUpdatePayload } from "@/services/createListingService";
-import { ADS_CONVERSIONS, trackAdsConversion, trackEvent } from "@/lib/analytics/gtag";
-import { GADS_LABEL_PUBLISH, trackConversionOnce } from "@/lib/gads";
+import { safeFreeText, toDealType, trackOnce, type PurchaseItem } from "@/lib/analytics";
 
 interface PaymentIntentWithMetadata extends PaymentIntent {
   metadata: {
@@ -103,6 +102,142 @@ function getNumber(value: unknown): number | null {
 }
 
 const DUMMY_IMAGE_URL = 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&h=600&fit=crop';
+
+// ---------------------------------------------------------------------------
+// Analytics: listing_published and purchase are imported into Google Ads as
+// primary conversions, so they fire only from state Supabase has confirmed —
+// never from a click, a toast or a URL parameter — and at most once per
+// listing / per Stripe payment in this browser.
+// ---------------------------------------------------------------------------
+
+type ConfirmedListing = Pick<
+  Tables<"listings">,
+  | "id"
+  | "status"
+  | "payment_status"
+  | "price_plan"
+  | "premium"
+  | "stripe_payment_intent_id"
+  | "brand"
+  | "model"
+  | "deal_type"
+  | "leasing_offer"
+  | "published_at"
+>;
+
+const CONFIRM_COLUMNS =
+  "id, status, payment_status, price_plan, premium, stripe_payment_intent_id, brand, model, deal_type, leasing_offer, published_at";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Reads the listing back from Supabase until it shows as paid (for a payment:
+ * paid by exactly this PaymentIntent). The webhook / verify-payment write can
+ * land a beat after the browser learns of the payment, hence the short retry
+ * window (~8 s). Returns null when it never confirms — then nothing is sent.
+ */
+async function readConfirmedListing(
+  filter: { listingId: string } | { paymentIntentId: string },
+): Promise<ConfirmedListing | null> {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const query = supabase.from("listings").select(CONFIRM_COLUMNS);
+    const { data } = await ("paymentIntentId" in filter
+      ? query.eq("stripe_payment_intent_id", filter.paymentIntentId)
+      : query.eq("id", filter.listingId)
+    ).maybeSingle();
+    const row = data as unknown as ConfirmedListing | null;
+    const matchesIntent = !("paymentIntentId" in filter) || row?.stripe_payment_intent_id === filter.paymentIntentId;
+    if (row && row.payment_status === "paid" && matchesIntent) return row;
+    if (attempt < 5) await sleep(1500);
+  }
+  return null;
+}
+
+function reportListingPublished(row: ConfirmedListing, plan: "free" | "premium") {
+  // Private listings are confirmed at submission (status 'pending' → reviewed
+  // and live within hours); garage listings are live immediately.
+  if (row.status !== "pending" && row.status !== "published") return;
+  trackOnce(`ba_pub_${row.id}`, "listing_published", {
+    listing_id: row.id,
+    deal_type: toDealType(row),
+    brand: safeFreeText(row.brand) ?? "",
+    model: safeFreeText(row.model) ?? "",
+    plan,
+    value: 0,
+    currency: "CHF",
+  });
+}
+
+// What the seller chose when the PaymentIntent was created. Kept in
+// sessionStorage (it survives the TWINT/3DS redirect in the same tab) because
+// Stripe does not expose intent metadata to the browser.
+type CheckoutIntent = { listingId: string; kind: "publish" | "plan_change"; plan: Plan; boost: boolean };
+const CHECKOUT_INTENT_PREFIX = "ba_checkout_";
+
+function rememberCheckoutIntent(paymentIntentId: string, intent: CheckoutIntent) {
+  try {
+    window.sessionStorage.setItem(CHECKOUT_INTENT_PREFIX + paymentIntentId, JSON.stringify(intent));
+  } catch {
+    /* fall back to inferring from the confirmed row */
+  }
+}
+
+function readCheckoutIntent(paymentIntentId: string): CheckoutIntent | null {
+  try {
+    const raw = window.sessionStorage.getItem(CHECKOUT_INTENT_PREFIX + paymentIntentId);
+    return raw ? (JSON.parse(raw) as CheckoutIntent) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reports a Stripe payment that Stripe marked succeeded: listing_published for
+ * a new listing, and purchase when a Premium product was bought (a paid plan,
+ * which includes Premium, or the Premium Boost). A donation-only payment is
+ * not a Premium sale and sends no purchase. Premium must also be confirmed on
+ * the row (the webhook / verify-payment grant it only after payment).
+ */
+async function reportConfirmedPayment(paymentIntentId: string, amountChf: number) {
+  const row = await readConfirmedListing({ paymentIntentId });
+  if (!row) {
+    console.warn("[analytics] Payment not confirmed in Supabase yet — no listing_published/purchase sent.");
+    return;
+  }
+
+  const intent = readCheckoutIntent(paymentIntentId);
+  const plan = (intent?.plan ?? row.price_plan ?? "standard") as Plan;
+  const boost = intent ? intent.boost : row.premium === true && !planIncludesPremium(plan);
+  const productPrice = planIncludesPremium(plan) ? pricingPlans[plan].price : boost ? PREMIUM_BOOST_PRICE : 0;
+  const premiumSold = productPrice > 0 && row.premium === true;
+
+  // A paid plan change upgrades a listing that already went live; it is a
+  // purchase, not a new listing.
+  const isPlanChange = intent
+    ? intent.kind === "plan_change"
+    : typeof row.published_at === "string" && Date.parse(row.published_at) < Date.now() - 15 * 60 * 1000;
+  if (!isPlanChange) reportListingPublished(row, premiumSold ? "premium" : "free");
+
+  if (!premiumSold) return;
+  const items: PurchaseItem[] = [
+    {
+      item_name: "Premium Inserat",
+      item_id: row.id,
+      item_variant: planIncludesPremium(plan) ? plan : "standard_boost",
+      price: productPrice,
+      quantity: 1,
+    },
+  ];
+  const donation = Math.round((amountChf - productPrice) * 100) / 100;
+  if (donation > 0) items.push({ item_name: "Unterstützung", item_id: row.id, price: donation, quantity: 1 });
+
+  trackOnce(`ba_purchase_${paymentIntentId}`, "purchase", {
+    transaction_id: paymentIntentId,
+    value: amountChf,
+    currency: "CHF",
+    items,
+  });
+}
 
 export default function Step5_PreviewAndPay() {
   const { data, updateData, nextStep, prevStep, setIsComplete, draftId, setDraftId, guestImageFiles, setGuestImageFiles } = useWizard();
@@ -584,22 +719,14 @@ export default function Step5_PreviewAndPay() {
 
           toast({ title: "Zahlung erfolgreich!", description: "Dein Inserat wird bearbeitet." });
 
-          // Redirect-based checkout (TWINT, 3DS) completed — same funnel
-          // events as the embedded path. Wizard state may be freshly restored
-          // here, so the premium check also consults the fetched listing.
-          const paidChf = paymentIntent.amount / 100;
-          trackEvent("listing_published", { deal_type: dealType, value: paidChf, currency: "CHF" });
-          // Google Ads publish conversion with the amount actually charged.
-          // Keyed by the payment intent, so the back button restoring the
-          // ?payment_confirmed URL (which re-runs this handler) — or this
-          // payment being observed again anywhere else — cannot double-count.
-          trackConversionOnce(
-            `listing-payment:${paymentIntent.id}`,
-            GADS_LABEL_PUBLISH,
-            paidChf > 0 ? paidChf : undefined,
-          );
+          // Redirect-based checkout (TWINT, 3DS) completed. Reported once the
+          // listing row confirms the payment; keyed by the PaymentIntent, so
+          // the back button restoring this URL cannot double-count.
+          void reportConfirmedPayment(paymentIntent.id, paymentIntent.amount / 100);
 
-          const confirmedListingId = (paymentIntent as PaymentIntentWithMetadata).metadata.listing_id;
+          // Optional chaining: Stripe.js does not guarantee metadata on
+          // intents retrieved with the publishable key.
+          const confirmedListingId = (paymentIntent as PaymentIntentWithMetadata).metadata?.listing_id;
           const listingId = confirmedListingId;
           if (listingId && user) {
             const freshListingData = await getListingByIdForOwner(listingId, user);
@@ -615,20 +742,6 @@ export default function Step5_PreviewAndPay() {
                 sessionStorage.setItem('completedListingData', JSON.stringify(completedData));
               }
               updateData(freshListingData);
-
-              const paidPremium =
-                Boolean(freshListingData.premium) ||
-                planIncludesPremium(freshListingData.price_plan as any) ||
-                isPremium ||
-                premiumIncluded;
-              if (paidPremium) {
-                trackEvent("premium_purchased", {
-                  plan: freshListingData.price_plan ?? undefined,
-                  value: paidChf,
-                  currency: "CHF",
-                });
-                trackAdsConversion(ADS_CONVERSIONS.premiumPurchase, { value: paidChf, currency: "CHF" });
-              }
             }
           }
           // Pass the intent's listing id explicitly: on a TWINT/3DS return the
@@ -656,7 +769,7 @@ export default function Step5_PreviewAndPay() {
         variant: 'destructive' 
       });
     }
-  }, [user, toast, updateData, setIsComplete, cleanupDraftAfterPublish, dealType, isPremium, premiumIncluded]);
+  }, [user, toast, updateData, setIsComplete, cleanupDraftAfterPublish]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -836,15 +949,13 @@ export default function Step5_PreviewAndPay() {
         }
 
         await cleanupDraftAfterPublish(listingIdToUse);
-        // Funnel event: a free listing was submitted for review. GA4 only —
-        // the Google Ads lead conversion already fired at guest signup.
-        trackEvent("listing_published", {
-          plan: selectedPlanId ?? "standard",
-          premium: false,
-          deal_type: dealType,
+        // Free listing submitted for review: reported once Supabase shows the
+        // row as paid (CHF 0) and pending. Not awaited — the retry window must
+        // never hold up the success screen.
+        const freeListingId = listingIdToUse;
+        void readConfirmedListing({ listingId: freeListingId }).then((row) => {
+          if (row) reportListingPublished(row, "free");
         });
-        // Google Ads publish conversion — free tier, so no value.
-        trackConversionOnce(`listing-publish:${listingIdToUse}`, GADS_LABEL_PUBLISH);
         toast({ title: "Erfolgreich", description: "Dein kostenloses Inserat wird geprüft." });
         setIsComplete(true);
         return;
@@ -855,6 +966,12 @@ export default function Step5_PreviewAndPay() {
         throw new Error("Keine Zahlungs-Session erhalten. Bitte Seite neu laden und erneut versuchen.");
       }
 
+      rememberCheckoutIntent(nextClientSecret.split("_secret")[0], {
+        listingId: listingIdToUse,
+        kind: isEditingCompleted && planChanged ? "plan_change" : "publish",
+        plan: selectedPlanId,
+        boost: isPremium && !premiumIncluded,
+      });
       setClientSecret(nextClientSecret);
       setPaymentInitiated(true);
     } catch (error: any) {
@@ -1000,11 +1117,18 @@ export default function Step5_PreviewAndPay() {
         updateData({ status: "published", seller_type: "garage" } as any);
       }
 
-      // Garage listings publish instantly — no payment, but still a funnel event.
-      trackEvent("listing_published", { seller: "garage", deal_type: dealType });
-      // Google Ads publish conversion — nothing was paid here, so no value.
-      // (The "already published" early return above deliberately doesn't fire.)
-      trackConversionOnce(`listing-publish:${listingIdToUse}`, GADS_LABEL_PUBLISH);
+      // Garage listings go live instantly. Reported only when the RPC's
+      // returned row (or a read-back) says 'published'. (The "already
+      // published" early return above deliberately doesn't fire.)
+      const garageListingId = listingIdToUse;
+      void (async () => {
+        let row = typed?.id ? (typed as unknown as ConfirmedListing) : null;
+        if (!row) {
+          const { data: readBack } = await supabase.from("listings").select(CONFIRM_COLUMNS).eq("id", garageListingId).maybeSingle();
+          row = readBack as unknown as ConfirmedListing | null;
+        }
+        if (row?.status === "published") reportListingPublished(row, "free");
+      })();
       toast({
         title: "Inserat veröffentlicht!",
         description: "Dein Inserat ist jetzt live.",
@@ -1046,7 +1170,7 @@ export default function Step5_PreviewAndPay() {
     }
   };
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentIntent?: { id: string; amount: number }) => {
     // Verify payment synchronously to ensure status is updated before redirect
     if (clientSecret) {
       try {
@@ -1060,37 +1184,13 @@ export default function Step5_PreviewAndPay() {
       }
     }
 
-    // Paid checkout completed in the embedded widget. Report the GA4 funnel
-    // events and — once its label exists in Google Ads — the Premium purchase
-    // conversion (trackAdsConversion no-ops while the label is empty).
-    trackEvent("listing_published", {
-      plan: selectedPlanId ?? "standard",
-      premium: isPremium || premiumIncluded,
-      deal_type: dealType,
-      value: total,
-      currency: "CHF",
-    });
-    if (isPremium || premiumIncluded) {
-      trackEvent("premium_purchased", {
-        plan: selectedPlanId ?? "standard",
-        value: total,
-        currency: "CHF",
-      });
-      trackAdsConversion(ADS_CONVERSIONS.premiumPurchase, { value: total, currency: "CHF" });
+    // Embedded checkout: Stripe reported the intent as succeeded. The same
+    // PaymentIntent id keys the redirect path, so one payment is reported
+    // once whichever path (or how many of them) observes it.
+    const paymentIntentId = paymentIntent?.id ?? (clientSecret ?? "").split("_secret")[0];
+    if (paymentIntentId.startsWith("pi_")) {
+      void reportConfirmedPayment(paymentIntentId, paymentIntent ? paymentIntent.amount / 100 : total);
     }
-
-    // Google Ads publish conversion with the paid amount. The dedupe key is the
-    // payment intent behind the client secret — the same identity the redirect
-    // return path uses — so one payment yields exactly one conversion no matter
-    // which confirmation path (or how many of them) observes it.
-    const paymentKey =
-      (clientSecret ?? "").split("_secret")[0] ||
-      (typeof data.id === "string" && data.id.length > 0 ? data.id : "unknown");
-    trackConversionOnce(
-      `listing-payment:${paymentKey}`,
-      GADS_LABEL_PUBLISH,
-      total > 0 ? total : undefined,
-    );
 
     toast({
       title: "Zahlung erfolgreich!",

@@ -43,6 +43,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { FREE_MONTHLY_LIMIT, PAID_MONTHLY_LIMIT } from "@/lib/buyauto/valuationQuota";
 import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
+import { track } from "@/lib/analytics";
 
 /** Biggest per-month valuation quota any public package includes. */
 const MAX_PLAN_VALUATIONS = GARAGE_PLANS.pro.valuationsPerMonth;
@@ -399,6 +400,20 @@ export function EintauschwertRechner() {
   const [tgLoading, setTgLoading] = useState(false);
   // Vehicle identity at calculation time — changing the car invalidates comps.
   const searchedVehicleRef = useRef("");
+
+  // GA4 generate_lead (valuation): a completed Eintauschwert result rendered.
+  // Once per vehicle — recalculating the same car with edited deductions or
+  // comps is not a new valuation.
+  const reportedValuationsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!result) return;
+    const vehicleKey = `${state.make}|${state.model}|${state.year}|${state.bodyType}|${state.displacement}`;
+    if (reportedValuationsRef.current.has(vehicleKey)) return;
+    reportedValuationsRef.current.add(vehicleKey);
+    track("generate_lead", { lead_type: "valuation", value: 0, currency: "CHF" });
+    // Only a new result counts; state edits without a result are not leads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
 
   // Latest committed values for async handlers: the search response must merge
   // into what the user sees NOW, not into a snapshot from click time.

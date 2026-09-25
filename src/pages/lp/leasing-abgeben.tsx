@@ -10,7 +10,7 @@ import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard
 import { searchListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import { Slider } from "@/components/ui/slider";
-import { trackEvent } from "@/lib/analytics/gtag";
+import { track } from "@/lib/analytics";
 
 type LeasingAbgebenPageProps = {
   takeoverListings: Listing[];
@@ -98,7 +98,7 @@ function CtaButton({
     <Button asChild className={className}>
       <Link
         href={CTA_HREF}
-        onClick={() => trackEvent("cta_click", { cta_location: location, page: "lp-leasing-abgeben" })}
+        onClick={() => track("cta_click", { cta_id: location, page_path: "/lp/leasing-abgeben" })}
       >
         {children}
       </Link>

@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { queueLoginEvent, setUser, track } from "@/lib/analytics";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -42,6 +43,9 @@ export default function AuthForm({
       };
       
       await authService.signIn(signInData);
+      // Sent by AnalyticsProvider once the profile (role) has loaded, so an
+      // admin login never reaches GA4.
+      queueLoginEvent();
       console.log("AuthForm: Login successful");
       
       toast.success("Erfolgreich angemeldet!");
@@ -88,6 +92,15 @@ export default function AuthForm({
       };
       
       await authService.signUp(signUpData);
+      // signUp resolved: Supabase created the account (duplicates throw).
+      const role = data.accountType === "garage" ? "dealer" : "private";
+      setUser(null, role);
+      track("sign_up", { method: "email" });
+      // A garage registering is the dealer-partner lead (there is no separate
+      // dealer lead form or table).
+      if (role === "dealer") {
+        track("generate_lead", { lead_type: "dealer_partner", value: 0, currency: "CHF" });
+      }
       console.log("AuthForm: Registration successful");
       
       toast.success("Registrierung erfolgreich! Überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen.");

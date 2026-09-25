@@ -15,6 +15,7 @@ import {
 } from "@/services/messagingService";
 import { LogIn, SendHorizontal, Paperclip, X } from "lucide-react";
 import { useRouter } from "next/router";
+import { trackOnce } from "@/lib/analytics";
 
 export interface MessagingPanelProps {
   listingId: string;
@@ -255,6 +256,8 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
     setBusy(true);
 
     let targetConvId = conversationId;
+    // No conversation and no history yet: this send opens a new one.
+    const opensNewConversation = !conversationId && messages.length === 0;
 
     if (!targetConvId) {
       targetConvId = await createOrGetConversationForListing(listingId);
@@ -270,6 +273,16 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
       : await sendMessage(targetConvId, body);
 
     if (ok) {
+      if (opensNewConversation) {
+        // A buyer can hold one conversation per listing; the key also guards
+        // against a transient lookup failure making an old one look new.
+        trackOnce(`ba_lead_conversation_${listingId}`, "generate_lead", {
+          lead_type: "conversation",
+          listing_id: listingId,
+          value: 0,
+          currency: "CHF",
+        });
+      }
       setDraft("");
       setSelectedFiles([]);
 

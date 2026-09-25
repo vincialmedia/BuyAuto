@@ -1,150 +1,67 @@
 # Google Analytics 4 + Google Ads — Setup
 
-## Why analytics were missing
+Rebuilt in Sept 2026. The audit and every decision behind this setup are in
+`docs/analytics-audit.md`; the event catalogue is `docs/analytics-events.md`.
 
-Google Analytics was never wired into this codebase. `PRODUCTION_READINESS_PLAN.md`
-listed it as "Status: Missing" with a final step of *"User provides GA4 ID -> Add
-Analytics script"*, and that step was never completed — there is no `gtag`,
-`googletagmanager`, or measurement ID anywhere in the repo's git history. The only
-analytics that ever shipped from this repo is `@vercel/analytics`.
-
-`datenschutz.tsx` already promised Google Analytics ("Wir nutzen oder planen die
-Nutzung von Google Analytics"), which is why the site looked like it should have
-been reporting.
-
-If a GA property did receive data at some point, the tag was injected outside this
-repo (e.g. the Softgen builder preview host or a tag added to an older deployment)
-and stopped the moment the site began deploying from this repository.
-
-## What is now in place
+## Files
 
 | File | Role |
 | --- | --- |
-| `src/pages/_document.tsx` | Consent Mode v2 defaults (`denied`), inline in the server HTML so they run before the tag loads. Re-grants immediately for returning visitors who already accepted. |
-| `src/lib/analytics/gtag.ts` | Measurement ID, Google Ads ID, consent read/write, `pageview()`, `trackEvent()`, `trackAdsConversion()`. Each product no-ops when its ID is unset. |
-| `src/components/analytics/GoogleAnalytics.tsx` | Loads `gtag.js` once, configures the GA4 property and the Google Ads tag on it, sends a page view on every client-side route change. |
-| `src/components/buyauto/CookieConsent.tsx` | Banner now has **Ablehnen** and **Einverstanden**; both write a Consent Mode update covering analytics *and* advertising storage. |
-| `src/pages/datenschutz.tsx` | Privacy policy matches actual behaviour, incl. opt-out path. |
+| `src/pages/_document.tsx` | Consent Mode v2 defaults (`denied`), inline in the server HTML so they run before the tag. Re-grants immediately for returning visitors who already accepted. Also installs the `window.gtag` queue shim. |
+| `src/lib/analytics.ts` | The only analytics module: IDs, consent read/write, internal-traffic guard, loader, page views, `setUser`, typed `track()`. |
+| `src/components/analytics/AnalyticsProvider.tsx` | Mounted in `_app`. Initialises GA once auth has resolved, sends one page view per page, keeps `user_id`/`user_role` in sync, measures contact clicks. |
+| `src/components/buyauto/CookieConsent.tsx` | Banner: **Ablehnen** / **Einverstanden**. |
 
-## The measurement ID
+## IDs
 
-The BuyAuto property's Measurement ID (`G-6GJ6D58G1S`) is **compiled in as the
-default** in `src/lib/analytics/gtag.ts` — like the Ads ID and the conversion
-labels, it ships in the public bundle either way, and a missing env var on a
-deployment must not silently switch reporting off. **No Vercel configuration is
-needed.**
+- GA4: property 437300642, stream `G-KXKPFFXV3E` (compiled default).
+  `NEXT_PUBLIC_GA_MEASUREMENT_ID` overrides it at build time — if it is set in
+  Vercel it must be `G-KXKPFFXV3E` (or `""` to switch GA off).
+- Google Ads: `AW-18317910859` (compiled default, `NEXT_PUBLIC_GADS_ID`
+  overrides). Only the base tag (`gtag('config', 'AW-…')`) runs on the site —
+  gclid capture and remarketing. **Conversions come exclusively from the GA4
+  import** of the key events `listing_published` and `purchase`. The old
+  tag-based conversion calls ("Inserat gestartet", "Inserat veröffentlicht",
+  "Submit lead form") were removed from the code.
 
-`NEXT_PUBLIC_GA_MEASUREMENT_ID` overrides the default at **build** time (Next.js
-inlines `NEXT_PUBLIC_*` into the client bundle — setting it at runtime has no
-effect; redeploy after changing it). Set it to an empty string to disable GA —
-`.env.local` does exactly that so local development never pollutes the stats.
+## When nothing is sent
 
-## Verifying
+Tracking only runs on `www.buyauto.ch` / `buyauto.ch`. It is off — and
+`gtag.js` is never requested — on previews and localhost, on `/admin*`,
+`/embed*` and `/…test` routes, for signed-in admins, for sessions that came
+from the Vercel dashboard, and in any browser where
+`localStorage.setItem('ba_no_track', '1')` was run (undo with
+`localStorage.removeItem('ba_no_track')`).
 
-1. Open `https://www.buyauto.ch` in a private window with no ad blocker.
-2. Click **Einverstanden** in the cookie banner.
-3. GA → **Reports** → **Realtime** should show the visit within ~30 seconds.
-4. In DevTools → Network, filter for `collect` — you should see requests to
-   `google-analytics.com/g/collect`. Before consent these carry `gcs=G100`
-   (cookieless); after consent, `gcs=G111`.
-5. Navigate between pages — each navigation should produce its own `page_view`.
+## Loading and performance
 
-Note: uBlock Origin, Brave, Firefox strict mode and most VPN-level filters block
-`googletagmanager.com` outright. Test in a clean browser before concluding the
-tag is broken.
-
-## Google Ads
-
-The Google Ads tag (`AW-18317910859`) rides on the same `gtag.js` as GA4 — one
-script, one `config` call per destination, which is how Google's own
-multi-product snippet works.
-
-Unlike the measurement ID it is **not** required as an env var: the ID is
-compiled in as the default, because the campaigns depend on it being live and a
-missing variable on a deployment must not silently switch conversion tracking
-off. `NEXT_PUBLIC_GADS_ID` overrides it (format `AW-XXXXXXXXX`; set it to an
-empty string to disable the tag, e.g. on a fork or a staging deployment). The
-legacy name `NEXT_PUBLIC_GOOGLE_ADS_ID` is still honoured when the canonical
-one is unset. Base tag and every conversion `send_to` resolve from the same
-value, so they cannot diverge.
-
-Differences from the GA4 config, both deliberate:
-
-- The Ads tag **is not** held back until the banner is answered. That first hit
-  is what captures the `gclid` of an ad click; holding it would lose the
-  click-to-conversion link for anyone who leaves before deciding. Consent Mode
-  keeps it cookieless until `ad_storage` is granted.
-- Client-side navigations are reported to GA4 only (`send_to`), so the Ads tag
-  counts the landing hit and nothing else — same as the stock snippet.
-
-### Conversion actions
-
-A conversion action reads as **"not detected"** in Google Ads until something on
-the site actually fires it — the base tag alone is never enough, which is the
-usual reason the troubleshooter comes back red on a freshly installed tag.
-
-Labels live in `ADS_CONVERSIONS` in `src/lib/analytics/gtag.ts` — or, for the
-listing-funnel conversions, in env vars read by `src/lib/gads.ts`. Either way a
-label is the part after the slash in the `AW-XXXXXXXXX/LabelHere` string shown
-under the conversion's *Tag einrichten* in Google Ads.
-
-| Conversion action | Label source | Fires on | Where |
-| --- | --- | --- | --- |
-| Submit lead form | `ADS_CONVERSIONS.submitLeadForm` | A guest seller creates an account to publish their listing (registration only — signing in with an existing account does not count) | `src/components/buyauto/create-listing/GuestAuthGate.tsx` |
-| Listing creation started („Inserat gestartet“) | compiled default in `src/lib/gads.ts`; `NEXT_PUBLIC_GADS_LABEL_START` overrides | First meaningful interaction with the creation form on `/inserat-erstellen` (first input/change in any field; once per browser session, not in edit mode) | `src/components/buyauto/create-listing/ListingWizard.tsx` |
-| Listing published / paid upgrade („Inserat veröffentlicht“) | compiled default in `src/lib/gads.ts`; `NEXT_PUBLIC_GADS_LABEL_PUBLISH` overrides | Every successful publish (free, paid — embedded or TWINT/3DS redirect — and garage), plus payment success for a listing upgrade (premium boost, relist, paid plan change). `value` carries the CHF actually paid when there was a payment; value-less otherwise. Deduped per payment via `transaction_id` + a session guard, so a publish and its payment confirmation count once. | `Step5_PreviewAndPay.tsx`, `dashboard/ListingsSection.tsx` |
-
-Like the Ads ID, the two listing-funnel labels are compiled in as defaults, so
-**no Vercel configuration is needed** for conversion tracking to run in
-production. The `NEXT_PUBLIC_GADS_*` env vars exist as build-time-inlined
-overrides only (set a label to an empty string to switch that conversion off,
-e.g. on a fork); after changing one in Vercel, redeploy.
-
-To add another, put its label in `ADS_CONVERSIONS` and call it from the success
-path:
-
-```ts
-import { ADS_CONVERSIONS, trackAdsConversion } from "@/lib/analytics/gtag";
-
-trackAdsConversion(ADS_CONVERSIONS.submitLeadForm, { value: 49, currency: "CHF" });
-```
-
-Other candidates, deliberately **not** wired up: the first message to a seller on
-a listing (`MessagingPanel`), garage registration (`AuthForm`), and the footer
-newsletter signup. Newsletter in particular is high-volume and cheap to obtain,
-so counting it as a lead pulls Smart Bidding away from real inquiries.
-
-### Verifying the Ads tag
-
-1. Load the site in a clean browser and check DevTools → Network for
-   `googletagmanager.com/gtag/js?id=AW-18317910859`.
-2. In the Console, `dataLayer` should contain `["config","AW-18317910859"]`.
-3. Google Ads → **Tools** → **Conversions** → **Google tag** → *Check your
-   website* confirms the tag is detected on `www.buyauto.ch`.
+`gtag.js` (~115 KB) is injected on the first scroll/tap/key press or after
+8 s, never during page load; on Google Ads click landings (gclid/gbraid/wbraid)
+it loads immediately so the click ID is captured. Commands issued earlier wait
+on `dataLayer` and are replayed in order.
 
 ## Consent behaviour
 
-- Nothing is stored until the visitor chooses. Consent Mode defaults to `denied`,
-  so GA and Google Ads send cookieless pings only — aggregate counts, no
-  identifiers, no ad cookies.
-- **Einverstanden** → `analytics_storage` *and* `ad_storage` /`ad_user_data` /
-  `ad_personalization` granted: full GA4 measurement plus Ads conversion
-  tracking and remarketing.
-- **Ablehnen** → stays denied, permanently, and the banner does not reappear.
-- The choice is stored under `buyauto_consent_v2` in `localStorage`. The old
-  `buyauto_cookie_consent` key is deliberately not reused: that banner had no
-  reject option and gated nothing, so it is not valid consent for analytics
-  cookies. Existing visitors are asked once more.
-- To revoke: clear site data. The banner returns on the next visit.
+- Until the visitor chooses, Consent Mode is `denied`: GA4 and Google Ads send
+  cookieless pings only (no cookies, no client ID) — used by Google for
+  modelling. The landing page view is held until the choice.
+- **Einverstanden** → `analytics_storage`, `ad_storage`, `ad_user_data`,
+  `ad_personalization` granted; full measurement, and `user_id` (the
+  pseudonymous Supabase UUID) is attached for signed-in users.
+- **Ablehnen** → stays denied permanently; cookieless pings continue, no
+  `user_id`. The banner does not reappear.
+- The choice lives in `localStorage` under `buyauto_consent_v2`. The footer
+  link reopens the banner.
 
-## Tracking custom events
+## Verifying
 
-```ts
-import { trackEvent } from "@/lib/analytics/gtag";
+1. Open `https://www.buyauto.ch/?ga_debug=1` in a clean browser (no ad blocker).
+2. Accept the banner, scroll once.
+3. GA4 → Admin → **DebugView** shows the device within ~30 s.
+4. DevTools → Network → filter `collect`: requests to
+   `google-analytics.com/g/collect` with `tid=G-KXKPFFXV3E`. Before consent they
+   carry `gcs=G100`, after consent `gcs=G111`.
 
-trackEvent("listing_published", { listing_id: id, package: "premium" });
-```
-
-Events respect consent automatically and are dropped when neither ID is set. An
-untargeted `trackEvent` reaches every configured destination, so naming one after
-a Google Ads conversion action picks it up there as well as in GA4.
+uBlock Origin, Brave, Firefox strict mode and most VPN filters block
+`googletagmanager.com`. Test in a clean browser before concluding the tag is
+broken.
