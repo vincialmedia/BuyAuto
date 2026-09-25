@@ -44,6 +44,7 @@ export type ListingUpdatePayload = Partial<{
   title?: string;
   /** Freitext hinter dem generierten Titel; DB-CHECK begrenzt auf 50 Zeichen. */
   title_suffix?: string | null;
+  tg_nr?: string | null;
   price_plan?: PricePlanId;
   /**
    * Deliberately absent: premium, is_premium and premium_until. Premium is a paid
@@ -100,7 +101,7 @@ export function vehicleCoreFieldsFromWizard(
   data: ListingData
 ): Pick<
   ListingUpdatePayload,
-  "vin" | "make_id" | "model_id" | "variant_id" | "power_hp" | "drivetrain" | "first_registration"
+  "vin" | "tg_nr" | "make_id" | "model_id" | "variant_id" | "power_hp" | "drivetrain" | "first_registration"
 > {
   const anyData = data as any;
   const hp = coerceNumber(anyData?.power_hp);
@@ -115,7 +116,9 @@ export function vehicleCoreFieldsFromWizard(
     typeof v === "string" && v.trim() !== "" ? v : null;
 
   return {
-    vin: typeof anyData?.vin === "string" ? anyData.vin : null,
+    vin: typeof anyData?.vin === "string" && anyData.vin.trim() !== "" ? anyData.vin : null,
+    tg_nr:
+      typeof anyData?.tg_nr === "string" && /^[A-Z0-9]{6}$/.test(anyData.tg_nr) ? anyData.tg_nr : null,
     make_id: uuidOrNull(anyData?.make_id),
     model_id: uuidOrNull(anyData?.model_id),
     variant_id: uuidOrNull(anyData?.variant_id),
