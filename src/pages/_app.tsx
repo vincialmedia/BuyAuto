@@ -9,7 +9,9 @@ import AuthProvider from "@/contexts/AuthContext";
 import "@/styles/globals.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useEffect } from "react";
 import { MessagesProvider, translateWith, type I18nPageProps } from "@/i18n/runtime";
+import { HTML_LANG, toLocale } from "@/i18n/config";
 import { Hreflang, AUTO_HREFLANG_ROUTES } from "@/i18n/seo";
 
 // Both toast systems stay mounted (11 files — the whole create-listing wizard
@@ -90,6 +92,21 @@ export default function App({ Component, pageProps }: AppProps<I18nPageProps>) {
     ? { ...organizationSchema, description: translateWith(messages, ORGANIZATION_DESCRIPTION) }
     : organizationSchema;
   const isEmbed = router.pathname === "/embed" || router.pathname.startsWith("/embed/");
+
+  // With i18n enabled, Next's router overwrites <html lang> with the bare
+  // locale ("de") on every client-side route change. Keep the regional tag the
+  // server rendered ("de-CH", as before i18n; "fr-CH", "it-CH", "en").
+  const htmlLang = HTML_LANG[toLocale(router.locale)];
+  useEffect(() => {
+    const root = document.documentElement;
+    const enforce = () => {
+      if (root.lang !== htmlLang) root.lang = htmlLang;
+    };
+    enforce();
+    const observer = new MutationObserver(enforce);
+    observer.observe(root, { attributes: true, attributeFilter: ["lang"] });
+    return () => observer.disconnect();
+  }, [htmlLang]);
 
   const isListingDetailPage = router.pathname === "/fahrzeug/[id]";
 
