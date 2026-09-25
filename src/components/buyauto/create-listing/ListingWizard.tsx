@@ -86,11 +86,13 @@ const GUEST_DRAFT_KEY = "buyauto:guest-listing-draft";
 // email-confirmation sign-up the original tab and the link's tab both migrate
 // the same localStorage draft; with a shared id the second insert collides
 // (23505) and adopts the first row instead of adding a duplicate.
+const toGuestDraftKey = (value: unknown): string | null =>
+  typeof value === "string" && value.length > 0 ? value : null;
+
 const readGuestDraftKey = (): string | null => {
   try {
     const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
-    const parsed = raw ? (JSON.parse(raw) as { draftKey?: unknown }) : null;
-    return typeof parsed?.draftKey === "string" && parsed.draftKey.length > 0 ? parsed.draftKey : null;
+    return toGuestDraftKey(raw ? (JSON.parse(raw) as { draftKey?: unknown }).draftKey : null);
   } catch {
     return null;
   }
@@ -343,6 +345,10 @@ export default function ListingWizard() {
   // autosave tick landing between that and setIsComplete(true) would otherwise
   // insert a fresh row for the listing that was just published.
   const draftClosedRef = useRef(false);
+  // The guest draftKey this tab last read or wrote, captured together with the
+  // payload. The other tab may remove the localStorage entry while this one is
+  // still rehydrating photos, so the key must not be re-read only at insert time.
+  const guestDraftKeyRef = useRef<string | null>(null);
 
   const setDraftIdSynced = useCallback((id: string | null) => {
     draftIdRef.current = id;
@@ -375,9 +381,9 @@ export default function ListingWizard() {
       }
 
       // Reuse the pending guest draft's id (if any) so another tab migrating the
-      // same guest draft converges on this row. Read at insert time: every
-      // create in this tab — autosave or migration, whichever wins — uses it.
-      const preferredId = typeof window !== "undefined" ? readGuestDraftKey() : null;
+      // same guest draft converges on this row. Every create in this tab —
+      // autosave or migration, whichever wins — uses it.
+      const preferredId = guestDraftKeyRef.current ?? (typeof window !== "undefined" ? readGuestDraftKey() : null);
       const createPromise = (async () => {
         let id: string;
         try {
@@ -393,6 +399,7 @@ export default function ListingWizard() {
           }
         }
         draftIdRef.current = id;
+        guestDraftKeyRef.current = null;
         setDraftId(id);
         return id;
       })();
@@ -532,7 +539,8 @@ export default function ListingWizard() {
             try {
               const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
               if (raw) {
-                const parsed = JSON.parse(raw) as { data?: Partial<ListingData> };
+                const parsed = JSON.parse(raw) as { data?: Partial<ListingData>; draftKey?: unknown };
+                guestDraftKeyRef.current = toGuestDraftKey(parsed?.draftKey);
                 const restored = parsed?.data;
                 if (restored && hasAnyUserInput({ ...createEmptyListingData(), ...restored } as ListingData)) {
                   const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
@@ -613,8 +621,9 @@ export default function ListingWizard() {
           let guestDraft: Partial<ListingData> | null = null;
           try {
             const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
-            const parsed = raw ? (JSON.parse(raw) as { data?: Partial<ListingData> }) : null;
+            const parsed = raw ? (JSON.parse(raw) as { data?: Partial<ListingData>; draftKey?: unknown }) : null;
             guestDraft = parsed?.data ?? null;
+            if (guestDraft) guestDraftKeyRef.current = toGuestDraftKey(parsed?.draftKey);
           } catch {
             guestDraft = null;
           }
@@ -808,7 +817,8 @@ export default function ListingWizard() {
     // before they sign in at the final step. Server-side drafts need a user_id.
     if (!user) {
       try {
-        const draftKey = readGuestDraftKey() ?? newGuestDraftKey();
+        const draftKey = guestDraftKeyRef.current ?? readGuestDraftKey() ?? newGuestDraftKey();
+        guestDraftKeyRef.current = draftKey;
         window.localStorage.setItem(
           GUEST_DRAFT_KEY,
           JSON.stringify({ savedAt: new Date().toISOString(), draftKey, data: draftData })
