@@ -13,6 +13,7 @@ import {
   mapTgFuel,
   mapTgTransmission,
   matchModelFromTyp,
+  matchVariantFromRest,
 } from "../src/pages/api/vehicles/decode-tg";
 
 // --- fuel codes (empirical meanings, see decode-tg comment) ---------------
@@ -80,5 +81,36 @@ assert.equal(matchModelFromTyp("T500 Kipper", vwModels), null);
 // No match at all
 assert.equal(matchModelFromTyp("Passat 2.0 TDI", vwModels), null);
 assert.equal(matchModelFromTyp("", vwModels), null);
+
+// --- variant matcher (live catalog names, 2026-09-25) -----------------------
+const golfVariants = [
+  { id: "10tsi", name: "1.0 TSI" },
+  { id: "14", name: "1.4" },
+  { id: "14tsi", name: "1.4 TSI" },
+  { id: "15etsi", name: "1.5 eTSI" },
+  { id: "15tsi", name: "1.5 TSI" },
+  { id: "gti", name: "GTI" },
+  { id: "gti-cs", name: "GTI Clubsport" },
+  { id: "r", name: "R" },
+];
+const model3Variants = [
+  { id: "lr", name: "Long Range" },
+  { id: "lr-awd", name: "Long Range AWD" },
+  { id: "perf", name: "Performance" },
+  { id: "sr", name: "Standard Range" },
+];
+// Regression: 1XZ901 "Golf 8 1.5 eTSI" -> rest "8 1.5 eTSI"
+assert.equal(matchVariantFromRest("8 1.5 eTSI", golfVariants)?.id, "15etsi");
+// Regression: AXA116 "Model 3 LongRange" -> rest "LongRange" == "Long Range"
+assert.equal(matchVariantFromRest("LongRange", model3Variants)?.id, "lr");
+assert.equal(matchVariantFromRest("Long Range AWD", model3Variants)?.id, "lr-awd");
+// Longest wins, token-exact
+assert.equal(matchVariantFromRest("GTI Clubsport 2.0", golfVariants)?.id, "gti-cs");
+assert.equal(matchVariantFromRest("1.4 TSI", golfVariants)?.id, "14tsi");
+// "R" must not match inside "LongRange" or "Range"
+assert.equal(matchVariantFromRest("LongRange", golfVariants), null);
+assert.equal(matchVariantFromRest("R 2.0 4Motion", golfVariants)?.id, "r");
+assert.equal(matchVariantFromRest("", golfVariants), null);
+assert.equal(matchVariantFromRest("2.0 TDI", golfVariants), null);
 
 console.log("All decode-tg mapper checks passed.");
