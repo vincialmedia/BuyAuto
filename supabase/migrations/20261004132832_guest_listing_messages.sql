@@ -8,7 +8,9 @@
 --    which takes the buyer explicitly. The logged-in chat (auth.uid()) and the
 --    guest route (the freshly created user) open conversations through the same
 --    code. The body below is the live version, unchanged apart from where the
---    buyer id comes from.
+--    buyer id comes from (checked against prosrc). Note the live body had
+--    drifted from the last tracked one (20260316151220: advisory lock, NULL for
+--    sold listings, re-adds the seller); this migration keeps live behaviour.
 -- 2. guest_message_precheck answers in one call whether the listing is live
 --    (same rule as listings_public), whether the email is the seller's own, and
 --    whether an account already exists for it.

@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import authService from "@/services/authService";
-import { queueLoginEvent, track, trackOnce } from "@/lib/analytics";
+import { setUser, track, trackOnce } from "@/lib/analytics";
 import {
   GUEST_MESSAGE_LIMITS,
   guestMessagePrefill,
@@ -17,22 +16,25 @@ import {
 } from "@/lib/buyauto/guestMessage";
 import { SendHorizontal } from "lucide-react";
 
+/** How logging in an existing account from the form went (the send that follows is the panel's). */
+export type GuestLoginResult = "logged_in" | "invalid_credentials" | "email_not_confirmed" | "failed";
+
 export interface GuestMessageFormProps {
   listingId: string;
   dealType?: "lease_takeover" | "direct_purchase" | null;
   /**
-   * Called once an existing account has logged in with the password typed
-   * here; sends the message through the logged-in chat. Resolves false if it
-   * could not be sent.
+   * The email already has an account: log in with the password typed here
+   * and send the message through the logged-in chat. Once logged in, this
+   * form unmounts and the panel shows how the send went.
    */
-  onLoggedIn: (message: string) => Promise<boolean>;
+  onExistingAccount: (email: string, password: string, message: string) => Promise<GuestLoginResult>;
 }
 
 type FormError = { text: string; showPasswordReset?: boolean };
 
 const inputClass = "h-11 rounded-xl border-neutral-200 focus-visible:ring-neutral-400";
 
-export function GuestMessageForm({ listingId, dealType, onLoggedIn }: GuestMessageFormProps) {
+export function GuestMessageForm({ listingId, dealType, onExistingAccount }: GuestMessageFormProps) {
   const router = useRouter();
 
   const [message, setMessage] = useState(() => guestMessagePrefill(dealType));
@@ -56,7 +58,7 @@ export function GuestMessageForm({ listingId, dealType, onLoggedIn }: GuestMessa
     lastName: `guest-last-name-${listingId}`,
     email: `guest-email-${listingId}`,
     password: `guest-password-${listingId}`,
-    website: `guest-website-${listingId}`,
+    website: `guest-extra-${listingId}`,
   };
 
   function errorFor(field: GuestMessageField): string | null {
@@ -65,30 +67,16 @@ export function GuestMessageForm({ listingId, dealType, onLoggedIn }: GuestMessa
 
   async function logInAndSend(trimmedEmail: string, trimmedMessage: string) {
     setBusyText("Du hast schon ein Konto. Wir loggen dich ein …");
-    try {
-      await authService.signIn({ email: trimmedEmail, password });
-    } catch (error: unknown) {
-      const text = error instanceof Error ? error.message : "";
-      if (text.includes("Email not confirmed")) {
-        setFormError({
-          text: "Mit dieser E-Mail gibt es schon ein Konto, das noch nicht bestätigt ist. Klick zuerst auf den Link in unserer E-Mail, danach kannst du hier schreiben.",
-        });
-      } else if (text.includes("Invalid login credentials")) {
-        setFieldError({ field: "password", text: "Mit dieser E-Mail gibt es schon ein Konto, aber das Passwort stimmt nicht." });
-        setFormError({ text: "Passwort vergessen? Auf der Login-Seite kannst du es zurücksetzen.", showPasswordReset: true });
-      } else {
-        setFormError({ text: "Das Einloggen hat nicht geklappt. Bitte versuch es nochmals." });
-      }
-      return;
-    }
-
-    // Reported by AnalyticsProvider once the profile has loaded, like every login.
-    queueLoginEvent();
-    setBusyText("Nachricht wird gesendet …");
-    // From here the panel switches to the logged-in chat, which takes over.
-    const ok = await onLoggedIn(trimmedMessage);
-    if (!ok) {
-      setFormError({ text: "Du bist eingeloggt, aber die Nachricht ging nicht raus. Bitte schick sie im Chat nochmals." });
+    const result = await onExistingAccount(trimmedEmail, password, trimmedMessage);
+    if (result === "email_not_confirmed") {
+      setFormError({
+        text: "Mit dieser E-Mail gibt es schon ein Konto, das noch nicht bestätigt ist. Klick zuerst auf den Link in unserer E-Mail, danach kannst du hier schreiben.",
+      });
+    } else if (result === "invalid_credentials") {
+      setFieldError({ field: "password", text: "Mit dieser E-Mail gibt es schon ein Konto, aber das Passwort stimmt nicht." });
+      setFormError({ text: "Passwort vergessen? Auf der Login-Seite kannst du es zurücksetzen.", showPasswordReset: true });
+    } else if (result === "failed") {
+      setFormError({ text: "Das Einloggen hat nicht geklappt. Bitte versuch es nochmals." });
     }
   }
 
@@ -137,6 +125,7 @@ export function GuestMessageForm({ listingId, dealType, onLoggedIn }: GuestMessa
       // A filled honeypot gets the same answer from the server; only real
       // submissions count.
       if (!website) {
+        setUser(null, "private");
         track("sign_up", { method: "email" });
         trackOnce(`ba_lead_conversation_${listingId}`, "generate_lead", {
           lead_type: "conversation",
@@ -269,7 +258,7 @@ export function GuestMessageForm({ listingId, dealType, onLoggedIn }: GuestMessa
           <p className="text-xs text-red-600">{errorFor("password")}</p>
         ) : (
           <p id={`${ids.password}-hint`} className="text-xs text-neutral-500">
-            Mindestens {GUEST_MESSAGE_LIMITS.passwordMin} Zeichen. Damit loggst du dich später ein.
+            Neu hier: mindestens {GUEST_MESSAGE_LIMITS.passwordMin} Zeichen. Schon ein Konto: dein bisheriges Passwort.
           </p>
         )}
       </div>
@@ -316,15 +305,15 @@ export function GuestMessageForm({ listingId, dealType, onLoggedIn }: GuestMessa
       </Button>
 
       <p className="text-xs leading-relaxed text-neutral-500">
-        Mit dem Senden erstellst du ein BuyAuto-Konto und akzeptierst die{" "}
+        Mit dem Senden erstellen wir dir ein BuyAuto-Konto, und du akzeptierst die{" "}
         <Link href="/agb" className="underline underline-offset-2 hover:text-neutral-700">
           AGB
-        </Link>{" "}
-        und die{" "}
+        </Link>
+        . Dein Name und deine Nachricht gehen an den Anbieter (
         <Link href="/datenschutz" className="underline underline-offset-2 hover:text-neutral-700">
           Datenschutzerklärung
         </Link>
-        .
+        ).
       </p>
       <p className="text-xs text-neutral-600">
         Schon ein Konto?{" "}

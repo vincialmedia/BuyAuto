@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   createOrGetConversationForListing,
   getExistingConversationForListing,
+  openConversationForListing,
   createSignedAttachmentUrl,
   getConversationContext,
   getMessages,
@@ -14,8 +15,9 @@ import {
   sendMessageWithAttachments,
 } from "@/services/messagingService";
 import { SendHorizontal, Paperclip, X } from "lucide-react";
-import { trackOnce } from "@/lib/analytics";
-import { GuestMessageForm } from "./GuestMessageForm";
+import { queueLoginEvent, trackOnce } from "@/lib/analytics";
+import authService from "@/services/authService";
+import { GuestMessageForm, type GuestLoginResult } from "./GuestMessageForm";
 
 export interface MessagingPanelProps {
   listingId: string;
@@ -85,6 +87,10 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
   const isGuest = !user && !loading;
   // Bumped after a guest logs in and sends, so the chat reloads with it.
   const [reloadKey, setReloadKey] = useState(0);
+  // A visitor whose email already has an account logs in from the guest form.
+  // The form unmounts the moment the session exists, so the panel carries the
+  // send that follows and its outcome.
+  const [handoff, setHandoff] = useState<{ phase: "sending" } | { phase: "failed"; text: string } | null>(null);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UiMessage[]>([]);
@@ -106,8 +112,17 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
   const canSend = useMemo(() => {
     const hasText = draft.trim().length > 0;
     const hasFiles = selectedFiles.length > 0;
-    return isAuthed && !isSeller && (hasText || hasFiles) && !busy && !readOnly && !soldBlocked && !messagingUnavailable;
-  }, [busy, draft, isAuthed, isSeller, readOnly, soldBlocked, messagingUnavailable, selectedFiles.length]);
+    return (
+      isAuthed &&
+      !isSeller &&
+      (hasText || hasFiles) &&
+      !busy &&
+      !readOnly &&
+      !soldBlocked &&
+      !messagingUnavailable &&
+      handoff?.phase !== "sending"
+    );
+  }, [busy, draft, isAuthed, isSeller, readOnly, soldBlocked, messagingUnavailable, selectedFiles.length, handoff]);
 
   const counterpartyLabel = useMemo(() => {
     if (counterpartyRole === "seller") return "Anbieter";
@@ -252,30 +267,64 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
-  // A logged-out visitor whose email already has an account just logged in
-  // through the guest form; send their message the way handleSend does.
-  async function sendAfterLogin(body: string): Promise<boolean> {
+  // Existing account typed into the guest form: log in with that password,
+  // then send the message the way handleSend does. Nothing is sent unless the
+  // password is right.
+  async function logInAndSend(email: string, password: string, body: string): Promise<GuestLoginResult> {
+    setHandoff({ phase: "sending" });
+    // Queued before signing in: the profile load that flushes it can finish
+    // before signIn resolves.
+    queueLoginEvent();
+    try {
+      await authService.signIn({ email, password });
+    } catch (error) {
+      setHandoff(null);
+      const code = (error as { code?: string } | null)?.code;
+      const text = error instanceof Error ? error.message : "";
+      if (code === "email_not_confirmed" || text.includes("Email not confirmed")) return "email_not_confirmed";
+      if (code === "invalid_credentials" || text.includes("Invalid login credentials")) return "invalid_credentials";
+      return "failed";
+    }
+
     const existingConvId = await getExistingConversationForListing(listingId);
-    const convId = existingConvId ?? (await createOrGetConversationForListing(listingId));
+    let convId = existingConvId;
+    let failure: string | null = null;
+    if (!convId) {
+      const opened = await openConversationForListing(listingId);
+      if ("id" in opened) convId = opened.id;
+      else if (opened.error.includes("cannot_message_own_listing"))
+        failure = "Dies ist dein eigenes Inserat. Du kannst dir selbst keine Nachrichten senden.";
+      else if (opened.error.includes("listing_sold"))
+        failure = "Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich.";
+    }
     const ok = convId ? await sendMessage(convId, body) : false;
 
-    if (ok && !existingConvId) {
-      trackOnce(`ba_lead_conversation_${listingId}`, "generate_lead", {
-        lead_type: "conversation",
-        listing_id: listingId,
-        value: 0,
-        currency: "CHF",
-        new_account: false,
+    if (ok) {
+      if (!existingConvId) {
+        trackOnce(`ba_lead_conversation_${listingId}`, "generate_lead", {
+          lead_type: "conversation",
+          listing_id: listingId,
+          value: 0,
+          currency: "CHF",
+          new_account: false,
+        });
+      }
+      setHandoff(null);
+    } else {
+      // Keep the text so it can be sent again from the composer.
+      setDraft(body);
+      setHandoff({
+        phase: "failed",
+        text: failure ?? "Du bist eingeloggt, aber die Nachricht ging nicht raus. Sie steht unten im Textfeld, schick sie bitte nochmals.",
       });
     }
-    // Not sent (e.g. an archived chat): leave the text in the composer.
-    if (!ok) setDraft(body);
     setReloadKey((key) => key + 1);
-    return ok;
+    return "logged_in";
   }
 
   async function handleSend() {
     if (readOnly || soldBlocked || messagingUnavailable || isSeller) return;
+    setHandoff(null);
 
     const body = draft.trim();
     const hasFiles = selectedFiles.length > 0;
@@ -373,7 +422,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
         <CardContent className="p-6">
           {header}
           {isGuest ? (
-            <GuestMessageForm listingId={listingId} dealType={dealType} onLoggedIn={sendAfterLogin} />
+            <GuestMessageForm listingId={listingId} dealType={dealType} onExistingAccount={logInAndSend} />
           ) : (
             <div className="mt-5 space-y-3" aria-hidden="true">
               <div className="h-24 bg-neutral-50 rounded-2xl border border-neutral-200 animate-pulse" />
@@ -390,6 +439,20 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
     <Card className={cn("border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden", className)}>
       <CardContent className="p-6">
         {header}
+
+        {handoff ? (
+          <div
+            role="status"
+            className={cn(
+              "mt-4 rounded-2xl border p-4 text-sm",
+              handoff.phase === "failed"
+                ? "border-amber-200 bg-amber-50 text-amber-900"
+                : "border-neutral-200 bg-neutral-50 text-neutral-700"
+            )}
+          >
+            {handoff.phase === "sending" ? "Du bist eingeloggt. Deine Nachricht wird gesendet …" : handoff.text}
+          </div>
+        ) : null}
 
         {notice ? (
           <div

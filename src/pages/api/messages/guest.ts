@@ -1,9 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createHash } from "crypto";
+import { createHmac } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
 import {
+  GUEST_MESSAGE_LIMITS,
+  GUEST_PASSWORD_TOO_SHORT,
   validateGuestMessage,
   type GuestMessageErrorCode,
   type GuestMessageField,
@@ -18,6 +20,12 @@ import {
 // the client logs in with the password and uses the logged-in chat.
 
 const GUEST_SUBMISSIONS_PER_IP_PER_DAY = 20;
+// Conversations per listing and 24 h from guest accounts that haven't
+// confirmed their email yet: a seller can't be flooded from many IPs.
+const UNCONFIRMED_GUEST_CONVERSATIONS_PER_LISTING_PER_DAY = 10;
+// How old the account signUp hands back may be. Anything older existed before
+// this request, and nothing is ever posted for an account that existed before.
+const NEW_ACCOUNT_MAX_AGE_MS = 2 * 60 * 1000;
 
 // Where the confirmation link lands. Supabase accepts redirects on the Site
 // URL's own host without an allow-list entry; vercel.json forwards the apex to
@@ -28,14 +36,19 @@ type Precheck = {
   listing_available: boolean;
   is_seller_email?: boolean;
   account_exists?: boolean;
+  recent_unconfirmed_guest_conversations?: number;
 };
 
-// The service-role RPCs from 20261004132832_guest_listing_messages are not in
+// The service-role RPCs from the guest_listing_messages migrations are not in
 // the generated types yet.
 type UntypedRpc = <T>(
   fn: string,
   args: Record<string, unknown>
 ) => PromiseLike<{ data: T | null; error: { message: string } | null }>;
+
+const GENERIC_ERROR = "Das hat nicht geklappt. Bitte versuch es nochmals.";
+const MESSAGE_FAILED =
+  "Dein Konto ist erstellt, aber die Nachricht ging nicht raus. Bestätige deine E-Mail, log dich ein und schick sie nochmals.";
 
 function fail(
   res: NextApiResponse<GuestMessageResponse>,
@@ -47,21 +60,55 @@ function fail(
   return res.status(httpStatus).json({ status: "error", error, message, ...(field ? { field } : {}) });
 }
 
-function clientIpHash(req: NextApiRequest): string {
+/** Only our own pages may post here: a JSON body (a cross-site form can't send one without a CORS preflight) from the same origin. */
+function isSameOriginJson(req: NextApiRequest): boolean {
+  const contentType = String(req.headers["content-type"] ?? "").toLowerCase();
+  if (!contentType.startsWith("application/json")) return false;
+
+  const fetchSite = req.headers["sec-fetch-site"];
+  if (typeof fetchSite === "string" && fetchSite !== "same-origin") return false;
+
+  const origin = req.headers.origin;
+  if (typeof origin === "string" && origin) {
+    const hosts = [req.headers["x-forwarded-host"], req.headers.host].filter((h): h is string => typeof h === "string");
+    try {
+      if (!hosts.includes(new URL(origin).host)) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** The client's network for the per-IP limit: the IPv4 address, or the /64 of an IPv6 address (one subscriber). */
+function clientNetwork(req: NextApiRequest): string {
   const realIp = req.headers["x-real-ip"];
   const forwarded = req.headers["x-forwarded-for"];
-  const ip =
+  let ip =
     (typeof realIp === "string" && realIp.trim()) ||
     (typeof forwarded === "string" && forwarded.split(",")[0].trim()) ||
     req.socket.remoteAddress ||
     "unknown";
-  return createHash("sha256").update(`buyauto-guest-message:${ip}`).digest("hex");
+
+  const mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+  if (mapped) ip = mapped[1];
+  if (!ip.includes(":")) return ip;
+
+  const [head, tail = ""] = ip.toLowerCase().split("::");
+  const headParts = head ? head.split(":") : [];
+  const tailParts = tail ? tail.split(":") : [];
+  const missing = Math.max(0, 8 - headParts.length - tailParts.length);
+  const groups = [...headParts, ...Array(missing).fill("0"), ...tailParts];
+  return `${groups.slice(0, 4).map((g) => g || "0").join(":")}::/64`;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<GuestMessageResponse>) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return fail(res, 405, "invalid_input", "Method not allowed");
+  }
+  if (!isSameOriginJson(req)) {
+    return fail(res, 403, "invalid_input", "Diese Anfrage ist nicht erlaubt.");
   }
 
   const body = (req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
@@ -90,13 +137,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   });
   const rpc = admin.rpc.bind(admin) as unknown as UntypedRpc;
 
+  // Keyed hash: the stored value can't be turned back into an IP.
+  const networkHash = createHmac("sha256", serviceRoleKey).update(`guest-message:${clientNetwork(req)}`).digest("hex");
   const { data: allowed, error: limitError } = await rpc<boolean>("guest_message_register_attempt", {
-    p_ip_hash: clientIpHash(req),
+    p_ip_hash: networkHash,
     p_limit: GUEST_SUBMISSIONS_PER_IP_PER_DAY,
   });
   if (limitError) {
     console.error("guest message: rate limit check failed", limitError.message);
-    return fail(res, 500, "server_error", "Das hat nicht geklappt. Bitte versuch es nochmals.");
+    return fail(res, 500, "server_error", GENERIC_ERROR);
   }
   if (allowed !== true) {
     return fail(res, 429, "rate_limited", "Zu viele Nachrichten von diesem Anschluss. Bitte versuch es morgen wieder.");
@@ -108,16 +157,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   });
   if (precheckError || !precheck) {
     console.error("guest message: precheck failed", precheckError?.message);
-    return fail(res, 500, "server_error", "Das hat nicht geklappt. Bitte versuch es nochmals.");
+    return fail(res, 500, "server_error", GENERIC_ERROR);
   }
   if (!precheck.listing_available) {
     return fail(res, 409, "listing_unavailable", "Dieses Inserat ist nicht mehr verfügbar.");
   }
+  // Before the seller check, so the answer never tells whether a registered
+  // address is this listing's seller. A seller who logs in here is stopped by
+  // the conversation function (cannot_message_own_listing).
+  if (precheck.account_exists) {
+    return res.status(200).json({ status: "existing_account" });
+  }
+  // Left for addresses without an account: a garage's contact email.
   if (precheck.is_seller_email) {
     return fail(res, 400, "own_listing", "Mit dieser E-Mail-Adresse kannst du diesem Inserat nicht schreiben.", "email");
   }
-  if (precheck.account_exists) {
-    return res.status(200).json({ status: "existing_account" });
+  if ((precheck.recent_unconfirmed_guest_conversations ?? 0) >= UNCONFIRMED_GUEST_CONVERSATIONS_PER_LISTING_PER_DAY) {
+    return fail(res, 429, "listing_busy", "Dieses Inserat bekommt gerade sehr viele Anfragen. Bitte versuch es später nochmals.");
+  }
+  if (input.password.length < GUEST_MESSAGE_LIMITS.passwordMin) {
+    return fail(res, 400, "invalid_input", GUEST_PASSWORD_TOO_SHORT, "password");
   }
 
   // The normal signup, run on the server: Supabase sends its usual
@@ -125,6 +184,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   // browser, so confirming there signs them straight in.
   const fullName = [input.firstName, input.lastName].filter(Boolean).join(" ");
   const supabase = createPagesServerClient<Database>({ req, res });
+  const signUpStartedAt = Date.now();
   const { data: signUp, error: signUpError } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
@@ -157,10 +217,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return fail(res, 500, "server_error", "Das Konto konnte nicht erstellt werden. Bitte versuch es nochmals.");
   }
 
-  const user = signUp.user;
-  // With confirmations on, Supabase answers a registered address with an
-  // obfuscated user without identities (an account created a moment ago).
-  if (!user || (Array.isArray(user.identities) && user.identities.length === 0)) {
+  // With confirmations on, Supabase answers a confirmed address with an
+  // obfuscated user without identities, and an unconfirmed one with that real,
+  // older account. Only an account this very request created is written for:
+  // re-read it with the service role and require it to be brand new,
+  // unconfirmed and carrying the name typed here.
+  const signedUpId = signUp.user?.identities?.length ? signUp.user.id : null;
+  const { data: created } = signedUpId
+    ? await admin.auth.admin.getUserById(signedUpId)
+    : { data: { user: null } };
+  const user = created?.user ?? null;
+  const isThisRequestsAccount =
+    !!user &&
+    !user.email_confirmed_at &&
+    Date.parse(user.created_at) >= signUpStartedAt - NEW_ACCOUNT_MAX_AGE_MS &&
+    user.user_metadata?.first_name === input.firstName;
+  if (!isThisRequestsAccount) {
     return res.status(200).json({ status: "existing_account" });
   }
 
@@ -181,12 +253,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   );
   if (conversationError || typeof conversationId !== "string") {
     console.error("guest message: conversation failed", conversationError?.message);
-    return fail(
-      res,
-      500,
-      "message_failed",
-      "Dein Konto ist erstellt, aber die Nachricht ging nicht raus. Bestätige deine E-Mail, log dich ein und schick sie nochmals."
-    );
+    return fail(res, 500, "message_failed", MESSAGE_FAILED);
   }
 
   const { error: messageError } = await admin.from("messages").insert({
@@ -196,12 +263,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   });
   if (messageError) {
     console.error("guest message: message insert failed", messageError.message);
-    return fail(
-      res,
-      500,
-      "message_failed",
-      "Dein Konto ist erstellt, aber die Nachricht ging nicht raus. Bestätige deine E-Mail, log dich ein und schick sie nochmals."
-    );
+    return fail(res, 500, "message_failed", MESSAGE_FAILED);
   }
 
   return res.status(200).json({ status: "sent" });

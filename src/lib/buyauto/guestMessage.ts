@@ -5,7 +5,9 @@
 export const GUEST_MESSAGE_LIMITS = {
   nameMax: 60,
   emailMax: 254,
-  passwordMin: 8, // same minimum as the normal signup (registerSchema)
+  // Same minimum as the normal signup (registerSchema). Only enforced for new
+  // accounts: existing ones log in here and may predate the rule.
+  passwordMin: 8,
   passwordMax: 72, // bcrypt ignores everything past 72 bytes
   messageMax: 5000, // messages_body_check
 } as const;
@@ -24,6 +26,7 @@ export type GuestMessageField = Exclude<keyof GuestMessageInput, "listingId">;
 export type GuestMessageErrorCode =
   | "invalid_input"
   | "rate_limited"
+  | "listing_busy"
   | "listing_unavailable"
   | "own_listing"
   | "weak_password"
@@ -45,9 +48,11 @@ export type GuestMessageValidation =
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Names are shown to the seller and in their notification email; keep links out.
+// Names are shown to the seller and in their notification email: no links, no
+// posing as BuyAuto, no control, bidi or zero-width characters.
 const LINK_RE = /(https?:|www\.|\.(ch|com|net|org|de|io)\b)/i;
-const CONTROL_RE = /[\u0000-\u001F\u007F]/;
+const IMPERSONATION_RE = /buy\s*auto/i;
+const CONTROL_RE = /[\u0000-\u001F\u007F-\u009F­​-‏‪-‮⁠-⁩﻿]/;
 
 function str(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -81,19 +86,20 @@ export function validateGuestMessage(raw: Record<string, unknown>): GuestMessage
     ["firstName", firstName],
     ["lastName", lastName],
   ] as const) {
-    if (value.length > GUEST_MESSAGE_LIMITS.nameMax || CONTROL_RE.test(value) || LINK_RE.test(value)) {
+    if (
+      value.length > GUEST_MESSAGE_LIMITS.nameMax ||
+      CONTROL_RE.test(value) ||
+      LINK_RE.test(value) ||
+      IMPERSONATION_RE.test(value)
+    ) {
       return { ok: false, field, message: "Bitte gib hier nur deinen Namen ein." };
     }
   }
   if (!email || email.length > GUEST_MESSAGE_LIMITS.emailMax || !EMAIL_RE.test(email)) {
     return { ok: false, field: "email", message: "Bitte gib eine gültige E-Mail-Adresse ein." };
   }
-  if (password.length < GUEST_MESSAGE_LIMITS.passwordMin) {
-    return {
-      ok: false,
-      field: "password",
-      message: `Das Passwort muss mindestens ${GUEST_MESSAGE_LIMITS.passwordMin} Zeichen lang sein.`,
-    };
+  if (!password) {
+    return { ok: false, field: "password", message: "Bitte gib ein Passwort ein." };
   }
   if (password.length > GUEST_MESSAGE_LIMITS.passwordMax) {
     return {
@@ -105,6 +111,8 @@ export function validateGuestMessage(raw: Record<string, unknown>): GuestMessage
 
   return { ok: true, value: { listingId, firstName, lastName, email, password, message } };
 }
+
+export const GUEST_PASSWORD_TOO_SHORT = `Das Passwort muss mindestens ${GUEST_MESSAGE_LIMITS.passwordMin} Zeichen lang sein.`;
 
 /** First message suggested to the buyer; a Direktkauf with takeover offer gets the neutral question. */
 export function guestMessagePrefill(dealType: "lease_takeover" | "direct_purchase" | null | undefined): string {
