@@ -163,15 +163,6 @@ select cron.schedule(
       and (user_id is not null or visitor_id is not null or visitor_hash is not null)$$
 );
 
--- Backfill the rows logged before this migration (ids 2–33 on 2026-10-04),
--- from the 2026-10 usage analysis:
---   ids 2, 3, 15, 16  ran on PR preview builds (2/3 before PR #15 merged; 15/16
---                     carry funnel keys production only got with #58)
---   ids 4, 11, 13, 14 were the owner's test garage account (matched to its
---                     valuation_usage counter to the millisecond)
--- All eight are the owner. The other rows ran on production code and are
--- marked production so the documented queries cover the full history.
-update public.valuation_search_logs
-set env = case when id in (2, 3, 15, 16) then 'preview' else 'production' end,
-    is_internal = id in (2, 3, 4, 11, 13, 14, 15, 16)
-where env is null;
+-- The rows logged before this migration (ids 2–33) were labelled once, outside
+-- the migration (row ids are environment-specific); see
+-- docs/valuation-search-logs.md.

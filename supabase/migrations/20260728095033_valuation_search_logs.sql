@@ -4,7 +4,7 @@
 --
 -- Applied to prod on 2026-07-28 straight from the PR #15 branch and never
 -- committed; restored here verbatim from supabase_migrations.schema_migrations
--- so the repo can rebuild the schema. 20261004160000_valuation_search_attribution
+-- so the repo can rebuild the schema. 20261004135257_valuation_search_attribution
 -- builds on it.
 create table if not exists public.valuation_search_logs (
   id bigint generated always as identity primary key,

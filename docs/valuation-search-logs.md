@@ -28,9 +28,12 @@ Retention: pg_cron (`valuation-search-logs-pseudonymise`, daily) clears
 `user_id`, `visitor_id` and `visitor_hash` on rows older than 12 months, as
 promised in /datenschutz.
 
-Rows before 2026-10-04 were backfilled from the usage analysis: ids 2, 3, 4,
-11, 13, 14, 15, 16 are the owner's tests (`is_internal`), 2/3/15/16 ran on
-previews. Those rows have no user/visitor/source data.
+Rows before 2026-10-04 (ids 2–33) were labelled once from the usage analysis:
+ids 2, 3, 4, 11, 13, 14, 15, 16 are the owner's tests (`is_internal`; 2, 3, 15
+and 16 ran on PR previews, 4, 11, 13 and 14 were the test garage account), the
+rest `env = 'production'`. Those rows have no user/visitor/source data. Rows
+the old deploy wrote after the migration and before this code went live keep
+`env` NULL until labelled by hand.
 
 **Keep your own browsers out:** on www.buyauto.ch, run
 `localStorage.ba_no_track = "1"` in the console once per browser (same flag

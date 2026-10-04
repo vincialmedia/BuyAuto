@@ -6,7 +6,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // log_valuation_event(), which only the service role may call, so rows only
 // come from our API routes. The page fields (source, embed_garage, visitor_id,
 // internal) are still reported by the browser unauthenticated. See
-// supabase/migrations/20261004160000_valuation_search_attribution.sql and
+// supabase/migrations/20261004135257_valuation_search_attribution.sql and
 // docs/valuation-search-logs.md.
 
 export type ValuationLogStatus = "ok" | "search_failed" | "gate_anon" | "gate_free" | "gate_paid";
