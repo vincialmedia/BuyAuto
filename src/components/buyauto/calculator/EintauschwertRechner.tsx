@@ -1,4 +1,4 @@
-import { tgDecodeUrl } from "@/lib/buyauto/listingContract";
+import { tgDecodeUrl, YEAR_MIN } from "@/lib/buyauto/listingContract";
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -588,6 +588,9 @@ export function EintauschwertRechner() {
 
   const handlePreset = () => {
     tgVehicleRef.current = null;
+    // The demo car must never sit next to another car's result (or its CTA).
+    setResult(null);
+    searchedVehicleRef.current = "";
     setState(PRESET_GOLF);
     setCompsMode('manual');
     setFoundListings([]);
@@ -871,7 +874,7 @@ export function EintauschwertRechner() {
   // (private owners, prefilled listing) or keep calculating by hand.
   const gateAlternatives = (
     <div className="space-y-4">
-      {showPrivateSellCta && (
+      {showPrivateSellCta && state.year >= YEAR_MIN && (
         <div className="rounded-xl border border-red-500/40 bg-red-600/10 p-5 space-y-3">
           <p className="text-neutral-200 leading-relaxed">
             <strong className="text-white">Du willst dein Auto verkaufen?</strong> Inseriere es gratis auf
@@ -928,6 +931,8 @@ export function EintauschwertRechner() {
       return;
     }
     setResult(computed);
+    // The result now describes the current form (e.g. a corrected km).
+    resultVehicleRef.current = sellVehicleFrom(state);
     toast.success("Neu berechnet");
   };
 
@@ -2034,17 +2039,30 @@ export function EintauschwertRechner() {
             </div>
 
             {/* PRIVATE SELLER CTA: the car they just valued, prefilled. */}
-            {showPrivateSellCta && (
+            {/* Only for cars the listing form accepts (YEAR_MIN onward). An
+                unreliable valuation is quoted as ranges and seeds no price. */}
+            {showPrivateSellCta && (resultVehicleRef.current?.year ?? 0) >= YEAR_MIN && (
               <div className="max-w-2xl mx-auto mb-10 rounded-xl border border-red-500/40 bg-red-600/10 p-5 sm:p-6 text-center">
                 <p className="text-lg font-bold text-white">Privat verkaufen statt eintauschen?</p>
                 <p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-                  Vergleichbare Autos werden für rund CHF {chf(result.marketValue)} angeboten; beim Eintausch
-                  bietet eine Garage nach dieser Rechnung etwa CHF {chf(result.offer)}. Inseriere dein Auto auf
-                  BuyAuto – Marke, Modell, Jahrgang und Kilometerstand sind schon ausgefüllt.
+                  {result.lowConfidence ? (
+                    <>
+                      Vergleichbare Autos werden für etwa CHF {chf(result.marketMin)} – {chf(result.marketMax)}{" "}
+                      angeboten; beim Eintausch böte eine Garage nach dieser Rechnung grob CHF{" "}
+                      {chf(result.offerMin)} – {chf(result.offerMax)}.
+                    </>
+                  ) : (
+                    <>
+                      Vergleichbare Autos werden für rund CHF {chf(result.marketValue)} angeboten; beim Eintausch
+                      bietet eine Garage nach dieser Rechnung etwa CHF {chf(result.offer)}.
+                    </>
+                  )}{" "}
+                  Inseriere dein Auto auf BuyAuto – Marke, Modell, Jahrgang und Kilometerstand sind schon
+                  ausgefüllt.
                 </p>
                 <Button asChild size="lg" className="mt-4 bg-red-600 hover:bg-red-700 text-white border-none">
                   <Link
-                    href={sellHref(resultVehicleRef.current, result.marketValue)}
+                    href={sellHref(resultVehicleRef.current, result.lowConfidence ? undefined : result.marketValue)}
                     onClick={() => track("valuation_cta_click", { target: "list" })}
                   >
                     Gratis inserieren – Daten übernommen

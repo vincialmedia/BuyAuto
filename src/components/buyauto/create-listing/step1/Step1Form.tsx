@@ -748,6 +748,8 @@ export function Step1Form() {
         ...values,
         vin: normalizedVin.length > 0 ? normalizedVin : null,
         tg_nr: savedTgNr,
+        // Submitting Step 1 makes a Rechner-seeded draft the seller's own work.
+        rechner_seed_pristine: false,
 
         deal_type: nextDealType,
         financing_type: nextFinancingType,

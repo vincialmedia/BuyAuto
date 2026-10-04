@@ -134,6 +134,11 @@ export interface ListingData {
    * the listing row.
    */
   tg_autodecode_pending?: boolean;
+  /**
+   * Wizard-only: true from a Rechner seed until the seller submits Step 1. A
+   * later Rechner link may replace a draft that is still just that seed.
+   */
+  rechner_seed_pristine?: boolean;
 
   donation_enabled?: boolean;
   donation_amount_chf?: number;

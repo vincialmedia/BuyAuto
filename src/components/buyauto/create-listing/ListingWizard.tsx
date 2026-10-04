@@ -205,6 +205,7 @@ const readRechnerSeed = (query: ParsedUrlQuery): Partial<ListingData> | null => 
     plan_choice_v2: true,
     donation_enabled: false,
     donation_choice_v2: true,
+    rechner_seed_pristine: true,
   };
 
   const makeId = param("make_id");
@@ -234,6 +235,29 @@ const readRechnerSeed = (query: ParsedUrlQuery): Partial<ListingData> | null => 
   }
   return seed;
 };
+
+/**
+ * A stored draft that is still only an earlier Rechner seed (Step 1 never
+ * submitted, no photos, location or description, no listing row): a new
+ * Rechner link replaces it instead of being dropped in its favour.
+ */
+const isUntouchedRechnerSeed = (d: Partial<ListingData>): boolean =>
+  d.rechner_seed_pristine === true &&
+  !d.id &&
+  !(Array.isArray(d.images) && d.images.length > 0) &&
+  !(typeof d.location === "string" && d.location.trim().length > 0) &&
+  !(typeof d.description === "string" && d.description.trim().length > 0);
+
+/**
+ * When a Rechner link has to give way to real unsaved work, the «Gratis»
+ * promise still holds: the free plan and no donation are carried over unless
+ * that draft already stores the seller's own choice.
+ */
+const withRechnerFreeChoices = (d: Partial<ListingData>): Partial<ListingData> => ({
+  ...d,
+  ...((d as any).plan_choice_v2 === true ? {} : { price_plan: "standard" as const, plan_choice_v2: true }),
+  ...((d as any).donation_choice_v2 === true ? {} : { donation_enabled: false, donation_choice_v2: true }),
+});
 
 
 const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<ListingData> => {
@@ -298,6 +322,16 @@ const toWizardPatchFromListing = (listing: any, prev: ListingData): Partial<List
     // speichern» (no expiry change) and the paid plan-change flow.
     original_price_plan: (listing?.price_plan ?? (prev as any)?.original_price_plan ?? null) as any,
     payment_status: (listing?.payment_status ?? (prev as any)?.payment_status ?? null) as any,
+    // A Rechner listing reopened via «Bearbeiten» before payment keeps its
+    // free path: the row stores no donation choice, so Step 3 would otherwise
+    // preselect CHF 1 again. A choice already in the wizard (draft) wins.
+    ...(listing?.created_via === "rechner" &&
+    listing?.payment_status !== "paid" &&
+    (prev as any)?.donation_choice_v2 !== true
+      ? { created_via: "rechner" as const, donation_enabled: false, donation_choice_v2: true }
+      : listing?.created_via === "rechner"
+        ? { created_via: "rechner" as const }
+        : {}),
     // The row's premium is server state, not the seller's boost choice: the
     // premium-authority trigger keeps it false until the webhook grants it, so
     // taking it here would wipe the boost choice saved in the wizard draft.
@@ -469,7 +503,11 @@ export default function ListingWizard() {
       try {
         const id = await createPromise;
         if (router.isReady && router.query.draft !== id) {
-          await router.replace({ pathname: router.pathname, query: { ...router.query, draft: id } }, undefined, {
+          // router.query can be the snapshot from before the Rechner params
+          // were stripped; never put them back.
+          const query: Record<string, string | string[] | undefined> = { ...router.query, draft: id };
+          for (const key of RECHNER_SEED_PARAMS) delete query[key];
+          await router.replace({ pathname: router.pathname, query }, undefined, {
             shallow: true,
           });
         }
@@ -637,17 +675,22 @@ export default function ListingWizard() {
         if (!user) {
           // Guest: restore an in-progress listing from localStorage (if any) so
           // reopening the page — or returning after email confirmation — resumes
-          // where they left off. Only applies to a fresh, non-edit visit.
-          if (typeof editQuery !== "string" && typeof window !== "undefined") {
+          // where they left off. Only applies to a fresh, non-edit visit, and not
+          // once this wizard was seeded from a Rechner link: the seed is newer
+          // than whatever localStorage still holds until the next autosave.
+          if (!rechnerSeededRef.current && typeof editQuery !== "string" && typeof window !== "undefined") {
             try {
               const raw = window.localStorage.getItem(GUEST_DRAFT_KEY);
               if (raw) {
                 const parsed = JSON.parse(raw) as { data?: Partial<ListingData>; draftKey?: unknown };
                 guestDraftKeyRef.current = toGuestDraftKey(parsed?.draftKey);
                 const restored = parsed?.data;
-                if (restored && hasAnyUserInput({ ...createEmptyListingData(), ...restored } as ListingData)) {
+                if (rechnerSeed && restored && isUntouchedRechnerSeed(restored)) {
+                  // Only an earlier Rechner seed: the new link replaces it.
+                } else if (restored && hasAnyUserInput({ ...createEmptyListingData(), ...restored } as ListingData)) {
+                  const keep = rechnerSeed ? withRechnerFreeChoices(restored) : restored;
                   const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
-                    { ...restored, id: undefined },
+                    { ...keep, id: undefined },
                     guestImageFilesRef.current
                   );
                   setGuestImageFiles(pairs);
@@ -735,9 +778,15 @@ export default function ListingWizard() {
             guestDraft = null;
           }
 
+          if (rechnerSeed && guestDraft && isUntouchedRechnerSeed(guestDraft)) {
+            // Only an earlier Rechner seed: drop it, the new link replaces it.
+            window.localStorage.removeItem(GUEST_DRAFT_KEY);
+            guestDraft = null;
+          }
+
           if (guestDraft && hasAnyUserInput({ ...createEmptyListingData(), ...guestDraft } as ListingData)) {
             const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
-              { ...guestDraft, id: undefined },
+              { ...(rechnerSeed ? withRechnerFreeChoices(guestDraft) : guestDraft), id: undefined },
               guestImageFilesRef.current
             );
             setGuestImageFiles(pairs);
