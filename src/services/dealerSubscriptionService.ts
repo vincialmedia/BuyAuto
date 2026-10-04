@@ -57,16 +57,6 @@ export async function ensureDealerPremiumCredits(garage: Garage, periodYYYYMM: s
   return (data as DealerPremiumCreditsRow | null) ?? null;
 }
 
-export async function requestDealerPlanChange(garage: Garage, toPlanCode: string) {
-  const { data, error } = await supabase.rpc("request_dealer_plan_change", {
-    dealer_id: garage.id,
-    to_plan_code: toPlanCode,
-  });
-
-  if (error) throw error;
-  return data;
-}
-
 export async function setListingPremiumUsingCredit(listingId: string) {
   const { data, error } = await supabase.rpc("garage_set_listing_premium_with_credit", {
     listing_id: listingId,
