@@ -2,7 +2,7 @@ import Head from "next/head";
 
 // Fixed revision date (see agb.tsx): a privacy policy carries the date it was
 // last changed, and a static value avoids a post-hydration text swap.
-const DATENSCHUTZ_STAND = "26.11.2025";
+const DATENSCHUTZ_STAND = "04.10.2026";
 
 export default function Datenschutz() {
   return (
@@ -73,6 +73,21 @@ export default function Datenschutz() {
               </ul>
               <p className="mb-4">
                 Diese Daten werden in unserer Datenbank bei <strong>Supabase</strong> gespeichert. Die Datenhaltung erfolgt auf Servern in der Schweiz (Zürich, AWS-Infrastruktur).
+              </p>
+
+              <h3 className="text-lg font-medium mb-2">Beim Eintauschwert-Rechner</h3>
+              <p className="mb-4">
+                Wenn Sie im Eintauschwert-Rechner eine automatische Suche nach Vergleichsinseraten starten oder Ihr Kontingent an Suchen erreicht ist, speichern wir, um die Nutzung des Rechners auszuwerten und ihn zu verbessern:
+              </p>
+              <ul className="list-disc pl-5 mb-4 space-y-1">
+                <li>die eingegebenen Fahrzeugdaten (Marke, Modell, Jahrgang, Kilometerstand, Karosserie, Hubraum) und die gefundenen Vergleichsinserate</li>
+                <li>wo der Rechner verwendet wurde (auf buyauto.ch, im Garage-Dashboard oder eingebettet auf der Website einer Garage)</li>
+                <li>Ihre Benutzer-ID, falls Sie angemeldet sind</li>
+                <li>einen pseudonymen Tageswert: eine Prüfsumme aus IP-Adresse und Browser-Kennung, gebildet mit einem zufälligen Schlüssel, der täglich ersetzt wird. Die IP-Adresse selbst wird nicht gespeichert, und nach dem Tageswechsel lässt sich der Wert keiner IP-Adresse mehr zuordnen.</li>
+                <li>nur wenn Sie im Cookie-Banner «Einverstanden» gewählt haben: eine zufällige Kennung, die im lokalen Speicher Ihres Browsers abgelegt wird («ba_vid»), damit wir mehrere Suchen desselben Browsers zusammenfassen können. Wählen Sie «Ablehnen», wird sie gelöscht.</li>
+              </ul>
+              <p className="mb-4">
+                Rechtsgrundlage ist unser berechtigtes Interesse an der Verbesserung unseres Angebots (Art. 6 Abs. 1 lit. f DSGVO bzw. Art. 31 Abs. 1 DSG), für die Browser-Kennung Ihre Einwilligung. Die Daten werden bei Supabase in der Schweiz gespeichert.
               </p>
             </section>
 

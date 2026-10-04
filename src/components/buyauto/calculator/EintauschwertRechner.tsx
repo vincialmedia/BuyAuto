@@ -44,7 +44,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { FREE_MONTHLY_LIMIT, PAID_MONTHLY_LIMIT } from "@/lib/buyauto/valuationQuota";
 import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
-import { track } from "@/lib/analytics";
+import { getConsentedVisitorId, isInternalBrowser, track } from "@/lib/analytics";
 
 /** Biggest per-month valuation quota any public package includes. */
 const MAX_PLAN_VALUATIONS = GARAGE_PLANS.pro.valuationsPerMonth;
@@ -719,6 +719,48 @@ export function EintauschwertRechner() {
     : Math.max(0, ANON_FREE_SEARCHES - anonSearchesUsed);
   const searchesLimit = user ? quota?.limit ?? null : ANON_FREE_SEARCHES;
 
+  // Attribution sent with every search and gate hit (valuation_search_logs):
+  // which page, which browser (only with analytics consent), owner's browser.
+  const logContext = () => {
+    const path = router.pathname;
+    const source = path.startsWith("/embed")
+      ? "embed"
+      : path.startsWith("/dashboard")
+        ? "dashboard"
+        : path === "/eintauschwert-rechner"
+          ? "public"
+          : "other";
+    const garage = router.query.garage;
+    return {
+      source,
+      embedGarage: source === "embed" && typeof garage === "string" ? garage : undefined,
+      visitorId: getConsentedVisitorId() ?? undefined,
+      internal: isInternalBrowser() || undefined,
+    };
+  };
+
+  // The gates are enforced here in the browser, so report each one to the
+  // server — they are the sign-up and upgrade moments. Once per car and gate.
+  const reportedGatesRef = useRef<Set<string>>(new Set());
+  const reportGate = (kind: Exclude<GateKind, null>) => {
+    const key = `${kind}|${state.make}|${state.model}|${state.year}`;
+    if (reportedGatesRef.current.has(key)) return;
+    reportedGatesRef.current.add(key);
+    fetch("/api/valuation/gate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        kind,
+        make: state.make.trim(),
+        model: state.model.trim(),
+        year: state.year,
+        km: state.vehicleKm,
+        ...logContext(),
+      }),
+    }).catch(() => {});
+  };
+
   // Blocks an automatic search when the quota is exhausted, showing the right
   // gate. Returns true when the search may proceed. Manual entry never calls this.
   const gateBeforeSearch = (): boolean => {
@@ -726,13 +768,16 @@ export function EintauschwertRechner() {
       if (anonSearchesUsed >= ANON_FREE_SEARCHES) {
         setGateKind("anon");
         setResult(null);
+        reportGate("anon");
         return false;
       }
       return true;
     }
     if (quota && quota.remaining <= 0) {
-      setGateKind(quota.plan === "paid" ? "paid_limit" : "free_plan");
+      const kind = quota.plan === "paid" ? "paid_limit" : "free_plan";
+      setGateKind(kind);
       setResult(null);
+      reportGate(kind);
       return false;
     }
     return true;
@@ -870,6 +915,7 @@ export function EintauschwertRechner() {
           km: state.vehicleKm,
           body: state.bodyType || undefined,
           displacement: state.displacement || undefined,
+          ...logContext(),
         }),
       });
 
