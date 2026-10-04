@@ -274,12 +274,13 @@ export function GuestMessageForm({ listingId, dealType, onLoggedIn }: GuestMessa
         )}
       </div>
 
-      {/* Honeypot: off-screen and out of the tab order, so only bots fill it. */}
+      {/* Honeypot: off-screen and out of the tab order, so only bots fill it.
+          Deliberately no name/label that browser autofill would recognise. */}
       <div aria-hidden="true" className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden">
-        <label htmlFor={ids.website}>Website</label>
+        <label htmlFor={ids.website}>Bitte leer lassen</label>
         <input
           id={ids.website}
-          name="website"
+          name="ba_extra"
           type="text"
           tabIndex={-1}
           autoComplete="off"
