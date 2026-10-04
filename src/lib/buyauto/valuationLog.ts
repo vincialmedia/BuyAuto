@@ -3,9 +3,11 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Attribution for valuation_search_logs: who ran (or was blocked from) an
 // Eintauschwert-Rechner search, from which page, in which build. Written via
-// log_valuation_event(), which only the service role may call — clients can't
-// forge rows. See supabase/migrations/20261004160000_valuation_search_attribution.sql
-// and docs/valuation-search-logs.md.
+// log_valuation_event(), which only the service role may call, so rows only
+// come from our API routes. The page fields (source, embed_garage, visitor_id,
+// internal) are still reported by the browser unauthenticated. See
+// supabase/migrations/20261004160000_valuation_search_attribution.sql and
+// docs/valuation-search-logs.md.
 
 export type ValuationLogStatus = "ok" | "search_failed" | "gate_anon" | "gate_free" | "gate_paid";
 export type ValuationSource = "public" | "dashboard" | "embed" | "other";

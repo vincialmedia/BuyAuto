@@ -742,8 +742,9 @@ export function EintauschwertRechner() {
   // The gates are enforced here in the browser, so report each one to the
   // server — they are the sign-up and upgrade moments. Once per car and gate.
   const reportedGatesRef = useRef<Set<string>>(new Set());
+  const gateKey = (kind: Exclude<GateKind, null>) => `${kind}|${state.make}|${state.model}|${state.year}`;
   const reportGate = (kind: Exclude<GateKind, null>) => {
-    const key = `${kind}|${state.make}|${state.model}|${state.year}`;
+    const key = gateKey(kind);
     if (reportedGatesRef.current.has(key)) return;
     reportedGatesRef.current.add(key);
     fetch("/api/valuation/gate", {
@@ -932,8 +933,11 @@ export function EintauschwertRechner() {
               plan: body.quota.plan,
             });
           }
-          setGateKind(body?.quota?.plan === "paid" ? "paid_limit" : "free_plan");
+          const kind = body?.quota?.plan === "paid" ? "paid_limit" : "free_plan";
+          setGateKind(kind);
           setResult(null);
+          // The server already logged this gate; a retry must not log it again.
+          reportedGatesRef.current.add(gateKey(kind));
         } else if (res.status === 503) {
           toast.error("Automatische Suche momentan nicht verfügbar", {
             description: "Erfasse die Vergleichsfahrzeuge manuell – der Rechner funktioniert weiterhin.",

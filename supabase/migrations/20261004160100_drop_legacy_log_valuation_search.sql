@@ -4,11 +4,10 @@
 -- log_valuation_search(jsonb, jsonb) is SECURITY DEFINER and executable by
 -- anon, so anyone holding the public anon key could insert arbitrary rows into
 -- valuation_search_logs. Nothing calls it once the new code is deployed.
-
--- Rows the previous deploy wrote between the attribution migration and the
--- deploy carry no env; they came from production code.
-update public.valuation_search_logs
-set env = 'production'
-where env is null;
+--
+-- Rows the old code writes after 20261004160000 ran have env NULL, and old-code
+-- preview rows can't be told apart from production ones, so they are left
+-- unlabelled: the documented queries (env = 'production') leave them out.
+-- Applying both migrations right after the deploy keeps that set empty.
 
 drop function if exists public.log_valuation_search(jsonb, jsonb);

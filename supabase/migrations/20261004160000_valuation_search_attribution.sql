@@ -16,22 +16,23 @@
 --   user_id       the signed-in user, if any
 --   visitor_id    random per-browser UUID; only sent after analytics consent
 --   visitor_hash  sha256(daily salt || IP || user agent). The raw IP is never
---                 stored and the salt is replaced the next UTC day, so a hash
---                 only groups one browser's searches within a day and can't
---                 be reversed afterwards. Works without consent and in embeds.
+--                 stored. A pg_cron job replaces the salt at 00:00 UTC, so a
+--                 hash only groups one browser's searches within a day and
+--                 can't be traced back to an IP from the database afterwards.
+--                 Works without consent and in embeds.
 --   is_internal   admin account or a browser flagged ba_no_track / arriving
 --                 from vercel.com (the same rules GA4 uses)
 --
--- Distinct real people:
---   select count(distinct coalesce(user_id::text, visitor_id::text,
---                visitor_hash || created_at::date))
---   from valuation_search_logs where env = 'production' and not is_internal;
+-- Retention: a second pg_cron job strips user_id, visitor_id and visitor_hash
+-- from rows older than 12 months; vehicle and funnel stay for statistics.
+--
+-- Distinct real people: see docs/valuation-search-logs.md.
 --
 -- Logging moves to log_valuation_event(), callable by service_role only: the
 -- API routes call it with the service key. The old log_valuation_search() is
 -- executable by anon, so anyone holding the public anon key can insert rows;
 -- 20261004160100_drop_legacy_log_valuation_search drops it once the new code
--- is deployed (dropping it now would stop logging from the current deploy).
+-- is deployed (dropping it earlier would stop logging from the old deploy).
 
 alter table public.valuation_search_logs
   add column if not exists status       text    not null default 'ok',
@@ -65,13 +66,14 @@ alter table public.valuation_search_logs
 
 create index if not exists valuation_search_logs_created_at_idx
   on public.valuation_search_logs (created_at);
+create index if not exists valuation_search_logs_visitor_hash_idx
+  on public.valuation_search_logs (visitor_hash) where visitor_hash is not null;
 
 -- Server-only tables: RLS on with no policies already hides them; drop the
 -- default client grants as well.
 revoke all on table public.valuation_search_logs from anon, authenticated;
 
--- One row: today's salt. The first log of a new UTC day overwrites it, so the
--- previous day's salt is gone and every earlier hash becomes irreversible.
+-- One row: today's salt (see the rotation job below).
 create table if not exists public.valuation_visitor_salt (
   id   boolean primary key default true check (id),
   day  date    not null,
@@ -104,6 +106,7 @@ declare
   v_hash text;
 begin
   if nullif(p_ip, '') is not null then
+    -- Creates the salt on the first log of a day if the rotation job hasn't.
     insert into public.valuation_visitor_salt as s (id, day, salt)
     values (true, v_day, extensions.gen_random_bytes(32))
     on conflict (id) do update
@@ -114,6 +117,16 @@ begin
       extensions.digest(v_salt || convert_to(p_ip || '|' || coalesce(p_user_agent, ''), 'UTF8'), 'sha256'),
       'hex'
     );
+  end if;
+
+  -- Gate rows are reported by the browser without authentication: cap them
+  -- per visitor and day so a script can't flood the counts.
+  if p_status like 'gate%' and v_hash is not null and (
+    select count(*) from public.valuation_search_logs
+    where visitor_hash = v_hash and status like 'gate%'
+      and created_at >= v_day::timestamp at time zone 'utc'
+  ) >= 10 then
+    return;
   end if;
 
   insert into public.valuation_search_logs
@@ -129,14 +142,35 @@ revoke all on function public.log_valuation_event(text, jsonb, jsonb, text, text
 grant execute on function public.log_valuation_event(text, jsonb, jsonb, text, text, text, uuid, uuid, text, text, boolean)
   to service_role;
 
--- Backfill the 31 rows logged before this migration (2026-07-28 – 2026-09-30),
+-- Replace the salt at 00:00 UTC whether or not anyone searches that day, so
+-- yesterday's hashes stop being reproducible on schedule, not on traffic.
+-- (cron.schedule with an existing job name updates that job.)
+select cron.schedule(
+  'valuation-visitor-salt-rotate',
+  '0 0 * * *',
+  $$update public.valuation_visitor_salt
+    set day = (now() at time zone 'utc')::date, salt = extensions.gen_random_bytes(32)
+    where day < (now() at time zone 'utc')::date$$
+);
+
+-- Retention: after 12 months a row keeps only the car and the search funnel.
+select cron.schedule(
+  'valuation-search-logs-pseudonymise',
+  '25 3 * * *',
+  $$update public.valuation_search_logs
+    set user_id = null, visitor_id = null, visitor_hash = null
+    where created_at < now() - interval '12 months'
+      and (user_id is not null or visitor_id is not null or visitor_hash is not null)$$
+);
+
+-- Backfill the rows logged before this migration (ids 2–33 on 2026-10-04),
 -- from the 2026-10 usage analysis:
 --   ids 2, 3, 15, 16  ran on PR preview builds (2/3 before PR #15 merged; 15/16
 --                     carry funnel keys production only got with #58)
 --   ids 4, 11, 13, 14 were the owner's test garage account (matched to its
 --                     valuation_usage counter to the millisecond)
--- All eight are the owner. The other rows ran on production code; they are
--- marked production so the queries above cover the full history.
+-- All eight are the owner. The other rows ran on production code and are
+-- marked production so the documented queries cover the full history.
 update public.valuation_search_logs
 set env = case when id in (2, 3, 15, 16) then 'preview' else 'production' end,
     is_internal = id in (2, 3, 4, 11, 13, 14, 15, 16)

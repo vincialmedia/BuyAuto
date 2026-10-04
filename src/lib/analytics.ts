@@ -104,8 +104,13 @@ export const CONSENT_CHANGE_EVENT = "buyauto:consent-change";
 export const CONSENT_REOPEN_EVENT = "buyauto:consent-reopen";
 export type ConsentChoice = "granted" | "denied";
 
-// The calculator's per-browser visitor id (see getConsentedVisitorId).
+// The calculator's per-browser visitor id (see getConsentedVisitorId). Older
+// "granted" answers were given to a banner that named only Google Analytics and
+// Ads, so the id additionally needs this marker, which only a consent given to
+// the banner that names our own statistics writes.
 const VISITOR_ID_KEY = "ba_vid";
+const CONSENT_SCOPE_KEY = "buyauto_consent_scope";
+const CONSENT_SCOPE = "own-stats-v1";
 const VISITOR_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function readStoredConsent(): ConsentChoice | null {
@@ -144,6 +149,7 @@ function applyConsent(choice: ConsentChoice) {
 /** Persists the visitor's choice and applies it. */
 export function setConsent(choice: ConsentChoice) {
   writeStorage("local", CONSENT_STORAGE_KEY, choice);
+  writeStorage("local", CONSENT_SCOPE_KEY, choice === "granted" ? CONSENT_SCOPE : null);
   if (readStoredConsent() !== choice) {
     console.warn(
       "[analytics] Could not persist the cookie choice — storage is unavailable. It applies to this page view only and the banner will reappear.",
@@ -272,12 +278,13 @@ export function isInternalBrowser(): boolean {
 /**
  * Random per-browser id that groups one visitor's calculator searches in
  * valuation_search_logs across days. Only exists while analytics consent is
- * granted: returns null (and removes any stored id) otherwise. Without it the
- * server still groups a browser's searches within one day by a salted hash.
+ * granted under the current banner text: returns null (and removes any stored
+ * id) otherwise. Without it the server still groups a browser's searches
+ * within one day by a salted hash.
  */
 export function getConsentedVisitorId(): string | null {
   if (typeof window === "undefined") return null;
-  if (readStoredConsent() !== "granted") {
+  if (readStoredConsent() !== "granted" || readStorage("local", CONSENT_SCOPE_KEY) !== CONSENT_SCOPE) {
     writeStorage("local", VISITOR_ID_KEY, null);
     return null;
   }

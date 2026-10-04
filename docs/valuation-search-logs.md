@@ -14,8 +14,19 @@ not logged.
 | `env` | `production` · `preview` · `development` · `local`. Preview builds write to the production database too. |
 | `user_id` | signed-in user, else null |
 | `visitor_id` | random per-browser id, only sent after analytics consent |
-| `visitor_hash` | sha256(daily salt ‖ IP ‖ user agent). Groups one browser within a UTC day; the raw IP is never stored and the salt is replaced daily. |
+| `visitor_hash` | sha256(daily salt ‖ IP ‖ user agent). Groups one browser within a UTC day. The raw IP is never stored; pg_cron replaces the salt at 00:00 UTC (`valuation-visitor-salt-rotate`). |
 | `is_internal` | admin account, or a browser with `localStorage.ba_no_track = "1"`, or a session that came from vercel.com |
+
+Trust: rows are only written by our API routes (the RPC is service-role
+only), but the page fields (`source`, `embed_garage`, `visitor_id`, the
+internal flag) come from the browser, and so do `gate_anon` rows (the
+anonymous counter lives in localStorage). Quota gates (`gate_free` /
+`gate_paid`) are checked against the user's real quota. Gate rows are capped
+at 10 per visitor hash and day.
+
+Retention: pg_cron (`valuation-search-logs-pseudonymise`, daily) clears
+`user_id`, `visitor_id` and `visitor_hash` on rows older than 12 months, as
+promised in /datenschutz.
 
 Rows before 2026-10-04 were backfilled from the usage analysis: ids 2, 3, 4,
 11, 13, 14, 15, 16 are the owner's tests (`is_internal`), 2/3/15/16 ran on
@@ -31,15 +42,30 @@ is not, so use the flag in the browser you test it with.
 Real usage only: `env = 'production' and not is_internal`.
 
 ```sql
--- People and searches per month
+-- People and searches per month. An anonymous row is first resolved to the
+-- account the same browser used later (same visitor_id, or same hash on the
+-- same day), so someone who searches anonymously and then signs up counts once.
+with real as (
+  select * from valuation_search_logs
+  where env = 'production' and not is_internal
+), resolved as (
+  select r.*,
+         coalesce(r.user_id, (
+           select s.user_id from real s
+           where s.user_id is not null
+             and ((r.visitor_id is not null and s.visitor_id = r.visitor_id)
+               or (r.visitor_hash is not null and s.visitor_hash = r.visitor_hash
+                   and s.created_at::date = r.created_at::date))
+           order by s.created_at limit 1)) as person_user
+  from real r
+)
 select date_trunc('month', created_at)::date as month,
        count(*) filter (where status = 'ok') as searches,
-       count(distinct coalesce(user_id::text, visitor_id::text,
+       count(distinct coalesce(person_user::text, visitor_id::text,
                                visitor_hash || created_at::date)) as people,
        count(*) filter (where status = 'gate_anon') as hit_anon_wall,
-       count(distinct user_id) as logged_in_people
-from valuation_search_logs
-where env = 'production' and not is_internal
+       count(distinct person_user) as logged_in_people
+from resolved
 group by 1 order by 1;
 
 -- Which cars
@@ -61,7 +87,9 @@ where g.status = 'gate_anon' and g.env = 'production' and not g.is_internal
 group by 1;
 ```
 
-"People" counts a signed-in user once, a consenting browser once, and a
-non-consenting browser once **per day**. It slightly over-counts people who
-come back on another day without consent, and counts two people behind the
-same IP and browser build on the same day as one.
+"People" counts a signed-in user once (including their anonymous searches
+from a browser they later signed in on), a consenting browser once, and a
+non-consenting browser once **per day**. It over-counts people who come back
+on another day without consent, and counts two people behind the same IP and
+browser build on the same day as one. `visitor_id` only exists for consents
+given to the banner text that names our own statistics (from 2026-10).
