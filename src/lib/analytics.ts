@@ -623,6 +623,10 @@ export interface EventMap {
   };
   contact_click: { contact_method: "phone" | "whatsapp" | "email"; listing_id?: string };
   cta_click: { cta_id: string; page_path: string };
+  /** Eintauschwert-Rechner: list = «Gratis inserieren» (prefilled listing),
+   *  garage = garage sign-up / packages, comp_link = a found comparable listing,
+   *  manual = continue with hand-entered comps past a search limit. */
+  valuation_cta_click: { target: "list" | "garage" | "comp_link" | "manual" };
 }
 
 export type AnalyticsEvent = keyof EventMap;

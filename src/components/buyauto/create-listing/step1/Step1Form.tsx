@@ -551,6 +551,21 @@ export function Step1Form() {
     }
   };
 
+  // A listing started from the Eintauschwert-Rechner with a Typenschein
+  // decodes it once, on first mount, to fill fuel, gearbox, body and power
+  // (the Rechner only hands over make, model, year and km). The flag lives in
+  // wizard data so going back to Step 1 doesn't decode again; the ref covers
+  // React's dev-mode double effect.
+  const tgAutoDecodedRef = useRef(false);
+  useEffect(() => {
+    if (tgAutoDecodedRef.current || !data.tg_autodecode_pending) return;
+    tgAutoDecodedRef.current = true;
+    updateData({ tg_autodecode_pending: false });
+    if (/^[A-Z0-9]{6}$/.test(tgInput)) void onDecodeTg();
+    // Mount-only: onDecodeTg reads the seeded tgInput of this first render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   useEffect(() => {
     registerDraftSnapshotter(() => {

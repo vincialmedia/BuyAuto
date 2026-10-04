@@ -126,6 +126,14 @@ export interface ListingData {
 
   /** Attribution: the seller's answer to "Wie hast du uns gefunden?" (optional). */
   source?: string | null;
+  /** Attribution: the tool that started this listing ('rechner' = Eintauschwert-Rechner CTA). */
+  created_via?: "rechner" | null;
+  /**
+   * Wizard-only one-shot flag: a listing seeded from the Rechner with a
+   * Typenschein decodes it once when Step 1 first mounts. Never persisted to
+   * the listing row.
+   */
+  tg_autodecode_pending?: boolean;
 
   donation_enabled?: boolean;
   donation_amount_chf?: number;

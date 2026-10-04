@@ -12,7 +12,12 @@ import { pricingPlans, PREMIUM_BOOST_PRICE, planIncludesPremium } from "@/lib/bu
 import type { Plan } from "@/lib/buyauto/stripe_config";
 import { cantons } from "@/lib/buyauto/data";
 import { useToast } from "@/hooks/use-toast";
-import { createOrUpdateListing, getListingByIdForOwner, vehicleCoreFieldsFromWizard } from "@/services/createListingService";
+import {
+  attributionFieldsFromWizard,
+  createOrUpdateListing,
+  getListingByIdForOwner,
+  vehicleCoreFieldsFromWizard,
+} from "@/services/createListingService";
 import type { PaymentIntent } from "@stripe/stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "next/router";
@@ -611,6 +616,7 @@ export default function Step5_PreviewAndPay() {
 
       // Step-1 technical fields via the shared helper (single source — U4).
       ...vehicleCoreFieldsFromWizard(data),
+      ...attributionFieldsFromWizard(data),
     };
 
     const remainingMonths = getNumber(anyData?.remaining_months);

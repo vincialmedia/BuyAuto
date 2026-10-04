@@ -44,6 +44,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { FREE_MONTHLY_LIMIT, PAID_MONTHLY_LIMIT } from "@/lib/buyauto/valuationQuota";
 import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
+import { pricingPlans } from "@/lib/buyauto/stripe_config";
 import { getConsentedVisitorId, isInternalBrowser, track } from "@/lib/analytics";
 
 /** Biggest per-month valuation quota any public package includes. */
@@ -365,17 +366,54 @@ const CalculatorSkeleton = () => (
   </div>
 );
 
+// The car handed to the listing wizard by the «Gratis inserieren» CTA.
+interface SellVehicle {
+  make: string;
+  model: string;
+  year: number;
+  km: number;
+  makeId: string;
+  modelId: string;
+  /** Typenschein-Nr., only when the car came from a lookup and is unchanged. */
+  tg: string;
+}
+
+// /inserat-erstellen?src=rechner&… — read by readRechnerSeed in the listing
+// wizard, which validates every param again. The price is the market value
+// (median of the comps) as a starting point; the seller edits it in Step 2.
+function sellHref(vehicle: SellVehicle | null, marketValue?: number): string {
+  const params = new URLSearchParams({ src: "rechner", plan: "standard" });
+  if (vehicle) {
+    if (vehicle.makeId) {
+      params.set("make_id", vehicle.makeId);
+      if (vehicle.modelId) params.set("model_id", vehicle.modelId);
+    }
+    if (vehicle.make) params.set("brand", vehicle.make);
+    if (vehicle.model) params.set("model", vehicle.model);
+    if (vehicle.year > 0) params.set("year", String(vehicle.year));
+    if (vehicle.km > 0) params.set("km", String(Math.round(vehicle.km)));
+    if (vehicle.tg) params.set("tg", vehicle.tg);
+  }
+  if (marketValue && marketValue > 0) params.set("price", String(Math.round(marketValue / 100) * 100));
+  return `/inserat-erstellen?${params.toString()}`;
+}
+
 // --- Main Component ---
 
 export function EintauschwertRechner() {
-  const { user, profile } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
   const router = useRouter();
   const isGarage = profile?.role === "garage";
+  const isDashboard = router.pathname.startsWith("/dashboard");
+  const isEmbed = router.pathname.startsWith("/embed");
+  // Most visitors of the public page are private owners checking their own
+  // car: offer them to sell it. Not in the garage dashboard, not inside a
+  // garage's own website (the embed) and not for garage accounts (wait for the
+  // profile so a garage never sees it flash).
+  const showPrivateSellCta = !isDashboard && !isEmbed && !isGarage && !(user && profileLoading);
   // After checkout the garage lands back where it hit the gate — the dashboard
   // Rechner tab when embedded there, the public page everywhere else.
-  const gateReturnPath = router.pathname.startsWith("/dashboard")
-    ? "/dashboard/garage?tab=rechner"
-    : "/eintauschwert-rechner";
+  const gateReturnPath = isDashboard ? "/dashboard/garage?tab=rechner" : "/eintauschwert-rechner";
   const [state, setState] = useState<CalculatorState>(DEFAULT_STATE);
   const [isClient, setIsClient] = useState(false);
   const [result, setResult] = useState<CalcResult | null>(null);
@@ -401,6 +439,14 @@ export function EintauschwertRechner() {
   const [tgLoading, setTgLoading] = useState(false);
   // Vehicle identity at calculation time — changing the car invalidates comps.
   const searchedVehicleRef = useRef("");
+  // The last successful Typenschein lookup with the catalog ids it resolved;
+  // only passed on while make/model still match it.
+  const tgVehicleRef = useRef<{ tg: string; make: string; model: string; makeId: string; modelId: string } | null>(
+    null
+  );
+  // The car the shown result was computed for: the CTA lists this car, even if
+  // the form was edited since.
+  const resultVehicleRef = useRef<SellVehicle | null>(null);
 
   // GA4 generate_lead (valuation): a completed Eintauschwert result rendered.
   // Once per vehicle — recalculating the same car with edited deductions or
@@ -541,6 +587,7 @@ export function EintauschwertRechner() {
   };
 
   const handlePreset = () => {
+    tgVehicleRef.current = null;
     setState(PRESET_GOLF);
     setCompsMode('manual');
     setFoundListings([]);
@@ -555,6 +602,7 @@ export function EintauschwertRechner() {
   };
 
   const handleReset = () => {
+    tgVehicleRef.current = null;
     setState({ ...DEFAULT_STATE, comps: DEFAULT_STATE.comps.map((c) => ({ ...c })) });
     setResult(null);
     setGateKind(null);
@@ -630,6 +678,8 @@ export function EintauschwertRechner() {
     try {
       const res = await fetch(tgDecodeUrl(tg));
       const data = (await res.json().catch(() => ({}))) as {
+        make_id?: string | null;
+        model_id?: string | null;
         provider_make?: string | null;
         provider_model?: string | null;
         body_key?: string | null;
@@ -659,16 +709,25 @@ export function EintauschwertRechner() {
         data.body_key && BODY_TYPE_OPTIONS.some((o) => o.value === data.body_key)
           ? data.body_key
           : "";
+      const nextMake = data.provider_make ?? stateRef.current.make;
+      const nextModel = model || stateRef.current.model;
       setVehicleFieldMode('text');
       setMakeId("");
       setModelId("");
       setState((prev) => ({
         ...prev,
-        make: data.provider_make ?? prev.make,
-        model: model || prev.model,
+        make: nextMake,
+        model: nextModel,
         bodyType: bodyKey,
         displacement: data.displacement_l ?? "",
       }));
+      tgVehicleRef.current = {
+        tg,
+        make: nextMake,
+        model: nextModel,
+        makeId: data.make_id ?? "",
+        modelId: data.model_id ?? "",
+      };
       toast.success("Typenschein erkannt", {
         description: [
           data.provider_make,
@@ -784,6 +843,65 @@ export function EintauschwertRechner() {
     return true;
   };
 
+  const sellVehicleFrom = (s: CalculatorState): SellVehicle => {
+    const tgCar = tgVehicleRef.current;
+    const fromTg = tgCar !== null && tgCar.make === s.make && tgCar.model === s.model;
+    return {
+      make: s.make.trim(),
+      model: s.model.trim(),
+      year: s.year,
+      km: s.vehicleKm,
+      makeId: makeId || (fromTg ? tgCar.makeId : ""),
+      modelId: makeId ? modelId : fromTg ? tgCar.modelId : "",
+      tg: fromTg ? tgCar.tg : "",
+    };
+  };
+
+  // The search limits only meter the automatic portal search: entering the
+  // comps by hand is always free, so that is offered as a way past every gate.
+  const continueManually = () => {
+    track("valuation_cta_click", { target: "manual" });
+    setGateKind(null);
+    setCompsMode('manual');
+    setStep(1);
+    scrollToComps();
+  };
+
+  // Ways past a search limit that need no garage account: sell the car
+  // (private owners, prefilled listing) or keep calculating by hand.
+  const gateAlternatives = (
+    <div className="space-y-4">
+      {showPrivateSellCta && (
+        <div className="rounded-xl border border-red-500/40 bg-red-600/10 p-5 space-y-3">
+          <p className="text-neutral-200 leading-relaxed">
+            <strong className="text-white">Du willst dein Auto verkaufen?</strong> Inseriere es gratis auf
+            BuyAuto – Marke, Modell, Jahrgang und Kilometerstand übernehmen wir.
+          </p>
+          <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
+            <Link
+              href={sellHref(sellVehicleFrom(state))}
+              onClick={() => track("valuation_cta_click", { target: "list" })}
+            >
+              Gratis inserieren – Daten übernommen
+            </Link>
+          </Button>
+        </div>
+      )}
+      <p className="text-sm text-neutral-300">
+        Weiterrechnen geht immer gratis, wenn du die Vergleichspreise selbst einträgst (z.B. von
+        AutoScout24 oder tutti).
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white"
+        onClick={continueManually}
+      >
+        Vergleichspreise selbst eintragen
+      </Button>
+    </div>
+  );
+
   const finishWithComputation = (nextState: CalculatorState) => {
     const computed = compute(nextState);
     if (!computed) {
@@ -795,6 +913,7 @@ export function EintauschwertRechner() {
     setResult(computed);
     setGateKind(null);
     searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}|${nextState.bodyType}|${nextState.displacement}`;
+    resultVehicleRef.current = sellVehicleFrom(nextState);
     return true;
   };
 
@@ -831,6 +950,7 @@ export function EintauschwertRechner() {
     setMakeId("");
     setModelId("");
     setTgInput("");
+    tgVehicleRef.current = null;
     setVehicleFieldMode('select');
     setCompsMode('auto');
     setStep(1);
@@ -1083,6 +1203,7 @@ export function EintauschwertRechner() {
           href={l.url}
           target="_blank"
           rel="noopener noreferrer nofollow"
+          onClick={() => track("valuation_cta_click", { target: "comp_link" })}
           className="flex items-center justify-between gap-2 text-sm text-neutral-600 hover:text-red-600 transition-colors group"
         >
           <span className="truncate">{l.title}</span>
@@ -1685,48 +1806,40 @@ export function EintauschwertRechner() {
                 <h3 className="text-2xl md:text-3xl font-bold">
                   {ANON_FREE_SEARCHES} gratis Suchen erreicht
                 </h3>
-                <p className="text-neutral-300 leading-relaxed">
-                  Registriere dich kostenlos als Garage und rechne weiter – der Rechner ist
-                  dann auch direkt in deinem Konto verfügbar.
-                </p>
-                <ul className="text-sm text-neutral-300 space-y-2 text-left max-w-sm mx-auto">
-                  <li className="flex items-start gap-2">
-                    <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    {FREE_MONTHLY_LIMIT} Suchen pro Monat gratis – mit einem Garagen-Paket bis zu{" "}
-                    {MAX_PLAN_VALUATIONS} pro Monat
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Rechner in deinem Konto & manuelle Berechnung ohne Limit
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Fahrzeuge inserieren – plus eigene Garagen-Seite mit deinem ganzen Bestand
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Sparkles className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    Alle Informationen und Dokumente bleiben an einem zentralen Ort in der App
-                  </li>
-                </ul>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                  <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
-                    <Link href={SIGNUP_HREF}>Kostenlos als Garage registrieren</Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
-                    <Link href="/auth?redirect=/eintauschwert-rechner">Ich habe schon ein Konto</Link>
-                  </Button>
-                </div>
-                <p className="text-xs text-neutral-500">
-                  Automatische Suchen je nach Paket: Starter {GARAGE_PLANS.starter.valuationsPerMonth},
-                  Growth {GARAGE_PLANS.growth.valuationsPerMonth}, Pro {GARAGE_PLANS.pro.valuationsPerMonth} pro Monat.
-                  Manuelle Berechnungen immer unbegrenzt.
-                </p>
+                {gateAlternatives}
+                {/* Inside a garage's own website the visitor is that garage's
+                    customer: no BuyAuto garage sign-up there. */}
+                {!isEmbed && (
+                  <div className="border-t border-white/10 pt-6 space-y-4">
+                    <p className="text-sm text-neutral-300 leading-relaxed">
+                      <strong className="text-white">Du bist Garage?</strong> Registriere dich kostenlos:{" "}
+                      {FREE_MONTHLY_LIMIT} automatische Suchen pro Monat gratis, mit einem Garagen-Paket bis zu{" "}
+                      {MAX_PLAN_VALUATIONS} – und der Rechner ist direkt in deinem Konto.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button asChild variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
+                        <Link href={SIGNUP_HREF} onClick={() => track("valuation_cta_click", { target: "garage" })}>
+                          Als Garage registrieren
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" className="text-neutral-300 hover:bg-white/10 hover:text-white">
+                        <Link href={`/auth?redirect=${encodeURIComponent(gateReturnPath)}`}>Ich habe schon ein Konto</Link>
+                      </Button>
+                    </div>
+                    <p className="text-xs text-neutral-500">
+                      Automatische Suchen je nach Paket: Starter {GARAGE_PLANS.starter.valuationsPerMonth},
+                      Growth {GARAGE_PLANS.growth.valuationsPerMonth}, Pro {GARAGE_PLANS.pro.valuationsPerMonth} pro Monat.
+                      Manuelle Berechnungen immer unbegrenzt.
+                    </p>
+                  </div>
+                )}
               </>
             )}
 
             {gateKind === "free_plan" && (
               <>
                 <h3 className="text-2xl md:text-3xl font-bold">Monatslimit erreicht</h3>
+                {gateAlternatives}
                 <p className="text-neutral-300 leading-relaxed">
                   Du hast diesen Monat alle <strong className="text-white">{FREE_MONTHLY_LIMIT} Gratis-Suchen</strong>{" "}
                   genutzt. Weitere automatische Suchen sind nicht gratis – mit einem{" "}
@@ -1920,6 +2033,31 @@ export function EintauschwertRechner() {
               </div>
             </div>
 
+            {/* PRIVATE SELLER CTA: the car they just valued, prefilled. */}
+            {showPrivateSellCta && (
+              <div className="max-w-2xl mx-auto mb-10 rounded-xl border border-red-500/40 bg-red-600/10 p-5 sm:p-6 text-center">
+                <p className="text-lg font-bold text-white">Privat verkaufen statt eintauschen?</p>
+                <p className="mt-2 text-sm text-neutral-300 leading-relaxed">
+                  Vergleichbare Autos werden für rund CHF {chf(result.marketValue)} angeboten; beim Eintausch
+                  bietet eine Garage nach dieser Rechnung etwa CHF {chf(result.offer)}. Inseriere dein Auto auf
+                  BuyAuto – Marke, Modell, Jahrgang und Kilometerstand sind schon ausgefüllt.
+                </p>
+                <Button asChild size="lg" className="mt-4 bg-red-600 hover:bg-red-700 text-white border-none">
+                  <Link
+                    href={sellHref(resultVehicleRef.current, result.marketValue)}
+                    onClick={() => track("valuation_cta_click", { target: "list" })}
+                  >
+                    Gratis inserieren – Daten übernommen
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
+                </Button>
+                <p className="mt-3 text-xs text-neutral-400">
+                  Standard-Inserat {pricingPlans.standard.duration_days} Tage kostenlos · alle Angaben noch
+                  anpassbar
+                </p>
+              </div>
+            )}
+
             {/* BREAKDOWN TABLE */}
             <div className="max-w-2xl mx-auto text-sm bg-neutral-950/50 rounded-lg p-3 sm:p-4 md:p-6 border border-white/5">
               <div className="flex justify-between items-center text-neutral-500 font-bold uppercase text-xs tracking-wider mb-4 border-b border-white/10 pb-2">
@@ -1988,7 +2126,22 @@ export function EintauschwertRechner() {
               </div>
             )}
 
-            {/* CTA */}
+            {/* GARAGE CTA: in the dashboard and for garage accounts. Private
+                owners get the sell CTA above plus a pointer here; the embed
+                (a garage's own website) shows neither. */}
+            {showPrivateSellCta && (
+              <p className="max-w-2xl mx-auto mt-8 text-center text-sm text-neutral-400">
+                Du bist Garage?{" "}
+                <Link
+                  href="/fuer-garagen"
+                  onClick={() => track("valuation_cta_click", { target: "garage" })}
+                  className="font-medium text-white underline underline-offset-4 hover:text-red-300"
+                >
+                  So nutzt du den Rechner für Ankäufe
+                </Link>
+              </p>
+            )}
+            {!showPrivateSellCta && !isEmbed && (
             <div className="max-w-2xl mx-auto mt-8 bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
               <p className="text-neutral-300 mb-4">
                 Fahrzeug übernommen? <strong className="text-white">Verkauf es schneller mit BuyAuto.</strong>{" "}
@@ -1998,13 +2151,16 @@ export function EintauschwertRechner() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild className="bg-red-600 hover:bg-red-700 text-white border-none">
-                  <Link href="/preise#plaene">Garagen-Pakete & Preise</Link>
+                  <Link href="/preise#plaene" onClick={() => track("valuation_cta_click", { target: "garage" })}>
+                    Garagen-Pakete & Preise
+                  </Link>
                 </Button>
                 <Button asChild variant="outline" className="border-white/20 hover:bg-white/10 hover:text-white bg-transparent text-white">
                   <Link href="/inserat-erstellen">Occasion inserieren</Link>
                 </Button>
               </div>
             </div>
+            )}
           </div>
         </div>
       )}

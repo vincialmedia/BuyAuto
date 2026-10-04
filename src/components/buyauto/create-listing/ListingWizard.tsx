@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import type { ParsedUrlQuery } from "querystring";
 import dynamic from "next/dynamic";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
 } from "@/lib/buyauto/guestImageStore";
 import { Check, Loader2, Save } from "lucide-react";
 import { GARAGE_MAX_PHOTOS } from "@/lib/buyauto/garagePlans";
+import { currentYearMax, YEAR_MIN } from "@/lib/buyauto/listingContract";
 import { getEntryPage, toDealType, trackOncePerSession, track, type DealType as AnalyticsDealType } from "@/lib/analytics";
 
 const StepLoading = () => (
@@ -175,6 +177,62 @@ const hasAnyUserInput = (data: ListingData) => {
       (anyData?.leasing_offer?.enabled === true) ||
       (anyData?.leasing_offer?.lease_takeover_offer?.enabled === true)
   );
+};
+
+// The Eintauschwert-Rechner's «Gratis inserieren» link
+// (/inserat-erstellen?src=rechner&…) carries the car the user just valued.
+const RECHNER_SEED_PARAMS = ["src", "plan", "make_id", "model_id", "brand", "model", "year", "km", "tg", "price"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Wizard data for a listing started from the Rechner, or null for any other
+ * entry. Query input is untrusted: anything malformed is dropped. The free
+ * Standard plan and "no donation" are stored as the seller's choices, so the
+ * promised «Gratis» holds (Step 3 otherwise preselects Verlängert and CHF 1).
+ */
+const readRechnerSeed = (query: ParsedUrlQuery): Partial<ListingData> | null => {
+  const param = (key: string) => {
+    const value = query[key];
+    return typeof value === "string" ? value.trim() : "";
+  };
+  if (param("src") !== "rechner") return null;
+
+  const seed: Partial<ListingData> & Record<string, unknown> = {
+    created_via: "rechner",
+    deal_type: "direct_purchase",
+    financing_type: "cash",
+    price_plan: "standard",
+    plan_choice_v2: true,
+    donation_enabled: false,
+    donation_choice_v2: true,
+  };
+
+  const makeId = param("make_id");
+  const modelId = param("model_id");
+  if (UUID_RE.test(makeId)) {
+    seed.make_id = makeId;
+    if (UUID_RE.test(modelId)) seed.model_id = modelId;
+  }
+  const brand = param("brand").slice(0, 40);
+  const model = param("model").slice(0, 60);
+  if (brand) seed.brand = brand;
+  if (model) seed.model = model;
+
+  // The Rechner accepts 1980+, the listing form only YEAR_MIN+.
+  const year = Number(param("year"));
+  if (Number.isInteger(year) && year >= YEAR_MIN && year <= currentYearMax()) seed.year = year;
+  const km = Number(param("km"));
+  if (Number.isInteger(km) && km > 0 && km <= 1_000_000) seed.km = km;
+  const price = Number(param("price"));
+  if (Number.isInteger(price) && price > 0 && price <= 2_000_000) seed.purchase_price_chf = price;
+
+  const tg = param("tg").toUpperCase().replace(/[\s.\-]/g, "");
+  if (/^[A-Z0-9]{6}$/.test(tg)) {
+    seed.tg_nr = tg;
+    // Step 1 decodes it once to fill fuel, gearbox, body and power.
+    seed.tg_autodecode_pending = true;
+  }
+  return seed;
 };
 
 
@@ -527,6 +585,12 @@ export default function ListingWizard() {
   const persistDraftRef = useRef(persistDraft);
   persistDraftRef.current = persistDraft;
 
+  // The loader re-runs on sign-in (Step 5) and when ?draft= is added; the
+  // Rechner seed must only ever apply on the first run, and once it has, no
+  // later run may swap the seeded wizard for an older server draft.
+  const rechnerSeedHandledRef = useRef(false);
+  const rechnerSeededRef = useRef(false);
+
   useEffect(() => {
     if (!router.isReady) return;
 
@@ -534,6 +598,41 @@ export default function ListingWizard() {
       try {
         const draftQuery = router.query.draft;
         const editQuery = router.query.edit;
+
+        // A Rechner link only seeds a fresh wizard: never an edit, an explicit
+        // draft, a garage, or unsaved local work (handled below).
+        let rechnerSeed: Partial<ListingData> | null = null;
+        if (!rechnerSeedHandledRef.current) {
+          rechnerSeedHandledRef.current = true;
+          const seed = readRechnerSeed(router.query);
+          if (seed) {
+            // Drop the link's params so a reload, the Stripe return URL or the
+            // draft URL never carries them again (persistDraft keeps the query).
+            // Not awaited: the seed has to land in this same tick, before a
+            // concurrent run of this effect can mount Step 1 with empty data
+            // (Step 1 reads its form values only once, on mount).
+            const rest = { ...router.query };
+            for (const key of RECHNER_SEED_PARAMS) delete rest[key];
+            void router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true });
+            if (typeof draftQuery !== "string" && typeof editQuery !== "string" && !isGarage) {
+              rechnerSeed = seed;
+            }
+          }
+        }
+        const applyRechnerSeed = (seed: Partial<ListingData>) => {
+          rechnerSeededRef.current = true;
+          setData(() => ({ ...createEmptyListingData(), ...seed }));
+          toast({
+            title: "Fahrzeugdaten übernommen",
+            description: "Ergänze die restlichen Angaben – das Standard-Inserat ist gratis.",
+          });
+        };
+        const keptOpenDraftToast = () =>
+          toast({
+            title: "Offener Entwurf geöffnet",
+            description:
+              "Du hast noch ein begonnenes Inserat. Die Daten aus dem Rechner wurden deshalb nicht übernommen.",
+          });
 
         if (!user) {
           // Guest: restore an in-progress listing from localStorage (if any) so
@@ -553,12 +652,16 @@ export default function ListingWizard() {
                   );
                   setGuestImageFiles(pairs);
                   setData((prev) => ({ ...prev, ...hydrated, id: undefined }));
+                  // The guest draft is the only copy of that work: it wins.
+                  if (rechnerSeed) keptOpenDraftToast();
+                  rechnerSeed = null;
                 }
               }
             } catch {
               /* ignore malformed local draft */
             }
           }
+          if (rechnerSeed) applyRechnerSeed(rechnerSeed);
           setIsLoadingFromQuery(false);
           return;
         }
@@ -645,43 +748,51 @@ export default function ListingWizard() {
             } catch (e) {
               console.warn("Could not migrate guest draft to a server draft:", e);
             }
-            toast({
-              title: "Entwurf wiederhergestellt",
-              description: "Dein begonnenes Inserat wurde übernommen.",
-            });
+            if (rechnerSeed) {
+              keptOpenDraftToast();
+            } else {
+              toast({
+                title: "Entwurf wiederhergestellt",
+                description: "Dein begonnenes Inserat wurde übernommen.",
+              });
+            }
             setIsLoadingFromQuery(false);
             return;
           }
 
           // 2) Otherwise resume the newest server draft that contains real work
-          //    (empty autosave shells are skipped).
-          try {
-            const drafts = await getMyListingDrafts({ user });
-            const resumable = drafts.find((d) =>
-              hasAnyUserInput({ ...createEmptyListingData(), ...(d.data as any) } as ListingData)
-            );
-            if (resumable) {
-              setDraftIdSynced(resumable.id);
-              const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
-                resumable.data,
-                guestImageFilesRef.current
+          //    (empty autosave shells are skipped). Not for a Rechner link: the
+          //    seller asked to list the car they just valued, and server drafts
+          //    stay safe in the dashboard's draft list.
+          if (!rechnerSeed && !rechnerSeededRef.current) {
+            try {
+              const drafts = await getMyListingDrafts({ user });
+              const resumable = drafts.find((d) =>
+                hasAnyUserInput({ ...createEmptyListingData(), ...(d.data as any) } as ListingData)
               );
-              setGuestImageFiles(pairs);
-              setData((prev) => ({ ...prev, ...(hydrated as any) }));
-              await router.replace(
-                { pathname: router.pathname, query: { ...router.query, draft: resumable.id } },
-                undefined,
-                { shallow: true }
-              );
-              toast({
-                title: "Entwurf wiederhergestellt",
-                description: "Du kannst dein begonnenes Inserat fortsetzen.",
-              });
-              setIsLoadingFromQuery(false);
-              return;
+              if (resumable) {
+                setDraftIdSynced(resumable.id);
+                const { data: hydrated, pairs } = await rehydrateGuestImagesInData(
+                  resumable.data,
+                  guestImageFilesRef.current
+                );
+                setGuestImageFiles(pairs);
+                setData((prev) => ({ ...prev, ...(hydrated as any) }));
+                await router.replace(
+                  { pathname: router.pathname, query: { ...router.query, draft: resumable.id } },
+                  undefined,
+                  { shallow: true }
+                );
+                toast({
+                  title: "Entwurf wiederhergestellt",
+                  description: "Du kannst dein begonnenes Inserat fortsetzen.",
+                });
+                setIsLoadingFromQuery(false);
+                return;
+              }
+            } catch (e) {
+              console.warn("Could not check for resumable drafts:", e);
             }
-          } catch (e) {
-            console.warn("Could not check for resumable drafts:", e);
           }
         }
 
@@ -689,6 +800,7 @@ export default function ListingWizard() {
         // listing is a Direktkauf — a Leasingübernahme is offered as an option
         // inside Step 2, so the old ?deal_type= deep-link no longer seeds a
         // pure lease_takeover.
+        if (rechnerSeed) applyRechnerSeed(rechnerSeed);
         setIsLoadingFromQuery(false);
       } catch (e) {
         setIsLoadingFromQuery(false);

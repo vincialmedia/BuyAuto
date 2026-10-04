@@ -11,9 +11,9 @@ Nothing is sent — and `gtag.js` is not loaded — for: hosts other than
 `localStorage.ba_no_track = "1"`, and sessions that arrived from vercel.com.
 
 Registered custom dimensions (must match exactly): `deal_type`, `listing_id`,
-`lead_type`, `funnel_step`, `plan`, `step_name`, `contact_method` (event) and
-`user_role` (user). `step_name` and `contact_method` still need registering in
-GA4.
+`lead_type`, `funnel_step`, `plan`, `step_name`, `contact_method`, `target` (event) and
+`user_role` (user). `step_name`, `contact_method` and `target` still need registering
+in GA4.
 
 | Event | Parameters | Fired from | Trigger (confirmed state) |
 | --- | --- | --- | --- |
@@ -33,6 +33,7 @@ GA4.
 | ↳ `inquiry` | — | — | No trigger: nothing writes `listing_inquiries` any more. |
 | `contact_click` | `contact_method: "phone" \| "whatsapp" \| "email"`, `listing_id` (listing pages only) | `AnalyticsProvider.tsx` (delegated listener) | Click on a `tel:`, `mailto:` or WhatsApp link on `/fahrzeug/[id]` or a dealer microsite. The link target is never sent. |
 | `cta_click` | `cta_id`, `page_path` | `pages/lp/leasing-abgeben.tsx`, `pages/leasing-abgeben-schweiz.tsx` | CTA click (navigation intent; not a conversion). |
+| `valuation_cta_click` | `target: "list" \| "garage" \| "comp_link" \| "manual"` | `calculator/EintauschwertRechner.tsx` | Click on a calculator CTA: `list` = «Gratis inserieren – Daten übernommen» (result card or search-limit gate; opens `/inserat-erstellen?src=rechner…`), `garage` = garage sign-up / packages / «Für Garagen», `comp_link` = a found comparable listing, `manual` = «Vergleichspreise selbst eintragen» past a limit. Navigation intent, not a conversion. Listings started this way carry `listings.created_via = 'rechner'`. |
 
 User scope: `user_id` = Supabase user UUID (only with analytics consent),
 user property `user_role` = `private` / `dealer` / `admin`.

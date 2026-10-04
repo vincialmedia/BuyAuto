@@ -61,6 +61,8 @@ export type ListingUpdatePayload = Partial<{
   user_id?: string;
   /** Attribution: the seller's answer to "Wie hast du uns gefunden?" (optional). */
   source?: string | null;
+  /** Attribution: the tool that started this listing (see attributionFieldsFromWizard). */
+  created_via?: "rechner" | null;
 }>;
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -97,6 +99,15 @@ function coerceNumber(v: unknown): number | undefined {
  * INSERT dropped all seven — audit finding U4). Centralising them here means
  * every write path includes the same set and they can never silently drift.
  */
+/**
+ * `created_via` for a listing write. Only ever sent when set: edit mode
+ * hydrates the wizard from the row without it, so an unconditional
+ * `created_via: null` would wipe the attribution on the next save.
+ */
+export function attributionFieldsFromWizard(data: ListingData): Pick<ListingUpdatePayload, "created_via"> {
+  return data.created_via === "rechner" ? { created_via: "rechner" } : {};
+}
+
 export function vehicleCoreFieldsFromWizard(
   data: ListingData
 ): Pick<
