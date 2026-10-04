@@ -13,15 +13,17 @@ import {
   sendMessage,
   sendMessageWithAttachments,
 } from "@/services/messagingService";
-import { LogIn, SendHorizontal, Paperclip, X } from "lucide-react";
-import { useRouter } from "next/router";
+import { SendHorizontal, Paperclip, X } from "lucide-react";
 import { trackOnce } from "@/lib/analytics";
+import { GuestMessageForm } from "./GuestMessageForm";
 
 export interface MessagingPanelProps {
   listingId: string;
   listingTitle: string;
   ownerId?: string | null;
   isSold?: boolean;
+  /** Picks the suggested first message for logged-out visitors. */
+  dealType?: "lease_takeover" | "direct_purchase" | null;
   className?: string;
 }
 
@@ -74,11 +76,15 @@ function formatBytes(value: number | null | undefined): string {
   return `${fixed} ${units[i]}`;
 }
 
-export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, className }: MessagingPanelProps) {
+export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealType, className }: MessagingPanelProps) {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
   const isSeller = Boolean(user?.id && ownerId && user.id === ownerId);
+  // Logged-out visitors get the guest form (message + account in one step).
+  // The page HTML is CDN-cached, so this is only decided once auth resolved.
+  const isGuest = !user && !loading;
+  // Bumped after a guest logs in and sends, so the chat reloads with it.
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UiMessage[]>([]);
@@ -114,7 +120,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
       return { kind: "info", text: "Dies ist dein eigenes Inserat. Du kannst dir selbst keine Nachrichten senden." };
     }
     if (!isAuthed) {
-      return { kind: "info", text: "Bitte logge Dich ein oder registriere Dich, um Nachrichten zu schicken." };
+      return null;
     }
     if (soldBlocked) {
       return { kind: "warning", text: "Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich." };
@@ -218,7 +224,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
     return () => {
       cancelled = true;
     };
-  }, [isAuthed, listingId, isSeller, isSold]);
+  }, [isAuthed, listingId, isSeller, isSold, reloadKey]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -244,6 +250,28 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
 
   function removeSelectedFile(index: number) {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // A logged-out visitor whose email already has an account just logged in
+  // through the guest form; send their message the way handleSend does.
+  async function sendAfterLogin(body: string): Promise<boolean> {
+    const existingConvId = await getExistingConversationForListing(listingId);
+    const convId = existingConvId ?? (await createOrGetConversationForListing(listingId));
+    const ok = convId ? await sendMessage(convId, body) : false;
+
+    if (ok && !existingConvId) {
+      trackOnce(`ba_lead_conversation_${listingId}`, "generate_lead", {
+        lead_type: "conversation",
+        listing_id: listingId,
+        value: 0,
+        currency: "CHF",
+        new_account: false,
+      });
+    }
+    // Not sent (e.g. an archived chat): leave the text in the composer.
+    if (!ok) setDraft(body);
+    setReloadKey((key) => key + 1);
+    return ok;
   }
 
   async function handleSend() {
@@ -281,6 +309,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
           listing_id: listingId,
           value: 0,
           currency: "CHF",
+          new_account: false,
         });
       }
       setDraft("");
@@ -326,30 +355,41 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
     setBusy(false);
   }
 
+  const header = (
+    <div className="min-w-0">
+      <h3 className="text-lg font-bold tracking-tight text-neutral-900">Nachricht Schreiben</h3>
+      <p className="text-sm text-neutral-600 mt-1">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
+      {user && counterpartyName ? (
+        <p className="text-sm text-neutral-600 mt-1">
+          <span className="font-semibold text-neutral-900">{counterpartyLabel}:</span> {counterpartyName}
+        </p>
+      ) : null}
+    </div>
+  );
+
+  if (!user) {
+    return (
+      <Card className={cn("border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden", className)}>
+        <CardContent className="p-6">
+          {header}
+          {isGuest ? (
+            <GuestMessageForm listingId={listingId} dealType={dealType} onLoggedIn={sendAfterLogin} />
+          ) : (
+            <div className="mt-5 space-y-3" aria-hidden="true">
+              <div className="h-24 bg-neutral-50 rounded-2xl border border-neutral-200 animate-pulse" />
+              <div className="h-11 bg-neutral-50 rounded-xl border border-neutral-200 animate-pulse" />
+              <div className="h-11 bg-neutral-50 rounded-xl border border-neutral-200 animate-pulse" />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className={cn("border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden", className)}>
       <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Nachricht Schreiben</h3>
-            <p className="text-sm text-neutral-600 mt-1">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
-            {counterpartyName ? (
-              <p className="text-sm text-neutral-600 mt-1">
-                <span className="font-semibold text-neutral-900">{counterpartyLabel}:</span> {counterpartyName}
-              </p>
-            ) : null}
-          </div>
-
-          {!isAuthed ? (
-            <Button
-              className="bg-neutral-900 hover:bg-neutral-800 text-white"
-              onClick={() => router.push("/auth?redirect=" + encodeURIComponent(router.asPath))}
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Einloggen
-            </Button>
-          ) : null}
-        </div>
+        {header}
 
         {notice ? (
           <div
