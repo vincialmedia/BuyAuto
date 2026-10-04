@@ -1,4 +1,3 @@
- 
 export type Json =
   | string
   | number
@@ -11,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -571,6 +570,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "listing_drafts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_drafts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "public_listings"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "listing_drafts_make_id_fkey"
             columns: ["make_id"]
             isOneToOne: false
@@ -592,6 +605,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      listing_drafts_archive_20260702: {
+        Row: {
+          catalog_confidence: string | null
+          catalog_needs_review: boolean | null
+          created_at: string | null
+          data: Json | null
+          id: string | null
+          make_id: string | null
+          model_id: string | null
+          updated_at: string | null
+          user_id: string | null
+          variant_id: string | null
+          variant_text: string | null
+        }
+        Insert: {
+          catalog_confidence?: string | null
+          catalog_needs_review?: boolean | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string | null
+          make_id?: string | null
+          model_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          variant_id?: string | null
+          variant_text?: string | null
+        }
+        Update: {
+          catalog_confidence?: string | null
+          catalog_needs_review?: boolean | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string | null
+          make_id?: string | null
+          model_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          variant_id?: string | null
+          variant_text?: string | null
+        }
+        Relationships: []
       }
       listing_inquiries: {
         Row: {
@@ -815,11 +870,65 @@ export type Database = {
           },
         ]
       }
+      listing_translations: {
+        Row: {
+          created_at: string
+          description: string | null
+          listing_id: string
+          locale: string
+          provider: string
+          source_hash: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          listing_id: string
+          locale: string
+          provider?: string
+          source_hash: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          listing_id?: string
+          locale?: string
+          provider?: string
+          source_hash?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_translations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_translations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_translations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "public_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           archived_at: string | null
           archived_reason: string | null
-          draft_delete_at: string | null
           body: string
           brand: string
           canton_code: string | null
@@ -831,6 +940,7 @@ export type Database = {
           deal_type: Database["public"]["Enums"]["deal_type"]
           deposit_chf: number | null
           description: string | null
+          draft_delete_at: string | null
           drivetrain: string | null
           duration_days: number | null
           expires_at: string | null
@@ -875,9 +985,9 @@ export type Database = {
             | null
           stripe_payment_intent_id: string | null
           stripe_refund_id: string | null
+          tg_nr: string | null
           title: string | null
           title_suffix: string | null
-          tg_nr: string | null
           ui_version: string | null
           updated_at: string | null
           user_id: string | null
@@ -889,7 +999,6 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           archived_reason?: string | null
-          draft_delete_at?: string | null
           body: string
           brand: string
           canton_code?: string | null
@@ -901,6 +1010,7 @@ export type Database = {
           deal_type?: Database["public"]["Enums"]["deal_type"]
           deposit_chf?: number | null
           description?: string | null
+          draft_delete_at?: string | null
           drivetrain?: string | null
           duration_days?: number | null
           expires_at?: string | null
@@ -945,9 +1055,9 @@ export type Database = {
             | null
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
+          tg_nr?: string | null
           title?: string | null
           title_suffix?: string | null
-          tg_nr?: string | null
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -959,7 +1069,6 @@ export type Database = {
         Update: {
           archived_at?: string | null
           archived_reason?: string | null
-          draft_delete_at?: string | null
           body?: string
           brand?: string
           canton_code?: string | null
@@ -971,6 +1080,7 @@ export type Database = {
           deal_type?: Database["public"]["Enums"]["deal_type"]
           deposit_chf?: number | null
           description?: string | null
+          draft_delete_at?: string | null
           drivetrain?: string | null
           duration_days?: number | null
           expires_at?: string | null
@@ -1015,9 +1125,9 @@ export type Database = {
             | null
           stripe_payment_intent_id?: string | null
           stripe_refund_id?: string | null
+          tg_nr?: string | null
           title?: string | null
           title_suffix?: string | null
-          tg_nr?: string | null
           ui_version?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -1056,6 +1166,201 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      listings_archive_20260702: {
+        Row: {
+          archived_at: string | null
+          body: string | null
+          brand: string | null
+          canton_code: string | null
+          contract_end_date: string | null
+          cover_image_index: number | null
+          cover_image_url: string | null
+          created_at: string | null
+          created_by: string | null
+          deal_type: Database["public"]["Enums"]["deal_type"] | null
+          deposit_chf: number | null
+          description: string | null
+          drivetrain: string | null
+          duration_days: number | null
+          expires_at: string | null
+          financing_type: Database["public"]["Enums"]["financing_type"] | null
+          first_registration: string | null
+          fuel: string | null
+          garage_id: string | null
+          gearbox: string | null
+          id: string | null
+          images: Json | null
+          is_premium: boolean | null
+          leasing_offer: Json | null
+          location: string | null
+          make_id: string | null
+          make_model: string | null
+          mileage_km: number | null
+          model: string | null
+          model_id: string | null
+          moderation_note: string | null
+          pause_until: string | null
+          paused_at: string | null
+          payment_status: string | null
+          power_hp: number | null
+          premium: boolean | null
+          premium_until: string | null
+          price_paid_chf: number | null
+          price_per_month_chf: number | null
+          price_plan: string | null
+          pricing_plan: string | null
+          purchase_price_chf: number | null
+          refunded_at: string | null
+          remaining_km: number | null
+          remaining_months: number | null
+          seller_type: string | null
+          sold_at: string | null
+          sold_delete_at: string | null
+          status: Database["public"]["Enums"]["listing_status"] | null
+          status_before_sold:
+            | Database["public"]["Enums"]["listing_status"]
+            | null
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
+          title: string | null
+          ui_version: string | null
+          updated_at: string | null
+          user_id: string | null
+          variant_id: string | null
+          view_count: number | null
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          archived_at?: string | null
+          body?: string | null
+          brand?: string | null
+          canton_code?: string | null
+          contract_end_date?: string | null
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
+          deposit_chf?: number | null
+          description?: string | null
+          drivetrain?: string | null
+          duration_days?: number | null
+          expires_at?: string | null
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
+          first_registration?: string | null
+          fuel?: string | null
+          garage_id?: string | null
+          gearbox?: string | null
+          id?: string | null
+          images?: Json | null
+          is_premium?: boolean | null
+          leasing_offer?: Json | null
+          location?: string | null
+          make_id?: string | null
+          make_model?: string | null
+          mileage_km?: number | null
+          model?: string | null
+          model_id?: string | null
+          moderation_note?: string | null
+          pause_until?: string | null
+          paused_at?: string | null
+          payment_status?: string | null
+          power_hp?: number | null
+          premium?: boolean | null
+          premium_until?: string | null
+          price_paid_chf?: number | null
+          price_per_month_chf?: number | null
+          price_plan?: string | null
+          pricing_plan?: string | null
+          purchase_price_chf?: number | null
+          refunded_at?: string | null
+          remaining_km?: number | null
+          remaining_months?: number | null
+          seller_type?: string | null
+          sold_at?: string | null
+          sold_delete_at?: string | null
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          status_before_sold?:
+            | Database["public"]["Enums"]["listing_status"]
+            | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          title?: string | null
+          ui_version?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          variant_id?: string | null
+          view_count?: number | null
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          archived_at?: string | null
+          body?: string | null
+          brand?: string | null
+          canton_code?: string | null
+          contract_end_date?: string | null
+          cover_image_index?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
+          deposit_chf?: number | null
+          description?: string | null
+          drivetrain?: string | null
+          duration_days?: number | null
+          expires_at?: string | null
+          financing_type?: Database["public"]["Enums"]["financing_type"] | null
+          first_registration?: string | null
+          fuel?: string | null
+          garage_id?: string | null
+          gearbox?: string | null
+          id?: string | null
+          images?: Json | null
+          is_premium?: boolean | null
+          leasing_offer?: Json | null
+          location?: string | null
+          make_id?: string | null
+          make_model?: string | null
+          mileage_km?: number | null
+          model?: string | null
+          model_id?: string | null
+          moderation_note?: string | null
+          pause_until?: string | null
+          paused_at?: string | null
+          payment_status?: string | null
+          power_hp?: number | null
+          premium?: boolean | null
+          premium_until?: string | null
+          price_paid_chf?: number | null
+          price_per_month_chf?: number | null
+          price_plan?: string | null
+          pricing_plan?: string | null
+          purchase_price_chf?: number | null
+          refunded_at?: string | null
+          remaining_km?: number | null
+          remaining_months?: number | null
+          seller_type?: string | null
+          sold_at?: string | null
+          sold_delete_at?: string | null
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          status_before_sold?:
+            | Database["public"]["Enums"]["listing_status"]
+            | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          title?: string | null
+          ui_version?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          variant_id?: string | null
+          view_count?: number | null
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
       }
       makes: {
         Row: {
@@ -1132,14 +1437,14 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
-          sender_user_id: string
+          sender_user_id?: string | null
         }
         Update: {
           body?: string
           conversation_id?: string
           created_at?: string
           id?: string
-          sender_user_id?: string
+          sender_user_id?: string | null
         }
         Relationships: [
           {
@@ -1264,6 +1569,141 @@ export type Database = {
           phone?: string | null
           status?: string
           vorname?: string
+        }
+        Relationships: []
+      }
+      tg_ingest_runs: {
+        Row: {
+          finished_at: string | null
+          id: number
+          rows: number | null
+          source_last_modified: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: never
+          rows?: number | null
+          source_last_modified?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          finished_at?: string | null
+          id?: never
+          rows?: number | null
+          source_last_modified?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      tg_vehicle_types: {
+        Row: {
+          fahrzeugart: string | null
+          getriebe: string | null
+          hubraum_ccm: number | null
+          id: number
+          ingested_at: string | null
+          karosserieform: string | null
+          karosserieform_code: string | null
+          leistung_kw: number | null
+          marke: string | null
+          motor_marke: string | null
+          motor_typ: string | null
+          raw: Json
+          source_updated_at: string | null
+          tg_erteilt: string | null
+          tg_nr: string
+          treibstoff: string | null
+          typ: string | null
+          variante: string | null
+          vmax_kmh: number | null
+        }
+        Insert: {
+          fahrzeugart?: string | null
+          getriebe?: string | null
+          hubraum_ccm?: number | null
+          id?: never
+          ingested_at?: string | null
+          karosserieform?: string | null
+          karosserieform_code?: string | null
+          leistung_kw?: number | null
+          marke?: string | null
+          motor_marke?: string | null
+          motor_typ?: string | null
+          raw: Json
+          source_updated_at?: string | null
+          tg_erteilt?: string | null
+          tg_nr: string
+          treibstoff?: string | null
+          typ?: string | null
+          variante?: string | null
+          vmax_kmh?: number | null
+        }
+        Update: {
+          fahrzeugart?: string | null
+          getriebe?: string | null
+          hubraum_ccm?: number | null
+          id?: never
+          ingested_at?: string | null
+          karosserieform?: string | null
+          karosserieform_code?: string | null
+          leistung_kw?: number | null
+          marke?: string | null
+          motor_marke?: string | null
+          motor_typ?: string | null
+          raw?: Json
+          source_updated_at?: string | null
+          tg_erteilt?: string | null
+          tg_nr?: string
+          treibstoff?: string | null
+          typ?: string | null
+          variante?: string | null
+          vmax_kmh?: number | null
+        }
+        Relationships: []
+      }
+      valuation_search_logs: {
+        Row: {
+          created_at: string
+          funnel: Json
+          id: number
+          vehicle: Json
+        }
+        Insert: {
+          created_at?: string
+          funnel: Json
+          id?: never
+          vehicle: Json
+        }
+        Update: {
+          created_at?: string
+          funnel?: Json
+          id?: never
+          vehicle?: Json
+        }
+        Relationships: []
+      }
+      valuation_usage: {
+        Row: {
+          period_month: string
+          search_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          period_month: string
+          search_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          period_month?: string
+          search_count?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1510,118 +1950,6 @@ export type Database = {
           vin: string | null
           year: number | null
         }
-        Insert: {
-          archived_at?: string | null
-          body?: string | null
-          brand?: string | null
-          canton_code?: string | null
-          cover_image_index?: number | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deal_type?: Database["public"]["Enums"]["deal_type"] | null
-          deposit_chf?: number | null
-          description?: string | null
-          drivetrain?: string | null
-          duration_days?: number | null
-          expires_at?: string | null
-          financing_type?: Database["public"]["Enums"]["financing_type"] | null
-          first_registration?: string | null
-          fuel?: string | null
-          garage_id?: string | null
-          gearbox?: string | null
-          id?: string | null
-          images?: Json | null
-          is_premium?: boolean | null
-          leasing_offer?: Json | null
-          location?: string | null
-          make_id?: string | null
-          mileage_km?: number | null
-          model?: string | null
-          model_id?: string | null
-          moderation_note?: string | null
-          payment_status?: string | null
-          power_hp?: number | null
-          premium?: boolean | null
-          premium_until?: string | null
-          price_paid_chf?: number | null
-          price_per_month_chf?: number | null
-          price_plan?: string | null
-          pricing_plan?: string | null
-          purchase_price_chf?: number | null
-          refunded_at?: string | null
-          remaining_km?: number | null
-          remaining_months?: number | null
-          seller_type?: string | null
-          status?: Database["public"]["Enums"]["listing_status"] | null
-          stripe_payment_intent_id?: string | null
-          stripe_refund_id?: string | null
-          title?: string | null
-          ui_version?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          variant?: string | null
-          variant_id?: string | null
-          view_count?: number | null
-          vin?: string | null
-          year?: number | null
-        }
-        Update: {
-          archived_at?: string | null
-          body?: string | null
-          brand?: string | null
-          canton_code?: string | null
-          cover_image_index?: number | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deal_type?: Database["public"]["Enums"]["deal_type"] | null
-          deposit_chf?: number | null
-          description?: string | null
-          drivetrain?: string | null
-          duration_days?: number | null
-          expires_at?: string | null
-          financing_type?: Database["public"]["Enums"]["financing_type"] | null
-          first_registration?: string | null
-          fuel?: string | null
-          garage_id?: string | null
-          gearbox?: string | null
-          id?: string | null
-          images?: Json | null
-          is_premium?: boolean | null
-          leasing_offer?: Json | null
-          location?: string | null
-          make_id?: string | null
-          mileage_km?: number | null
-          model?: string | null
-          model_id?: string | null
-          moderation_note?: string | null
-          payment_status?: string | null
-          power_hp?: number | null
-          premium?: boolean | null
-          premium_until?: string | null
-          price_paid_chf?: number | null
-          price_per_month_chf?: number | null
-          price_plan?: string | null
-          pricing_plan?: string | null
-          purchase_price_chf?: number | null
-          refunded_at?: string | null
-          remaining_km?: number | null
-          remaining_months?: number | null
-          seller_type?: string | null
-          status?: Database["public"]["Enums"]["listing_status"] | null
-          stripe_payment_intent_id?: string | null
-          stripe_refund_id?: string | null
-          title?: string | null
-          ui_version?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          variant?: string | null
-          variant_id?: string | null
-          view_count?: number | null
-          vin?: string | null
-          year?: number | null
-        }
         Relationships: [
           {
             foreignKeyName: "listings_garage_id_fkey"
@@ -1697,7 +2025,7 @@ export type Database = {
           location?: string | null
           mileage_km?: number | null
           model?: string | null
-          premium?: boolean | null
+          premium?: never
           price_per_month_chf?: number | null
           remaining_km?: number | null
           remaining_months?: number | null
@@ -1722,7 +2050,7 @@ export type Database = {
           location?: string | null
           mileage_km?: number | null
           model?: string | null
-          premium?: boolean | null
+          premium?: never
           price_per_month_chf?: number | null
           remaining_km?: number | null
           remaining_months?: number | null
@@ -1757,6 +2085,14 @@ export type Database = {
       }
       archive_expired_listings: { Args: never; Returns: Json }
       archive_listing: { Args: { p_listing_id: string }; Returns: undefined }
+      consume_valuation_search: {
+        Args: { p_limit: number }
+        Returns: {
+          allowed: boolean
+          limit: number
+          used: number
+        }[]
+      }
       create_or_get_conversation_for_listing: {
         Args: { p_listing_id: string }
         Returns: string
@@ -1814,17 +2150,6 @@ export type Database = {
         Args: { listing_id: string }
         Returns: Json
       }
-      get_all_users_with_profiles: {
-        Args: never
-        Returns: {
-          created_at: string
-          email: string
-          full_name: string
-          last_sign_in_at: string
-          role: string
-          user_id: string
-        }[]
-      }
       get_conversation_context: {
         Args: { p_conversation_id: string }
         Returns: Json
@@ -1854,6 +2179,16 @@ export type Database = {
       get_garage_website_tools_enabled: {
         Args: { p_garage_id: string }
         Returns: boolean
+      }
+      get_listing_conversations_for_seller: {
+        Args: { p_listing_id: string }
+        Returns: {
+          buyer_display_name: string
+          conversation_id: string
+          conversation_status: string
+          last_message_at: string
+          last_message_body: string
+        }[]
       }
       get_listing_cover_image: {
         Args: { p_cover_index: number; p_cover_url: string; p_images: Json }
@@ -1919,7 +2254,7 @@ export type Database = {
         Args: never
         Returns: {
           slug: string
-          updated_at: string | null
+          updated_at: string
         }[]
       }
       get_public_garages: {
@@ -1952,8 +2287,17 @@ export type Database = {
       }
       get_service_role_key: { Args: never; Returns: string }
       get_user_role: { Args: { user_id: string }; Returns: string }
+      get_valuation_usage: { Args: never; Returns: number }
       increment_listing_view: {
         Args: { p_listing_id: string }
+        Returns: undefined
+      }
+      listing_text_hash: {
+        Args: { p_description: string; p_title: string }
+        Returns: string
+      }
+      log_valuation_search: {
+        Args: { p_funnel: Json; p_vehicle: Json }
         Returns: undefined
       }
       mark_conversation_read: {
@@ -1984,6 +2328,11 @@ export type Database = {
         Args: { p_model_id: string; p_variant_text: string }
         Returns: string
       }
+      revert_listing_to_draft: {
+        Args: { p_listing_id: string }
+        Returns: undefined
+      }
+      run_listing_maintenance: { Args: never; Returns: Json }
       search_published_listings: {
         Args: {
           limit_count?: number
@@ -2028,9 +2377,29 @@ export type Database = {
         Returns: undefined
       }
       supabase_url: { Args: never; Returns: string }
+      sweep_archive_stale_drafts: { Args: never; Returns: Json }
+      sweep_delete_archived_drafts: { Args: never; Returns: Json }
+      sweep_expire_declined_listings: { Args: never; Returns: number }
+      sweep_expired_listings: { Args: never; Returns: number }
+      sweep_lapsed_premium: { Args: never; Returns: number }
+      sweep_reactivate_paused: { Args: never; Returns: number }
       sync_garage_plan_snapshot_from_subscription: {
         Args: { p_dealer_id: string }
         Returns: undefined
+      }
+      tg_distinct_makes: {
+        Args: never
+        Returns: {
+          marke: string
+          variant_count: number
+        }[]
+      }
+      tg_distinct_typs: {
+        Args: { p_marke: string }
+        Returns: {
+          typ: string
+          variant_count: number
+        }[]
       }
       unpause_listing: { Args: { p_listing_id: string }; Returns: undefined }
       upgrade_to_garage: {
@@ -2078,12 +2447,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2107,11 +2476,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2132,11 +2501,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2157,11 +2526,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2174,11 +2543,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
