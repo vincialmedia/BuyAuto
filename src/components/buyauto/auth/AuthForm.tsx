@@ -20,11 +20,14 @@ type AuthView = "login" | "register" | "reset-password" | "update-password";
 interface AuthFormProps {
   initialView?: AuthView;
   initialAccountType?: "private" | "garage";
+  /** Sanitised internal path the sign-up confirmation link returns to. */
+  returnPath?: string;
 }
 
 export default function AuthForm({
   initialView = "login",
   initialAccountType,
+  returnPath,
 }: AuthFormProps = {}) {
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [isLoading, setIsLoading] = useState(false);
@@ -89,6 +92,7 @@ export default function AuthForm({
         garageName: data.garageName,
         city: data.city,
         contactEmail: data.contactEmail,
+        ...(returnPath ? { emailRedirectTo: `${window.location.origin}${returnPath}` } : {}),
       };
       
       await authService.signUp(signUpData);

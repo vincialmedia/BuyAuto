@@ -119,9 +119,17 @@ export default function AuthPage() {
   const initialAccountType =
     typeParam === "garage" || typeParam === "dealer" ? "garage" : undefined;
 
+  // The confirmation e-mail link must bring a new account back to where it
+  // signed up from (e.g. the calculator), not to the Site URL.
+  const returnPath = safeInternalPath(router.query.redirect ?? null) ?? undefined;
+
   return (
     <AuthLayout>
-      <AuthForm initialView={initialView} initialAccountType={initialAccountType} />
+      <AuthForm
+        initialView={initialView}
+        initialAccountType={initialAccountType}
+        returnPath={returnPath}
+      />
     </AuthLayout>
   );
 }

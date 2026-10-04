@@ -189,9 +189,9 @@ const PRESET_GOLF: CalculatorState = {
 
 const MAX_COMPS = 6;
 
-// Anonymous users get a taste before signing up: 5 free automatic searches,
-// counted in localStorage. This is a lead magnet, not DRM — a cleared cache just
-// grants another 5. Logged-in users are metered server-side via /api/valuation/*
+// Anonymous users get a taste before signing up: ANON_FREE_SEARCHES free
+// automatic searches, counted in localStorage. This is a lead magnet, not DRM —
+// a cleared cache just grants them again. Logged-in users are metered server-side via /api/valuation/*
 // (3/mo free, then the quota of their garage package). Only automatic searches
 // count; manual entry and "Neuberechnung" are always free.
 const ANON_FREE_SEARCHES = 3;
