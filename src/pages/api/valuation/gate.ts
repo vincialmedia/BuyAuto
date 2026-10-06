@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import { DRIVETRAIN_TYPES, isGearboxType, type DrivetrainType } from "@/lib/buyauto/listingContract";
 import { peekQuota } from "@/lib/buyauto/valuationQuota";
 import { clientIp, logValuationEvent, readLogContext } from "@/lib/buyauto/valuationLog";
 
@@ -53,6 +54,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     model: typeof input.model === "string" ? input.model.trim().slice(0, 60) : "",
     year: Number.isInteger(year) && year >= 1980 && year <= new Date().getFullYear() + 1 ? year : null,
     km: Number.isFinite(km) && km > 0 && km <= 500_000 ? km : null,
+    variant:
+      typeof input.variant === "string"
+        ? input.variant.replace(/\s+/g, " ").trim().slice(0, 60) || null
+        : null,
+    gearbox: isGearboxType(input.gearbox) ? input.gearbox : null,
+    drivetrain: (DRIVETRAIN_TYPES as readonly unknown[]).includes(input.drivetrain)
+      ? (input.drivetrain as DrivetrainType)
+      : null,
   };
 
   try {
