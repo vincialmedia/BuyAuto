@@ -163,7 +163,7 @@ grant execute on function public.guest_message_precheck(uuid, text) to service_r
 
 create table if not exists public.guest_message_attempts (
   id uuid primary key default gen_random_uuid(),
-  -- sha256 of the client IP, never the IP itself.
+  -- Keyed hash (HMAC) of the client network, never the IP itself.
   ip_hash text not null,
   created_at timestamptz not null default now()
 );

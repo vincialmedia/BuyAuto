@@ -26,7 +26,6 @@ export type GuestMessageField = Exclude<keyof GuestMessageInput, "listingId">;
 export type GuestMessageErrorCode =
   | "invalid_input"
   | "rate_limited"
-  | "listing_busy"
   | "listing_unavailable"
   | "own_listing"
   | "weak_password"
@@ -50,9 +49,16 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Names are shown to the seller and in their notification email: no links, no
 // posing as BuyAuto, no control, bidi or zero-width characters.
-const LINK_RE = /(https?:|www\.|\.(ch|com|net|org|de|io)\b)/i;
-const IMPERSONATION_RE = /buy\s*auto/i;
-const CONTROL_RE = /[\u0000-\u001F\u007F-\u009F­​-‏‪-‮⁠-⁩﻿]/;
+const LINK_RE = /(https?:|www\.|\.[a-z]{2,}\b)/i;
+// Control, format, separator and blank-looking characters, plus Unicode tags.
+const CONTROL_RE =
+  /[\u0000-\u001F\u007F-\u009F\u00AD\u061C\u115F\u1160\u200B-\u200F\u2028-\u202E\u2060-\u206F\u3164\uFEFF\uFFA0]|\uDB40[\uDC00-\uDC7F]/;
+
+/** "Buy-Auto", "B.u.y Auto", full-width letters …: compared on the letters a–z only. */
+function posesAsBuyAuto(value: string): boolean {
+  const letters = value.normalize("NFKC").normalize("NFD").toLowerCase().replace(/[^a-z]/g, "");
+  return letters.includes("buyauto");
+}
 
 function str(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -90,7 +96,7 @@ export function validateGuestMessage(raw: Record<string, unknown>): GuestMessage
       value.length > GUEST_MESSAGE_LIMITS.nameMax ||
       CONTROL_RE.test(value) ||
       LINK_RE.test(value) ||
-      IMPERSONATION_RE.test(value)
+      posesAsBuyAuto(value)
     ) {
       return { ok: false, field, message: "Bitte gib hier nur deinen Namen ein." };
     }

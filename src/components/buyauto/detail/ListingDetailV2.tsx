@@ -511,6 +511,7 @@ export function ListingDetailV2({
             {!isSold && (
               <div id="messages" className="scroll-mt-36 md:scroll-mt-40">
                 <MessagingPanel 
+                  key={listing.id}
                   listingId={listing.id} 
                   listingTitle={displayTitle}
                   ownerId={((listing as any).user_id ?? (listing as any).created_by ?? null) as string | null}

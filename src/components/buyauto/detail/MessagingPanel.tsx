@@ -15,7 +15,7 @@ import {
   sendMessageWithAttachments,
 } from "@/services/messagingService";
 import { SendHorizontal, Paperclip, X } from "lucide-react";
-import { queueLoginEvent, trackOnce } from "@/lib/analytics";
+import { clearQueuedLoginEvent, queueLoginEvent, trackOnce } from "@/lib/analytics";
 import authService from "@/services/authService";
 import { GuestMessageForm, type GuestLoginResult } from "./GuestMessageForm";
 
@@ -279,6 +279,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
       await authService.signIn({ email, password });
     } catch (error) {
       setHandoff(null);
+      clearQueuedLoginEvent();
       const code = (error as { code?: string } | null)?.code;
       const text = error instanceof Error ? error.message : "";
       if (code === "email_not_confirmed" || text.includes("Email not confirmed")) return "email_not_confirmed";
@@ -310,13 +311,13 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
         });
       }
       setHandoff(null);
+    } else if (failure) {
+      // Own listing or sold: sending again can't work, so no text in the composer.
+      setHandoff({ phase: "failed", text: failure });
     } else {
-      // Keep the text so it can be sent again from the composer.
+      // Keep the text; if the chat is still open it can be sent again.
       setDraft(body);
-      setHandoff({
-        phase: "failed",
-        text: failure ?? "Du bist eingeloggt, aber die Nachricht ging nicht raus. Sie steht unten im Textfeld, schick sie bitte nochmals.",
-      });
+      setHandoff({ phase: "failed", text: "Du bist eingeloggt, aber die Nachricht konnte nicht gesendet werden." });
     }
     setReloadKey((key) => key + 1);
     return "logged_in";

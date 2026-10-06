@@ -98,16 +98,26 @@ export function GuestMessageForm({ listingId, dealType, onExistingAccount }: Gue
     setBusy(true);
     setBusyText("Nachricht wird gesendet …");
     try {
-      let result: GuestMessageResponse;
+      let response: Response;
       try {
-        const response = await fetch("/api/messages/guest", {
+        response = await fetch("/api/messages/guest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...input, website }),
         });
-        result = (await response.json()) as GuestMessageResponse;
       } catch {
         setFormError({ text: "Keine Verbindung. Bitte prüf dein Internet und versuch es nochmals." });
+        return;
+      }
+      let result: GuestMessageResponse | null = null;
+      try {
+        result = (await response.json()) as GuestMessageResponse;
+      } catch {
+        result = null;
+      }
+
+      if (!result || (result.status !== "sent" && result.status !== "existing_account" && result.status !== "error")) {
+        setFormError({ text: "Das hat nicht geklappt. Bitte versuch es nochmals." });
         return;
       }
 

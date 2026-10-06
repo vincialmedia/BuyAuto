@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createHmac } from "crypto";
+import { createHmac, randomUUID } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "@/integrations/supabase/types";
@@ -20,12 +20,6 @@ import {
 // the client logs in with the password and uses the logged-in chat.
 
 const GUEST_SUBMISSIONS_PER_IP_PER_DAY = 20;
-// Conversations per listing and 24 h from guest accounts that haven't
-// confirmed their email yet: a seller can't be flooded from many IPs.
-const UNCONFIRMED_GUEST_CONVERSATIONS_PER_LISTING_PER_DAY = 10;
-// How old the account signUp hands back may be. Anything older existed before
-// this request, and nothing is ever posted for an account that existed before.
-const NEW_ACCOUNT_MAX_AGE_MS = 2 * 60 * 1000;
 
 // Where the confirmation link lands. Supabase accepts redirects on the Site
 // URL's own host without an allow-list entry; vercel.json forwards the apex to
@@ -36,7 +30,6 @@ type Precheck = {
   listing_available: boolean;
   is_seller_email?: boolean;
   account_exists?: boolean;
-  recent_unconfirmed_guest_conversations?: number;
 };
 
 // The service-role RPCs from the guest_listing_messages migrations are not in
@@ -172,9 +165,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   if (precheck.is_seller_email) {
     return fail(res, 400, "own_listing", "Mit dieser E-Mail-Adresse kannst du diesem Inserat nicht schreiben.", "email");
   }
-  if ((precheck.recent_unconfirmed_guest_conversations ?? 0) >= UNCONFIRMED_GUEST_CONVERSATIONS_PER_LISTING_PER_DAY) {
-    return fail(res, 429, "listing_busy", "Dieses Inserat bekommt gerade sehr viele Anfragen. Bitte versuch es später nochmals.");
-  }
   if (input.password.length < GUEST_MESSAGE_LIMITS.passwordMin) {
     return fail(res, 400, "invalid_input", GUEST_PASSWORD_TOO_SHORT, "password");
   }
@@ -184,7 +174,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   // browser, so confirming there signs them straight in.
   const fullName = [input.firstName, input.lastName].filter(Boolean).join(" ");
   const supabase = createPagesServerClient<Database>({ req, res });
-  const signUpStartedAt = Date.now();
+  // Random per request and stored with the new account: Auth never rewrites the
+  // metadata of an existing account, so finding it again proves this signUp
+  // created the account.
+  const signupNonce = randomUUID();
   const { data: signUp, error: signUpError } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
@@ -195,6 +188,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         last_name: input.lastName || undefined,
         full_name: fullName,
         role: "private",
+        guest_signup_nonce: signupNonce,
       },
     },
   });
@@ -220,18 +214,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   // With confirmations on, Supabase answers a confirmed address with an
   // obfuscated user without identities, and an unconfirmed one with that real,
   // older account. Only an account this very request created is written for:
-  // re-read it with the service role and require it to be brand new,
-  // unconfirmed and carrying the name typed here.
+  // re-read it with the service role and require this request's nonce on an
+  // unconfirmed account.
   const signedUpId = signUp.user?.identities?.length ? signUp.user.id : null;
   const { data: created } = signedUpId
     ? await admin.auth.admin.getUserById(signedUpId)
     : { data: { user: null } };
   const user = created?.user ?? null;
   const isThisRequestsAccount =
-    !!user &&
-    !user.email_confirmed_at &&
-    Date.parse(user.created_at) >= signUpStartedAt - NEW_ACCOUNT_MAX_AGE_MS &&
-    user.user_metadata?.first_name === input.firstName;
+    !!user && !user.email_confirmed_at && user.user_metadata?.guest_signup_nonce === signupNonce;
   if (!isThisRequestsAccount) {
     return res.status(200).json({ status: "existing_account" });
   }

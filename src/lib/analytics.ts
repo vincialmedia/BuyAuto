@@ -626,6 +626,12 @@ export function queueLoginEvent() {
   writeStorage("session", PENDING_LOGIN_KEY, String(Date.now()));
 }
 
+/** Drops a queued login event (the sign-in it was queued for failed). */
+export function clearQueuedLoginEvent() {
+  if (typeof window === "undefined") return;
+  writeStorage("session", PENDING_LOGIN_KEY, null);
+}
+
 export function flushLoginEvent() {
   if (typeof window === "undefined") return;
   const queuedAt = Number(readStorage("session", PENDING_LOGIN_KEY));
