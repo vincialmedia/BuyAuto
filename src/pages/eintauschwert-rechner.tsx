@@ -33,8 +33,8 @@ const CalculatorSkeleton = () => (
   <div className="w-full space-y-8 animate-pulse" aria-hidden="true">
     {/* Presets bar */}
     <div className="h-24 sm:h-16 bg-neutral-50 rounded-xl border border-neutral-200" />
-    {/* Step-1 vehicle card */}
-    <div className="h-[560px] max-w-2xl mx-auto bg-white rounded-xl border border-neutral-200 shadow-sm" />
+    {/* Step-1 vehicle card — single column on mobile stacks all eight fields */}
+    <div className="h-[960px] sm:h-[640px] max-w-2xl mx-auto bg-white rounded-xl border border-neutral-200 shadow-sm" />
   </div>
 );
 
@@ -77,7 +77,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Woher kommen die Vergleichspreise bei der automatischen Suche?",
-    a: "Der Rechner durchsucht öffentlich zugängliche Inserate auf Schweizer Occasions-Portalen (z.B. AutoScout24, tutti oder Comparis) nach deinem Modell und Jahrgang und übernimmt bis zu 5 Treffer mit Preis und Kilometerstand. Jeder Treffer ist verlinkt und editierbar – du behältst die Kontrolle über die Vergleichsbasis. Findet die Suche nichts Passendes, erfasst du die Inserate einfach manuell.",
+    a: "Der Rechner durchsucht öffentlich zugängliche Inserate auf Schweizer Occasions-Portalen (z.B. AutoScout24, tutti oder Comparis) nach deinem Modell (samt Ausführung, falls angegeben – ein Golf R wird mit Golf R verglichen, nicht mit gewöhnlichen Golfs) und Jahrgang und übernimmt bis zu 5 Treffer mit Preis und Kilometerstand. Jeder Treffer ist verlinkt und editierbar – du behältst die Kontrolle über die Vergleichsbasis. Findet die Suche nichts Passendes, erfasst du die Inserate einfach manuell.",
   },
   {
     q: "Soll ich die Marge in Prozent oder als Fixbetrag rechnen?",
@@ -85,7 +85,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Wie viele Vergleichsfahrzeuge brauche ich für eine belastbare Occasionsbewertung?",
-    a: "3–5 vergleichbare Inserate (gleiches Modell, ähnliches Alter, ähnliche Ausstattung) reichen in der Praxis. Der Rechner nutzt den Median der km-bereinigten Preise – so verzerrt ein einzelnes überteuertes oder verschleudertes Inserat das Ergebnis nicht.",
+    a: "3–5 vergleichbare Inserate (gleiches Modell, ähnliches Alter, ähnliche Ausstattung) reichen in der Praxis. Der Rechner nutzt den Median der Preise (km-bereinigt, wenn du den Kilometerstand angibst) – so verzerrt ein einzelnes überteuertes oder verschleudertes Inserat das Ergebnis nicht.",
   },
   {
     q: "Ersetzt der Rechner eine Eurotax-Bewertung?",
@@ -98,7 +98,7 @@ const FAQ_ITEMS = [
 ];
 
 const FACTORS = [
-  { label: "Kilometerstand", text: "Der wichtigste Werthebel nach dem Modell. Der Rechner gleicht die km-Differenz zu den Vergleichsfahrzeugen automatisch an." },
+  { label: "Kilometerstand", text: "Der wichtigste Werthebel nach dem Modell. Gibst du ihn an, gleicht der Rechner die km-Differenz zu den Vergleichsfahrzeugen automatisch an." },
   { label: "Alter & Jahrgang", text: "Erstzulassung und Modellgeneration bestimmen die Basis. Jüngere Fahrzeuge verlieren pro Jahr absolut mehr Wert." },
   { label: "Zustand & Aufbereitung", text: "Kratzer, Innenraum, anstehende MFK: Was du aufbereiten musst, ziehst du als Kosten ab." },
   { label: "Ausstattung & Motorisierung", text: "Ausstattungslinie, Getriebe und Antrieb (Benzin, Diesel, Hybrid) verschieben den Marktwert spürbar." },
@@ -218,8 +218,8 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             <p className="text-lg md:text-xl text-neutral-300 leading-relaxed mb-6 max-w-2xl mx-auto">
               Der Eintauschwert ist der Preis, den die Garage beim Eintausch zahlt: Marktwert minus
               Aufbereitung, Garantie-Rückstellung, Standzeit und Marge – als Faustregel 80–90% des
-              Marktwerts. Gib Marke, Modell, Jahrgang und Kilometerstand ein; der Rechner zieht echte
-              Vergleichsinserate bei und liefert in 2 Minuten den Ankaufspreis samt Rechenweg fürs
+              Marktwerts. Gib Marke, Modell, Ausführung und Jahrgang ein – der Kilometerstand ist
+              optional, macht den Wert aber präziser. Der Rechner zieht echte Vergleichsinserate bei und liefert in 2 Minuten den Ankaufspreis samt Rechenweg fürs
               Kundengespräch.
             </p>
 
@@ -249,7 +249,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             <ol className="grid grid-cols-1 md:grid-cols-3 gap-4 list-none pl-0">
               <li className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
                 <span className="text-red-600 font-bold text-2xl">1.</span>
-                <p className="mt-2 text-neutral-700"><strong>Fahrzeug eingeben:</strong> Marke, Modell, Jahrgang, Kilometerstand. Der Rechner sucht automatisch bis zu 5 passende Inserate – oder du erfasst sie manuell.</p>
+                <p className="mt-2 text-neutral-700"><strong>Fahrzeug eingeben:</strong> Marke, Modell, Ausführung (z.B. Golf R statt Golf) und Jahrgang – Kilometerstand, Getriebe und Antrieb sind optional, machen den Wert aber präziser. Der Rechner sucht automatisch bis zu 5 passende Inserate – oder du erfasst sie manuell.</p>
               </li>
               <li className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
                 <span className="text-red-600 font-bold text-2xl">2.</span>
@@ -276,10 +276,11 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             </div>
             <div className="prose prose-lg text-neutral-700 max-w-none">
               <p>
-                Der <strong>Marktwert</strong> ist der Median von 3–5 vergleichbaren Inseraten. Hat ein
-                Vergleichsauto mehr oder weniger Kilometer als deins, wird sein Preis automatisch
-                angeglichen – rund 5% des Inseratspreises pro 10&apos;000 km Differenz (bei einem
-                CHF 20&apos;000-Auto sind 20&apos;000 km ≈ CHF 2&apos;000). Der Median statt des
+                Der <strong>Marktwert</strong> ist der Median von 3–5 vergleichbaren Inseraten – je
+                genauer Ausführung, Getriebe und Antrieb angegeben sind, desto passender die
+                Vergleichsbasis. Gibst du den Kilometerstand an und hat ein Vergleichsauto mehr oder
+                weniger Kilometer als deins, wird sein Preis automatisch angeglichen – rund 5% des
+                Inseratspreises pro 10&apos;000 km Differenz (bei einem CHF 20&apos;000-Auto sind 20&apos;000 km ≈ CHF 2&apos;000). Der Median statt des
                 Durchschnitts sorgt dafür, dass ein einzelnes überteuertes oder verschleudertes
                 Inserat das Ergebnis nicht verzerrt. Und wenn die Datenlage dünn ist – weniger als
                 3 Inserate oder stark streuende Preise – zeigt der Rechner ehrlich eine Spanne
