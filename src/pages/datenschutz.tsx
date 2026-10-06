@@ -80,7 +80,7 @@ export default function Datenschutz() {
                 Wenn Sie im Eintauschwert-Rechner – auf buyauto.ch oder eingebettet auf der Website einer Garage – eine automatische Suche nach Vergleichsinseraten starten oder Ihr Kontingent an Suchen erreicht ist, speichern wir, um die Nutzung des Rechners auszuwerten und ihn zu verbessern:
               </p>
               <ul className="list-disc pl-5 mb-4 space-y-1">
-                <li>die eingegebenen Fahrzeugdaten (Marke, Modell, Jahrgang, Kilometerstand, Karosserie, Hubraum) und die gefundenen Vergleichsinserate</li>
+                <li>die eingegebenen Fahrzeugdaten (Marke, Modell, Jahrgang und – falls angegeben – Ausführung, Kilometerstand, Getriebe, Antrieb, Karosserie und Hubraum) und die gefundenen Vergleichsinserate</li>
                 <li>wo der Rechner verwendet wurde (auf buyauto.ch, im Garage-Dashboard oder eingebettet auf der Website einer Garage)</li>
                 <li>Ihre Benutzer-ID, falls Sie angemeldet sind</li>
                 <li>einen pseudonymen Tageswert: eine Prüfsumme aus IP-Adresse und Browser-Typ (User-Agent), gebildet mit einem zufälligen Schlüssel, der jeden Tag um Mitternacht (UTC) durch einen neuen ersetzt wird. Die IP-Adresse selbst wird nicht gespeichert. Nach dem Tageswechsel lässt sich der Wert aus unserer Datenbank keiner IP-Adresse mehr zuordnen; ältere Schlüssel bleiben nur in Sicherungskopien der Datenbank erhalten, die ausschliesslich der Wiederherstellung dienen.</li>

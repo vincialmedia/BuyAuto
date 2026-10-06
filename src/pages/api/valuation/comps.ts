@@ -15,6 +15,8 @@ import {
   parseListingText,
   selectComps,
   splitVariant,
+  stripModelPrefix,
+  variantIdentity,
   variantSearchTerm,
   yearMatches,
   BODY_TYPE_LABEL,
@@ -329,6 +331,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const variantStr =
     typeof input.variant === "string" ? input.variant.replace(/\s+/g, " ").trim().slice(0, 60) : "";
   const variantParts = splitVariant(variantStr);
+  // The identity the variant check matches, minus a repeated model name ("X3
+  // 20d xDrive" -> "20d"), exactly like the siblings below.
+  const ownIdentity = variantIdentity(variantStr, modelStr);
   // Catalog model id, only to load the sibling variants for the variant check.
   const modelId =
     typeof input.modelId === "string" &&
@@ -412,7 +417,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // awaited before the first selection, so it overlaps the searches. A failed
   // load only weakens the check (match-or-unknown), it never fails the search.
   const siblingsPromise: Promise<string[]> =
-    modelId && variantParts.identity
+    modelId && ownIdentity
       ? (async () => {
           try {
             const { data, error } = await supabase
@@ -421,9 +426,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               .eq("model_id", modelId)
               .eq("is_active", true);
             if (error || !data) return [];
-            const own = variantParts.identity.toLowerCase();
+            const own = ownIdentity.toLowerCase();
             const ids = (data as Array<{ name?: unknown }>)
-              .map((row) => (typeof row.name === "string" ? splitVariant(row.name).identity : ""))
+              .map((row) => (typeof row.name === "string" ? variantIdentity(row.name, modelStr) : ""))
               .filter((id) => id && id.toLowerCase() !== own);
             return [...new Set(ids)];
           } catch (e) {
@@ -439,7 +444,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // The variant goes into the searches only ("VW Golf R 2021", "Audi A4 40
   // TFSI 2020"), minus drive words that listings often leave out. Skipped when
   // the typed model already ends in it as whole words (free text "Golf R").
-  const variantTerm = variantSearchTerm(variantStr);
+  const variantTerm = stripModelPrefix(variantSearchTerm(variantStr), modelStr);
   const vehicleWithVariant =
     variantTerm && !` ${modelStr.toLowerCase()}`.endsWith(` ${variantTerm.toLowerCase()}`)
       ? `${vehicle} ${variantTerm}`
@@ -577,7 +582,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Preview and final selection must get identical inputs.
   const siblings = await siblingsPromise;
   const selectOpts = {
-    variant: variantParts.identity ? { identity: variantParts.identity, siblings } : null,
+    variant: ownIdentity
+      ? { identity: ownIdentity, siblings, displacement: variantParts.displacement }
+      : null,
     gearbox,
     // A drive named only in the variant ("2.0 TDI 4MOTION") is still a preference.
     drivetrain: drivetrain ?? variantParts.drive,
@@ -778,7 +785,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           : mixedBody
             ? "Die Treffer mischen verschiedene Karosserie-Varianten (z.B. Coupé und Roadster) – entferne unpassende und rechne neu."
             : toppedUp > 0
-              ? "Bei einigen Inseraten ist die Motorisierung nicht ausgewiesen – prüf sie kurz nach."
+              ? variantStr
+                ? "Bei einigen Inseraten ist die Motorisierung oder Ausführung nicht ausgewiesen – prüf sie kurz nach."
+                : "Bei einigen Inseraten ist die Motorisierung nicht ausgewiesen – prüf sie kurz nach."
               : relaxed && kmNum !== null
                 ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
                 : undefined,

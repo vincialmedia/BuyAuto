@@ -558,11 +558,14 @@ export function autolinaCategoryUrl(make: string, model: string): string {
 }
 
 /**
- * Equipment lines that share a letter with a trim: "R-Line" is not an "R",
- * "S line" not an "S". Merged into one token before any trim/variant matching.
+ * Equipment lines that share letters with a trim: "R-Line" is not an "R",
+ * "ST-Line" no Focus ST, "N Line" no i30 N, "GT-Line" no Ceed GT, "R.S. Line"
+ * no Clio RS. Merged into one token before any trim/variant matching.
  */
 function mergeEquipmentLines(lower: string): string {
-  return lower.replace(/\b(r|s|amg)[\s_-]*line\b/g, "$1line").replace(/\bm[\s_-]*sport/g, "msport");
+  return lower
+    .replace(/\b(r\.?\s?s\.?|st|gt|n|r|s|amg)[\s_.-]*line\b/g, (_m, p: string) => `${p.replace(/[.\s]/g, "")}line`)
+    .replace(/\bm[\s_-]*sport/g, "msport");
 }
 
 /**
@@ -804,7 +807,12 @@ const DRIVE_WORDS = /\b(?:4motion|quattro|4matic|awd|4x4|all4|allrad\w*)(?![a-z0
 
 /** Engine-code tokens: they name the engine family, not the trim. */
 const ENGINE_CODE =
-  /^(e-?tsi|tsi|tdi|tfsi|fsi|tgi|cdi|crdi|hdi|bluehdi|dci|tdci|tce|thp|multijet|ecoboost|puretech|skyactiv(-[a-z])?|mhev|bluemotion|bluetec)$/i;
+  /^(e-?tsi|tsi|tdi|tfsi|fsi|tgi|cdi|crdi|hdi|bluehdi|dci|tdci|tce|thp|multijet|ecoboost|puretech|skyactiv(-[a-z])?|mhev|bluemotion|bluetec|cdti|ti-?vct|vti|mpi|t-?gdi|gdi|sce|ecoblue|duratec|d-?4d|dig-?t|i-?vtec|i-?dtec|jtdm?|vvt-?i|multiair|ecotec)$/i;
+
+// Audi's plug-in hybrids: "40 TFSI e" is its own car next to the petrol "40
+// TFSI". One token, so the engine-code filter can't strip it and leave a
+// non-contiguous "40 e" that no listing title ever spells.
+const glueHybridMarker = (s: string) => s.replace(/\btfsi[\s-]?e(?![a-z0-9])/gi, "tfsie");
 
 export interface VariantParts {
   displacement: string | null;
@@ -819,7 +827,7 @@ export interface VariantParts {
  * variant is fully described by displacement/drive and needs no token check.
  */
 export function splitVariant(variant: string): VariantParts {
-  const v = (variant ?? "").replace(/\s+/g, " ").trim();
+  const v = glueHybridMarker(variant ?? "").replace(/\s+/g, " ").trim();
   const displacement = displacementOf(v);
   const drive = new RegExp(DRIVE_WORDS.source, "i").test(v) ? "Allrad" : null;
   const identity = v
@@ -835,6 +843,29 @@ export function splitVariant(variant: string): VariantParts {
 /** The variant search term: the variant as named, minus the drive words. */
 export function variantSearchTerm(variant: string): string {
   return (variant ?? "").replace(DRIVE_WORDS, " ").replace(/\+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Drop a leading repeat of the model name: some catalog rows carry it ("X3
+ * 20d xDrive", "Panamera 4S", "I5 eDrive40") next to the plain form. Left in,
+ * "X3 20d" reads as a longer sibling of "20d" that every X3 title names, and
+ * "Panamera 4" never counts as the base of "4 E-Hybrid".
+ */
+export function stripModelPrefix(text: string, model: string): string {
+  const modelCompact = variantTokens(model).join("");
+  if (!modelCompact) return text;
+  const parts = text.split(/\s+/).filter(Boolean);
+  let acc = "";
+  for (let i = 0; i < parts.length && acc.length < modelCompact.length; i++) {
+    acc += variantTokens(parts[i]).join("");
+    if (acc === modelCompact) return parts.slice(i + 1).join(" ");
+  }
+  return text;
+}
+
+/** A catalog variant's identity for the variant check, relative to its model. */
+export function variantIdentity(variant: string, model: string): string {
+  return stripModelPrefix(splitVariant(variant).identity, model);
 }
 
 function safeDecode(s: string): string {
@@ -871,13 +902,22 @@ function urlSlugText(url: string): string {
 /** Normalized match tokens: folded, equipment lines merged, drive words and prices removed. */
 function variantTokens(text: string): string[] {
   const t = mergeEquipmentLines(
-    text
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      // Prices and mileages ("CHF 40'900", "40'000 km") are not designations:
-      // Audi's "40" must not match them.
-      .replace(/\d{1,3}(?:['’]\d{3})+/g, " ")
+    glueHybridMarker(
+      text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+    )
+      // Mileages and prices ("40'000 km", "40.000 km", "40 000 km", "CHF 40 900",
+      // a "...-40-000-km" slug) are not designations: Audi's "40" must not
+      // match them. A plain space only counts as a thousands separator next to
+      // "km" or a currency — "C 63 507" and "911 992" are names, not numbers.
+      .replace(/\d+(?:[\s'’.\u00a0\u202f-]\d{3})*[\s-]?km\b/g, " ")
+      .replace(/\b(?:chf|sfr|fr\.|eur)\s*\d+(?:[\s'’.\u00a0\u202f]\d{3})*/g, " ")
+      .replace(/\d+(?:[\s'’.\u00a0\u202f]\d{3})*\s*(?:chf|sfr|eur)\b/g, " ")
+      .replace(/(?<!\d)\d{1,3}(?:['’.\u00a0\u202f]\d{3})+(?!\d)/g, " ")
+      // A decimal stays one token: "3.0" must never glue into Audi's "30".
+      .replace(/(\d)[.,](?=\d)/g, "$1p")
   ).replace(DRIVE_WORDS, " ");
   return t.split(/[^a-z0-9]+/).filter(Boolean);
 }
@@ -1115,8 +1155,12 @@ export interface CompSelection {
 }
 
 export interface SelectOptions {
-  /** Requested catalog variant identity (see splitVariant) and its siblings' identities. */
-  variant?: { identity: string; siblings: string[] } | null;
+  /**
+   * Requested catalog variant identity (see variantIdentity) and its siblings'
+   * identities. `displacement`: the variant names one ("1.6 Ti-VCT") — its
+   * identity is then an engine descriptor, not a trim.
+   */
+  variant?: { identity: string; siblings: string[]; displacement?: string | null } | null;
   gearbox?: RequestedGearbox | null;
   drivetrain?: RequestedDrivetrain | null;
 }
@@ -1170,20 +1214,27 @@ export function selectComps(
   //     confirmed (the identity is stronger evidence than a stated
   //     displacement), and a comp naming no variant is set aside entirely —
   //     for a Golf R lookup, an untyped "VW Golf" is most likely a plain Golf.
+  //     Exception: a variant that names a displacement ("1.6 Ti-VCT", "4.0
+  //     Turbo") — a comp that already confirmed that engine above but leaves
+  //     out the descriptor ("Ford Focus 1.6 Trend") is a top-up candidate, not
+  //     set aside: most titles never spell such descriptors.
   //     With nothing unverified left, the band anchors on matches only.
   let droppedForVariant = 0;
   let variantUnverified = 0;
   const variant = opts?.variant?.identity.trim() ? opts.variant : null;
   if (variant) {
+    const engineConfirmed = new Set(requestedDisplacement && variant.displacement ? confirmed : []);
     const matched: CompCandidate[] = [];
+    const engineOnly: CompCandidate[] = [];
     for (const c of [...confirmed, ...unverified]) {
       const verdict = variantVerdict(c.title, c.url, variant.identity, variant.siblings);
       if (verdict === "match") matched.push(c);
       else if (verdict === "mismatch") droppedForVariant += 1;
+      else if (engineConfirmed.has(c)) engineOnly.push(c);
       else variantUnverified += 1;
     }
     confirmed = matched;
-    unverified = [];
+    unverified = engineOnly;
   }
 
   // 1b) Body-variant verdict. Only when the requested variant is KNOWN — the

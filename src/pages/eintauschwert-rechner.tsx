@@ -218,8 +218,8 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             <p className="text-lg md:text-xl text-neutral-300 leading-relaxed mb-6 max-w-2xl mx-auto">
               Der Eintauschwert ist der Preis, den die Garage beim Eintausch zahlt: Marktwert minus
               Aufbereitung, Garantie-Rückstellung, Standzeit und Marge – als Faustregel 80–90% des
-              Marktwerts. Gib Marke, Modell, Ausführung und Jahrgang ein – der Kilometerstand ist
-              optional, macht den Wert aber präziser. Der Rechner zieht echte Vergleichsinserate bei und liefert in 2 Minuten den Ankaufspreis samt Rechenweg fürs
+              Marktwerts. Gib Marke, Modell und Jahrgang ein – Ausführung (z.B. Golf R) und
+              Kilometerstand sind optional, machen den Wert aber präziser. Der Rechner zieht echte Vergleichsinserate bei und liefert in 2 Minuten den Ankaufspreis samt Rechenweg fürs
               Kundengespräch.
             </p>
 
@@ -249,7 +249,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             <ol className="grid grid-cols-1 md:grid-cols-3 gap-4 list-none pl-0">
               <li className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
                 <span className="text-red-600 font-bold text-2xl">1.</span>
-                <p className="mt-2 text-neutral-700"><strong>Fahrzeug eingeben:</strong> Marke, Modell, Ausführung (z.B. Golf R statt Golf) und Jahrgang – Kilometerstand, Getriebe und Antrieb sind optional, machen den Wert aber präziser. Der Rechner sucht automatisch bis zu 5 passende Inserate – oder du erfasst sie manuell.</p>
+                <p className="mt-2 text-neutral-700"><strong>Fahrzeug eingeben:</strong> Marke, Modell und Jahrgang – Ausführung (z.B. Golf R statt Golf), Kilometerstand, Getriebe und Antrieb sind optional, machen den Wert aber präziser. Der Rechner sucht automatisch bis zu 5 passende Inserate – oder du erfasst sie manuell.</p>
               </li>
               <li className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
                 <span className="text-red-600 font-bold text-2xl">2.</span>

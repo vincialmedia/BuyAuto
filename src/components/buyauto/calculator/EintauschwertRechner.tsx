@@ -250,6 +250,20 @@ function splitTgModel(model: string, variantText: string): { model: string; vari
   return { model, variant };
 }
 
+// What a Typenschein says about the trim when the catalog has no matching
+// Ausführung: "VII 2.0GTI 5" -> "2.0 GTI". Generation numerals ("VII", "8")
+// and door counts ("5", "3T") describe no trim and go; so do body words.
+const ROMAN_GENERATION_RE = /^(I{1,3}|IV|VI{0,3}|IX|X)$/;
+function tgTrimText(variantText: string | null | undefined): string {
+  return stripBodyWords(variantText)
+    .replace(/(\d[.,]\d)(?=[a-z]{2,}(?![a-z]*\d))/gi, "$1 ")
+    .split(/\s+/)
+    .filter((t) => t && !ROMAN_GENERATION_RE.test(t) && !/^\d[tT]?$/.test(t))
+    .join(" ")
+    .slice(0, VARIANT_MAX)
+    .trim();
+}
+
 // Anonymous users get a taste before signing up: ANON_FREE_SEARCHES free
 // automatic searches, counted in localStorage. This is a lead magnet, not DRM —
 // a cleared cache just grants them again. Logged-in users are metered server-side via /api/valuation/*
@@ -541,6 +555,10 @@ export function EintauschwertRechner() {
   // their option list has loaded (make -> models -> variants).
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
   const [pendingVariantId, setPendingVariantId] = useState<string | null>(null);
+  // The Typenschein named a trim the catalog list doesn't have ("2.0 GTI" on a
+  // type the dropdown can't match): the Ausführung is then a free-text field
+  // holding it, until the user goes back to the list.
+  const [variantFreeText, setVariantFreeText] = useState(false);
   // Explicit user-facing choice between dropdowns and free text. Deriving this
   // from "is the field empty" flips the input type mid-keystroke — never do that.
   const [vehicleFieldMode, setVehicleFieldMode] = useState<'select' | 'text'>('select');
@@ -565,7 +583,7 @@ export function EintauschwertRechner() {
   } | null>(null);
   // The lookup's provider texts, for when its model can't be picked from the
   // dropdown after all (see the pending-model effect).
-  const tgTextFallbackRef = useRef<{ make: string; model: string; variant: string } | null>(null);
+  const tgTextFallbackRef = useRef<{ make: string; model: string; variant: string; trim: string } | null>(null);
   // The car the shown result was computed for: the CTA lists this car, even if
   // the form was edited since.
   const resultVehicleRef = useRef<SellVehicle | null>(null);
@@ -590,6 +608,11 @@ export function EintauschwertRechner() {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+  // Same for the selected make: the user can change it while a lookup runs.
+  const makeIdRef = useRef(makeId);
+  useEffect(() => {
+    makeIdRef.current = makeId;
+  }, [makeId]);
 
   useEffect(() => {
     setIsClient(true);
@@ -722,8 +745,9 @@ export function EintauschwertRechner() {
       setModelId("");
       setVariantId("");
       if (text) {
-        setState((prev) => ({ ...prev, make: text.make, model: text.model, variant: text.variant }));
-        if (tgVehicleRef.current) tgVehicleRef.current = { ...tgVehicleRef.current, ...text, variantId: "" };
+        const { make, model, variant } = text;
+        setState((prev) => ({ ...prev, make, model, variant }));
+        if (tgVehicleRef.current) tgVehicleRef.current = { ...tgVehicleRef.current, make, model, variant, variantId: "" };
       }
       return;
     }
@@ -734,21 +758,34 @@ export function EintauschwertRechner() {
     }
     setModelId(match.id);
     setVariantId("");
-    setState((prev) => ({ ...prev, model: match.name, variant: "" }));
+    // No catalog variant decoded: keep the Typenschein's own trim text rather
+    // than silently valuing a GTI as a plain Golf.
+    const trim = pendingVariantId ? "" : tgTextFallbackRef.current?.trim ?? "";
+    setVariantFreeText(trim !== "");
+    setState((prev) => ({ ...prev, model: match.name, variant: trim }));
     if (tgVehicleRef.current) {
-      tgVehicleRef.current = { ...tgVehicleRef.current, model: match.name, variant: "", variantId: "" };
+      tgVehicleRef.current = { ...tgVehicleRef.current, model: match.name, variant: trim, variantId: "" };
     }
-    // modelId is read only to compare; the effect must not re-run on it.
+    // modelId is read only to compare, pendingVariantId was staged together
+    // with pendingModelId; the effect must not re-run on either.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [models, modelsLoading, pendingModelId, makeId]);
 
-  // Then its variant, once the model's variants are in. Not found: the field
-  // simply stays empty — the Ausführung is optional.
+  // Then its variant, once the model's variants are in. Not found: the
+  // Typenschein's trim text, as when none was decoded (the field is optional,
+  // so without one it simply stays empty).
   useEffect(() => {
     if (!pendingVariantId || !modelId || variantsLoading) return;
     const match = variants.find((v) => v.id === pendingVariantId);
     setPendingVariantId(null);
-    if (!match) return;
+    if (!match) {
+      const trim = tgTextFallbackRef.current?.trim ?? "";
+      if (!trim) return;
+      setVariantFreeText(true);
+      setState((prev) => ({ ...prev, variant: trim }));
+      if (tgVehicleRef.current) tgVehicleRef.current = { ...tgVehicleRef.current, variant: trim, variantId: "" };
+      return;
+    }
     setVariantId(match.id);
     setState((prev) => ({ ...prev, variant: match.name }));
     if (tgVehicleRef.current) {
@@ -793,6 +830,7 @@ export function EintauschwertRechner() {
   const clearPendingTg = () => {
     setPendingModelId(null);
     setPendingVariantId(null);
+    setVariantFreeText(false);
   };
 
   const handlePreset = () => {
@@ -956,8 +994,11 @@ export function EintauschwertRechner() {
         // Catalog hit: stay in the dropdowns like the listing wizard. The model
         // (then the variant) is applied once its option list has loaded; the
         // pending-model effect falls back to the texts if it never shows up.
-        tgTextFallbackRef.current = { make: textMake, ...text };
-        if (knownMake.id !== makeId) {
+        tgTextFallbackRef.current = { make: textMake, ...text, trim: tgTrimText(data.variant_text) };
+        // The live make, not the one at click time: if the user picked this
+        // make meanwhile, its models are already loaded and setMakeId would be
+        // a no-op that never clears modelsLoading.
+        if (knownMake.id !== makeIdRef.current) {
           setModels([]);
           setModelsLoading(true);
           setMakeId(knownMake.id);
@@ -1714,15 +1755,33 @@ export function EintauschwertRechner() {
                   label="Ausführung (optional)"
                   tooltip="Motorisierung bzw. Version, z.B. R, GTI oder 2.0 TDI. Ein Golf R kostet deutlich mehr als ein gewöhnlicher Golf – mit der Ausführung sucht der Rechner gezielt passende Vergleichsinserate."
                 />
-                {modelIsFreeText || (modelId !== "" && !variantsLoading && variants.length === 0) ? (
-                  <Input
-                    type="text"
-                    value={state.variant}
-                    onChange={(e) => updateState('variant', e.target.value)}
-                    placeholder="z.B. R, GTI, 2.0 TDI"
-                    maxLength={VARIANT_MAX}
-                    className="bg-neutral-50/50"
-                  />
+                {modelIsFreeText || variantFreeText || (modelId !== "" && !variantsLoading && variants.length === 0) ? (
+                  <>
+                    <Input
+                      type="text"
+                      value={state.variant}
+                      onChange={(e) => updateState('variant', e.target.value)}
+                      placeholder="z.B. R, GTI, 2.0 TDI"
+                      maxLength={VARIANT_MAX}
+                      className="bg-neutral-50/50"
+                    />
+                    {variantFreeText && !modelIsFreeText && variants.length > 0 && (
+                      <p className="text-xs text-neutral-500">
+                        Vom Typenschein übernommen.{" "}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVariantFreeText(false);
+                            setVariantId("");
+                            updateState('variant', "");
+                          }}
+                          className="text-neutral-400 hover:text-red-600 underline underline-offset-2 transition-colors"
+                        >
+                          Aus Liste wählen
+                        </button>
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <Select
                     value={variantId}
