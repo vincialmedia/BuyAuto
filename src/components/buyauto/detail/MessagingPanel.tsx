@@ -7,21 +7,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   createOrGetConversationForListing,
   getExistingConversationForListing,
+  openConversationForListing,
   createSignedAttachmentUrl,
   getConversationContext,
   getMessages,
   sendMessage,
   sendMessageWithAttachments,
 } from "@/services/messagingService";
-import { LogIn, SendHorizontal, Paperclip, X } from "lucide-react";
-import { useRouter } from "next/router";
-import { trackOnce } from "@/lib/analytics";
+import { SendHorizontal, Paperclip, X } from "lucide-react";
+import { clearQueuedLoginEvent, queueLoginEvent, trackOnce } from "@/lib/analytics";
+import authService from "@/services/authService";
+import { GuestMessageForm, type GuestLoginResult } from "./GuestMessageForm";
 
 export interface MessagingPanelProps {
   listingId: string;
   listingTitle: string;
   ownerId?: string | null;
   isSold?: boolean;
+  /** Picks the suggested first message for logged-out visitors. */
+  dealType?: "lease_takeover" | "direct_purchase" | null;
   className?: string;
 }
 
@@ -74,11 +78,19 @@ function formatBytes(value: number | null | undefined): string {
   return `${fixed} ${units[i]}`;
 }
 
-export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, className }: MessagingPanelProps) {
+export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealType, className }: MessagingPanelProps) {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
   const isSeller = Boolean(user?.id && ownerId && user.id === ownerId);
+  // Logged-out visitors get the guest form (message + account in one step).
+  // The page HTML is CDN-cached, so this is only decided once auth resolved.
+  const isGuest = !user && !loading;
+  // Bumped after a guest logs in and sends, so the chat reloads with it.
+  const [reloadKey, setReloadKey] = useState(0);
+  // A visitor whose email already has an account logs in from the guest form.
+  // The form unmounts the moment the session exists, so the panel carries the
+  // send that follows and its outcome.
+  const [handoff, setHandoff] = useState<{ phase: "sending" } | { phase: "failed"; text: string } | null>(null);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UiMessage[]>([]);
@@ -100,8 +112,17 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
   const canSend = useMemo(() => {
     const hasText = draft.trim().length > 0;
     const hasFiles = selectedFiles.length > 0;
-    return isAuthed && !isSeller && (hasText || hasFiles) && !busy && !readOnly && !soldBlocked && !messagingUnavailable;
-  }, [busy, draft, isAuthed, isSeller, readOnly, soldBlocked, messagingUnavailable, selectedFiles.length]);
+    return (
+      isAuthed &&
+      !isSeller &&
+      (hasText || hasFiles) &&
+      !busy &&
+      !readOnly &&
+      !soldBlocked &&
+      !messagingUnavailable &&
+      handoff?.phase !== "sending"
+    );
+  }, [busy, draft, isAuthed, isSeller, readOnly, soldBlocked, messagingUnavailable, selectedFiles.length, handoff]);
 
   const counterpartyLabel = useMemo(() => {
     if (counterpartyRole === "seller") return "Anbieter";
@@ -114,7 +135,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
       return { kind: "info", text: "Dies ist dein eigenes Inserat. Du kannst dir selbst keine Nachrichten senden." };
     }
     if (!isAuthed) {
-      return { kind: "info", text: "Bitte logge Dich ein oder registriere Dich, um Nachrichten zu schicken." };
+      return null;
     }
     if (soldBlocked) {
       return { kind: "warning", text: "Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich." };
@@ -218,7 +239,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
     return () => {
       cancelled = true;
     };
-  }, [isAuthed, listingId, isSeller, isSold]);
+  }, [isAuthed, listingId, isSeller, isSold, reloadKey]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -246,8 +267,65 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
+  // Existing account typed into the guest form: log in with that password,
+  // then send the message the way handleSend does. Nothing is sent unless the
+  // password is right.
+  async function logInAndSend(email: string, password: string, body: string): Promise<GuestLoginResult> {
+    setHandoff({ phase: "sending" });
+    // Queued before signing in: the profile load that flushes it can finish
+    // before signIn resolves.
+    queueLoginEvent();
+    try {
+      await authService.signIn({ email, password });
+    } catch (error) {
+      setHandoff(null);
+      clearQueuedLoginEvent();
+      const code = (error as { code?: string } | null)?.code;
+      const text = error instanceof Error ? error.message : "";
+      if (code === "email_not_confirmed" || text.includes("Email not confirmed")) return "email_not_confirmed";
+      if (code === "invalid_credentials" || text.includes("Invalid login credentials")) return "invalid_credentials";
+      return "failed";
+    }
+
+    const existingConvId = await getExistingConversationForListing(listingId);
+    let convId = existingConvId;
+    let failure: string | null = null;
+    if (!convId) {
+      const opened = await openConversationForListing(listingId);
+      if ("id" in opened) convId = opened.id;
+      else if (opened.error.includes("cannot_message_own_listing"))
+        failure = "Dies ist dein eigenes Inserat. Du kannst dir selbst keine Nachrichten senden.";
+      else if (opened.error.includes("listing_sold"))
+        failure = "Das Fahrzeug wurde verkauft, weitere Nachrichten sind nicht möglich.";
+    }
+    const ok = convId ? await sendMessage(convId, body) : false;
+
+    if (ok) {
+      if (!existingConvId) {
+        trackOnce(`ba_lead_conversation_${listingId}`, "generate_lead", {
+          lead_type: "conversation",
+          listing_id: listingId,
+          value: 0,
+          currency: "CHF",
+          new_account: false,
+        });
+      }
+      setHandoff(null);
+    } else if (failure) {
+      // Own listing or sold: sending again can't work, so no text in the composer.
+      setHandoff({ phase: "failed", text: failure });
+    } else {
+      // Keep the text; if the chat is still open it can be sent again.
+      setDraft(body);
+      setHandoff({ phase: "failed", text: "Du bist eingeloggt, aber die Nachricht konnte nicht gesendet werden." });
+    }
+    setReloadKey((key) => key + 1);
+    return "logged_in";
+  }
+
   async function handleSend() {
     if (readOnly || soldBlocked || messagingUnavailable || isSeller) return;
+    setHandoff(null);
 
     const body = draft.trim();
     const hasFiles = selectedFiles.length > 0;
@@ -281,6 +359,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
           listing_id: listingId,
           value: 0,
           currency: "CHF",
+          new_account: false,
         });
       }
       setDraft("");
@@ -326,30 +405,55 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, class
     setBusy(false);
   }
 
+  const header = (
+    <div className="min-w-0">
+      <h3 className="text-lg font-bold tracking-tight text-neutral-900">Nachricht Schreiben</h3>
+      <p className="text-sm text-neutral-600 mt-1">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
+      {user && counterpartyName ? (
+        <p className="text-sm text-neutral-600 mt-1">
+          <span className="font-semibold text-neutral-900">{counterpartyLabel}:</span> {counterpartyName}
+        </p>
+      ) : null}
+    </div>
+  );
+
+  if (!user) {
+    return (
+      <Card className={cn("border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden", className)}>
+        <CardContent className="p-6">
+          {header}
+          {isGuest ? (
+            <GuestMessageForm listingId={listingId} dealType={dealType} onExistingAccount={logInAndSend} />
+          ) : (
+            <div className="mt-5 space-y-3" aria-hidden="true">
+              <div className="h-24 bg-neutral-50 rounded-2xl border border-neutral-200 animate-pulse" />
+              <div className="h-11 bg-neutral-50 rounded-xl border border-neutral-200 animate-pulse" />
+              <div className="h-11 bg-neutral-50 rounded-xl border border-neutral-200 animate-pulse" />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className={cn("border-neutral-200/60 shadow-sm bg-white rounded-3xl overflow-hidden", className)}>
       <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">Nachricht Schreiben</h3>
-            <p className="text-sm text-neutral-600 mt-1">Chat-Verlauf bleibt beim Inserat „{listingTitle}“ gespeichert.</p>
-            {counterpartyName ? (
-              <p className="text-sm text-neutral-600 mt-1">
-                <span className="font-semibold text-neutral-900">{counterpartyLabel}:</span> {counterpartyName}
-              </p>
-            ) : null}
-          </div>
+        {header}
 
-          {!isAuthed ? (
-            <Button
-              className="bg-neutral-900 hover:bg-neutral-800 text-white"
-              onClick={() => router.push("/auth?redirect=" + encodeURIComponent(router.asPath))}
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Einloggen
-            </Button>
-          ) : null}
-        </div>
+        {handoff ? (
+          <div
+            role="status"
+            className={cn(
+              "mt-4 rounded-2xl border p-4 text-sm",
+              handoff.phase === "failed"
+                ? "border-amber-200 bg-amber-50 text-amber-900"
+                : "border-neutral-200 bg-neutral-50 text-neutral-700"
+            )}
+          >
+            {handoff.phase === "sending" ? "Du bist eingeloggt. Deine Nachricht wird gesendet …" : handoff.text}
+          </div>
+        ) : null}
 
         {notice ? (
           <div
