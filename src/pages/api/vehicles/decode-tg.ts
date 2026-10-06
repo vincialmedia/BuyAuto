@@ -145,8 +145,8 @@ export function mapTgListingBody(raw: string | null): string | null {
 
 /**
  * Findet das Katalog-Modell, dessen Name den Anfang des TARGA-Typ-Texts bildet
- * ("Golf 8 1.5 eTSI" -> "Golf"; "Golf GTI Clubsport 2.0" -> "Golf GTI
- * Clubsport"). Vergleich tokenweise über normalizeVehicleKey, damit
+ * ("Golf 8 1.5 eTSI" -> "Golf"; "Golf Variant 1.5 TSI" -> "Golf
+ * Variant"). Vergleich tokenweise über normalizeVehicleKey, damit
  * Punktierung/Umlaute nicht stören ("ID.3 Pro" matcht "ID.3") und "T500"
  * NICHT "T5" matcht. Bei mehreren Treffern gewinnt der längste Name.
  */
@@ -316,10 +316,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Tokenweiser Präfix-Match gegen die echten Katalog-Modelle der Marke —
       // deutlich treffersicherer als die abgeleitete Modellfamilie, weil er
       // Generationszahlen und Motorisierungs-Suffixe im TARGA-Typ übersteht.
+      // Nur aktive Modelle, wie /api/vehicles/models: die inaktiven Trim-
+      // Modelle ("Golf R", "Golf GTI") sind in keinem Dropdown wählbar. So
+      // wird "Golf R" zu Modell "Golf" + Ausführung "R".
       const { data: modelRows } = await supabase
         .from("models")
         .select("id,name")
         .eq("make_id", makeId)
+        .eq("is_active", true)
         .limit(1000);
       const matched = matchModelFromTyp(
         providerModel,
@@ -333,6 +337,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             .from("variants")
             .select("id,name")
             .eq("model_id", matched.id)
+            .eq("is_active", true)
             .limit(500);
           const variant = matchVariantFromRest(
             matched.rest,
@@ -348,6 +353,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             .select("id")
             .eq("make_id", makeId)
             .eq("normalized_name", normalizeVehicleKey(candidate))
+            .eq("is_active", true)
             .maybeSingle();
           modelId = (modelRow as { id?: string } | null)?.id ?? null;
         }

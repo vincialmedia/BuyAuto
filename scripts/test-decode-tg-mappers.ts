@@ -113,4 +113,17 @@ assert.equal(matchVariantFromRest("R 2.0 4Motion", golfVariants)?.id, "r");
 assert.equal(matchVariantFromRest("", golfVariants), null);
 assert.equal(matchVariantFromRest("2.0 TDI", golfVariants), null);
 
+// Regression: TG 1XV620 typ "Golf R". The trim-as-model rows ("Golf R",
+// "Golf GTI") are is_active=false, so decode-tg only matches against the
+// active models: "Golf R" must land on "Golf" + variant "R", the pair the
+// wizard and Rechner dropdowns can actually show.
+const activeVwModels = [
+  { id: "golf", name: "Golf" },
+  { id: "golf-variant", name: "Golf Variant" },
+  { id: "golf-cabriolet", name: "Golf Cabriolet" },
+];
+const golfR = matchModelFromTyp("Golf R", activeVwModels);
+assert.deepEqual(golfR, { id: "golf", name: "Golf", rest: "R" });
+assert.equal(matchVariantFromRest(golfR.rest, golfVariants)?.id, "r");
+
 console.log("All decode-tg mapper checks passed.");
