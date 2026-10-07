@@ -32,8 +32,8 @@ export interface QuotaResult {
 /**
  * Resolve the caller's monthly limit from their dealer plan. A garage with any
  * real plan / active subscription / active admin override is "paid", and the
- * limit then depends on which tier they are on (Starter 25 / Growth 100 /
- * Pro 400) — the automatic search spends Firecrawl credits, so it is priced
+ * limit then depends on which tier they are on (GARAGE_PLANS
+ * valuationsPerMonth) — the automatic search spends Firecrawl credits, so it is priced
  * like the metered resource it is. Everyone else logged-in is "free".
  *
  * Fails OPEN: if plan detection throws, we treat the user as paid rather than

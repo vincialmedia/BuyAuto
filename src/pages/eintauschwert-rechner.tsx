@@ -149,7 +149,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: "https://www.buyauto.ch/" },
-      { "@type": "ListItem", position: 2, name: "Für Garagen", item: "https://www.buyauto.ch/garage-plan" },
+      { "@type": "ListItem", position: 2, name: "Für Garagen", item: "https://www.buyauto.ch/fuer-garagen" },
       { "@type": "ListItem", position: 3, name: "Eintauschwert-Rechner", item: canonical },
     ],
   };
@@ -202,7 +202,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             <nav aria-label="Brotkrumen" className="mb-5 flex items-center justify-center gap-1.5 text-xs text-neutral-400">
               <Link href="/" className="hover:text-white transition-colors">Home</Link>
               <ChevronRight className="w-3 h-3" aria-hidden="true" />
-              <Link href="/garage-plan" className="hover:text-white transition-colors">Für Garagen</Link>
+              <Link href="/fuer-garagen" className="hover:text-white transition-colors">Für Garagen</Link>
               <ChevronRight className="w-3 h-3" aria-hidden="true" />
               <span className="text-neutral-200">Eintauschwert-Rechner</span>
             </nav>
@@ -436,7 +436,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
                 <ShieldCheck className="w-8 h-8 text-red-400 mb-4" />
                 <h3 className="font-bold text-lg mb-2">Bewertungen im Paket</h3>
-                <p className="text-sm text-neutral-400">25 bis 400 automatische Suchen pro Monat, je nach Garagen-Paket – manuelle Berechnungen immer ohne Limit.</p>
+                <p className="text-sm text-neutral-400">{GARAGE_PLANS.starter.valuationsPerMonth} bis {GARAGE_PLANS.pro.valuationsPerMonth} automatische Suchen pro Monat, je nach Garagen-Paket – manuelle Berechnungen immer ohne Limit.</p>
               </div>
               <div className="bg-white/10 p-6 rounded-xl border border-white/10">
                 <Building2 className="w-8 h-8 text-red-400 mb-4" />
@@ -446,7 +446,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white shadow-lg border-none">
-                <Link href="/garage-plan">
+                <Link href="/fuer-garagen">
                   <Building2 className="w-4 h-4 mr-2" />
                   Garagen-Angebot ansehen
                 </Link>
@@ -509,7 +509,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                 <span className="font-medium">Occasionen auf BuyAuto durchsuchen</span>
                 <ChevronRight className="w-4 h-4 text-red-400 group-hover:translate-x-0.5 transition-transform" />
               </Link>
-              <Link href="/garage-plan" className="flex items-center justify-between gap-2 bg-neutral-50 rounded-xl border border-neutral-200 px-5 py-4 text-neutral-700 hover:border-red-300 hover:text-red-600 transition-colors group">
+              <Link href="/fuer-garagen" className="flex items-center justify-between gap-2 bg-neutral-50 rounded-xl border border-neutral-200 px-5 py-4 text-neutral-700 hover:border-red-300 hover:text-red-600 transition-colors group">
                 <span className="font-medium">BuyAuto für Garagen & Händler</span>
                 <ChevronRight className="w-4 h-4 text-red-400 group-hover:translate-x-0.5 transition-transform" />
               </Link>

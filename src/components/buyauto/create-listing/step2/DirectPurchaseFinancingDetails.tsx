@@ -12,7 +12,12 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWizard } from "../ListingWizard";
-import { createOrUpdateListing, vehicleCoreFieldsFromWizard, type ListingUpdatePayload } from "@/services/createListingService";
+import {
+  attributionFieldsFromWizard,
+  createOrUpdateListing,
+  vehicleCoreFieldsFromWizard,
+  type ListingUpdatePayload,
+} from "@/services/createListingService";
 import { updateListingDraft } from "@/services/listingDraftService";
 
 import { LeaseTakeoverOfferSection, type LeaseTakeoverOfferFormValues } from "./LeaseTakeoverOfferSection";
@@ -641,6 +646,7 @@ export function DirectPurchaseFinancingDetails() {
 
         // Carry the Step-1 technical fields so this INSERT never drops them (U4).
         ...vehicleCoreFieldsFromWizard(data),
+        ...attributionFieldsFromWizard(data),
 
         purchase_price_chf: purchasePriceChfClean,
         price_per_month_chf: null,

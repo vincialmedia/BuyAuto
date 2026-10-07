@@ -937,6 +937,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string | null
           created_by: string | null
+          created_via: string | null
           deal_type: Database["public"]["Enums"]["deal_type"]
           deposit_chf: number | null
           description: string | null
@@ -1007,6 +1008,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_via?: string | null
           deal_type?: Database["public"]["Enums"]["deal_type"]
           deposit_chf?: number | null
           description?: string | null
@@ -1077,6 +1079,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_via?: string | null
           deal_type?: Database["public"]["Enums"]["deal_type"]
           deposit_chf?: number | null
           description?: string | null

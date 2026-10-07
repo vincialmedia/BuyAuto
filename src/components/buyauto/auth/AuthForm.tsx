@@ -20,11 +20,14 @@ type AuthView = "login" | "register" | "reset-password" | "update-password";
 interface AuthFormProps {
   initialView?: AuthView;
   initialAccountType?: "private" | "garage";
+  /** Sanitised internal path the sign-up confirmation link returns to. */
+  returnPath?: string;
 }
 
 export default function AuthForm({
   initialView = "login",
   initialAccountType,
+  returnPath,
 }: AuthFormProps = {}) {
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [isLoading, setIsLoading] = useState(false);
@@ -89,6 +92,16 @@ export default function AuthForm({
         garageName: data.garageName,
         city: data.city,
         contactEmail: data.contactEmail,
+        // Paths behind the auth middleware (/dashboard, /admin) would bounce the
+        // link's ?code= into a nested redirect and lose the session: those go
+        // through /auth, which exchanges the code and then forwards.
+        ...(returnPath
+          ? {
+              emailRedirectTo: /^\/(dashboard|admin)(\/|\?|$)/.test(returnPath)
+                ? `${window.location.origin}/auth?redirect=${encodeURIComponent(returnPath)}`
+                : `${window.location.origin}${returnPath}`,
+            }
+          : {}),
       };
       
       await authService.signUp(signUpData);
