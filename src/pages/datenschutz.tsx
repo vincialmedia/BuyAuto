@@ -2,7 +2,7 @@ import Head from "next/head";
 
 // Fixed revision date (see agb.tsx): a privacy policy carries the date it was
 // last changed, and a static value avoids a post-hydration text swap.
-const DATENSCHUTZ_STAND = "26.11.2025";
+const DATENSCHUTZ_STAND = "04.10.2026";
 
 export default function Datenschutz() {
   return (
@@ -74,6 +74,24 @@ export default function Datenschutz() {
               <p className="mb-4">
                 Diese Daten werden in unserer Datenbank bei <strong>Supabase</strong> gespeichert. Die Datenhaltung erfolgt auf Servern in der Schweiz (Zürich, AWS-Infrastruktur).
               </p>
+
+              <h3 id="eintauschwert-rechner" className="text-lg font-medium mb-2 scroll-mt-24">Beim Eintauschwert-Rechner</h3>
+              <p className="mb-4">
+                Wenn Sie im Eintauschwert-Rechner – auf buyauto.ch oder eingebettet auf der Website einer Garage – eine automatische Suche nach Vergleichsinseraten starten oder Ihr Kontingent an Suchen erreicht ist, speichern wir, um die Nutzung des Rechners auszuwerten und ihn zu verbessern:
+              </p>
+              <ul className="list-disc pl-5 mb-4 space-y-1">
+                <li>die eingegebenen Fahrzeugdaten (Marke, Modell, Jahrgang, Kilometerstand, Karosserie, Hubraum) und die gefundenen Vergleichsinserate</li>
+                <li>wo der Rechner verwendet wurde (auf buyauto.ch, im Garage-Dashboard oder eingebettet auf der Website einer Garage)</li>
+                <li>Ihre Benutzer-ID, falls Sie angemeldet sind</li>
+                <li>einen pseudonymen Tageswert: eine Prüfsumme aus IP-Adresse und Browser-Typ (User-Agent), gebildet mit einem zufälligen Schlüssel, der jeden Tag um Mitternacht (UTC) durch einen neuen ersetzt wird. Die IP-Adresse selbst wird nicht gespeichert. Nach dem Tageswechsel lässt sich der Wert aus unserer Datenbank keiner IP-Adresse mehr zuordnen; ältere Schlüssel bleiben nur in Sicherungskopien der Datenbank erhalten, die ausschliesslich der Wiederherstellung dienen.</li>
+                <li>nur wenn Sie im Cookie-Banner «Einverstanden» gewählt haben: eine zufällige Kennung, die im lokalen Speicher Ihres Browsers abgelegt wird («ba_vid»), damit wir mehrere Suchen desselben Browsers zusammenfassen können – sind Sie dabei angemeldet, auch mit Ihrer Benutzer-ID. Wählen Sie «Ablehnen», wird die Kennung aus Ihrem Browser gelöscht und nicht mehr übermittelt.</li>
+              </ul>
+              <p className="mb-4">
+                Nach 12 Monaten entfernen wir Benutzer-ID, Tageswert und Kennung aus den Einträgen; Fahrzeugdaten und Suchergebnisse bleiben ohne Personenbezug für Statistiken erhalten. Auf Anfrage löschen wir Einträge zu Ihrer Benutzer-ID früher. Die Daten werden bei Supabase in der Schweiz gespeichert.
+              </p>
+              <p className="mb-4">
+                Rechtsgrundlage ist unser berechtigtes Interesse an der Verbesserung unseres Angebots (Art. 6 Abs. 1 lit. f DSGVO bzw. Art. 31 Abs. 1 DSG); für die Kennung «ba_vid» Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 Abs. 1 DSG).
+              </p>
             </section>
 
             <section className="mb-10">
@@ -91,6 +109,10 @@ export default function Datenschutz() {
               </p>
               <p className="mb-4">
                 Analyse-Cookies werden erst gesetzt, nachdem Sie im Cookie-Banner auf «Einverstanden» geklickt haben. Bis dahin – und wenn Sie «Ablehnen» wählen – werden über den Google-Consent-Modus ausschliesslich cookielose, nicht auf Sie zurückführbare Signale übermittelt. Rechtsgrundlage der Bearbeitung ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 31 DSG).
+              </p>
+              <p className="mb-4">
+                Mit derselben Einwilligung legen wir im lokalen Speicher Ihres Browsers zusätzlich eine zufällige Kennung («ba_vid») für unsere eigene, pseudonyme Nutzungsstatistik des Eintauschwert-Rechners ab (siehe{" "}
+                <a href="#eintauschwert-rechner" className="text-red-600 hover:underline">Beim Eintauschwert-Rechner</a>).
               </p>
               <p className="mb-4">
                 Sind Sie in Ihrem Benutzerkonto angemeldet und haben Sie eingewilligt, übermitteln wir zusätzlich eine pseudonyme Kennung Ihres Kontos (eine zufällige ID, nicht Ihren Namen oder Ihre E-Mail-Adresse) sowie Ihre Kontoart (privat oder Garage) an Google Analytics. So können wir Ihre Nutzung über mehrere Geräte hinweg zusammenfassen. Name, E-Mail-Adresse, Telefonnummer oder Inhalte Ihrer Nachrichten werden nicht an Google Analytics übermittelt.

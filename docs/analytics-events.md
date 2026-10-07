@@ -29,7 +29,7 @@ registering in GA4.
 | `generate_lead` | `lead_type`, `listing_id?`, `deal_type?`, `new_account?`, `value: 0`, `currency: "CHF"` | see below | see below |
 | ↳ `conversation` | `listing_id`, `new_account` | `detail/MessagingPanel.tsx`, `detail/GuestMessageForm.tsx` | First message of a new conversation sent successfully; once per listing per browser. `new_account: true` when a logged-out visitor created their account with that message (server answered `sent`; never for a filled honeypot), `false` for existing accounts (already logged in, or logged in from the listing chat box). |
 | ↳ `dealer_partner` | — | `auth/AuthForm.tsx` | A garage account registration succeeded. |
-| ↳ `valuation` | — | `calculator/EintauschwertRechner.tsx` | A calculated Eintauschwert result rendered; once per vehicle (recalculations don't count). |
+| ↳ `valuation` | — | `calculator/EintauschwertRechner.tsx` | A calculated Eintauschwert result rendered; once per vehicle (recalculations don't count). Server-side, consent-independent search/gate counts: `docs/valuation-search-logs.md`. |
 | ↳ `inquiry` | — | — | No trigger: nothing writes `listing_inquiries` any more. |
 | `contact_click` | `contact_method: "phone" \| "whatsapp" \| "email"`, `listing_id` (listing pages only) | `AnalyticsProvider.tsx` (delegated listener) | Click on a `tel:`, `mailto:` or WhatsApp link on `/fahrzeug/[id]` or a dealer microsite. The link target is never sent. |
 | `cta_click` | `cta_id`, `page_path` | `pages/lp/leasing-abgeben.tsx`, `pages/leasing-abgeben-schweiz.tsx` | CTA click (navigation intent; not a conversion). |

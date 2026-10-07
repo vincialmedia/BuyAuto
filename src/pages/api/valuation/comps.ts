@@ -23,6 +23,7 @@ import {
   type CompCandidate,
 } from "@/lib/buyauto/compsParser";
 import { peekQuota, commitSearch, type QuotaResult } from "@/lib/buyauto/valuationQuota";
+import { clientIp, logValuationEvent, readLogContext } from "@/lib/buyauto/valuationLog";
 
 // Firecrawl search calls can take 10-30s; lift the serverless limit accordingly.
 // Pages Router API routes configure maxDuration via the config export (the bare
@@ -281,13 +282,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  const ip =
-    (typeof req.headers["x-forwarded-for"] === "string"
-      ? req.headers["x-forwarded-for"].split(",")[0].trim()
-      : null) ??
-    req.socket.remoteAddress ??
-    "unknown";
-  if (rateLimited(ip)) {
+  if (rateLimited(clientIp(req) ?? "unknown")) {
     return res.status(429).json({
       error: "rate_limited",
       message: "Zu viele Anfragen – bitte versuch es später nochmals.",
@@ -349,9 +344,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } = await supabase.auth.getUser();
   let quotaCtx: { limit: number; plan: "free" | "paid" } | null = null;
   let quota: QuotaResult | null = null;
+  // Attribution for valuation_search_logs (page, visitor, build, user).
+  const logCtx = readLogContext(req, input);
+  const logVehicle = {
+    make: makeStr,
+    model: modelStr,
+    year: yearNum,
+    km: kmNum,
+    body: requestedBody,
+    displacement: requestedDisplacement,
+  };
   if (user) {
     const peek = await peekQuota(supabase, user.id);
     if (!peek.allowed) {
+      await logValuationEvent({
+        status: peek.plan === "paid" ? "gate_paid" : "gate_free",
+        vehicle: logVehicle,
+        ctx: logCtx,
+        userId: user.id,
+      });
       return res.status(402).json({
         error: "quota_exceeded",
         message:
@@ -402,13 +413,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // A key/quota problem hits every call the same way — fail loudly instead of
   // reporting a misleading "no listings found".
-  if (outcomes.some((o) => o.status === 401 || o.status === 403)) {
+  const keyProblem = outcomes.some((o) => o.status === 401 || o.status === 403);
+  const creditsProblem = outcomes.some((o) => o.status === 402);
+  if (keyProblem || creditsProblem) {
+    await logValuationEvent({
+      status: "search_failed",
+      vehicle: logVehicle,
+      funnel: { firecrawl: outcomes.map((o) => o.status) },
+      ctx: logCtx,
+      userId: user?.id,
+    });
+  }
+  if (keyProblem) {
     return res.status(502).json({
       error: "firecrawl_auth",
       message: "Die Inserats-Suche meldet einen ungültigen API-Key (Firecrawl). Bitte FIRECRAWL_API_KEY in Vercel prüfen.",
     });
   }
-  if (outcomes.some((o) => o.status === 402)) {
+  if (creditsProblem) {
     return res.status(502).json({
       error: "firecrawl_credits",
       message: "Das Firecrawl-Guthaben ist aufgebraucht – Suche vorübergehend nicht möglich.",
@@ -609,14 +631,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     "valuation/comps funnel:",
     JSON.stringify({ vehicle, yearNum, kmNum, requestedBody, requestedDisplacement, ...funnel })
   );
-  try {
-    await supabase.rpc("log_valuation_search", {
-      p_vehicle: { make: makeStr, model: modelStr, year: yearNum, km: kmNum, body: requestedBody },
-      p_funnel: funnel,
-    });
-  } catch {
-    // Diagnostics only — never let logging break the search response.
-  }
+  await logValuationEvent({ status: "ok", vehicle: logVehicle, funnel, ctx: logCtx, userId: user?.id });
 
   // A zero result caused by the trim/body filters (we DID find this model, just
   // not the requested engine or variant) needs its own message so the user knows

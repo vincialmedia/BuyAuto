@@ -104,6 +104,15 @@ export const CONSENT_CHANGE_EVENT = "buyauto:consent-change";
 export const CONSENT_REOPEN_EVENT = "buyauto:consent-reopen";
 export type ConsentChoice = "granted" | "denied";
 
+// The calculator's per-browser visitor id (see getConsentedVisitorId). Older
+// "granted" answers were given to a banner that named only Google Analytics and
+// Ads, so the id additionally needs this marker, which only a consent given to
+// the banner that names our own statistics writes.
+const VISITOR_ID_KEY = "ba_vid";
+const CONSENT_SCOPE_KEY = "buyauto_consent_scope";
+const CONSENT_SCOPE = "own-stats-v1";
+const VISITOR_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function readStoredConsent(): ConsentChoice | null {
   if (typeof window === "undefined") return null;
   const stored = readStorage("local", CONSENT_STORAGE_KEY);
@@ -117,6 +126,9 @@ export function readStoredConsent(): ConsentChoice | null {
 let pageViewHeldForConsent = false;
 
 function applyConsent(choice: ConsentChoice) {
+  // The calculator's visitor id lives only as long as the consent does.
+  if (choice === "denied") writeStorage("local", VISITOR_ID_KEY, null);
+
   gtag("consent", "update", {
     ad_storage: choice,
     ad_user_data: choice,
@@ -137,6 +149,7 @@ function applyConsent(choice: ConsentChoice) {
 /** Persists the visitor's choice and applies it. */
 export function setConsent(choice: ConsentChoice) {
   writeStorage("local", CONSENT_STORAGE_KEY, choice);
+  writeStorage("local", CONSENT_SCOPE_KEY, choice === "granted" ? CONSENT_SCOPE : null);
   if (readStoredConsent() !== choice) {
     console.warn(
       "[analytics] Could not persist the cookie choice — storage is unavailable. It applies to this page view only and the banner will reappear.",
@@ -244,6 +257,45 @@ export function isTrackingDisabled(pathname?: string): boolean {
   if (readStorage("session", INTERNAL_SESSION_KEY) === "1") return true;
 
   return false;
+}
+
+/**
+ * True for the owner's own browsers (ba_no_track, or a session that arrived
+ * from vercel.com). Sent with calculator searches so valuation_search_logs can
+ * flag them; the server adds admin accounts itself.
+ */
+export function isInternalBrowser(): boolean {
+  if (typeof window === "undefined") return false;
+  if (readStorage("local", NO_TRACK_STORAGE_KEY) === "1") return true;
+  captureLandingContext();
+  return readStorage("session", INTERNAL_SESSION_KEY) === "1";
+}
+
+// ---------------------------------------------------------------------------
+// Calculator visitor id
+// ---------------------------------------------------------------------------
+
+/**
+ * Random per-browser id that groups one visitor's calculator searches in
+ * valuation_search_logs across days. Only exists while analytics consent is
+ * granted under the current banner text: returns null (and removes any stored
+ * id) otherwise. Without it the server still groups a browser's searches
+ * within one day by a salted hash.
+ */
+export function getConsentedVisitorId(): string | null {
+  if (typeof window === "undefined") return null;
+  if (readStoredConsent() !== "granted" || readStorage("local", CONSENT_SCOPE_KEY) !== CONSENT_SCOPE) {
+    writeStorage("local", VISITOR_ID_KEY, null);
+    return null;
+  }
+  const stored = readStorage("local", VISITOR_ID_KEY);
+  if (stored && VISITOR_ID_RE.test(stored)) return stored;
+  if (typeof crypto === "undefined" || typeof crypto.randomUUID !== "function") return null;
+  const id = crypto.randomUUID();
+  writeStorage("local", VISITOR_ID_KEY, id);
+  // Storage can be unavailable; an id that won't persist would split one
+  // visitor into many.
+  return readStorage("local", VISITOR_ID_KEY) === id ? id : null;
 }
 
 function isDebugMode(): boolean {

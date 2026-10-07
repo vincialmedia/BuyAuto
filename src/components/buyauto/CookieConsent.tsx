@@ -67,8 +67,10 @@ export function CookieConsent() {
           {/* Message */}
           <div className="flex-1 text-sm text-gray-700">
             <p>
-              Diese Website verwendet Cookies für Analyse (Google Analytics) und
-              Werbung (Google Ads), um Ihnen das beste Nutzererlebnis zu bieten.
+              Diese Website verwendet Cookies und lokalen Speicher für Analyse
+              (Google Analytics und eigene, pseudonyme Nutzungsstatistik, z. B. zum
+              Eintauschwert-Rechner) und Werbung (Google Ads), um Ihnen das beste
+              Nutzererlebnis zu bieten.
               Details finden Sie in unserer{" "}
               <Link href="/datenschutz" className="text-red-600 underline hover:no-underline">
                 Datenschutzerklärung

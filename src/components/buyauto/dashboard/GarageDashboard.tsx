@@ -570,6 +570,18 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
                         <p className="text-neutral-600">
                           Füge diesen Code auf deiner Website ein – die Höhe passt sich automatisch an.
                         </p>
+                        <p className="text-neutral-600">
+                          Erwähne den Rechner von BuyAuto in deiner Datenschutzerklärung und verlinke{" "}
+                          <a
+                            href="https://www.buyauto.ch/datenschutz#eintauschwert-rechner"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-red-600 hover:underline"
+                          >
+                            unsere Angaben dazu
+                          </a>
+                          .
+                        </p>
                         <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-xs text-white">
 {`<iframe
   id="buyauto-eintauschwert-rechner"

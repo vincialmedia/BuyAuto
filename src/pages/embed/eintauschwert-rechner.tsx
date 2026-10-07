@@ -125,6 +125,15 @@ export default function EintauschwertRechnerEmbed(props: PageProps) {
             >
               BuyAuto.ch
             </a>
+            {" · "}
+            <a
+              href="https://www.buyauto.ch/datenschutz#eintauschwert-rechner"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-neutral-500 hover:text-red-600"
+            >
+              Datenschutz
+            </a>
           </p>
         </div>
       </main>
