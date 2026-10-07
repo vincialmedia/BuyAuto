@@ -145,8 +145,8 @@ export function mapTgListingBody(raw: string | null): string | null {
 
 /**
  * Findet das Katalog-Modell, dessen Name den Anfang des TARGA-Typ-Texts bildet
- * ("Golf 8 1.5 eTSI" -> "Golf"; "Golf GTI Clubsport 2.0" -> "Golf GTI
- * Clubsport"). Vergleich tokenweise über normalizeVehicleKey, damit
+ * ("Golf 8 1.5 eTSI" -> "Golf"; "Golf Variant 1.5 TSI" -> "Golf
+ * Variant"). Vergleich tokenweise über normalizeVehicleKey, damit
  * Punktierung/Umlaute nicht stören ("ID.3 Pro" matcht "ID.3") und "T500"
  * NICHT "T5" matcht. Bei mehreren Treffern gewinnt der längste Name.
  */
@@ -192,10 +192,21 @@ export function matchModelFromTyp(
  */
 export function matchVariantFromRest(
   rest: string,
-  variants: Array<{ id: string; name: string }>
+  variants: Array<{ id: string; name: string }>,
+  modelName?: string
 ): { id: string; name: string } | null {
-  const tokens = rest.trim().split(/\s+/).filter(Boolean).map((t) => normalizeVehicleKey(t));
+  // TARGA klebt die Ausführung oft an den Hubraum ("Golf VII 2.0GTI 5"):
+  // getrennt, damit "GTI" ein eigenes Fenster bekommt. Fenster über mehrere
+  // Tokens bleiben, "2.0 TSI" matcht also weiterhin. Nur vor einem echten
+  // Wort: "1.6D4M" (Diesel 4MOTION) darf nicht zur Benziner-Zeile "1.6" werden.
+  const tokens = rest
+    .replace(/(\d[.,]\d)(?=[a-z]{2,}(?![a-z]*\d))/gi, "$1 ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => normalizeVehicleKey(t));
   if (tokens.length === 0) return null;
+  const modelKey = modelName ? normalizeVehicleKey(modelName) : "";
   const windows = new Set<string>();
   for (let i = 0; i < tokens.length; i++) {
     let acc = "";
@@ -206,11 +217,67 @@ export function matchVariantFromRest(
   }
   let best: { id: string; name: string; len: number } | null = null;
   for (const v of variants) {
-    const key = normalizeVehicleKey(v.name);
-    if (!key || !windows.has(key)) continue;
+    const full = normalizeVehicleKey(v.name);
+    // Katalogzeilen mit wiederholtem Modellnamen ("Panamera 4", "X3 20d
+    // xDrive"): der Rest nach dem Modell enthält ihn nicht mehr.
+    const own = modelKey && full.startsWith(modelKey) ? full.slice(modelKey.length) : "";
+    const key = full && windows.has(full) ? full : own && windows.has(own) ? own : "";
+    if (!key) continue;
     if (!best || key.length > best.len) best = { id: v.id, name: v.name, len: key.length };
   }
   return best ? { id: best.id, name: best.name } : null;
+}
+
+// Karosserie-Wörter, die im TARGA-Typ hinter der Ausführung oder Generation
+// stehen ("Golf R Variant", "Golf Var. 1.4TSI", "Golf 7 SV 1.5TSI", "320d
+// Touring"), normalisiert -> das Wort im Katalog-Modellnamen. Kein "V" (Golf V
+// ist die Generation) und kein "P".
+const BODY_MODEL_WORDS: Record<string, string> = {
+  variant: "variant",
+  var: "variant",
+  va: "variant",
+  cabrio: "cabriolet",
+  cabriolet: "cabriolet",
+  cab: "cabriolet",
+  touring: "touring",
+  sportsvan: "sportsvan",
+  sportsv: "sportsvan",
+  sv: "sportsvan",
+  alltrack: "alltrack",
+  allt: "alltrack",
+  avant: "avant",
+  sportback: "sportback",
+  combi: "combi",
+  granturismo: "granturismo",
+};
+
+/**
+ * Der Präfix-Match endet vor der Karosserie, wenn die Ausführung davor steht
+ * ("Golf R Variant" -> "Golf" + Rest "R Variant"). Gibt es "<Modell>
+ * <Karosserie>" als aktives Modell ("Golf Variant"), gilt dieses, und das
+ * Karosserie-Wort fällt aus dem Rest. Sonst bleibt der Treffer unverändert.
+ */
+export function refineBodyModel(
+  matched: { id: string; name: string; rest: string },
+  models: Array<{ id: string; name: string }>
+): { id: string; name: string; rest: string } {
+  const restTokens = matched.rest.split(/\s+/).filter(Boolean);
+  const base = normalizeVehicleKey(matched.name);
+  for (let i = 0; i < restTokens.length; i++) {
+    for (const span of [2, 1]) {
+      if (i + span > restTokens.length) continue;
+      const word = BODY_MODEL_WORDS[normalizeVehicleKey(restTokens.slice(i, i + span).join(""))];
+      if (!word) continue;
+      const target = models.find((m) => normalizeVehicleKey(m.name) === base + word);
+      if (!target || target.id === matched.id) continue;
+      return {
+        id: target.id,
+        name: target.name,
+        rest: [...restTokens.slice(0, i), ...restTokens.slice(i + span)].join(" "),
+      };
+    }
+  }
+  return matched;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -316,40 +383,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Tokenweiser Präfix-Match gegen die echten Katalog-Modelle der Marke —
       // deutlich treffersicherer als die abgeleitete Modellfamilie, weil er
       // Generationszahlen und Motorisierungs-Suffixe im TARGA-Typ übersteht.
+      // Nur aktive Modelle, wie /api/vehicles/models: die inaktiven Trim-
+      // Modelle ("Golf R", "Golf GTI") sind in keinem Dropdown wählbar. So
+      // wird "Golf R" zu Modell "Golf" + Ausführung "R".
       const { data: modelRows } = await supabase
         .from("models")
         .select("id,name")
         .eq("make_id", makeId)
+        .eq("is_active", true)
         .limit(1000);
-      const matched = matchModelFromTyp(
-        providerModel,
-        (modelRows ?? []) as Array<{ id: string; name: string }>
-      );
-      if (matched) {
-        modelId = matched.id;
-        if (matched.rest) {
-          variantText = matched.rest;
-          const { data: variantRows } = await supabase
-            .from("variants")
-            .select("id,name")
-            .eq("model_id", matched.id)
-            .limit(500);
-          const variant = matchVariantFromRest(
-            matched.rest,
-            (variantRows ?? []) as Array<{ id: string; name: string }>
-          );
-          if (variant) variantId = variant.id;
-        }
-      } else {
+      const activeModels = (modelRows ?? []) as Array<{ id: string; name: string }>;
+      let resolved = matchModelFromTyp(providerModel, activeModels);
+      if (!resolved) {
+        // Familien-Fallback ("320d" -> "3 Series"): die Ausführung steckt dann
+        // im abgeleiteten variantText und wird unten genauso gesucht.
         const candidate = family.familyName ?? providerModel.split(/\s+/)[0];
         if (candidate) {
           const { data: modelRow } = await supabase
             .from("models")
-            .select("id")
+            .select("id,name")
             .eq("make_id", makeId)
             .eq("normalized_name", normalizeVehicleKey(candidate))
+            .eq("is_active", true)
             .maybeSingle();
-          modelId = (modelRow as { id?: string } | null)?.id ?? null;
+          const row = modelRow as { id?: string; name?: string } | null;
+          if (row?.id) resolved = { id: row.id, name: row.name ?? candidate, rest: family.variantText ?? "" };
+        }
+      }
+      if (resolved) {
+        resolved = refineBodyModel(resolved, activeModels);
+        modelId = resolved.id;
+        if (resolved.rest) {
+          variantText = resolved.rest;
+          const { data: variantRows } = await supabase
+            .from("variants")
+            .select("id,name")
+            .eq("model_id", resolved.id)
+            .eq("is_active", true)
+            .limit(500);
+          const variant = matchVariantFromRest(
+            resolved.rest,
+            (variantRows ?? []) as Array<{ id: string; name: string }>,
+            resolved.name
+          );
+          if (variant) variantId = variant.id;
         }
       }
     }

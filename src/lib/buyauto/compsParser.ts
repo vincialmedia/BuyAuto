@@ -558,18 +558,34 @@ export function autolinaCategoryUrl(make: string, model: string): string {
 }
 
 /**
+ * Equipment lines that share letters with a trim: "R-Line" is not an "R",
+ * "ST-Line" no Focus ST, "N Line" no i30 N, "GT-Line" no Ceed GT, "R.S. Line"
+ * no Clio RS. Merged into one token before any trim/variant matching.
+ */
+function mergeEquipmentLines(lower: string): string {
+  return lower
+    .replace(/\b(r\.?\s?s\.?|st|gt|n|r|s|amg)[\s_.-]*line\b/g, (_m, p: string) => `${p.replace(/[.\s]/g, "")}line`)
+    .replace(/\bm[\s_-]*sport/g, "msport");
+}
+
+/**
  * How precisely a listing title matches the requested model: 0 = full model
  * string (incl. trim) present, 1 = base model word present, 2 = no match info.
- * Whitespace-insensitive so "1.5tsi" matches "1.5 TSI".
+ * Separator-insensitive so "1.5tsi" matches "1.5 TSI" — but a model ending in a
+ * letter must not run on into another word: "Golf Rabbit" and "Golf R-Line" are
+ * not a full match for "Golf R".
  */
 export function modelPrecision(title: string, model: string): number {
-  const norm = (s: string) => s.toLowerCase().replace(/[\s\-]/g, "");
-  const t = norm(title);
-  if (!t) return 2;
-  const full = norm(model);
-  if (full && t.includes(full)) return 0;
-  const base = norm(model.split(/\s+/)[0] ?? "");
-  if (base && t.includes(base)) return 1;
+  const t = mergeEquipmentLines(title.toLowerCase());
+  if (!t.trim()) return 2;
+  const tokens = model.toLowerCase().split(/[\s\-]+/).filter(Boolean);
+  if (tokens.length > 0) {
+    const esc = tokens.map((tok) => tok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const guard = /[a-z]$/.test(tokens[tokens.length - 1]) ? "(?![a-z])" : "";
+    if (new RegExp(`${esc.join("[\\s\\-]*")}${guard}`).test(t)) return 0;
+  }
+  const base = (model.split(/\s+/)[0] ?? "").toLowerCase().replace(/-/g, "");
+  if (base && t.replace(/[\s\-]/g, "").includes(base)) return 1;
   return 2;
 }
 
@@ -776,6 +792,230 @@ export function trimVerdict(title: string, model: string, url = ""): TrimVerdict
   return "unknown";
 }
 
+// --- Variant (Ausführung) matching ------------------------------------------
+//
+// The catalog lists a model's trims as variants: "Golf" → "R", "GTI Clubsport",
+// "1.5 TSI". Its displacement half feeds the trim filter above; what is left,
+// the identity ("R", "GTI Clubsport", "40", "C 220 d"), is matched here as whole
+// tokens. A substring test reads "Golf R-Line" and "Golf Rabbit" as a Golf R —
+// and a Golf R valuation built on plain Golfs is off by a factor of two.
+
+// All-wheel-drive markers. xDrive is a prefix ("xDrive30d"): only the drive
+// part goes, "30d" is the engine. Everything else needs a word end, or
+// "quattro" would eat Maserati's "Quattroporte".
+const DRIVE_WORDS = /\b(?:4motion|quattro|4matic|awd|4x4|all4|allrad\w*)(?![a-z0-9])|\bxdrive/gi;
+
+/** Engine-code tokens: they name the engine family, not the trim. */
+const ENGINE_CODE =
+  /^(e-?tsi|tsi|tdi|tfsi|fsi|tgi|cdi|crdi|hdi|bluehdi|dci|tdci|tce|thp|multijet|ecoboost|puretech|skyactiv(-[a-z])?|mhev|bluemotion|bluetec|cdti|ti-?vct|vti|mpi|t-?gdi|gdi|sce|ecoblue|duratec|d-?4d|dig-?t|i-?vtec|i-?dtec|jtdm?|vvt-?i|multiair|ecotec)$/i;
+
+// Audi's plug-in hybrids: "40 TFSI e" is its own car next to the petrol "40
+// TFSI". One token, so the engine-code filter can't strip it and leave a
+// non-contiguous "40 e" that no listing title ever spells.
+const glueHybridMarker = (s: string) => s.replace(/\btfsi[\s-]?e(?![a-z0-9])/gi, "tfsie");
+
+export interface VariantParts {
+  displacement: string | null;
+  identity: string;
+  drive: "Allrad" | null;
+}
+
+/**
+ * Split a catalog variant into what each filter can use: "2.0 TDI 4MOTION" →
+ * displacement "2.0", no identity, Allrad; "GTI Clubsport" → identity only;
+ * "40 TFSI quattro" → identity "40", Allrad. An empty identity means the
+ * variant is fully described by displacement/drive and needs no token check.
+ */
+export function splitVariant(variant: string): VariantParts {
+  const v = glueHybridMarker(variant ?? "").replace(/\s+/g, " ").trim();
+  const displacement = displacementOf(v);
+  const drive = new RegExp(DRIVE_WORDS.source, "i").test(v) ? "Allrad" : null;
+  const identity = v
+    .replace(DRIVE_WORDS, " ")
+    .split(" ")
+    .filter((t) => /[a-z0-9]/i.test(t))
+    .filter((t) => !ENGINE_CODE.test(t))
+    .filter((t) => !(displacement && /^\d[.,]\d$/.test(t)))
+    .join(" ");
+  return { displacement, identity, drive };
+}
+
+/** The variant search term: the variant as named, minus the drive words. */
+export function variantSearchTerm(variant: string): string {
+  return (variant ?? "").replace(DRIVE_WORDS, " ").replace(/\+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Drop a leading repeat of the model name: some catalog rows carry it ("X3
+ * 20d xDrive", "Panamera 4S", "I5 eDrive40") next to the plain form. Left in,
+ * "X3 20d" reads as a longer sibling of "20d" that every X3 title names, and
+ * "Panamera 4" never counts as the base of "4 E-Hybrid".
+ */
+export function stripModelPrefix(text: string, model: string): string {
+  const modelCompact = variantTokens(model).join("");
+  if (!modelCompact) return text;
+  const parts = text.split(/\s+/).filter(Boolean);
+  let acc = "";
+  for (let i = 0; i < parts.length && acc.length < modelCompact.length; i++) {
+    acc += variantTokens(parts[i]).join("");
+    if (acc === modelCompact) return parts.slice(i + 1).join(" ");
+  }
+  return text;
+}
+
+/** A catalog variant's identity for the variant check, relative to its model. */
+export function variantIdentity(variant: string, model: string): string {
+  return stripModelPrefix(splitVariant(variant).identity, model);
+}
+
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s; // malformed escape — use it raw
+  }
+}
+
+// Path segments that are portal structure, not listing words ("/de/d/",
+// "/details/show/") — "d" or "s" must not read as a trim.
+const URL_STRUCTURE_SEGMENTS = new Set([
+  "de", "fr", "it", "en", "d", "s", "vi", "li", "details", "show",
+  "carfinder", "marktplatz", "fahrzeug", "fahrzeuge", "autos", "occasion",
+]);
+
+/** The listing words in a URL path: the slug segments, without the trailing id. */
+function urlSlugText(url: string): string {
+  if (!url) return "";
+  let path: string;
+  try {
+    path = new URL(url).pathname;
+  } catch {
+    return "";
+  }
+  return path
+    .split("/")
+    .filter((seg) => seg && !/^\d+$/.test(seg) && !URL_STRUCTURE_SEGMENTS.has(seg.toLowerCase()))
+    .map((seg) => safeDecode(seg).replace(/-\d{4,}$/, ""))
+    .join(" ");
+}
+
+/** Normalized match tokens: folded, equipment lines merged, drive words and prices removed. */
+function variantTokens(text: string): string[] {
+  const t = mergeEquipmentLines(
+    glueHybridMarker(
+      text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+    )
+      // Mileages and prices ("40'000 km", "40.000 km", "40 000 km", "CHF 40 900",
+      // a "...-40-000-km" slug) are not designations: Audi's "40" must not
+      // match them. A plain space only counts as a thousands separator next to
+      // "km" or a currency — "C 63 507" and "911 992" are names, not numbers.
+      .replace(/\d+(?:[\s'’.\u00a0\u202f-]\d{3})*[\s-]?km\b/g, " ")
+      .replace(/\b(?:chf|sfr|fr\.|eur)\s*\d+(?:[\s'’.\u00a0\u202f]\d{3})*/g, " ")
+      .replace(/\d+(?:[\s'’.\u00a0\u202f]\d{3})*\s*(?:chf|sfr|eur)\b/g, " ")
+      .replace(/(?<!\d)\d{1,3}(?:['’.\u00a0\u202f]\d{3})+(?!\d)/g, " ")
+      // A decimal stays one token: "3.0" must never glue into Audi's "30".
+      .replace(/(\d)[.,](?=\d)/g, "$1p")
+  ).replace(DRIVE_WORDS, " ");
+  return t.split(/[^a-z0-9]+/).filter(Boolean);
+}
+
+/**
+ * Does a contiguous run of tokens spell the identity? Comparing concatenations
+ * makes the glued forms match too: "C220d", "C 220d" and "C 220 d" are the same
+ * car, as are "LongRange" and "Long Range". Whole tokens only: "Rabbit" is no "R".
+ */
+function hasIdentity(tokens: string[], compact: string): boolean {
+  if (!compact) return false;
+  for (let i = 0; i < tokens.length; i++) {
+    let acc = "";
+    for (let j = i; j < tokens.length && acc.length < compact.length; j++) {
+      acc += tokens[j];
+      if (acc === compact) return true;
+    }
+  }
+  return false;
+}
+
+function containsSequence(haystack: string[], needle: string[]): boolean {
+  for (let i = 0; i + needle.length <= haystack.length; i++) {
+    if (needle.every((n, k) => haystack[i + k] === n)) return true;
+  }
+  return false;
+}
+
+export type VariantVerdict = "match" | "mismatch" | "unknown";
+
+/**
+ * Three-way variant check over the title and the URL slug, like trimVerdict():
+ *   match    – names the requested identity, and no longer sibling built on it
+ *              ("GTI Clubsport" is not a "GTI")
+ *   mismatch – names another sibling variant of the same model instead
+ *   unknown  – names none of them ("VW Golf Life")
+ * Without siblings (free-text model) the answer is match or unknown only.
+ */
+export function variantVerdict(
+  title: string,
+  url: string,
+  identity: string,
+  siblingIdentities: string[]
+): VariantVerdict {
+  const want = variantTokens(identity);
+  if (want.length === 0) return "unknown";
+  const wantCompact = want.join("");
+  const tokens = variantTokens(`${title} ${urlSlugText(url)}`);
+  const siblings = siblingIdentities
+    .map(variantTokens)
+    .filter((s) => s.length > 0 && s.join("") !== wantCompact);
+  const named = (s: string[]) => hasIdentity(tokens, s.join(""));
+
+  if (named(want)) {
+    const extended = siblings.some((s) => s.length > want.length && containsSequence(s, want) && named(s));
+    return extended ? "mismatch" : "match";
+  }
+  return siblings.some(named) ? "mismatch" : "unknown";
+}
+
+/** Title plus decoded URL: the text the gearbox/drive detectors read. */
+function compText(title: string, url: string): string {
+  return `${title} ${url ? safeDecode(url) : ""}`;
+}
+
+const AUTOMATIC_GEARBOX =
+  /\b(dsg|s[\s-]?tronic|tiptronic|steptronic|multitronic|geartronic|\d{1,2}g[\s-]?tronic|speedshift|dct|dkg|pdk|edc|cvt|automat|automatik|automatic|automatique|automatikgetriebe)\b/i;
+const MANUAL_GEARBOX = /\b(schaltgetriebe|manuell|manual|handschaltung|handschalter)\b/i;
+
+/**
+ * The gearbox a listing text positively names, or null. Conservative: a text
+ * naming both kinds ("Steptronic mit Manual-Modus") is null, not a guess.
+ * "AT" only in capitals — lowercase "at" is ordinary text.
+ */
+export function gearboxOf(text: string): "Automatik" | "Manuell" | null {
+  if (!text) return null;
+  const auto = AUTOMATIC_GEARBOX.test(text) || /\bAT\b/.test(text);
+  const manual = MANUAL_GEARBOX.test(text);
+  if (auto === manual) return null;
+  return auto ? "Automatik" : "Manuell";
+}
+
+const ALLRAD_TEXT = /\b(quattro|4motion|4matic|4x4|awd|all4|allrad\w*)(?![a-z0-9])|\bxdrive/i;
+// sDrive is BMW's two-wheel drive, written glued like xDrive ("sDrive20i").
+const TWO_WD_TEXT = /\b(4x2|fwd|rwd|frontantrieb|heckantrieb)\b|\bsdrive/i;
+
+/**
+ * All-wheel vs. two-wheel drive as a listing text positively names it. Front
+ * and rear drive are rarely told apart in titles, so both are "2WD".
+ */
+export function drivetrainOf(text: string): "Allrad" | "2WD" | null {
+  if (!text) return null;
+  const awd = ALLRAD_TEXT.test(text);
+  const twoWd = TWO_WD_TEXT.test(text);
+  if (awd === twoWd) return null;
+  return awd ? "Allrad" : "2WD";
+}
+
 // --- Comp selection ------------------------------------------------------
 // Lives here rather than in the API route so it can be unit-tested as a pure
 // function: this is the stage that decides which cars end up in the median, and
@@ -807,37 +1047,69 @@ function medianOf(values: number[]): number {
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+export type RequestedGearbox = "Automatik" | "Manuell";
+export type RequestedDrivetrain = "Frontantrieb" | "Heckantrieb" | "Allrad";
+
+/** Optional ranking preferences for the pick (never filters). */
+interface PickPreferences {
+  gearbox?: RequestedGearbox | null;
+  drivetrain?: RequestedDrivetrain | null;
+}
+
 /**
  * Prefer comps with a similar mileage; widen the band only when the strict one
  * yields too few. Returns the picked comps plus whether relaxation was needed.
+ * Unknown mileage (null): the pool's own median km stands in, so the pick is
+ * the typical cars rather than the lowest-km ones, and nothing is "relaxed".
  */
 function pickBySimilarKm(
   comps: CompCandidate[],
-  targetKm: number,
+  targetKm: number | null,
   model: string,
   limit: number = MAX_COMPS,
-  preferredBody: BodyType | null = null
+  preferredBody: BodyType | null = null,
+  prefs: PickPreferences = {}
 ): { picked: CompCandidate[]; relaxed: boolean } {
+  if (comps.length === 0) return { picked: [], relaxed: false };
+  const target = targetKm ?? medianOf(comps.map((c) => c.km));
   // Trim precision beats km proximity: a GTI comp poisons a 1.5-TSI valuation far
   // worse than a 20'000-km mileage gap (the km-Angleich corrects mileage anyway).
   // Body-type agreement sits between the two: a same-variant comp with a bigger
-  // mileage gap beats a Roadster in a Coupé valuation.
+  // mileage gap beats a Roadster in a Coupé valuation. Gearbox and drive come
+  // next: they move the price, but less than the body, and titles often omit them.
   const bodyRank = (c: CompCandidate): number => {
     if (!preferredBody) return 0;
     const got = compBodyType(c.title, c.url);
     if (!got) return 1;
     return got === preferredBody ? 0 : 2;
   };
+  const gearboxRank = (c: CompCandidate): number => {
+    if (!prefs.gearbox) return 0;
+    const got = gearboxOf(compText(c.title, c.url));
+    if (!got) return 1;
+    return got === prefs.gearbox ? 0 : 2;
+  };
+  const driveRank = (c: CompCandidate): number => {
+    if (!prefs.drivetrain) return 0;
+    const got = drivetrainOf(compText(c.title, c.url));
+    if (!got) return 1;
+    const wanted = prefs.drivetrain === "Allrad" ? "Allrad" : "2WD";
+    return got === wanted ? 0 : 2;
+  };
   const byDistance = [...comps].sort((a, b) => {
     const p = modelPrecision(a.title, model) - modelPrecision(b.title, model);
     if (p !== 0) return p;
     const bd = bodyRank(a) - bodyRank(b);
     if (bd !== 0) return bd;
-    return Math.abs(a.km - targetKm) - Math.abs(b.km - targetKm);
+    const gb = gearboxRank(a) - gearboxRank(b);
+    if (gb !== 0) return gb;
+    const dr = driveRank(a) - driveRank(b);
+    if (dr !== 0) return dr;
+    return Math.abs(a.km - target) - Math.abs(b.km - target);
   });
   const bands = [
-    Math.max(30_000, targetKm * 0.4),
-    Math.max(60_000, targetKm * 0.8),
+    Math.max(30_000, target * 0.4),
+    Math.max(60_000, target * 0.8),
     Number.POSITIVE_INFINITY,
   ];
 
@@ -849,9 +1121,10 @@ function pickBySimilarKm(
     for (const c of byDistance) {
       if (picked.length >= limit) break;
       if (picked.includes(c)) continue;
-      if (Math.abs(c.km - targetKm) <= bands[i]) {
+      if (Math.abs(c.km - target) <= bands[i]) {
         picked.push(c);
-        if (i > 0) relaxed = true;
+        // A km gap only means something when the user's mileage is known.
+        if (i > 0 && targetKm !== null) relaxed = true;
       }
     }
   }
@@ -868,6 +1141,10 @@ export interface CompSelection {
   droppedForTrim: number;
   /** Positively the WRONG body variant (model named one) — always excluded. */
   droppedForBody: number;
+  /** Positively another catalog variant (e.g. a GTI in a Golf R lookup) — always excluded. */
+  droppedForVariant: number;
+  /** Comps naming no variant, set aside because a variant was requested. */
+  variantUnverified: number;
   droppedNearNew: number;
   droppedOutliers: number;
   /** The final picks still mix body variants (e.g. Coupé + Roadster). */
@@ -877,20 +1154,34 @@ export interface CompSelection {
   harvested: number;
 }
 
+export interface SelectOptions {
+  /**
+   * Requested catalog variant identity (see variantIdentity) and its siblings'
+   * identities. `displacement`: the variant names one ("1.6 Ti-VCT") — its
+   * identity is then an engine descriptor, not a trim.
+   */
+  variant?: { identity: string; siblings: string[]; displacement?: string | null } | null;
+  gearbox?: RequestedGearbox | null;
+  drivetrain?: RequestedDrivetrain | null;
+}
+
 /**
  * Turn the raw harvest into the comps that actually drive the valuation.
  *
- * Order matters: engine verdict → body verdict → mileage floor → price band →
- * km-similarity pick. Confirmed comps always fill the seats first; unverified ones (no engine
- * stated anywhere) only fill seats that would otherwise stay empty, which is
- * what lifts a real lookup off "3 Inserate" without ever letting a known-wrong
- * engine into the median.
+ * Order matters: engine verdict → variant verdict → body verdict → mileage
+ * floor → price band → km-similarity pick. Confirmed comps always fill the
+ * seats first; unverified ones (no engine stated anywhere) only fill seats that
+ * would otherwise stay empty, which is what lifts a real lookup off "3
+ * Inserate" without ever letting a known-wrong engine into the median.
+ *
+ * `targetKm` null = mileage unknown (see pickBySimilarKm).
  */
 export function selectComps(
   raw: CompCandidate[],
   model: string,
-  targetKm: number,
-  requestedBodyOverride?: BodyType | null
+  targetKm: number | null,
+  requestedBodyOverride?: BodyType | null,
+  opts?: SelectOptions
 ): CompSelection {
   const harvested = raw.length;
   const requestedDisplacement = displacementOf(model);
@@ -915,6 +1206,36 @@ export function selectComps(
     confirmed = [...raw];
   }
   const droppedForTrim = harvested - confirmed.length - unverified.length;
+
+  // 1a) Catalog-variant verdict ("Golf" + "R"). The inventory pages hold every
+  //     Golf, and an R sits at ~2x a plain Golf's price — left to the outlier
+  //     band below, the plain majority would throw out the real Rs. So it runs
+  //     before the band: a different sibling is dropped, a match counts as
+  //     confirmed (the identity is stronger evidence than a stated
+  //     displacement), and a comp naming no variant is set aside entirely —
+  //     for a Golf R lookup, an untyped "VW Golf" is most likely a plain Golf.
+  //     Exception: a variant that names a displacement ("1.6 Ti-VCT", "4.0
+  //     Turbo") — a comp that already confirmed that engine above but leaves
+  //     out the descriptor ("Ford Focus 1.6 Trend") is a top-up candidate, not
+  //     set aside: most titles never spell such descriptors.
+  //     With nothing unverified left, the band anchors on matches only.
+  let droppedForVariant = 0;
+  let variantUnverified = 0;
+  const variant = opts?.variant?.identity.trim() ? opts.variant : null;
+  if (variant) {
+    const engineConfirmed = new Set(requestedDisplacement && variant.displacement ? confirmed : []);
+    const matched: CompCandidate[] = [];
+    const engineOnly: CompCandidate[] = [];
+    for (const c of [...confirmed, ...unverified]) {
+      const verdict = variantVerdict(c.title, c.url, variant.identity, variant.siblings);
+      if (verdict === "match") matched.push(c);
+      else if (verdict === "mismatch") droppedForVariant += 1;
+      else if (engineConfirmed.has(c)) engineOnly.push(c);
+      else variantUnverified += 1;
+    }
+    confirmed = matched;
+    unverified = engineOnly;
+  }
 
   // 1b) Body-variant verdict. Only when the requested variant is KNOWN — the
   //     caller passed one (the calculator's Karosserie field), or the model
@@ -987,8 +1308,10 @@ export function selectComps(
     if (best && bestCount >= 2 && bestCount * 2 > typedTotal) preferredBody = best;
   }
 
-  // 5) Pick by mileage similarity — confirmed first, then top up.
-  const confirmedPick = pickBySimilarKm(confirmed, targetKm, model, MAX_COMPS, preferredBody);
+  // 5) Pick by mileage similarity — confirmed first, then top up. Gearbox and
+  //    drive only rank; titles name them too rarely to filter on.
+  const prefs: PickPreferences = { gearbox: opts?.gearbox, drivetrain: opts?.drivetrain };
+  const confirmedPick = pickBySimilarKm(confirmed, targetKm, model, MAX_COMPS, preferredBody, prefs);
   const picked = confirmedPick.picked;
   let relaxed = confirmedPick.relaxed;
   let toppedUp = 0;
@@ -998,7 +1321,8 @@ export function selectComps(
       targetKm,
       model,
       MAX_COMPS - picked.length,
-      preferredBody
+      preferredBody,
+      prefs
     );
     picked.push(...topUp.picked);
     toppedUp = topUp.picked.length;
@@ -1020,6 +1344,8 @@ export function selectComps(
     toppedUp,
     droppedForTrim,
     droppedForBody,
+    droppedForVariant,
+    variantUnverified,
     droppedNearNew,
     droppedOutliers,
     mixedBody: pickedBodies.size >= 2,

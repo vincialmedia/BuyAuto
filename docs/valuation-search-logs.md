@@ -8,8 +8,8 @@ not logged.
 | Column | Meaning |
 | --- | --- |
 | `status` | `ok` search ran · `search_failed` Firecrawl key/credits · `gate_anon` anonymous 3-search wall · `gate_free` / `gate_paid` logged-in quota reached |
-| `vehicle` | `{make, model, year, km, body, displacement}` as entered |
-| `funnel` | search diagnostics (`picked`, `pickedComps`, drop counters); null for gate rows |
+| `vehicle` | `{make, model, year, km\|null, body, displacement, variant, gearbox, drivetrain}` as entered (gate rows: no `body`/`displacement`). `km` is null when not entered (optional since 2026-10); `variant` is the Ausführung, catalog name or free text (e.g. `R`); `gearbox` `Automatik`/`Manuell`; `drivetrain` `Frontantrieb`/`Heckantrieb`/`Allrad`; null when not chosen |
+| `funnel` | search diagnostics (`picked`, `pickedComps`, drop counters incl. `droppedForVariant`; `variantUnverified` = comps naming no variant, set aside when one was requested; for a variant with a displacement ("1.6 Ti-VCT") the comps that confirm that engine are kept as top-ups instead and count in `toppedUp`/`unverifiedAvailable`); null for gate rows |
 | `source` | `public` (/eintauschwert-rechner) · `dashboard` · `embed` (+ `embed_garage` slug) · `other` |
 | `env` | `production` · `preview` · `development` · `local`. Preview builds write to the production database too. |
 | `user_id` | signed-in user, else null |

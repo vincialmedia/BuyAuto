@@ -14,6 +14,7 @@ import {
   mapTgTransmission,
   matchModelFromTyp,
   matchVariantFromRest,
+  refineBodyModel,
 } from "../src/pages/api/vehicles/decode-tg";
 
 // --- fuel codes (empirical meanings, see decode-tg comment) ---------------
@@ -112,5 +113,92 @@ assert.equal(matchVariantFromRest("LongRange", golfVariants), null);
 assert.equal(matchVariantFromRest("R 2.0 4Motion", golfVariants)?.id, "r");
 assert.equal(matchVariantFromRest("", golfVariants), null);
 assert.equal(matchVariantFromRest("2.0 TDI", golfVariants), null);
+
+// Regression: TG 1XV620 typ "Golf R". The trim-as-model rows ("Golf R",
+// "Golf GTI") are is_active=false, so decode-tg only matches against the
+// active models: "Golf R" must land on "Golf" + variant "R", the pair the
+// wizard and Rechner dropdowns can actually show.
+const activeVwModels = [
+  { id: "golf", name: "Golf" },
+  { id: "golf-variant", name: "Golf Variant" },
+  { id: "golf-cabriolet", name: "Golf Cabriolet" },
+];
+const golfR = matchModelFromTyp("Golf R", activeVwModels);
+assert.deepEqual(golfR, { id: "golf", name: "Golf", rest: "R" });
+assert.equal(matchVariantFromRest(golfR.rest, golfVariants)?.id, "r");
+
+// Regression: the most common GTI/GTD types glue the trim to the
+// displacement ("Golf VII 2.0GTI 5": 66 TGs, e.g. 1VE563). The trim must still
+// be found, or the Rechner values a GTI as a plain Golf.
+const golfVariantsLive = [
+  ...golfVariants,
+  { id: "gtd", name: "GTD" },
+  { id: "gti-tcr", name: "GTI TCR" },
+  { id: "20tdi", name: "2.0 TDI" },
+];
+const golfGti = matchModelFromTyp("Golf VII 2.0GTI 5", activeVwModels);
+assert.deepEqual(golfGti, { id: "golf", name: "Golf", rest: "VII 2.0GTI 5" });
+assert.equal(matchVariantFromRest(golfGti.rest, golfVariantsLive)?.id, "gti");
+assert.equal(matchVariantFromRest("VII 2.0GTD 5", golfVariantsLive)?.id, "gtd");
+assert.equal(matchVariantFromRest("7 2.0GTI TCR", golfVariantsLive)?.id, "gti-tcr");
+assert.equal(matchVariantFromRest("VII 2.0TDI", golfVariantsLive)?.id, "20tdi");
+assert.equal(matchVariantFromRest("8 2.0 GTI", golfVariantsLive)?.id, "gti");
+
+// Catalog variants that repeat the model name ("Panamera 4", "X3 20d xDrive").
+const panameraVariants = [
+  { id: "p4", name: "Panamera 4" },
+  { id: "p4s", name: "Panamera 4S" },
+  { id: "p4eh", name: "4 E-Hybrid" },
+];
+assert.equal(matchVariantFromRest("4", panameraVariants, "Panamera")?.id, "p4");
+assert.equal(matchVariantFromRest("4S", panameraVariants, "Panamera")?.id, "p4s");
+assert.equal(matchVariantFromRest("4 E-Hybrid", panameraVariants, "Panamera")?.id, "p4eh");
+assert.equal(matchVariantFromRest("4", panameraVariants), null);
+
+// Regression: "Golf R Variant" (1VF167), "Golf GTD Variant" (1VG345), "Golf R
+// Cabrio" (1VE548) are a Golf Variant / Cabriolet with the trim, not a hatchback.
+const golfRVariant = refineBodyModel(matchModelFromTyp("Golf R Variant", activeVwModels)!, activeVwModels);
+assert.deepEqual(golfRVariant, { id: "golf-variant", name: "Golf Variant", rest: "R" });
+assert.deepEqual(
+  refineBodyModel(matchModelFromTyp("Golf GTD Variant", activeVwModels)!, activeVwModels),
+  { id: "golf-variant", name: "Golf Variant", rest: "GTD" }
+);
+assert.deepEqual(
+  refineBodyModel(matchModelFromTyp("Golf R Cabrio", activeVwModels)!, activeVwModels),
+  { id: "golf-cabriolet", name: "Golf Cabriolet", rest: "R" }
+);
+assert.deepEqual(
+  refineBodyModel(matchModelFromTyp("Golf VII Variant 2.0 TDI", activeVwModels)!, activeVwModels),
+  { id: "golf-variant", name: "Golf Variant", rest: "VII 2.0 TDI" }
+);
+// No such body model: unchanged. "V" is a generation, not a Variant.
+assert.deepEqual(refineBodyModel({ id: "golf", name: "Golf", rest: "V 1.6" }, activeVwModels), {
+  id: "golf",
+  name: "Golf",
+  rest: "V 1.6",
+});
+assert.deepEqual(refineBodyModel(golfR!, activeVwModels), golfR);
+
+// Regression: BMW "320d" (1BA881) resolves through the family fallback to the
+// active "3 Series"; its Ausführung must still be matched, and "Touring" picks
+// the Touring model.
+const bmwModels = [
+  { id: "3er", name: "3 Series" },
+  { id: "3er-touring", name: "3 Series Touring" },
+  { id: "5er", name: "5 Series" },
+];
+const bmw3Variants = [
+  { id: "318d", name: "318d" },
+  { id: "320d", name: "320d" },
+  { id: "330d", name: "330d" },
+  { id: "m340i", name: "M340i" },
+];
+assert.equal(matchVariantFromRest("320d", bmw3Variants)?.id, "320d");
+assert.equal(matchVariantFromRest("330d xDrive", bmw3Variants)?.id, "330d");
+assert.deepEqual(refineBodyModel({ id: "3er", name: "3 Series", rest: "320d Touring" }, bmwModels), {
+  id: "3er-touring",
+  name: "3 Series Touring",
+  rest: "320d",
+});
 
 console.log("All decode-tg mapper checks passed.");

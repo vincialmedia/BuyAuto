@@ -1,4 +1,12 @@
-import { tgDecodeUrl, YEAR_MIN } from "@/lib/buyauto/listingContract";
+import {
+  DRIVETRAIN_TYPES,
+  GEARBOX_TYPES,
+  isGearboxType,
+  tgDecodeUrl,
+  YEAR_MIN,
+  type DrivetrainType,
+  type GearboxType,
+} from "@/lib/buyauto/listingContract";
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -77,7 +85,14 @@ interface CalculatorState {
   make: string;
   model: string;
   year: number;
+  /** Ausführung: Katalog-Variantenname oder Freitext (z.B. "R", "40 TFSI quattro"),
+   *  '' = keine Angabe. Trennt einen Golf R von gewöhnlichen Golfs. */
+  variant: string;
+  /** 0 = unbekannt — dann gibt es keinen km-Angleich. */
   vehicleKm: number;
+  /** '' = unbekannt/egal. */
+  gearbox: '' | GearboxType;
+  drivetrain: '' | DrivetrainType;
   /** Karosserie ('' = unbekannt/egal) — schärft die automatische Suche. */
   bodyType: string;
   /** Hubraum-Token aus dem Typenschein (z.B. "2.0", '' = unbekannt) — aktiviert
@@ -107,6 +122,8 @@ interface CalcResult {
   offerMax: number;
   offerShare: number; // Eintauschwert in % vom Marktwert
   compCount: number;
+  /** false: Kilometerstand unbekannt, die Inseratspreise flossen unverändert ein. */
+  kmAdjusted: boolean;
   /** Absolute Extremwerte der angeglichenen Preise (immer min–max). */
   fullMin: number;
   fullMax: number;
@@ -152,7 +169,10 @@ const DEFAULT_STATE: CalculatorState = {
   make: "",
   model: "",
   year: 0,
+  variant: "",
   vehicleKm: 0,
+  gearbox: "",
+  drivetrain: "",
   bodyType: "",
   displacement: "",
   comps: [
@@ -172,7 +192,10 @@ const PRESET_GOLF: CalculatorState = {
   make: "VW",
   model: "Golf 1.5 TSI",
   year: 2020,
+  variant: "",
   vehicleKm: 78000,
+  gearbox: "",
+  drivetrain: "",
   bodyType: "",
   displacement: "",
   comps: [
@@ -189,6 +212,57 @@ const PRESET_GOLF: CalculatorState = {
 };
 
 const MAX_COMPS = 6;
+
+// Ausführung is free text in the comps contract, capped server-side at 60.
+const VARIANT_MAX = 60;
+
+// Everything that decides which comps describe the car (GA4 dedupe, comps
+// invalidation). km is left out: its correction is applied locally.
+const vehicleIdentity = (s: CalculatorState) =>
+  [s.make, s.model, s.variant, s.year, s.bodyType, s.displacement, s.gearbox, s.drivetrain].join("|");
+
+// Body words from the ASTRA type string ("LIM", "KOMBI") belong to bodyType,
+// not to the model/variant search text.
+const BODY_WORD_RE =
+  /^(lim|limousine|kombi|coupe|coupé|cabriolet|cabrio|roadster|targa|suv|schr(ä|ae)gheck|stufenheck)$/i;
+const stripBodyWords = (text: string | null | undefined) =>
+  (text ?? "")
+    .split(/\s+/)
+    .filter((t) => !BODY_WORD_RE.test(t))
+    .join(" ")
+    .trim();
+
+// The ASTRA type string usually ends with the variant ("GOLF 2.0 TDI" + "2.0
+// TDI"): split it so model and Ausführung each carry their own part instead of
+// sending the variant twice. Token-wise, so "R" never matches inside "TOURAN".
+function splitTgModel(model: string, variantText: string): { model: string; variant: string } {
+  const variant = variantText.slice(0, VARIANT_MAX).trim();
+  if (!variant) return { model, variant: "" };
+  const modelTokens = model.split(/\s+/).filter(Boolean);
+  const variantTokens = variant.toLowerCase().split(/\s+/).filter(Boolean);
+  for (let i = modelTokens.length - variantTokens.length; i >= 0; i--) {
+    const hit = variantTokens.every((t, j) => modelTokens[i + j].toLowerCase() === t);
+    if (!hit) continue;
+    const rest = [...modelTokens.slice(0, i), ...modelTokens.slice(i + variantTokens.length)].join(" ");
+    // Nothing left of the model (the whole type IS the variant): keep it whole.
+    return rest ? { model: rest, variant } : { model, variant: "" };
+  }
+  return { model, variant };
+}
+
+// What a Typenschein says about the trim when the catalog has no matching
+// Ausführung: "VII 2.0GTI 5" -> "2.0 GTI". Generation numerals ("VII", "8")
+// and door counts ("5", "3T") describe no trim and go; so do body words.
+const ROMAN_GENERATION_RE = /^(I{1,3}|IV|VI{0,3}|IX|X)$/;
+function tgTrimText(variantText: string | null | undefined): string {
+  return stripBodyWords(variantText)
+    .replace(/(\d[.,]\d)(?=[a-z]{2,}(?![a-z]*\d))/gi, "$1 ")
+    .split(/\s+/)
+    .filter((t) => t && !ROMAN_GENERATION_RE.test(t) && !/^\d[tT]?$/.test(t))
+    .join(" ")
+    .slice(0, VARIANT_MAX)
+    .trim();
+}
 
 // Anonymous users get a taste before signing up: ANON_FREE_SEARCHES free
 // automatic searches, counted in localStorage. This is a lead magnet, not DRM —
@@ -237,7 +311,11 @@ function compute(state: CalculatorState): CalcResult | null {
   // Laufleistungs-Angleich: hat das Vergleichsfahrzeug MEHR km als unseres,
   // ist unser Fahrzeug entsprechend mehr wert (und umgekehrt). Die Korrektur
   // skaliert mit dem Fahrzeugwert (KM_ADJUST_PCT_PER_10K), gedeckelt auf ±50%.
+  // Ohne eigenen Kilometerstand kein Angleich: gegen 0 km gerechnet würde
+  // jedes Vergleichsauto künstlich verteuert.
+  const kmAdjusted = state.vehicleKm > 0;
   const adjustedPrices = validComps.map((c) => {
+    if (!kmAdjusted) return c.price;
     const factor = 1 + (KM_ADJUST_PCT_PER_10K / 100) * ((c.km - state.vehicleKm) / 10_000);
     const clamped = Math.min(1 + KM_ADJUST_CAP, Math.max(1 - KM_ADJUST_CAP, factor));
     return c.price * clamped;
@@ -290,6 +368,7 @@ function compute(state: CalculatorState): CalcResult | null {
     offerMax,
     offerShare: marketValue > 0 ? (offer / marketValue) * 100 : 0,
     compCount: validComps.length,
+    kmAdjusted,
     fullMin,
     fullMax,
     bandIsIqr,
@@ -299,6 +378,29 @@ function compute(state: CalculatorState): CalcResult | null {
 }
 
 // --- Helper Components ---
+
+const InfoTip = ({ text }: { text: string }) => (
+  <TooltipProvider>
+    <Tooltip delayDuration={300}>
+      <TooltipTrigger asChild>
+        <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-neutral-600 cursor-help" />
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
+        <p className="text-xs">{text}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+// Required fields keep the bold label, optional ones the lighter style.
+const FieldLabel = ({ label, required = false, tooltip }: { label: string; required?: boolean; tooltip?: string }) => (
+  <div className="flex items-center gap-2">
+    <Label className={`text-sm ${required ? "font-bold text-neutral-900" : "font-medium text-neutral-600"}`}>
+      {label}
+    </Label>
+    {tooltip && <InfoTip text={tooltip} />}
+  </div>
+);
 
 const MoneyInput = ({
   label,
@@ -324,18 +426,7 @@ const MoneyInput = ({
       <Label className={`text-sm ${highlight ? "font-bold text-neutral-900" : "font-medium text-neutral-600"}`}>
         {label}
       </Label>
-      {tooltip && (
-        <TooltipProvider>
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-neutral-600 cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
-              <p className="text-xs">{tooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
+      {tooltip && <InfoTip text={tooltip} />}
     </div>
     <div className="relative">
       <Input
@@ -361,8 +452,8 @@ const CalculatorSkeleton = () => (
   <div className="w-full space-y-8 animate-pulse" aria-hidden="true">
     {/* Presets bar */}
     <div className="h-24 sm:h-16 bg-neutral-50 rounded-xl border border-neutral-200" />
-    {/* Step-1 vehicle card */}
-    <div className="h-[560px] max-w-2xl mx-auto bg-white rounded-xl border border-neutral-200 shadow-sm" />
+    {/* Step-1 vehicle card — single column on mobile stacks all eight fields */}
+    <div className="h-[960px] sm:h-[640px] max-w-2xl mx-auto bg-white rounded-xl border border-neutral-200 shadow-sm" />
   </div>
 );
 
@@ -374,8 +465,31 @@ interface SellVehicle {
   km: number;
   makeId: string;
   modelId: string;
+  /** Catalog variant; only meaningful (and only sent) together with modelId. */
+  variantId: string;
+  gearbox: '' | GearboxType;
+  drivetrain: '' | DrivetrainType;
   /** Typenschein-Nr., only when the car came from a lookup and is unchanged. */
   tg: string;
+}
+
+// "Marke, Modell, Ausführung und Jahrgang" — only the fields the CTA link
+// actually carries into the listing wizard.
+function carriedFieldsLabel(vehicle: SellVehicle | null): { text: string; count: number } {
+  const fields = vehicle
+    ? [
+        vehicle.make ? "Marke" : "",
+        vehicle.model ? "Modell" : "",
+        vehicle.modelId && vehicle.variantId ? "Ausführung" : "",
+        vehicle.year > 0 ? "Jahrgang" : "",
+        vehicle.km > 0 ? "Kilometerstand" : "",
+        vehicle.gearbox ? "Getriebe" : "",
+        vehicle.drivetrain ? "Antrieb" : "",
+      ].filter(Boolean)
+    : [];
+  const text =
+    fields.length > 1 ? `${fields.slice(0, -1).join(", ")} und ${fields[fields.length - 1]}` : fields.join("");
+  return { text, count: fields.length };
 }
 
 // /inserat-erstellen?src=rechner&… — read by readRechnerSeed in the listing
@@ -386,12 +500,17 @@ function sellHref(vehicle: SellVehicle | null, marketValue?: number): string {
   if (vehicle) {
     if (vehicle.makeId) {
       params.set("make_id", vehicle.makeId);
-      if (vehicle.modelId) params.set("model_id", vehicle.modelId);
+      if (vehicle.modelId) {
+        params.set("model_id", vehicle.modelId);
+        if (vehicle.variantId) params.set("variant_id", vehicle.variantId);
+      }
     }
     if (vehicle.make) params.set("brand", vehicle.make);
     if (vehicle.model) params.set("model", vehicle.model);
     if (vehicle.year > 0) params.set("year", String(vehicle.year));
     if (vehicle.km > 0) params.set("km", String(Math.round(vehicle.km)));
+    if (vehicle.gearbox) params.set("gearbox", vehicle.gearbox);
+    if (vehicle.drivetrain) params.set("drivetrain", vehicle.drivetrain);
     if (vehicle.tg) params.set("tg", vehicle.tg);
   }
   if (marketValue && marketValue > 0) params.set("price", String(Math.round(marketValue / 100) * 100));
@@ -429,6 +548,17 @@ export function EintauschwertRechner() {
   const [modelsLoading, setModelsLoading] = useState(false);
   const [makeId, setMakeId] = useState("");
   const [modelId, setModelId] = useState("");
+  const [variants, setVariants] = useState<VehicleOption[]>([]);
+  const [variantsLoading, setVariantsLoading] = useState(false);
+  const [variantId, setVariantId] = useState("");
+  // Typenschein lookup in select mode: the decoded catalog ids wait here until
+  // their option list has loaded (make -> models -> variants).
+  const [pendingModelId, setPendingModelId] = useState<string | null>(null);
+  const [pendingVariantId, setPendingVariantId] = useState<string | null>(null);
+  // The Typenschein named a trim the catalog list doesn't have ("2.0 GTI" on a
+  // type the dropdown can't match): the Ausführung is then a free-text field
+  // holding it, until the user goes back to the list.
+  const [variantFreeText, setVariantFreeText] = useState(false);
   // Explicit user-facing choice between dropdowns and free text. Deriving this
   // from "is the field empty" flips the input type mid-keystroke — never do that.
   const [vehicleFieldMode, setVehicleFieldMode] = useState<'select' | 'text'>('select');
@@ -441,9 +571,19 @@ export function EintauschwertRechner() {
   const searchedVehicleRef = useRef("");
   // The last successful Typenschein lookup with the catalog ids it resolved;
   // only passed on while make/model still match it.
-  const tgVehicleRef = useRef<{ tg: string; make: string; model: string; makeId: string; modelId: string } | null>(
-    null
-  );
+  const tgVehicleRef = useRef<{
+    tg: string;
+    make: string;
+    model: string;
+    variant: string;
+    gearbox: '' | GearboxType;
+    makeId: string;
+    modelId: string;
+    variantId: string;
+  } | null>(null);
+  // The lookup's provider texts, for when its model can't be picked from the
+  // dropdown after all (see the pending-model effect).
+  const tgTextFallbackRef = useRef<{ make: string; model: string; variant: string; trim: string } | null>(null);
   // The car the shown result was computed for: the CTA lists this car, even if
   // the form was edited since.
   const resultVehicleRef = useRef<SellVehicle | null>(null);
@@ -454,7 +594,7 @@ export function EintauschwertRechner() {
   const reportedValuationsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!result) return;
-    const vehicleKey = `${state.make}|${state.model}|${state.year}|${state.bodyType}|${state.displacement}`;
+    const vehicleKey = vehicleIdentity(state);
     if (reportedValuationsRef.current.has(vehicleKey)) return;
     reportedValuationsRef.current.add(vehicleKey);
     track("generate_lead", { lead_type: "valuation", value: 0, currency: "CHF" });
@@ -468,6 +608,11 @@ export function EintauschwertRechner() {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+  // Same for the selected make: the user can change it while a lookup runs.
+  const makeIdRef = useRef(makeId);
+  useEffect(() => {
+    makeIdRef.current = makeId;
+  }, [makeId]);
 
   useEffect(() => {
     setIsClient(true);
@@ -554,6 +699,100 @@ export function EintauschwertRechner() {
     };
   }, [makeId]);
 
+  // Ausführungen of the selected model, same pattern as the models above. The
+  // field is optional: a failed load just leaves the free-text input.
+  useEffect(() => {
+    setVariants([]);
+    if (!modelId) {
+      setVariantsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setVariantsLoading(true);
+    fetch(`/api/vehicles/variants?model_id=${encodeURIComponent(modelId)}`)
+      .then((r) => (r.ok ? r.json() : { variants: [] }))
+      .then((data: { variants?: Array<{ id?: string; name?: string }> }) => {
+        if (cancelled) return;
+        setVariants(
+          (data?.variants ?? [])
+            .filter((v) => v?.id && v?.name)
+            .map((v) => ({ id: String(v.id), name: String(v.name) }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setVariants([]);
+      })
+      .finally(() => {
+        if (!cancelled) setVariantsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [modelId]);
+
+  // Apply a Typenschein model once the make's models are in. Not in the list
+  // (no catalog match, or a hidden trim-as-model row like "Golf R"): fall back
+  // to the free-text fields with the provider's texts, as before.
+  useEffect(() => {
+    if (!pendingModelId || !makeId || modelsLoading) return;
+    const match = models.find((m) => m.id === pendingModelId);
+    setPendingModelId(null);
+    if (!match) {
+      const text = tgTextFallbackRef.current;
+      setPendingVariantId(null);
+      setVehicleFieldMode('text');
+      setMakeId("");
+      setModelId("");
+      setVariantId("");
+      if (text) {
+        const { make, model, variant } = text;
+        setState((prev) => ({ ...prev, make, model, variant }));
+        if (tgVehicleRef.current) tgVehicleRef.current = { ...tgVehicleRef.current, make, model, variant, variantId: "" };
+      }
+      return;
+    }
+    if (match.id !== modelId) {
+      // Same reason as in handleModelSelect: no stale variant list in between.
+      setVariants([]);
+      setVariantsLoading(true);
+    }
+    setModelId(match.id);
+    setVariantId("");
+    // No catalog variant decoded: keep the Typenschein's own trim text rather
+    // than silently valuing a GTI as a plain Golf.
+    const trim = pendingVariantId ? "" : tgTextFallbackRef.current?.trim ?? "";
+    setVariantFreeText(trim !== "");
+    setState((prev) => ({ ...prev, model: match.name, variant: trim }));
+    if (tgVehicleRef.current) {
+      tgVehicleRef.current = { ...tgVehicleRef.current, model: match.name, variant: trim, variantId: "" };
+    }
+    // modelId is read only to compare, pendingVariantId was staged together
+    // with pendingModelId; the effect must not re-run on either.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [models, modelsLoading, pendingModelId, makeId]);
+
+  // Then its variant, once the model's variants are in. Not found: the
+  // Typenschein's trim text, as when none was decoded (the field is optional,
+  // so without one it simply stays empty).
+  useEffect(() => {
+    if (!pendingVariantId || !modelId || variantsLoading) return;
+    const match = variants.find((v) => v.id === pendingVariantId);
+    setPendingVariantId(null);
+    if (!match) {
+      const trim = tgTextFallbackRef.current?.trim ?? "";
+      if (!trim) return;
+      setVariantFreeText(true);
+      setState((prev) => ({ ...prev, variant: trim }));
+      if (tgVehicleRef.current) tgVehicleRef.current = { ...tgVehicleRef.current, variant: trim, variantId: "" };
+      return;
+    }
+    setVariantId(match.id);
+    setState((prev) => ({ ...prev, variant: match.name }));
+    if (tgVehicleRef.current) {
+      tgVehicleRef.current = { ...tgVehicleRef.current, variant: match.name, variantId: match.id };
+    }
+  }, [variants, variantsLoading, pendingVariantId, modelId]);
+
   // A login clears the anonymous gate — the server quota takes over.
   useEffect(() => {
     if (user) setGateKind(null);
@@ -586,8 +825,17 @@ export function EintauschwertRechner() {
     );
   };
 
+  // Any manual change of the car, and every reset, cancels a Typenschein
+  // lookup's staged ids — they must never land on top of the user's choice.
+  const clearPendingTg = () => {
+    setPendingModelId(null);
+    setPendingVariantId(null);
+    setVariantFreeText(false);
+  };
+
   const handlePreset = () => {
     tgVehicleRef.current = null;
+    clearPendingTg();
     // The demo car must never sit next to another car's result (or its CTA).
     setResult(null);
     searchedVehicleRef.current = "";
@@ -597,6 +845,7 @@ export function EintauschwertRechner() {
     // Preset names don't map to dropdown ids — show them as text fields.
     setMakeId("");
     setModelId("");
+    setVariantId("");
     setVehicleFieldMode('text');
     setStep(2);
     toast.success("Beispielwerte geladen", {
@@ -606,12 +855,14 @@ export function EintauschwertRechner() {
 
   const handleReset = () => {
     tgVehicleRef.current = null;
+    clearPendingTg();
     setState({ ...DEFAULT_STATE, comps: DEFAULT_STATE.comps.map((c) => ({ ...c })) });
     setResult(null);
     setGateKind(null);
     setFoundListings([]);
     setMakeId("");
     setModelId("");
+    setVariantId("");
     setTgInput("");
     setVehicleFieldMode('select');
     setStep(1);
@@ -623,36 +874,62 @@ export function EintauschwertRechner() {
     // never offer a stale list while the new fetch is in flight.
     setModels([]);
     setModelsLoading(true);
+    clearPendingTg();
     setMakeId(id);
     setModelId("");
-    setState((prev) => ({ ...prev, make: selected?.name ?? "", model: "" }));
+    setVariantId("");
+    // Another make is another car: its gearbox/drivetrain no longer apply.
+    setState((prev) => ({ ...prev, make: selected?.name ?? "", model: "", variant: "", gearbox: "", drivetrain: "" }));
   };
 
   const handleModelSelect = (id: string) => {
     const selected = models.find((m) => m.id === id);
+    if (id !== modelId) {
+      // Same as for the models: never offer the previous model's variants.
+      setVariants([]);
+      setVariantsLoading(true);
+    }
+    clearPendingTg();
     setModelId(id);
-    setState((prev) => ({ ...prev, model: selected?.name ?? "" }));
+    setVariantId("");
+    setState((prev) => ({ ...prev, model: selected?.name ?? "", variant: "" }));
+  };
+
+  // Radix SelectItem can't carry "" — "none" stands for «Keine Angabe».
+  const handleVariantSelect = (id: string) => {
+    const selected = id === "none" ? undefined : variants.find((v) => v.id === id);
+    setPendingVariantId(null);
+    setVariantId(selected?.id ?? "");
+    updateState('variant', selected?.name ?? "");
   };
 
   const switchToTextFields = () => {
+    clearPendingTg();
     setVehicleFieldMode('text');
     setMakeId("");
     setModelId("");
+    setVariantId("");
+    updateState('variant', "");
   };
 
   const switchToSelectFields = () => {
+    clearPendingTg();
     setVehicleFieldMode('select');
     setMakeId("");
     setModelId("");
-    setState((prev) => ({ ...prev, make: "", model: "" }));
+    setVariantId("");
+    setState((prev) => ({ ...prev, make: "", model: "", variant: "" }));
   };
 
   // Dropdowns only when the vehicle DB delivered options AND the user hasn't
   // opted into free text (preset values or "not in the list" cases).
   const useSelectFields = vehicleFieldMode === 'select' && makes.length > 0;
   const modelSelectReady = useSelectFields && makeId !== "" && models.length > 0;
+  // The model came from free text (dropdowns off, or the make has no catalog
+  // models) — then the Ausführung is free text as well.
+  const modelIsFreeText = !useSelectFields || (makeId !== "" && !modelsLoading && models.length === 0);
 
-  const vehicleLabel = [state.make, state.model, state.year > 0 ? `(${state.year})` : ""]
+  const vehicleLabel = [state.make, state.model, state.variant.trim(), state.year > 0 ? `(${state.year})` : ""]
     .filter(Boolean)
     .join(" ");
 
@@ -683,8 +960,11 @@ export function EintauschwertRechner() {
       const data = (await res.json().catch(() => ({}))) as {
         make_id?: string | null;
         model_id?: string | null;
+        variant_id?: string | null;
+        variant_text?: string | null;
         provider_make?: string | null;
         provider_model?: string | null;
+        transmission?: string | null;
         body_key?: string | null;
         body_label?: string | null;
         displacement_l?: string | null;
@@ -698,45 +978,86 @@ export function EintauschwertRechner() {
       }
       // Karosserie-Wörter ("LIM", "KOMBI") gehören nicht in den Modell-Suchstring
       // — die Karosserie kommt separat als bodyType mit.
-      const model = (data.provider_model ?? "")
-        .split(/\s+/)
-        .filter(
-          (t) =>
-            !/^(lim|limousine|kombi|coupe|coupé|cabriolet|cabrio|roadster|targa|suv|schr(ä|ae)gheck|stufenheck)$/i.test(
-              t
-            )
-        )
-        .join(" ")
-        .trim();
+      const model = stripBodyWords(data.provider_model);
       const bodyKey =
         data.body_key && BODY_TYPE_OPTIONS.some((o) => o.value === data.body_key)
           ? data.body_key
           : "";
-      const nextMake = data.provider_make ?? stateRef.current.make;
-      const nextModel = model || stateRef.current.model;
-      setVehicleFieldMode('text');
-      setMakeId("");
-      setModelId("");
-      setState((prev) => ({
-        ...prev,
-        make: nextMake,
-        model: nextModel,
-        bodyType: bodyKey,
-        displacement: data.displacement_l ?? "",
-      }));
-      tgVehicleRef.current = {
-        tg,
-        make: nextMake,
-        model: nextModel,
-        makeId: data.make_id ?? "",
-        modelId: data.model_id ?? "",
-      };
+      const gearbox = isGearboxType(data.transmission) ? data.transmission : "";
+      // Free-text fallback, exactly as before plus the Ausführung text.
+      const text = splitTgModel(model || stateRef.current.model, stripBodyWords(data.variant_text));
+      const textMake = data.provider_make ?? stateRef.current.make;
+      const knownMake = data.make_id ? makes.find((m) => m.id === data.make_id) : undefined;
+      clearPendingTg();
+      setVariantId("");
+      if (knownMake && data.model_id) {
+        // Catalog hit: stay in the dropdowns like the listing wizard. The model
+        // (then the variant) is applied once its option list has loaded; the
+        // pending-model effect falls back to the texts if it never shows up.
+        tgTextFallbackRef.current = { make: textMake, ...text, trim: tgTrimText(data.variant_text) };
+        // The live make, not the one at click time: if the user picked this
+        // make meanwhile, its models are already loaded and setMakeId would be
+        // a no-op that never clears modelsLoading.
+        if (knownMake.id !== makeIdRef.current) {
+          setModels([]);
+          setModelsLoading(true);
+          setMakeId(knownMake.id);
+        }
+        setVehicleFieldMode('select');
+        setModelId("");
+        setPendingModelId(data.model_id);
+        setPendingVariantId(data.variant_id ?? null);
+        setState((prev) => ({
+          ...prev,
+          make: knownMake.name,
+          model: "",
+          variant: "",
+          gearbox,
+          bodyType: bodyKey,
+          displacement: data.displacement_l ?? "",
+        }));
+        tgVehicleRef.current = {
+          tg,
+          make: knownMake.name,
+          model: "",
+          variant: "",
+          gearbox,
+          makeId: knownMake.id,
+          modelId: data.model_id,
+          variantId: "",
+        };
+      } else {
+        tgTextFallbackRef.current = null;
+        setVehicleFieldMode('text');
+        setMakeId("");
+        setModelId("");
+        setState((prev) => ({
+          ...prev,
+          make: textMake,
+          model: text.model,
+          variant: text.variant,
+          gearbox,
+          bodyType: bodyKey,
+          displacement: data.displacement_l ?? "",
+        }));
+        tgVehicleRef.current = {
+          tg,
+          make: textMake,
+          model: text.model,
+          variant: text.variant,
+          gearbox,
+          makeId: data.make_id ?? "",
+          modelId: data.model_id ?? "",
+          variantId: data.model_id ? data.variant_id ?? "" : "",
+        };
+      }
       toast.success("Typenschein erkannt", {
         description: [
           data.provider_make,
           model,
           data.body_label,
           data.displacement_l ? `${data.displacement_l}l` : null,
+          gearbox || null,
         ]
           .filter(Boolean)
           .join(" · "),
@@ -763,12 +1084,7 @@ export function EintauschwertRechner() {
       });
       return false;
     }
-    if (state.vehicleKm <= 0) {
-      toast.error("Kilometerstand fehlt", {
-        description: "Trag den Kilometerstand des Eintausch-Fahrzeugs ein.",
-      });
-      return false;
-    }
+    // Kilometerstand is optional: without it the comps are taken as listed.
     return true;
   };
 
@@ -804,7 +1120,8 @@ export function EintauschwertRechner() {
   // The gates are enforced here in the browser, so report each one to the
   // server — they are the sign-up and upgrade moments. Once per car and gate.
   const reportedGatesRef = useRef<Set<string>>(new Set());
-  const gateKey = (kind: Exclude<GateKind, null>) => `${kind}|${state.make}|${state.model}|${state.year}`;
+  const gateKey = (kind: Exclude<GateKind, null>) =>
+    `${kind}|${state.make}|${state.model}|${state.variant}|${state.year}`;
   const reportGate = (kind: Exclude<GateKind, null>) => {
     const key = gateKey(kind);
     if (reportedGatesRef.current.has(key)) return;
@@ -818,7 +1135,10 @@ export function EintauschwertRechner() {
         make: state.make.trim(),
         model: state.model.trim(),
         year: state.year,
-        km: state.vehicleKm,
+        km: state.vehicleKm > 0 ? state.vehicleKm : undefined,
+        variant: state.variant.trim().slice(0, VARIANT_MAX) || undefined,
+        gearbox: state.gearbox || undefined,
+        drivetrain: state.drivetrain || undefined,
         ...logContext(),
       }),
     }).catch(() => {});
@@ -848,15 +1168,25 @@ export function EintauschwertRechner() {
 
   const sellVehicleFrom = (s: CalculatorState): SellVehicle => {
     const tgCar = tgVehicleRef.current;
-    const fromTg = tgCar !== null && tgCar.make === s.make && tgCar.model === s.model;
+    // The lookup's catalog ids still describe the car while make and model match.
+    const tgModel = tgCar !== null && tgCar.make === s.make && tgCar.model === s.model;
+    // The wizard re-decodes a passed TG on mount and overwrites what it decodes,
+    // so the TG only goes along while the variant and gearbox are its own too.
+    const tgCarUnchanged = tgModel && tgCar.variant === s.variant && tgCar.gearbox === s.gearbox;
+    // Select mode: the dropdowns are the source of truth; the TG ids only fill
+    // in for free-text fields.
+    const outModelId = makeId ? modelId : tgModel ? tgCar.modelId : "";
     return {
       make: s.make.trim(),
       model: s.model.trim(),
       year: s.year,
       km: s.vehicleKm,
-      makeId: makeId || (fromTg ? tgCar.makeId : ""),
-      modelId: makeId ? modelId : fromTg ? tgCar.modelId : "",
-      tg: fromTg ? tgCar.tg : "",
+      makeId: makeId || (tgModel ? tgCar.makeId : ""),
+      modelId: outModelId,
+      variantId: !outModelId ? "" : makeId ? variantId : tgCarUnchanged ? tgCar.variantId : "",
+      gearbox: s.gearbox,
+      drivetrain: s.drivetrain,
+      tg: tgCarUnchanged ? tgCar.tg : "",
     };
   };
 
@@ -872,17 +1202,19 @@ export function EintauschwertRechner() {
 
   // Ways past a search limit that need no garage account: sell the car
   // (private owners, prefilled listing) or keep calculating by hand.
+  const gateSellVehicle = sellVehicleFrom(state);
+  const gateCarried = carriedFieldsLabel(gateSellVehicle);
   const gateAlternatives = (
     <div className="space-y-4">
       {showPrivateSellCta && state.year >= YEAR_MIN && (
         <div className="rounded-xl border border-red-500/40 bg-red-600/10 p-5 space-y-3">
           <p className="text-neutral-200 leading-relaxed">
             <strong className="text-white">Du willst dein Auto verkaufen?</strong> Inseriere es gratis auf
-            BuyAuto – Marke, Modell, Jahrgang und Kilometerstand übernehmen wir.
+            BuyAuto – {gateCarried.text || "die Fahrzeugdaten"} übernehmen wir.
           </p>
           <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white border-none">
             <Link
-              href={sellHref(sellVehicleFrom(state))}
+              href={sellHref(gateSellVehicle)}
               onClick={() => track("valuation_cta_click", { target: "list" })}
             >
               Gratis inserieren – Daten übernommen
@@ -915,7 +1247,7 @@ export function EintauschwertRechner() {
     }
     setResult(computed);
     setGateKind(null);
-    searchedVehicleRef.current = `${nextState.make}|${nextState.model}|${nextState.year}|${nextState.bodyType}|${nextState.displacement}`;
+    searchedVehicleRef.current = vehicleIdentity(nextState);
     resultVehicleRef.current = sellVehicleFrom(nextState);
     return true;
   };
@@ -954,6 +1286,8 @@ export function EintauschwertRechner() {
     setGateKind(null);
     setMakeId("");
     setModelId("");
+    setVariantId("");
+    clearPendingTg();
     setTgInput("");
     tgVehicleRef.current = null;
     setVehicleFieldMode('select');
@@ -977,7 +1311,7 @@ export function EintauschwertRechner() {
       });
       return;
     }
-    const key = `${state.make}|${state.model}|${state.year}|${state.bodyType}|${state.displacement}`;
+    const key = vehicleIdentity(state);
     if (result && searchedVehicleRef.current && key !== searchedVehicleRef.current) {
       setResult(null);
       if (compsMode === 'auto') {
@@ -1038,7 +1372,13 @@ export function EintauschwertRechner() {
           make: state.make.trim(),
           model: state.model.trim(),
           year: state.year,
-          km: state.vehicleKm,
+          // Unknown km is omitted, never sent as 0.
+          km: state.vehicleKm > 0 ? state.vehicleKm : undefined,
+          variant: state.variant.trim().slice(0, VARIANT_MAX) || undefined,
+          // Lets the server load the model's sibling variants (Golf R vs GTI…).
+          modelId: vehicleFieldMode === 'select' && modelId ? modelId : undefined,
+          gearbox: state.gearbox || undefined,
+          drivetrain: state.drivetrain || undefined,
           body: state.bodyType || undefined,
           displacement: state.displacement || undefined,
           ...logContext(),
@@ -1148,6 +1488,8 @@ export function EintauschwertRechner() {
 
   if (!isClient) return <CalculatorSkeleton />;
 
+  const resultCarried = carriedFieldsLabel(resultVehicleRef.current);
+
   // Shared blocks (plain JSX values, NOT components — a component defined inside
   // the render body remounts on every keystroke and inputs lose focus).
   const compRowsEditor = (
@@ -1223,14 +1565,22 @@ export function EintauschwertRechner() {
 
   // The km correction is applied silently (KM_ADJUST_PCT_PER_10K) — an editable
   // factor confused every tester, so it's explained, not asked.
-  const kmAdjustNote = (
-    <p className="text-xs text-neutral-500 leading-relaxed">
-      <strong className="text-neutral-700">Kilometerstand wird automatisch berücksichtigt:</strong>{" "}
-      Vergleichsautos mit mehr Kilometern als deins sind entsprechend günstiger – der Rechner
-      gleicht das mit rund {KM_ADJUST_PCT_PER_10K}% des Inseratspreises pro 10&apos;000 km
-      Differenz aus. Beispiel: CHF 20&apos;000-Auto, 20&apos;000 km Unterschied ≈ CHF 2&apos;000.
-    </p>
-  );
+  const kmAdjustNote =
+    state.vehicleKm > 0 ? (
+      <p className="text-xs text-neutral-500 leading-relaxed">
+        <strong className="text-neutral-700">Kilometerstand wird automatisch berücksichtigt:</strong>{" "}
+        Vergleichsautos mit mehr Kilometern als deins sind entsprechend günstiger – der Rechner
+        gleicht das mit rund {KM_ADJUST_PCT_PER_10K}% des Inseratspreises pro 10&apos;000 km
+        Differenz aus. Beispiel: CHF 20&apos;000-Auto, 20&apos;000 km Unterschied ≈ CHF 2&apos;000.
+      </p>
+    ) : (
+      <p className="text-xs text-neutral-500 leading-relaxed">
+        <strong className="text-neutral-700">Ohne Kilometerstand:</strong> Die Inseratspreise fliessen
+        unverändert ein. Trägst du den Kilometerstand ein, gleicht der Rechner die km-Differenz zu
+        den Vergleichsautos aus (rund {KM_ADJUST_PCT_PER_10K}% pro 10&apos;000 km) – das macht den
+        Wert präziser.
+      </p>
+    );
 
   return (
     <div className="w-full space-y-8" id="calculator-tool">
@@ -1308,7 +1658,7 @@ export function EintauschwertRechner() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-sm font-bold text-neutral-900">Marke *</Label>
+                <FieldLabel label="Marke *" required />
                 {useSelectFields ? (
                   <Select value={makeId} onValueChange={handleMakeSelect}>
                     <SelectTrigger className="border-neutral-400 bg-white shadow-sm font-semibold">
@@ -1333,7 +1683,7 @@ export function EintauschwertRechner() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm font-bold text-neutral-900">Modell *</Label>
+                <FieldLabel label="Modell *" required />
                 {useSelectFields ? (
                   modelSelectReady ? (
                     <Select value={modelId} onValueChange={handleModelSelect}>
@@ -1388,7 +1738,7 @@ export function EintauschwertRechner() {
                     onClick={switchToTextFields}
                     className="text-xs text-neutral-400 hover:text-red-600 underline underline-offset-2 transition-colors"
                   >
-                    Marke oder Modell nicht in der Liste? Manuell eingeben
+                    Marke, Modell oder Ausführung nicht in der Liste? Manuell eingeben
                   </button>
                 ) : makes.length > 0 ? (
                   <button
@@ -1401,7 +1751,63 @@ export function EintauschwertRechner() {
                 ) : null}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm font-bold text-neutral-900">Jahrgang *</Label>
+                <FieldLabel
+                  label="Ausführung (optional)"
+                  tooltip="Motorisierung bzw. Version, z.B. R, GTI oder 2.0 TDI. Ein Golf R kostet deutlich mehr als ein gewöhnlicher Golf – mit der Ausführung sucht der Rechner gezielt passende Vergleichsinserate."
+                />
+                {modelIsFreeText || variantFreeText || (modelId !== "" && !variantsLoading && variants.length === 0) ? (
+                  <>
+                    <Input
+                      type="text"
+                      value={state.variant}
+                      onChange={(e) => updateState('variant', e.target.value)}
+                      placeholder="z.B. R, GTI, 2.0 TDI"
+                      maxLength={VARIANT_MAX}
+                      className="bg-neutral-50/50"
+                    />
+                    {variantFreeText && !modelIsFreeText && variants.length > 0 && (
+                      <p className="text-xs text-neutral-500">
+                        Vom Typenschein übernommen.{" "}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVariantFreeText(false);
+                            setVariantId("");
+                            updateState('variant', "");
+                          }}
+                          className="text-neutral-400 hover:text-red-600 underline underline-offset-2 transition-colors"
+                        >
+                          Aus Liste wählen
+                        </button>
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <Select
+                    value={variantId}
+                    onValueChange={handleVariantSelect}
+                    disabled={modelId === "" || variantsLoading}
+                  >
+                    <SelectTrigger className="bg-neutral-50/50">
+                      <SelectValue
+                        placeholder={
+                          modelId === "" ? "Zuerst Modell wählen" : variantsLoading ? "Ausführungen laden…" : "Ausführung wählen"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="none">Keine Angabe</SelectItem>
+                      {variants.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel label="Jahrgang *" required />
                 <Input
                   type="number"
                   min={1980}
@@ -1413,34 +1819,56 @@ export function EintauschwertRechner() {
                 />
               </div>
               <MoneyInput
-                label="Kilometerstand *"
+                label="Kilometerstand (optional)"
                 value={state.vehicleKm}
                 onChange={(v) => updateState('vehicleKm', v)}
                 unit="km"
-                highlight
                 placeholder="z.B. 80'000"
-                tooltip="Kilometerstand des Fahrzeugs, das du in Eintausch nimmst."
+                tooltip="Optional, macht den Wert aber präziser: Mit Kilometerstand gleicht der Rechner die km-Differenz zu den Vergleichsfahrzeugen aus."
               />
-              <div className="sm:col-span-2 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-neutral-600">
-                    Karosserie (optional)
-                  </Label>
-                  <TooltipProvider>
-                    <Tooltip delayDuration={300}>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
-                        <p className="text-xs">
-                          Existiert das Modell in mehreren Varianten (z.B. Coupé und Roadster),
-                          macht die Angabe die automatische Suche deutlich präziser – nur
-                          passende Varianten fliessen in die Bewertung ein.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+              <div className="space-y-1.5">
+                <FieldLabel label="Getriebe (optional)" />
+                <Select
+                  value={state.gearbox === "" ? "any" : state.gearbox}
+                  onValueChange={(v) => updateState('gearbox', GEARBOX_TYPES.find((g) => g === v) ?? "")}
+                >
+                  <SelectTrigger className="bg-neutral-50/50">
+                    <SelectValue placeholder="Weiss nicht / egal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Weiss nicht / egal</SelectItem>
+                    {GEARBOX_TYPES.map((g) => (
+                      <SelectItem key={g} value={g}>
+                        {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel label="Antrieb (optional)" />
+                <Select
+                  value={state.drivetrain === "" ? "any" : state.drivetrain}
+                  onValueChange={(v) => updateState('drivetrain', DRIVETRAIN_TYPES.find((d) => d === v) ?? "")}
+                >
+                  <SelectTrigger className="bg-neutral-50/50">
+                    <SelectValue placeholder="Weiss nicht / egal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Weiss nicht / egal</SelectItem>
+                    {DRIVETRAIN_TYPES.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel
+                  label="Karosserie (optional)"
+                  tooltip="Gibt es das Modell mit verschiedenen Karosserien (z.B. Coupé und Roadster), macht die Angabe die automatische Suche deutlich präziser – nur Inserate mit passender Karosserie fliessen in die Bewertung ein."
+                />
                 <Select
                   value={state.bodyType === "" ? "any" : state.bodyType}
                   onValueChange={(v) => updateState('bodyType', v === "any" ? "" : v)}
@@ -1534,8 +1962,9 @@ export function EintauschwertRechner() {
               <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 text-sm text-neutral-600 leading-relaxed">
                 <Search className="w-4 h-4 inline-block mr-2 text-red-600" />
                 Sobald du auf «Inserate suchen &amp; Eintauschwert berechnen» klickst, durchsucht der
-                Rechner Schweizer Occasions-Portale (AutoScout24, tutti &amp; Co.), gleicht die
-                Kilometer an und berechnet den Eintauschwert – alles in einem Schritt.
+                Rechner Schweizer Occasions-Portale (AutoScout24, tutti &amp; Co.)
+                {state.vehicleKm > 0 ? ", gleicht die Kilometer an" : ""} und berechnet den
+                Eintauschwert – alles in einem Schritt.
                 {searchesRemaining !== null && (
                   <span className="block mt-2" aria-live="polite">
                     {searchesRemaining > 0 ? (
@@ -1589,7 +2018,14 @@ export function EintauschwertRechner() {
             <div className="min-w-0">
               <p className="font-bold text-neutral-900 truncate">{vehicleLabel || "Fahrzeug"}</p>
               <p className="text-xs text-neutral-500">
-                {chf(state.vehicleKm)} km · {compsMode === 'auto' ? "Automatische Suche" : "Manuelle Vergleichswerte"}
+                {[
+                  state.vehicleKm > 0 ? `${chf(state.vehicleKm)} km` : "",
+                  state.gearbox,
+                  state.drivetrain,
+                  compsMode === 'auto' ? "Automatische Suche" : "Manuelle Vergleichswerte",
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
           </div>
@@ -1934,7 +2370,7 @@ export function EintauschwertRechner() {
                       `Nur ${result.compCount} Vergleichsfahrzeug${result.compCount === 1 ? "" : "e"} vorhanden. `}
                     {result.spreadFactor !== null &&
                       result.spreadFactor > MAX_CONFIDENT_SPREAD &&
-                      `Die angeglichenen Preise liegen um Faktor ${result.spreadFactor.toFixed(1)} auseinander – vermutlich stecken unterschiedliche Varianten oder Ausstattungen in den Treffern. `}
+                      `Die ${result.kmAdjusted ? "angeglichenen " : ""}Preise liegen um Faktor ${result.spreadFactor.toFixed(1)} auseinander – vermutlich stecken unterschiedliche Varianten oder Ausstattungen in den Treffern. `}
                     Prüf die Vergleichsinserate, entferne unpassende und ergänze 3–5 wirklich
                     vergleichbare – die Neuberechnung ist gratis.
                   </p>
@@ -1955,7 +2391,8 @@ export function EintauschwertRechner() {
                     </div>
                     <div className="text-xs text-neutral-500 mt-1">
                       {result.bandIsIqr ? "Typische Spanne (P25–P75)" : "Spanne"} aus{" "}
-                      {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                      {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}
+                      {result.kmAdjusted ? ", km-bereinigt" : ""}
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
                       Median: CHF {chf(result.marketValue)}
@@ -1970,7 +2407,8 @@ export function EintauschwertRechner() {
                   <>
                     <div className="text-3xl font-bold">CHF {chf(result.marketValue)}</div>
                     <div className="text-xs text-neutral-500 mt-1">
-                      Median aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}, km-bereinigt
+                      Median aus {result.compCount} Vergleichsfahrzeug{result.compCount === 1 ? "" : "en"}
+                      {result.kmAdjusted ? ", km-bereinigt" : ""}
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/10 text-sm text-neutral-300">
                       {result.bandIsIqr ? "Typische Spanne (P25–P75)" : "Spanne"}: CHF{" "}
@@ -2057,8 +2495,8 @@ export function EintauschwertRechner() {
                       bietet eine Garage nach dieser Rechnung etwa CHF {chf(result.offer)}.
                     </>
                   )}{" "}
-                  Inseriere dein Auto auf BuyAuto – Marke, Modell, Jahrgang und Kilometerstand sind schon
-                  ausgefüllt.
+                  Inseriere dein Auto auf BuyAuto – {resultCarried.text}{" "}
+                  {resultCarried.count === 1 ? "ist" : "sind"} schon ausgefüllt.
                 </p>
                 <Button asChild size="lg" className="mt-4 bg-red-600 hover:bg-red-700 text-white border-none">
                   <Link
@@ -2084,7 +2522,7 @@ export function EintauschwertRechner() {
               </div>
 
               <div className="flex justify-between items-center py-1.5 text-white font-medium">
-                <span>Marktwert (Median, km-bereinigt)</span>
+                <span>Marktwert (Median{result.kmAdjusted ? ", km-bereinigt" : ""})</span>
                 <span className="font-mono">{chf(result.marketValue)}</span>
               </div>
               <div className="flex justify-between items-center py-1.5 text-neutral-400">
@@ -2123,11 +2561,20 @@ export function EintauschwertRechner() {
               <div className="max-w-2xl mx-auto mt-4 p-4 bg-black/20 rounded-lg text-xs text-neutral-400 font-mono">
                 <p className="mb-2 font-bold text-white">Berechnungslogik:</p>
                 <div className="space-y-1">
-                  <p>
-                    Angeglichener Preis = Inseratspreis ± {KM_ADJUST_PCT_PER_10K}% pro 10&apos;000 km
-                    Differenz (max. ±{Math.round(KM_ADJUST_CAP * 100)}%)
-                  </p>
-                  <p>Marktwert = Median der angeglichenen Preise</p>
+                  {result.kmAdjusted ? (
+                    <>
+                      <p>
+                        Angeglichener Preis = Inseratspreis ± {KM_ADJUST_PCT_PER_10K}% pro 10&apos;000 km
+                        Differenz (max. ±{Math.round(KM_ADJUST_CAP * 100)}%)
+                      </p>
+                      <p>Marktwert = Median der angeglichenen Preise</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>Kein Kilometerstand angegeben – die Inseratspreise fliessen unverändert ein</p>
+                      <p>Marktwert = Median der Inseratspreise</p>
+                    </>
+                  )}
                   <p>Eintauschwert = Marktwert − Aufbereitung − Garantie − Standzeit − Marge</p>
                   <p>
                     Ab 4 Inseraten zeigt die Spanne das mittlere Preisfeld (P25–P75); die
@@ -2139,7 +2586,8 @@ export function EintauschwertRechner() {
                   </p>
                 </div>
                 <p className="mt-3 text-neutral-500">
-                  Angeglichene Vergleichspreise: {result.adjustedPrices.map((p) => chf(p)).join(" / ")}
+                  {result.kmAdjusted ? "Angeglichene Vergleichspreise" : "Vergleichspreise"}:{" "}
+                  {result.adjustedPrices.map((p) => chf(p)).join(" / ")}
                 </p>
               </div>
             )}

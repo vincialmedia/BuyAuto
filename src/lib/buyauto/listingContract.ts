@@ -106,6 +106,9 @@ export function isFuelType(v: unknown): v is FuelType {
 export function isGearboxType(v: unknown): v is GearboxType {
   return typeof v === "string" && (GEARBOX_TYPES as readonly string[]).includes(v);
 }
+export function isDrivetrainType(v: unknown): v is DrivetrainType {
+  return typeof v === "string" && (DRIVETRAIN_TYPES as readonly string[]).includes(v);
+}
 export function isCantonCode(v: unknown): v is CantonCode {
   return typeof v === "string" && (CANTON_CODES as readonly string[]).includes(v);
 }
@@ -145,7 +148,7 @@ export const zDescriptionOptional = z
  * Modell-/Ausführungs-Mapping hochzählen, damit Aufrufer eine neue URL
  * anfragen statt eine veraltete gecachte Antwort zu bekommen.
  */
-export const TG_DECODE_VERSION = 3;
+export const TG_DECODE_VERSION = 4;
 
 export function tgDecodeUrl(tg: string): string {
   return `/api/vehicles/decode-tg?tg=${encodeURIComponent(tg)}&v=${TG_DECODE_VERSION}`;

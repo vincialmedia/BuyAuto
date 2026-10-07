@@ -14,6 +14,10 @@ import {
   parseDetailMarkdown,
   parseListingText,
   selectComps,
+  splitVariant,
+  stripModelPrefix,
+  variantIdentity,
+  variantSearchTerm,
   yearMatches,
   BODY_TYPE_LABEL,
   BODY_TYPE_VALUES,
@@ -22,6 +26,7 @@ import {
   type BodyType,
   type CompCandidate,
 } from "@/lib/buyauto/compsParser";
+import { DRIVETRAIN_TYPES, isGearboxType, type DrivetrainType } from "@/lib/buyauto/listingContract";
 import { peekQuota, commitSearch, type QuotaResult } from "@/lib/buyauto/valuationQuota";
 import { clientIp, logValuationEvent, readLogContext } from "@/lib/buyauto/valuationLog";
 
@@ -300,7 +305,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const makeStr = typeof make === "string" ? make.trim().slice(0, 40) : "";
   const modelStr = typeof model === "string" ? model.trim().slice(0, 60) : "";
   const yearNum = Number(year);
-  const kmNum = Number(km);
+  // Kilometerstand is optional: missing, empty or ≤0 means unknown (null) —
+  // the AS24 mileage window is then skipped and the pick centres on the
+  // harvest's own median km. Only an absurd value is still an error.
+  const kmRaw = km === undefined || km === null || km === "" ? NaN : Number(km);
+  const kmNum: number | null = Number.isFinite(kmRaw) && kmRaw > 0 ? kmRaw : null;
   // Optional Karosserie from the calculator's body-type field. Unknown values
   // are ignored (never an error) — the filter is an optimization, not a gate.
   const bodyStr = typeof body === "string" ? body.trim().toLowerCase() : "";
@@ -315,20 +324,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ? ((input as { displacement?: string }).displacement ?? "").trim().replace(",", ".")
     : "";
   const requestedDisplacement = /^\d\.\d$/.test(dispRaw) ? dispRaw : null;
+  // Optional catalog variant ("R", "GTI Clubsport", "40 TFSI quattro") or free
+  // text. Never appended to the model for the category URLs: baseModel() keeps
+  // only the base name, so "Golf GTI Clubsport" would slug to a dead
+  // "golf-clubsport" page.
+  const variantStr =
+    typeof input.variant === "string" ? input.variant.replace(/\s+/g, " ").trim().slice(0, 60) : "";
+  const variantParts = splitVariant(variantStr);
+  // The identity the variant check matches, minus a repeated model name ("X3
+  // 20d xDrive" -> "20d"), exactly like the siblings below.
+  const ownIdentity = variantIdentity(variantStr, modelStr);
+  // Catalog model id, only to load the sibling variants for the variant check.
+  const modelId =
+    typeof input.modelId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.modelId)
+      ? input.modelId
+      : null;
+  const gearbox = isGearboxType(input.gearbox) ? input.gearbox : null;
+  const drivetrain = (DRIVETRAIN_TYPES as readonly unknown[]).includes(input.drivetrain)
+    ? (input.drivetrain as DrivetrainType)
+    : null;
 
   if (
     !makeStr ||
     !modelStr ||
     !Number.isFinite(yearNum) ||
     yearNum < 1980 ||
-    yearNum > new Date().getFullYear() + 1 ||
-    !Number.isFinite(kmNum) ||
-    kmNum < 0 ||
-    kmNum > 500_000
+    yearNum > new Date().getFullYear() + 1
   ) {
     return res.status(400).json({
       error: "invalid_input",
-      message: "Marke, Modell, Jahr und Kilometerstand sind Pflichtfelder.",
+      message: "Marke, Modell und Jahrgang sind Pflichtfelder.",
+    });
+  }
+  if (kmNum !== null && kmNum > 500_000) {
+    return res.status(400).json({
+      error: "invalid_input",
+      message: "Bitte gib einen gültigen Kilometerstand ein.",
     });
   }
 
@@ -353,6 +385,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     km: kmNum,
     body: requestedBody,
     displacement: requestedDisplacement,
+    variant: variantStr || null,
+    gearbox,
+    drivetrain,
   };
   if (user) {
     const peek = await peekQuota(supabase, user.id);
@@ -376,19 +411,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     quota = peek; // provisional; replaced by the post-search commit result
   }
 
+  // Sibling variants of the catalog model, for the variant check: a "GTI
+  // Clubsport" listing is then a positive mismatch in a "GTI" lookup, not just
+  // "unknown". Same anon-readable table as /api/vehicles/variants. Started now,
+  // awaited before the first selection, so it overlaps the searches. A failed
+  // load only weakens the check (match-or-unknown), it never fails the search.
+  const siblingsPromise: Promise<string[]> =
+    modelId && ownIdentity
+      ? (async () => {
+          try {
+            const { data, error } = await supabase
+              .from("variants")
+              .select("id,name")
+              .eq("model_id", modelId)
+              .eq("is_active", true);
+            if (error || !data) return [];
+            const own = ownIdentity.toLowerCase();
+            const ids = (data as Array<{ name?: unknown }>)
+              .map((row) => (typeof row.name === "string" ? variantIdentity(row.name, modelStr) : ""))
+              .filter((id) => id && id.toLowerCase() !== own);
+            return [...new Set(ids)];
+          } catch (e) {
+            console.error("valuation/comps: variant siblings load failed", e);
+            return [];
+          }
+        })()
+      : Promise.resolve([]);
+
   // Query with the name listings actually use ("VW", not "Volkswagen").
   const queryMake = MAKE_ALIASES[makeStr.toLowerCase()] ?? makeStr;
   const vehicle = `${queryMake} ${modelStr}`;
+  // The variant goes into the searches only ("VW Golf R 2021", "Audi A4 40
+  // TFSI 2020"), minus drive words that listings often leave out. Skipped when
+  // the typed model already ends in it as whole words (free text "Golf R").
+  const variantTerm = stripModelPrefix(variantSearchTerm(variantStr), modelStr);
+  const vehicleWithVariant =
+    variantTerm && !` ${modelStr.toLowerCase()}`.endsWith(` ${variantTerm.toLowerCase()}`)
+      ? `${vehicle} ${variantTerm}`
+      : vehicle;
   // A known Karosserie sharpens the searches: "BMW i8 Coupé" surfaces the right
   // variant's listings instead of a Coupé/Roadster mix.
-  const vehicleQuery = requestedBody ? `${vehicle} ${BODY_TYPE_LABEL[requestedBody]}` : vehicle;
-  // The model used for SELECTION (trim filter). A decoded displacement is
-  // appended only when the typed model names none itself — searches and
-  // category URLs keep the clean model name.
+  const vehicleQuery = requestedBody
+    ? `${vehicleWithVariant} ${BODY_TYPE_LABEL[requestedBody]}`
+    : vehicleWithVariant;
+  // The model used for SELECTION (trim filter). A displacement — decoded from
+  // the Typenschein, else the variant's own ("1.5 TSI") — is appended only when
+  // the typed model names none itself. Searches and category URLs keep the
+  // clean model name.
+  const extraDisplacement = requestedDisplacement ?? variantParts.displacement;
   const filterModel =
-    requestedDisplacement && !displacementOf(modelStr)
-      ? `${modelStr} ${requestedDisplacement}`
-      : modelStr;
+    extraDisplacement && !displacementOf(modelStr) ? `${modelStr} ${extraDisplacement}` : modelStr;
   const stats: TierStat[] = [];
   const seenUrls = new Set<string>();
   const candidates: Candidate[] = [];
@@ -471,12 +543,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // yearMatches, km window matches the middle pickBySimilarKm band, body from
   // the request) — the inventory arrives pre-filtered instead of being pruned
   // after the scrape. Comparis only supports the body facet; autolina neither.
-  const kmBand = Math.max(60_000, kmNum * 0.8);
+  // No km window when the mileage is unknown: one around 0 km would fetch
+  // only the near-new cars.
+  const kmWindow =
+    kmNum !== null
+      ? (() => {
+          const kmBand = Math.max(60_000, kmNum * 0.8);
+          return {
+            kmFrom: Math.max(MIN_COMP_KM, Math.round(kmNum - kmBand)),
+            kmTo: Math.round(kmNum + kmBand),
+          };
+        })()
+      : {};
   const as24Filters = {
     yearFrom: yearNum - 2,
     yearTo: yearNum + 2,
-    kmFrom: Math.max(MIN_COMP_KM, Math.round(kmNum - kmBand)),
-    kmTo: Math.round(kmNum + kmBand),
+    ...kmWindow,
     body: requestedBody,
   };
   const orderedCategoryUrls = [
@@ -497,7 +579,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Counts CONFIRMED picks only (minus top-ups) — engine-less cards are usable
   // as a top-up but are not a reason to stop looking for the real thing.
   comps = dedupeByPriceKm(comps);
-  const preview = selectComps(comps, filterModel, kmNum, requestedBody);
+  // Preview and final selection must get identical inputs.
+  const siblings = await siblingsPromise;
+  const selectOpts = {
+    variant: ownIdentity
+      ? { identity: ownIdentity, siblings, displacement: variantParts.displacement }
+      : null,
+    gearbox,
+    // A drive named only in the variant ("2.0 TDI 4MOTION") is still a preference.
+    drivetrain: drivetrain ?? variantParts.drive,
+  };
+  const preview = selectComps(comps, filterModel, kmNum, requestedBody, selectOpts);
   const viableSoFar = preview.picked.length - preview.toppedUp;
   if (viableSoFar < MAX_COMPS && withinBudget()) {
     const catPages = orderedCategoryUrls.slice(0, MAX_CATEGORY_SCRAPES);
@@ -595,14 +687,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     toppedUp,
     droppedForTrim,
     droppedForBody,
+    droppedForVariant,
+    variantUnverified,
     droppedNearNew,
     droppedOutliers,
     mixedBody,
     unverifiedAvailable,
     harvested,
-  } = selectComps(comps, filterModel, kmNum, requestedBody);
-  // Counters are disjoint (trim | body | near-new | outlier) so the funnel log adds up.
-  const droppedForQuality = droppedForTrim + droppedForBody + droppedNearNew + droppedOutliers;
+  } = selectComps(comps, filterModel, kmNum, requestedBody, selectOpts);
+  // Counters are disjoint (trim | variant | body | near-new | outlier) so the
+  // funnel log adds up. variantUnverified is set aside, not dropped for
+  // quality — like unverifiedAvailable it is reported on its own.
+  const droppedForQuality =
+    droppedForTrim + droppedForVariant + droppedForBody + droppedNearNew + droppedOutliers;
 
   // The search actually ran (Firecrawl was billed) — commit ONE search against
   // the logged-in user's quota now, not before, so a platform failure above
@@ -617,6 +714,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     stats,
     harvested,
     droppedForTrim,
+    droppedForVariant,
+    variantUnverified,
     droppedForBody,
     droppedNearNew,
     droppedOutliers,
@@ -629,25 +728,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
   console.log(
     "valuation/comps funnel:",
-    JSON.stringify({ vehicle, yearNum, kmNum, requestedBody, requestedDisplacement, ...funnel })
+    JSON.stringify({
+      vehicle,
+      yearNum,
+      kmNum,
+      requestedBody,
+      requestedDisplacement,
+      variant: variantStr || null,
+      gearbox,
+      drivetrain,
+      ...funnel,
+    })
   );
   await logValuationEvent({ status: "ok", vehicle: logVehicle, funnel, ctx: logCtx, userId: user?.id });
 
-  // A zero result caused by the trim/body filters (we DID find this model, just
-  // not the requested engine or variant) needs its own message so the user knows
-  // to enter the matching listings by hand rather than thinking the model
-  // doesn't exist.
-  const trimZero = picked.length === 0 && droppedForTrim > 0;
-  const bodyZero = picked.length === 0 && !trimZero && droppedForBody > 0;
+  // A zero result caused by the variant/trim/body filters (we DID find this
+  // model, just not the requested variant, engine or body) needs its own
+  // message so the user knows to enter the matching listings by hand rather
+  // than thinking the model doesn't exist. The variant goes first: it is the
+  // most specific thing the user asked for.
+  const variantZero =
+    picked.length === 0 && !!variantStr && (droppedForVariant > 0 || variantUnverified > 0);
+  const trimZero = picked.length === 0 && !variantZero && droppedForTrim > 0;
+  const bodyZero = picked.length === 0 && !variantZero && !trimZero && droppedForBody > 0;
   const modelLabel = `${queryMake} ${baseModel(modelStr)}`.trim();
   const diagnosis =
     picked.length > 0
       ? undefined
-      : trimZero
-        ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Motorisierung (${filterModel}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
-        : bodyZero
-          ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Karosserie-Variante (${modelStr}). Erfasse 3–5 passende Vergleichsfahrzeuge manuell.`
-          : buildDiagnosis(searchStats, candidatesTried);
+      : variantZero
+        ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine als «${variantStr}» erkennbaren. Erfasse 3–5 passende Vergleichsfahrzeuge manuell.`
+        : trimZero
+          ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Motorisierung (${filterModel}). Erfasse 3–5 Vergleichsfahrzeuge mit gleicher Motorisierung manuell.`
+          : bodyZero
+            ? `Es wurden ${modelLabel}-Inserate gefunden, aber keine mit passender Karosserie-Variante (${modelStr}). Erfasse 3–5 passende Vergleichsfahrzeuge manuell.`
+            : buildDiagnosis(searchStats, candidatesTried);
 
   return res.status(200).json({
     comps: picked,
@@ -659,18 +773,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     mixedBody,
     warning:
       picked.length === 0
-        ? trimZero
-          ? `Keine ${filterModel}-Inserate mit passender Motorisierung gefunden – erfasse sie manuell.`
-          : bodyZero
-            ? `Keine ${modelStr}-Inserate mit passender Karosserie-Variante gefunden – erfasse sie manuell.`
-            : "Keine Vergleichsinserate gefunden – erfasse sie manuell."
+        ? variantZero
+          ? `Keine als «${variantStr}» erkennbaren ${modelLabel}-Inserate gefunden – erfasse sie manuell.`
+          : trimZero
+            ? `Keine ${filterModel}-Inserate mit passender Motorisierung gefunden – erfasse sie manuell.`
+            : bodyZero
+              ? `Keine ${modelStr}-Inserate mit passender Karosserie-Variante gefunden – erfasse sie manuell.`
+              : "Keine Vergleichsinserate gefunden – erfasse sie manuell."
         : picked.length < 3
           ? "Nur wenige Vergleichsinserate gefunden – prüf die Werte und ergänze manuell."
           : mixedBody
             ? "Die Treffer mischen verschiedene Karosserie-Varianten (z.B. Coupé und Roadster) – entferne unpassende und rechne neu."
             : toppedUp > 0
-              ? "Bei einigen Inseraten ist die Motorisierung nicht ausgewiesen – prüf sie kurz nach."
-              : relaxed
+              ? variantStr
+                ? "Bei einigen Inseraten ist die Motorisierung oder Ausführung nicht ausgewiesen – prüf sie kurz nach."
+                : "Bei einigen Inseraten ist die Motorisierung nicht ausgewiesen – prüf sie kurz nach."
+              : relaxed && kmNum !== null
                 ? "Einige Treffer weichen beim Kilometerstand stärker ab – prüf die Werte."
                 : undefined,
   });

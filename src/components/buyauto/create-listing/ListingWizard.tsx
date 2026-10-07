@@ -21,7 +21,7 @@ import {
 } from "@/lib/buyauto/guestImageStore";
 import { Check, Loader2, Save } from "lucide-react";
 import { GARAGE_MAX_PHOTOS } from "@/lib/buyauto/garagePlans";
-import { currentYearMax, YEAR_MIN } from "@/lib/buyauto/listingContract";
+import { currentYearMax, isDrivetrainType, isGearboxType, YEAR_MIN } from "@/lib/buyauto/listingContract";
 import { getEntryPage, toDealType, trackOncePerSession, track, type DealType as AnalyticsDealType } from "@/lib/analytics";
 
 const StepLoading = () => (
@@ -181,7 +181,9 @@ const hasAnyUserInput = (data: ListingData) => {
 
 // The Eintauschwert-Rechner's «Gratis inserieren» link
 // (/inserat-erstellen?src=rechner&…) carries the car the user just valued.
-const RECHNER_SEED_PARAMS = ["src", "plan", "make_id", "model_id", "brand", "model", "year", "km", "tg", "price"];
+const RECHNER_SEED_PARAMS = [
+  "src", "plan", "make_id", "model_id", "variant_id", "brand", "model", "year", "km", "tg", "price", "gearbox", "drivetrain",
+];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -210,9 +212,14 @@ const readRechnerSeed = (query: ParsedUrlQuery): Partial<ListingData> | null => 
 
   const makeId = param("make_id");
   const modelId = param("model_id");
+  const variantId = param("variant_id");
   if (UUID_RE.test(makeId)) {
     seed.make_id = makeId;
-    if (UUID_RE.test(modelId)) seed.model_id = modelId;
+    if (UUID_RE.test(modelId)) {
+      seed.model_id = modelId;
+      // A variant only means something under its model.
+      if (UUID_RE.test(variantId)) seed.variant_id = variantId;
+    }
   }
   const brand = param("brand").slice(0, 40);
   const model = param("model").slice(0, 60);
@@ -226,6 +233,10 @@ const readRechnerSeed = (query: ParsedUrlQuery): Partial<ListingData> | null => 
   if (Number.isInteger(km) && km > 0 && km <= 1_000_000) seed.km = km;
   const price = Number(param("price"));
   if (Number.isInteger(price) && price > 0 && price <= 2_000_000) seed.purchase_price_chf = price;
+  const gearbox = param("gearbox");
+  if (isGearboxType(gearbox)) seed.gearbox = gearbox;
+  const drivetrain = param("drivetrain");
+  if (isDrivetrainType(drivetrain)) seed.drivetrain = drivetrain;
 
   const tg = param("tg").toUpperCase().replace(/[\s.\-]/g, "");
   if (/^[A-Z0-9]{6}$/.test(tg)) {
