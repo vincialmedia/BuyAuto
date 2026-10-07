@@ -189,6 +189,24 @@ export async function createOrGetConversationForListing(listingId: string): Prom
   return typeof data === "string" ? data : null;
 }
 
+/**
+ * createOrGetConversationForListing for the listing chat box's login handover,
+ * which needs to know why it failed (e.g. "cannot_message_own_listing").
+ */
+export async function openConversationForListing(listingId: string): Promise<{ id: string } | { error: string }> {
+  const { data, error } = await supabase.rpc("create_or_get_conversation_for_listing", {
+    p_listing_id: listingId,
+  });
+
+  if (error || typeof data !== "string") {
+    console.error("openConversationForListing error:", error);
+    return { error: error?.message ?? "no_conversation" };
+  }
+
+  invalidateMessagingCache();
+  return { id: data };
+}
+
 export async function getExistingConversationForListing(listingId: string): Promise<string | null> {
   const sessionRes = await supabase.auth.getSession();
   const userId = sessionRes.data.session?.user?.id ?? null;

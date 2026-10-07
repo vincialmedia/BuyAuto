@@ -618,6 +618,8 @@ export interface EventMap {
     lead_type: "inquiry" | "conversation" | "dealer_partner" | "valuation";
     listing_id?: string;
     deal_type?: DealType;
+    /** Conversation leads only: the buyer created their account with this message. */
+    new_account?: boolean;
     value: 0;
     currency: "CHF";
   };
@@ -678,6 +680,12 @@ const PENDING_LOGIN_KEY = "ba_pending_login";
 export function queueLoginEvent() {
   if (typeof window === "undefined") return;
   writeStorage("session", PENDING_LOGIN_KEY, String(Date.now()));
+}
+
+/** Drops a queued login event (the sign-in it was queued for failed). */
+export function clearQueuedLoginEvent() {
+  if (typeof window === "undefined") return;
+  writeStorage("session", PENDING_LOGIN_KEY, null);
 }
 
 export function flushLoginEvent() {

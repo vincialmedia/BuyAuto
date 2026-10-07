@@ -58,8 +58,6 @@ export type GarageUpdate = Partial<
     | "opening_hours"
     | "services"
     | "team_members"
-    | "plan"
-    | "listing_limit"
   >
 >;
 
