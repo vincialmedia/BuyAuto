@@ -31,7 +31,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { getPublicOfferIndex, liveTakeovers, searchListings } from "@/services/listingsService";
+import { getPublicOfferIndex, liveTakeovers, searchListings, searchListingsOrThrow } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
 import { orderPremiumListings } from "@/lib/buyauto/premiumListings";
@@ -1281,25 +1281,23 @@ export default function LeasingUebernahmePage({
 }
 
 export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async () => {
-  try {
-    const [results, offers, premiumTakeovers, premiumDirect] = await Promise.all([
-      searchListings({ dealType: "lease_takeover", sort: "dateDesc", pageSize: 6 }),
-      getPublicOfferIndex(),
-      searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
-      searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
-    ]);
+  // The count, the grid and the brand links must come from a successful query: a
+  // failure throws, so ISR keeps the last good page instead of caching "0 laufende
+  // Leasingverträge" (a failed first build fails loudly instead of shipping it).
+  const [results, offers, premiumTakeovers, premiumDirect] = await Promise.all([
+    searchListingsOrThrow({ dealType: "lease_takeover", sort: "dateDesc", pageSize: 6 }),
+    getPublicOfferIndex(),
+    searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
+    searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
+  ]);
 
-    // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
-    const availableBrands = indexableBrandPages(liveTakeovers(offers)).map((b) => ({ slug: b.slug, name: b.name }));
+  // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
+  const availableBrands = indexableBrandPages(liveTakeovers(offers)).map((b) => ({ slug: b.slug, name: b.name }));
 
-    // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
-    const takeoverListings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-    const premiumListings = JSON.parse(
-      JSON.stringify(orderPremiumListings([...premiumTakeovers.items, ...premiumDirect.items]))
-    ) as Listing[];
-    return { props: { takeoverListings, takeoverTotal: results.total, availableBrands, premiumListings }, revalidate: 300 };
-  } catch (error) {
-    console.error("Leasinguebernahme hub SSR search failed:", error);
-    return { props: { takeoverListings: [], takeoverTotal: 0, availableBrands: [], premiumListings: [] }, revalidate: 300 };
-  }
+  // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
+  const takeoverListings = JSON.parse(JSON.stringify(results.items)) as Listing[];
+  const premiumListings = JSON.parse(
+    JSON.stringify(orderPremiumListings([...premiumTakeovers.items, ...premiumDirect.items]))
+  ) as Listing[];
+  return { props: { takeoverListings, takeoverTotal: results.total, availableBrands, premiumListings }, revalidate: 300 };
 };

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Check, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { searchListings } from "@/services/listingsService";
+import { searchListingsOrThrow } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import {
   dbBrandsFor,
@@ -296,14 +296,14 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) => {
   const slug = String(context.params?.marke ?? "");
 
-  let inventoryRows: BrandInventoryRow[] = [];
-  try {
-    const { data, error } = await supabase.from("listings_public").select("brand, model, deal_type");
-    if (error) console.error("Brand page inventory query failed:", { slug, error });
-    else inventoryRows = (data ?? []) as BrandInventoryRow[];
-  } catch (error) {
+  // A failed query throws: during ISR revalidation Next then keeps serving the last
+  // good page instead of caching a 404 or an empty noindex page for the brand.
+  const { data, error } = await supabase.from("listings_public").select("brand, model, deal_type");
+  if (error) {
     console.error("Brand page inventory query failed:", { slug, error });
+    throw error;
   }
+  const inventoryRows = (data ?? []) as BrandInventoryRow[];
 
   const resolved = resolveBrandSlug(slug, inventoryRows);
 
@@ -321,19 +321,15 @@ export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) =>
 
   const brand = resolved.brand;
 
-  try {
-    // The whole live inventory of the brand (Kaufart rule) — the count and the grid agree.
-    const results = await searchListings({
-      dealType: "lease_takeover",
-      brands: dbBrandsFor(brand),
-      sort: "dateDesc",
-      pageSize: BRAND_PAGE_MAX_LISTINGS,
-    });
-    // Strip undefined fields so Next can serialize the props.
-    const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-    return { props: { brand, listings, total: results.total }, revalidate: 300 };
-  } catch (error) {
-    console.error("Brand page SSR search failed:", { slug, error });
-    return { props: { brand, listings: [], total: 0 }, revalidate: 300 };
-  }
+  // The whole live inventory of the brand (Kaufart rule) — the count and the grid agree.
+  // Throws on a failed query (see above): the indexing decision depends on this count.
+  const results = await searchListingsOrThrow({
+    dealType: "lease_takeover",
+    brands: dbBrandsFor(brand),
+    sort: "dateDesc",
+    pageSize: BRAND_PAGE_MAX_LISTINGS,
+  });
+  // Strip undefined fields so Next can serialize the props.
+  const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
+  return { props: { brand, listings, total: results.total }, revalidate: 300 };
 };

@@ -30,11 +30,17 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // Source from the listings_public view (via the Kaufart-resolving offer index) so the
   // sitemap equals exactly what renders: published, not expired. A Leasingübernahme
   // whose contract has run out is no live offer and is left out.
-  let offers: PublicOffer[] = [];
+  let offers: PublicOffer[];
   try {
     offers = await getPublicOfferIndex();
   } catch (listingsError) {
+    // Never serve (and let the CDN cache) a sitemap without listings and brand pages.
     console.error("Sitemap: failed to load listings", listingsError);
+    res.statusCode = 503;
+    res.setHeader("Retry-After", "300");
+    res.setHeader("Cache-Control", "no-store");
+    res.end();
+    return { props: {} };
   }
   const listings = offers.filter((o) => o.offer.isLiveOffer);
 

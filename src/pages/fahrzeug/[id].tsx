@@ -489,6 +489,17 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   );
 }
 
+// Keep the visitor's query (gclid, utm_*) on the retired-listing redirect, like the
+// next.config redirects do. The route param and the preview flag are not forwarded.
+function withForwardedQuery(destination: string, query: Record<string, string | string[] | undefined>): string {
+  const url = new URL(destination, "https://www.buyauto.ch");
+  for (const [key, value] of Object.entries(query)) {
+    if (key === "id" || key === "preview" || url.searchParams.has(key)) continue;
+    for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) url.searchParams.append(key, v);
+  }
+  return url.pathname + url.search;
+}
+
 export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = async (context) => {
   const { id } = context.params!;
   const { preview } = context.query;
@@ -582,7 +593,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
             lifecycle.kind === "row" ? lifecycle.brand : null,
             listingSlugPrefix(id)
           );
-          return { redirect: { destination, permanent: true } };
+          return { redirect: { destination: withForwardedQuery(destination, context.query), permanent: true } };
         }
       }
 

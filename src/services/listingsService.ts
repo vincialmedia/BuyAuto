@@ -771,6 +771,15 @@ export async function searchListings(searchQuery: SearchQuery): Promise<SearchRe
   }
 }
 
+/**
+ * Same as searchListings, but a failed query throws instead of returning an empty
+ * result. ISR pages use it so a Supabase hiccup during revalidation keeps the last
+ * good page instead of caching an empty (noindex) one.
+ */
+export async function searchListingsOrThrow(searchQuery: SearchQuery): Promise<SearchResult> {
+  return runOfferSearch(searchQuery);
+}
+
 export async function searchDealerListings(garageId: string, searchQuery: SearchQuery): Promise<SearchResult> {
   try {
     return await runOfferSearch(searchQuery, garageId);
