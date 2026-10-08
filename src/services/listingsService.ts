@@ -470,12 +470,19 @@ function isMissingContractEndColumn(error: { code?: string; message?: string } |
   return error.code === "42703" || /contract_end_date/.test(error.message ?? "");
 }
 
-async function selectOfferRows(scope: (query: any) => any): Promise<OfferRow[]> {
+/** The PostgREST filters the offer queries use; awaiting it runs the query. */
+interface OfferQuery extends PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }> {
+  eq(column: string, value: unknown): OfferQuery;
+  in(column: string, values: readonly unknown[]): OfferQuery;
+  ilike(column: string, pattern: string): OfferQuery;
+  or(filters: string): OfferQuery;
+  gte(column: string, value: unknown): OfferQuery;
+  lte(column: string, value: unknown): OfferQuery;
+}
+
+async function selectOfferRows(scope: (query: OfferQuery) => OfferQuery): Promise<OfferRow[]> {
   const run = (columns: string) =>
-    scope(supabase.from(PUBLIC_LISTINGS_VIEW).select(columns).eq("status", "published")) as PromiseLike<{
-      data: unknown;
-      error: { code?: string; message?: string } | null;
-    }>;
+    scope(supabase.from(PUBLIC_LISTINGS_VIEW).select(columns).eq("status", "published") as unknown as OfferQuery);
 
   const tryContractEnd =
     contractEndColumnMissingAt === null || Date.now() - contractEndColumnMissingAt > CONTRACT_END_RECHECK_MS;
@@ -500,7 +507,7 @@ function resolveOffers(rows: OfferRow[], now: Date): PublicOffer[] {
 }
 
 /** Plain column filters PostgREST can apply before the Kaufart stage. */
-function applyColumnFilters(query: any, q: SearchQuery, garageId?: string): any {
+function applyColumnFilters(query: OfferQuery, q: SearchQuery, garageId?: string): OfferQuery {
   let next = query;
   if (garageId) next = next.eq("garage_id", garageId);
 
