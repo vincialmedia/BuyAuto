@@ -920,7 +920,8 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
 
 // Served via ISR (static + periodic revalidation) instead of a frozen build-time file,
 // so the page refreshes without a redeploy and shares the prerender path of its siblings.
-// Live inventory stats (Kaution spread) refresh hourly; null renders the no-number fallbacks.
+// Live inventory stats (Kaution spread) and the premium carousel refresh every 5 minutes, like
+// the sibling guide pages; null stats render the no-number fallbacks.
 export const getStaticProps: GetStaticProps<LeasinguebernahmeKostenPageProps> = async () => {
   let stats: InventoryStats | null = null;
   try {
@@ -929,5 +930,5 @@ export const getStaticProps: GetStaticProps<LeasinguebernahmeKostenPageProps> = 
     console.error("Leasingübernahme Kosten: live inventory stats failed:", error);
   }
   const premiumListings = await getPremiumCarouselListings();
-  return { props: { stats, premiumListings }, revalidate: 3600 };
+  return { props: { stats, premiumListings }, revalidate: 300 };
 };
