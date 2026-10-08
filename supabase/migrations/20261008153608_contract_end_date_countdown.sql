@@ -117,8 +117,8 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_listings_contract_end_date on public.listings;
-create trigger trg_listings_contract_end_date
+-- CREATE OR REPLACE TRIGGER (PostgreSQL 14+) keeps a re-run idempotent without a DROP.
+create or replace trigger trg_listings_contract_end_date
   before insert or update on public.listings
   for each row execute function public.set_listing_contract_end_date();
 

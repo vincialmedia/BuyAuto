@@ -459,10 +459,10 @@ type OfferRow = {
 /** A published listing with its resolved Kaufart and effective values. */
 export type PublicOffer = OfferRow & { offer: ResolvedOffer };
 
-// listings_public gains contract_end_date with migration 20261008090000. Until
-// that migration is applied the column does not exist (PostgreSQL 42703), so
-// the read retries without it and months fall back to the stored value — the
-// site works before and after the migration. Safe to drop once it is live.
+// listings_public gains contract_end_date with migration 20261008153608 (live on
+// production since 2026-10-08). On a database without it the column does not
+// exist (PostgreSQL 42703), so the read retries without it and months fall back
+// to the stored value. Safe to drop once every environment has the migration.
 let contractEndColumnMissingAt: number | null = null;
 const CONTRACT_END_RECHECK_MS = 5 * 60 * 1000;
 
