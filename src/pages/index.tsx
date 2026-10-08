@@ -13,8 +13,7 @@ import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/buyauto/types";
-import { searchListingsOrThrow } from "@/services/listingsService";
-import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
+import { loadPremiumCarouselListings } from "@/services/listingsService";
 
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"), {
   loading: () => <div className="h-96 bg-white animate-pulse" />,
@@ -350,11 +349,8 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
   // A failed fetch throws, so ISR keeps the last good page instead of caching an
   // empty carousel.
-  const result = await searchListingsOrThrow(PREMIUM_LISTINGS_QUERY);
-
   // Takeovers first, newest first — see orderPremiumListings.
-  // Strip undefined fields so Next can serialize.
-  const premiumListings = JSON.parse(JSON.stringify(orderPremiumListings(result.items))) as Listing[];
+  const premiumListings = await loadPremiumCarouselListings();
 
   return { props: { premiumListings }, revalidate: 300 };
 };

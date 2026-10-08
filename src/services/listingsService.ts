@@ -1030,14 +1030,21 @@ export async function getLiveInventoryStats(): Promise<InventoryStats> {
 }
 
 /**
- * Premium carousel for ISR guide pages: ordered and serializable. Null when the
- * query fails, so the carousel falls back to its client-side fetch instead of
- * rendering empty.
+ * Premium carousel for ISR pages: ordered and serializable. Throws on a failed
+ * query; logs when there are more premium listings than the carousel holds.
  */
+export async function loadPremiumCarouselListings(): Promise<Listing[]> {
+  const result = await searchListingsOrThrow(PREMIUM_LISTINGS_QUERY);
+  if (result.total > result.items.length) {
+    console.warn(`Premium carousel shows ${result.items.length} of ${result.total} premium listings (raise PREMIUM_LISTINGS_QUERY.pageSize).`);
+  }
+  return JSON.parse(JSON.stringify(orderPremiumListings(result.items))) as Listing[];
+}
+
+/** Like loadPremiumCarouselListings, but null on failure so the carousel falls back to its client fetch. */
 export async function getPremiumCarouselListings(): Promise<Listing[] | null> {
   try {
-    const result = await searchListingsOrThrow(PREMIUM_LISTINGS_QUERY);
-    return JSON.parse(JSON.stringify(orderPremiumListings(result.items))) as Listing[];
+    return await loadPremiumCarouselListings();
   } catch (error) {
     console.error("Premium carousel fetch failed:", error);
     return null;
