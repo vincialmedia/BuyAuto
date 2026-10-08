@@ -104,16 +104,13 @@ export const CONSENT_CHANGE_EVENT = "buyauto:consent-change";
 export const CONSENT_REOPEN_EVENT = "buyauto:consent-reopen";
 export type ConsentChoice = "granted" | "denied";
 
-// The calculator's per-browser visitor id (see getConsentedVisitorId). It needs
-// this marker on top of "granted", and only a consent given to a banner that
-// names our own statistics may write it. The current banner (Oct 2026) names
-// only Google Analytics and Ads, so new consents don't write it; answers given
-// to the earlier banner that named our statistics keep theirs. Write it again
-// (BANNER_NAMES_OWN_STATS) only together with banner text that names them.
+// The calculator's per-browser visitor id (see getConsentedVisitorId). Older
+// "granted" answers were given to a banner that named only Google Analytics and
+// Ads, so the id additionally needs this marker, which only a consent given to
+// the banner that names our own statistics writes.
 const VISITOR_ID_KEY = "ba_vid";
 const CONSENT_SCOPE_KEY = "buyauto_consent_scope";
 const CONSENT_SCOPE = "own-stats-v1";
-const BANNER_NAMES_OWN_STATS = false;
 const VISITOR_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function readStoredConsent(): ConsentChoice | null {
@@ -152,7 +149,7 @@ function applyConsent(choice: ConsentChoice) {
 /** Persists the visitor's choice and applies it. */
 export function setConsent(choice: ConsentChoice) {
   writeStorage("local", CONSENT_STORAGE_KEY, choice);
-  writeStorage("local", CONSENT_SCOPE_KEY, choice === "granted" && BANNER_NAMES_OWN_STATS ? CONSENT_SCOPE : null);
+  writeStorage("local", CONSENT_SCOPE_KEY, choice === "granted" ? CONSENT_SCOPE : null);
   if (readStoredConsent() !== choice) {
     console.warn(
       "[analytics] Could not persist the cookie choice — storage is unavailable. It applies to this page view only and the banner will reappear.",
