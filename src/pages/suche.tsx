@@ -10,6 +10,8 @@ import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { debounce } from "@/lib/utils";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
 import { safeFreeText, track } from "@/lib/analytics";
+import { kaufartOf } from "@/lib/buyauto/kaufart";
+import { pluralize } from "@/lib/buyauto/format";
 
 const DynamicFilterBar = dynamic(() => import("@/components/buyauto/search/DynamicFilterBar"), {
   ssr: true,
@@ -251,7 +253,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
 
   const heading = useMemo(() => {
     if (isDefaultView) return "Autos kaufen & Leasingübernahmen in der Schweiz";
-    if (saleTypeLabel === "Leasingübernahme") return "Leasingübernahme – Fahrzeuge in der Schweiz";
+    if (saleTypeLabel === "Leasingübernahme") return "Leasingübernahme-Angebote in der Schweiz";
     if (saleTypeLabel === "Direktkauf") return "Autos kaufen in der Schweiz";
     if (saleTypeLabel === "Leasing") return "Leasing-Angebote in der Schweiz";
     return "Fahrzeuge in der Schweiz";
@@ -260,9 +262,9 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
   const pageTitle = isDefaultView
     ? "Auto kaufen oder Leasing übernehmen in der Schweiz | BuyAuto"
     : saleTypeLabel === "Leasingübernahme"
-      ? `Leasingübernahme Angebote – ${totalResults} Fahrzeuge in der Schweiz | BuyAuto`
+      ? `Leasingübernahme-Angebote: ${totalResults} ${pluralize(totalResults, "Auto", "Autos")} zur Übernahme | BuyAuto`
       : totalResults > 0
-        ? `${saleTypeLabel} – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz`
+        ? `${saleTypeLabel} – ${totalResults} ${pluralize(totalResults, "Fahrzeug", "Fahrzeuge")} gefunden | BuyAuto Schweiz`
         : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
 
   const metaDescription = isDefaultView
@@ -285,8 +287,8 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
       "description": metaDescription,
       "numberOfItems": totalResults,
       "itemListElement": searchResults.items.map((listing, index) => {
-        const dealType = listing.deal_type ?? "lease_takeover";
-        const isDirectPurchase = dealType === "direct_purchase";
+        // Kaufart rule (lib/buyauto/kaufart), never the stored deal_type.
+        const isDirectPurchase = kaufartOf(listing) === "direct_purchase";
         const priceCandidate = isDirectPurchase ? listing.purchasePriceCHF : listing.pricePerMonthCHF;
         const price = typeof priceCandidate === "number" && priceCandidate > 0 ? priceCandidate : null;
 

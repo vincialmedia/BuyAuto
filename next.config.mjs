@@ -13,6 +13,20 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
+  // Retired pages. Every target is a live page that does not redirect itself,
+  // so each old URL resolves in exactly one 308 hop.
+  async redirects() {
+    return [
+      { source: '/auto-abos-im-vergleich', destination: '/leasinguebernahme-vs-autoabo', permanent: true },
+      { source: '/carify-alternativen', destination: '/leasinguebernahme-vs-autoabo', permanent: true },
+      { source: '/auto-abo-vs-leasing-kosten', destination: '/leasinguebernahme-vs-autoabo', permanent: true },
+      { source: '/auto-abo-kuendigen', destination: '/leasinguebernahme-vs-autoabo', permanent: true },
+      { source: '/leasinguebernahme-vs-neues-leasing', destination: '/leasinguebernahme', permanent: true },
+      { source: '/leasing-transfer', destination: '/leasinguebernahme', permanent: true },
+      { source: '/fuer-haendler', destination: '/eintauschwert-rechner', permanent: true },
+      { source: '/fuer-haendler/marktwert-rechner', destination: '/eintauschwert-rechner', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

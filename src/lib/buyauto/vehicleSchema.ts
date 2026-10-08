@@ -64,7 +64,7 @@ export function parseListingPlace(
     const tokens = location
       .split(",")
       .map((t) => t.trim())
-      .filter((t) => t !== "" && !t.startsWith("Schweiz/"));
+      .filter((t) => t !== "" && !t.startsWith("Schweiz/") && t !== "Schweiz");
 
     for (const token of tokens) {
       const upper = token.toUpperCase();

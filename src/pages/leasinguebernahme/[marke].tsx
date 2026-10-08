@@ -8,14 +8,19 @@ import { searchListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import {
   dbBrandsFor,
+  isIndexableBrandCount,
   LEASING_BRANDS,
   resolveBrandSlug,
   type BrandInventoryRow,
   type LeasingBrand,
 } from "@/lib/buyauto/leasingBrands";
 import { supabase } from "@/integrations/supabase/client";
+import { FEE_SHORT } from "@/lib/buyauto/facts";
+import { pluralize } from "@/lib/buyauto/format";
 
 const SITE_URL = "https://www.buyauto.ch";
+/** Brand pages list their whole live inventory (far below this today). */
+const BRAND_PAGE_MAX_LISTINGS = 120;
 
 type BrandPageProps = {
   brand: LeasingBrand;
@@ -36,7 +41,7 @@ function buildFaq(brand: LeasingBrand): FaqItem[] {
     },
     {
       question: `Was kostet die Leasingübernahme eines ${brand.name}?`,
-      answer: `Du zahlst die bestehende monatliche Leasingrate weiter. Einmalig fallen je nach Leasinggeber und Kanton rund 200–650 CHF für Transfer, Ummeldung und Administration an. Die ursprüngliche Anzahlung bleibt im Vertrag und kommt dir als Übernehmer zugute.`,
+      answer: `Du zahlst die bestehende monatliche Leasingrate weiter. Einmalig fallen die Übertragungsgebühr der Leasinggesellschaft (${FEE_SHORT}) und die kantonalen Gebühren für den neuen Fahrzeugausweis an. Die ursprüngliche Anzahlung bleibt im Vertrag und kommt dir als Übernehmer zugute.`,
     },
     {
       question: `Welche ${brand.name}-Modelle kann ich übernehmen?`,
@@ -51,11 +56,14 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
   // name (Mercedes-Benz page ↔ "Mercedes" rows) — link with the primary DB spelling.
   const searchHref = `/suche?dealType=lease_takeover&brand=${encodeURIComponent(dbBrandsFor(brand)[0])}`;
   const hasListings = total > 0;
+  // Indexed from BRAND_PAGE_MIN_INDEXABLE_LISTINGS live Leasingübernahmen on;
+  // thinner pages stay reachable but "noindex, follow".
+  const indexable = isIndexableBrandCount(total);
   const faq = buildFaq(brand);
 
   const pageTitle = `Leasingübernahme ${brand.name} – Angebote in der Schweiz | BuyAuto`;
   const metaDescription = hasListings
-    ? `Leasingübernahme ${brand.name} in der Schweiz: ${total} aktuelle Angebote – übernimm einen laufenden ${brand.name}-Leasingvertrag ohne hohe Anzahlung. Jetzt auf BuyAuto entdecken.`
+    ? `Leasingübernahme ${brand.name} in der Schweiz: ${total} ${pluralize(total, "aktuelles Angebot", "aktuelle Angebote")} – übernimm einen laufenden ${brand.name}-Leasingvertrag ohne hohe Anzahlung. Jetzt auf BuyAuto entdecken.`
     : `Leasingübernahme ${brand.name} in der Schweiz: übernimm einen laufenden ${brand.name}-Leasingvertrag ohne hohe Anzahlung – geprüfte Angebote von Privatpersonen und Garagen auf BuyAuto.`;
 
   const breadcrumbJsonLd = {
@@ -128,19 +136,23 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
-        {hasListings ? (
-          <link rel="canonical" href={canonical} />
+        {indexable ? (
+          <>
+            <meta name="robots" content="index, follow" />
+            <link rel="canonical" href={canonical} />
+          </>
         ) : (
-          /* Empty brand views carry no index value yet: noindex,follow (crawlable, out of
-             the index) and NO self-canonical — so we never send canonical + noindex
-             together. They flip to indexable automatically once inventory is published. */
-          <meta name="robots" content="noindex,follow" />
+          /* Thin brand views (fewer than BRAND_PAGE_MIN_INDEXABLE_LISTINGS live
+             Leasingübernahmen): noindex, follow (crawlable, out of the index) and NO
+             self-canonical — so we never send canonical + noindex together. They flip
+             to indexable automatically once enough inventory is published. */
+          <meta name="robots" content="noindex, follow" />
         )}
 
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="website" />
-        {hasListings && <meta property="og:url" content={canonical} />}
+        {indexable && <meta property="og:url" content={canonical} />}
         <meta property="og:image" content={`${SITE_URL}/share-logo.jpg`} />
         <meta property="og:locale" content="de_CH" />
 
@@ -310,7 +322,13 @@ export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) =>
   const brand = resolved.brand;
 
   try {
-    const results = await searchListings({ dealType: "lease_takeover", brands: dbBrandsFor(brand), sort: "dateDesc" });
+    // The whole live inventory of the brand (Kaufart rule) — the count and the grid agree.
+    const results = await searchListings({
+      dealType: "lease_takeover",
+      brands: dbBrandsFor(brand),
+      sort: "dateDesc",
+      pageSize: BRAND_PAGE_MAX_LISTINGS,
+    });
     // Strip undefined fields so Next can serialize the props.
     const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
     return { props: { brand, listings, total: results.total }, revalidate: 300 };

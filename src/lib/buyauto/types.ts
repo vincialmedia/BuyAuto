@@ -1,3 +1,5 @@
+import type { Kaufart } from "./kaufart";
+
 export type DealType = "lease_takeover" | "direct_purchase";
 export type FinancingType = "cash" | "leasing";
 
@@ -25,14 +27,23 @@ export interface LeasingOffer {
 export interface Listing {
   id: string;
   user_id?: string; // ✅ Made optional to fix build errors
+  /** Stored seller choice. Display logic must use `kaufart` instead (lib/buyauto/kaufart). */
   deal_type?: DealType;
+  /** Display type from resolveListingOffer(); set by every listing transform. */
+  kaufart?: Kaufart;
+  /** Leasingübernahme whose contract has run out (effective months reached 0). */
+  contractEnded?: boolean;
   financing_type?: FinancingType | null;
   leasing_offer?: LeasingOffer | null;
   brand: string;
   model: string;
+  /** Catalog variant name (listings_public.variant), when the listing has one. */
+  variant?: string | null;
   title?: string;
   year: number;
+  /** Monthly takeover rate (Leasingübernahme), else the stored column value. */
   pricePerMonthCHF: number;
+  /** Effective remaining months (Leasingübernahme), counting down to contract_end_date. */
   remainingMonths: number;
   remaining_km?: number | null;
   location: string;
@@ -41,6 +52,7 @@ export interface Listing {
   gearbox: "Automatik" | "Manuell";
   body: "Limousine" | "Kombi" | "SUV" | "Cabrio" | "Coupe";
   premium: boolean;
+  /** Effective Kaution for a Leasingübernahme (0 = keine). */
   depositCHF?: number | null;
   images: string[];
   imageUrl: string;

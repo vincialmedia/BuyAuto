@@ -1,6 +1,8 @@
 import Head from "next/head";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { LEASING_COMPANIES } from "@/lib/buyauto/leasingCompanies";
+import { BANK_NOW, CEMBRA, CEMBRA_TRANSFER_EXCL_VAT_CHF, FEE_SHORT, MULTILEASE } from "@/lib/buyauto/facts";
+import { formatChf } from "@/lib/buyauto/format";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -49,6 +51,11 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasingvertrag-uebertragen"];
+
+// Cost-table cell built from the facts module: "Cembra: CHF 575 exkl. MWST; AMAG, Multilease, BANK-now: auf Anfrage".
+const TRANSFER_FEE_CELL =
+  `${CEMBRA.name}: ${formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST; ` +
+  `AMAG, ${MULTILEASE.name}, ${BANK_NOW.name}: auf Anfrage`;
 
 export default function LeasingvertragUebertragenPage() {
   const scrollToSection = (id: string) => {
@@ -203,7 +210,7 @@ export default function LeasingvertragUebertragenPage() {
                   Einen Leasingvertrag übertragen heisst: Du gibst deine laufende Leasing-Verpflichtung an eine
                   andere Person weiter, die Rate, Restlaufzeit und Konditionen unverändert übernimmt. Nötig sind
                   die Zustimmung der Leasinggesellschaft und eine Bonitätsprüfung der übernehmenden Person. Für
-                  die Umschreibung verlangen die meisten Leasinggeber eine Gebühr von rund 100–400 CHF.
+                  die Übertragung verlangt die Leasinggesellschaft eine Gebühr – {FEE_SHORT}.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -553,9 +560,9 @@ export default function LeasingvertragUebertragenPage() {
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Verhandelbar</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr der Leasinggesellschaft</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{TRANSFER_FEE_CELL}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">Verhandlungssache</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Administrationskosten</td>

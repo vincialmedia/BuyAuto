@@ -1,14 +1,12 @@
 import type { Listing } from "@/lib/buyauto/types";
+import { kaufartOf } from "@/lib/buyauto/kaufart";
 
 /**
- * A Leasingübernahme comes in two shapes: the legacy `deal_type =
- * 'lease_takeover'` row, and — for every listing the wizard has created since
- * the unified flow — a `direct_purchase` row whose `leasing_offer.
- * lease_takeover_offer.enabled` is true (optionally with a Kaufpreis next to
- * it). Every surface that asks "is this a takeover?" must accept both.
+ * "Is this a Leasingübernahme?" — answered by the one Kaufart rule
+ * (lib/buyauto/kaufart): a monthly takeover rate, whatever deal_type is stored.
  */
 export function isLeaseTakeoverListing(listing: Listing): boolean {
-  return listing.deal_type === "lease_takeover" || hasEnabledTakeoverOffer(listing);
+  return kaufartOf(listing) === "lease_takeover";
 }
 
 /** Direktkauf row that additionally offers a Leasingübernahme (the wizard's shape). */

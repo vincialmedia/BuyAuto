@@ -1,15 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 import { SearchQuery, SearchResult } from "@/lib/buyauto/search";
-import { Listing, ListingDetail, PricePlanId } from "@/lib/buyauto/types";
+import { Listing, ListingDetail } from "@/lib/buyauto/types";
 import type { Database } from "@/integrations/supabase/types";
 import { BODY_TYPES, FUEL_TYPES, GEARBOX_TYPES } from "@/lib/buyauto/listingContract";
+import { hasNewLeasingFinancing, kaufartOf, resolveListingOffer, type ResolvedOffer } from "@/lib/buyauto/kaufart";
+import { publicSellerName } from "@/lib/buyauto/sellerName";
+import { displayLocation } from "@/lib/buyauto/location";
+import { computeInventoryStats, type InventoryStats } from "@/lib/buyauto/facts";
 
 type PublicListingRow = Database["public"]["Views"]["listings_public"]["Row"];
 type ListingsTableRow = Database["public"]["Tables"]["listings"]["Row"];
 
 const PUBLIC_LISTINGS_VIEW = "listings_public";
-
-type PublicProfileRow = { id: string; full_name: string | null; avatar_url: string | null };
 
 type PublicGarageRow = {
   id: string;
@@ -45,35 +47,6 @@ type PublicListingOwnerProfileRow = {
   full_name: string | null;
   avatar_url: string | null;
 };
-
-async function getPublicProfilesByIds(
-  userIds: string[]
-): Promise<Record<string, { fullName: string | null; avatarUrl: string | null }>> {
-  const unique = Array.from(new Set(userIds.filter((v) => typeof v === "string" && v.trim() !== "")));
-  if (unique.length === 0) return {};
-
-  const { data, error } = await supabase.rpc("get_public_profiles", { p_user_ids: unique });
-
-  if (error) {
-    console.error("Error fetching public profiles:", { error, count: unique.length });
-    return {};
-  }
-
-  const rows = (Array.isArray(data) ? data : []) as unknown as PublicProfileRow[];
-  const map: Record<string, { fullName: string | null; avatarUrl: string | null }> = {};
-
-  for (const r of rows) {
-    const id = typeof (r as any)?.id === "string" ? (r as any).id : String((r as any)?.id ?? "");
-    if (!id) continue;
-
-    map[id] = {
-      fullName: typeof (r as any)?.full_name === "string" ? (r as any).full_name : null,
-      avatarUrl: typeof (r as any)?.avatar_url === "string" ? (r as any).avatar_url : null,
-    };
-  }
-
-  return map;
-}
 
 async function fetchPublicListingOwnerProfilesByListingIds(
   listingIds: string[]
@@ -134,27 +107,6 @@ async function fetchPublicGaragesByIds(garageIds: string[]): Promise<Record<stri
   }
 
   return map;
-}
-
-function getOwnerUserIdFromPublicRow(row: unknown): string | null {
-  const r = row as Record<string, unknown>;
-
-  const candidates: unknown[] = [
-    r.user_id,
-    r.created_by,
-    (r as any)?.seller_user_id,
-    (r as any)?.sellerUserId,
-    (r as any)?.owner_user_id,
-    (r as any)?.ownerUserId,
-    (r as any)?.seller_user?.id,
-    (r as any)?.sellerUser?.id,
-  ];
-
-  for (const c of candidates) {
-    if (typeof c === "string" && c.trim()) return c;
-  }
-
-  return null;
 }
 
 function getListingIdFromRow(row: unknown): string | null {
@@ -304,71 +256,88 @@ function normalizeBody(input: unknown): BodyValue {
   return "Limousine";
 }
 
-// Transform public listing row to UI Listing format
-function transformPublicRowToListing(row: PublicListingRow): Listing {
-  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
+// ---------------------------------------------------------------------------
+// Row -> UI Listing transforms. Every public listing passes through
+// listingFieldsFromRow, which applies the Kaufart rule (lib/buyauto/kaufart):
+// kaufart, effective monthly rate, Kaution and remaining months are decided
+// there and nowhere else. deal_type stays the stored value (analytics reads it).
+// ---------------------------------------------------------------------------
 
-  const purchasePriceCandidate =
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown })
-      .purchase_price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown }).price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
-    null;
+type ListingSourceRow = {
+  id?: unknown;
+  brand?: string | null;
+  model?: string | null;
+  variant?: string | null;
+  title?: string | null;
+  description?: string | null;
+  year?: number | null;
+  price_per_month_chf?: number | null;
+  purchase_price_chf?: number | null;
+  remaining_months?: number | null;
+  remaining_km?: number | null;
+  deposit_chf?: number | null;
+  contract_end_date?: string | null;
+  location?: string | null;
+  mileage_km?: number | null;
+  fuel?: unknown;
+  gearbox?: unknown;
+  body?: unknown;
+  premium?: boolean | null;
+  images?: unknown;
+  cover_image_url?: string | null;
+  deal_type?: string | null;
+  financing_type?: string | null;
+  leasing_offer?: unknown;
+  vin?: string | null;
+  make_id?: string | null;
+  model_id?: string | null;
+  variant_id?: string | null;
+  power_hp?: number | null;
+  drivetrain?: string | null;
+  first_registration?: string | null;
+  created_at?: string | null;
+};
 
-  const purchasePriceCHF = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
+/** Purchase price is only ever purchase_price_chf (never the plan fee price_paid_chf). */
+function purchasePriceFromRow(row: ListingSourceRow): number | null {
+  const v = row.purchase_price_chf;
+  return typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null;
+}
 
-  const leasingOfferCandidate =
-    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasing_offer ??
-    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasingOffer ??
-    null;
+function listingFieldsFromRow(row: ListingSourceRow, now: Date = new Date()) {
+  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url ?? undefined);
+  const offer = resolveListingOffer(row, now);
+  const isTakeover = offer.kaufart === "lease_takeover";
 
   const leasing_offer =
-    leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
-
-  const joinedProfile = (row as unknown as { profiles?: { full_name?: string | null; avatar_url?: string | null } | null }).profiles ?? null;
-
-  const sellerNameCandidate =
-    joinedProfile?.full_name ??
-    (row as unknown as { seller_name?: string | null }).seller_name ??
-    null;
-
-  const sellerAvatarCandidate =
-    joinedProfile?.avatar_url ??
-    (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ??
-    null;
-
-  const seller_name = getNonEmptyString(sellerNameCandidate);
-  const seller_avatar_url = getNonEmptyString(sellerAvatarCandidate);
-
-  const seller_type = getSellerTypeFromRow(row);
-  const garage_id = getGarageIdFromRow(row);
-  const garage_name = getGarageNameFromRow(row);
-
-  const effectiveSellerName = seller_name ?? (seller_type === "garage" ? garage_name : null);
+    row.leasing_offer && typeof row.leasing_offer === "object" ? (row.leasing_offer as any) : null;
 
   return {
     id: String(row.id ?? ""),
-    deal_type: row.deal_type ?? "lease_takeover",
-    financing_type: row.financing_type ?? null,
+    deal_type: (row.deal_type ?? "direct_purchase") as Listing["deal_type"],
+    kaufart: offer.kaufart,
+    contractEnded: offer.contractEnded,
+    financing_type: (row.financing_type ?? null) as Listing["financing_type"],
     leasing_offer,
     brand: row.brand ?? "",
     model: row.model ?? "",
+    variant: row.variant ?? null,
     title: row.title || undefined,
     description: row.description || undefined,
     year: row.year ?? 0,
-    pricePerMonthCHF: row.price_per_month_chf ?? 0,
-    remainingMonths: row.remaining_months ?? 0,
+    pricePerMonthCHF: isTakeover ? offer.rateChf ?? 0 : row.price_per_month_chf ?? 0,
+    remainingMonths: isTakeover ? offer.months ?? 0 : row.remaining_months ?? 0,
     remaining_km: row.remaining_km ?? null,
-    location: row.location ?? "",
+    location: displayLocation(row.location),
     mileageKm: row.mileage_km ?? 0,
     fuel: normalizeFuel(row.fuel),
     gearbox: normalizeGearbox(row.gearbox),
     body: normalizeBody(row.body),
     premium: row.premium ?? false,
-    depositCHF: row.deposit_chf ?? null,
+    depositCHF: isTakeover ? offer.kautionChf ?? 0 : row.deposit_chf ?? null,
     images: imageUrls,
     imageUrl: imageUrls[0] || "",
-    purchasePriceCHF,
+    purchasePriceCHF: purchasePriceFromRow(row),
 
     vin: row.vin ?? null,
     makeId: row.make_id ?? null,
@@ -377,159 +346,68 @@ function transformPublicRowToListing(row: PublicListingRow): Listing {
     powerHp: row.power_hp ?? null,
     drivetrain: row.drivetrain ?? null,
     firstRegistration: row.first_registration ?? null,
-
-    seller_type,
-    seller_name: effectiveSellerName,
-    seller_avatar_url,
-    garage_id,
-    garage_name,
-    garage_logo_url: null,
     created_at: row.created_at ?? null,
   };
 }
 
-// Transform public listing row to detailed format
-function transformPublicRowToListingDetail(row: PublicListingRow): ListingDetail {
-  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
-
-  const purchasePriceCandidate =
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown })
-      .purchase_price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown }).price_chf ??
-    (row as unknown as { purchase_price_chf?: unknown; price_chf?: unknown; price_paid_chf?: unknown }).price_paid_chf ??
-    null;
-
-  const purchasePriceCHF = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
-
-  const leasingOfferCandidate =
-    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasing_offer ??
-    (row as unknown as { leasing_offer?: unknown; leasingOffer?: unknown }).leasingOffer ??
-    null;
-
-  const leasing_offer =
-    leasingOfferCandidate && typeof leasingOfferCandidate === "object" ? (leasingOfferCandidate as any) : null;
-
-  const joinedProfile = (row as unknown as { profiles?: { full_name?: string | null; avatar_url?: string | null } | null }).profiles ?? null;
-
-  const sellerNameCandidate =
-    joinedProfile?.full_name ??
-    (row as unknown as { seller_name?: string | null }).seller_name ??
-    null;
-
-  const sellerAvatarCandidate =
-    joinedProfile?.avatar_url ??
-    (row as unknown as { seller_avatar_url?: string | null }).seller_avatar_url ??
-    null;
-
-  const seller_name = getNonEmptyString(sellerNameCandidate);
-  const seller_avatar_url = getNonEmptyString(sellerAvatarCandidate);
+function sellerFieldsFromRow(row: unknown) {
+  const joinedProfile = (row as { profiles?: { full_name?: string | null; avatar_url?: string | null } | null }).profiles ?? null;
+  const rawName = joinedProfile?.full_name ?? (row as { seller_name?: string | null }).seller_name ?? null;
+  const rawAvatar = joinedProfile?.avatar_url ?? (row as { seller_avatar_url?: string | null }).seller_avatar_url ?? null;
 
   const seller_type = getSellerTypeFromRow(row);
   const garage_id = getGarageIdFromRow(row);
   const garage_name = getGarageNameFromRow(row);
 
-  const effectiveSellerName = seller_name ?? (seller_type === "garage" ? garage_name : null);
-
   return {
-    id: String(row.id ?? ""),
-    deal_type: row.deal_type ?? "lease_takeover",
-    financing_type: row.financing_type ?? null,
-    leasing_offer,
-    brand: row.brand ?? "",
-    model: row.model ?? "",
-    title: row.title || undefined,
-    description: row.description || undefined,
-    year: row.year ?? 0,
-    pricePerMonthCHF: row.price_per_month_chf ?? 0,
-    remainingMonths: row.remaining_months ?? 0,
-    remaining_km: row.remaining_km ?? null,
-    location: row.location ?? "",
-    mileageKm: row.mileage_km ?? 0,
-    fuel: normalizeFuel(row.fuel),
-    gearbox: normalizeGearbox(row.gearbox),
-    body: normalizeBody(row.body),
-    premium: row.premium ?? false,
-    depositCHF: row.deposit_chf ?? null,
-    images: imageUrls,
-    imageUrl: imageUrls[0] || "",
-    purchasePriceCHF,
+    seller_type,
+    seller_name: publicSellerName({ sellerType: seller_type, fullName: getNonEmptyString(rawName), garageName: garage_name }),
+    seller_avatar_url: getNonEmptyString(rawAvatar),
+    garage_id,
+    garage_name,
+    garage_logo_url: null as string | null,
+  };
+}
+
+// Transform public listing row to UI Listing format
+function transformPublicRowToListing(row: PublicListingRow, now: Date = new Date()): Listing {
+  return {
+    ...listingFieldsFromRow(row as unknown as ListingSourceRow, now),
+    ...sellerFieldsFromRow(row),
+  };
+}
+
+// Transform public listing row to detailed format
+function transformPublicRowToListingDetail(row: PublicListingRow, now: Date = new Date()): ListingDetail {
+  return {
+    ...listingFieldsFromRow(row as unknown as ListingSourceRow, now),
+    ...sellerFieldsFromRow(row),
     canton_code: row.canton_code ?? "",
     cover_image_url: row.cover_image_url ?? null,
-    image_urls: imageUrls,
+    image_urls: parseImagesFromDatabase(row.images, row.cover_image_url),
     status: (row.status ?? "draft") as ListingDetail["status"],
     created_at: row.created_at ?? "",
     expires_at: row.expires_at ?? null,
     duration_days: row.duration_days ?? null,
     price_plan: (row.price_plan ?? null) as ListingDetail["price_plan"],
     premium_until: row.premium_until ?? null,
-
-    vin: row.vin ?? null,
-    makeId: row.make_id ?? null,
-    modelId: row.model_id ?? null,
-    variantId: row.variant_id ?? null,
-    powerHp: row.power_hp ?? null,
-    drivetrain: row.drivetrain ?? null,
-    firstRegistration: row.first_registration ?? null,
-
-    seller_type,
-    seller_name: effectiveSellerName,
-    seller_avatar_url,
-    garage_id,
-    garage_name,
-    garage_logo_url: null,
   };
 }
 
 export { transformPublicRowToListingDetail };
 
 function transformListingsTableRowToListingDetail(row: ListingsTableRow): ListingDetail {
-  const imageUrls = parseImagesFromDatabase(row.images, row.cover_image_url);
-
-  const purchasePriceCHF = typeof row.purchase_price_chf === "number" ? row.purchase_price_chf : null;
-
-  const leasingOffer =
-    row.leasing_offer && typeof row.leasing_offer === "object" ? (row.leasing_offer as any) : null;
-
   return {
-    id: row.id,
-    deal_type: (row.deal_type ?? "lease_takeover") as any,
-    financing_type: (row.financing_type ?? null) as any,
-    leasing_offer: leasingOffer,
-    brand: row.brand ?? "",
-    model: row.model ?? "",
-    title: row.title ?? undefined,
-    description: row.description ?? undefined,
-    year: row.year ?? 0,
-    pricePerMonthCHF: row.price_per_month_chf ?? 0,
-    remainingMonths: row.remaining_months ?? 0,
-    remaining_km: row.remaining_km ?? null,
-    location: row.location ?? "",
-    mileageKm: row.mileage_km ?? 0,
-    fuel: normalizeFuel(row.fuel),
-    gearbox: normalizeGearbox(row.gearbox),
-    body: normalizeBody(row.body),
-    premium: row.premium ?? false,
-    depositCHF: row.deposit_chf ?? null,
-    images: imageUrls,
-    imageUrl: imageUrls[0] || "",
-    purchasePriceCHF,
+    ...listingFieldsFromRow(row as unknown as ListingSourceRow),
     canton_code: row.canton_code ?? "",
     cover_image_url: row.cover_image_url ?? null,
-    image_urls: imageUrls,
+    image_urls: parseImagesFromDatabase(row.images, row.cover_image_url),
     status: (row.status ?? "draft") as ListingDetail["status"],
     created_at: row.created_at ?? "",
     expires_at: row.expires_at ?? null,
     duration_days: row.duration_days ?? null,
     price_plan: (row.price_plan ?? null) as ListingDetail["price_plan"],
     premium_until: row.premium_until ?? null,
-
-    vin: row.vin ?? null,
-    makeId: row.make_id ?? null,
-    modelId: row.model_id ?? null,
-    variantId: row.variant_id ?? null,
-    powerHp: row.power_hp ?? null,
-    drivetrain: row.drivetrain ?? null,
-    firstRegistration: row.first_registration ?? null,
 
     seller_type: row.seller_type ?? null,
     seller_name: null,
@@ -538,6 +416,297 @@ function transformListingsTableRowToListingDetail(row: ListingsTableRow): Listin
     garage_name: null,
     garage_logo_url: null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Public inventory engine.
+//
+// Stage 1 reads light columns for every published, unexpired listing that
+// matches the plain column filters (brand, year, canton, …) and resolves each
+// row's Kaufart in code. Kaufart, monthly rate, Kaution and effective months are
+// filtered, sorted and paginated on those resolved offers, so counts, filters
+// and badges can never disagree. Stage 2 loads the full rows of the page that
+// is shown. The inventory is small (dozens of rows; PostgREST caps a response
+// at 1000), so stage 1 is one cheap sequential scan.
+// ---------------------------------------------------------------------------
+
+const OFFER_COLUMNS =
+  "id, brand, model, variant, year, price_per_month_chf, purchase_price_chf, remaining_months, deposit_chf, " +
+  "leasing_offer, deal_type, financing_type, mileage_km, premium, created_at, updated_at, garage_id";
+
+type OfferRow = {
+  id: string;
+  brand: string | null;
+  model: string | null;
+  variant: string | null;
+  year: number | null;
+  price_per_month_chf: number | null;
+  purchase_price_chf: number | null;
+  remaining_months: number | null;
+  deposit_chf: number | null;
+  leasing_offer: unknown;
+  deal_type: string | null;
+  financing_type: string | null;
+  mileage_km: number | null;
+  premium: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+  garage_id: string | null;
+  contract_end_date?: string | null;
+};
+
+/** A published listing with its resolved Kaufart and effective values. */
+export type PublicOffer = OfferRow & { offer: ResolvedOffer };
+
+// listings_public gains contract_end_date with migration 20261008090000. Until
+// that migration is applied the column does not exist (PostgreSQL 42703), so
+// the read retries without it and months fall back to the stored value — the
+// site works before and after the migration. Safe to drop once it is live.
+let contractEndColumnMissingAt: number | null = null;
+const CONTRACT_END_RECHECK_MS = 5 * 60 * 1000;
+
+function isMissingContractEndColumn(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === "42703" || /contract_end_date/.test(error.message ?? "");
+}
+
+async function selectOfferRows(scope: (query: any) => any): Promise<OfferRow[]> {
+  const run = (columns: string) =>
+    scope(supabase.from(PUBLIC_LISTINGS_VIEW).select(columns).eq("status", "published")) as PromiseLike<{
+      data: unknown;
+      error: { code?: string; message?: string } | null;
+    }>;
+
+  const tryContractEnd =
+    contractEndColumnMissingAt === null || Date.now() - contractEndColumnMissingAt > CONTRACT_END_RECHECK_MS;
+
+  if (tryContractEnd) {
+    const { data, error } = await run(`${OFFER_COLUMNS}, contract_end_date`);
+    if (!error) {
+      contractEndColumnMissingAt = null;
+      return (Array.isArray(data) ? data : []) as OfferRow[];
+    }
+    if (!isMissingContractEndColumn(error)) throw error;
+    contractEndColumnMissingAt = Date.now();
+  }
+
+  const { data, error } = await run(OFFER_COLUMNS);
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []) as OfferRow[];
+}
+
+function resolveOffers(rows: OfferRow[], now: Date): PublicOffer[] {
+  return rows.map((row) => ({ ...row, offer: resolveListingOffer(row, now) }));
+}
+
+/** Plain column filters PostgREST can apply before the Kaufart stage. */
+function applyColumnFilters(query: any, q: SearchQuery, garageId?: string): any {
+  let next = query;
+  if (garageId) next = next.eq("garage_id", garageId);
+
+  // Free-text keyword (e.g. Google sitelinks searchbox `?query=bmw`): match across brand + model.
+  if (q.query) {
+    const term = q.query.trim().replace(/[%,()\\*]/g, " ").trim();
+    if (term) next = next.or(`brand.ilike.%${term}%,model.ilike.%${term}%`);
+  }
+
+  if (q.brands?.length) next = next.in("brand", q.brands);
+  else if (q.brand) next = next.eq("brand", q.brand);
+  if (q.model) next = next.ilike("model", `%${q.model}%`);
+  if (q.variant) next = next.eq("variant", q.variant);
+  if (q.yearMin) next = next.gte("year", q.yearMin);
+  if (q.yearMax) next = next.lte("year", q.yearMax);
+  if (typeof q.kmMax === "number") next = next.lte("mileage_km", q.kmMax);
+  if (q.canton?.length) next = next.in("canton_code", q.canton);
+  if (q.fuel?.length) next = next.in("fuel", q.fuel);
+  if (q.gearbox?.length) next = next.in("gearbox", q.gearbox);
+  if (q.body?.length) next = next.in("body", q.body);
+  if (q.premiumOnly) next = next.eq("premium", true);
+  return next;
+}
+
+type KaufartScope = {
+  bucket: "lease_takeover" | "direct_purchase" | "monthly" | "all";
+  financingType?: "cash" | "leasing";
+  priceMode: "monthly" | "purchase" | "none";
+};
+
+/** URL params -> which Kaufart bucket a query asks for (URL contract unchanged). */
+function kaufartScopeFor(q: SearchQuery): KaufartScope {
+  if (q.monthlyOnly === true) return { bucket: "monthly", priceMode: "monthly" };
+
+  const hasMonthsFilter = typeof q.monthsMin === "number" || typeof q.monthsMax === "number";
+  const dealType = q.dealType ?? (hasMonthsFilter ? "lease_takeover" : q.financingType ? "direct_purchase" : undefined);
+
+  if (dealType === "lease_takeover") return { bucket: "lease_takeover", priceMode: "monthly" };
+  if (dealType === "direct_purchase") {
+    return { bucket: "direct_purchase", financingType: q.financingType, priceMode: "purchase" };
+  }
+  return { bucket: "all", priceMode: "none" };
+}
+
+function inKaufartScope(o: PublicOffer, scope: KaufartScope): boolean {
+  // A Leasingübernahme whose contract has run out is no live offer anywhere.
+  if (!o.offer.isLiveOffer) return false;
+
+  switch (scope.bucket) {
+    case "all":
+      return true;
+    case "lease_takeover":
+      return o.offer.kaufart === "lease_takeover";
+    case "monthly":
+      return o.offer.kaufart === "lease_takeover" || hasNewLeasingFinancing(o);
+    case "direct_purchase":
+      if (o.offer.kaufart !== "direct_purchase") return false;
+      if (scope.financingType === "leasing") return hasNewLeasingFinancing(o);
+      if (scope.financingType === "cash") return o.financing_type === "cash" || o.financing_type === null;
+      return true;
+  }
+}
+
+function priceOf(o: PublicOffer, mode: KaufartScope["priceMode"]): number | null {
+  if (mode === "monthly") return o.offer.rateChf;
+  if (mode === "purchase") {
+    const v = o.purchase_price_chf;
+    return typeof v === "number" && v > 0 ? v : null;
+  }
+  return null;
+}
+
+function timeOf(value: string | null): number {
+  const t = value ? Date.parse(value) : NaN;
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function compareOffers(sort: SearchQuery["sort"], scope: KaufartScope): (a: PublicOffer, b: PublicOffer) => number {
+  const newestFirst = (a: PublicOffer, b: PublicOffer) => timeOf(b.created_at) - timeOf(a.created_at) || a.id.localeCompare(b.id);
+  const nullsLast = (x: number | null, y: number | null, dir: 1 | -1) => {
+    if (x === null && y === null) return 0;
+    if (x === null) return 1;
+    if (y === null) return -1;
+    return (x - y) * dir;
+  };
+
+  const isTakeover = scope.bucket === "lease_takeover";
+
+  if (scope.priceMode !== "none" && (sort === "priceAsc" || sort === "priceDesc")) {
+    const dir = sort === "priceAsc" ? 1 : -1;
+    return (a, b) => nullsLast(priceOf(a, scope.priceMode), priceOf(b, scope.priceMode), dir) || newestFirst(a, b);
+  }
+  if (sort === "dateDesc") return newestFirst;
+  if (sort === "yearDesc") return (a, b) => (b.year ?? 0) - (a.year ?? 0) || newestFirst(a, b);
+  if (isTakeover && (sort === "monthsAsc" || sort === "monthsDesc")) {
+    const dir = sort === "monthsAsc" ? 1 : -1;
+    return (a, b) => nullsLast(a.offer.months, b.offer.months, dir) || newestFirst(a, b);
+  }
+  if (sort === "kmAsc") return (a, b) => (a.mileage_km ?? 0) - (b.mileage_km ?? 0) || newestFirst(a, b);
+  return (a, b) => Number(Boolean(b.premium)) - Number(Boolean(a.premium)) || newestFirst(a, b);
+}
+
+/** Kaufart, price, months and Kaution filters on resolved offers. */
+function filterOffers(offers: PublicOffer[], q: SearchQuery, scope: KaufartScope): PublicOffer[] {
+  return offers.filter((o) => {
+    if (!inKaufartScope(o, scope)) return false;
+
+    if (scope.priceMode !== "none" && (typeof q.priceMin === "number" || typeof q.priceMax === "number")) {
+      const price = priceOf(o, scope.priceMode);
+      if (price === null) return false;
+      if (typeof q.priceMin === "number" && price < q.priceMin) return false;
+      if (typeof q.priceMax === "number" && price > q.priceMax) return false;
+    }
+
+    if (scope.bucket === "lease_takeover" && (typeof q.monthsMin === "number" || typeof q.monthsMax === "number")) {
+      const months = o.offer.months;
+      if (months === null) return false;
+      if (typeof q.monthsMin === "number" && months < q.monthsMin) return false;
+      if (typeof q.monthsMax === "number" && months > q.monthsMax) return false;
+    }
+
+    if (q.noDeposit && o.offer.kaufart === "lease_takeover" && (o.offer.kautionChf ?? 0) > 0) return false;
+
+    return true;
+  });
+}
+
+/** Full rows for the given ids, in the given order, enriched with seller/garage data. */
+async function loadListingsByIds(ids: string[], now: Date): Promise<Listing[]> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase.from(PUBLIC_LISTINGS_VIEW).select("*").in("id", ids).eq("status", "published");
+  if (error) throw error;
+
+  const byId = new Map<string, PublicListingRow>();
+  for (const row of (Array.isArray(data) ? data : []) as unknown as PublicListingRow[]) {
+    if (row?.id) byId.set(String(row.id), row);
+  }
+
+  const rows = ids.map((id) => byId.get(id)).filter((r): r is PublicListingRow => Boolean(r));
+  return enrichPublicListings(rows, now);
+}
+
+/** Garage name/logo for garage rows; abbreviated owner name + avatar for private rows. */
+async function enrichPublicListings(rows: PublicListingRow[], now: Date): Promise<Listing[]> {
+  const garageIds = rows
+    .map((r) => getGarageIdFromRow(r))
+    .filter((v): v is string => typeof v === "string" && v.length > 0);
+
+  const privateListingIds = rows
+    .filter((r) => !isGarageSellerFromRow(r))
+    .map((r) => getListingIdFromRow(r))
+    .filter((v): v is string => typeof v === "string" && v.trim() !== "");
+
+  const [publicGaragesById, ownerProfilesByListingId] = await Promise.all([
+    fetchPublicGaragesByIds(garageIds),
+    fetchPublicListingOwnerProfilesByListingIds(privateListingIds),
+  ]);
+
+  return rows.map((r) => {
+    const listing = transformPublicRowToListing(r, now);
+
+    const gId = getGarageIdFromRow(r);
+    if (gId && publicGaragesById[gId]) {
+      const g = publicGaragesById[gId];
+      const resolvedLogo = resolveListingImagesPublicUrl(g.logo_url) ?? g.logo_url ?? null;
+      return {
+        ...listing,
+        seller_name: publicSellerName({ sellerType: "garage", garageName: g.garage_name }) ?? listing.seller_name ?? null,
+        garage_name: g.garage_name ?? listing.garage_name ?? null,
+        garage_id: gId,
+        garage_logo_url: resolvedLogo,
+      };
+    }
+
+    if (!isGarageSellerFromRow(r)) {
+      const p = ownerProfilesByListingId[listing.id];
+      if (p) {
+        return {
+          ...listing,
+          seller_name: publicSellerName({ sellerType: "private", fullName: p.fullName }) ?? listing.seller_name ?? null,
+          seller_avatar_url: p.avatarUrl ?? listing.seller_avatar_url ?? null,
+        };
+      }
+    }
+
+    return listing;
+  });
+}
+
+async function runOfferSearch(searchQuery: SearchQuery, garageId?: string): Promise<SearchResult> {
+  const pageSize = searchQuery.pageSize && searchQuery.pageSize > 0 ? searchQuery.pageSize : 12;
+  const page = searchQuery.page || 1;
+  const now = new Date();
+
+  const scope = kaufartScopeFor(searchQuery);
+  const rows = await selectOfferRows((query) => applyColumnFilters(query, searchQuery, garageId));
+  const matches = filterOffers(resolveOffers(rows, now), searchQuery, scope).sort(
+    compareOffers(searchQuery.sort || (garageId ? "dateDesc" : "relevance"), scope)
+  );
+
+  const offset = (page - 1) * pageSize;
+  const pageIds = matches.slice(offset, offset + pageSize).map((o) => o.id);
+  const items = await loadListingsByIds(pageIds, now);
+
+  return { items, total: matches.length, page, pageSize };
 }
 
 // PUBLIC FRONTEND FUNCTIONS (homepage, search, listing detail)
@@ -550,7 +719,7 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
       .eq("id", id)
       // The view contains published, unexpired listings only, so filtering for
       // 'sold' here never matched anything. A sold listing is intentionally not
-      // publicly reachable; the detail page renders its 410 for that case.
+      // publicly reachable; the detail page redirects for that case.
       .eq("status", "published")
       .single();
 
@@ -574,7 +743,7 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
         if (p) {
           return {
             ...base,
-            seller_name: p.fullName ?? (base as any).seller_name ?? null,
+            seller_name: publicSellerName({ sellerType: "private", fullName: p.fullName }) ?? (base as any).seller_name ?? null,
             seller_avatar_url: p.avatarUrl ?? (base as any).seller_avatar_url ?? null,
           };
         }
@@ -590,368 +759,45 @@ export async function getPublishedListingById(id: string): Promise<ListingDetail
 
 export async function searchListings(searchQuery: SearchQuery): Promise<SearchResult> {
   try {
-    const pageSize = 12;
-    const page = searchQuery.page || 1;
-    const offset = (page - 1) * pageSize;
-
-    const monthlyOnly = searchQuery.monthlyOnly === true;
-
-    const hasMonthsFilter = typeof searchQuery.monthsMin === "number" || typeof searchQuery.monthsMax === "number";
-    const isLeasingOfferFilter = searchQuery.dealType === "direct_purchase" && searchQuery.financingType === "leasing";
-
-    const inferredDealType: "lease_takeover" | "direct_purchase" | undefined =
-      searchQuery.dealType ??
-      (hasMonthsFilter ? "lease_takeover" : searchQuery.financingType ? "direct_purchase" : undefined);
-
-    const effectiveDealType = inferredDealType;
-    const isMixed = !monthlyOnly && !effectiveDealType;
-    const isLeaseTakeover = effectiveDealType === "lease_takeover";
-    const isDirectPurchase = effectiveDealType === "direct_purchase";
-
-    const priceMode: "monthly" | "purchase" | "none" =
-      monthlyOnly || isLeaseTakeover || isLeasingOfferFilter ? "monthly" : isDirectPurchase ? "purchase" : "none";
-
-    const monthlyPriceColumn = "price_per_month_chf";
-    const purchasePriceColumn = "purchase_price_chf";
-    const priceColumn = priceMode === "monthly" ? monthlyPriceColumn : purchasePriceColumn;
-
-    let query = supabase
-      .from(PUBLIC_LISTINGS_VIEW)
-      .select("*", { count: "exact" })
-      .eq("status", "published");
-
-    if (monthlyOnly) {
-      query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing,leasing_offer->>enabled.eq.true)");
-    } else if (effectiveDealType) {
-      query = query.eq("deal_type", effectiveDealType);
-    }
-
-    if (!monthlyOnly && effectiveDealType === "direct_purchase") {
-      if (searchQuery.financingType === "leasing") {
-        query = query
-          .eq("financing_type", "leasing")
-          .contains("leasing_offer", { enabled: true });
-      } else if (searchQuery.financingType === "cash") {
-        query = query.or("financing_type.eq.cash,financing_type.is.null");
-      }
-    }
-
-    // Free-text keyword (e.g. Google sitelinks searchbox `?query=bmw`): match across brand + model.
-    if (searchQuery.query) {
-      const term = searchQuery.query.trim().replace(/[%,()\\*]/g, " ").trim();
-      if (term) query = query.or(`brand.ilike.%${term}%,model.ilike.%${term}%`);
-    }
-
-    if (searchQuery.brands?.length) query = query.in("brand", searchQuery.brands);
-    else if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
-    if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
-    if (searchQuery.variant) query = query.eq("variant", searchQuery.variant);
-    if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
-    if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
-
-    if (priceMode !== "none") {
-      if (typeof searchQuery.priceMin === "number") query = query.gte(priceColumn, searchQuery.priceMin);
-      if (typeof searchQuery.priceMax === "number") query = query.lte(priceColumn, searchQuery.priceMax);
-    }
-
-    if (isLeaseTakeover) {
-      if (typeof searchQuery.monthsMin === "number") query = query.gte("remaining_months", searchQuery.monthsMin);
-      if (typeof searchQuery.monthsMax === "number") query = query.lte("remaining_months", searchQuery.monthsMax);
-    }
-
-    if (typeof searchQuery.kmMax === "number") query = query.lte("mileage_km", searchQuery.kmMax);
-    if (searchQuery.canton?.length) query = query.in("canton_code", searchQuery.canton);
-    if (searchQuery.fuel?.length) query = query.in("fuel", searchQuery.fuel);
-    if (searchQuery.gearbox?.length) query = query.in("gearbox", searchQuery.gearbox);
-    if (searchQuery.body?.length) query = query.in("body", searchQuery.body);
-    if (searchQuery.premiumOnly) query = query.eq("premium", true);
-    if (searchQuery.noDeposit) query = query.is("deposit_chf", null);
-
-    const sortOrder = searchQuery.sort || "relevance";
-
-    if (priceMode !== "none" && sortOrder === "priceAsc") query = query.order(priceColumn, { ascending: true, nullsFirst: false });
-    else if (priceMode !== "none" && sortOrder === "priceDesc") query = query.order(priceColumn, { ascending: false, nullsFirst: false });
-    else if (sortOrder === "dateDesc") query = query.order("created_at", { ascending: false });
-    else if (sortOrder === "yearDesc") query = query.order("year", { ascending: false });
-    else if (isLeaseTakeover && sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });
-    else if (isLeaseTakeover && sortOrder === "monthsDesc") query = query.order("remaining_months", { ascending: false });
-    else if (sortOrder === "kmAsc") query = query.order("mileage_km", { ascending: true });
-    else query = query.order("premium", { ascending: false }).order("created_at", { ascending: false });
-
-    query = query.range(offset, offset + pageSize - 1);
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      console.error("Search query error:", error);
-      throw error;
-    }
-
-    const rows = (Array.isArray(data) ? data : []) as unknown as PublicListingRow[];
-
-    const garageIds = rows
-      .map((r) => (r as unknown as { garage_id?: string | null }).garage_id ?? null)
-      .filter((v): v is string => typeof v === "string" && v.length > 0);
-
-    const privateRows = rows.filter((r) => !isGarageSellerFromRow(r));
-
-    const privateListingIds = privateRows
-      .map((r) => getListingIdFromRow(r))
-      .filter((v): v is string => typeof v === "string" && v.trim() !== "");
-
-    const [publicGaragesById, ownerProfilesByListingId] = await Promise.all([
-      fetchPublicGaragesByIds(garageIds),
-      fetchPublicListingOwnerProfilesByListingIds(privateListingIds),
-    ]);
-
-    const items = rows.map((r) => {
-      const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
-
-      const gId = getGarageIdFromRow(r);
-      if (gId && publicGaragesById[gId]) {
-        const g = publicGaragesById[gId];
-        const resolvedLogo = resolveListingImagesPublicUrl(g.logo_url) ?? g.logo_url ?? null;
-        return {
-          ...listing,
-          seller_name: g.garage_name ?? listing.seller_name ?? null,
-          garage_name: g.garage_name ?? listing.garage_name ?? null,
-          garage_id: gId,
-          garage_logo_url: resolvedLogo,
-        };
-      }
-
-      if (!isGarageSellerFromRow(r)) {
-        const p = ownerProfilesByListingId[listing.id];
-        if (p) {
-          return {
-            ...listing,
-            seller_name: p.fullName ?? listing.seller_name ?? null,
-            seller_avatar_url: p.avatarUrl ?? listing.seller_avatar_url ?? null,
-          };
-        }
-      }
-
-      return listing;
-    });
-
-    return {
-      items,
-      total: count || 0,
-      page,
-      pageSize,
-    };
+    return await runOfferSearch(searchQuery);
   } catch (error) {
     console.error("Search listings error:", error);
     return {
       items: [],
       total: 0,
       page: searchQuery.page || 1,
-      pageSize: 12,
+      pageSize: searchQuery.pageSize || 12,
     };
   }
 }
 
 export async function searchDealerListings(garageId: string, searchQuery: SearchQuery): Promise<SearchResult> {
   try {
-    const pageSize = 12;
-    const page = searchQuery.page || 1;
-    const offset = (page - 1) * pageSize;
-
-    const monthlyOnly = searchQuery.monthlyOnly === true;
-
-    const hasMonthsFilter = typeof searchQuery.monthsMin === "number" || typeof searchQuery.monthsMax === "number";
-    const isLeasingOfferFilter = searchQuery.dealType === "direct_purchase" && searchQuery.financingType === "leasing";
-
-    const inferredDealType: "lease_takeover" | "direct_purchase" | undefined =
-      searchQuery.dealType ??
-      (hasMonthsFilter ? "lease_takeover" : searchQuery.financingType ? "direct_purchase" : undefined);
-
-    const effectiveDealType = inferredDealType;
-    const isMixed = !monthlyOnly && !effectiveDealType;
-    const isLeaseTakeover = effectiveDealType === "lease_takeover";
-    const isDirectPurchase = effectiveDealType === "direct_purchase";
-
-    const priceMode: "monthly" | "purchase" | "none" =
-      monthlyOnly || isLeaseTakeover || isLeasingOfferFilter ? "monthly" : isDirectPurchase ? "purchase" : "none";
-
-    const monthlyPriceColumn = "price_per_month_chf";
-    const purchasePriceColumn = "purchase_price_chf";
-    const priceColumn = priceMode === "monthly" ? monthlyPriceColumn : purchasePriceColumn;
-
-    let query = supabase
-      .from(PUBLIC_LISTINGS_VIEW)
-      .select("*", { count: "exact" })
-      .eq("garage_id", garageId)
-      .eq("status", "published");
-
-    if (monthlyOnly) {
-      query = query.or("deal_type.eq.lease_takeover,and(deal_type.eq.direct_purchase,financing_type.eq.leasing,leasing_offer->>enabled.eq.true)");
-    } else if (effectiveDealType) {
-      query = query.eq("deal_type", effectiveDealType);
-    }
-
-    if (!monthlyOnly && effectiveDealType === "direct_purchase") {
-      if (searchQuery.financingType === "leasing") {
-        query = query
-          .eq("financing_type", "leasing")
-          .contains("leasing_offer", { enabled: true });
-      } else if (searchQuery.financingType === "cash") {
-        query = query.or("financing_type.eq.cash,financing_type.is.null");
-      }
-    }
-
-    if (searchQuery.brand) query = query.eq("brand", searchQuery.brand);
-    if (searchQuery.model) query = query.ilike("model", `%${searchQuery.model}%`);
-    if (searchQuery.variant) query = query.eq("variant", searchQuery.variant);
-    if (searchQuery.yearMin) query = query.gte("year", searchQuery.yearMin);
-    if (searchQuery.yearMax) query = query.lte("year", searchQuery.yearMax);
-
-    if (priceMode !== "none") {
-      if (typeof searchQuery.priceMin === "number") query = query.gte(priceColumn, searchQuery.priceMin);
-      if (typeof searchQuery.priceMax === "number") query = query.lte(priceColumn, searchQuery.priceMax);
-    }
-
-    if (isLeaseTakeover) {
-      if (typeof searchQuery.monthsMin === "number") query = query.gte("remaining_months", searchQuery.monthsMin);
-      if (typeof searchQuery.monthsMax === "number") query = query.lte("remaining_months", searchQuery.monthsMax);
-    }
-
-    if (typeof searchQuery.kmMax === "number") query = query.lte("mileage_km", searchQuery.kmMax);
-    if (searchQuery.canton?.length) query = query.in("canton_code", searchQuery.canton);
-    if (searchQuery.fuel?.length) query = query.in("fuel", searchQuery.fuel);
-    if (searchQuery.gearbox?.length) query = query.in("gearbox", searchQuery.gearbox);
-    if (searchQuery.body?.length) query = query.in("body", searchQuery.body);
-    if (searchQuery.premiumOnly) query = query.eq("premium", true);
-    if (searchQuery.noDeposit) query = query.is("deposit_chf", null);
-
-    const sortOrder = searchQuery.sort || "dateDesc";
-
-    if (priceMode !== "none" && sortOrder === "priceAsc") query = query.order(priceColumn, { ascending: true, nullsFirst: false });
-    else if (priceMode !== "none" && sortOrder === "priceDesc") query = query.order(priceColumn, { ascending: false, nullsFirst: false });
-    else if (sortOrder === "dateDesc") query = query.order("created_at", { ascending: false });
-    else if (sortOrder === "yearDesc") query = query.order("year", { ascending: false });
-    else if (isLeaseTakeover && sortOrder === "monthsAsc") query = query.order("remaining_months", { ascending: true });
-    else if (isLeaseTakeover && sortOrder === "monthsDesc") query = query.order("remaining_months", { ascending: false });
-    else if (sortOrder === "kmAsc") query = query.order("mileage_km", { ascending: true });
-    else query = query.order("premium", { ascending: false }).order("created_at", { ascending: false });
-
-    query = query.range(offset, offset + pageSize - 1);
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      console.error("Dealer search query error:", { garageId, error });
-      throw error;
-    }
-
-    const rows = (Array.isArray(data) ? data : []) as unknown as PublicListingRow[];
-
-    const garageIds = rows
-      .map((r) => (r as unknown as { garage_id?: string | null }).garage_id ?? null)
-      .filter((v): v is string => typeof v === "string" && v.length > 0);
-
-    const publicGaragesById = await fetchPublicGaragesByIds(garageIds);
-
-    const privateRows = rows.filter((r) => !isGarageSellerFromRow(r));
-    const ownerIdByListingId: Record<string, string> = {};
-
-    for (const r of privateRows) {
-      const listingId = getListingIdFromRow(r);
-      const ownerId = getOwnerUserIdFromPublicRow(r);
-      if (listingId && ownerId) ownerIdByListingId[listingId] = ownerId;
-    }
-
-    const missingOwnerListingIds = privateRows
-      .map((r) => getListingIdFromRow(r))
-      .filter((v): v is string => typeof v === "string" && v.trim() !== "")
-      .filter((listingId) => !ownerIdByListingId[listingId]);
-
-    if (missingOwnerListingIds.length > 0) {
-      const { data: ownerRows, error: ownerError } = await supabase
-        .from("listings")
-        .select("id, user_id, created_by, seller_type, status")
-        .in("id", missingOwnerListingIds)
-        .in("status", ["published", "sold"]);
-
-      if (ownerError) {
-        console.error("Owner fallback query error (dealer search):", { ownerError, count: missingOwnerListingIds.length });
-      } else {
-        const normalized = Array.isArray(ownerRows) ? ownerRows : [];
-        for (const row of normalized) {
-          const listingId = typeof (row as any)?.id === "string" ? (row as any).id : String((row as any)?.id ?? "");
-          if (!listingId || ownerIdByListingId[listingId]) continue;
-
-          const sellerType = (row as any)?.seller_type ?? null;
-          if (sellerType === "garage") continue;
-
-          const userId = (row as any)?.user_id ?? null;
-          const createdBy = (row as any)?.created_by ?? null;
-
-          const ownerId =
-            (typeof userId === "string" && userId.trim() ? userId : null) ??
-            (typeof createdBy === "string" && createdBy.trim() ? createdBy : null) ??
-            null;
-
-          if (ownerId) ownerIdByListingId[listingId] = ownerId;
-        }
-      }
-    }
-
-    const privateOwnerIds = Object.values(ownerIdByListingId).filter((v) => typeof v === "string" && v.trim() !== "");
-    const profileMap = await getPublicProfilesByIds(privateOwnerIds);
-
-    const ownerProfilesByListingId: Record<string, { fullName: string | null; avatarUrl: string | null }> = {};
-    for (const [listingId, ownerId] of Object.entries(ownerIdByListingId)) {
-      const p = profileMap[ownerId];
-      if (!p) continue;
-      ownerProfilesByListingId[listingId] = p;
-    }
-
-    const items = rows.map((r) => {
-      const listing = transformPublicRowToListing(r as unknown as PublicListingRow);
-
-      const gId = getGarageIdFromRow(r);
-      if (gId && publicGaragesById[gId]) {
-        const g = publicGaragesById[gId];
-        const resolvedLogo = resolveListingImagesPublicUrl(g.logo_url) ?? g.logo_url ?? null;
-        return {
-          ...listing,
-          seller_name: g.garage_name ?? listing.seller_name ?? null,
-          garage_name: g.garage_name ?? listing.garage_name ?? null,
-          garage_id: gId,
-          garage_logo_url: resolvedLogo,
-        };
-      }
-
-      if (!isGarageSellerFromRow(r)) {
-        const p = ownerProfilesByListingId[listing.id];
-        if (p) {
-          return {
-            ...listing,
-            seller_name: p.fullName ?? listing.seller_name ?? null,
-            seller_avatar_url: p.avatarUrl ?? listing.seller_avatar_url ?? null,
-          };
-        }
-      }
-
-      return listing;
-    });
-
-    return {
-      items,
-      total: count || 0,
-      page,
-      pageSize,
-    };
+    return await runOfferSearch(searchQuery, garageId);
   } catch (error) {
-    console.error("Search dealer listings error:", error);
+    console.error("Search dealer listings error:", { garageId, error });
     return {
       items: [],
       total: 0,
       page: searchQuery.page || 1,
-      pageSize: 12,
+      pageSize: searchQuery.pageSize || 12,
     };
   }
+}
+
+/**
+ * Every published, unexpired listing with its resolved Kaufart — the basis for
+ * counts, brand-page indexing, the sitemap and the live stats. Ended
+ * Leasingübernahmen are included but flagged (offer.isLiveOffer === false).
+ */
+export async function getPublicOfferIndex(now: Date = new Date()): Promise<PublicOffer[]> {
+  const rows = await selectOfferRows((query) => query);
+  return resolveOffers(rows, now);
+}
+
+/** Live Leasingübernahme offers only (what the hub, brand pages and stats count). */
+export function liveTakeovers(offers: PublicOffer[]): PublicOffer[] {
+  return offers.filter((o) => o.offer.kaufart === "lease_takeover" && o.offer.isLiveOffer);
 }
 
 // Brands are static-ish data fetched on every mount of SearchBarV2/SearchForm/DynamicFilterBar.
@@ -1057,27 +903,15 @@ export async function getVariantsForBrandModel(brand: string, model: string): Pr
 
 export async function getSimilarListings(listing: ListingDetail, limit: number = 6): Promise<Listing[]> {
   try {
-    const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
-
-    let query = supabase
-      .from(PUBLIC_LISTINGS_VIEW)
-      .select("*")
-      .neq("id", listing.id)
-      .eq("deal_type", dealType);
-
-    query = query.eq("status", "published");
-
-    const { data, error } = await query
-      .order("premium", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      console.error("Error fetching similar listings:", error);
-      return [];
-    }
-
-    return (data ?? []).map((r) => transformPublicRowToListing(r as unknown as PublicListingRow));
+    const now = new Date();
+    const kaufart = kaufartOf(listing);
+    const offers = await getPublicOfferIndex(now);
+    const ids = offers
+      .filter((o) => o.id !== listing.id && o.offer.isLiveOffer && o.offer.kaufart === kaufart)
+      .sort(compareOffers("relevance", { bucket: "all", priceMode: "none" }))
+      .slice(0, limit)
+      .map((o) => o.id);
+    return await loadListingsByIds(ids, now);
   } catch (error) {
     console.error("Get similar listings error:", error);
     return [];
@@ -1138,9 +972,12 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
 
     const seller_name = hideName
       ? null
-      : (typeof profile?.full_name === "string" && profile.full_name.trim() ? profile.full_name : null) ??
-        (metaFullName && metaFullName.trim() ? metaFullName : null) ??
-        null;
+      : publicSellerName({
+          sellerType: (data as unknown as { seller_type?: string | null }).seller_type ?? "private",
+          fullName:
+            (typeof profile?.full_name === "string" && profile.full_name.trim() ? profile.full_name : null) ??
+            (metaFullName && metaFullName.trim() ? metaFullName : null),
+        });
 
     const seller_avatar_url = hideName
       ? null
@@ -1159,4 +996,13 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
     console.error("Get user listing by ID error:", error);
     return null;
   }
+}
+
+/**
+ * Live inventory stats over the current Leasingübernahme listings (facts module).
+ * Pages that print them revalidate hourly (getStaticProps revalidate: 3600).
+ */
+export async function getLiveInventoryStats(): Promise<InventoryStats> {
+  const offers = await getPublicOfferIndex();
+  return computeInventoryStats(liveTakeovers(offers).map((o) => o.offer));
 }

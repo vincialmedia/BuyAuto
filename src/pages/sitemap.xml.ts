@@ -1,17 +1,11 @@
 import type { GetServerSideProps } from "next";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
-import { brandPagesForInventory } from "@/lib/buyauto/leasingBrands";
+import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
 import { CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
+import { getPublicOfferIndex, liveTakeovers, type PublicOffer } from "@/services/listingsService";
 
-type ListingSitemapRow = {
-  id: string;
-  brand: string;
-  model: string;
-  deal_type: string | null;
-  updated_at: string | null;
-  created_at: string | null;
-};
+type ListingSitemapRow = Pick<PublicOffer, "id" | "brand" | "model" | "updated_at" | "created_at">;
 
 function toSitemapLastmod(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -33,16 +27,16 @@ function urlTag(loc: string, lastmod: string | null): string {
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const baseUrl = "https://www.buyauto.ch";
 
-  // Source from the listings_public view so the sitemap equals exactly what renders:
-  // it already filters to status='published', not expired, and (via the is_internal
-  // safeguard) excludes internal/test accounts. No manual status filter here.
-  const { data: listings, error: listingsError } = await supabase
-    .from("listings_public")
-    .select("id, brand, model, deal_type, updated_at, created_at");
-
-  if (listingsError) {
+  // Source from the listings_public view (via the Kaufart-resolving offer index) so the
+  // sitemap equals exactly what renders: published, not expired. A Leasingübernahme
+  // whose contract has run out is no live offer and is left out.
+  let offers: PublicOffer[] = [];
+  try {
+    offers = await getPublicOfferIndex();
+  } catch (listingsError) {
     console.error("Sitemap: failed to load listings", listingsError);
   }
+  const listings = offers.filter((o) => o.offer.isLiveOffer);
 
   const { data: garageRows, error: garageError } = await supabase.rpc("get_public_garage_slugs");
 
@@ -57,7 +51,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     }))
     .filter((g) => g.slug.length > 0);
 
-  const listingRows = (listings as ListingSitemapRow[] | null) || [];
+  const listingRows: ListingSitemapRow[] = listings;
 
   const listingLastmod = (l: ListingSitemapRow) => toSitemapLastmod(l.updated_at ?? l.created_at);
 
@@ -79,7 +73,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
 
   const listingUrls = listingRows
     .map((listing) => {
-      const href = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
+      const href = buildListingHref({ id: listing.id, brand: listing.brand ?? "", model: listing.model ?? "" });
       return urlTag(`${baseUrl}${href}`, listingLastmod(listing));
     })
     .join("");
@@ -92,20 +86,17 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // via strong internal links (header, footer, home, hub, brand pages), so Google still
   // crawls and indexes them — without the faceted-URL signal.
 
-  // Programmatic brand landing pages — only the brands that actually have at least one
-  // live lease_takeover listing (others render noindex, so we keep them out of the map).
-  // brandPagesForInventory is alias-aware (Mercedes rows → mercedes-benz page) and adds
-  // auto-generated pages for live brands without a curated entry. lastmod = that brand's
-  // newest listing change, since the page body is its inventory.
-  const takeoverRows = listingRows.filter((l) => l.deal_type === "lease_takeover");
+  // Programmatic brand landing pages — only the INDEXABLE ones (enough live
+  // Leasingübernahmen by the Kaufart rule; thinner pages render noindex and stay out
+  // of the map). indexableBrandPages is alias-aware (Mercedes rows -> mercedes-benz).
+  // lastmod = that brand's newest takeover change, since the page body is its inventory.
+  const takeoverRows = liveTakeovers(offers);
 
-  const brandUrls = brandPagesForInventory(
-    takeoverRows.map((l) => ({ brand: l.brand, model: null, deal_type: l.deal_type }))
-  )
+  const brandUrls = indexableBrandPages(takeoverRows)
     .map((b) => {
       const brandLastmod =
         takeoverRows
-          .filter((l) => b.dbBrands.includes(l.brand))
+          .filter((l) => typeof l.brand === "string" && b.dbBrands.includes(l.brand))
           .map(listingLastmod)
           .filter(Boolean)
           .sort()

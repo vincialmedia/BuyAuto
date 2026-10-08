@@ -31,10 +31,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { searchListings } from "@/services/listingsService";
+import { getPublicOfferIndex, liveTakeovers, searchListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
-import { supabase } from "@/integrations/supabase/client";
-import { brandPagesForInventory, type BrandInventoryRow } from "@/lib/buyauto/leasingBrands";
+import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
+import { orderPremiumListings } from "@/lib/buyauto/premiumListings";
+import { CEMBRA, CEMBRA_TRANSFER_EXCL_VAT_CHF, FEE_SHORT } from "@/lib/buyauto/facts";
+import { formatChf } from "@/lib/buyauto/format";
 import {
   Accordion,
   AccordionContent,
@@ -58,15 +60,22 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 type LeasingUebernahmePageProps = {
   takeoverListings: Listing[];
   takeoverTotal: number;
-  // Brand landing pages that currently have live takeover inventory. Only these are
-  // linked from the brand section — empty brand pages are noindex and must stay unlinked.
+  // Indexable brand landing pages (enough live Leasingübernahmen). Only these are
+  // linked from the brand section — noindex brand pages stay unlinked.
   availableBrands: { slug: string; name: string }[];
+  /** Premium carousel, rendered server-side (prices in the HTML). */
+  premiumListings: Listing[];
 };
 
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme"];
 
-export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal, availableBrands }: LeasingUebernahmePageProps) {
+export default function LeasingUebernahmePage({
+  takeoverListings,
+  takeoverTotal,
+  availableBrands,
+  premiumListings,
+}: LeasingUebernahmePageProps) {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const hasTakeoverListings = Array.isArray(takeoverListings) && takeoverListings.length > 0;
 
@@ -321,8 +330,8 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                   Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag samt Monatsrate und
                   Restlaufzeit von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer. Die
                   Leasinggesellschaft prüft deine Bonität und stimmt der Übernahme zu – eine hohe Anzahlung wie
-                  beim Neuleasing entfällt. Einmalig fallen je nach Leasinggeber rund 200–650 CHF für Transfer
-                  und Umschreibung an.
+                  beim Neuleasing entfällt. Einmalig fallen die Übertragungsgebühr der Leasinggesellschaft
+                  ({FEE_SHORT}) und die kantonalen Gebühren für den neuen Fahrzeugausweis an.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -803,9 +812,11 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Übernahme-/Transfergebühr</td>
-                    <td className="p-6 text-neutral-700 font-bold">100–400 CHF</td>
-                    <td className="p-6 text-neutral-700">Abgeber oder Übernehmer</td>
+                    <td className="p-6 font-semibold text-neutral-900">Übertragungsgebühr der Leasinggesellschaft</td>
+                    <td className="p-6 text-neutral-700 font-bold">
+                      {CEMBRA.name}: {formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST; AMAG, Multilease, BANK-now: auf Anfrage
+                    </td>
+                    <td className="p-6 text-neutral-700">Verhandlungssache</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-6 font-semibold text-neutral-900">Händler-/Wechselgebühr</td>
@@ -1255,111 +1266,14 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
                   </div>
                 </article>
 
-                <article className="bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-xl shrink-0">
-                      <RefreshCw className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Leasingübernahme vs. Neues Leasing</h4>
-                      <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Lohnt sich ein neuer Leasingvertrag oder ist die Übernahme günstiger? Hier findest du alle Vor- und Nachteile im direkten Vergleich.
-                      </p>
-                      <Link href="/leasinguebernahme-vs-neues-leasing" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Neues Leasing vs. Übernahme
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-xl shrink-0">
-                      <DollarSign className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Auto-Abo vs. Leasing Kosten</h4>
-                      <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Was kostet mehr – Auto-Abo oder Leasing? Nutze unseren Kostenrechner und finde die günstigste Option für dein Budget.
-                      </p>
-                      <Link href="/auto-abo-vs-leasing-kosten" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Kostenvergleich Auto-Abo & Leasing
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </article>
               </div>
             </div>
 
-            {/* Auto-Abo Guides */}
-            <div>
-              <h3 className="text-xl font-black text-neutral-900 mb-6 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                Auto-Abo Ratgeber
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <article className="bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-xl shrink-0">
-                      <Search className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Auto-Abos im Vergleich Schweiz</h4>
-                      <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Welcher Auto-Abo-Anbieter ist der beste? Wir vergleichen Preise, Fahrzeuge und Konditionen der grössten Anbieter in der Schweiz.
-                      </p>
-                      <Link href="/auto-abos-im-vergleich" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Beste Auto-Abo Anbieter Schweiz
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-xl shrink-0">
-                      <XCircle className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Auto-Abo kündigen</h4>
-                      <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Du willst dein Auto-Abo beenden? Hier erfährst du, wie du richtig kündigst und welche Alternativen es gibt.
-                      </p>
-                      <Link href="/auto-abo-kuendigen" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Auto-Abo kündigen: Anleitung & Alternativen
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="bg-white border-2 border-neutral-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-xl shrink-0">
-                      <Users className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-neutral-900 mb-2 text-lg">Carify Alternativen</h4>
-                      <p className="text-neutral-600 text-sm mb-3 leading-relaxed">
-                        Carify ist nicht die einzige Option. Entdecke die besten Alternativen für Auto-Abos und Leasingübernahmen in der Schweiz.
-                      </p>
-                      <Link href="/carify-alternativen" className="inline-flex items-center gap-1 text-primary font-semibold hover:underline text-sm">
-                        Carify Alternativen im Überblick
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              </div>
-            </div>
           </div>
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings />
+        <PremiumListings initialListings={premiumListings} />
         
       </main>
     </>
@@ -1368,24 +1282,24 @@ export default function LeasingUebernahmePage({ takeoverListings, takeoverTotal,
 
 export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async () => {
   try {
-    const [results, brandRows] = await Promise.all([
-      searchListings({ dealType: "lease_takeover", sort: "dateDesc" }),
-      // listings_public already filters to published + not expired; we only need the
-      // distinct brands that currently have a live takeover listing.
-      supabase.from("listings_public").select("brand, model, deal_type").eq("deal_type", "lease_takeover"),
+    const [results, offers, premiumTakeovers, premiumDirect] = await Promise.all([
+      searchListings({ dealType: "lease_takeover", sort: "dateDesc", pageSize: 6 }),
+      getPublicOfferIndex(),
+      searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
+      searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
     ]);
 
-    // Curated pages (alias-aware) plus auto-generated pages for uncovered DB brands.
-    const availableBrands = brandPagesForInventory(((brandRows.data ?? []) as BrandInventoryRow[])).map((b) => ({
-      slug: b.slug,
-      name: b.name,
-    }));
+    // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
+    const availableBrands = indexableBrandPages(liveTakeovers(offers)).map((b) => ({ slug: b.slug, name: b.name }));
 
     // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
-    const takeoverListings = JSON.parse(JSON.stringify(results.items.slice(0, 6))) as Listing[];
-    return { props: { takeoverListings, takeoverTotal: results.total, availableBrands }, revalidate: 300 };
+    const takeoverListings = JSON.parse(JSON.stringify(results.items)) as Listing[];
+    const premiumListings = JSON.parse(
+      JSON.stringify(orderPremiumListings([...premiumTakeovers.items, ...premiumDirect.items]))
+    ) as Listing[];
+    return { props: { takeoverListings, takeoverTotal: results.total, availableBrands, premiumListings }, revalidate: 300 };
   } catch (error) {
     console.error("Leasinguebernahme hub SSR search failed:", error);
-    return { props: { takeoverListings: [], takeoverTotal: 0, availableBrands: [] }, revalidate: 300 };
+    return { props: { takeoverListings: [], takeoverTotal: 0, availableBrands: [], premiumListings: [] }, revalidate: 300 };
   }
 };

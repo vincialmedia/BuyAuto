@@ -1,5 +1,6 @@
 import Head from "next/head";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
+import { FEE_SHORT } from "@/lib/buyauto/facts";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -40,6 +41,12 @@ import {
 
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/autoscout24-alternative-leasinguebernahme"];
+
+// Shared by the FAQPage JSON-LD and the visible FAQ so both carry the same sourced fee.
+const FAQ_KOSTEN_ANSWER =
+  `Die Leasinggesellschaft verrechnet meist eine Übertragungsgebühr (${FEE_SHORT}). ` +
+  "Wer diese übernimmt (alter oder neuer Leasingnehmer), ist Verhandlungssache. " +
+  "Dies ist aber fast immer günstiger als eine vorzeitige Kündigung.";
 
 export default function AutoscoutAlternativeLeasinguebernahmePage() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
@@ -106,7 +113,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
             "name": "Welche Kosten entstehen bei einer Leasingübernahme?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Meistens fällt eine Umschreibegebühr der Bank an (ca. CHF 300–600). Diese ist oft deutlich geringer als die Kosten einer vorzeitigen Vertragskündigung."
+              "text": FAQ_KOSTEN_ANSWER
             }
           },
           {
@@ -476,7 +483,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="flex-1">
                   <p className="text-xl text-neutral-700 leading-relaxed mb-6">
-                    Oft fallen Gebühren für die Umschreibung/Übertragung an. Die genaue Höhe hängt vom Leasinggeber ab (oft zwischen CHF 300 und CHF 600) – eine detaillierte Aufschlüsselung, <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline underline-offset-4 decoration-primary/30">was eine Leasingübernahme kostet</Link>, findest du in unserem Kosten-Ratgeber.
+                    Oft fallen Gebühren für die Umschreibung/Übertragung an. Die genaue Höhe hängt von der Leasinggesellschaft ab ({FEE_SHORT}) – eine detaillierte Aufschlüsselung, <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline underline-offset-4 decoration-primary/30">was eine Leasingübernahme kostet</Link>, findest du in unserem Kosten-Ratgeber.
                   </p>
                   <p className="text-xl text-neutral-700 leading-relaxed font-medium">
                     Im Vergleich zu <span className="text-red-600">"vorzeitig kündigen und alles zahlen"</span> ist die Übernahme für viele der deutlich sinnvollere und günstigere Exit.
@@ -663,7 +670,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
                 },
                 {
                   q: "Welche Kosten entstehen bei einer Leasingübernahme?",
-                  a: "Die Bank verrechnet meist eine Umschreibegebühr (ca. CHF 300–600). Wer diese übernimmt (alter oder neuer Leasingnehmer), ist Verhandlungssache. Dies ist aber fast immer günstiger als eine vorzeitige Kündigung."
+                  a: FAQ_KOSTEN_ANSWER
                 },
                 {
                   q: "Wie lange dauert eine Leasingübernahme?",
