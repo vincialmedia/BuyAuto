@@ -535,6 +535,8 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
 
   try {
     if (preview === "true") {
+      // Owner/admin preview loads client-side; the shell itself must never be indexed.
+      context.res?.setHeader("X-Robots-Tag", "noindex, nofollow");
       return { props: { listing: null } };
     }
 
@@ -607,7 +609,8 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
 
       if (isRetiredListing(lifecycle)) {
         const ownerIds = lifecycle.kind === "row" ? lifecycle.ownerIds : [];
-        const privileged = ownerIds.length > 0 && (await isOwnerOrAdmin(context, ownerIds));
+        // Admins pass even when the row has no owner ids.
+        const privileged = lifecycle.kind === "row" && (await isOwnerOrAdmin(context, ownerIds));
         if (!privileged) {
           const destination = await retiredListingDestination(
             lifecycle.kind === "row" ? lifecycle.brand : null,

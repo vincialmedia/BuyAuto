@@ -123,7 +123,7 @@ export function buildVehicleDescription(input: VehicleDescriptionInput): string 
     const months = typeof input.remainingMonths === "number" && input.remainingMonths > 0 ? input.remainingMonths : null;
 
     if (rate && months) {
-      parts.push(`Leasingübernahme: ${vehicle} für CHF ${chf.format(rate)} pro Monat bei ${months} Monaten Restlaufzeit.`);
+      parts.push(`Leasingübernahme: ${vehicle} für CHF ${chf.format(rate)} pro Monat bei ${months} ${months === 1 ? "Monat" : "Monaten"} Restlaufzeit.`);
     } else if (rate) {
       parts.push(`Leasingübernahme: ${vehicle} für CHF ${chf.format(rate)} pro Monat.`);
     } else {

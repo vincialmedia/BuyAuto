@@ -149,7 +149,7 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
         <title>Leasing abgeben Schweiz: legal & ohne Verlust raus | BuyAuto</title>
         <meta
           name="description"
-          content="Leasing abgeben in der Schweiz leicht gemacht: Übergib deinen Leasingvertrag an einen Nachfolger und zahle nur die Umschreibegebühr."
+          content="Leasing abgeben in der Schweiz: Übergib deinen Leasingvertrag an eine Nachfolgerin oder einen Nachfolger – einmalig fällt die Übertragungsgebühr deiner Leasinggesellschaft an."
         />
         {/* Unlisted Google Ads landing page: the organic twin lives at
             /leasing-abgeben-schweiz. noindex keeps this variant out of search;

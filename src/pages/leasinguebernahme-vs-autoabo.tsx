@@ -467,7 +467,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                 <div>
                   <p className="text-green-900 font-semibold mb-1">Spartipp</p>
                   <p className="text-green-800">
-                    Leasingübernahme ist oft 20-30% günstiger als ein Auto-Abo, da du keine All-Inclusive-Services mitfinanzierst und von der bereits geleisteten Anzahlung profitierst. Eine detaillierte Übersicht über <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">alle Leasingübernahme-Kosten</Link> findest du in unserem separaten Ratgeber.
+                    Eine Leasingübernahme ist oft günstiger als ein Auto-Abo, da du keine All-Inclusive-Services mitfinanzierst und von der bereits geleisteten Anzahlung profitierst. Eine detaillierte Übersicht über <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">alle Leasingübernahme-Kosten</Link> findest du in unserem separaten Ratgeber.
                   </p>
                 </div>
               </div>

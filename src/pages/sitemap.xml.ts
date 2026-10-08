@@ -47,7 +47,13 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const { data: garageRows, error: garageError } = await supabase.rpc("get_public_garage_slugs");
 
   if (garageError) {
+    // Same rule as above: no partial sitemap (here: without the dealer pages).
     console.error("Sitemap: failed to load garage slugs", garageError);
+    res.statusCode = 503;
+    res.setHeader("Retry-After", "300");
+    res.setHeader("Cache-Control", "no-store");
+    res.end();
+    return { props: {} };
   }
 
   const garages = (garageRows || [])

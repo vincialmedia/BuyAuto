@@ -275,17 +275,23 @@ export function LeasingCompanyPage({
                     )}
                     {i < arr.length - 2 ? ", " : i === arr.length - 2 ? " und " : ""}
                   </span>
-                ))}{" "}
-                (
-                <a
-                  href={company.financedBrands.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer nofollow"
-                  className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
-                >
-                  {company.financedBrands.sourceLabel}
-                </a>
-                ).
+                ))}
+                {company.financedBrands.sourceUrl && company.financedBrands.sourceLabel ? (
+                  <>
+                    {" "}(
+                    <a
+                      href={company.financedBrands.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
+                    >
+                      {company.financedBrands.sourceLabel}
+                    </a>
+                    ).
+                  </>
+                ) : (
+                  "."
+                )}
               </p>
             )}
 

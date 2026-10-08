@@ -1026,7 +1026,7 @@ export default function LeasingUebernahmePage({
                   Gibt es einen Unterschied zwischen Leasingübernahme und Leasing Transfer?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung. „Leasingübernahme" ist der gängige Verbraucherbegriff, während „Leasing Transfer" der formale Begriff ist, der oft von Banken und Leasinggesellschaften verwendet wird.
+                  Nein. Beide Begriffe beschreiben denselben Vorgang der Vertragsübertragung. „Leasingübernahme“ ist der gängige Verbraucherbegriff, während „Leasing Transfer“ der formale Begriff ist, der oft von Banken und Leasinggesellschaften verwendet wird.
                 </AccordionContent>
               </AccordionItem>
               

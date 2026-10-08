@@ -25,7 +25,7 @@ import type { LeasingCalculatorProps } from "@/components/buyauto/detail/Leasing
 import { cn } from "@/lib/utils";
 import { GarageMiniBanner } from "@/components/buyauto/detail/GarageMiniBanner";
 import { hasNewLeasingFinancing, KAUFART_LABEL, kaufartOf } from "@/lib/buyauto/kaufart";
-import { formatChf, formatSwissInt } from "@/lib/buyauto/format";
+import { formatChf, formatSwissInt, pluralize } from "@/lib/buyauto/format";
 
 const LeasingCalculator = dynamic<LeasingCalculatorProps>(
   () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
@@ -268,7 +268,7 @@ export function ListingDetailV2({
                       <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
                         <div className="text-[11px] uppercase tracking-wide text-white/60">Restlaufzeit</div>
                         <div className="mt-0.5 font-semibold text-white">
-                          {typeof takeoverMonths === "number" && takeoverMonths > 0 ? `${takeoverMonths} Monate` : "—"}
+                          {typeof takeoverMonths === "number" && takeoverMonths > 0 ? `${takeoverMonths} ${pluralize(takeoverMonths, "Monat", "Monate")}` : "—"}
                         </div>
                       </div>
                       <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">

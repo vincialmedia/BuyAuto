@@ -22,9 +22,6 @@ import { formatChf } from "@/lib/buyauto/format";
 /** formatChf plus ".–", e.g. 1234 -> "CHF 1'234.–" (Betragsschreibweise im Fliesstext). */
 const chfDash = (value: number) => `${formatChf(value)}.–`;
 
-/** "Ausgabe 01/26" -> "ALB 01/26" — follows the edition in the facts module. */
-const AMAG_ALB_LABEL = `ALB ${AMAG_LEASING.edition.replace(/^Ausgabe\s+/, "")}`;
-
 export interface SourcedFact {
   /** Rendered German copy incl. the visible attribution («gemäss …, Stand …»). */
   text: string;
@@ -73,8 +70,9 @@ export interface LeasingCompany {
   financedBrands?: {
     lead: string;
     brands: { name: string; href?: string }[];
-    sourceLabel: string;
-    sourceUrl: string;
+    /** Omitted while the list is not confirmed against the current source. */
+    sourceLabel?: string;
+    sourceUrl?: string;
   };
   facts: LeasingCompanyFacts;
 }
@@ -137,8 +135,8 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
       // sind kuratiert, skoda läuft als dynamische Seite mit Live-Inventar.
       // Seat und Cupra haben noch keine Seiten — nur Nennung im Text.
       // Markenliste (Porsche NICHT aufgeführt) zuletzt gegen die Vorgänger-
-      // ausgabe der ALB geprüft; die Ziffer ist gegen die aktuelle Ausgabe
-      // nicht nachgeprüft und wird deshalb nicht zitiert.
+      // ausgabe der ALB (01/25) geprüft und gegen 01/26 nicht nachgeprüft:
+      // deshalb ohne Quellenangabe, bis sie gegen die aktuelle Ausgabe bestätigt ist.
       brands: [
         { name: "VW", href: "/leasinguebernahme/volkswagen" },
         { name: "VW Nutzfahrzeuge" },
@@ -147,8 +145,6 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
         { name: "CUPRA" },
         { name: "Škoda", href: "/leasinguebernahme/skoda" },
       ],
-      sourceLabel: `gemäss ${AMAG_ALB_LABEL}`,
-      sourceUrl: AMAG_LEASING.sourceUrl,
     },
     facts: {
       transferFee: {
@@ -160,15 +156,15 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
       },
       // ERFAHRUNGSWERT-VINCE: typische Dauer einer AMAG-Übertragung
       typicalDuration: null,
+      // Aus der Vorgängerausgabe der ALB (01/25); gegen 01/26 nicht nachgeprüft,
+      // deshalb ohne Quellenangabe, bis bestätigt.
       documents: {
         text:
-          `AMAG Leasing prüft Kreditfähigkeit und Kreditwürdigkeit der übernehmenden Person mit Abfrage bei ZEK/IKO (gemäss ${AMAG_ALB_LABEL}). Das Fahrzeug muss grundsätzlich auf die Leasingnehmerin oder den Leasingnehmer immatrikuliert sein; bei Neufahrzeugen ist Vollkasko Pflicht.`,
-        sourceLinkText: AMAG_ALB_LABEL,
-        sourceUrl: AMAG_LEASING.sourceUrl,
+          "AMAG Leasing prüft Kreditfähigkeit und Kreditwürdigkeit der übernehmenden Person mit Abfrage bei ZEK/IKO. Das Fahrzeug muss grundsätzlich auf die Leasingnehmerin oder den Leasingnehmer immatrikuliert sein; bei Neufahrzeugen ist Vollkasko Pflicht.",
       },
       transferProcess: {
         text:
-          "AMAG Leasing arbeitet mit indirektem Leasing: Deine Liefergarage ist eng eingebunden und gegenüber AMAG Leasing zur Rücknahme zum Restwert verpflichtet (gemäss AMAG-Leasing-Ablauf). Kläre eine Übernahme deshalb gemeinsam mit AMAG Leasing und der Liefergarage. Leasingfahrzeuge tragen Code 178 im Fahrzeugausweis – ohne Freigabe der AMAG läuft beim Strassenverkehrsamt nichts.",
+          "AMAG Leasing arbeitet mit indirektem Leasing: Deine Liefergarage ist eng eingebunden und gegenüber AMAG Leasing zur Rücknahme zum Restwert verpflichtet (gemäss AMAG-Leasing-Ablauf). Kläre eine Übernahme deshalb gemeinsam mit AMAG Leasing und der Liefergarage. Leasingfahrzeuge tragen im Fahrzeugausweis den Eintrag «Halterwechsel verboten» – ohne Freigabe der AMAG läuft beim Strassenverkehrsamt nichts.",
         sourceLinkText: "AMAG-Leasing-Ablauf",
         sourceUrl: "https://www.amag-leasing.ch/de/ablauf-leasing.html",
       },
