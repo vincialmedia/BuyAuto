@@ -24,19 +24,17 @@ import dynamic from "next/dynamic";
 import type { LeasingCalculatorProps } from "@/components/buyauto/detail/LeasingCalculator";
 import { cn } from "@/lib/utils";
 import { GarageMiniBanner } from "@/components/buyauto/detail/GarageMiniBanner";
+import { hasNewLeasingFinancing, KAUFART_LABEL, kaufartOf } from "@/lib/buyauto/kaufart";
+import { formatChf, formatSwissInt, pluralize } from "@/lib/buyauto/format";
 
 const LeasingCalculator = dynamic<LeasingCalculatorProps>(
   () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
   { ssr: false, loading: () => <div className="min-h-[600px] bg-neutral-50 animate-pulse rounded-2xl" /> }
 );
 
-function formatChf(value: number): string {
-  return new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(value);
-}
 
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(value);
-}
+// Same glyph as prices, meta and JSON-LD (lib/buyauto/format), independent of the runtime's ICU.
+const formatNumber = formatSwissInt;
 
 function formatDateDeCh(input: string): string {
   const d = new Date(input);
@@ -109,7 +107,9 @@ export function ListingDetailV2({
   childrenBelowFold?: React.ReactNode;
   bottomContent?: React.ReactNode;
 }) {
-  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+  // Display type from the one Kaufart rule (lib/buyauto/kaufart), never the stored deal_type.
+  const kaufart = kaufartOf(listing);
+  const isTakeover = kaufart === "lease_takeover";
   const isSold = (listing.status as any) === "sold";
 
   // Prefer the stored title (it carries the decoded trim, e.g. "530i xDrive")
@@ -118,52 +118,44 @@ export function ListingDetailV2({
   const baseTitle = listing.title?.trim() || `${listing.brand} ${listing.model}`.trim();
   const displayTitle = listing.year && !baseTitle.endsWith(String(listing.year)) ? `${baseTitle} ${listing.year}` : baseTitle;
 
-  const hasLeasing =
-    dealType === "direct_purchase" &&
-    ((listing as unknown as { financing_type?: string | null }).financing_type === "leasing" ||
-      Boolean((listing as unknown as { leasing_offer?: { enabled?: boolean } | null }).leasing_offer?.enabled));
+  const leasingOffer = (listing as unknown as { leasing_offer?: any | null }).leasing_offer ?? null;
+  const takeoverOfferJson =
+    leasingOffer && typeof leasingOffer === "object"
+      ? ((leasingOffer as unknown as { lease_takeover_offer?: any | null }).lease_takeover_offer ?? null)
+      : null;
 
-  const primaryPriceLabel =
-    dealType === "direct_purchase"
-      ? typeof purchasePriceChf === "number"
-        ? formatChf(purchasePriceChf)
-        : "Preis auf Anfrage"
-      : formatChf(listing.pricePerMonthCHF);
+  // "Leasing" (new-leasing financing on a Direktkauf) keeps its current handling:
+  // a Leasing chip, the teaser line and the calculator.
+  const hasLeasing = !isTakeover && hasNewLeasingFinancing(listing);
 
-  const primaryPriceSub = dealType === "direct_purchase" ? "Kaufpreis" : "pro Monat";
+  // Leasingübernahme facts: effective values from the listing transform.
+  const takeoverRateChf = isTakeover && listing.pricePerMonthCHF > 0 ? listing.pricePerMonthCHF : null;
+  const takeoverMonths = isTakeover && typeof listing.remainingMonths === "number" ? listing.remainingMonths : null;
+  const takeoverKautionChf = isTakeover && typeof listing.depositCHF === "number" ? listing.depositCHF : null;
+  const remainingKmColumn = (listing as unknown as { remaining_km?: number | null }).remaining_km ?? null;
+  const takeoverRemainingKm = !isTakeover
+    ? null
+    : typeof remainingKmColumn === "number"
+      ? remainingKmColumn
+      : typeof takeoverOfferJson?.remaining_km === "number"
+        ? (takeoverOfferJson.remaining_km as number)
+        : null;
+
+  const primaryPriceLabel = isTakeover
+    ? takeoverRateChf !== null
+      ? formatChf(takeoverRateChf)
+      : "Preis auf Anfrage"
+    : typeof purchasePriceChf === "number"
+      ? formatChf(purchasePriceChf)
+      : "Preis auf Anfrage";
+
+  const primaryPriceSub = isTakeover ? "pro Monat" : "Kaufpreis";
 
   const chatScroll = () => {
     const el = document.getElementById("messages");
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-
-  const leasingOffer = (listing as unknown as { leasing_offer?: any | null }).leasing_offer ?? null;
-  const leaseTakeoverOffer =
-    dealType === "direct_purchase" && leasingOffer && typeof leasingOffer === "object"
-      ? ((leasingOffer as unknown as { lease_takeover_offer?: any | null }).lease_takeover_offer ?? null)
-      : null;
-
-  const leaseTakeoverEnabled = Boolean(
-    leaseTakeoverOffer && typeof leaseTakeoverOffer === "object" && leaseTakeoverOffer.enabled === true
-  );
-
-  const leaseTakeoverMonthlyChf =
-    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.price_per_month_chf === "number"
-      ? (leaseTakeoverOffer.price_per_month_chf as number)
-      : null;
-  const leaseTakeoverRemainingMonths =
-    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.remaining_months === "number"
-      ? (leaseTakeoverOffer.remaining_months as number)
-      : null;
-  const leaseTakeoverDepositChf =
-    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.deposit_chf === "number"
-      ? (leaseTakeoverOffer.deposit_chf as number)
-      : null;
-  const leaseTakeoverRemainingKm =
-    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.remaining_km === "number"
-      ? (leaseTakeoverOffer.remaining_km as number)
-      : null;
 
   const canShowLeasingCalculator =
     hasLeasing && typeof purchasePriceChf === "number" && leasingOffer && typeof leasingOffer === "object" && leasingOffer.enabled;
@@ -208,21 +200,9 @@ export function ListingDetailV2({
       items.push({ key: "power", label: "Leistung", value: `${formatNumber(powerHp)} PS`, Icon: Zap });
     }
 
-    // Lease-takeover only: on a Direktkauf with takeover offer the column
-    // mirrors the offer's remaining km, which the takeover box below already
-    // shows — repeating it here would duplicate the figure.
-    const remainingKm = (listing as unknown as { remaining_km?: number | null }).remaining_km ?? null;
-    if (dealType === "lease_takeover" && typeof remainingKm === "number" && remainingKm > 0) {
-      items.push({
-        key: "remaining-km",
-        label: "Restkilometer",
-        value: `${formatNumber(remainingKm)} km`,
-        Icon: Gauge,
-      });
-    }
-
+    // Restkilometer of a Leasingübernahme live in the takeover box above.
     return items;
-  }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing, dealType]);
+  }, [listing.fuel, listing.gearbox, listing.mileageKm, listing.year, listing]);
 
   return (
     <div className={cn("min-h-screen bg-neutral-50 pb-24", isSold ? "grayscale-[0.2]" : "")}>
@@ -273,59 +253,42 @@ export function ListingDetailV2({
 
               <div className="mt-5 space-y-5">
                 <div className="rounded-3xl bg-neutral-900 text-white p-5 sm:p-6 shadow-sm border border-neutral-800/60">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-white/70">{primaryPriceSub}</div>
-                    {dealType !== "direct_purchase" && typeof listing.remainingMonths === "number" && listing.remainingMonths > 0 && (
-                      <div className="text-xs text-white/70">Restlaufzeit: {listing.remainingMonths}M</div>
-                    )}
-                  </div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-white/70">{primaryPriceSub}</div>
 
                   <div className="mt-1 text-3xl sm:text-4xl font-bold tracking-tight">{primaryPriceLabel}</div>
 
-                  {dealType !== "direct_purchase" && typeof listing.depositCHF === "number" && (
-                    <div className="mt-2 text-sm text-white/75">
-                      Kaution:{" "}
-                      <span className="font-semibold text-white">{listing.depositCHF > 0 ? formatChf(listing.depositCHF) : "Keine"}</span>
+                  {isTakeover && typeof purchasePriceChf === "number" && (
+                    <div className="mt-1 text-sm text-white/75">
+                      Kaufpreis: <span className="font-semibold text-white">{formatChf(purchasePriceChf)}</span>
                     </div>
                   )}
 
-                  {dealType === "direct_purchase" && leaseTakeoverMonthlyChf !== null && (
-                    <div className="mt-3 rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/85">
-                      Leasingübernahme:{" "}
-                      <span className="font-semibold text-white">
-                        {formatChf(Math.round(leaseTakeoverMonthlyChf))} / Monat
-                      </span>
-                    </div>
-                  )}
-
-                  {dealType === "direct_purchase" && leaseTakeoverEnabled && (
+                  {isTakeover && (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
                         <div className="text-[11px] uppercase tracking-wide text-white/60">Restlaufzeit</div>
                         <div className="mt-0.5 font-semibold text-white">
-                          {typeof leaseTakeoverRemainingMonths === "number" && leaseTakeoverRemainingMonths > 0
-                            ? `${leaseTakeoverRemainingMonths} Monate`
-                            : "—"}
+                          {typeof takeoverMonths === "number" && takeoverMonths > 0 ? `${takeoverMonths} ${pluralize(takeoverMonths, "Monat", "Monate")}` : "—"}
                         </div>
                       </div>
                       <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
                         <div className="text-[11px] uppercase tracking-wide text-white/60">Kaution</div>
                         <div className="mt-0.5 font-semibold text-white">
-                          {typeof leaseTakeoverDepositChf === "number" ? (leaseTakeoverDepositChf > 0 ? formatChf(leaseTakeoverDepositChf) : "Keine") : "—"}
+                          {typeof takeoverKautionChf === "number" ? (takeoverKautionChf > 0 ? formatChf(takeoverKautionChf) : "Keine") : "—"}
                         </div>
                       </div>
                       <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/80">
                         <div className="text-[11px] uppercase tracking-wide text-white/60">Restkilometer</div>
                         <div className="mt-0.5 font-semibold text-white">
-                          {typeof leaseTakeoverRemainingKm === "number" && leaseTakeoverRemainingKm > 0
-                            ? `${formatNumber(leaseTakeoverRemainingKm)} km`
+                          {typeof takeoverRemainingKm === "number" && takeoverRemainingKm > 0
+                            ? `${formatNumber(takeoverRemainingKm)} km`
                             : "—"}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {dealType === "direct_purchase" && teaserMonthlyLabel && leaseTakeoverMonthlyChf === null && (
+                  {!isTakeover && teaserMonthlyLabel && (
                     <div className="mt-3 rounded-2xl bg-white/10 border border-white/10 px-3 py-2 text-sm text-white/85">
                       {teaserMonthlyLabel}
                     </div>
@@ -342,14 +305,10 @@ export function ListingDetailV2({
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
                     <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
-                    {dealType === "direct_purchase"
-                      ? leaseTakeoverEnabled
-                        ? "Direktkauf + Leasingübernahme"
-                        : "Direktkauf"
-                      : "Leasingübernahme"}
+                    {KAUFART_LABEL[kaufart]}
                   </span>
 
-                  {dealType === "direct_purchase" && hasLeasing && !leaseTakeoverEnabled && (
+                  {hasLeasing && (
                     <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700">
                       <Tag className="h-3.5 w-3.5 mr-2 text-neutral-600" />
                       Leasing
@@ -516,7 +475,7 @@ export function ListingDetailV2({
                   listingTitle={displayTitle}
                   ownerId={((listing as any).user_id ?? (listing as any).created_by ?? null) as string | null}
                   isSold={isSold}
-                  dealType={dealType}
+                  dealType={kaufart}
                 />
               </div>
             )}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { kaufartOf } from "@/lib/buyauto/kaufart";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,9 +101,9 @@ function getEnabledTakeoverOffer(listing: AdminListing) {
   return takeover?.enabled === true ? takeover : null;
 }
 
+/** The Kaufart buyers see (lib/buyauto/kaufart); the raw enums stay visible below. */
 function getEffectiveDealLabel(listing: AdminListing): string {
-  if (listing.deal_type === "lease_takeover") return "Leasingübernahme";
-  if (getEnabledTakeoverOffer(listing)) return "Direktkauf + Leasingübernahme";
+  if (kaufartOf(listing) === "lease_takeover") return "Leasingübernahme";
   if (listing.financing_type === "leasing" || listing.leasing_offer?.enabled === true) return "Direktkauf + Leasing";
   return "Direktkauf";
 }

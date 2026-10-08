@@ -2,6 +2,8 @@ import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import { SEO } from "@/components/SEO";
 import { getPublicGarageBySlug } from "@/services/garageService";
+import { searchDealerListingsOrThrow } from "@/services/listingsService";
+import type { SearchResult } from "@/lib/buyauto/search";
 import { PublicDealerInventory } from "@/components/buyauto/dealer/PublicDealerInventory";
 import { DealerHeroHeader } from "@/components/buyauto/dealer/DealerHeroHeader";
 import { DealerAboutAndMap } from "@/components/buyauto/dealer/DealerAboutAndMap";
@@ -16,6 +18,8 @@ type PageProps =
       garage: PublicGarage;
       logoUrl: string | null;
       absoluteUrl: string;
+      /** First inventory page, server-rendered (same query as the component's default). */
+      initialResults: SearchResult;
     }
   | {
       ok: false;
@@ -49,6 +53,10 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 
     const absoluteUrl = `${base.replace(/\/$/, "")}/${garage.slug}`;
     const logoUrl = garage.logo_url ?? null;
+    // Count and card prices in the server HTML; a failed query lands in the 503 below.
+    const initialResults = JSON.parse(
+      JSON.stringify(await searchDealerListingsOrThrow(garage.id, { page: 1, sort: "dateDesc" }))
+    ) as SearchResult;
 
     return {
       props: {
@@ -56,6 +64,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
         garage,
         logoUrl,
         absoluteUrl,
+        initialResults,
       },
     };
   } catch {
@@ -64,6 +73,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
     if (ctx.res) {
       ctx.res.statusCode = 503;
       ctx.res.setHeader("Retry-After", "120");
+      ctx.res.setHeader("Cache-Control", "no-store");
     }
     return { props: { ok: false } };
   }
@@ -152,7 +162,7 @@ export default function DealerMicrositePage(props: PageProps) {
             </div>
           </div>
 
-          <PublicDealerInventory garageId={garage.id} />
+          <PublicDealerInventory garageId={garage.id} initialResults={props.initialResults} />
         </section>
       </main>
     </>

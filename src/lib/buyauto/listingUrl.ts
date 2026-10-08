@@ -21,6 +21,15 @@ export function extractListingIdFromParam(param: string): string {
   return trimmed;
 }
 
+/** The descriptive part of a listing URL segment: "porsche-cayenne-<uuid>" -> "porsche-cayenne". */
+export function listingSlugPrefix(param: string): string {
+  return String(param || "")
+    .trim()
+    .replace(UUID_V4ish_END_REGEX, "")
+    .replace(/-+$/, "")
+    .toLowerCase();
+}
+
 export function buildListingSlugSegment(input: { id: string; brand?: string | null; model?: string | null }): string {
   const id = input.id;
   const brand = typeof input.brand === "string" ? input.brand : "";

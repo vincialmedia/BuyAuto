@@ -11,14 +11,20 @@ import { searchListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import { Slider } from "@/components/ui/slider";
 import { track } from "@/lib/analytics";
+import { AMAG_LEASING, CEMBRA, CEMBRA_TRANSFER_DISPLAY, FEE_SENTENCE, FEE_SHORT } from "@/lib/buyauto/facts";
+import { formatChf } from "@/lib/buyauto/format";
 
 type LeasingAbgebenPageProps = {
   takeoverListings: Listing[];
 };
 
-// Typical re-registration/transfer fee charged by Swiss leasing banks — a guide
-// value, not a quote; the disclaimer under the calculator says so.
-const TRANSFER_FEE_CHF = 350;
+// Calculator comparison box and options row (Übernahme vs. Kündigung). Every
+// figure comes from the facts module: Cembra's published transfer fee and AMAG
+// Leasing's flat early-termination fee (ALB Ziff. 18) plus the retroactive
+// recalculation (Ziff. 14.1).
+const TAKEOVER_FEE_LABEL = `Übertragungsgebühr bei ${CEMBRA.name} inkl. MWST, andere auf Anfrage`;
+const CANCELLATION_FEE_VALUE = `${formatChf(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung)} + Neuberechnung`;
+const CANCELLATION_FEE_LABEL = `Beispiel ${AMAG_LEASING.name}: Pauschale exkl. MWST, alle Raten werden rückwirkend neu berechnet`;
 
 const CTA_HREF = "/inserat-erstellen";
 const CTA_LABEL = "Gratis Inserat erstellen";
@@ -44,7 +50,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "Was kostet mich die Leasingübernahme?",
-    a: `In der Regel nur die Umschreibegebühr deiner Leasingbank – typischerweise rund CHF ${TRANSFER_FEE_CHF}. Die verbleibenden Raten zahlt ab der Umschreibung dein Nachfolger. Das Inserat auf BuyAuto ist gratis.`,
+    a: `${FEE_SENTENCE} Die verbleibenden Raten zahlt ab der Umschreibung dein Nachfolger. Das Inserat auf BuyAuto ist gratis.`,
   },
   {
     q: "Wie schnell kann ich mein Leasing abgeben?",
@@ -143,7 +149,7 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
         <title>Leasing abgeben Schweiz: legal & ohne Verlust raus | BuyAuto</title>
         <meta
           name="description"
-          content="Leasing abgeben in der Schweiz leicht gemacht: Übergib deinen Leasingvertrag an einen Nachfolger und zahle nur die Umschreibegebühr."
+          content="Leasing abgeben in der Schweiz: Übergib deinen Leasingvertrag an eine Nachfolgerin oder einen Nachfolger – einmalig fällt die Übertragungsgebühr deiner Leasinggesellschaft an."
         />
         {/* Unlisted Google Ads landing page: the organic twin lives at
             /leasing-abgeben-schweiz. noindex keeps this variant out of search;
@@ -228,7 +234,7 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
               </h1>
               <p className="mt-5 text-[16.5px] leading-[1.625] text-white/[0.72] max-w-[480px] [text-wrap:pretty]">
                 Übergib deinen Leasingvertrag an eine Nachfolgerin oder einen Nachfolger: Sie übernehmen die
-                Restraten, du zahlst nur die Umschreibegebühr von typischerweise rund CHF {TRANSFER_FEE_CHF}.
+                Restraten. Einmalig fällt die Übertragungsgebühr deiner Leasinggesellschaft an – {FEE_SHORT}.
               </p>
 
               <ul className="mt-[26px] flex flex-col gap-3">
@@ -335,13 +341,13 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
                       Beste Lösung
                     </span>
                     <p className="text-[10.5px] font-extrabold tracking-[0.06em] uppercase text-emerald-700">Übernahme</p>
-                    <p className="mt-1 text-xl leading-tight font-black text-emerald-700 whitespace-nowrap">CHF 0 – 650</p>
-                    <p className="mt-0.5 text-[11px] leading-tight text-emerald-600">Umschreibegebühr</p>
+                    <p className="mt-1 text-xl leading-tight font-black text-emerald-700 whitespace-nowrap">{CEMBRA_TRANSFER_DISPLAY}</p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-emerald-600">{TAKEOVER_FEE_LABEL}</p>
                   </div>
                   <div className="bg-red-600 rounded-[14px] px-4 py-3.5">
                     <p className="text-[10.5px] font-extrabold tracking-[0.06em] uppercase text-white/70">Kündigung</p>
-                    <p className="mt-1 text-xl leading-tight font-black text-white">Mehrere tausend</p>
-                    <p className="mt-0.5 text-[11px] leading-tight text-white/70">je nach Bank & Vertrag</p>
+                    <p className="mt-1 text-xl leading-tight font-black text-white">{CANCELLATION_FEE_VALUE}</p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-white/70">{CANCELLATION_FEE_LABEL}</p>
                   </div>
                 </div>
 
@@ -394,8 +400,8 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
                 )}
               </ul>
               <div className="lg:text-right">
-                <p className="text-[22px] leading-tight font-black text-red-600 whitespace-nowrap">~ CHF {TRANSFER_FEE_CHF}</p>
-                <p className="mt-0.5 text-[11.5px] leading-tight text-neutral-500">Umschreibegebühr</p>
+                <p className="text-[22px] leading-tight font-black text-red-600 whitespace-nowrap">{CEMBRA_TRANSFER_DISPLAY}</p>
+                <p className="mt-0.5 text-[11.5px] leading-tight text-neutral-500">{TAKEOVER_FEE_LABEL}</p>
               </div>
             </div>
 

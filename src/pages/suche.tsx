@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { searchListings } from "@/services/listingsService";
+import { searchListings, searchListingsOrThrow } from "@/services/listingsService";
 import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { debounce } from "@/lib/utils";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
 import { safeFreeText, track } from "@/lib/analytics";
+import { kaufartOf } from "@/lib/buyauto/kaufart";
+import { pluralize } from "@/lib/buyauto/format";
 
 const DynamicFilterBar = dynamic(() => import("@/components/buyauto/search/DynamicFilterBar"), {
   ssr: true,
@@ -247,11 +249,14 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
 
   const isDefaultView = useMemo(() => isDefaultSearchQuery(searchQuery), [searchQuery]);
   const isIndexable = useMemo(() => isIndexableSearchQuery(searchQuery), [searchQuery]);
+  // An indexable view that loaded and is empty would be a soft 404: noindex it until
+  // listings come back (same idea as the brand-page threshold).
+  const isIndexed = isIndexable && !(searchResults && totalResults === 0);
   const saleTypeLabel = useMemo(() => getSaleTypeLabel(searchQuery), [searchQuery]);
 
   const heading = useMemo(() => {
     if (isDefaultView) return "Autos kaufen & Leasingübernahmen in der Schweiz";
-    if (saleTypeLabel === "Leasingübernahme") return "Leasingübernahme – Fahrzeuge in der Schweiz";
+    if (saleTypeLabel === "Leasingübernahme") return "Leasingübernahme-Angebote in der Schweiz";
     if (saleTypeLabel === "Direktkauf") return "Autos kaufen in der Schweiz";
     if (saleTypeLabel === "Leasing") return "Leasing-Angebote in der Schweiz";
     return "Fahrzeuge in der Schweiz";
@@ -260,9 +265,11 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
   const pageTitle = isDefaultView
     ? "Auto kaufen oder Leasing übernehmen in der Schweiz | BuyAuto"
     : saleTypeLabel === "Leasingübernahme"
-      ? `Leasingübernahme Angebote – ${totalResults} Fahrzeuge in der Schweiz | BuyAuto`
+      ? searchResults
+        ? `Leasingübernahme-Angebote: ${totalResults} ${pluralize(totalResults, "Auto", "Autos")} zur Übernahme | BuyAuto`
+        : "Leasingübernahme-Angebote in der Schweiz | BuyAuto"
       : totalResults > 0
-        ? `${saleTypeLabel} – ${totalResults} Fahrzeuge gefunden | BuyAuto Schweiz`
+        ? `${saleTypeLabel} – ${totalResults} ${pluralize(totalResults, "Fahrzeug", "Fahrzeuge")} gefunden | BuyAuto Schweiz`
         : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
 
   const metaDescription = isDefaultView
@@ -285,8 +292,8 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
       "description": metaDescription,
       "numberOfItems": totalResults,
       "itemListElement": searchResults.items.map((listing, index) => {
-        const dealType = listing.deal_type ?? "lease_takeover";
-        const isDirectPurchase = dealType === "direct_purchase";
+        // Kaufart rule (lib/buyauto/kaufart), never the stored deal_type.
+        const isDirectPurchase = kaufartOf(listing) === "direct_purchase";
         const priceCandidate = isDirectPurchase ? listing.purchasePriceCHF : listing.pricePerMonthCHF;
         const price = typeof priceCandidate === "number" && priceCandidate > 0 ? priceCandidate : null;
 
@@ -338,7 +345,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
     };
   };
 
-  const jsonLd = isIndexable ? generateJsonLd() : null;
+  const jsonLd = isIndexed ? generateJsonLd() : null;
 
   return (
     <>
@@ -346,7 +353,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        {isIndexable ? (
+        {isIndexed ? (
           <link rel="canonical" href={canonicalUrlForQuery(searchQuery)} />
         ) : (
           <meta name="robots" content="noindex,follow" />
@@ -440,14 +447,18 @@ export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ 
   }
 
   try {
+    const results = await searchListingsOrThrow(initialQuery);
     // Indexable views are the same for every visitor — let the CDN serve them.
     res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
-    const results = await searchListings(initialQuery);
     // Strip any `undefined` fields so Next can serialize the props.
     const initialResults = JSON.parse(JSON.stringify(results)) as SearchResult;
     return { props: { initialResults, initialQuery } };
   } catch (error) {
+    // Transient backend failure: 503 (retry later), never a cached "0 Autos" page.
     console.error("SSR /suche search failed:", error);
+    res.statusCode = 503;
+    res.setHeader("Retry-After", "120");
+    res.setHeader("Cache-Control", "no-store");
     return { props: { initialResults: null, initialQuery } };
   }
 };

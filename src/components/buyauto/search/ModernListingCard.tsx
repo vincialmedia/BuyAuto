@@ -5,6 +5,8 @@ import { Star, MapPin, Gauge, Fuel, Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
+import { hasNewLeasingFinancing, KAUFART_LABEL, kaufartOf } from "@/lib/buyauto/kaufart";
+import { formatChf, formatSwissInt } from "@/lib/buyauto/format";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { getImageVariant } from "@/lib/buyauto/imageVariant";
 
@@ -29,32 +31,15 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
       }
     : undefined;
 
-  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+  // The one Kaufart rule (lib/buyauto/kaufart): every listing transform stamps
+  // `kaufart` and the effective rate / months / Kaution, so the card only renders.
+  const kaufart = kaufartOf(listing);
+  const isLeaseTakeover = kaufart === "lease_takeover";
 
   const purchasePriceChf =
-    typeof listing.purchasePriceCHF === "number"
-      ? listing.purchasePriceCHF
-      : typeof (listing as unknown as { purchase_price_chf?: unknown }).purchase_price_chf === "number"
-        ? ((listing as unknown as { purchase_price_chf?: number }).purchase_price_chf ?? null)
-        : typeof (listing as unknown as { price_chf?: unknown }).price_chf === "number"
-          ? ((listing as unknown as { price_chf?: number }).price_chf ?? null)
-          : typeof (listing as unknown as { listing_price?: unknown }).listing_price === "number"
-            ? ((listing as unknown as { listing_price?: number }).listing_price ?? null)
-            : null;
+    typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0 ? listing.purchasePriceCHF : null;
 
   const leasingOffer = listing.leasing_offer ?? null;
-
-  const leaseTakeoverOffer =
-    dealType === "direct_purchase" && leasingOffer && typeof leasingOffer === "object"
-      ? ((leasingOffer as unknown as { lease_takeover_offer?: any | null }).lease_takeover_offer ?? null)
-      : null;
-
-  const leaseTakeoverEnabled = Boolean(leaseTakeoverOffer && typeof leaseTakeoverOffer === "object" && leaseTakeoverOffer.enabled === true);
-
-  const leaseTakeoverMonthlyChf =
-    leaseTakeoverEnabled && typeof leaseTakeoverOffer?.price_per_month_chf === "number"
-      ? (leaseTakeoverOffer.price_per_month_chf as number)
-      : null;
 
   // "Ab CHF …" must be the cheapest rate the calculator on the detail page can
   // actually reproduce: the offer's LONGEST term (monthly amortization falls
@@ -69,10 +54,12 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
       ? Math.min(...leasingOffer.km_options.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0))
       : 10000;
 
+  // "Leasing" = a Direktkauf with a new-leasing financing offer; it keeps its
+  // current handling (blue chip + "Ab CHF … / Monat" teaser).
+  const isLeasing = !isLeaseTakeover && hasNewLeasingFinancing(listing);
+
   const teaserMonthlyChf =
-    dealType === "direct_purchase" &&
-    leasingOffer?.enabled === true &&
-    purchasePriceChf
+    isLeasing && leasingOffer?.enabled === true && purchasePriceChf
       ? estimateTeaserMonthlyRateChf({
           priceChf: purchasePriceChf,
           year: listing.year,
@@ -85,55 +72,33 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         })
       : null;
 
-  // Deterministic Swiss grouping (117'000). Intl/toLocaleString("de-CH") is NOT used
-  // here because Node and browsers disagree on the apostrophe character (U+0027 vs
-  // U+2019), which caused hydration mismatches on every server-rendered card.
-  const swissInt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
-  const chf = { format: swissInt };
-
-  // Which financing to highlight. Product rule: a listing is either a pure
-  // Leasingübernahme, a plain Direktkauf, or a Direktkauf that additionally offers
-  // Leasing OR Leasingübernahme (never both). Leasingübernahme takes precedence.
-  const isLeaseTakeover = dealType === "lease_takeover" || leaseTakeoverEnabled;
-  const isLeasing = !isLeaseTakeover && dealType === "direct_purchase" && leasingOffer?.enabled === true;
-  const dealLabel = isLeaseTakeover ? "Leasingübernahme" : isLeasing ? "Leasing" : "Direktkauf";
+  const dealLabel = isLeaseTakeover ? KAUFART_LABEL.lease_takeover : isLeasing ? "Leasing" : KAUFART_LABEL.direct_purchase;
   const dealChipClass = isLeaseTakeover
     ? "bg-red-50 text-red-700"
     : isLeasing
       ? "bg-blue-50 text-blue-700"
       : "bg-neutral-100 text-neutral-700";
 
-  // Monthly rate for the takeover case: a concrete figure for pure takeovers
-  // (pricePerMonthCHF) or the add-on's price_per_month_chf for Direktkauf + Übernahme.
-  const takeoverMonthlyChf =
-    dealType === "lease_takeover"
-      ? typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
-        ? listing.pricePerMonthCHF
-        : null
-      : leaseTakeoverMonthlyChf;
+  const takeoverMonthlyChf = isLeaseTakeover && listing.pricePerMonthCHF > 0 ? listing.pricePerMonthCHF : null;
+  const takeoverMonths = isLeaseTakeover && listing.remainingMonths > 0 ? listing.remainingMonths : null;
 
-  const purchasePriceLine = purchasePriceChf ? `CHF ${chf.format(Math.round(purchasePriceChf))}` : null;
+  const purchasePriceLine = purchasePriceChf ? formatChf(purchasePriceChf) : null;
 
-  // Highlighted price: lead with the monthly figure for Leasing / Leasingübernahme,
-  // and drop the Kaufpreis to the secondary line. Plain Direktkauf shows the price only.
+  // Leasingübernahme leads with the monthly rate; a purchase price is only the
+  // secondary "Kaufpreis" line. Leasing leads with its teaser. Direktkauf shows the price.
   const primaryLine = isLeaseTakeover
     ? takeoverMonthlyChf
-      ? `CHF ${chf.format(Math.round(takeoverMonthlyChf))} / Monat`
-      : purchasePriceLine ?? "Preis auf Anfrage"
+      ? `${formatChf(takeoverMonthlyChf)} / Monat`
+      : "Preis auf Anfrage"
     : isLeasing
       ? teaserMonthlyChf
-        ? `Ab CHF ${chf.format(Math.round(teaserMonthlyChf))} / Monat`
+        ? `Ab ${formatChf(teaserMonthlyChf)} / Monat`
         : purchasePriceLine ?? "Preis auf Anfrage"
       : purchasePriceLine ?? "Preis auf Anfrage";
 
-  const secondaryLine = isLeaseTakeover
-    ? takeoverMonthlyChf && purchasePriceLine
+  const secondaryLine =
+    (isLeaseTakeover && purchasePriceLine) || (isLeasing && teaserMonthlyChf && purchasePriceLine)
       ? `Kaufpreis: ${purchasePriceLine}`
-      : null
-    : isLeasing
-      ? teaserMonthlyChf && purchasePriceLine
-        ? `Kaufpreis: ${purchasePriceLine}`
-        : null
       : null;
 
   const formatLocation = (location: string) => {
@@ -235,7 +200,7 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
         <div className="grid grid-cols-2 gap-2 sm:gap-2.5 mb-3 sm:mb-4">
           <div className="flex items-center text-xs text-neutral-600">
             <Gauge className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
-            <span className="font-medium truncate">{swissInt(listing.mileageKm)} km</span>
+            <span className="font-medium truncate">{formatSwissInt(listing.mileageKm)} km</span>
           </div>
           <div className="flex items-center text-xs text-neutral-600">
             <Fuel className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 text-neutral-400 flex-shrink-0" />
@@ -251,17 +216,19 @@ export function ModernListingCard({ listing, onDetailsClick, priority = false }:
           </div>
         </div>
 
-        {dealType === "lease_takeover" && (
+        {isLeaseTakeover && (
           <>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Restlaufzeit</span>
-              <span className="font-medium">{listing.remainingMonths} Monate</span>
-            </div>
+            {takeoverMonths !== null && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Restlaufzeit</span>
+                <span className="font-medium">{takeoverMonths} {takeoverMonths === 1 ? "Monat" : "Monate"}</span>
+              </div>
+            )}
 
-            {listing.remaining_km && (
+            {typeof listing.remaining_km === "number" && listing.remaining_km > 0 && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Verbleibende KM</span>
-                <span className="font-medium">{swissInt(listing.remaining_km)} km</span>
+                <span className="font-medium">{formatSwissInt(listing.remaining_km)} km</span>
               </div>
             )}
           </>

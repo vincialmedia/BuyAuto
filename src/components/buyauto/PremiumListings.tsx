@@ -1,53 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Clock, Crown, Fuel, MapPin } from "lucide-react";
-import Image from "next/image";
+import { ChevronLeft, ChevronRight, Crown } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { Listing } from "@/lib/buyauto/types";
-import { buildListingHref } from "@/lib/buyauto/listingUrl";
-import { getImageVariant } from "@/lib/buyauto/imageVariant";
-import { hasEnabledTakeoverOffer, isLeaseTakeoverListing, orderPremiumListings } from "@/lib/buyauto/premiumListings";
+import { hasNewLeasingFinancing, kaufartOf } from "@/lib/buyauto/kaufart";
+import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
+import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
 
-type DealTypeLabel = "Direktkauf" | "Leasing" | "Leasingübernahme";
 type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
 
-const FILTER_OPTIONS: { label: DealTypeLabel | "Alle"; value: FilterCategory }[] = [
+const FILTER_OPTIONS: { label: string; value: FilterCategory }[] = [
   { label: "Alle", value: "all" },
   { label: "Direktkauf", value: "direct_purchase" },
   { label: "Leasing", value: "leasing" },
   { label: "Leasingübernahme", value: "lease_takeover" },
 ];
-
-function getDealTypeLabel(listing: Listing): DealTypeLabel {
-  // Product rule: a listing with an enabled Übernahme-Angebot IS a
-  // Leasingübernahme, whatever deal_type the wizard stored and whether or not
-  // a Kaufpreis sits next to it (every Leasingübernahme carries one). Same
-  // precedence as the search cards (ModernListingCard). The badge is a
-  // property of the listing, never of the active tab.
-  if (isLeaseTakeoverListing(listing)) return "Leasingübernahme";
-  if (listing.financing_type === "leasing") return "Leasing";
-  return "Direktkauf";
-}
-
-/**
- * Restlaufzeit of an enabled Übernahme-Angebot. The offer JSON is the source
- * of truth and remaining_months a mirror — same fallback order as
- * SimilarListings and the detail page.
- */
-function getTakeoverRemainingMonths(listing: Listing): number | null {
-  const fromOffer = listing.leasing_offer?.lease_takeover_offer?.remaining_months;
-  if (hasEnabledTakeoverOffer(listing) && typeof fromOffer === "number" && fromOffer > 0) return fromOffer;
-  return typeof listing.remainingMonths === "number" && listing.remainingMonths > 0 ? listing.remainingMonths : null;
-}
-
-/** Swiss thousands grouping without Intl: Node and browsers disagree on the
- *  de-CH separator glyph, which produced hydration mismatches on the
- *  server-rendered search cards (see ModernListingCard). */
-const swissInt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 
 interface PremiumListingsProps {
   externalFilter?: FilterCategory;
@@ -88,15 +57,12 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
         // critical bundle — on the homepage this effect never runs anyway
         // (initialListings comes from getStaticProps).
         const { searchListings } = await import("@/services/listingsService");
-        const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
-          searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
-          searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
-        ]);
+        const result = await searchListings(PREMIUM_LISTINGS_QUERY);
 
         if (cancelled) return;
 
-        // Same merge as the homepage's getStaticProps: takeovers first, newest first.
-        setListings(orderPremiumListings([...leaseTakeoverResult.items, ...directPurchaseResult.items]));
+        // Same order as the homepage's getStaticProps: takeovers first, newest first.
+        setListings(orderPremiumListings(result.items));
         setCurrentIndex(0);
       } catch (error) {
         console.error("Error loading premium listings:", error);
@@ -115,29 +81,12 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
 
   const filteredListings = useMemo(() => {
     if (activeFilter === "all") return listings;
+    // Each tab is exactly one Kaufart bucket, the same rule as the card chip.
     return listings.filter((listing) => {
-      // Check if this listing has leasing offer enabled
-      const hasLeasingOffer = listing.leasing_offer?.enabled === true || listing.financing_type === "leasing";
-
-      if (activeFilter === "direct_purchase") {
-        // Pure Direktkauf only. A row with an enabled Übernahme-Angebot is a
-        // Leasingübernahme and belongs to that tab, even though it carries a
-        // Kaufpreis too (every Leasingübernahme does).
-        return (
-          listing.deal_type === "direct_purchase" &&
-          !hasEnabledTakeoverOffer(listing) &&
-          typeof listing.purchasePriceCHF === "number" &&
-          listing.purchasePriceCHF > 0
-        );
-      }
-      if (activeFilter === "leasing") {
-        // Show if it has leasing financing available (but not pure lease takeovers)
-        return hasLeasingOffer && listing.deal_type !== "lease_takeover";
-      }
-      if (activeFilter === "lease_takeover") {
-        // Legacy lease_takeover rows and Direktkauf rows with an enabled Übernahme-Angebot
-        return isLeaseTakeoverListing(listing);
-      }
+      const kaufart = kaufartOf(listing);
+      if (activeFilter === "lease_takeover") return kaufart === "lease_takeover";
+      if (activeFilter === "leasing") return kaufart === "direct_purchase" && hasNewLeasingFinancing(listing);
+      if (activeFilter === "direct_purchase") return kaufart === "direct_purchase" && !hasNewLeasingFinancing(listing);
       return true;
     });
   }, [listings, activeFilter]);
@@ -151,15 +100,6 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
   useEffect(() => {
     setCurrentIndex(0);
   }, [activeFilter]);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("de-CH", {
-      style: "currency",
-      currency: "CHF",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
 
   const nextSlide = () => setCurrentIndex((prev) => Math.min(prev + pageSize, maxIndex));
   const prevSlide = () => setCurrentIndex((prev) => Math.max(prev - pageSize, 0));
@@ -220,72 +160,6 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
           </div>
         </div>
       </section>
-    );
-  }
-
-  function renderPriceBlock(listing: Listing) {
-    const takeoverOffer = listing.leasing_offer?.lease_takeover_offer?.enabled
-      ? listing.leasing_offer.lease_takeover_offer
-      : null;
-
-    const hasPurchasePrice = typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0;
-    const hasLeasingMonthly = typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0;
-    const takeoverMonthly =
-      takeoverOffer && typeof takeoverOffer.price_per_month_chf === "number" && takeoverOffer.price_per_month_chf > 0
-        ? takeoverOffer.price_per_month_chf
-        : null;
-    // A monthly rate without its term is half an offer, so the Restlaufzeit
-    // rides on the rate line; the meta row keeps the km (a vehicle fact).
-    const takeoverMonths = takeoverMonthly !== null ? getTakeoverRemainingMonths(listing) : null;
-
-    // An enabled Übernahme-Angebot leads with the monthly rate — the Kaufpreis
-    // becomes the secondary line (same rule as the search cards).
-    if (takeoverMonthly !== null) {
-      return (
-        <div className="text-right">
-          <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Leasingübernahme</div>
-          <div className="text-xl font-bold text-red-600">{formatPrice(takeoverMonthly)}</div>
-          <div className="text-xs text-neutral-500">/ Monat{takeoverMonths !== null ? ` · ${takeoverMonths} Mt.` : ""}</div>
-
-          {hasPurchasePrice && (
-            <div className="mt-1 text-xs text-neutral-500">
-              Kaufpreis: <span className="font-semibold text-neutral-700">{formatPrice(listing.purchasePriceCHF as number)}</span>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    if (hasPurchasePrice) {
-      return (
-        <div className="text-right">
-          <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Kaufpreis</div>
-          <div className="text-xl font-bold tracking-tight text-neutral-900">{formatPrice(listing.purchasePriceCHF as number)}</div>
-
-          {/* Only reachable without an Übernahme-Angebot (those lead with the
-              rate above), so a monthly figure here is a real Leasing rate. */}
-          {hasLeasingMonthly && (
-            <div className="mt-1 text-xs text-neutral-500">
-              Leasing: <span className="font-semibold text-neutral-700">{formatPrice(listing.pricePerMonthCHF)}/Mt.</span>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    const mainMonthly = listing.pricePerMonthCHF;
-    const deposit = typeof listing.depositCHF === "number" && listing.depositCHF > 0 ? listing.depositCHF : null;
-
-    return (
-      <div className="text-right">
-        <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide">{getDealTypeLabel(listing)}</div>
-        <div className="text-xl font-bold text-red-600">{formatPrice(mainMonthly)}</div>
-        <div className="text-xs text-neutral-500">/ Monat</div>
-
-        <div className="text-xs text-neutral-500 mt-0.5">
-          {deposit ? `Kaution: ${formatPrice(deposit)}` : "Keine Kaution"}
-        </div>
-      </div>
     );
   }
 
@@ -369,100 +243,9 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
 
               {/* Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {visibleListings.map((listing) => {
-                  const dealTypeLabel = getDealTypeLabel(listing);
-                  // Meta slot: legacy takeover rows carry no mileage worth
-                  // showing and keep their Restlaufzeit chip; every
-                  // direct_purchase row (hybrids included) shows km — a hybrid's
-                  // Restlaufzeit rides on its rate line in renderPriceBlock.
-                  const showLegacyRemainingMonths = listing.deal_type === "lease_takeover";
-
-                  return (
-                    <Link
-                      key={listing.id}
-                      href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}
-                    >
-                      <Card className="group cursor-pointer bg-white border-neutral-200 hover:border-amber-300 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden rounded-2xl">
-                        <CardContent className="p-0 relative">
-                          {/* Premium Badge */}
-                          <div className="absolute top-3 left-3 z-10">
-                            <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-md text-xs font-semibold">
-                              <Crown className="w-3 h-3 mr-1" />
-                              Premium
-                            </Badge>
-                          </div>
-
-                          {/* Deal Type Badge */}
-                          <div className="absolute top-3 right-3 z-10">
-                            <Badge variant="secondary" className="bg-white/90 text-neutral-700 border border-neutral-200 shadow-sm backdrop-blur-sm text-xs">
-                              {dealTypeLabel}
-                            </Badge>
-                          </div>
-
-                          {/* Image */}
-                          <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-neutral-100">
-                            {listing.imageUrl ? (
-                              <Image
-                                src={getImageVariant(listing.imageUrl, "medium")}
-                                alt={`${listing.brand} ${listing.model}`}
-                                fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                quality={75}
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-neutral-100 flex items-center justify-center">
-                                <span className="text-neutral-400 font-medium text-sm">
-                                  {listing.brand} {listing.model}
-                                </span>
-                              </div>
-                            )}
-                            {/* Subtle gradient overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-                          </div>
-
-                          {/* Content */}
-                          <div className="p-5">
-                            <div className="flex justify-between items-start gap-3 mb-4">
-                              <div className="min-w-0">
-                                <h3 className="font-bold text-base text-neutral-900 group-hover:text-red-600 transition-colors truncate">
-                                  {listing.brand} {listing.model}
-                                </h3>
-                                <p className="text-neutral-500 text-sm">{listing.year}</p>
-                              </div>
-                              {renderPriceBlock(listing)}
-                            </div>
-
-                            {/* Meta info */}
-                            <div className="flex items-center justify-between text-xs text-neutral-500 pt-3 border-t border-neutral-100">
-                              <div className="flex items-center gap-1.5">
-                                <MapPin className="w-3.5 h-3.5 text-neutral-400" />
-                                <span className="truncate max-w-[80px]">{listing.location}</span>
-                              </div>
-
-                              <div className="flex items-center gap-1.5">
-                                <Fuel className="w-3.5 h-3.5 text-neutral-400" />
-                                <span>{listing.fuel}</span>
-                              </div>
-
-                              {showLegacyRemainingMonths ? (
-                                <div className="flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                                  <span>{listing.remainingMonths} Mt.</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                                  <span>{swissInt(listing.mileageKm || 0)} km</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  );
-                })}
+                {visibleListings.map((listing) => (
+                  <ModernListingCard key={listing.id} listing={listing} />
+                ))}
               </div>
 
               {/* Pagination Dots — gate on the filtered list so an empty or

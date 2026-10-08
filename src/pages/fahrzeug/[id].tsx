@@ -5,16 +5,31 @@ import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { ListingDetail } from "@/lib/buyauto/types";
-import { getPublishedListingById, getUserListingById, transformPublicRowToListingDetail } from "@/services/listingsService";
+import type { Listing, ListingDetail } from "@/lib/buyauto/types";
+import {
+  getPublishedListingById,
+  getSimilarListings,
+  getUserListingById,
+  transformPublicRowToListingDetail,
+} from "@/services/listingsService";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
 import type { GaragePublicInfo } from "@/services/garageService";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { buildListingHref, buildListingSlugSegment, extractListingIdFromParam } from "@/lib/buyauto/listingUrl";
+import { buildListingHref, buildListingSlugSegment, extractListingIdFromParam, listingSlugPrefix } from "@/lib/buyauto/listingUrl";
+import { kaufartOf } from "@/lib/buyauto/kaufart";
+import { listingFullName, listingMetaDescription, listingSeoTitle } from "@/lib/buyauto/listingSeo";
+import { publicSellerName } from "@/lib/buyauto/sellerName";
+import {
+  isOwnerOrAdmin,
+  isRetiredListing,
+  readListingLifecycle,
+  retiredListingDestination,
+} from "@/services/listingLifecycleService";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
+import { formatChf } from "@/lib/buyauto/format";
 import { safeFreeText, toDealType, track } from "@/lib/analytics";
 import {
   buildVehicleDescription,
@@ -35,6 +50,8 @@ interface ListingDetailPageProps {
   notFound?: boolean;
   // Set when the id is not a live listing (handled with a 404/410 status in getServerSideProps).
   gone?: boolean;
+  // Server-rendered «Ähnliche Fahrzeuge»; absent on client-loaded previews (fetched there).
+  similarListings?: Listing[];
 }
 
 function serializeListing(listing: ListingDetail | null): ListingDetail | null {
@@ -57,7 +74,7 @@ function serializeListing(listing: ListingDetail | null): ListingDetail | null {
   };
 }
 
-export default function ListingDetailPage({ listing: initialListing, notFound, gone }: ListingDetailPageProps) {
+export default function ListingDetailPage({ listing: initialListing, notFound, gone, similarListings }: ListingDetailPageProps) {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
@@ -286,23 +303,20 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const listingUrl = `${baseUrl}${buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}`;
   const ogImage = listing.imageUrl || (images.length > 0 ? images[0] : `${baseUrl}/buyauto-logo.png`);
 
-  const dealType = (listing.deal_type ?? "lease_takeover") as "lease_takeover" | "direct_purchase";
+  // Display type from the one Kaufart rule (lib/buyauto/kaufart), never the stored deal_type.
+  const kaufart = kaufartOf(listing);
+  const isDirectPurchase = kaufart === "direct_purchase";
 
   const leasingOffer = (listing as unknown as { leasing_offer?: any; leasingOffer?: any }).leasing_offer ??
     (listing as unknown as { leasing_offer?: any; leasingOffer?: any }).leasingOffer ??
     null;
 
-  const purchasePriceCandidate =
-    (listing as unknown as { listing_price?: unknown; price_chf?: unknown; purchase_price_chf?: unknown; purchasePriceCHF?: unknown }).purchasePriceCHF ??
-    (listing as unknown as { listing_price?: unknown; price_chf?: unknown; purchase_price_chf?: unknown; purchasePriceCHF?: unknown }).purchase_price_chf ??
-    (listing as unknown as { listing_price?: unknown; price_chf?: unknown; purchase_price_chf?: unknown; purchasePriceCHF?: unknown }).price_chf ??
-    (listing as unknown as { listing_price?: unknown; price_chf?: unknown; purchase_price_chf?: unknown; purchasePriceCHF?: unknown }).listing_price ??
-    null;
+  const purchasePriceChf =
+    typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0 ? listing.purchasePriceCHF : null;
 
-  const purchasePriceChf = typeof purchasePriceCandidate === "number" ? purchasePriceCandidate : null;
-
+  // "Leasing" teaser (new-leasing financing on a Direktkauf): unchanged handling.
   const teaserMonthlyChf =
-    dealType === "direct_purchase" &&
+    isDirectPurchase &&
     leasingOffer?.enabled === true &&
     purchasePriceChf
       ? estimateTeaserMonthlyRateChf({
@@ -319,37 +333,32 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
 
   const teaserMonthlyLabel =
     typeof teaserMonthlyChf === "number"
-      ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
+      ? `Ab ${formatChf(teaserMonthlyChf)} / Monat`
       : null;
 
   // Prefer the stored title — it carries the decoded trim ("BMW 5 Series 530i
   // xDrive"), which is what long-tail searches match — over bare brand+model.
   const seoName = listing.title?.trim() || `${listing.brand} ${listing.model}`;
+  const pageTitle = listingSeoTitle(listing);
+  const metaDescription = listingMetaDescription(listing);
 
-  const metaPriceText =
-    dealType === "direct_purchase"
-      ? purchasePriceChf
-        ? `${new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(purchasePriceChf)} Kaufpreis`
-        : "Kaufpreis"
-      : `${new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(listing.pricePerMonthCHF)}/Monat`;
-
-  // Per-deal-type Offer: a one-time sale price for direct purchase, a monthly rate for
-  // lease takeover (never a hardcoded monthly unit on a purchase price).
-  const isDirectPurchase = dealType === "direct_purchase";
+  // Per-Kaufart Offer: a one-time sale price for Direktkauf, a monthly rate for
+  // Leasingübernahme (never a monthly unit on a purchase price).
   const offerPrice = isDirectPurchase
     ? purchasePriceChf
     : typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
       ? listing.pricePerMonthCHF
       : null;
 
-  // remaining_months on direct-purchase rows mirrors the optional Leasingübernahme
-  // add-on offer (or is null) — the Offer here models the sale itself, so
-  // leaseLength stays a lease-takeover-only fact.
   const leaseLength = isDirectPurchase ? null : leaseLengthIso(listing.remainingMonths);
   const availableAtOrFrom = parseListingPlace(listing.location, listing.canton_code);
 
+  // An ended Leasingübernahme (effective months 0) is out of every list and the
+  // sitemap: no Offer and noindex here too (the page itself stays reachable).
+  const contractEnded = listing.contractEnded === true;
+
   const vehicleOffer =
-    typeof offerPrice === "number" && offerPrice > 0
+    !contractEnded && typeof offerPrice === "number" && offerPrice > 0
       ? {
           "@type": "Offer",
           price: offerPrice,
@@ -383,7 +392,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const dateVehicleFirstRegistered = firstRegistrationIso(listing.firstRegistration);
   const driveWheelConfiguration = driveWheelConfigurationFor(listing.drivetrain);
   const schemaDescription = buildVehicleDescription({
-    dealType,
+    dealType: kaufart,
     brand: listing.brand,
     model: listing.model,
     year: listing.year,
@@ -397,7 +406,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const vehicleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Car",
-    name: `${seoName} ${listing.year}`,
+    name: `${listingFullName(listing)} ${listing.year}`,
     brand: { "@type": "Brand", name: listing.brand },
     model: listing.model,
     vehicleModelDate: listing.year,
@@ -427,18 +436,16 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   return (
     <>
       <Head>
-        <title>{`${seoName} ${listing.year} - BuyAuto`}</title>
-        <meta
-          name="description"
-          content={`${seoName} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
-        />
-        <link rel="canonical" href={listingUrl} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={metaDescription} />
+        {contractEnded ? (
+          <meta name="robots" content="noindex,follow" />
+        ) : (
+          <link rel="canonical" href={listingUrl} />
+        )}
 
-        <meta property="og:title" content={`${seoName} ${listing.year} - BuyAuto`} />
-        <meta
-          property="og:description"
-          content={`${listing.brand} ${listing.model} ${listing.year} für ${metaPriceText} in ${listing.location}. Jetzt Auto-Angebot entdecken!`}
-        />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={listingUrl} />
         <meta property="og:image" content={ogImage} />
@@ -448,8 +455,8 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         <meta property="og:site_name" content="BuyAuto" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${listing.brand} ${listing.model} ${listing.year} - BuyAuto`} />
-        <meta name="twitter:description" content={`${listing.brand} ${listing.model} ${listing.year} - ${metaPriceText}`} />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={metaDescription} />
         <meta name="twitter:image" content={ogImage} />
 
         <script
@@ -490,12 +497,27 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         childrenBelowFold={undefined}
         bottomContent={
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-            <SimilarListings listing={listing} />
+            <SimilarListings
+              key={listing.id}
+              listing={listing}
+              initialListings={listing.id === initialListing?.id ? similarListings : undefined}
+            />
           </div>
         }
       />
     </>
   );
+}
+
+// Keep the visitor's query (gclid, utm_*) on the retired-listing redirect, like the
+// next.config redirects do. The route param and the preview flag are not forwarded.
+function withForwardedQuery(destination: string, query: Record<string, string | string[] | undefined>): string {
+  const url = new URL(destination, "https://www.buyauto.ch");
+  for (const [key, value] of Object.entries(query)) {
+    if (key === "id" || key === "preview" || url.searchParams.has(key)) continue;
+    for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) url.searchParams.append(key, v);
+  }
+  return url.pathname + url.search;
 }
 
 export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = async (context) => {
@@ -513,6 +535,8 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
 
   try {
     if (preview === "true") {
+      // Owner/admin preview loads client-side; the shell itself must never be indexed.
+      context.res?.setHeader("X-Robots-Tag", "noindex, nofollow");
       return { props: { listing: null } };
     }
 
@@ -566,7 +590,8 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
 
           listing = {
             ...listing,
-            seller_name: fullName ?? listing.seller_name ?? null,
+            // First name + initial only ("Dávid T."): the surname never reaches the props.
+            seller_name: publicSellerName({ sellerType: "private", fullName }) ?? listing.seller_name ?? null,
             seller_avatar_url: avatarUrl ?? listing.seller_avatar_url ?? null,
           };
         }
@@ -574,36 +599,63 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     }
 
     if (!listing) {
-      // Not a live listing in listings_public (expired / sold / draft / rejected / test /
-      // unknown). Emit a real non-200 status so crawlers never index it. Distinguish
-      // "was live, now gone" (410) from "never public / unknown" (404): anon RLS only
-      // exposes status='published' on the base table, so a hit here means the row is
-      // published-but-expired (or excluded as internal) → 410 Gone; a miss → 404.
-      const { data: publishedRow, error: publishedRowError } = await supabase
-        .from("listings")
-        .select("id")
-        .eq("id", listingId)
-        .eq("status", "published")
-        .maybeSingle();
+      // Not a live listing in listings_public. Sold / archived / expired / rejected
+      // listings and ids without any row are retired URLs: anonymous and non-owner
+      // visitors get a permanent redirect to the brand page (when it is indexable)
+      // or the Leasingübernahme hub. Owners and admins keep today's page (and
+      // preview their listing via ?preview=true). Paused, inactive, draft and
+      // pending listings keep today's behaviour: 404 with noindex.
+      const lifecycle = await readListingLifecycle(listingId);
 
-      // Same rule as above: a failed lookup is not a 404 verdict.
-      if (publishedRowError) {
-        throw publishedRowError;
+      if (isRetiredListing(lifecycle)) {
+        const ownerIds = lifecycle.kind === "row" ? lifecycle.ownerIds : [];
+        // Admins pass even when the row has no owner ids.
+        const privileged = lifecycle.kind === "row" && (await isOwnerOrAdmin(context, ownerIds));
+        if (!privileged) {
+          const destination = await retiredListingDestination(
+            lifecycle.kind === "row" ? lifecycle.brand : null,
+            listingSlugPrefix(id)
+          );
+          return { redirect: { destination: withForwardedQuery(destination, context.query), permanent: true } };
+        }
+      }
+
+      if (lifecycle.kind === "unknown") {
+        // Lookup unavailable: fall back to the anonymous check. A published-but-expired
+        // row is visible to anon RLS (410); anything else answers 404.
+        const { data: publishedRow, error: publishedRowError } = await supabase
+          .from("listings")
+          .select("id")
+          .eq("id", listingId)
+          .eq("status", "published")
+          .maybeSingle();
+
+        // A failed lookup is not a 404 verdict.
+        if (publishedRowError) {
+          throw publishedRowError;
+        }
+
+        if (context.res) {
+          context.res.statusCode = publishedRow ? 410 : 404;
+        }
+        return { props: { listing: null, gone: true } };
       }
 
       if (context.res) {
-        context.res.statusCode = publishedRow ? 410 : 404;
+        context.res.statusCode = lifecycle.kind === "row" && lifecycle.status === "published" ? 410 : 404;
       }
       return { props: { listing: null, gone: true } };
     }
 
     const serializedListing = serializeListing(listing);
+    // Similar cards (prices, links) are part of the server HTML, not a client fetch.
+    const similarListings = JSON.parse(JSON.stringify(await getSimilarListings(listing, 6))) as Listing[];
 
     if (context.res) {
       context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     }
 
-    return { props: { listing: serializedListing } };
+    return { props: { listing: serializedListing, similarListings } };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
     // Transient backend failure: signal 503 (retry later) instead of a 200 skeleton that

@@ -121,7 +121,14 @@ function buildFaqs(company: LeasingCompany): Faq[] {
   ];
 }
 
-export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
+export function LeasingCompanyPage({
+  company,
+  indexableBrandHrefs,
+}: {
+  company: LeasingCompany;
+  /** Brand pages that are indexable right now; a brand href outside this list renders as plain text. */
+  indexableBrandHrefs?: string[];
+}) {
   const { name, compoundName, slug, facts } = company;
   const path = `/${slug}`;
   const url = `https://www.buyauto.ch${path}`;
@@ -259,7 +266,7 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                 {company.financedBrands.lead}{" "}
                 {company.financedBrands.brands.map((brand, i, arr) => (
                   <span key={brand.name}>
-                    {brand.href ? (
+                    {brand.href && indexableBrandHrefs?.includes(brand.href) ? (
                       <Link href={brand.href} className="text-red-600 font-semibold hover:underline">
                         {brand.name}
                       </Link>
@@ -268,17 +275,23 @@ export function LeasingCompanyPage({ company }: { company: LeasingCompany }) {
                     )}
                     {i < arr.length - 2 ? ", " : i === arr.length - 2 ? " und " : ""}
                   </span>
-                ))}{" "}
-                (
-                <a
-                  href={company.financedBrands.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer nofollow"
-                  className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
-                >
-                  {company.financedBrands.sourceLabel}
-                </a>
-                ).
+                ))}
+                {company.financedBrands.sourceUrl && company.financedBrands.sourceLabel ? (
+                  <>
+                    {" "}(
+                    <a
+                      href={company.financedBrands.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
+                    >
+                      {company.financedBrands.sourceLabel}
+                    </a>
+                    ).
+                  </>
+                ) : (
+                  "."
+                )}
               </p>
             )}
 

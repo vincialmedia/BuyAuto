@@ -1,7 +1,20 @@
+import type { GetStaticProps } from "next";
 import Head from "next/head";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { LEASING_COMPANIES } from "@/lib/buyauto/leasingCompanies";
+import {
+  CEMBRA_TRANSFER_DISPLAY,
+  CEMBRA_TRANSFER_EXCL_VAT_CHF,
+  FEE_SENTENCE,
+  FEE_SHORT,
+  kautionSentence,
+  kautionTableCell,
+  type InventoryStats,
+} from "@/lib/buyauto/facts";
+import { formatChf } from "@/lib/buyauto/format";
+import { getLiveInventoryStats, getPremiumCarouselListings } from "@/services/listingsService";
+import type { Listing } from "@/lib/buyauto/types";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -47,7 +60,25 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-kosten"];
 
-export default function LeasinguebernahmeKostenPage() {
+interface LeasinguebernahmeKostenPageProps {
+  stats: InventoryStats | null;
+  /** Server-rendered premium carousel; null falls back to the client fetch. */
+  premiumListings: Listing[] | null;
+}
+
+// FAQ answers shared by the FAQPage JSON-LD and the visible accordion, so both always match.
+const FAQ_TOTAL_COST_ANSWER = `${FEE_SENTENCE} Monatlich kommen Leasingrate und Versicherung dazu.`;
+
+function faqCheaperAnswer(stats: InventoryStats | null): string {
+  return (
+    "Beim Einstieg meistens: Statt einer Anzahlung für einen Neuvertrag fällt die Übertragungsgebühr an, " +
+    `${FEE_SHORT}. ${kautionSentence(stats)}`
+  );
+}
+
+export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: LeasinguebernahmeKostenPageProps) {
+  const faqCheaper = faqCheaperAnswer(stats);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -94,7 +125,7 @@ export default function LeasinguebernahmeKostenPage() {
                   name: "Wie viel kostet eine Leasingübernahme insgesamt?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Die Gesamtkosten liegen typischerweise zwischen 200 und 650 CHF für den Einstieg (Transfer, Ummeldung, Administration). Hinzu kommen monatliche Kosten wie Leasingrate und Versicherung.",
+                    text: FAQ_TOTAL_COST_ANSWER,
                   },
                 },
                 {
@@ -118,7 +149,7 @@ export default function LeasinguebernahmeKostenPage() {
                   name: "Ist eine Leasingübernahme günstiger als ein neues Leasing?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten.",
+                    text: faqCheaper,
                   },
                 },
                 {
@@ -197,9 +228,9 @@ export default function LeasinguebernahmeKostenPage() {
                   Der komplette Gebühren-Überblick
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Eine Leasingübernahme kostet dich in der Schweiz einmalig rund 200–650 CHF – je nach
-                  Leasinggeber für Umschreibung, Bonitätsprüfung und Administration. Danach zahlst du einfach
-                  die bestehende Monatsrate weiter; eine Anzahlung wie beim Neuleasing entfällt. Alle Gebühren,
+                  Du zahlst die bestehende monatliche Leasingrate weiter; eine Anzahlung wie beim Neuleasing
+                  entfällt. Einmalig fallen die Übertragungsgebühr der Leasinggesellschaft ({FEE_SHORT}) und
+                  die kantonalen Gebühren für den neuen Fahrzeugausweis an. Alle Gebühren,
                   versteckte Kosten und Spartipps findest du im Detail weiter unten.
                 </p>
                 
@@ -242,7 +273,7 @@ export default function LeasinguebernahmeKostenPage() {
             
             <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-xl shadow-sm">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Eine <strong>Leasingübernahme kostet in der Schweiz typischerweise zwischen 200–650 CHF</strong>, abhängig von der Bank, dem Fahrzeugtyp und eventuellen Zusatzleistungen.
+                Du zahlst die bestehende monatliche Leasingrate weiter. Einmalig fallen die <strong>Übertragungsgebühr der Leasinggesellschaft ({FEE_SHORT})</strong> und die kantonalen Gebühren für den neuen Fahrzeugausweis an.
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
                 Viele Abgeber übernehmen diese Kosten freiwillig, um den Transfer attraktiver zu gestalten.
@@ -316,9 +347,11 @@ export default function LeasinguebernahmeKostenPage() {
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Transfergebühr (Bank)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Meist Abgeber oder frei verhandelbar</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr der Leasinggesellschaft</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">
+                      Cembra: {formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST; AMAG, Multilease, BANK-now: auf Anfrage
+                    </td>
+                    <td className="p-4 md:p-6 text-neutral-700">Verhandlungssache</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Händler-/Wechselgebühr</td>
@@ -347,7 +380,7 @@ export default function LeasinguebernahmeKostenPage() {
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Administrationskosten (Bank)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">0–100 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">je nach Leasinggesellschaft</td>
                     <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
                   </tr>
                 </tbody>
@@ -388,7 +421,7 @@ export default function LeasinguebernahmeKostenPage() {
                     Die <strong>Transfergebühr</strong> ist die Hauptgebühr bei einer Leasingübernahme. Sie wird von der Leasingbank erhoben und deckt die administrativen Kosten der Vertragsübertragung ab.
                   </p>
                   <p className="text-neutral-700 leading-relaxed">
-                    Diese Gebühr variiert je nach Bank und kann zwischen <strong>100 und 400 CHF</strong> liegen. Wie die Übertragung selbst Schritt für Schritt abläuft, zeigt unser Ratgeber{" "}
+                    {FEE_SENTENCE} Wie die Übertragung selbst Schritt für Schritt abläuft, zeigt unser Ratgeber{" "}
                     <Link href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline">
                       Leasingvertrag übertragen – so funktioniert es
                     </Link>.
@@ -675,12 +708,14 @@ export default function LeasinguebernahmeKostenPage() {
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Anzahlung</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">0–100 CHF</td>
+                    <td className="p-4 md:p-6 text-green-600 font-semibold">{kautionTableCell(stats)}</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">3'000–10'000 CHF</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Transfergebühr</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–400 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">
+                      Cembra: rund {CEMBRA_TRANSFER_DISPLAY} inkl. MWST, andere auf Anfrage
+                    </td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">—</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
@@ -697,11 +732,6 @@ export default function LeasinguebernahmeKostenPage() {
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Laufzeit</td>
                     <td className="p-4 md:p-6 text-green-600 font-semibold">6–24 Monate (kürzer)</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">36–48 Monate</td>
-                  </tr>
-                  <tr className="bg-green-50 hover:bg-green-100 transition-colors">
-                    <td className="p-4 md:p-6 font-bold text-neutral-900">TOTAL (Einstieg)</td>
-                    <td className="p-4 md:p-6 text-green-600 font-bold text-lg">200–650 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-900 font-bold text-lg">3'200–10'550 CHF</td>
                   </tr>
                 </tbody>
               </table>
@@ -787,7 +817,7 @@ export default function LeasinguebernahmeKostenPage() {
                   Wie viel kostet eine Leasingübernahme insgesamt?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Die Gesamtkosten liegen typischerweise zwischen <strong>200 und 650 CHF</strong> für den Einstieg (Transfer, Ummeldung, Administration). Hinzu kommen monatliche Kosten wie Leasingrate und Versicherung.
+                  {FAQ_TOTAL_COST_ANSWER}
                 </AccordionContent>
               </AccordionItem>
               
@@ -823,10 +853,7 @@ export default function LeasinguebernahmeKostenPage() {
                   Ist eine Leasingübernahme günstiger als ein neues Leasing?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, deutlich! Du sparst die hohe Anzahlung (3'000–10'000 CHF) und zahlst nur 200–650 CHF Einstiegskosten. Zudem profitierst du von kürzeren Restlaufzeiten. Alle Unterschiede im Detail zeigt{" "}
-                  <Link href="/leasinguebernahme-vs-neues-leasing" className="text-primary font-semibold hover:underline">
-                    Leasingübernahme vs. neues Leasing im Vergleich
-                  </Link>.
+                  {faqCheaper}
                 </AccordionContent>
               </AccordionItem>
 
@@ -884,7 +911,7 @@ export default function LeasinguebernahmeKostenPage() {
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings />
+        <PremiumListings initialListings={premiumListings ?? undefined} />
         
       </main>
     </>
@@ -893,6 +920,15 @@ export default function LeasinguebernahmeKostenPage() {
 
 // Served via ISR (static + periodic revalidation) instead of a frozen build-time file,
 // so the page refreshes without a redeploy and shares the prerender path of its siblings.
-export const getStaticProps = async () => {
-  return { props: {}, revalidate: 300 };
+// Live inventory stats (Kaution spread) and the premium carousel refresh every 5 minutes, like
+// the sibling guide pages; null stats render the no-number fallbacks.
+export const getStaticProps: GetStaticProps<LeasinguebernahmeKostenPageProps> = async () => {
+  let stats: InventoryStats | null = null;
+  try {
+    stats = await getLiveInventoryStats();
+  } catch (error) {
+    console.error("Leasingübernahme Kosten: live inventory stats failed:", error);
+  }
+  const premiumListings = await getPremiumCarouselListings();
+  return { props: { stats, premiumListings }, revalidate: 300 };
 };

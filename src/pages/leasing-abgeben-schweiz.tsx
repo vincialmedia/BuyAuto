@@ -32,6 +32,8 @@ import type { Listing } from "@/lib/buyauto/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { track } from "@/lib/analytics";
+import { AMAG_LEASING, CEMBRA, CEMBRA_TRANSFER_DISPLAY, FEE_SENTENCE, FEE_SHORT } from "@/lib/buyauto/facts";
+import { formatChf } from "@/lib/buyauto/format";
 import {
   Accordion,
   AccordionContent,
@@ -43,9 +45,12 @@ type LeasingAbgebenPageProps = {
   takeoverListings: Listing[];
 };
 
-// Typical re-registration/transfer fee charged by Swiss leasing banks — a guide
-// value, not a quote; the disclaimer under the calculator says so.
-const TRANSFER_FEE_CHF = 350;
+// Calculator comparison box (Übernahme vs. Kündigung). Every figure comes from
+// the facts module: Cembra's published transfer fee and AMAG Leasing's flat
+// early-termination fee (ALB Ziff. 18) plus the retroactive recalculation (Ziff. 14.1).
+const TAKEOVER_FEE_LABEL = `Übertragungsgebühr bei ${CEMBRA.name} inkl. MWST, andere auf Anfrage`;
+const CANCELLATION_FEE_VALUE = `${formatChf(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung)} + Neuberechnung`;
+const CANCELLATION_FEE_LABEL = `Beispiel ${AMAG_LEASING.name}: Pauschale exkl. MWST, alle Raten werden rückwirkend neu berechnet`;
 
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasing-abgeben-schweiz"];
@@ -72,7 +77,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "Was kostet mich die Leasingübernahme?",
-    a: `In der Regel nur die Umschreibegebühr deiner Leasingbank – typischerweise rund CHF ${TRANSFER_FEE_CHF}. Die verbleibenden Raten zahlt ab der Umschreibung dein Nachfolger. Das Inserat auf BuyAuto ist gratis.`,
+    a: `${FEE_SENTENCE} Die verbleibenden Raten zahlt ab der Umschreibung dein Nachfolger. Das Inserat auf BuyAuto ist gratis.`,
   },
   {
     q: "Was passiert, wenn ich nicht mehr zahlen kann?",
@@ -255,7 +260,7 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
 
                 <p className="text-lg md:text-xl text-neutral-600 leading-relaxed mb-7">
                   Übergib deinen Leasingvertrag an eine Nachfolgerin oder einen Nachfolger: Sie übernehmen die
-                  Restraten, du zahlst nur die Umschreibegebühr von typischerweise rund CHF {TRANSFER_FEE_CHF}.
+                  Restraten. Einmalig fällt die Übertragungsgebühr deiner Leasinggesellschaft an – {FEE_SHORT}.
                 </p>
 
                 <CtaButton
@@ -342,16 +347,16 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                         <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
                         <span className="text-xs font-bold text-neutral-900">Übernahme</span>
                       </div>
-                      <p className="text-xl font-black text-green-700">~ CHF {TRANSFER_FEE_CHF}</p>
-                      <p className="text-xs text-neutral-600 mt-0.5">Umschreibegebühr</p>
+                      <p className="text-xl font-black text-green-700">{CEMBRA_TRANSFER_DISPLAY}</p>
+                      <p className="text-xs text-neutral-600 mt-0.5">{TAKEOVER_FEE_LABEL}</p>
                     </div>
                     <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <XCircle className="w-4 h-4 text-red-600 shrink-0" />
                         <span className="text-xs font-bold text-neutral-900">Kündigung</span>
                       </div>
-                      <p className="text-xl font-black text-red-600">Mehrere tausend</p>
-                      <p className="text-xs text-neutral-600 mt-0.5">je nach Bank & Vertrag</p>
+                      <p className="text-xl font-black text-red-600">{CANCELLATION_FEE_VALUE}</p>
+                      <p className="text-xs text-neutral-600 mt-0.5">{CANCELLATION_FEE_LABEL}</p>
                     </div>
                   </div>
 

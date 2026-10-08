@@ -13,6 +13,14 @@
 // Research base: Vince, Stand 13.08.2026. Kernbefund: nur Cembra publiziert
 // einen Übernahme-Tarif; AMAG, Multilease und BANK-now regeln die Übertragung
 // individuell auf Anfrage.
+//
+// Fee figures are built from the facts module (facts.ts), never typed here.
+
+import { AMAG_LEASING, CEMBRA } from "@/lib/buyauto/facts";
+import { formatChf } from "@/lib/buyauto/format";
+
+/** formatChf plus ".–", e.g. 1234 -> "CHF 1'234.–" (Betragsschreibweise im Fliesstext). */
+const chfDash = (value: number) => `${formatChf(value)}.–`;
 
 export interface SourcedFact {
   /** Rendered German copy incl. the visible attribution («gemäss …, Stand …»). */
@@ -62,8 +70,9 @@ export interface LeasingCompany {
   financedBrands?: {
     lead: string;
     brands: { name: string; href?: string }[];
-    sourceLabel: string;
-    sourceUrl: string;
+    /** Omitted while the list is not confirmed against the current source. */
+    sourceLabel?: string;
+    sourceUrl?: string;
   };
   facts: LeasingCompanyFacts;
 }
@@ -81,9 +90,9 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
     facts: {
       transferFee: {
         text:
-          "Cembra verrechnet für den Halterwechsel CHF 500.– plus CHF 75.– für die Umschreibung des Fahrzeugausweises, jeweils exkl. MWST (gemäss Gebührenübersicht Leasing der Cembra, gültig ab 1.9.2023). Dazu kommen die kantonalen Gebühren des Strassenverkehrsamts. Zum Vergleich: Allein die Kündigungsabrechnung bei einer vorzeitigen Auflösung kostet CHF 250.– exkl. MWST (gleiche Quelle) – hinzu kommt die eigentliche Auflösungsentschädigung gemäss Vertrag.",
+          `Cembra verrechnet für den Halterwechsel ${chfDash(CEMBRA.feesExclVatChf.halterwechsel)} plus ${chfDash(CEMBRA.feesExclVatChf.fahrzeugausweisUmschreibung)} für die Umschreibung des Fahrzeugausweises, jeweils exkl. MWST (gemäss Gebührenübersicht Leasing der Cembra, gültig ab ${CEMBRA.validFrom}). Dazu kommen die kantonalen Gebühren des Strassenverkehrsamts. Zum Vergleich: Allein die Kündigungsabrechnung bei einer vorzeitigen Auflösung kostet ${chfDash(CEMBRA.feesExclVatChf.kuendigungsabrechnung)} exkl. MWST (gleiche Quelle) – hinzu kommt die eigentliche Auflösungsentschädigung gemäss Vertrag.`,
         sourceLinkText: "Gebührenübersicht Leasing der Cembra",
-        sourceUrl: "https://www.cembra.ch/assets/cembra/leasing/gebuehren-de.pdf",
+        sourceUrl: CEMBRA.sourceUrl,
       },
       // ERFAHRUNGSWERT-VINCE: typische Dauer einer Cembra-Übertragung
       typicalDuration: null,
@@ -125,7 +134,9 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
       // Nur Marken mit existierender Brand-Page verlinken: volkswagen und audi
       // sind kuratiert, skoda läuft als dynamische Seite mit Live-Inventar.
       // Seat und Cupra haben noch keine Seiten — nur Nennung im Text.
-      // Porsche ist in ALB 01/25 Ziff. 9.1.1 NICHT aufgeführt.
+      // Markenliste (Porsche NICHT aufgeführt) zuletzt gegen die Vorgänger-
+      // ausgabe der ALB geprüft und gegen die aktuelle Ausgabe nicht nachgeprüft:
+      // deshalb ohne Quellenangabe, bis sie gegen die aktuelle Ausgabe bestätigt ist.
       brands: [
         { name: "VW", href: "/leasinguebernahme/volkswagen" },
         { name: "VW Nutzfahrzeuge" },
@@ -134,31 +145,26 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
         { name: "CUPRA" },
         { name: "Škoda", href: "/leasinguebernahme/skoda" },
       ],
-      sourceLabel: "gemäss ALB 01/25, Ziff. 9.1.1",
-      sourceUrl:
-        "https://www.amag-leasing.ch/content/dam/amag-leasingportal/documents/allgemeine-leasingbestimmungen/deutsch/ALB_Autos_0125_DE_fin.pdf",
     },
     facts: {
       transferFee: {
         // ERFAHRUNGSWERT-VINCE: real verrechnete Übernahmegebühr bei AMAG Leasing
         text:
-          "AMAG Leasing publiziert keinen Tarif für die Vertragsübernahme – die Konditionen werden auf Anfrage festgelegt. Zum Vergleich: Die vorzeitige Vertragsauflösung kostet gemäss den Allgemeinen Leasingbestimmungen (Ausgabe 01/25, Ziff. 14.1 und 18) pauschal CHF 800.– exkl. MWST, zusätzlich werden die Leasingraten rückwirkend auf die effektive Laufzeit neu berechnet – die Übernahme kann deshalb deutlich günstiger sein.",
+          `AMAG Leasing publiziert keinen Tarif für die Vertragsübernahme – die Konditionen werden auf Anfrage festgelegt. Zum Vergleich: Die vorzeitige Vertragsauflösung kostet gemäss den Allgemeinen Leasingbestimmungen (${AMAG_LEASING.edition}, Ziff. 14.1 und 18) pauschal ${chfDash(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung)} exkl. MWST, zusätzlich werden die Leasingraten rückwirkend auf die effektive Laufzeit neu berechnet – die Übernahme kann deshalb deutlich günstiger sein.`,
         sourceLinkText: "Allgemeinen Leasingbestimmungen",
-        sourceUrl:
-          "https://www.amag-leasing.ch/content/dam/amag-leasingportal/documents/allgemeine-leasingbestimmungen/deutsch/ALB_Autos_0125_DE_fin.pdf",
+        sourceUrl: AMAG_LEASING.sourceUrl,
       },
       // ERFAHRUNGSWERT-VINCE: typische Dauer einer AMAG-Übertragung
       typicalDuration: null,
+      // Aus der Vorgängerausgabe der ALB; gegen die aktuelle Ausgabe nicht nachgeprüft,
+      // deshalb ohne Quellenangabe, bis bestätigt.
       documents: {
         text:
-          "AMAG Leasing prüft Kreditfähigkeit und Kreditwürdigkeit der übernehmenden Person mit Abfrage bei ZEK/IKO (gemäss ALB 01/25, Ziff. 19.1). Das Fahrzeug muss grundsätzlich auf die Leasingnehmerin oder den Leasingnehmer immatrikuliert sein (Ziff. 8.1); bei Neufahrzeugen ist Vollkasko Pflicht (Ziff. 5.1).",
-        sourceLinkText: "ALB 01/25",
-        sourceUrl:
-          "https://www.amag-leasing.ch/content/dam/amag-leasingportal/documents/allgemeine-leasingbestimmungen/deutsch/ALB_Autos_0125_DE_fin.pdf",
+          "AMAG Leasing prüft Kreditfähigkeit und Kreditwürdigkeit der übernehmenden Person mit Abfrage bei ZEK/IKO. Das Fahrzeug muss grundsätzlich auf die Leasingnehmerin oder den Leasingnehmer immatrikuliert sein; bei Neufahrzeugen ist Vollkasko Pflicht.",
       },
       transferProcess: {
         text:
-          "AMAG Leasing arbeitet mit indirektem Leasing: Deine Liefergarage ist eng eingebunden und gegenüber AMAG Leasing zur Rücknahme zum Restwert verpflichtet (gemäss AMAG-Leasing-Ablauf). Kläre eine Übernahme deshalb gemeinsam mit AMAG Leasing und der Liefergarage. Leasingfahrzeuge tragen Code 178 im Fahrzeugausweis (ALB Ziff. 16.9) – ohne Freigabe der AMAG läuft beim Strassenverkehrsamt nichts.",
+          "AMAG Leasing arbeitet mit indirektem Leasing: Deine Liefergarage ist eng eingebunden und gegenüber AMAG Leasing zur Rücknahme zum Restwert verpflichtet (gemäss AMAG-Leasing-Ablauf). Kläre eine Übernahme deshalb gemeinsam mit AMAG Leasing und der Liefergarage. Leasingfahrzeuge tragen im Fahrzeugausweis den Eintrag «Halterwechsel verboten» – ohne Freigabe der AMAG läuft beim Strassenverkehrsamt nichts.",
         sourceLinkText: "AMAG-Leasing-Ablauf",
         sourceUrl: "https://www.amag-leasing.ch/de/ablauf-leasing.html",
       },

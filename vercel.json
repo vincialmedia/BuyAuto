@@ -12,8 +12,101 @@
   ],
   "redirects": [
     {
+      "source": "/auto-abos-im-vergleich",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme-vs-autoabo",
+      "permanent": true
+    },
+    {
+      "source": "/carify-alternativen",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme-vs-autoabo",
+      "permanent": true
+    },
+    {
+      "source": "/auto-abo-vs-leasing-kosten",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme-vs-autoabo",
+      "permanent": true
+    },
+    {
+      "source": "/auto-abo-kuendigen",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme-vs-autoabo",
+      "permanent": true
+    },
+    {
+      "source": "/leasinguebernahme-vs-neues-leasing",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme",
+      "permanent": true
+    },
+    {
+      "source": "/leasing-transfer",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme",
+      "permanent": true
+    },
+    {
+      "source": "/fuer-haendler",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/eintauschwert-rechner",
+      "permanent": true
+    },
+    {
+      "source": "/fuer-haendler/marktwert-rechner",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/eintauschwert-rechner",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "buyauto.ch" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
       "destination": "https://www.buyauto.ch/:path*",
       "permanent": true
     }

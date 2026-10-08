@@ -1,5 +1,8 @@
 import Head from "next/head";
+import type { Listing } from "@/lib/buyauto/types";
+import { getPremiumCarouselListings } from "@/services/listingsService";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
+import { FEE_SHORT } from "@/lib/buyauto/facts";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -26,7 +29,6 @@ import {
 // Dynamic import for below-the-fold content
 const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
   loading: () => <div className="w-full h-96 bg-neutral-100 animate-pulse rounded-xl" />,
-  ssr: false
 });
 
 import { Button } from "@/components/ui/button";
@@ -41,7 +43,50 @@ import {
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/autoscout24-alternative-leasinguebernahme"];
 
-export default function AutoscoutAlternativeLeasinguebernahmePage() {
+// Shared by the FAQPage JSON-LD and the visible FAQ so both carry the same sourced fee.
+const FAQ_KOSTEN_ANSWER =
+  `Die Leasinggesellschaft verrechnet meist eine Übertragungsgebühr (${FEE_SHORT}). ` +
+  "Wer diese übernimmt (alter oder neuer Leasingnehmer), ist Verhandlungssache. " +
+  "Dies ist aber fast immer günstiger als eine vorzeitige Kündigung.";
+
+// One list for the visible FAQ and the FAQPage JSON-LD: Google requires the schema
+// to carry the same answers the visitor can read.
+const FAQS: { q: string; a: string }[] = [
+  {
+    q: "Muss der Leasinggeber einer Leasingübernahme zustimmen?",
+    a: "Ja, der Leasingvertrag besteht zwischen dir und der Bank. Ein Wechsel des Vertragspartners bedarf immer der Zustimmung der Bank. Diese prüft vor allem die Bonität des neuen Leasingnehmers."
+  },
+  {
+    q: "Wird eine Bonitätsprüfung gemacht?",
+    a: "Absolut. Der neue Leasingnehmer muss finanziell in der Lage sein, die Raten zu tragen. Ein Betreibungsauszug und Lohnausweis sind Standard."
+  },
+  {
+    q: "Welche Kosten entstehen bei einer Leasingübernahme?",
+    a: FAQ_KOSTEN_ANSWER
+  },
+  {
+    q: "Wie lange dauert eine Leasingübernahme?",
+    a: "Wenn ein Interessent gefunden ist und alle Unterlagen (Betreibungsauszug, Lohnausweis etc.) vorliegen, braucht die Bank oft nur wenige Tage bis eine Woche für die Prüfung und Vertragserstellung."
+  },
+  {
+    q: "Kann ich mein Leasing-Auto einfach verkaufen?",
+    a: "Nein, das Auto gehört der Leasingbank. Du kannst es nicht verkaufen, es sei denn, du kaufst es vorher aus dem Vertrag heraus (was teuer ist). Die Leasingübernahme ist der Weg, den Vertrag zu übertragen."
+  },
+  {
+    q: "Welche Angaben gehören ins Inserat, damit es schneller geht?",
+    a: "Sei transparent: Monatliche Rate, genaue Restlaufzeit, aktuelle Kilometer, Restkilometer, allfällige Anzahlung und der Name der Leasingbank sind entscheidend für Interessenten."
+  },
+  {
+    q: "Was passiert nach der Bewilligung?",
+    a: "Die Bank schickt den Umschreibungsvertrag. Wenn beide Parteien unterschrieben haben (und die Umschreibegebühr bezahlt ist), kann das Fahrzeug offiziell übergeben werden."
+  },
+  {
+    q: "Worauf sollte man bei der Fahrzeugübergabe achten?",
+    a: "Erstellt ein Übergabeprotokoll! Haltet Schäden, Kilometerstand und Zubehör schriftlich fest. Informiert auch die Versicherung über den Halterwechsel."
+  }
+];
+
+export default function AutoscoutAlternativeLeasinguebernahmePage({ premiumListings }: { premiumListings: Listing[] | null }) {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   
   // Handle sticky CTA visibility
@@ -84,72 +129,11 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
       },
       {
         "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "Muss der Leasinggeber einer Leasingübernahme zustimmen?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Ja, der Leasinggeber (die Bank) muss der Übernahme zustimmen. Er prüft in der Regel die Bonität des neuen Leasingnehmers."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Wird eine Bonitätsprüfung gemacht?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Ja, absolut. Der neue Leasingnehmer übernimmt die finanziellen Verpflichtungen, daher prüft die Bank dessen Zahlungsfähigkeit."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Welche Kosten entstehen bei einer Leasingübernahme?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Meistens fällt eine Umschreibegebühr der Bank an (ca. CHF 300–600). Diese ist oft deutlich geringer als die Kosten einer vorzeitigen Vertragskündigung."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Wie lange dauert eine Leasingübernahme?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Sobald ein Nachfolger gefunden ist und die Unterlagen vollständig eingereicht sind, dauert die Prüfung durch die Bank oft nur wenige Tage bis eine Woche."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Kann ich mein Leasing-Auto einfach verkaufen?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Nein, da das Auto der Bank gehört, kannst du es nicht einfach verkaufen. Du müsstest es erst aus dem Vertrag herauskaufen (was teuer ist) oder eben den Leasingvertrag übertragen."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Welche Angaben gehören ins Inserat, damit es schneller geht?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Wichtig sind: Monatliche Rate, Restlaufzeit, aktuelle Kilometer, Restkilometer, Anzahlung (falls gewünscht) und der Name der Leasingbank."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Was passiert nach der Bewilligung?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Die Bank erstellt einen Umschreibungsvertrag. Wenn beide Parteien unterschrieben haben, kann das Fahrzeug übergeben werden."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Worauf sollte man bei der Fahrzeugübergabe achten?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Erstellt unbedingt ein Übergabeprotokoll, haltet den genauen Zustand und Kilometerstand fest und übergebt alle Schlüssel und Dokumente."
-            }
-          }
-        ]
+        "mainEntity": FAQS.map((faq) => ({
+          "@type": "Question",
+          "name": faq.q,
+          "acceptedAnswer": { "@type": "Answer", "text": faq.a },
+        }))
       }
     ]
   };
@@ -476,7 +460,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="flex-1">
                   <p className="text-xl text-neutral-700 leading-relaxed mb-6">
-                    Oft fallen Gebühren für die Umschreibung/Übertragung an. Die genaue Höhe hängt vom Leasinggeber ab (oft zwischen CHF 300 und CHF 600) – eine detaillierte Aufschlüsselung, <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline underline-offset-4 decoration-primary/30">was eine Leasingübernahme kostet</Link>, findest du in unserem Kosten-Ratgeber.
+                    Oft fallen Gebühren für die Umschreibung/Übertragung an. Die genaue Höhe hängt von der Leasinggesellschaft ab ({FEE_SHORT}) – eine detaillierte Aufschlüsselung, <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline underline-offset-4 decoration-primary/30">was eine Leasingübernahme kostet</Link>, findest du in unserem Kosten-Ratgeber.
                   </p>
                   <p className="text-xl text-neutral-700 leading-relaxed font-medium">
                     Im Vergleich zu <span className="text-red-600">"vorzeitig kündigen und alles zahlen"</span> ist die Übernahme für viele der deutlich sinnvollere und günstigere Exit.
@@ -652,40 +636,7 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
             </div>
             
             <Accordion type="single" collapsible className="w-full space-y-4">
-              {[
-                {
-                  q: "Muss der Leasinggeber einer Leasingübernahme zustimmen?",
-                  a: "Ja, der Leasingvertrag besteht zwischen dir und der Bank. Ein Wechsel des Vertragspartners bedarf immer der Zustimmung der Bank. Diese prüft vor allem die Bonität des neuen Leasingnehmers."
-                },
-                {
-                  q: "Wird eine Bonitätsprüfung gemacht?",
-                  a: "Absolut. Der neue Leasingnehmer muss finanziell in der Lage sein, die Raten zu tragen. Ein Betreibungsauszug und Lohnausweis sind Standard."
-                },
-                {
-                  q: "Welche Kosten entstehen bei einer Leasingübernahme?",
-                  a: "Die Bank verrechnet meist eine Umschreibegebühr (ca. CHF 300–600). Wer diese übernimmt (alter oder neuer Leasingnehmer), ist Verhandlungssache. Dies ist aber fast immer günstiger als eine vorzeitige Kündigung."
-                },
-                {
-                  q: "Wie lange dauert eine Leasingübernahme?",
-                  a: "Wenn ein Interessent gefunden ist und alle Unterlagen (Betreibungsauszug, Lohnausweis etc.) vorliegen, braucht die Bank oft nur wenige Tage bis eine Woche für die Prüfung und Vertragserstellung."
-                },
-                {
-                  q: "Kann ich mein Leasing-Auto einfach verkaufen?",
-                  a: "Nein, das Auto gehört der Leasingbank. Du kannst es nicht verkaufen, es sei denn, du kaufst es vorher aus dem Vertrag heraus (was teuer ist). Die Leasingübernahme ist der Weg, den Vertrag zu übertragen."
-                },
-                {
-                  q: "Welche Angaben gehören ins Inserat, damit es schneller geht?",
-                  a: "Sei transparent: Monatliche Rate, genaue Restlaufzeit, aktuelle Kilometer, Restkilometer, allfällige Anzahlung und der Name der Leasingbank sind entscheidend für Interessenten."
-                },
-                {
-                  q: "Was passiert nach der Bewilligung?",
-                  a: "Die Bank schickt den Umschreibungsvertrag. Wenn beide Parteien unterschrieben haben (und die Umschreibegebühr bezahlt ist), kann das Fahrzeug offiziell übergeben werden."
-                },
-                {
-                  q: "Worauf sollte man bei der Fahrzeugübergabe achten?",
-                  a: "Erstellt ein Übergabeprotokoll! Haltet Schäden, Kilometerstand und Zubehör schriftlich fest. Informiert auch die Versicherung über den Halterwechsel."
-                }
-              ].map((faq, i) => (
+              {FAQS.map((faq, i) => (
                 <AccordionItem 
                   key={i}
                   value={`item-${i}`} 
@@ -764,9 +715,14 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings />
+        <PremiumListings initialListings={premiumListings ?? undefined} />
         
       </main>
     </>
   );
 }
+
+// ISR so the premium carousel is server-rendered (prices in the HTML, no client fetch).
+export const getStaticProps = async () => {
+  return { props: { premiumListings: await getPremiumCarouselListings() }, revalidate: 300 };
+};

@@ -1,24 +1,24 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Listing, ListingDetail } from "@/lib/buyauto/types";
 import { getSimilarListings } from "@/services/listingsService";
-import { buildListingHref } from "@/lib/buyauto/listingUrl";
-import { getImageVariant } from "@/lib/buyauto/imageVariant";
+import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
 
 interface SimilarListingsProps {
   listing: ListingDetail;
+  /** Server-rendered cards (getServerSideProps); when given, no client fetch happens. */
+  initialListings?: Listing[];
 }
 
-export default function SimilarListings({ listing }: SimilarListingsProps) {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function SimilarListings({ listing, initialListings }: SimilarListingsProps) {
+  const [listings, setListings] = useState<Listing[]>(initialListings ?? []);
+  const [isLoading, setIsLoading] = useState(initialListings === undefined);
 
   useEffect(() => {
+    if (initialListings !== undefined) return;
     const loadSimilarListings = async () => {
       try {
         const similarListings = await getSimilarListings(listing, 6);
@@ -31,7 +31,7 @@ export default function SimilarListings({ listing }: SimilarListingsProps) {
     };
 
     loadSimilarListings();
-  }, [listing]);
+  }, [listing, initialListings]);
 
   if (isLoading) {
     return (
@@ -82,7 +82,9 @@ export default function SimilarListings({ listing }: SimilarListingsProps) {
       <div className="md:hidden">
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory">
           {listings.map((listingItem) => (
-            <SimilarListingCardMobile key={listingItem.id} listing={listingItem} />
+            <div key={listingItem.id} className="flex-shrink-0 w-72 snap-start">
+              <ModernListingCard listing={listingItem} />
+            </div>
           ))}
         </div>
       </div>
@@ -90,7 +92,7 @@ export default function SimilarListings({ listing }: SimilarListingsProps) {
       {/* Desktop: Grid */}
       <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
         {listings.slice(0, 6).map((listingItem) => (
-          <SimilarListingCard key={listingItem.id} listing={listingItem} />
+          <ModernListingCard key={listingItem.id} listing={listingItem} />
         ))}
       </div>
     </section>
@@ -119,172 +121,6 @@ function SimilarListingCardSkeleton({ className }: { className?: string }) {
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
-}
-
-/**
- * Same product rule as ModernListingCard: a row is a Leasingübernahme when its
- * deal_type says so or its takeover add-on offer is enabled — those lead with
- * the monthly rate and Restlaufzeit. Everything else is a Direktkauf and shows
- * the purchase price (never the mirrored monthly columns as "pro Monat").
- */
-function cardPriceInfo(listing: Listing): { price: string; priceSub: string; months: number | null } {
-  const chf = (v: number) => `CHF ${v.toLocaleString("de-CH")}`;
-  const dealType = listing.deal_type ?? "lease_takeover";
-
-  const takeover = dealType === "direct_purchase" ? listing.leasing_offer?.lease_takeover_offer ?? null : null;
-  const takeoverEnabled = takeover?.enabled === true;
-
-  const monthly =
-    dealType === "lease_takeover"
-      ? listing.pricePerMonthCHF > 0
-        ? listing.pricePerMonthCHF
-        : null
-      : takeoverEnabled && typeof takeover?.price_per_month_chf === "number"
-        ? takeover.price_per_month_chf
-        : null;
-
-  if ((dealType === "lease_takeover" || takeoverEnabled) && monthly) {
-    const months =
-      dealType === "lease_takeover"
-        ? listing.remainingMonths > 0
-          ? listing.remainingMonths
-          : null
-        : typeof takeover?.remaining_months === "number" && takeover.remaining_months > 0
-          ? takeover.remaining_months
-          : null;
-    return { price: chf(Math.round(monthly)), priceSub: "pro Monat", months };
-  }
-
-  const purchase = typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0 ? listing.purchasePriceCHF : null;
-  return { price: purchase ? chf(Math.round(purchase)) : "Preis auf Anfrage", priceSub: purchase ? "Kaufpreis" : "", months: null };
-}
-
-function SimilarListingCard({ listing }: { listing: Listing }) {
-  const formatMileage = (km: number) => `${km.toLocaleString("de-CH")} km`;
-  const { price, priceSub, months } = cardPriceInfo(listing);
-
-  return (
-    <Card className="group border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-      <Link href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}>
-        <div className="relative aspect-video bg-gradient-to-br from-neutral-100 to-neutral-200">
-          {listing.imageUrl && (
-            <Image
-              src={getImageVariant(listing.imageUrl, "medium")}
-              alt={`${listing.brand} ${listing.model} ${listing.year}`}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 350px"
-              quality={80}
-            />
-          )}
-          {!listing.imageUrl && (
-            <div className="absolute inset-0 flex items-center justify-center text-neutral-500">
-              <div className="text-center">
-                <div className="text-4xl mb-2">🚗</div>
-                <p className="text-sm">Bild nicht verfügbar</p>
-              </div>
-            </div>
-          )}
-          {listing.premium && (
-            <Badge className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white border-0 text-xs">
-              Premium
-            </Badge>
-          )}
-        </div>
-        
-        <CardContent className="p-4 space-y-3">
-          <div>
-            <h3 className="font-semibold text-neutral-900 group-hover:text-red-600 transition-colors">
-              {listing.brand} {listing.model}
-            </h3>
-            <p className="text-sm text-neutral-600">
-              {listing.year} · {formatMileage(listing.mileageKm)}
-            </p>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="font-bold text-red-600">
-                {price}
-              </div>
-              {priceSub && <div className="text-xs text-neutral-500">{priceSub}</div>}
-            </div>
-            <div className="text-right text-sm text-neutral-600">
-              {months !== null && <div>{months} Mon.</div>}
-              <div className="flex items-center gap-1 text-xs">
-                <MapPin className="w-3 h-3" />
-                {listing.location}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Link>
-    </Card>
-  );
-}
-
-function SimilarListingCardMobile({ listing }: { listing: Listing }) {
-  const formatMileage = (km: number) => `${km.toLocaleString("de-CH")} km`;
-  const { price, priceSub, months } = cardPriceInfo(listing);
-
-  return (
-    <Card className="group flex-shrink-0 w-72 border-0 shadow-lg shadow-neutral-900/5 bg-white rounded-2xl overflow-hidden snap-start">
-      <Link href={buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model })}>
-        <div className="relative aspect-video bg-gradient-to-br from-neutral-100 to-neutral-200">
-          {listing.imageUrl && (
-            <Image
-              src={getImageVariant(listing.imageUrl, "medium")}
-              alt={`${listing.brand} ${listing.model} ${listing.year}`}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              sizes="300px"
-              quality={80}
-            />
-          )}
-          {!listing.imageUrl && (
-            <div className="absolute inset-0 flex items-center justify-center text-neutral-500">
-              <div className="text-center">
-                <div className="text-4xl mb-2">🚗</div>
-                <p className="text-sm">Bild nicht verfügbar</p>
-              </div>
-            </div>
-          )}
-          {listing.premium && (
-            <Badge className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white border-0 text-xs">
-              Premium
-            </Badge>
-          )}
-        </div>
-        
-        <CardContent className="p-4 space-y-3">
-          <div>
-            <h3 className="font-semibold text-neutral-900 group-hover:text-red-600 transition-colors">
-              {listing.brand} {listing.model}
-            </h3>
-            <p className="text-sm text-neutral-600">
-              {listing.year} · {formatMileage(listing.mileageKm)}
-            </p>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="font-bold text-red-600">
-                {price}
-              </div>
-              {priceSub && <div className="text-xs text-neutral-500">{priceSub}</div>}
-            </div>
-            <div className="text-right text-sm text-neutral-600">
-              {months !== null && <div>{months} Mon.</div>}
-              <div className="flex items-center gap-1 text-xs">
-                <MapPin className="w-3 h-3" />
-                {listing.location}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Link>
     </Card>
   );
 }

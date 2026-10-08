@@ -38,6 +38,8 @@ export interface SearchQuery {
   dealType?: "lease_takeover" | "direct_purchase";
   financingType?: "cash" | "leasing";
   garageId?: string;
+  /** Results per page (default 12). Brand pages list their whole inventory. */
+  pageSize?: number;
 }
 
 export type SearchResult = {

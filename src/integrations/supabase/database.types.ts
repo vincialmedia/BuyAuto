@@ -1902,6 +1902,7 @@ export type Database = {
           body: string | null
           brand: string | null
           canton_code: string | null
+          contract_end_date: string | null
           cover_image_index: number | null
           cover_image_url: string | null
           created_at: string | null

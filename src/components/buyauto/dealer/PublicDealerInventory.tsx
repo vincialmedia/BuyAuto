@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SearchQuery, SearchResult } from "@/lib/buyauto/search";
 import { searchDealerListings } from "@/services/listingsService";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { buildListingHref } from "@/lib/buyauto/listingUrl";
+import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
+import { formatChf, formatSwissInt, pluralize } from "@/lib/buyauto/format";
 
 type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
 
@@ -17,6 +17,8 @@ interface PublicDealerInventoryProps {
   className?: string;
   initialQuery?: Partial<SearchQuery> & { saleType?: string };
   embedId?: string;
+  /** Server-rendered first page (getServerSideProps) for the default query; skips the first fetch. */
+  initialResults?: SearchResult;
 }
 
 function deriveSaleType(query: SearchQuery): SaleTypeOption {
@@ -24,17 +26,6 @@ function deriveSaleType(query: SearchQuery): SaleTypeOption {
   if (query.dealType === "lease_takeover") return "lease_takeover";
   if (query.financingType === "leasing") return "leasing";
   return "direct_purchase";
-}
-
-function getSaleTypeLabel(option: SaleTypeOption): string {
-  if (option === "lease_takeover") return "Leasingübernahme";
-  if (option === "leasing") return "Leasing";
-  if (option === "direct_purchase") return "Direktkauf";
-  return "Alle";
-}
-
-function formatChf(value: number): string {
-  return `CHF ${new Intl.NumberFormat("de-CH").format(value)}`;
 }
 
 function getCurrentYear(): number {
@@ -64,7 +55,7 @@ function postHeightToParent(embedId?: string) {
   }
 }
 
-export function PublicDealerInventory({ garageId, className, initialQuery, embedId }: PublicDealerInventoryProps) {
+export function PublicDealerInventory({ garageId, className, initialQuery, embedId, initialResults }: PublicDealerInventoryProps) {
   const [query, setQuery] = useState<SearchQuery>(() => {
     const base: SearchQuery = {
       page: 1,
@@ -76,8 +67,10 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
     return { ...base, ...saleTypePatch };
   });
 
-  const [results, setResults] = useState<SearchResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [results, setResults] = useState<SearchResult | null>(initialResults ?? null);
+  const [loading, setLoading] = useState(initialResults === undefined);
+  // The server already rendered the first page: don't refetch it on mount.
+  const skipInitialFetch = useRef(initialResults !== undefined);
 
   const saleType = useMemo(() => deriveSaleType(query), [query.dealType, query.financingType]);
   const isMixed = saleType === "all";
@@ -95,6 +88,10 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
   const priceMaxPlaceholder = isDirectPurchase ? "Max. Kaufpreis" : "Max. Rate";
 
   useEffect(() => {
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
+    }
     let cancelled = false;
 
     async function run() {
@@ -226,7 +223,7 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
           <div>
             <h2 className="text-lg font-bold tracking-tight text-neutral-900">Fahrzeuge im Angebot</h2>
             <p className="mt-1 text-sm text-neutral-600">
-              {loading ? "Lade Fahrzeuge…" : total > 0 ? `${total.toLocaleString("de-CH")} Fahrzeuge` : "Aktuell keine Fahrzeuge verfügbar"}
+              {loading ? "Lade Fahrzeuge…" : total > 0 ? `${formatSwissInt(total)} ${pluralize(total, "Fahrzeug", "Fahrzeuge")}` : "Aktuell keine Fahrzeuge verfügbar"}
             </p>
           </div>
 
@@ -359,69 +356,9 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
         {results && results.items.length > 0 ? (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {results.items.map((listing) => {
-                const href = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
-                const priceLine =
-                  listing.deal_type === "direct_purchase"
-                    ? typeof listing.purchasePriceCHF === "number" && listing.purchasePriceCHF > 0
-                      ? formatChf(listing.purchasePriceCHF)
-                      : null
-                    : typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
-                      ? `${formatChf(listing.pricePerMonthCHF)}/Monat`
-                      : null;
-
-                return (
-                  <Link
-                    key={listing.id}
-                    href={href}
-                    className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <div className="aspect-[16/10] w-full bg-neutral-100">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={listing.imageUrl || "/buyauto-logo.png"}
-                        alt={`${listing.brand} ${listing.model}`}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                        loading="lazy"
-                      />
-                    </div>
-
-                    <div className="p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-neutral-900">
-                            {listing.brand} {listing.model}
-                          </div>
-                          <div className="mt-0.5 text-xs text-neutral-600">
-                            {listing.year} • {listing.location}
-                          </div>
-                        </div>
-
-                        {listing.premium ? (
-                          <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[11px] font-semibold text-white">Premium</span>
-                        ) : null}
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-neutral-700">
-                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{listing.fuel}</span>
-                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{listing.gearbox}</span>
-                        <span className="rounded-full bg-neutral-100 px-2.5 py-1">{listing.body}</span>
-                      </div>
-
-                      <div className="mt-4 flex items-end justify-between gap-3">
-                        <div>
-                          <div className="text-xs uppercase tracking-wide text-neutral-500">
-                            {getSaleTypeLabel(deriveSaleType({ dealType: listing.deal_type, financingType: listing.financing_type ?? undefined }))}
-                          </div>
-                          <div className="mt-1 text-sm font-bold text-neutral-900">{priceLine ?? "Preis auf Anfrage"}</div>
-                        </div>
-
-                        <span className="text-sm font-semibold text-primary underline underline-offset-4">Details</span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              {results.items.map((listing) => (
+                <ModernListingCard key={listing.id} listing={listing} />
+              ))}
             </div>
 
             <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-neutral-200 pt-6 sm:flex-row">

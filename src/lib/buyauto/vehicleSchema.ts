@@ -2,6 +2,8 @@
 // real DB values 1:1 — a helper returns null when the source field is missing or
 // malformed, and the caller omits the property. Nothing is ever guessed or defaulted.
 
+import { formatSwissInt } from "@/lib/buyauto/format";
+
 const SWISS_CANTON_CODES = new Set([
   "AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE",
   "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH",
@@ -64,7 +66,7 @@ export function parseListingPlace(
     const tokens = location
       .split(",")
       .map((t) => t.trim())
-      .filter((t) => t !== "" && !t.startsWith("Schweiz/"));
+      .filter((t) => t !== "" && !t.startsWith("Schweiz/") && t !== "Schweiz");
 
     for (const token of tokens) {
       const upper = token.toUpperCase();
@@ -87,7 +89,8 @@ export function parseListingPlace(
   };
 }
 
-const chf = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
+// Same glyph as the page body and meta (lib/buyauto/format).
+const chf = { format: formatSwissInt };
 
 export interface VehicleDescriptionInput {
   dealType: "lease_takeover" | "direct_purchase";
@@ -120,7 +123,7 @@ export function buildVehicleDescription(input: VehicleDescriptionInput): string 
     const months = typeof input.remainingMonths === "number" && input.remainingMonths > 0 ? input.remainingMonths : null;
 
     if (rate && months) {
-      parts.push(`Leasingübernahme: ${vehicle} für CHF ${chf.format(rate)} pro Monat bei ${months} Monaten Restlaufzeit.`);
+      parts.push(`Leasingübernahme: ${vehicle} für CHF ${chf.format(rate)} pro Monat bei ${months} ${months === 1 ? "Monat" : "Monaten"} Restlaufzeit.`);
     } else if (rate) {
       parts.push(`Leasingübernahme: ${vehicle} für CHF ${chf.format(rate)} pro Monat.`);
     } else {

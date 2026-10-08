@@ -204,3 +204,79 @@ export function brandPagesForInventory(rows: BrandInventoryRow[]): { slug: strin
 
   return pages.sort((a, b) => a.name.localeCompare(b.name, "de-CH"));
 }
+
+// ---------------------------------------------------------------------------
+// Indexing and redirect targets
+// ---------------------------------------------------------------------------
+
+/** A brand page is indexed ("index, follow") from this many live Leasingübernahmen on. */
+export const BRAND_PAGE_MIN_INDEXABLE_LISTINGS = 2;
+
+export function isIndexableBrandCount(count: number): boolean {
+  return count >= BRAND_PAGE_MIN_INDEXABLE_LISTINGS;
+}
+
+export interface BrandPageSummary {
+  slug: string;
+  name: string;
+  dbBrands: string[];
+  /** Live Leasingübernahme listings on the page. */
+  count: number;
+}
+
+/**
+ * Brand pages with their live Leasingübernahme count. Pass ONLY live
+ * Leasingübernahme rows (Kaufart rule, see lib/buyauto/kaufart).
+ */
+export function brandPageCounts(liveTakeoverRows: { brand: string | null }[]): BrandPageSummary[] {
+  const rows = liveTakeoverRows
+    .map((r) => (typeof r.brand === "string" ? r.brand.trim() : ""))
+    .filter((b) => b !== "");
+  return brandPagesForInventory(rows.map((brand) => ({ brand, model: null, deal_type: null }))).map((page) => ({
+    ...page,
+    count: rows.filter((b) => page.dbBrands.includes(b)).length,
+  }));
+}
+
+/** The brand pages that are indexable — the only ones the sitemap and brand link blocks list. */
+export function indexableBrandPages(liveTakeoverRows: { brand: string | null }[]): BrandPageSummary[] {
+  return brandPageCounts(liveTakeoverRows).filter((b) => isIndexableBrandCount(b.count));
+}
+
+/** The brand page that covers a raw listings.brand value ("Mercedes" -> mercedes-benz). */
+export function brandPageForDbBrand(dbBrand: string): { slug: string; name: string; dbBrands: string[] } | null {
+  const trimmed = dbBrand.trim();
+  if (!trimmed) return null;
+  const curated = curatedBrandForDbBrand(trimmed);
+  if (curated) return { slug: curated.slug, name: curated.name, dbBrands: dbBrandsFor(curated) };
+  const slug = slugifyBrandName(trimmed);
+  return slug ? { slug, name: trimmed, dbBrands: [trimmed] } : null;
+}
+
+/**
+ * The brand page a listing URL segment starts with ("mercedes-eqe" -> mercedes-benz),
+ * for listings that no longer have a row. Matches curated slugs, their DB
+ * spellings and the given DB brands; the longest match wins.
+ */
+export function brandPageForListingSlug(
+  slugPrefix: string,
+  knownDbBrands: string[]
+): { slug: string; name: string; dbBrands: string[] } | null {
+  const segment = slugPrefix.trim().toLowerCase();
+  if (!segment) return null;
+
+  const candidates: { key: string; page: { slug: string; name: string; dbBrands: string[] } }[] = [];
+  for (const curated of LEASING_BRANDS) {
+    const page = { slug: curated.slug, name: curated.name, dbBrands: dbBrandsFor(curated) };
+    for (const key of [curated.slug, ...dbBrandsFor(curated).map(slugifyBrandName)]) candidates.push({ key, page });
+  }
+  for (const dbBrand of knownDbBrands) {
+    const page = brandPageForDbBrand(dbBrand);
+    if (page) candidates.push({ key: slugifyBrandName(dbBrand), page });
+  }
+
+  const match = candidates
+    .filter(({ key }) => key && (segment === key || segment.startsWith(`${key}-`)))
+    .sort((a, b) => b.key.length - a.key.length)[0];
+  return match ? match.page : null;
+}

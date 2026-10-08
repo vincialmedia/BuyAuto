@@ -36,18 +36,14 @@ import { DECLINE_DELETE_AFTER_DAYS, DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyau
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
-import { hasEnabledTakeoverOffer } from "@/lib/buyauto/premiumListings";
+import { kaufartOf } from "@/lib/buyauto/kaufart";
 
 function getDealTypeLabel(listing: ListingDetail): string {
-  const dealType = listing.deal_type ?? "lease_takeover";
-  if (dealType === "direct_purchase") {
-    // The wizard stores a Leasingübernahme as a Direktkauf with an enabled
-    // Übernahme-Angebot; the seller should see the offer they actually made.
-    if (hasEnabledTakeoverOffer(listing)) return "Leasingübernahme";
-    if (listing.financing_type === "leasing") return "Direktkauf · Leasing";
-    return "Direktkauf · Barzahlung";
-  }
-  return "Leasingübernahme";
+  // Same Kaufart rule as the public site (lib/buyauto/kaufart): the seller sees
+  // the type buyers see, whatever deal_type the wizard stored.
+  if (kaufartOf(listing) === "lease_takeover") return "Leasingübernahme";
+  if (listing.financing_type === "leasing") return "Direktkauf · Leasing";
+  return "Direktkauf · Barzahlung";
 }
 
 /**

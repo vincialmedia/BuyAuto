@@ -498,10 +498,6 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
               Weitere Rechner & Ratgeber
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Link href="/auto-abo-vs-leasing-kosten" className="flex items-center justify-between gap-2 bg-neutral-50 rounded-xl border border-neutral-200 px-5 py-4 text-neutral-700 hover:border-red-300 hover:text-red-600 transition-colors group">
-                <span className="font-medium">Auto-Abo vs. Leasing: Kostenrechner</span>
-                <ChevronRight className="w-4 h-4 text-red-400 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
               <Link href="/leasinguebernahme-kosten" className="flex items-center justify-between gap-2 bg-neutral-50 rounded-xl border border-neutral-200 px-5 py-4 text-neutral-700 hover:border-red-300 hover:text-red-600 transition-colors group">
                 <span className="font-medium">Was kostet eine Leasingübernahme?</span>
                 <ChevronRight className="w-4 h-4 text-red-400 group-hover:translate-x-0.5 transition-transform" />
