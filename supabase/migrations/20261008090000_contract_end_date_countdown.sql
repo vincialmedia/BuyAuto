@@ -25,10 +25,14 @@
 
 begin;
 
+-- Fail fast instead of queueing every API read behind the trigger DDL's table lock.
+set local lock_timeout = '5s';
+
 -- ---------------------------------------------------------------------------
 -- 1. Stored remaining months: column first, then the takeover offer JSON.
---    Non-numeric JSON values yield NULL instead of raising, so a malformed
---    offer can never block a save through the trigger below.
+--    Non-numeric or absurdly long JSON values yield NULL instead of raising,
+--    and the trigger clamps the months to 0..1200, so neither a malformed
+--    offer nor a typo like 9999999 can block a save.
 -- ---------------------------------------------------------------------------
 create or replace function public.listing_stored_remaining_months(
   p_remaining_months integer,
@@ -42,7 +46,7 @@ as $$
   select coalesce(
     p_remaining_months,
     case
-      when (p_leasing_offer -> 'lease_takeover_offer' ->> 'remaining_months') ~ '^\s*\d+(\.\d+)?\s*$'
+      when (p_leasing_offer -> 'lease_takeover_offer' ->> 'remaining_months') ~ '^\s*\d{1,4}(\.\d+)?\s*$'
         then round((p_leasing_offer -> 'lease_takeover_offer' ->> 'remaining_months')::numeric)::integer
     end
   );
@@ -58,7 +62,7 @@ comment on function public.listing_stored_remaining_months(integer, jsonb) is
 update public.listings l
    set contract_end_date = (
          date_trunc('month', coalesce(l.published_at, l.created_at) at time zone 'Europe/Zurich')::date
-         + make_interval(months => greatest(0, m.months))
+         + make_interval(months => least(greatest(0, m.months), 1200))
        )::date
   from (
     select id, public.listing_stored_remaining_months(remaining_months, leasing_offer) as months
@@ -106,7 +110,7 @@ begin
 
   new.contract_end_date := (
     date_trunc('month', now() at time zone 'Europe/Zurich')::date
-    + make_interval(months => greatest(0, v_months))
+    + make_interval(months => least(greatest(0, v_months), 1200))
   )::date;
 
   return new;

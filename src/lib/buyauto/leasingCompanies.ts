@@ -135,7 +135,7 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
       // sind kuratiert, skoda läuft als dynamische Seite mit Live-Inventar.
       // Seat und Cupra haben noch keine Seiten — nur Nennung im Text.
       // Markenliste (Porsche NICHT aufgeführt) zuletzt gegen die Vorgänger-
-      // ausgabe der ALB (01/25) geprüft und gegen 01/26 nicht nachgeprüft:
+      // ausgabe der ALB geprüft und gegen die aktuelle Ausgabe nicht nachgeprüft:
       // deshalb ohne Quellenangabe, bis sie gegen die aktuelle Ausgabe bestätigt ist.
       brands: [
         { name: "VW", href: "/leasinguebernahme/volkswagen" },
@@ -156,7 +156,7 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
       },
       // ERFAHRUNGSWERT-VINCE: typische Dauer einer AMAG-Übertragung
       typicalDuration: null,
-      // Aus der Vorgängerausgabe der ALB (01/25); gegen 01/26 nicht nachgeprüft,
+      // Aus der Vorgängerausgabe der ALB; gegen die aktuelle Ausgabe nicht nachgeprüft,
       // deshalb ohne Quellenangabe, bis bestätigt.
       documents: {
         text:

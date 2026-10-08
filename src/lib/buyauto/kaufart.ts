@@ -25,9 +25,12 @@
  *            minimum 0; falls back to the stored value
  *            coalesce(remaining_months, lease_takeover_offer.remaining_months)
  *            while contract_end_date is NULL.
- * contract_end_date is always the 1st of a month (first day of the month the
- * months were entered + N), so counting calendar months keeps the seller's
- * number for the rest of that month and counts down on every 1st.
+ * The database sets contract_end_date to the 1st of a month (first day of the
+ * month the months were entered + N), so counting calendar months keeps the
+ * seller's number for the rest of that month and counts down on every 1st.
+ * A date a seller picked in the legacy takeover form can fall on any day; for
+ * those the wizard's own rule applies (one month less while the end day is
+ * still ahead of today's day), so the page never shows more than they entered.
  * At 0 months the contract has ended: the listing stays a Leasingübernahme but
  * drops out of every takeover list (isLiveOffer === false).
  */
@@ -89,15 +92,17 @@ function coalesceNumber(column: unknown, fromOffer: unknown): number | null {
 }
 
 /** Today's calendar date in Switzerland as [year, month(1-12)]. */
-function zurichYearMonth(now: Date): [number, number] {
+function zurichYearMonthDay(now: Date): [number, number, number] {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Zurich",
     year: "numeric",
     month: "2-digit",
+    day: "2-digit",
   }).formatToParts(now);
   const year = Number(parts.find((p) => p.type === "year")?.value);
   const month = Number(parts.find((p) => p.type === "month")?.value);
-  return [year, month];
+  const day = Number(parts.find((p) => p.type === "day")?.value);
+  return [year, month, day];
 }
 
 /**
@@ -110,8 +115,12 @@ export function monthsUntilContractEnd(contractEndDate: string | null | undefine
   if (!m) return null;
   const endYear = Number(m[1]);
   const endMonth = Number(m[2]);
-  const [year, month] = zurichYearMonth(now);
-  return Math.max(0, endYear * 12 + endMonth - (year * 12 + month));
+  const endDay = Number(m[3]);
+  const [year, month, day] = zurichYearMonthDay(now);
+  let months = endYear * 12 + endMonth - (year * 12 + month);
+  // Seller-picked end date (not the database's 1st-of-month anchor): same rule as the wizard.
+  if (endDay !== 1 && endDay < day) months -= 1;
+  return Math.max(0, months);
 }
 
 /**

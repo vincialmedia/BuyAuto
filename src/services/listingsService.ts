@@ -471,19 +471,45 @@ function isMissingContractEndColumn(error: { code?: string; message?: string } |
   return error.code === "42703" || /contract_end_date/.test(error.message ?? "");
 }
 
+type OfferQueryResult = {
+  data: unknown;
+  error: { code?: string; message?: string } | null;
+  count?: number | null;
+};
+
 /** The PostgREST filters the offer queries use; awaiting it runs the query. */
-interface OfferQuery extends PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }> {
+interface OfferQuery extends PromiseLike<OfferQueryResult> {
   eq(column: string, value: unknown): OfferQuery;
   in(column: string, values: readonly unknown[]): OfferQuery;
   ilike(column: string, pattern: string): OfferQuery;
   or(filters: string): OfferQuery;
   gte(column: string, value: unknown): OfferQuery;
   lte(column: string, value: unknown): OfferQuery;
+  order(column: string): OfferQuery;
+  range(from: number, to: number): OfferQuery;
 }
 
+// PostgREST caps a response at max-rows (Supabase: 1000) without an error, so the
+// offer rows are read in pages until the exact count is reached.
+const OFFER_PAGE_SIZE = 1000;
+
 async function selectOfferRows(scope: (query: OfferQuery) => OfferQuery): Promise<OfferRow[]> {
-  const run = (columns: string) =>
-    scope(supabase.from(PUBLIC_LISTINGS_VIEW).select(columns).eq("status", "published") as unknown as OfferQuery);
+  const run = async (columns: string): Promise<OfferQueryResult> => {
+    const rows: unknown[] = [];
+    // Advance by what came back, in case max-rows is set below the page size.
+    for (;;) {
+      const base = supabase
+        .from(PUBLIC_LISTINGS_VIEW)
+        .select(columns, { count: "exact" })
+        .eq("status", "published") as unknown as OfferQuery;
+      const from = rows.length;
+      const { data, error, count } = await scope(base).order("id").range(from, from + OFFER_PAGE_SIZE - 1);
+      if (error) return { data: null, error };
+      const page = Array.isArray(data) ? data : [];
+      rows.push(...page);
+      if (page.length === 0 || typeof count !== "number" || rows.length >= count) return { data: rows, error: null };
+    }
+  };
 
   const tryContractEnd =
     contractEndColumnMissingAt === null || Date.now() - contractEndColumnMissingAt > CONTRACT_END_RECHECK_MS;
