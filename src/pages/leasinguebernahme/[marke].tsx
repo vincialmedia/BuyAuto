@@ -8,6 +8,7 @@ import { searchListingsOrThrow } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import {
   dbBrandsFor,
+  getLeasingBrandBySlug,
   isIndexableBrandCount,
   LEASING_BRANDS,
   resolveBrandSlug,
@@ -34,7 +35,7 @@ type FaqItem = { question: string; answer: string };
 // Google requires the schema text to match what the user can actually see on the page.
 function buildFaq(brand: LeasingBrand): FaqItem[] {
   const models = brand.popularModels.slice(0, 3).join(", ");
-  return [
+  const items: FaqItem[] = [
     {
       question: `Wie funktioniert eine Leasingübernahme bei einem ${brand.name}?`,
       answer: `Du übernimmst einen laufenden ${brand.name}-Leasingvertrag von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer. Die Leasinggesellschaft prüft deine Bonität und stimmt der Übernahme zu – danach führst du den Vertrag zu den bestehenden Konditionen für die Restlaufzeit weiter. Eine hohe Anzahlung wie bei einem neuen Leasing entfällt.`,
@@ -43,11 +44,15 @@ function buildFaq(brand: LeasingBrand): FaqItem[] {
       question: `Was kostet die Leasingübernahme eines ${brand.name}?`,
       answer: `Du zahlst die bestehende monatliche Leasingrate weiter. Einmalig fallen die Übertragungsgebühr der Leasinggesellschaft (${FEE_SHORT}) und die kantonalen Gebühren für den neuen Fahrzeugausweis an. Die ursprüngliche Anzahlung bleibt im Vertrag und kommt dir als Übernehmer zugute.`,
     },
-    {
+  ];
+  // Without live models there is nothing honest to name.
+  if (models) {
+    items.push({
       question: `Welche ${brand.name}-Modelle kann ich übernehmen?`,
       answer: `Das hängt vom aktuellen Angebot ab. Beliebte ${brand.name}-Modelle für eine Leasingübernahme sind ${models}. Sieh dir die aktuell verfügbaren ${brand.name}-Angebote weiter oben an oder durchsuche alle Leasingübernahmen auf BuyAuto.`,
-    },
-  ];
+    });
+  }
+  return items;
 }
 
 export default function LeasingBrandPage({ brand, listings, total }: BrandPageProps) {
@@ -331,5 +336,10 @@ export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) =>
   });
   // Strip undefined fields so Next can serialize the props.
   const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-  return { props: { brand, listings, total: results.total }, revalidate: 300 };
+  // A page without a curated entry names only models it currently offers as
+  // Leasingübernahme (the slug itself resolves from every row, so thin pages stay reachable).
+  const pageBrand = getLeasingBrandBySlug(brand.slug)
+    ? brand
+    : { ...brand, popularModels: [...new Set(listings.map((l) => l.model).filter(Boolean))].slice(0, 4) };
+  return { props: { brand: pageBrand, listings, total: results.total }, revalidate: 300 };
 };

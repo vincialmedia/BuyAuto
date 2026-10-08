@@ -25,7 +25,7 @@ import type { LeasingCalculatorProps } from "@/components/buyauto/detail/Leasing
 import { cn } from "@/lib/utils";
 import { GarageMiniBanner } from "@/components/buyauto/detail/GarageMiniBanner";
 import { hasNewLeasingFinancing, KAUFART_LABEL, kaufartOf } from "@/lib/buyauto/kaufart";
-import { formatChf } from "@/lib/buyauto/format";
+import { formatChf, formatSwissInt } from "@/lib/buyauto/format";
 
 const LeasingCalculator = dynamic<LeasingCalculatorProps>(
   () => import("@/components/buyauto/detail/LeasingCalculator").then((m) => m.LeasingCalculator),
@@ -33,9 +33,8 @@ const LeasingCalculator = dynamic<LeasingCalculatorProps>(
 );
 
 
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(value);
-}
+// Same glyph as prices, meta and JSON-LD (lib/buyauto/format), independent of the runtime's ICU.
+const formatNumber = formatSwissInt;
 
 function formatDateDeCh(input: string): string {
   const d = new Date(input);

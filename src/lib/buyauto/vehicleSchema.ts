@@ -2,6 +2,8 @@
 // real DB values 1:1 — a helper returns null when the source field is missing or
 // malformed, and the caller omits the property. Nothing is ever guessed or defaulted.
 
+import { formatSwissInt } from "@/lib/buyauto/format";
+
 const SWISS_CANTON_CODES = new Set([
   "AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE",
   "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH",
@@ -87,7 +89,8 @@ export function parseListingPlace(
   };
 }
 
-const chf = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
+// Same glyph as the page body and meta (lib/buyauto/format).
+const chf = { format: formatSwissInt };
 
 export interface VehicleDescriptionInput {
   dealType: "lease_takeover" | "direct_purchase";

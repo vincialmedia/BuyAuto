@@ -13,8 +13,8 @@ import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/buyauto/types";
-import { searchListings } from "@/services/listingsService";
-import { orderPremiumListings } from "@/lib/buyauto/premiumListings";
+import { searchListingsOrThrow } from "@/services/listingsService";
+import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
 
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"), {
   loading: () => <div className="h-96 bg-white animate-pulse" />,
@@ -348,22 +348,13 @@ export default function HomePage({ premiumListings }: HomePageProps) {
 // ISR: premium listings are part of the static HTML (no client fetch, no
 // layout shift) and refresh in the background every 5 minutes.
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
-  try {
-    const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
-      searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
-      searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
-    ]);
+  // A failed fetch throws, so ISR keeps the last good page instead of caching an
+  // empty carousel.
+  const result = await searchListingsOrThrow(PREMIUM_LISTINGS_QUERY);
 
-    // Takeovers first (legacy rows AND wizard-created Direktkauf + Übernahme
-    // rows), newest first — see orderPremiumListings.
-    const ordered = orderPremiumListings([...leaseTakeoverResult.items, ...directPurchaseResult.items]);
+  // Takeovers first, newest first — see orderPremiumListings.
+  // Strip undefined fields so Next can serialize.
+  const premiumListings = JSON.parse(JSON.stringify(orderPremiumListings(result.items))) as Listing[];
 
-    // Strip undefined fields so Next can serialize.
-    const premiumListings = JSON.parse(JSON.stringify(ordered)) as Listing[];
-
-    return { props: { premiumListings }, revalidate: 300 };
-  } catch (error) {
-    console.error("Homepage premium listings fetch failed:", error);
-    return { props: { premiumListings: [] }, revalidate: 60 };
-  }
+  return { props: { premiumListings }, revalidate: 300 };
 };

@@ -9,13 +9,16 @@ import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard
 
 interface SimilarListingsProps {
   listing: ListingDetail;
+  /** Server-rendered cards (getServerSideProps); when given, no client fetch happens. */
+  initialListings?: Listing[];
 }
 
-export default function SimilarListings({ listing }: SimilarListingsProps) {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function SimilarListings({ listing, initialListings }: SimilarListingsProps) {
+  const [listings, setListings] = useState<Listing[]>(initialListings ?? []);
+  const [isLoading, setIsLoading] = useState(initialListings === undefined);
 
   useEffect(() => {
+    if (initialListings !== undefined) return;
     const loadSimilarListings = async () => {
       try {
         const similarListings = await getSimilarListings(listing, 6);
@@ -28,7 +31,7 @@ export default function SimilarListings({ listing }: SimilarListingsProps) {
     };
 
     loadSimilarListings();
-  }, [listing]);
+  }, [listing, initialListings]);
 
   if (isLoading) {
     return (

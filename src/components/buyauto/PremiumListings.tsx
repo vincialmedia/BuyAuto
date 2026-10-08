@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/buyauto/types";
 import { hasNewLeasingFinancing, kaufartOf } from "@/lib/buyauto/kaufart";
-import { orderPremiumListings } from "@/lib/buyauto/premiumListings";
+import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
 
 type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
@@ -57,15 +57,12 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
         // critical bundle — on the homepage this effect never runs anyway
         // (initialListings comes from getStaticProps).
         const { searchListings } = await import("@/services/listingsService");
-        const [leaseTakeoverResult, directPurchaseResult] = await Promise.all([
-          searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
-          searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
-        ]);
+        const result = await searchListings(PREMIUM_LISTINGS_QUERY);
 
         if (cancelled) return;
 
-        // Same merge as the homepage's getStaticProps: takeovers first, newest first.
-        setListings(orderPremiumListings([...leaseTakeoverResult.items, ...directPurchaseResult.items]));
+        // Same order as the homepage's getStaticProps: takeovers first, newest first.
+        setListings(orderPremiumListings(result.items));
         setCurrentIndex(0);
       } catch (error) {
         console.error("Error loading premium listings:", error);

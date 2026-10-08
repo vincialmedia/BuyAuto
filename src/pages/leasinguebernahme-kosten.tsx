@@ -13,7 +13,8 @@ import {
   type InventoryStats,
 } from "@/lib/buyauto/facts";
 import { formatChf } from "@/lib/buyauto/format";
-import { getLiveInventoryStats } from "@/services/listingsService";
+import { getLiveInventoryStats, getPremiumCarouselListings } from "@/services/listingsService";
+import type { Listing } from "@/lib/buyauto/types";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -61,6 +62,8 @@ const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-kosten"];
 
 interface LeasinguebernahmeKostenPageProps {
   stats: InventoryStats | null;
+  /** Server-rendered premium carousel; null falls back to the client fetch. */
+  premiumListings: Listing[] | null;
 }
 
 // FAQ answers shared by the FAQPage JSON-LD and the visible accordion, so both always match.
@@ -73,7 +76,7 @@ function faqCheaperAnswer(stats: InventoryStats | null): string {
   );
 }
 
-export default function LeasinguebernahmeKostenPage({ stats }: LeasinguebernahmeKostenPageProps) {
+export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: LeasinguebernahmeKostenPageProps) {
   const faqCheaper = faqCheaperAnswer(stats);
 
   const scrollToSection = (id: string) => {
@@ -908,7 +911,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings />
+        <PremiumListings initialListings={premiumListings ?? undefined} />
         
       </main>
     </>
@@ -925,5 +928,6 @@ export const getStaticProps: GetStaticProps<LeasinguebernahmeKostenPageProps> = 
   } catch (error) {
     console.error("Leasingübernahme Kosten: live inventory stats failed:", error);
   }
-  return { props: { stats }, revalidate: 3600 };
+  const premiumListings = await getPremiumCarouselListings();
+  return { props: { stats, premiumListings }, revalidate: 3600 };
 };

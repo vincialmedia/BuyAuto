@@ -5,8 +5,13 @@ import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { ListingDetail } from "@/lib/buyauto/types";
-import { getPublishedListingById, getUserListingById, transformPublicRowToListingDetail } from "@/services/listingsService";
+import type { Listing, ListingDetail } from "@/lib/buyauto/types";
+import {
+  getPublishedListingById,
+  getSimilarListings,
+  getUserListingById,
+  transformPublicRowToListingDetail,
+} from "@/services/listingsService";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
@@ -24,6 +29,7 @@ import {
   retiredListingDestination,
 } from "@/services/listingLifecycleService";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
+import { formatChf } from "@/lib/buyauto/format";
 import { safeFreeText, toDealType, track } from "@/lib/analytics";
 import {
   buildVehicleDescription,
@@ -44,6 +50,8 @@ interface ListingDetailPageProps {
   notFound?: boolean;
   // Set when the id is not a live listing (handled with a 404/410 status in getServerSideProps).
   gone?: boolean;
+  // Server-rendered «Ähnliche Fahrzeuge»; absent on client-loaded previews (fetched there).
+  similarListings?: Listing[];
 }
 
 function serializeListing(listing: ListingDetail | null): ListingDetail | null {
@@ -66,7 +74,7 @@ function serializeListing(listing: ListingDetail | null): ListingDetail | null {
   };
 }
 
-export default function ListingDetailPage({ listing: initialListing, notFound, gone }: ListingDetailPageProps) {
+export default function ListingDetailPage({ listing: initialListing, notFound, gone, similarListings }: ListingDetailPageProps) {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
@@ -325,7 +333,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
 
   const teaserMonthlyLabel =
     typeof teaserMonthlyChf === "number"
-      ? `Ab CHF ${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(teaserMonthlyChf))} / Monat`
+      ? `Ab ${formatChf(teaserMonthlyChf)} / Monat`
       : null;
 
   // Prefer the stored title — it carries the decoded trim ("BMW 5 Series 530i
@@ -345,8 +353,12 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const leaseLength = isDirectPurchase ? null : leaseLengthIso(listing.remainingMonths);
   const availableAtOrFrom = parseListingPlace(listing.location, listing.canton_code);
 
+  // An ended Leasingübernahme (effective months 0) is out of every list and the
+  // sitemap: no Offer and noindex here too (the page itself stays reachable).
+  const contractEnded = listing.contractEnded === true;
+
   const vehicleOffer =
-    typeof offerPrice === "number" && offerPrice > 0
+    !contractEnded && typeof offerPrice === "number" && offerPrice > 0
       ? {
           "@type": "Offer",
           price: offerPrice,
@@ -426,7 +438,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
-        <link rel="canonical" href={listingUrl} />
+        {contractEnded ? (
+          <meta name="robots" content="noindex,follow" />
+        ) : (
+          <link rel="canonical" href={listingUrl} />
+        )}
 
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={metaDescription} />
@@ -481,7 +497,11 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         childrenBelowFold={undefined}
         bottomContent={
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-            <SimilarListings listing={listing} />
+            <SimilarListings
+              key={listing.id}
+              listing={listing}
+              initialListings={listing.id === initialListing?.id ? similarListings : undefined}
+            />
           </div>
         }
       />
@@ -625,12 +645,14 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     }
 
     const serializedListing = serializeListing(listing);
+    // Similar cards (prices, links) are part of the server HTML, not a client fetch.
+    const similarListings = JSON.parse(JSON.stringify(await getSimilarListings(listing, 6))) as Listing[];
 
     if (context.res) {
       context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     }
 
-    return { props: { listing: serializedListing } };
+    return { props: { listing: serializedListing, similarListings } };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
     // Transient backend failure: signal 503 (retry later) instead of a 200 skeleton that

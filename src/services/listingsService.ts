@@ -7,6 +7,7 @@ import { hasNewLeasingFinancing, kaufartOf, resolveListingOffer, type ResolvedOf
 import { publicSellerName } from "@/lib/buyauto/sellerName";
 import { displayLocation } from "@/lib/buyauto/location";
 import { computeInventoryStats, type InventoryStats } from "@/lib/buyauto/facts";
+import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
 
 type PublicListingRow = Database["public"]["Views"]["listings_public"]["Row"];
 type ListingsTableRow = Database["public"]["Tables"]["listings"]["Row"];
@@ -787,6 +788,11 @@ export async function searchListingsOrThrow(searchQuery: SearchQuery): Promise<S
   return runOfferSearch(searchQuery);
 }
 
+/** Like searchDealerListings, but a failed query throws (server rendering answers 503). */
+export async function searchDealerListingsOrThrow(garageId: string, searchQuery: SearchQuery): Promise<SearchResult> {
+  return runOfferSearch(searchQuery, garageId);
+}
+
 export async function searchDealerListings(garageId: string, searchQuery: SearchQuery): Promise<SearchResult> {
   try {
     return await runOfferSearch(searchQuery, garageId);
@@ -1021,4 +1027,19 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
 export async function getLiveInventoryStats(): Promise<InventoryStats> {
   const offers = await getPublicOfferIndex();
   return computeInventoryStats(liveTakeovers(offers).map((o) => o.offer));
+}
+
+/**
+ * Premium carousel for ISR guide pages: ordered and serializable. Null when the
+ * query fails, so the carousel falls back to its client-side fetch instead of
+ * rendering empty.
+ */
+export async function getPremiumCarouselListings(): Promise<Listing[] | null> {
+  try {
+    const result = await searchListingsOrThrow(PREMIUM_LISTINGS_QUERY);
+    return JSON.parse(JSON.stringify(orderPremiumListings(result.items))) as Listing[];
+  } catch (error) {
+    console.error("Premium carousel fetch failed:", error);
+    return null;
+  }
 }

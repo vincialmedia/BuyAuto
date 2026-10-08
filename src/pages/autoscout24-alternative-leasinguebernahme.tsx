@@ -1,4 +1,6 @@
 import Head from "next/head";
+import type { Listing } from "@/lib/buyauto/types";
+import { getPremiumCarouselListings } from "@/services/listingsService";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { FEE_SHORT } from "@/lib/buyauto/facts";
 import Link from "next/link";
@@ -27,7 +29,6 @@ import {
 // Dynamic import for below-the-fold content
 const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListings"), {
   loading: () => <div className="w-full h-96 bg-neutral-100 animate-pulse rounded-xl" />,
-  ssr: false
 });
 
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ const FAQ_KOSTEN_ANSWER =
   "Wer diese übernimmt (alter oder neuer Leasingnehmer), ist Verhandlungssache. " +
   "Dies ist aber fast immer günstiger als eine vorzeitige Kündigung.";
 
-export default function AutoscoutAlternativeLeasinguebernahmePage() {
+export default function AutoscoutAlternativeLeasinguebernahmePage({ premiumListings }: { premiumListings: Listing[] | null }) {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   
   // Handle sticky CTA visibility
@@ -771,9 +772,14 @@ export default function AutoscoutAlternativeLeasinguebernahmePage() {
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings />
+        <PremiumListings initialListings={premiumListings ?? undefined} />
         
       </main>
     </>
   );
 }
+
+// ISR so the premium carousel is server-rendered (prices in the HTML, no client fetch).
+export const getStaticProps = async () => {
+  return { props: { premiumListings: await getPremiumCarouselListings() }, revalidate: 300 };
+};

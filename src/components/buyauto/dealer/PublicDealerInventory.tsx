@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SearchQuery, SearchResult } from "@/lib/buyauto/search";
@@ -8,7 +8,7 @@ import { searchDealerListings } from "@/services/listingsService";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { formatSwissInt, pluralize } from "@/lib/buyauto/format";
+import { formatChf, formatSwissInt, pluralize } from "@/lib/buyauto/format";
 
 type SaleTypeOption = "all" | "lease_takeover" | "direct_purchase" | "leasing";
 
@@ -17,6 +17,8 @@ interface PublicDealerInventoryProps {
   className?: string;
   initialQuery?: Partial<SearchQuery> & { saleType?: string };
   embedId?: string;
+  /** Server-rendered first page (getServerSideProps) for the default query; skips the first fetch. */
+  initialResults?: SearchResult;
 }
 
 function deriveSaleType(query: SearchQuery): SaleTypeOption {
@@ -24,10 +26,6 @@ function deriveSaleType(query: SearchQuery): SaleTypeOption {
   if (query.dealType === "lease_takeover") return "lease_takeover";
   if (query.financingType === "leasing") return "leasing";
   return "direct_purchase";
-}
-
-function formatChf(value: number): string {
-  return `CHF ${new Intl.NumberFormat("de-CH").format(value)}`;
 }
 
 function getCurrentYear(): number {
@@ -57,7 +55,7 @@ function postHeightToParent(embedId?: string) {
   }
 }
 
-export function PublicDealerInventory({ garageId, className, initialQuery, embedId }: PublicDealerInventoryProps) {
+export function PublicDealerInventory({ garageId, className, initialQuery, embedId, initialResults }: PublicDealerInventoryProps) {
   const [query, setQuery] = useState<SearchQuery>(() => {
     const base: SearchQuery = {
       page: 1,
@@ -69,8 +67,10 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
     return { ...base, ...saleTypePatch };
   });
 
-  const [results, setResults] = useState<SearchResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [results, setResults] = useState<SearchResult | null>(initialResults ?? null);
+  const [loading, setLoading] = useState(initialResults === undefined);
+  // The server already rendered the first page: don't refetch it on mount.
+  const skipInitialFetch = useRef(initialResults !== undefined);
 
   const saleType = useMemo(() => deriveSaleType(query), [query.dealType, query.financingType]);
   const isMixed = saleType === "all";
@@ -88,6 +88,10 @@ export function PublicDealerInventory({ garageId, className, initialQuery, embed
   const priceMaxPlaceholder = isDirectPurchase ? "Max. Kaufpreis" : "Max. Rate";
 
   useEffect(() => {
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
+    }
     let cancelled = false;
 
     async function run() {

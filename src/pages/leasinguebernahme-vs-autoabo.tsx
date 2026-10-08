@@ -1,4 +1,6 @@
 import Head from "next/head";
+import type { Listing } from "@/lib/buyauto/types";
+import { getPremiumCarouselListings } from "@/services/listingsService";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -43,7 +45,7 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-vs-autoabo"];
 
-export default function LeasingubernahmeVsAutoAboPage() {
+export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { premiumListings: Listing[] | null }) {
   const [showStickyCTA, setShowStickyCTA] = React.useState(false);
 
   React.useEffect(() => {
@@ -870,9 +872,14 @@ export default function LeasingubernahmeVsAutoAboPage() {
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings />
+        <PremiumListings initialListings={premiumListings ?? undefined} />
         
       </main>
     </>
   );
 }
+
+// ISR so the premium carousel is server-rendered (prices in the HTML, no client fetch).
+export const getStaticProps = async () => {
+  return { props: { premiumListings: await getPremiumCarouselListings() }, revalidate: 300 };
+};

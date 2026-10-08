@@ -31,10 +31,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { getPublicOfferIndex, liveTakeovers, searchListings, searchListingsOrThrow } from "@/services/listingsService";
+import { getPublicOfferIndex, liveTakeovers, searchListingsOrThrow } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
-import { orderPremiumListings } from "@/lib/buyauto/premiumListings";
+import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
 import { CEMBRA, CEMBRA_TRANSFER_EXCL_VAT_CHF, FEE_SHORT } from "@/lib/buyauto/facts";
 import { formatChf } from "@/lib/buyauto/format";
 import {
@@ -1284,11 +1284,10 @@ export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async 
   // The count, the grid and the brand links must come from a successful query: a
   // failure throws, so ISR keeps the last good page instead of caching "0 laufende
   // Leasingverträge" (a failed first build fails loudly instead of shipping it).
-  const [results, offers, premiumTakeovers, premiumDirect] = await Promise.all([
+  const [results, offers, premium] = await Promise.all([
     searchListingsOrThrow({ dealType: "lease_takeover", sort: "dateDesc", pageSize: 6 }),
     getPublicOfferIndex(),
-    searchListings({ page: 1, premiumOnly: true, dealType: "lease_takeover" }),
-    searchListings({ page: 1, premiumOnly: true, dealType: "direct_purchase" }),
+    searchListingsOrThrow(PREMIUM_LISTINGS_QUERY),
   ]);
 
   // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
@@ -1296,8 +1295,6 @@ export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async 
 
   // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
   const takeoverListings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-  const premiumListings = JSON.parse(
-    JSON.stringify(orderPremiumListings([...premiumTakeovers.items, ...premiumDirect.items]))
-  ) as Listing[];
+  const premiumListings = JSON.parse(JSON.stringify(orderPremiumListings(premium.items))) as Listing[];
   return { props: { takeoverListings, takeoverTotal: results.total, availableBrands, premiumListings }, revalidate: 300 };
 };

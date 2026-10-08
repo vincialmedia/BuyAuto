@@ -3,6 +3,8 @@ import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDate
 import { LEASING_COMPANIES } from "@/lib/buyauto/leasingCompanies";
 import { BANK_NOW, CEMBRA, CEMBRA_TRANSFER_EXCL_VAT_CHF, FEE_SHORT, MULTILEASE } from "@/lib/buyauto/facts";
 import { formatChf } from "@/lib/buyauto/format";
+import type { Listing } from "@/lib/buyauto/types";
+import { getPremiumCarouselListings } from "@/services/listingsService";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -57,7 +59,7 @@ const TRANSFER_FEE_CELL =
   `${CEMBRA.name}: ${formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST; ` +
   `AMAG, ${MULTILEASE.name}, ${BANK_NOW.name}: auf Anfrage`;
 
-export default function LeasingvertragUebertragenPage() {
+export default function LeasingvertragUebertragenPage({ premiumListings }: { premiumListings: Listing[] | null }) {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -926,7 +928,7 @@ export default function LeasingvertragUebertragenPage() {
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings />
+        <PremiumListings initialListings={premiumListings ?? undefined} />
         
       </main>
     </>
@@ -936,5 +938,6 @@ export default function LeasingvertragUebertragenPage() {
 // Served via ISR (static + periodic revalidation) instead of a frozen build-time file,
 // so the page refreshes without a redeploy and shares the prerender path of its siblings.
 export const getStaticProps = async () => {
-  return { props: {}, revalidate: 300 };
+  // The premium carousel is server-rendered (prices in the HTML, no client fetch).
+  return { props: { premiumListings: await getPremiumCarouselListings() }, revalidate: 300 };
 };

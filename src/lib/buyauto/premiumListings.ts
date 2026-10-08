@@ -1,5 +1,13 @@
 import type { Listing } from "@/lib/buyauto/types";
+import type { SearchQuery } from "@/lib/buyauto/search";
 import { kaufartOf } from "@/lib/buyauto/kaufart";
+
+/**
+ * Every premium listing in one query (live offers only). Splitting the query by
+ * Kaufart would cap the Leasingübernahme bucket at one page and silently drop paid
+ * placements; 24 keeps the old ceiling (two queries of 12).
+ */
+export const PREMIUM_LISTINGS_QUERY: SearchQuery = { page: 1, premiumOnly: true, pageSize: 24 };
 
 /**
  * "Is this a Leasingübernahme?" — answered by the one Kaufart rule
@@ -18,11 +26,9 @@ export function hasEnabledTakeoverOffer(listing: Listing): boolean {
  * Order for the homepage premium carousel: Leasingübernahmen first (both
  * shapes above), then plain Direktkauf, newest first within each group.
  *
- * The carousel is fed by two premium queries (deal_type lease_takeover and
- * direct_purchase). Concatenating them put every legacy takeover row ahead of
- * every wizard-created takeover, so a freshly published premium
- * Leasingübernahme landed on carousel page 4 behind rows from last winter.
- * Merging by date keeps paid premium placement where the seller expects it.
+ * Ordering by date (not by stored deal_type) keeps a freshly published premium
+ * Leasingübernahme from landing behind legacy rows from last winter, so paid
+ * premium placement stays where the seller expects it.
  *
  * Product decision, deliberately kept from the Leasing-Fokus homepage: the
  * section is headed «Aktuelle Leasingübernahmen», so takeovers stay in
