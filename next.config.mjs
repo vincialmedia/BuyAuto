@@ -26,6 +26,12 @@ const nextConfig = {
       { source: '/fuer-haendler', destination: '/eintauschwert-rechner', permanent: true },
       { source: '/fuer-haendler/marktwert-rechner', destination: '/eintauschwert-rechner', permanent: true },
       { source: '/leasing-concierge', destination: '/leasing-abgeben-schweiz', permanent: true },
+      // The four lender pages were merged into the cost page (one section each).
+      // Next keeps the query string and places it before the #anchor.
+      { source: '/cembra-leasing-uebernehmen', destination: '/leasinguebernahme-kosten#cembra', permanent: true },
+      { source: '/amag-leasing-uebernehmen', destination: '/leasinguebernahme-kosten#amag', permanent: true },
+      { source: '/multilease-leasing-uebernehmen', destination: '/leasinguebernahme-kosten#multilease', permanent: true },
+      { source: '/bank-now-leasing-uebernehmen', destination: '/leasinguebernahme-kosten#bank-now', permanent: true },
     ];
   },
   async headers() {
