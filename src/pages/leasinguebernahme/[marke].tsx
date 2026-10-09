@@ -1,75 +1,507 @@
+import type { ReactNode } from "react";
 import type { GetStaticPaths, GetStaticProps } from "next";
 import Head from "next/head";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { searchListingsOrThrow } from "@/services/listingsService";
+import { AuthorBox } from "@/components/buyauto/AuthorBox";
+import { FounderTakeoverNote } from "@/components/buyauto/FounderTakeoverNote";
+import { SourceCitation } from "@/components/buyauto/SourceCitation";
+import { getPublicOfferIndex, liveTakeovers, searchListingsOrThrow } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import {
   dbBrandsFor,
-  getLeasingBrandBySlug,
   isIndexableBrandCount,
   LEASING_BRANDS,
   resolveBrandSlug,
   type BrandInventoryRow,
   type LeasingBrand,
 } from "@/lib/buyauto/leasingBrands";
+import { brandLenderFor, type BrandLender } from "@/lib/buyauto/brandLenders";
 import { supabase } from "@/integrations/supabase/client";
-import { FEE_SHORT } from "@/lib/buyauto/facts";
-import { pluralize } from "@/lib/buyauto/format";
+import {
+  AMAG_LEASING,
+  BMW_FINANCIAL_SERVICES,
+  CA_AUTO_FINANCE,
+  CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
+  computeInventoryStats,
+  FACTS_CHECKED_ON,
+  MERCEDES_BENZ_FINANCIAL_SERVICES,
+  PORSCHE_FINANCIAL_SERVICES,
+  type FactSource,
+  type InventoryStats,
+} from "@/lib/buyauto/facts";
+import { formatChf, formatChfRappen, pluralize } from "@/lib/buyauto/format";
 
 const SITE_URL = "https://www.buyauto.ch";
 /** Brand pages list their whole live inventory (far below this today). */
 const BRAND_PAGE_MAX_LISTINGS = 120;
+const GUIDE_HREF = "/leasinguebernahme";
 
 type BrandPageProps = {
   brand: LeasingBrand;
   listings: Listing[];
   total: number;
+  /** Live stats over the brand's Leasingübernahmen; null when the read failed (numbers hidden). */
+  stats: InventoryStats | null;
+  /** Newest change among the brand's live listings (YYYY-MM-DD, Europe/Zurich); null = no date shown. */
+  updatedIso: string | null;
 };
 
-type FaqItem = { question: string; answer: string };
+// ── Small building blocks ──────────────────────────────────────────────────
 
-// Honest, brand-injected FAQ. Rendered visibly below AND emitted as FAQPage schema —
-// Google requires the schema text to match what the user can actually see on the page.
-function buildFaq(brand: LeasingBrand): FaqItem[] {
-  const models = brand.popularModels.slice(0, 3).join(", ");
-  const items: FaqItem[] = [
-    {
-      question: `Wie funktioniert eine Leasingübernahme bei einem ${brand.name}?`,
-      answer: `Du übernimmst einen laufenden ${brand.name}-Leasingvertrag von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer. Die Leasinggesellschaft prüft deine Bonität und stimmt der Übernahme zu – danach führst du den Vertrag zu den bestehenden Konditionen für die Restlaufzeit weiter. Eine hohe Anzahlung wie bei einem neuen Leasing entfällt.`,
-    },
-    {
-      question: `Was kostet die Leasingübernahme eines ${brand.name}?`,
-      answer: `Du zahlst die bestehende monatliche Leasingrate weiter. Einmalig fallen die Übertragungsgebühr der Leasinggesellschaft (${FEE_SHORT}) und die kantonalen Gebühren für den neuen Fahrzeugausweis an. Die ursprüngliche Anzahlung bleibt im Vertrag und kommt dir als Übernehmer zugute.`,
-    },
-  ];
-  // Without live models there is nothing honest to name.
-  if (models) {
-    items.push({
-      question: `Welche ${brand.name}-Modelle kann ich übernehmen?`,
-      answer: `Das hängt vom aktuellen Angebot ab. Beliebte ${brand.name}-Modelle für eine Leasingübernahme sind ${models}. Sieh dir die aktuell verfügbaren ${brand.name}-Angebote weiter oben an oder durchsuche alle Leasingübernahmen auf BuyAuto.`,
-    });
-  }
-  return items;
+const linkClass = "text-primary underline underline-offset-2 hover:no-underline";
+
+function Cite({ source }: { source: FactSource }) {
+  // A Stand that only repeats the title ("Geschäftsbericht 2025") is not printed twice.
+  const shown = source.stand && source.title.includes(source.stand) ? { title: source.title, url: source.url } : source;
+  return (
+    <p className="mt-1 text-xs text-neutral-500">
+      <SourceCitation source={shown} />
+    </p>
+  );
 }
 
-export default function LeasingBrandPage({ brand, listings, total }: BrandPageProps) {
+/** A verbatim lender quote, in «…» (lender wording, e.g. Mercedes-Benz' «Ihrem», stays as published). */
+function Quote({ children }: { children: ReactNode }) {
+  return <span className="italic">«{children}»</span>;
+}
+
+function LenderBlock({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mt-10 max-w-3xl" aria-labelledby="leasinggesellschaft">
+      <h2 id="leasinggesellschaft" className="text-xl sm:text-2xl font-bold text-neutral-900">
+        {title}
+      </h2>
+      <div className="mt-3 space-y-3 text-neutral-700 leading-relaxed">{children}</div>
+    </section>
+  );
+}
+
+const CHECKED = `geprüft am ${FACTS_CHECKED_ON}`;
+
+// ── Lender sections (facts.ts only, each fact with its source) ─────────────
+
+const AMAG = AMAG_LEASING;
+const AMAG_TERMINATION = formatChf(AMAG.feesExclVatChf.vorzeitigeVertragsaufloesung);
+const AMAG_PROVISIONAL = formatChf(AMAG.feesExclVatChf.provisorischeAufloesungskosten);
+const AMAG_C = AMAG.clauses;
+
+/**
+ * AMAG Leasing covers Volkswagen, Audi and Škoda (Geschäftsbericht 2025). The three
+ * pages state the same published facts, each in its own words, so they do not repeat
+ * one block of text.
+ */
+function AmagSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLender }) {
+  const statement = <Quote>{AMAG.brandStatement.quote}</Quote>;
+
+  if (brand.slug === "volkswagen") {
+    return (
+      <LenderBlock title="Volkswagen und AMAG Leasing">
+        <div>
+          <p>
+            Im Geschäftsbericht 2025 beschreibt AMAG Leasing, welche Marken sie abdeckt: {statement} Volkswagen ist die
+            erste der genannten Kernmarken.
+          </p>
+          <Cite source={AMAG.brandStatement.source} />
+        </div>
+        <p>Ob ein inserierter VW tatsächlich über AMAG Leasing läuft, steht in seinem Leasingvertrag.</p>
+        <div>
+          <p>
+            Die Allgemeinen Leasingbestimmungen Autos von AMAG Leasing ({AMAG.edition}) enthalten keine Gebühr für eine
+            Übernahme.
+            Für die vorzeitige Auflösung nennt {AMAG_C.aufloesungsgebuehren} pauschal {AMAG_TERMINATION} und für die
+            Berechnung der provisorischen Auflösungskosten {AMAG_PROVISIONAL}, beides exkl. MWST; die Raten werden
+            dann rückwirkend neu berechnet ({AMAG_C.rueckwirkendeNeuberechnung}). Bevor du einen Volkswagen
+            übernimmst, prüft AMAG Leasing deine Bonität und holt dazu Auskünfte bei ZEK und IKO ein (
+            {AMAG_C.bonitaetspruefung}). Für Neuwagen schreibt sie eine Vollkasko vor, für Occasionen kann eine
+            Teilkasko vereinbart werden ({AMAG_C.versicherung}).
+          </p>
+          <Cite source={AMAG.source} />
+        </div>
+        <p>
+          Die Gebühren von AMAG Leasing neben denen anderer Gesellschaften:{" "}
+          <Link href={lender.costHref} className={linkClass}>
+            Kosten einer Leasingübernahme
+          </Link>
+          . Den Ablauf Schritt für Schritt erklärt der{" "}
+          <Link href={GUIDE_HREF} className={linkClass}>
+            Ratgeber zur Leasingübernahme
+          </Link>
+          .
+        </p>
+      </LenderBlock>
+    );
+  }
+
+  if (brand.slug === "audi") {
+    return (
+      <LenderBlock title="Audi und AMAG Leasing">
+        <div>
+          <p>Audi steht im Geschäftsbericht 2025 von AMAG Leasing unter den Kernmarken: {statement}</p>
+          <Cite source={AMAG.brandStatement.source} />
+        </div>
+        <div>
+          <p>
+            Welche Gesellschaft einen bestimmten Audi least, zeigt erst dessen Vertrag. Läuft er über AMAG Leasing,
+            gilt laut ihren ALB {AMAG.edition}:
+          </p>
+          <ul className="mt-2 list-disc pl-5 space-y-1">
+            <li>Eine Übernahmegebühr ist darin nicht aufgeführt.</li>
+            <li>
+              Löst du den Audi vorzeitig auf, kostet das {AMAG_TERMINATION} exkl. MWST, plus {AMAG_PROVISIONAL} exkl.
+              MWST für die provisorische Berechnung der Auflösungskosten ({AMAG_C.aufloesungsgebuehren}).
+            </li>
+            <li>
+              Bei einer Auflösung rechnet AMAG Leasing die bisherigen Raten rückwirkend neu (
+              {AMAG_C.rueckwirkendeNeuberechnung}).
+            </li>
+            <li>
+              Ein neuer Audi muss vollkaskoversichert sein; für Occasionen lässt sich mit AMAG Leasing eine Teilkasko
+              vereinbaren ({AMAG_C.versicherung}).
+            </li>
+            <li>Für die Kreditprüfung fragt sie bei ZEK und IKO nach ({AMAG_C.bonitaetspruefung}).</li>
+          </ul>
+          <Cite source={AMAG.source} />
+        </div>
+        <p>
+          Wie AMAG Leasing neben Cembra oder CA Auto Finance dasteht, zeigt die{" "}
+          <Link href={lender.costHref} className={linkClass}>
+            Kostenübersicht
+          </Link>
+          ; die Schritte einer Übernahme stehen im{" "}
+          <Link href={GUIDE_HREF} className={linkClass}>
+            Ratgeber
+          </Link>
+          .
+        </p>
+      </LenderBlock>
+    );
+  }
+
+  if (brand.slug === "skoda") {
+    const rows: [string, string][] = [
+      ["Gebühr für die Übernahme", "nicht aufgeführt"],
+      [
+        `Vorzeitige Auflösung, ${AMAG_C.aufloesungsgebuehren}`,
+        `${AMAG_TERMINATION} exkl. MWST, dazu ${AMAG_PROVISIONAL} exkl. MWST für die Berechnung der provisorischen Auflösungskosten`,
+      ],
+      [`Raten bei Auflösung, ${AMAG_C.rueckwirkendeNeuberechnung}`, "rückwirkend neu berechnet"],
+      [`Bonitätsprüfung, ${AMAG_C.bonitaetspruefung}`, "Auskünfte bei ZEK und IKO"],
+      [`Versicherung, ${AMAG_C.versicherung}`, "Vollkasko bei Neuwagen; Teilkasko für Occasionen nach Vereinbarung"],
+    ];
+    return (
+      <LenderBlock title="Škoda und AMAG Leasing">
+        <div>
+          <p>
+            {statement} Mit diesem Satz beschreibt AMAG Leasing im Geschäftsbericht 2025 ihr Angebot; Škoda gehört zu
+            den genannten Kernmarken.
+          </p>
+          <Cite source={AMAG.brandStatement.source} />
+        </div>
+        <div>
+          <p>
+            Für einen Škoda, der über AMAG Leasing läuft, regeln ihre ALB ({AMAG.edition}) Folgendes. Ob das bei einem
+            Inserat zutrifft, steht im Vertrag.
+          </p>
+          <dl className="mt-2 divide-y divide-neutral-200 rounded-xl border border-neutral-200 text-sm">
+            {rows.map(([term, value]) => (
+              <div key={term} className="grid gap-1 p-3 sm:grid-cols-[14rem_1fr]">
+                <dt className="text-neutral-500">{term}</dt>
+                <dd className="text-neutral-900">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <Cite source={AMAG.source} />
+        </div>
+        <p>
+          Mehr zu AMAG Leasing und den Gebühren anderer Gesellschaften auf der{" "}
+          <Link href={lender.costHref} className={linkClass}>
+            Kostenseite
+          </Link>
+          . Wie du einen Škoda-Vertrag übernimmst, erklärt der{" "}
+          <Link href={GUIDE_HREF} className={linkClass}>
+            Ratgeber
+          </Link>
+          .
+        </p>
+      </LenderBlock>
+    );
+  }
+
+  // SEAT, CUPRA, VW Nutzfahrzeuge (dynamic pages).
+  return (
+    <LenderBlock title={`${brand.name} und AMAG Leasing`}>
+      <div>
+        <p>
+          AMAG Leasing nennt {brand.name} im Geschäftsbericht 2025 als Kernmarke: {statement}
+        </p>
+        <Cite source={AMAG.brandStatement.source} />
+      </div>
+      <div>
+        <p>
+          In ihren ALB {AMAG.edition} fehlt eine Übernahmegebühr. Wer einen {brand.name} vorzeitig zurückgibt, zahlt
+          nach {AMAG_C.aufloesungsgebuehren} {AMAG_TERMINATION} und für die provisorische Berechnung {AMAG_PROVISIONAL}{" "}
+          (je exkl. MWST); die Raten werden rückwirkend neu berechnet ({AMAG_C.rueckwirkendeNeuberechnung}). Die
+          Bonität prüft AMAG Leasing mit Auskünften von ZEK und IKO ({AMAG_C.bonitaetspruefung}). Neuwagen sind
+          vollkasko zu versichern, Occasionen nach Absprache teilkasko ({AMAG_C.versicherung}). Ob ein Inserat über
+          AMAG Leasing läuft, steht im Vertrag.
+        </p>
+        <Cite source={AMAG.source} />
+      </div>
+      <p>
+        <Link href={lender.costHref} className={linkClass}>
+          AMAG Leasing auf der Kostenseite
+        </Link>{" "}
+        ·{" "}
+        <Link href={GUIDE_HREF} className={linkClass}>
+          Ratgeber zur Leasingübernahme
+        </Link>
+      </p>
+    </LenderBlock>
+  );
+}
+
+function BmwSection({ lender }: { lender: BrandLender }) {
+  const bmw = BMW_FINANCIAL_SERVICES;
+  return (
+    <LenderBlock title="BMW Finanzdienstleistungen und die Übernahme">
+      <div>
+        <p>
+          Die Leasinggesellschaft von BMW in der Schweiz ist die {bmw.legalName} in {bmw.seat}.
+        </p>
+        <Cite source={bmw.source} />
+      </div>
+      <p>
+        Eine Gebühr für die Übernahme oder Regeln zur Übertragung eines Vertrags publiziert sie nicht ({CHECKED}). Was
+        die Übernahme eines bestimmten BMW kostet, erfährst du deshalb vom bisherigen Leasingnehmer oder direkt bei ihr.
+        Ob ein inserierter BMW überhaupt über sie geleast ist, steht im Vertrag.
+      </p>
+      <FounderTakeoverNote variant="inline" className="rounded-xl bg-neutral-50 p-4 text-sm text-neutral-700" />
+      <p>
+        Was andere Leasinggesellschaften für eine Übernahme verlangen, listet die{" "}
+        <Link href={lender.costHref} className={linkClass}>
+          Kostenübersicht
+        </Link>
+        . Wie eine Übernahme abläuft, erklärt der{" "}
+        <Link href={GUIDE_HREF} className={linkClass}>
+          Ratgeber zur Leasingübernahme
+        </Link>
+        .
+      </p>
+    </LenderBlock>
+  );
+}
+
+function MercedesSection({ lender }: { lender: BrandLender }) {
+  const mb = MERCEDES_BENZ_FINANCIAL_SERVICES;
+  return (
+    <LenderBlock title="Mercedes-Benz Financial Services">
+      <p>
+        Zur Leasingübernahme publiziert die {mb.legalName} keine Angaben, weder eine Gebühr noch Regeln zur Übertragung
+        ({CHECKED}).
+      </p>
+      <div>
+        <p>
+          Zur Kündigung steht auf der Finanzierungsseite von Mercedes-Benz Schweiz: <Quote>{mb.terminationQuote}</Quote>
+        </p>
+        <Cite source={mb.source} />
+      </div>
+      <p>
+        Für die Übernahme eines Mercedes heisst das: Gebühr und Bedingungen erfährst du beim bisherigen Leasingnehmer
+        oder bei der Leasinggesellschaft, die in seinem Vertrag steht.
+      </p>
+      <p>
+        Welche Gesellschaften ihre Übernahmegebühr publizieren, zeigt die{" "}
+        <Link href={lender.costHref} className={linkClass}>
+          Kostenübersicht
+        </Link>
+        . Den Ablauf beschreibt der{" "}
+        <Link href={GUIDE_HREF} className={linkClass}>
+          Ratgeber zur Leasingübernahme
+        </Link>
+        .
+      </p>
+    </LenderBlock>
+  );
+}
+
+function PorscheSection({ lender }: { lender: BrandLender }) {
+  const pfs = PORSCHE_FINANCIAL_SERVICES;
+  const provisional = pfs.feeQuotes.provisorischeAufloesungsberechnung;
+  return (
+    <LenderBlock title="Porsche Financial Services">
+      <div>
+        <p>
+          Seit {pfs.startedOn} least Porsche in der Schweiz über eine eigene Gesellschaft, die {pfs.legalName}.
+        </p>
+        <Cite source={pfs.newsroomSource} />
+      </div>
+      <div>
+        <p>
+          Zur Übertragung eines Vertrags auf eine andere Person steht in ihren ALB ({pfs.source.stand}),{" "}
+          {pfs.transferClause}: <Quote>{pfs.transferQuote}</Quote>
+        </p>
+        <p className="mt-3">
+          Eine Übernahmegebühr führen die ALB nicht auf. Für die provisorische Berechnung einer vorzeitigen
+          Vertragsauflösung nennen sie {formatChf(pfs.feesExclVatChf.provisorischeAufloesungsberechnung)} exkl. MWST (
+          {provisional.clause}).
+        </p>
+        <Cite source={pfs.source} />
+      </div>
+      <p>
+        <Link href={lender.costHref} className={linkClass}>
+          Übernahmegebühren der Leasinggesellschaften
+        </Link>{" "}
+        ·{" "}
+        <Link href={GUIDE_HREF} className={linkClass}>
+          Ratgeber zur Leasingübernahme
+        </Link>
+      </p>
+    </LenderBlock>
+  );
+}
+
+function CaAutoFinanceSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLender }) {
+  const ca = CA_AUTO_FINANCE;
+  const transferExcl = formatChf(ca.feesExclVatChf.vertragsumschreibung);
+  const transferIncl = formatChfRappen(CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF);
+  const isFiat = lender.basis === "fiat-partner";
+  return (
+    <LenderBlock title={`${brand.name} und CA Auto Finance`}>
+      <div>
+        <p>
+          {isFiat ? (
+            <>
+              Der {ca.role} ist die {ca.legalName} in {ca.seat}. In ihren FAQ nennt sie die Marken, auf die sie
+              spezialisiert ist: <Quote>{ca.brandsQuote}</Quote>.
+            </>
+          ) : (
+            <>
+              Die {ca.legalName} in {ca.seat} nennt {brand.name} in ihren FAQ unter den Marken, auf die sie
+              spezialisiert ist: <Quote>{ca.brandsQuote}</Quote>.
+            </>
+          )}
+        </p>
+        <Cite source={ca.faqSource} />
+      </div>
+      <div>
+        <p>
+          Für die Vertragsumschreibung auf eine neue Person verrechnet sie {transferExcl} exkl. MWST, also{" "}
+          {transferIncl} inkl. MWST (AVB {ca.clauses.gebuehren}). Die Bonität der übernehmenden Person prüft sie mit
+          Auskünften von IKO und ZEK (AVB {ca.clauses.bonitaetspruefung}).
+        </p>
+        <Cite source={ca.source} />
+      </div>
+      <p>
+        Ob ein inserierter {brand.name} über CA Auto Finance läuft, steht im Vertrag. Die Gebühren anderer
+        Gesellschaften zeigt die{" "}
+        <Link href={lender.costHref} className={linkClass}>
+          Kostenübersicht
+        </Link>
+        , den Ablauf der{" "}
+        <Link href={GUIDE_HREF} className={linkClass}>
+          Ratgeber
+        </Link>
+        .
+      </p>
+    </LenderBlock>
+  );
+}
+
+function LenderSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLender }) {
+  switch (lender.lender) {
+    case "amag":
+      return <AmagSection brand={brand} lender={lender} />;
+    case "bmw":
+      return <BmwSection lender={lender} />;
+    case "mercedes-benz":
+      return <MercedesSection lender={lender} />;
+    case "porsche":
+      return <PorscheSection lender={lender} />;
+    case "ca-auto-finance":
+      return <CaAutoFinanceSection brand={brand} lender={lender} />;
+  }
+}
+
+// ── Live numbers ───────────────────────────────────────────────────────────
+
+/** Live models in the brand's listings, alphabetical (no popularity claim). */
+function liveModels(listings: Listing[]): string[] {
+  return [...new Set(listings.map((l) => l.model?.trim()).filter((m): m is string => Boolean(m)))].sort((a, b) =>
+    a.localeCompare(b, "de-CH")
+  );
+}
+
+/**
+ * Count, median rate and median remaining months of the brand's live
+ * Leasingübernahmen. Labels change with the count so a single listing is not
+ * called a median; the brand and the numbers sit early so no long word run
+ * repeats on every brand page.
+ */
+function LiveStats({ brand, total, stats, models }: { brand: LeasingBrand; total: number; stats: InventoryStats | null; models: string[] }) {
+  if (total <= 0) return null;
+  const several = total > 1;
+  const rows: [string, string][] = [
+    ["Aktuell auf BuyAuto", `${total} ${brand.name}-${pluralize(total, "Leasingübernahme", "Leasingübernahmen")}`],
+  ];
+  if (models.length > 0) {
+    const label =
+      models.length > 1 ? "Modelle in den Inseraten" : several ? "Modell in den Inseraten" : "Modell im Inserat";
+    rows.push([label, models.join(", ")]);
+  }
+  if (stats?.medianRate != null) rows.push([several ? "Monatsrate im Median" : "Monatsrate", formatChf(stats.medianRate)]);
+  if (stats?.medianMonths != null) {
+    rows.push([
+      several ? "Restlaufzeit im Median" : "Restlaufzeit",
+      `${stats.medianMonths} ${pluralize(stats.medianMonths, "Monat", "Monate")}`,
+    ]);
+  }
+  return (
+    <dl className="mt-5 grid max-w-3xl grid-cols-1 gap-x-6 gap-y-2 rounded-2xl border border-neutral-200 p-4 text-sm sm:grid-cols-2">
+      {rows.map(([term, value]) => (
+        <div key={term}>
+          <dt className="text-neutral-500">{term}</dt>
+          <dd className="font-semibold text-neutral-900">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
+
+export default function LeasingBrandPage({ brand, listings, total, stats, updatedIso }: BrandPageProps) {
   const canonical = `${SITE_URL}/leasinguebernahme/${brand.slug}`;
-  // /suche filters on the exact stored brand string, which can differ from the display
-  // name (Mercedes-Benz page ↔ "Mercedes" rows) — link with the primary DB spelling.
+  // /suche filters on ONE exact stored brand string (its URL parser has no multi-brand
+  // param), which can differ from the display name (Mercedes-Benz page ↔ "Mercedes"
+  // rows) — link with the primary DB spelling.
   const searchHref = `/suche?dealType=lease_takeover&brand=${encodeURIComponent(dbBrandsFor(brand)[0])}`;
   const hasListings = total > 0;
   // Indexed from BRAND_PAGE_MIN_INDEXABLE_LISTINGS live Leasingübernahmen on;
   // thinner pages stay reachable but "noindex, follow".
   const indexable = isIndexableBrandCount(total);
-  const faq = buildFaq(brand);
+  const lender = brandLenderFor(brand);
+  const models = liveModels(listings);
+
+  const lenderMetaTail: Record<BrandLender["lender"], string> = {
+    amag: `Dazu die Gebühren aus den ALB von ${AMAG_LEASING.name}, mit Quelle.`,
+    bmw: `Dazu, was ${BMW_FINANCIAL_SERVICES.name} zur Übernahme publiziert.`,
+    "ca-auto-finance": `Dazu die Umschreibungsgebühr von ${CA_AUTO_FINANCE.name}, mit Quelle.`,
+    porsche: `Dazu die Klausel von ${PORSCHE_FINANCIAL_SERVICES.name} zur Übertragung, mit Quelle.`,
+    "mercedes-benz": `Dazu, was ${MERCEDES_BENZ_FINANCIAL_SERVICES.name} zur Kündigung sagt.`,
+  };
 
   const pageTitle = `Leasingübernahme ${brand.name} – Angebote in der Schweiz | BuyAuto`;
-  const metaDescription = hasListings
-    ? `Leasingübernahme ${brand.name} in der Schweiz: ${total} ${pluralize(total, "aktuelles Angebot", "aktuelle Angebote")} – übernimm einen laufenden ${brand.name}-Leasingvertrag ohne hohe Anzahlung. Jetzt auf BuyAuto entdecken.`
-    : `Leasingübernahme ${brand.name} in der Schweiz: übernimm einen laufenden ${brand.name}-Leasingvertrag ohne hohe Anzahlung – geprüfte Angebote von Privatpersonen und Garagen auf BuyAuto.`;
+  const descriptionParts = [
+    hasListings
+      ? `Leasingübernahme ${brand.name}: ${total} ${pluralize(total, "aktuelles Angebot", "aktuelle Angebote")} auf BuyAuto` +
+        (stats?.medianRate != null && total > 1 ? `, Monatsrate im Median ${formatChf(stats.medianRate)}.` : ".")
+      : `Leasingübernahme ${brand.name}: alle ${brand.name}-Inserate mit laufendem Leasingvertrag auf BuyAuto.`,
+    lender ? lenderMetaTail[lender.lender] : "",
+  ];
+  const metaDescription = descriptionParts.filter(Boolean).join(" ");
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
@@ -79,16 +511,6 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
       { "@type": "ListItem", position: 2, name: "Leasingübernahme", item: `${SITE_URL}/leasinguebernahme` },
       { "@type": "ListItem", position: 3, name: brand.name, item: canonical },
     ],
-  };
-
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faq.map((f) => ({
-      "@type": "Question",
-      name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.answer },
-    })),
   };
 
   const listingsJsonLd = hasListings
@@ -165,7 +587,6 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
         />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
         {listingsJsonLd && (
           <script
             type="application/ld+json"
@@ -175,9 +596,9 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
       </Head>
 
       <main className="bg-white min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-sm text-neutral-500 mb-6" aria-label="Breadcrumb">
+          <nav className="flex items-center gap-1.5 text-sm text-neutral-500 mb-5" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-neutral-900">Home</Link>
             <ChevronRight className="w-4 h-4" />
             <Link href="/leasinguebernahme" className="hover:text-neutral-900">Leasingübernahme</Link>
@@ -185,44 +606,19 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
             <span className="text-neutral-900 font-medium">{brand.name}</span>
           </nav>
 
-          {/* Hero */}
-          <header className="max-w-3xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-neutral-900">
+          <header>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900">
               Leasingübernahme {brand.name} in der Schweiz
             </h1>
-            <p className="mt-4 text-lg text-neutral-600 leading-relaxed">{brand.intro}</p>
-
-            <ul className="mt-6 grid sm:grid-cols-2 gap-2 text-sm text-neutral-700">
-              {[
-                "Keine hohe Anzahlung",
-                "Kurze Restlaufzeit statt 48 Monate",
-                "Geprüfte Angebote von Privat & Garagen",
-                "Transparente monatliche Rate",
-              ].map((point) => (
-                <li key={point} className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-primary shrink-0" />
-                  {point}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="font-bold whitespace-normal h-auto text-center">
-                <Link href={searchHref}>
-                  Alle {brand.name} Leasingübernahmen ansehen
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="font-bold whitespace-normal h-auto text-center">
-                <Link href="/leasinguebernahme">So funktioniert die Leasingübernahme</Link>
-              </Button>
-            </div>
+            <p className="mt-3 max-w-3xl text-lg text-neutral-600 leading-relaxed">{brand.intro}</p>
+            <AuthorBox updatedIso={updatedIso} className="mt-5 max-w-3xl" />
+            <LiveStats brand={brand} total={total} stats={stats} models={models} />
           </header>
 
           {/* Listings */}
-          <section className="mt-14">
-            <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
-              <h2 className="min-w-0 text-2xl font-bold text-neutral-900">
+          <section className="mt-8">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+              <h2 className="min-w-0 text-xl sm:text-2xl font-bold text-neutral-900">
                 {hasListings
                   ? `${total} ${brand.name}-${total === 1 ? "Angebot" : "Angebote"} zur Leasingübernahme`
                   : `Aktuell keine ${brand.name}-Leasingübernahmen verfügbar`}
@@ -241,48 +637,31 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-10 text-center">
-                <p className="text-neutral-600">
-                  Momentan sind keine {brand.name}-Fahrzeuge zur Leasingübernahme inseriert. Stöbere in allen
-                  verfügbaren Leasingübernahmen – oder gib dein eigenes {brand.name}-Leasing zur Übernahme frei.
-                </p>
-                <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <div className="rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-6 text-center">
+                <p className="text-neutral-600">Gerade ist kein {brand.name} zur Übernahme inseriert.</p>
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
                   <Button asChild className="font-bold">
                     <Link href="/suche?dealType=lease_takeover">Alle Leasingübernahmen ansehen</Link>
                   </Button>
                   <Button asChild variant="outline" className="font-bold">
-                    <Link href="/inserat-erstellen">Eigenes Leasing abgeben</Link>
+                    <Link href="/inserat-erstellen">Eigenes {brand.name}-Leasing abgeben</Link>
                   </Button>
                 </div>
               </div>
             )}
           </section>
 
-          {/* FAQ — visible content that mirrors the FAQPage schema above */}
-          <section className="mt-16 max-w-3xl">
-            <h2 className="text-2xl font-bold text-neutral-900 mb-6">
-              Häufige Fragen zur Leasingübernahme von {brand.name}
-            </h2>
-            <div className="space-y-6">
-              {faq.map((f) => (
-                <div key={f.question}>
-                  <h3 className="font-bold text-neutral-900">{f.question}</h3>
-                  <p className="mt-2 text-neutral-600 leading-relaxed">{f.answer}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Internal links */}
-          <section className="mt-16 border-t border-neutral-200 pt-8">
-            <p className="text-sm text-neutral-500 mb-3">Weiterlesen</p>
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-              <Link href="/leasinguebernahme" className="text-primary hover:underline">Leasingübernahme – kompletter Leitfaden</Link>
-              <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline">Was kostet eine Leasingübernahme?</Link>
-              <Link href="/leasingvertrag-uebertragen" className="text-primary hover:underline">Leasingvertrag übertragen</Link>
-              <Link href="/suche?dealType=lease_takeover" className="text-primary hover:underline">Alle Leasingübernahmen</Link>
-            </div>
-          </section>
+          {lender ? (
+            <LenderSection brand={brand} lender={lender} />
+          ) : (
+            <p className="mt-8 max-w-3xl text-neutral-700">
+              Wie die Übernahme eines {brand.name}-Leasings abläuft, erklärt der{" "}
+              <Link href={GUIDE_HREF} className={linkClass}>
+                Ratgeber zur Leasingübernahme
+              </Link>
+              .
+            </p>
+          )}
         </div>
       </main>
     </>
@@ -290,13 +669,47 @@ export default function LeasingBrandPage({ brand, listings, total }: BrandPagePr
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  // Curated slugs are prerendered; brands that only exist in the DB (e.g. Fiat, Škoda)
+  // Curated slugs are prerendered; brands that only exist in the DB (e.g. Fiat)
   // reach getStaticProps through fallback:"blocking" and are resolved there.
   return {
     paths: LEASING_BRANDS.map((b) => ({ params: { marke: b.slug } })),
     fallback: "blocking",
   };
 };
+
+/** "2026-10-09" in Swiss time, for the AuthorBox «Aktualisiert am». */
+function zurichIsoDate(timestamp: string | null): string | null {
+  const t = timestamp ? Date.parse(timestamp) : NaN;
+  if (Number.isNaN(t)) return null;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Zurich",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(t));
+}
+
+/**
+ * Median rate / months over the brand's live Leasingübernahmen and the newest
+ * change among them. Null on a failed read: the page then shows no live numbers.
+ */
+async function loadBrandLiveFacts(dbBrands: string[]): Promise<{ stats: InventoryStats | null; updatedIso: string | null }> {
+  try {
+    const offers = liveTakeovers(await getPublicOfferIndex()).filter((o) => o.brand !== null && dbBrands.includes(o.brand));
+    const newest = offers
+      .map((o) => o.updated_at ?? o.created_at)
+      .filter((v): v is string => typeof v === "string")
+      .sort()
+      .pop();
+    return {
+      stats: offers.length > 0 ? computeInventoryStats(offers.map((o) => o.offer)) : null,
+      updatedIso: zurichIsoDate(newest ?? null),
+    };
+  } catch (error) {
+    console.error("Brand page live stats failed:", { dbBrands, error });
+    return { stats: null, updatedIso: null };
+  }
+}
 
 export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) => {
   const slug = String(context.params?.marke ?? "");
@@ -328,18 +741,19 @@ export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) =>
 
   // The whole live inventory of the brand (Kaufart rule) — the count and the grid agree.
   // Throws on a failed query (see above): the indexing decision depends on this count.
-  const results = await searchListingsOrThrow({
-    dealType: "lease_takeover",
-    brands: dbBrandsFor(brand),
-    sort: "dateDesc",
-    pageSize: BRAND_PAGE_MAX_LISTINGS,
-  });
+  const [results, live] = await Promise.all([
+    searchListingsOrThrow({
+      dealType: "lease_takeover",
+      brands: dbBrandsFor(brand),
+      sort: "dateDesc",
+      pageSize: BRAND_PAGE_MAX_LISTINGS,
+    }),
+    loadBrandLiveFacts(dbBrandsFor(brand)),
+  ]);
   // Strip undefined fields so Next can serialize the props.
   const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-  // A page without a curated entry names only models it currently offers as
-  // Leasingübernahme (the slug itself resolves from every row, so thin pages stay reachable).
-  const pageBrand = getLeasingBrandBySlug(brand.slug)
-    ? brand
-    : { ...brand, popularModels: [...new Set(listings.map((l) => l.model).filter(Boolean))].slice(0, 4) };
-  return { props: { brand: pageBrand, listings, total: results.total }, revalidate: 300 };
+  return {
+    props: { brand, listings, total: results.total, stats: live.stats, updatedIso: live.updatedIso },
+    revalidate: 300,
+  };
 };
