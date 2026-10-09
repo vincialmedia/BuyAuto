@@ -5,7 +5,7 @@
 // honest). Seeded from each page's last real edit in git history.
 
 export const CONTENT_LAST_UPDATED: Record<string, string> = {
-  "/": "2026-08-14",
+  "/": "2026-10-09",
   "/suche": "2026-08-04",
   "/preise": "2026-08-14",
   "/updates": "2026-08-07",
@@ -14,12 +14,8 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/leasingvertrag-uebertragen": "2026-10-09",
   "/leasinguebernahme-vs-autoabo": "2026-10-09",
   "/eintauschwert-rechner": "2026-08-04",
-  "/leasing-abgeben-schweiz": "2026-10-08",
+  "/leasing-abgeben-schweiz": "2026-10-09",
   "/fuer-garagen": "2026-08-13",
-  "/cembra-leasing-uebernehmen": "2026-08-14",
-  "/amag-leasing-uebernehmen": "2026-10-09",
-  "/multilease-leasing-uebernehmen": "2026-08-14",
-  "/bank-now-leasing-uebernehmen": "2026-08-14",
   "/autoscout24-alternative-leasinguebernahme": "2026-10-08",
   "/datenschutz": "2026-07-31",
   "/agb": "2026-07-30",
