@@ -15,6 +15,11 @@ import {
 } from "@/services/createListingService";
 import { updateListingDraft } from "@/services/listingDraftService";
 import {
+  contractEndDateForListingWrite,
+  contractEndDateForMonths,
+  normalizeContractEndDate,
+} from "@/lib/buyauto/contractEndDate";
+import {
   leaseTakeoverFinancingSchema,
   type LeaseTakeoverFinancingForm,
 } from "./leaseTakeoverFinancingTypes";
@@ -79,12 +84,34 @@ function toFiniteNumber(value: unknown, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/**
+ * The contract end date to save: the picked (or loaded) date while the months
+ * are still the ones it set, none once the seller typed other months by hand
+ * (see contractEndDateForMonths). Before the loaded date reaches local state,
+ * the wizard's own value stands.
+ */
+function resolveContractEnd(params: {
+  contractEndDate: Date | undefined;
+  dateMonths: number | null;
+  months: unknown;
+  existing: { contract_end_date?: unknown } | null | undefined;
+}): string | null {
+  const { contractEndDate, dateMonths, months, existing } = params;
+  if (!contractEndDate) return normalizeContractEndDate(existing?.contract_end_date);
+  return contractEndDateForMonths({
+    contractEndDate: format(contractEndDate, "yyyy-MM-dd"),
+    dateMonths,
+    months,
+  });
+}
+
 function normalizeWizardPatch(params: {
   values: LeaseTakeoverFinancingForm;
   contractEndDate: Date | undefined;
+  dateMonths: number | null;
   existing: any;
 }) {
-  const { values, contractEndDate, existing } = params;
+  const { values, contractEndDate, dateMonths, existing } = params;
 
   const patch: Record<string, unknown> = {
     deal_type: "lease_takeover",
@@ -118,12 +145,14 @@ function normalizeWizardPatch(params: {
   if (typeof deposit === "number") patch.deposit_chf = deposit;
   if (typeof remainingKm === "number") patch.remaining_km = remainingKm;
 
-  const contractEnd =
-    contractEndDate ? format(contractEndDate, "yyyy-MM-dd") : typeof existing?.contract_end_date === "string" ? existing.contract_end_date : null;
-
-  if (typeof contractEnd === "string" && contractEnd.length > 0) {
-    patch.contract_end_date = contractEnd;
-  }
+  // null as well: months typed by hand must not leave the old date behind in
+  // wizard state, or Step 5 would send it again.
+  patch.contract_end_date = resolveContractEnd({
+    contractEndDate,
+    dateMonths,
+    months: values.remaining_months,
+    existing,
+  });
 
   return patch;
 }
@@ -138,6 +167,9 @@ export function LeaseTakeoverFinancingDetails() {
 
   const [isUpdatingListing, setIsUpdatingListing] = useState(false);
   const [contractEndDate, setContractEndDate] = useState<Date | undefined>(undefined);
+  // The months that go with contractEndDate (computed from the pick, or the
+  // stored months when an existing date was loaded).
+  const [dateMonths, setDateMonths] = useState<number | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -194,9 +226,11 @@ export function LeaseTakeoverFinancingDetails() {
 
         if (existingRemaining !== null) {
           setValue("remaining_months", existingRemaining, { shouldValidate: false, shouldDirty: false });
+          setDateMonths(existingRemaining);
         } else {
           const months = calculateRemainingMonths(parsed);
           setValue("remaining_months", months, { shouldValidate: false, shouldDirty: false });
+          setDateMonths(months);
         }
       }
     }
@@ -209,6 +243,7 @@ export function LeaseTakeoverFinancingDetails() {
       const patch = normalizeWizardPatch({
         values: getValues(),
         contractEndDate,
+        dateMonths,
         existing: data as any,
       });
 
@@ -216,13 +251,14 @@ export function LeaseTakeoverFinancingDetails() {
     }, 250);
 
     return () => clearTimeout(t);
-  }, [contractEndDate, data, getValues, isDirty, updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
+  }, [contractEndDate, data, dateMonths, getValues, isDirty, updateData, watchedDeposit, watchedPricePerMonth, watchedRemainingKm, watchedRemainingMonths]);
 
   useEffect(() => {
     registerDraftSnapshotter(() => {
       const patch = normalizeWizardPatch({
         values: getValues(),
         contractEndDate,
+        dateMonths,
         existing: data as any,
       });
       return patch as any;
@@ -231,7 +267,7 @@ export function LeaseTakeoverFinancingDetails() {
     return () => {
       registerDraftSnapshotter(() => ({}));
     };
-  }, [contractEndDate, data, getValues, registerDraftSnapshotter]);
+  }, [contractEndDate, data, dateMonths, getValues, registerDraftSnapshotter]);
 
   useEffect(() => {
     return () => {
@@ -239,11 +275,12 @@ export function LeaseTakeoverFinancingDetails() {
       const patch = normalizeWizardPatch({
         values: getValues(),
         contractEndDate,
+        dateMonths,
         existing: data as any,
       });
       updateData(patch as any);
     };
-  }, [contractEndDate, data, getValues, isDirty, updateData]);
+  }, [contractEndDate, data, dateMonths, getValues, isDirty, updateData]);
 
   const onSubmit = async (formData: LeaseTakeoverFinancingForm) => {
     setSubmitAttempted(true);
@@ -258,7 +295,12 @@ export function LeaseTakeoverFinancingDetails() {
       const remainingKm =
         typeof formData.remaining_km === "number" && Number.isFinite(formData.remaining_km) ? Number(formData.remaining_km) : 0;
 
-      const contractEnd = contractEndDate ? format(contractEndDate, "yyyy-MM-dd") : (data as any)?.contract_end_date ?? null;
+      const contractEnd = resolveContractEnd({
+        contractEndDate,
+        dateMonths,
+        months: formData.remaining_months,
+        existing: data,
+      });
 
       const financingPatch: Partial<typeof data> = {
         deal_type: "lease_takeover",
@@ -333,7 +375,9 @@ export function LeaseTakeoverFinancingDetails() {
         remaining_months: Number(formData.remaining_months),
         deposit_chf: depositChf,
         remaining_km: remainingKm,
-        contract_end_date: contractEnd,
+        // No date (months typed by hand) is not sent: the trigger then derives
+        // the end from the months, or keeps the running one if they are unchanged.
+        contract_end_date: contractEndDateForListingWrite({ deal_type: "lease_takeover", contract_end_date: contractEnd }),
       };
 
       const saved = await createOrUpdateListing(payload, user);
@@ -411,6 +455,7 @@ export function LeaseTakeoverFinancingDetails() {
 
     const months = calculateRemainingMonths(date);
     setValue("remaining_months", months, { shouldValidate: true });
+    setDateMonths(months);
 
     const patch: Record<string, unknown> = {
       deal_type: "lease_takeover",
@@ -418,6 +463,9 @@ export function LeaseTakeoverFinancingDetails() {
       leasing_offer: null,
       purchase_price_chf: null,
       contract_end_date: format(date, "yyyy-MM-dd"),
+      // With the date, so the reset-from-wizard-data effect above cannot put
+      // the old months back next to the new date.
+      remaining_months: months,
     };
 
     updateData(patch as any);
