@@ -3,6 +3,8 @@ import {
   CANTONAL_FEES,
   CANTONAL_KONTROLLSCHILDER_SUMMARY,
   FACTS_CHECKED_ON,
+  JURA_POINTS,
+  JURA_POINT_VALUE_CHF,
 } from "@/lib/buyauto/facts";
 import { formatChfRappen } from "@/lib/buyauto/format";
 
@@ -12,6 +14,14 @@ import { formatChfRappen } from "@/lib/buyauto/format";
  * of their own. One row per canton with its official source and Stand; the
  * notes for ZH, VD, ZG, SH and JU are footnotes. Server-rendered (static data).
  */
+/** Jura's tariff is in points: show the calculation, e.g. "71 × CHF 1.05 = CHF 74.55". */
+function feeCell(code: string, chf: number, points: number | null): string {
+  if (code === "JU" && points !== null) {
+    return `${points} × ${formatChfRappen(JURA_POINT_VALUE_CHF)} = ${formatChfRappen(chf)}`;
+  }
+  return formatChfRappen(chf);
+}
+
 export function CantonalFeesTable({ headingLevel = "h2" }: { headingLevel?: "h2" | "h3" }) {
   const Heading = headingLevel;
   const notes = CANTONAL_FEES.filter((c) => c.note);
@@ -54,9 +64,13 @@ export function CantonalFeesTable({ headingLevel = "h2" }: { headingLevel?: "h2"
                   </abbr>
                   {canton.note ? <sup className="ml-0.5 text-neutral-500">{noteNumber(canton.code)}</sup> : null}
                 </th>
-                <td className="px-3 py-2 text-neutral-800 whitespace-nowrap">{formatChfRappen(canton.fahrzeugausweisChf)}</td>
                 <td className="px-3 py-2 text-neutral-800 whitespace-nowrap">
-                  {canton.kontrollschilderChf === null ? "kein fester Betrag" : formatChfRappen(canton.kontrollschilderChf)}
+                  {feeCell(canton.code, canton.fahrzeugausweisChf, JURA_POINTS.fahrzeugausweis)}
+                </td>
+                <td className="px-3 py-2 text-neutral-800 whitespace-nowrap">
+                  {canton.kontrollschilderChf === null
+                    ? "kein fester Betrag"
+                    : feeCell(canton.code, canton.kontrollschilderChf, JURA_POINTS.kontrollschilder)}
                 </td>
                 <td className="px-3 py-2 text-neutral-600">
                   <a

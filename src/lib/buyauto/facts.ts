@@ -329,14 +329,13 @@ export function lenderTakeoverFee(key: LenderTakeoverFee["key"]): LenderTakeover
 
 /**
  * Konsumkreditgesetz: a private (consumer) leasing contract can be terminated
- * early; the lessor is then owed compensation per the table in the contract.
- * Only the article references are printed (no paraphrased numbers).
+ * early (Art. 17 Abs. 3, the only article the brief sources). Only the article
+ * reference is printed (no paraphrased numbers).
  */
 export const KKG = {
   name: "Konsumkreditgesetz (KKG)",
   sr: "SR 221.214.1",
   terminationArticle: "Art. 17 Abs. 3",
-  compensationTableArticle: "Art. 11 Abs. 2 lit. g",
   source: {
     title: "Bundesgesetz über den Konsumkredit (KKG), SR 221.214.1",
     url: "https://www.fedlex.admin.ch/eli/cc/2002/536/de#art_17",
@@ -665,6 +664,28 @@ export const CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL =
 
 /** Anchor of the cantonal table on the cost page. */
 export const CANTONAL_FEES_HREF = "/leasinguebernahme-kosten#kantone";
+
+/** The tariff behind a canton code as a citation ("Tarif Aargau", its URL and Stand). */
+export function cantonalFeeSource(code: string): FactSource {
+  const canton = CANTONAL_FEES.find((c) => c.code === code);
+  if (!canton) throw new Error(`Unknown canton code: ${code}`);
+  return { title: `Tarif ${canton.name}`, url: canton.sourceUrl, stand: canton.stand };
+}
+
+/**
+ * Sources of the lowest and highest Fahrzeugausweis fee: cite these wherever
+ * CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL is printed outside the #kantone table.
+ */
+export const CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES: FactSource[] = [
+  ...FAHRZEUGAUSWEIS_RANGE.min.codes,
+  ...FAHRZEUGAUSWEIS_RANGE.max.codes,
+].map(cantonalFeeSource);
+
+/** Same for the plate fee range (KONTROLLSCHILDER_RANGE). */
+export const CANTONAL_KONTROLLSCHILDER_RANGE_SOURCES: FactSource[] = [
+  ...KONTROLLSCHILDER_RANGE.min.codes,
+  ...KONTROLLSCHILDER_RANGE.max.codes,
+].map(cantonalFeeSource);
 
 // ── Auto-Abo examples (F10) ────────────────────────────────────────────────
 

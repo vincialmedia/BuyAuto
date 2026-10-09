@@ -11,6 +11,7 @@ import {
   CA_AUTO_FINANCE,
   CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
   CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES,
   CANTONAL_FEES_HREF,
   CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
@@ -33,11 +34,9 @@ import {
   TrendingDown, 
   TrendingUp, 
   Info, 
-  Clock, 
   DollarSign, 
   Users, 
   ShieldCheck, 
-  AlertTriangle, 
   Calendar, 
   FileCheck, 
   Zap, 
@@ -90,11 +89,11 @@ const ABO_TERM_LABEL =
 
 const EXTERNAL_LINK_CLASS = "underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900";
 
-/** Link to the provider's offer page: "Carvolution, Opel Corsa". */
+/** Link to the provider's offer page: "Carvolution, Opel Corsa Hybrid Edition 110". */
 function AboOfferLink({ example }: { example: AboExample }) {
   return (
     <a href={example.offer.url} target="_blank" rel="noopener noreferrer nofollow" className={EXTERNAL_LINK_CLASS}>
-      {example.provider.name}, {example.offer.brand} {example.offer.listingModel}
+      {example.provider.name}, {example.offer.model}
     </a>
   );
 }
@@ -128,8 +127,8 @@ const FAQ_SWITCH_ANSWER =
   "Du übernimmst den Vertrag für genau dieses Fahrzeug.";
 
 const FAQ_WHO_ANSWER =
-  "Für kostenbewusste Personen, die sich nur für die Restlaufzeit eines bestehenden Vertrags binden wollen und bereit " +
-  "sind, Versicherung und Service selbst zu organisieren.";
+  "Wenn du dich nur für die Restlaufzeit eines bestehenden Vertrags binden willst und bereit bist, Versicherung und " +
+  "Service selbst zu organisieren.";
 
 export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }: LeasingubernahmeVsAutoAboPageProps) {
   const [showStickyCTA, setShowStickyCTA] = React.useState(false);
@@ -158,7 +157,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
         <title>Leasingübernahme vs. Auto-Abo – Der grosse Vergleich | BuyAuto</title>
         <meta
           name="description"
-          content="Leasingübernahme oder Auto-Abo? Vergleichen Sie Kosten, Flexibilität und Vorteile beider Modelle für Ihre ideale Mobilitätslösung."
+          content="Leasingübernahme oder Auto-Abo? Vergleiche Kosten, Laufzeit und Leistungen beider Modelle mit aktuellen Beispielen und Quellen."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
         <script
@@ -241,7 +240,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasingübernahme vs. Auto-Abo – Der grosse Vergleich" />
-        <meta property="og:description" content="Vergleichen Sie Leasingübernahme und Auto-Abo: Kosten, Flexibilität und beste Option für Sie." />
+        <meta property="og:description" content="Vergleiche Leasingübernahme und Auto-Abo: Kosten, Laufzeit und Leistungen mit aktuellen Beispielen." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
       </Head>
@@ -268,7 +267,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
               <div className="flex items-center justify-between gap-4">
                 <div className="hidden md:block">
                   <p className="text-white font-bold text-lg">
-                    Finden Sie Ihre perfekte Leasingübernahme
+                    Finde deine Leasingübernahme
                   </p>
                   <p className="text-white/90 text-sm">
                     Aktuelle Angebote vergleichen
@@ -451,9 +450,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
                     "Bestehender Vertrag mit Restlaufzeit",
                     "Keine Anzahlung für einen neuen Vertrag",
                     "Fixe monatliche Rate",
-                    "Bindung nur für die Restlaufzeit",
-                    "Sofortige Verfügbarkeit",
-                    "Günstiger als Neuleasing"
+                    "Bindung nur für die Restlaufzeit"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -477,9 +474,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
                   {[
                     "Laufzeit je nach Anbieter und Angebot",
                     "Einmalkosten je nach Anbieter (z. B. Depot oder Kaution)",
-                    "All-Inclusive Rate (Versicherung, Service)",
-                    "Fahrzeugwechsel möglich",
-                    "Höhere monatliche Kosten"
+                    "All-Inclusive Rate (Versicherung, Service)"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
@@ -582,6 +577,15 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Neuer Fahrzeugausweis</td>
                     <td className="p-4 md:p-6 text-neutral-700">
                       <span className="font-semibold">{CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}, je nach Kanton</span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.length === 1 ? "Quelle:" : "Quellen:"}{" "}
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.map((source, i) => (
+                          <span key={source.title}>
+                            {i > 0 ? "; " : null}
+                            <SourceCitation source={source} prefix="" />
+                          </span>
+                        ))}
+                      </span>
                       <a href={CANTONAL_FEES_HREF} className="block text-xs text-primary font-semibold hover:underline mt-1">
                         Alle Kantone mit Quelle
                       </a>
@@ -645,7 +649,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
                   Leasingübernahmen Entdecken
                 </h2>
                 <p className="text-neutral-600 text-lg">
-                  Finden Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
+                  Finde eine Leasingübernahme oder erstelle dein eigenes Inserat.
                 </p>
               </div>
               <SearchForm />
@@ -748,16 +752,6 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
                   icon: DollarSign
                 },
                 {
-                  title: "Fahrzeugwechsel",
-                  desc: "Regelmässiger Wechsel zu neuen Modellen möglich",
-                  icon: TrendingUp
-                },
-                {
-                  title: "Keine versteckten Kosten",
-                  desc: "Transparente Preisgestaltung ohne Überraschungen",
-                  icon: Check
-                },
-                {
                   title: "Planungssicherheit",
                   desc: "Fixe Rate mit Versicherung, Service und Steuern",
                   icon: Calendar
@@ -806,12 +800,9 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
                   </div>
                   <ul className="space-y-4">
                     {[
-                      "du Kosten sparen möchtest",
                       "du dich nur für die Restlaufzeit eines Vertrags binden willst",
-                      "du das Fahrzeug sofort benötigst",
                       "du fixe monatliche Raten bevorzugst",
-                      "du bereit bist, die Versicherung separat zu zahlen",
-                      "du ein gutes Preis-Leistungs-Verhältnis suchst"
+                      "du bereit bist, die Versicherung separat zu zahlen"
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
                         <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -834,9 +825,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
                   <ul className="space-y-4">
                     {[
                       "du All-Inclusive-Service schätzt",
-                      "du regelmässig Fahrzeuge wechseln willst",
-                      "du keine separate Versicherung abschliessen möchtest",
-                      "du bereit bist, mehr für Komfort zu zahlen"
+                      "du keine separate Versicherung abschliessen möchtest"
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
                         <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
@@ -858,23 +847,20 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
               <span className="font-bold text-neutral-900">Entscheidungshilfe</span>
             </div>
             <h2 className="text-4xl font-bold text-neutral-900 mb-12 tracking-tight">
-              Entscheidungshilfe: Ihre Checkliste
+              Entscheidungshilfe: deine Checkliste
             </h2>
             
             <div className="bg-gradient-to-br from-neutral-50 to-white border-2 border-primary/20 rounded-3xl p-8 md:p-10 shadow-xl text-left">
               <p className="text-lg text-neutral-700 mb-6">
-                Beantworten Sie diese Fragen, um die richtige Wahl zu treffen:
+                Diese Fragen helfen dir bei der Wahl:
               </p>
               
               <div className="space-y-4">
                 {[
-                  "Wie wichtig ist Ihnen Flexibilität bei der Laufzeit?",
-                  "Möchten Sie eine All-Inclusive-Lösung oder lieber selbst verwalten?",
-                  "Wie lange planen Sie, das Fahrzeug zu nutzen?",
-                  "Ist Kostenersparnis oder Komfort wichtiger für Sie?",
-                  "Benötigen Sie das Fahrzeug sofort oder können Sie warten?",
-                  "Möchten Sie regelmässig verschiedene Fahrzeuge testen?",
-                  "Wie wichtig ist Ihnen Planungssicherheit?"
+                  "Wie wichtig ist dir Flexibilität bei der Laufzeit?",
+                  "Möchtest du eine All-Inclusive-Lösung oder lieber selbst verwalten?",
+                  "Wie lange planst du, das Fahrzeug zu nutzen?",
+                  "Wie wichtig ist dir Planungssicherheit?"
                 ].map((question, i) => (
                   <div key={i} className="bg-white border border-neutral-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
@@ -892,7 +878,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
                   💡 Unser Tipp:
                 </p>
                 <p className="text-neutral-700">
-                  Wenn Sie "Kostenersparnis", "Mittelfristig" und "Sofort" priorisieren, ist eine <strong>Leasingübernahme</strong> ideal – werfen Sie am besten gleich einen Blick auf die aktuell <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">verfügbaren Leasingübernahmen</Link>. Wenn Sie "Flexibilität", "All-Inclusive" und "Fahrzeugwechsel" bevorzugen, ist ein <strong>Auto-Abo</strong> besser geeignet.
+                  Willst du dich nur für die Restlaufzeit eines bestehenden Vertrags binden und Versicherung und Service selbst organisieren, passt eine <strong>Leasingübernahme</strong>: Wirf einen Blick auf die aktuell <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">verfügbaren Leasingübernahmen</Link>. Willst du Versicherung, Service und Steuern in einer Monatsrate, passt ein <strong>Auto-Abo</strong> besser.
                 </p>
               </div>
             </div>
@@ -999,10 +985,10 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }
               <span className="font-bold text-white">Bereit zum Start</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-              Bereit für Ihre Mobilitätslösung?
+              Bereit für deine Mobilitätslösung?
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-xl leading-relaxed">
-              Entdecken Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
+              Entdecke aktuelle Leasingübernahmen oder erstelle dein eigenes Inserat.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-10 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/30 transition-all hover:-translate-y-1">

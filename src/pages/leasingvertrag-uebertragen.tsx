@@ -7,6 +7,7 @@ import {
   CA_AUTO_FINANCE,
   CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
   CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES,
   CANTONAL_FEES_HREF,
   CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
@@ -34,13 +35,11 @@ import {
   Users, 
   BadgeCheck, 
   MapPin, 
-  Calendar, 
   DollarSign, 
   FileCheck, 
   Search, 
   ArrowRight, 
   RefreshCw, 
-  UserCheck, 
   AlertCircle, 
   CheckCircle, 
   XCircle 
@@ -601,6 +600,15 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Fahrzeugausweis / Ummeldung (Strassenverkehrsamt)</td>
                     <td className="p-4 md:p-6 text-neutral-700">
                       <span className="font-semibold">{CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}, je nach Kanton</span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.length === 1 ? "Quelle:" : "Quellen:"}{" "}
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.map((source, i) => (
+                          <span key={source.title}>
+                            {i > 0 ? "; " : null}
+                            <SourceCitation source={source} prefix="" />
+                          </span>
+                        ))}
+                      </span>
                       <a href={CANTONAL_FEES_HREF} className="block text-xs text-primary font-semibold hover:underline mt-1">
                         Alle Kantone mit Quelle
                       </a>
@@ -663,7 +671,6 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                   {[
                     "Oft günstigere Raten dank hoher Anzahlung",
                     "Keine oder geringe Einstiegskosten",
-                    "Sofortige Verfügbarkeit",
                     "Kürzere Restlaufzeit",
                     "Bestehende Konditionen bleiben"
                   ].map((item, i) => (
@@ -687,10 +694,9 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                 </div>
                 <ul className="space-y-4">
                   {[
-                    "Vertrag schnell loswerden",
+                    "Vertrag vor Ablauf abgeben",
                     "Keine hohen Ausstiegskosten",
-                    "Finanzielle Entlastung",
-                    "Schnelle Abwicklung möglich"
+                    "Finanzielle Entlastung"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />

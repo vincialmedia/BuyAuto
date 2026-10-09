@@ -8,6 +8,9 @@ import {
   CA_AUTO_FINANCE,
   CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
   CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FEES,
+  CANTONAL_KONTROLLSCHILDER_SUMMARY,
+  CANTONS_WITHOUT_FIXED_PLATE_FEE,
   CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
   CEMBRA_TRANSFER_EXCL_VAT_CHF,
@@ -27,7 +30,6 @@ import type { Listing } from "@/lib/buyauto/types";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
-  Check, 
   ChevronRight, 
   AlertTriangle, 
   FileText, 
@@ -37,8 +39,6 @@ import {
   DollarSign, 
   Clock, 
   Zap, 
-  Users, 
-  BadgeCheck, 
   ArrowRight, 
   FileCheck, 
   Search, 
@@ -90,9 +90,9 @@ const CANTONAL_SENTENCE =
 const FAQ_TOTAL_COST_ANSWER = `${TRANSFER_FEE_SENTENCE} ${CANTONAL_SENTENCE} Monatlich kommen Leasingrate und Versicherung dazu.`;
 
 const FAQ_REGISTRATION_ANSWER =
-  `Der neue Fahrzeugausweis kostet je nach Kanton ${CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}. Brauchst du neue ` +
-  `Kontrollschilder, kommen ${cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.min)} bis ` +
-  `${cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.max)} dazu. Die Tarife aller Kantone mit Quelle stehen in der Tabelle auf dieser Seite.`;
+  `Der neue Fahrzeugausweis kostet je nach Kanton ${CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}. ${CANTONAL_KONTROLLSCHILDER_SUMMARY} ` +
+  `In ZH und ZG können Zusatzgebühren dazukommen (siehe Fussnoten). Die Tarife aller Kantone mit Quelle stehen ` +
+  `in der Tabelle auf dieser Seite.`;
 
 function faqCheaperAnswer(stats: InventoryStats | null): string {
   return (
@@ -410,6 +410,11 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                       <span className="font-semibold">
                         {cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.min)} bis {cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.max)}
                       </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        {CANTONS_WITHOUT_FIXED_PLATE_FEE.length > 0
+                          ? `${CANTONS_WITHOUT_FIXED_PLATE_FEE.join(", ")} ohne festen Betrag; zu ZH siehe Fussnoten`
+                          : "Zu ZH siehe Fussnoten"}
+                      </span>
                       <a href="#kantone" className="block text-xs text-primary font-semibold hover:underline mt-1">
                         Alle Kantone mit Quelle
                       </a>
@@ -462,9 +467,6 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   <h3 className="text-2xl font-bold text-neutral-900 mb-4">
                     Was ist die Transfergebühr?
                   </h3>
-                  <p className="text-neutral-700 leading-relaxed mb-4">
-                    Die <strong>Transfergebühr</strong> ist die Hauptgebühr bei einer Leasingübernahme. Sie wird von der Leasingbank erhoben und deckt die administrativen Kosten der Vertragsübertragung ab.
-                  </p>
                   <p className="text-neutral-700 leading-relaxed">
                     {TRANSFER_FEE_SENTENCE} Wie die Übertragung selbst Schritt für Schritt abläuft, zeigt unser Ratgeber{" "}
                     <Link href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline">
@@ -473,26 +475,6 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   </p>
                 </CardContent>
               </Card>
-
-              <div className="bg-white p-6 rounded-xl border border-neutral-200">
-                <h3 className="text-xl font-bold text-neutral-900 mb-4">Faktoren, die die Höhe beeinflussen:</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { icon: BadgeCheck, text: "Leasingbank-Richtlinien" },
-                    { icon: DollarSign, text: "Restwert des Fahrzeugs" },
-                    { icon: Clock, text: "Restlaufzeit des Vertrags" },
-                    { icon: FileCheck, text: "Verwaltungsaufwand" }
-                  ].map((item, i) => {
-                    const IconComponent = item.icon;
-                    return (
-                      <div key={i} className="flex items-start gap-3 bg-neutral-50 border border-neutral-200 p-4 rounded-lg">
-                        <IconComponent className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-neutral-700 font-medium">{item.text}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -513,30 +495,17 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   <div>
                     <h3 className="text-xl font-bold text-neutral-900 mb-3">Was kostet die Ummeldung?</h3>
                     <p className="text-neutral-700 leading-relaxed">
-                      Nach der Vertragsübertragung stellt das <strong>Strassenverkehrsamt</strong> einen neuen Fahrzeugausweis auf
-                      dich aus. {CANTONAL_SENTENCE} Die Tarife aller 26 Kantone mit Quelle findest du in der{" "}
+                      Nach der Vertragsübertragung stellt dir das <strong>Strassenverkehrsamt</strong> einen neuen
+                      Fahrzeugausweis aus. Das kostet je nach Kanton {CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}. Die Tarife aller{" "}
+                      {CANTONAL_FEES.length} Kantone mit Quelle findest du in der{" "}
                       <a href="#kantone" className="text-primary font-semibold hover:underline">Tabelle nach Kanton</a>.
                     </p>
                   </div>
 
-                  <div className="bg-primary/5 p-6 rounded-lg">
-                    <h4 className="font-bold text-neutral-900 mb-3">Benötigte Dokumente:</h4>
-                    <ul className="space-y-2">
-                      {[
-                        "Fahrzeugausweis (Original)",
-                        "Personalausweis oder Pass",
-                        "Versicherungsbestätigung",
-                        "Unterschriebener Kaufvertrag oder Übertragungsvereinbarung",
-                        "Kontrollschildnummern (falls nicht übernommen)"
-                      ].map((doc, i) => (
-                        <li key={i} className="flex items-start gap-2 text-neutral-700">
-                          <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                          <span>{doc}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
+                  <p className="text-neutral-700 leading-relaxed">
+                    Welche Unterlagen nötig sind, sagen dir die Leasinggesellschaft und das Strassenverkehrsamt deines
+                    Kantons.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -563,33 +532,13 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
             <div className="space-y-6">
               <Card className="border-2 border-primary/20">
                 <CardContent className="p-8">
-                  <p className="text-lg text-neutral-700 leading-relaxed mb-6">
+                  <p className="text-lg text-neutral-700 leading-relaxed">
                     Bei einer Leasingübernahme versicherst du das Auto selbst. Welche Deckung du brauchst, legt der
                     Leasingvertrag fest: {AMAG_LEASING.name} verlangt für Neufahrzeuge eine Vollkasko, bei Occasionen ist
                     nach Absprache eine Teilkasko möglich ({AMAG_LEASING.clauses.versicherung},{" "}
                     <SourceCitation source={AMAG_LEASING.source} prefix="" />
-                    ). Die Prämie hängt unter anderem von diesen Faktoren ab:
+                    ).
                   </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { icon: DollarSign, title: "Fahrzeugwert", desc: "Höherer Wert = höhere Prämie" },
-                      { icon: Users, title: "Alter & Erfahrung", desc: "Junge Fahrer zahlen mehr" },
-                      { icon: BadgeCheck, title: "Unfallhistorie", desc: "Schadenfreie Jahre senken Kosten" },
-                      { icon: FileCheck, title: "Deckungsumfang", desc: "Vollkasko vs. Teilkasko" }
-                    ].map((item, i) => {
-                      const IconComponent = item.icon;
-                      return (
-                        <div key={i} className="bg-white border border-neutral-200 p-5 rounded-lg">
-                          <div className="flex items-center gap-3 mb-2">
-                            <IconComponent className="w-6 h-6 text-primary" />
-                            <h4 className="font-bold text-neutral-900">{item.title}</h4>
-                          </div>
-                          <p className="text-neutral-600 text-sm">{item.desc}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </CardContent>
               </Card>
 

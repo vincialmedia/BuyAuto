@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { 
   Check, 
   ChevronRight, 
-  AlertTriangle, 
   FileText, 
   Info, 
   ShieldCheck, 
@@ -13,7 +12,6 @@ import {
   Zap, 
   Users, 
   BadgeCheck, 
-  MapPin, 
   Calendar, 
   DollarSign, 
   FileCheck, 
@@ -30,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { getPublicOfferIndex, liveTakeovers, loadPremiumCarouselListings, searchListingsOrThrow } from "@/services/listingsService";
+import { getPremiumCarouselListings, getPublicOfferIndex, liveTakeovers, searchListingsOrThrow } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
 import {
@@ -39,6 +37,7 @@ import {
   CA_AUTO_FINANCE,
   CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
   CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES,
   CANTONAL_FEES_HREF,
   CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
@@ -69,13 +68,15 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 });
 
 type LeasingUebernahmePageProps = {
+  /** Newest live takeovers; empty when the live read failed (the «Live» section is then hidden). */
   takeoverListings: Listing[];
-  takeoverTotal: number;
+  /** Live takeover count; null when the live read failed. */
+  takeoverTotal: number | null;
   // Indexable brand landing pages (enough live Leasingübernahmen). Only these are
   // linked from the brand section — noindex brand pages stay unlinked.
   availableBrands: { slug: string; name: string }[];
-  /** Premium carousel, rendered server-side (prices in the HTML). */
-  premiumListings: Listing[];
+  /** Premium carousel, rendered server-side (prices in the HTML); null falls back to the client fetch. */
+  premiumListings: Listing[] | null;
 };
 
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
@@ -94,7 +95,9 @@ export default function LeasingUebernahmePage({
   premiumListings,
 }: LeasingUebernahmePageProps) {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
-  const hasTakeoverListings = Array.isArray(takeoverListings) && takeoverListings.length > 0;
+  // The «Live auf BuyAuto» section and the ItemList JSON-LD render only with data from a successful live read.
+  const hasTakeoverListings =
+    takeoverTotal !== null && Array.isArray(takeoverListings) && takeoverListings.length > 0;
 
   // Handle sticky CTA visibility
   useEffect(() => {
@@ -491,7 +494,10 @@ export default function LeasingUebernahmePage({
                   { id: "vorteile", label: "Vorteile für beide Seiten" },
                   { id: "rechtliches", label: "Rechtliche Hinweise" },
                   { id: "faq", label: "Häufige Fragen" },
-                ].map((item, i) => (
+                ]
+                  // «Aktuelle Angebote» only exists when the live read succeeded.
+                  .filter((item) => item.id !== "angebote" || hasTakeoverListings)
+                  .map((item, i) => (
                   <button 
                     key={i}
                     onClick={() => scrollToSection(item.id)}
@@ -854,6 +860,15 @@ export default function LeasingUebernahmePage({
                     <td className="p-6 font-semibold text-neutral-900">Ummeldung / Fahrzeugausweis (Strassenverkehrsamt)</td>
                     <td className="p-6 text-neutral-700">
                       <span className="font-bold">{CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}, je nach Kanton</span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.length === 1 ? "Quelle:" : "Quellen:"}{" "}
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.map((source, i) => (
+                          <span key={source.title}>
+                            {i > 0 ? "; " : null}
+                            <SourceCitation source={source} prefix="" />
+                          </span>
+                        ))}
+                      </span>
                       <a href={CANTONAL_FEES_HREF} className="block text-xs text-primary font-semibold hover:underline mt-1">
                         Alle Kantone mit Quelle
                       </a>
@@ -1290,7 +1305,7 @@ export default function LeasingUebernahmePage({
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings initialListings={premiumListings} />
+        <PremiumListings initialListings={premiumListings ?? undefined} />
         
       </main>
     </>
@@ -1298,19 +1313,34 @@ export default function LeasingUebernahmePage({
 }
 
 export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async () => {
-  // The count, the grid and the brand links must come from a successful query: a
-  // failure throws, so ISR keeps the last good page instead of caching "0 laufende
-  // Leasingverträge" (a failed first build fails loudly instead of shipping it).
-  const [results, offers, premiumListings] = await Promise.all([
-    searchListingsOrThrow({ dealType: "lease_takeover", sort: "dateDesc", pageSize: 6 }),
-    getPublicOfferIndex(),
-    loadPremiumCarouselListings(),
+  // Each read fails on its own: a failed live read renders the page without the «Live
+  // auf BuyAuto» section (never stale or fallback data labelled «Live»), a failed brand
+  // read drops the brand links, and a failed premium read lets the carousel fetch
+  // client-side. Revalidating every 5 minutes brings the live section back.
+  const [takeovers, availableBrands, premiumListings] = await Promise.all([
+    (async (): Promise<{ takeoverListings: Listing[]; takeoverTotal: number | null }> => {
+      try {
+        const results = await searchListingsOrThrow({ dealType: "lease_takeover", sort: "dateDesc", pageSize: 6 });
+        // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
+        const takeoverListings = JSON.parse(JSON.stringify(results.items)) as Listing[];
+        return { takeoverListings, takeoverTotal: results.total };
+      } catch (error) {
+        console.error("Leasingübernahme guide: live takeover read failed:", error);
+        return { takeoverListings: [], takeoverTotal: null };
+      }
+    })(),
+    (async (): Promise<{ slug: string; name: string }[]> => {
+      try {
+        // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
+        const offers = await getPublicOfferIndex();
+        return indexableBrandPages(liveTakeovers(offers)).map((b) => ({ slug: b.slug, name: b.name }));
+      } catch (error) {
+        console.error("Leasingübernahme guide: brand pages read failed:", error);
+        return [];
+      }
+    })(),
+    getPremiumCarouselListings(),
   ]);
 
-  // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
-  const availableBrands = indexableBrandPages(liveTakeovers(offers)).map((b) => ({ slug: b.slug, name: b.name }));
-
-  // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
-  const takeoverListings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-  return { props: { takeoverListings, takeoverTotal: results.total, availableBrands, premiumListings }, revalidate: 300 };
+  return { props: { ...takeovers, availableBrands, premiumListings }, revalidate: 300 };
 };
