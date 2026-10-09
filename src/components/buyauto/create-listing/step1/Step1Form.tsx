@@ -657,6 +657,9 @@ export function Step1Form() {
     const isGarageDraftFlow = Boolean(user && isGarage && !isEditingExistingListing);
 
     const nextDealType: DealType = effectiveDealType;
+    // A changed deal type starts without a contract end date: a date picked for a
+    // Direktkauf's takeover offer must not reappear next to other months in Step 2.
+    const contractEndDatePatch = nextDealType !== (data as any).deal_type ? { contract_end_date: null } : {};
     const normalizedLocation = String(values.location ?? "").trim();
     if (nextDealType !== "lease_takeover" && normalizedLocation.length === 0) {
       setError("location", { type: "manual", message: "Standort ist erforderlich" });
@@ -754,6 +757,7 @@ export function Step1Form() {
         deal_type: nextDealType,
         financing_type: nextFinancingType,
         leasing_offer: nextDealType === "lease_takeover" ? null : (data as any).leasing_offer,
+        ...contractEndDatePatch,
 
         make_id: values.make_id,
         model_id: values.model_id,
@@ -793,6 +797,7 @@ export function Step1Form() {
           deal_type: nextDealType,
           financing_type: nextFinancingType,
           leasing_offer: nextDealType === "lease_takeover" ? null : (data as any).leasing_offer,
+          ...contractEndDatePatch,
 
           make_id: values.make_id as any,
           model_id: values.model_id as any,
@@ -844,6 +849,7 @@ export function Step1Form() {
           deal_type: nextDealType,
           financing_type: nextFinancingType,
           leasing_offer: nextDealType === "lease_takeover" ? null : (data as any).leasing_offer,
+          ...contractEndDatePatch,
 
           make_id: values.make_id as any,
           model_id: values.model_id as any,

@@ -236,6 +236,18 @@ export function LeaseTakeoverFinancingDetails() {
     }
   }, [contractEndDate, data, setValue]);
 
+  // Months typed by hand replace the picked date (resolveContractEnd saves no
+  // date then), so the picker drops it too instead of showing a date that is
+  // not saved. Wizard data goes with it, or the effect above would load it back.
+  useEffect(() => {
+    if (!contractEndDate || dateMonths === null) return;
+    const months = Number(watchedRemainingMonths);
+    if (!Number.isFinite(months) || months === dateMonths) return;
+    setContractEndDate(undefined);
+    setDateMonths(null);
+    updateData({ contract_end_date: null } as any);
+  }, [contractEndDate, dateMonths, updateData, watchedRemainingMonths]);
+
   useEffect(() => {
     const t = setTimeout(() => {
       if (!isDirty) return;

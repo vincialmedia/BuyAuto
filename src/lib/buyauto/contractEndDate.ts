@@ -9,8 +9,8 @@
  * date when the seller gave none (months typed by hand: the trigger counts down
  * from the months), and null on a listing without a takeover.
  *
- * Read side: the seller dashboard flags a takeover whose contract has ended
- * with the same rule the public site uses to hide it (kaufart.ts).
+ * Read side: the seller dashboard flags a takeover whose contract_end_date
+ * has passed (Europe/Zurich).
  */
 import { resolveListingOffer, type KaufartSource } from "./kaufart";
 
@@ -89,17 +89,29 @@ export function contractEndDateForMonths(params: {
   return Number.isFinite(months) && months === params.dateMonths ? date : null;
 }
 
+/** Today's date in Switzerland as "yyyy-MM-dd". */
+function zurichTodayIso(now: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Zurich",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
 /**
- * Seller dashboard: "Vertrag abgelaufen – Inserat prüfen". Shown exactly when
- * the public site drops the listing as an ended Leasingübernahme
- * (resolveListingOffer().contractEnded: a takeover — deal_type lease_takeover
- * or a Direktkauf with a takeover offer — whose effective months reached 0),
- * except on a sold listing, which has nothing left to check.
+ * Seller dashboard: "Vertrag abgelaufen – Inserat prüfen". Shown when the
+ * listing is a takeover (deal_type lease_takeover or a Direktkauf with a
+ * takeover offer, per resolveListingOffer) and its contract_end_date lies
+ * before today in Zurich. No date, no badge; a sold listing has nothing left
+ * to check.
  */
 export function showContractEndedBadge(
   listing: KaufartSource & { status?: string | null },
   now: Date = new Date()
 ): boolean {
   if (listing.status === "sold") return false;
-  return resolveListingOffer(listing, now).contractEnded;
+  if (resolveListingOffer(listing, now).kaufart !== "lease_takeover") return false;
+  const endDate = normalizeContractEndDate(listing.contract_end_date);
+  return endDate !== null && endDate < zurichTodayIso(now);
 }

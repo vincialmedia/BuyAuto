@@ -775,8 +775,7 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             const views = Number.isFinite(Number(listing.view_count)) ? Number(listing.view_count) : 0;
             const isPublicListing = ["published", "active", "sold"].includes(String(listing.status));
             const listingHref = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
-            // A takeover whose contract has run out drops out of every public
-            // list (same rule as the site: lib/buyauto/kaufart). The row is the
+            // A takeover whose contract_end_date has passed. The row is the
             // raw listings row (select *), so contract_end_date is on it.
             const contractEnded = showContractEndedBadge(listing as ListingDetail & KaufartSource);
 

@@ -4,7 +4,7 @@
  *
  * Covers what a listing write sends as contract_end_date (wizard Step 2 and
  * Step 5) and when the seller dashboard shows "Vertrag abgelaufen – Inserat
- * prüfen" (must match the public site's contractEnded rule in kaufart.ts).
+ * prüfen" (contract_end_date before today in Zurich).
  */
 import assert from "node:assert/strict";
 import {
@@ -16,7 +16,6 @@ import {
   parseContractEndDate,
   showContractEndedBadge,
 } from "../src/lib/buyauto/contractEndDate";
-import { resolveListingOffer } from "../src/lib/buyauto/kaufart";
 
 // --- normalizeContractEndDate ------------------------------------------------
 assert.equal(normalizeContractEndDate("2027-03-15"), "2027-03-15");
@@ -154,19 +153,22 @@ const takeoverRow = (contract_end_date: string | null, extra: Record<string, unk
   ...extra,
 });
 
+// The date has passed.
 assert.equal(showContractEndedBadge(takeoverRow("2026-09-01"), now), true);
 assert.equal(showContractEndedBadge(takeoverRow("2025-12-01"), now), true);
-// Database anchor (1st of a month): ended from the 1st of that month on.
 assert.equal(showContractEndedBadge(takeoverRow("2026-10-01"), now), true);
-assert.equal(showContractEndedBadge(takeoverRow("2026-11-01"), now), false);
-// Seller-picked day: the public rule counts whole months left (none -> ended).
 assert.equal(showContractEndedBadge(takeoverRow("2026-10-08"), now), true);
-assert.equal(showContractEndedBadge(takeoverRow("2026-11-08"), now), true);
-assert.equal(showContractEndedBadge(takeoverRow("2026-11-09"), now), false);
+// Today and later: not passed, even with less than a month left.
+assert.equal(showContractEndedBadge(takeoverRow("2026-10-09"), now), false);
+assert.equal(showContractEndedBadge(takeoverRow("2026-10-20"), now), false);
+assert.equal(showContractEndedBadge(takeoverRow("2026-10-31"), now), false);
+assert.equal(showContractEndedBadge(takeoverRow("2026-11-01"), now), false);
+assert.equal(showContractEndedBadge(takeoverRow("2026-11-08"), now), false);
 assert.equal(showContractEndedBadge(takeoverRow("2027-08-20"), now), false);
-// No end date: the stored months decide (17 > 0).
+// No (valid) end date: no badge, whatever the stored months say.
 assert.equal(showContractEndedBadge(takeoverRow(null), now), false);
-assert.equal(showContractEndedBadge(takeoverRow(null, { remaining_months: 0 }), now), true);
+assert.equal(showContractEndedBadge(takeoverRow(null, { remaining_months: 0 }), now), false);
+assert.equal(showContractEndedBadge(takeoverRow("2026-02-30"), now), false);
 // Any status but sold.
 assert.equal(showContractEndedBadge(takeoverRow("2026-09-01", { status: "draft" }), now), true);
 assert.equal(showContractEndedBadge(takeoverRow("2026-09-01", { status: "paused" }), now), true);
@@ -219,19 +221,7 @@ assert.equal(
 
 // Europe/Zurich, not UTC: 2026-10-31T23:30Z is already 1 November in Zurich.
 const zurichNovember = new Date("2026-10-31T23:30:00Z");
-assert.equal(showContractEndedBadge(takeoverRow("2026-11-01"), zurichNovember), true);
-assert.equal(showContractEndedBadge(takeoverRow("2026-11-01"), new Date("2026-10-31T22:30:00Z")), false);
-
-// Same answer as the public site's rule for every non-sold row above.
-for (const row of [
-  takeoverRow("2026-09-01"),
-  takeoverRow("2026-10-01"),
-  takeoverRow("2026-11-01"),
-  takeoverRow("2026-10-20"),
-  takeoverRow(null),
-  directWithTakeover,
-]) {
-  assert.equal(showContractEndedBadge(row, now), resolveListingOffer(row, now).contractEnded);
-}
+assert.equal(showContractEndedBadge(takeoverRow("2026-10-31"), zurichNovember), true);
+assert.equal(showContractEndedBadge(takeoverRow("2026-10-31"), new Date("2026-10-31T22:30:00Z")), false);
 
 console.log("All contract-end-date checks passed.");
