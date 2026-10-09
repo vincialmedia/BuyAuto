@@ -111,6 +111,50 @@
       "permanent": true
     },
     {
+      "source": "/cembra-leasing-uebernehmen",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme-kosten",
+      "permanent": true
+    },
+    {
+      "source": "/amag-leasing-uebernehmen",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme-kosten",
+      "permanent": true
+    },
+    {
+      "source": "/multilease-leasing-uebernehmen",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme-kosten",
+      "permanent": true
+    },
+    {
+      "source": "/bank-now-leasing-uebernehmen",
+      "has": [
+        {
+          "type": "host",
+          "value": "buyauto.ch"
+        }
+      ],
+      "destination": "https://www.buyauto.ch/leasinguebernahme-kosten",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {

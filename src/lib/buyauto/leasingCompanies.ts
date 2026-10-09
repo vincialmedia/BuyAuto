@@ -1,282 +1,245 @@
-// Registry for the Leasinggesellschaft pages (cembra-leasing-uebernehmen etc.).
-// One entry = one SEO page, rendered by LeasingCompanyPage — same idea as the
-// brand registry in leasingBrands.ts, but with flat top-level slugs because
-// these are content pages like every other Ratgeber (and a distinct segment
-// under /leasinguebernahme/ would collide with the [marke] fallback).
+// Lender sections of the cost page (/leasinguebernahme-kosten#cembra, #amag,
+// #multilease, #bank-now). The former per-lender pages 308 to these anchors.
 //
-// UWG guardrail: every published figure carries a visible source attribution
-// and Stand. Fields without a verifiable source stay null — the template then
-// renders honest generic copy. Do not fill these from memory; sources are
-// linked per fact via sourceLinkText/sourceUrl (Quellenangaben are exempt from
-// the no-external-contacts rule for body copy).
+// Every fact carries a visible source link (sourceLinkText inside the text) and
+// the Stand of that source, also inside the text. Facts without a source are
+// not listed. The fee table itself (all lenders) reads LENDER_TAKEOVER_FEES in
+// facts.ts; this module holds the longer, lender-specific notes.
 //
-// Research base: Vince, Stand 13.08.2026. Kernbefund: nur Cembra publiziert
-// einen Übernahme-Tarif; AMAG, Multilease und BANK-now regeln die Übertragung
-// individuell auf Anfrage.
-//
-// Fee figures are built from the facts module (facts.ts), never typed here.
+// Numbers come from the facts module (facts.ts), never typed here.
 
-import { AMAG_LEASING, CEMBRA, type FactSource } from "@/lib/buyauto/facts";
+import {
+  AMAG_LEASING,
+  CEMBRA,
+  CEMBRA_TRANSFER_DISPLAY,
+  CEMBRA_TRANSFER_EXCL_VAT_CHF,
+  type FactSource,
+  type LenderTakeoverFee,
+} from "@/lib/buyauto/facts";
 import { formatChf, formatSwissInt } from "@/lib/buyauto/format";
 
-/** formatChf plus ".–", e.g. 1234 -> "CHF 1'234.–" (Betragsschreibweise im Fliesstext). */
-const chfDash = (value: number) => `${formatChf(value)}.–`;
+/** Research date of the lender web pages below that are not in facts.ts (Vince, 13.8.2026). */
+export const LENDER_RESEARCH_STAND = "Stand 13.8.2026";
+
+/** A source as printed on the page: title (link text in the source list), URL and Stand. */
+export type DatedSource = FactSource & { stand: string };
 
 export interface SourcedFact {
-  /** Rendered German copy incl. the visible attribution («gemäss …, Stand …»). */
+  /** German copy; contains sourceLinkText and source.stand verbatim. */
   text: string;
-  /** Phrase inside `text` rendered as the source hyperlink (Quellenangabe). */
-  sourceLinkText?: string;
-  sourceUrl?: string;
+  /** Phrase inside `text` rendered as the link to source.url. */
+  sourceLinkText: string;
+  source: DatedSource;
 }
 
-export interface LeasingCompanyFacts {
-  /** Umschreibe-/Halterwechselgebühr with source, or null (no published tariff). */
-  transferFee: SourcedFact | null;
-  /** Typical transfer duration. Stays null until a documented Erfahrungswert exists. */
-  typicalDuration: SourcedFact | null;
-  /** What the company checks/requires from the Übernehmer. */
-  documents: SourcedFact | null;
-  /** Company-specific transfer mechanics (channel, parties, Code 178). */
-  transferProcess: SourcedFact | null;
-}
+export type LenderSectionAnchor = Extract<LenderTakeoverFee["key"], "cembra" | "amag" | "multilease" | "bank-now">;
 
-export interface LeasingCompany {
-  /** Flat page slug, e.g. "cembra-leasing-uebernehmen" → /cembra-leasing-uebernehmen */
-  slug: string;
-  /** Full display name for standalone mentions («Zustimmung von AMAG Leasing»). */
+export interface LenderSection {
+  /** Element id on the cost page; equals the lender's key in LENDER_TAKEOVER_FEES. */
+  anchor: LenderSectionAnchor;
   name: string;
-  /** Name used in hyphen compounds («AMAG-Leasingvertrag») — avoids
-   *  «AMAG Leasing-Leasing» when the full name already contains «Leasing». */
-  compoundName: string;
-  /** Official company website entry point (may carry a language path like
-   *  /de when the bare domain redirects to the wrong language). */
-  officialSite: string;
-  /** Official info/FAQ page for the after-CTA «Direkt bei der Gesellschaft
-   *  nachfragen» link. Falls back to officialSite. Per the funnel rule this
-   *  link renders only AFTER the BuyAuto CTAs. */
-  infoUrl?: string;
-  /** One-sentence company differentiator rendered inside the hero block —
-   *  derived ONLY from the sourced facts below (keeps the four pages from
-   *  sharing an identical answer-first paragraph). */
-  heroNote: string;
-  /** Company-specific middle segment of the meta description — keeps the four
-   *  descriptions unique instead of name-swapped duplicates. */
-  descriptionDetail: string;
-  /** Sourced company status/size fact rendered under the hero intro. */
-  introNote?: SourcedFact;
-  /** What the company says about the brands it covers (AMAG only for now):
-   *  a verbatim quote with its source, plus links to our brand pages. */
-  brandStatement?: {
-    /** Copy before the quote, e.g. «Im Geschäftsbericht 2025 schreibt AMAG Leasing:». */
-    lead: string;
-    quote: string;
-    source: FactSource;
-    /** Brand pages to link after the quote; only indexable ones render as links. */
-    brandLinks: { name: string; href: string }[];
-  };
-  facts: LeasingCompanyFacts;
+  /** Status or size of the company, shown first. */
+  notes: SourcedFact[];
+  /** What the lender says about its fees. */
+  fee: SourcedFact | null;
+  /** Credit check, registration, insurance. */
+  checks: SourcedFact | null;
+  /** How the transfer runs at this lender. */
+  process: SourcedFact | null;
 }
 
-export const LEASING_COMPANIES: LeasingCompany[] = [
+const CEMBRA_KUNDENCENTER: DatedSource = {
+  title: "Cembra, Kundencenter Leasing für Privatpersonen",
+  url: "https://www.cembra.ch/de/kundencenter/leasing/privatpersonen/",
+  stand: LENDER_RESEARCH_STAND,
+};
+
+const CEMBRA_KONDITIONEN: DatedSource = {
+  title: "Cembra, Konditionen Autoleasing",
+  url: "https://www.cembra.ch/de/leasing/auto/konditionen/",
+  stand: LENDER_RESEARCH_STAND,
+};
+
+const AMAG_ABLAUF: DatedSource = {
+  title: "AMAG Leasing, Ablauf Leasing",
+  url: "https://www.amag-leasing.ch/de/ablauf-leasing.html",
+  stand: LENDER_RESEARCH_STAND,
+};
+
+const MULTILEASE_FAQ: DatedSource = {
+  title: "Multilease, FAQ",
+  url: "https://www.multilease.ch/de/faq",
+  stand: LENDER_RESEARCH_STAND,
+};
+
+const MULTILEASE_RATGEBER: DatedSource = {
+  title: "Multilease, Was ist Leasing?",
+  url: "https://www.multilease.ch/was-ist-leasing/",
+  stand: LENDER_RESEARCH_STAND,
+};
+
+const FINEWS_BANK_NOW: DatedSource = {
+  title: "finews.com, Porsche Financial Services, BANK-now und UBS (englisch)",
+  url: "https://www.finews.com/news/english-news/68246-porsche-switzerland-porsche-financial-services-bank-now-ubs-credit-suisse-leasing-business",
+  stand: "Stand August 2026",
+};
+
+const AMAG_ALB: DatedSource = { ...AMAG_LEASING.source };
+const CEMBRA_GEBUEHREN: DatedSource = { ...CEMBRA.source };
+const AMAG_CUSTOMERS: DatedSource = { ...AMAG_LEASING.customers.source, title: "AMAG Group, Geschäftsfeld Leasing" };
+// Title without the year: the Stand ("Geschäftsbericht 2025") already names it in the source list.
+const AMAG_GESCHAEFTSBERICHT: DatedSource = { ...AMAG_LEASING.brandStatement.source, title: AMAG_LEASING.legalName };
+
+export const LENDER_SECTIONS: readonly LenderSection[] = [
   {
-    slug: "cembra-leasing-uebernehmen",
-    name: "Cembra",
-    compoundName: "Cembra",
-    officialSite: "https://www.cembra.ch",
-    infoUrl: "https://www.cembra.ch/de/kundencenter/leasing/privatpersonen/",
-    heroNote:
-      "Besonderheit bei Cembra: Die Gebühren für den Halterwechsel stehen in einer offiziellen Gebührenübersicht – die Zahlen findest du weiter unten.",
-    descriptionDetail: "Ablauf, Bonitätsprüfung und der publizierte Halterwechsel-Tarif",
-    facts: {
-      transferFee: {
-        text:
-          `Cembra verrechnet für den Halterwechsel ${chfDash(CEMBRA.feesExclVatChf.halterwechsel)} plus ${chfDash(CEMBRA.feesExclVatChf.fahrzeugausweisUmschreibung)} für die Umschreibung des Fahrzeugausweises, jeweils exkl. MWST (gemäss Gebührenübersicht Leasing der Cembra, gültig ab ${CEMBRA.validFrom}). Dazu kommen die kantonalen Gebühren des Strassenverkehrsamts. Zum Vergleich: Allein die Kündigungsabrechnung bei einer vorzeitigen Auflösung kostet ${chfDash(CEMBRA.feesExclVatChf.kuendigungsabrechnung)} exkl. MWST (gleiche Quelle) – hinzu kommt die eigentliche Auflösungsentschädigung gemäss Vertrag.`,
-        sourceLinkText: "Gebührenübersicht Leasing der Cembra",
-        sourceUrl: CEMBRA.sourceUrl,
-      },
-      // ERFAHRUNGSWERT-VINCE: typische Dauer einer Cembra-Übertragung
-      typicalDuration: null,
-      documents: {
-        // ERFAHRUNGSWERT-VINCE: exakte Dokumentenliste aus realen Cembra-Übernahmen
-        text:
-          "Cembra prüft die Bonität der übernehmenden Person wie bei jedem neuen Leasingvertrag – mit Selbstauskunft, Einkommensnachweis und Abfrage bei ZEK/IKO. Eine Vollkaskoversicherung ist bei Cembra-Leasingverträgen zwingend (gemäss Cembra-Kundencenter Leasing).",
-        sourceLinkText: "Cembra-Kundencenter Leasing",
-        sourceUrl: "https://www.cembra.ch/de/kundencenter/leasing/privatpersonen/",
-      },
-      transferProcess: {
-        text:
-          "Die Übernahme wird direkt bei Cembra beantragt; die Gesellschaft schreibt den Vertrag nach bestandener Bonitätsprüfung auf die neue Person um. Leasingfahrzeuge tragen im Fahrzeugausweis den Code 178 («Halterwechsel verboten») – die Umschreibung beim Strassenverkehrsamt läuft deshalb immer über die Freigabe der Leasinggesellschaft (gemäss Cembra-Leasingkonditionen).",
-        sourceLinkText: "Cembra-Leasingkonditionen",
-        sourceUrl: "https://www.cembra.ch/de/leasing/auto/konditionen/",
-      },
-    },
-    // Interne Notiz (NICHT publizieren, Quelle 2016 veraltet): 20 Minuten
-    // berichtete damals Pauschale CHF 540 und Mindest-Restlaufzeit 12 Monate —
-    // telefonisch verifizieren.
-  },
-  {
-    slug: "amag-leasing-uebernehmen",
-    name: "AMAG Leasing",
-    compoundName: "AMAG",
-    officialSite: "https://www.amag-leasing.ch",
-    infoUrl: "https://www.amag-leasing.ch/de/ablauf-leasing.html",
-    heroNote:
-      "Besonderheit bei AMAG Leasing: Beim indirekten Leasing ist deine Liefergarage eng eingebunden – kläre die Übernahme deshalb mit beiden.",
-    descriptionDetail: "indirektes Leasing, Bonitätsprüfung und die Rolle der Liefergarage",
-    introNote: {
+    anchor: "cembra",
+    name: CEMBRA.name,
+    notes: [],
+    fee: {
       text:
-        `AMAG Leasing zählt nach eigenen Angaben über ${formatSwissInt(AMAG_LEASING.customers.moreThan)} Privat- und Firmenkunden (Quelle: ${AMAG_LEASING.customers.source.title}, ${AMAG_LEASING.customers.source.stand}).`,
-      sourceLinkText: AMAG_LEASING.customers.source.title,
-      sourceUrl: AMAG_LEASING.customers.source.url,
+        `Laut Gebührenübersicht Leasing der Cembra (${CEMBRA_GEBUEHREN.stand}) kostet der Halterwechsel ` +
+        `${formatChf(CEMBRA.feesExclVatChf.halterwechsel)} plus ${formatChf(CEMBRA.feesExclVatChf.fahrzeugausweisUmschreibung)} ` +
+        `für die Umschreibung des Fahrzeugausweises, jeweils exkl. MWST. Zusammen sind das ` +
+        `${formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. oder rund ${CEMBRA_TRANSFER_DISPLAY} inkl. MWST. ` +
+        `Die Kündigungsabrechnung bei einer vorzeitigen Auflösung kostet dort ` +
+        `${formatChf(CEMBRA.feesExclVatChf.kuendigungsabrechnung)} exkl. MWST.`,
+      sourceLinkText: "Gebührenübersicht Leasing der Cembra",
+      source: CEMBRA_GEBUEHREN,
     },
-    brandStatement: {
-      lead: "Im Geschäftsbericht 2025 beschreibt AMAG Leasing ihr Angebot so:",
-      quote: AMAG_LEASING.brandStatement.quote,
-      source: AMAG_LEASING.brandStatement.source,
-      // Nur Marken mit existierender Brand-Page verlinken (volkswagen, audi, skoda).
-      brandLinks: [
-        { name: "VW", href: "/leasinguebernahme/volkswagen" },
-        { name: "Audi", href: "/leasinguebernahme/audi" },
-        { name: "Škoda", href: "/leasinguebernahme/skoda" },
-      ],
+    checks: {
+      text:
+        `Laut Cembra-Kundencenter Leasing (${CEMBRA_KUNDENCENTER.stand}) prüft Cembra die Bonität der übernehmenden ` +
+        "Person wie bei jedem neuen Leasingvertrag: mit Selbstauskunft, Einkommensnachweis und Abfrage bei ZEK und IKO. " +
+        "Eine Vollkaskoversicherung ist bei Cembra-Leasingverträgen Pflicht.",
+      sourceLinkText: "Cembra-Kundencenter Leasing",
+      source: CEMBRA_KUNDENCENTER,
     },
-    facts: {
-      transferFee: {
-        text:
-          `Die Allgemeinen Leasingbestimmungen von ${AMAG_LEASING.name} (${AMAG_LEASING.edition}) nennen keine Gebühr für eine Vertragsübernahme. Für die vorzeitige Vertragsauflösung nennen sie pauschal ${chfDash(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung)} exkl. MWST und für die Berechnung der provisorischen Auflösungskosten ${chfDash(AMAG_LEASING.feesExclVatChf.provisorischeAufloesungskosten)} exkl. MWST (${AMAG_LEASING.clauses.aufloesungsgebuehren}). Bei einer vorzeitigen Auflösung werden die Leasingraten zudem rückwirkend neu berechnet (${AMAG_LEASING.clauses.rueckwirkendeNeuberechnung}).`,
-        sourceLinkText: "Allgemeinen Leasingbestimmungen",
-        sourceUrl: AMAG_LEASING.sourceUrl,
-      },
-      // ERFAHRUNGSWERT-VINCE: typische Dauer einer AMAG-Übertragung
-      typicalDuration: null,
-      // ALB Ausgabe 01/26, Ziff. 19.1, 8.1 und 5.1 (geprüft am 9.10.2026).
-      documents: {
-        text:
-          `Bei der Prüfung eines Leasingantrags holt AMAG Leasing unter anderem Auskünfte bei der ZEK und der IKO ein (${AMAG_LEASING.clauses.bonitaetspruefung}). Das Fahrzeug wird in der Regel auf die Leasingnehmerin oder den Leasingnehmer immatrikuliert; Ausnahmen gelten für eine Person im gleichen Haushalt und für Firmenwagen von Mitarbeitenden (${AMAG_LEASING.clauses.immatrikulation}). Für Neufahrzeuge verlangt AMAG Leasing eine Vollkaskoversicherung, bei Occasionen ist nach Absprache mit der Leasinggeberin eine Teilkasko möglich (${AMAG_LEASING.clauses.versicherung}). Quelle: Allgemeine Leasingbestimmungen Autos, ${AMAG_LEASING.edition}.`,
-        sourceLinkText: `Allgemeine Leasingbestimmungen Autos, ${AMAG_LEASING.edition}`,
-        sourceUrl: AMAG_LEASING.sourceUrl,
-      },
-      transferProcess: {
-        text:
-          "AMAG Leasing arbeitet mit indirektem Leasing: Deine Liefergarage ist eng eingebunden und gegenüber AMAG Leasing zur Rücknahme zum Restwert verpflichtet (gemäss AMAG-Leasing-Ablauf). Kläre eine Übernahme deshalb gemeinsam mit AMAG Leasing und der Liefergarage. Leasingfahrzeuge tragen im Fahrzeugausweis den Eintrag «Halterwechsel verboten» – ohne Freigabe der AMAG läuft beim Strassenverkehrsamt nichts.",
-        sourceLinkText: "AMAG-Leasing-Ablauf",
-        sourceUrl: "https://www.amag-leasing.ch/de/ablauf-leasing.html",
-      },
+    process: {
+      text:
+        `Gemäss Cembra-Leasingkonditionen (${CEMBRA_KONDITIONEN.stand}) wird die Übernahme direkt bei Cembra beantragt. ` +
+        "Nach bestandener Bonitätsprüfung schreibt Cembra den Vertrag auf die neue Person um. Leasingfahrzeuge tragen " +
+        "im Fahrzeugausweis den Code 178 («Halterwechsel verboten»). Die Umschreibung beim Strassenverkehrsamt läuft " +
+        "deshalb immer über die Freigabe der Leasinggesellschaft.",
+      sourceLinkText: "Cembra-Leasingkonditionen",
+      source: CEMBRA_KONDITIONEN,
     },
   },
   {
-    slug: "multilease-leasing-uebernehmen",
+    anchor: "amag",
+    name: AMAG_LEASING.name,
+    notes: [
+      {
+        text:
+          `${AMAG_LEASING.name} zählt nach eigenen Angaben über ${formatSwissInt(AMAG_LEASING.customers.moreThan)} ` +
+          `Privat- und Firmenkunden (Quelle: ${AMAG_CUSTOMERS.title}, ${AMAG_CUSTOMERS.stand}).`,
+        sourceLinkText: AMAG_CUSTOMERS.title,
+        source: AMAG_CUSTOMERS,
+      },
+      {
+        text: `Im Geschäftsbericht 2025 beschreibt ${AMAG_LEASING.name} ihr Angebot so: «${AMAG_LEASING.brandStatement.quote}»`,
+        sourceLinkText: AMAG_GESCHAEFTSBERICHT.stand,
+        source: AMAG_GESCHAEFTSBERICHT,
+      },
+    ],
+    fee: {
+      text:
+        `Die Allgemeinen Leasingbestimmungen von ${AMAG_LEASING.name} (${AMAG_ALB.stand}) nennen keine Gebühr für eine ` +
+        `Vertragsübernahme. Für die vorzeitige Vertragsauflösung nennen sie pauschal ` +
+        `${formatChf(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung)} exkl. MWST und für die Berechnung der ` +
+        `provisorischen Auflösungskosten ${formatChf(AMAG_LEASING.feesExclVatChf.provisorischeAufloesungskosten)} exkl. MWST ` +
+        `(${AMAG_LEASING.clauses.aufloesungsgebuehren}). Bei einer vorzeitigen Auflösung werden die Leasingraten zudem ` +
+        `rückwirkend neu berechnet (${AMAG_LEASING.clauses.rueckwirkendeNeuberechnung}).`,
+      sourceLinkText: "Allgemeinen Leasingbestimmungen",
+      source: AMAG_ALB,
+    },
+    checks: {
+      text:
+        `Bei der Prüfung eines Leasingantrags holt ${AMAG_LEASING.name} unter anderem Auskünfte bei der ZEK und der IKO ein ` +
+        `(${AMAG_LEASING.clauses.bonitaetspruefung}). Das Fahrzeug wird in der Regel auf die Leasingnehmerin oder den ` +
+        `Leasingnehmer immatrikuliert; Ausnahmen gelten für eine Person im gleichen Haushalt und für Firmenwagen von ` +
+        `Mitarbeitenden (${AMAG_LEASING.clauses.immatrikulation}). Für Neufahrzeuge verlangt ${AMAG_LEASING.name} eine ` +
+        `Vollkaskoversicherung, bei Occasionen ist nach Absprache mit der Leasinggeberin eine Teilkasko möglich ` +
+        `(${AMAG_LEASING.clauses.versicherung}). Quelle: Allgemeine Leasingbestimmungen Autos, ${AMAG_ALB.stand}.`,
+      sourceLinkText: "Allgemeine Leasingbestimmungen Autos",
+      source: AMAG_ALB,
+    },
+    process: {
+      text:
+        `${AMAG_LEASING.name} arbeitet mit indirektem Leasing: Deine Liefergarage ist eng eingebunden und gegenüber ` +
+        `${AMAG_LEASING.name} zur Rücknahme zum Restwert verpflichtet (gemäss AMAG-Leasing-Ablauf, ${AMAG_ABLAUF.stand}). ` +
+        `Kläre eine Übernahme deshalb gemeinsam mit ${AMAG_LEASING.name} und der Liefergarage.`,
+      sourceLinkText: "AMAG-Leasing-Ablauf",
+      source: AMAG_ABLAUF,
+    },
+  },
+  {
+    anchor: "multilease",
     name: "Multilease",
-    compoundName: "Multilease",
-    officialSite: "https://www.multilease.ch",
-    infoUrl: "https://www.multilease.ch/de/faq",
-    heroNote:
-      "Besonderheit bei Multilease: Vieles läuft über den Markenvertreter deiner Liefergarage – binde deine Garage deshalb früh ein.",
-    descriptionDetail: "Ablauf über den Markenvertreter und die Bonitätsprüfung",
-    facts: {
-      transferFee: {
-        // ERFAHRUNGSWERT-VINCE: real verrechnete Gebühr bei Multilease
-        text:
-          "Multilease publiziert keinen Übernahme-Tarif. Die Übertragung auf eine Drittperson ist gemäss Multilease-FAQ ausdrücklich vorgesehen – die Konditionen legt Multilease im Einzelfall fest.",
-        sourceLinkText: "Multilease-FAQ",
-        sourceUrl: "https://www.multilease.ch/de/faq",
-      },
-      // ERFAHRUNGSWERT-VINCE: typische Dauer einer Multilease-Übertragung
-      typicalDuration: null,
-      documents: {
-        text:
-          "Die Bonität der übernehmenden Person wird gemäss Konsumkreditgesetz geprüft; Multilease bzw. der Markenvertreter holt die nötigen Auskünfte ein (gemäss Multilease-Leasingratgeber).",
-        sourceLinkText: "Multilease-Leasingratgeber",
-        sourceUrl: "https://www.multilease.ch/was-ist-leasing/",
-      },
-      transferProcess: {
-        text:
-          "Multilease arbeitet eng mit den Liefergaragen: Verlängerung, Rückgabe und Fahrzeugübernahme laufen gemäss Multilease-FAQ über den Markenvertreter – nimm für eine Vertragsübertragung direkt mit Multilease Kontakt auf und binde deine Liefergarage früh ein. Auch hier gilt Code 178: Die Umschreibung des Fahrzeugausweises braucht die Freigabe der Leasinggesellschaft.",
-        sourceLinkText: "Multilease-FAQ",
-        sourceUrl: "https://www.multilease.ch/de/faq",
-      },
+    notes: [],
+    fee: {
+      text:
+        `Multilease publiziert keinen Übernahme-Tarif. Die Übertragung auf eine Drittperson ist gemäss Multilease-FAQ ` +
+        `(${MULTILEASE_FAQ.stand}) ausdrücklich vorgesehen; die Konditionen legt Multilease im Einzelfall fest.`,
+      sourceLinkText: "Multilease-FAQ",
+      source: MULTILEASE_FAQ,
+    },
+    checks: {
+      text:
+        "Die Bonität der übernehmenden Person wird gemäss Konsumkreditgesetz geprüft; Multilease oder der " +
+        `Markenvertreter holt die nötigen Auskünfte ein (gemäss Multilease-Leasingratgeber, ${MULTILEASE_RATGEBER.stand}).`,
+      sourceLinkText: "Multilease-Leasingratgeber",
+      source: MULTILEASE_RATGEBER,
+    },
+    process: {
+      text:
+        "Multilease arbeitet eng mit den Liefergaragen zusammen: Verlängerung, Rückgabe und Fahrzeugübernahme laufen " +
+        `gemäss Multilease-FAQ (${MULTILEASE_FAQ.stand}) über den Markenvertreter. Für eine Vertragsübertragung nimmst ` +
+        "du direkt mit Multilease Kontakt auf und bindest deine Liefergarage früh ein.",
+      sourceLinkText: "Multilease-FAQ",
+      source: MULTILEASE_FAQ,
     },
   },
   {
-    slug: "bank-now-leasing-uebernehmen",
+    anchor: "bank-now",
     name: "BANK-now",
-    compoundName: "BANK-now",
-    // Bare domain redirects to English — link the German entry point.
-    officialSite: "https://www.bank-now.ch/de",
-    infoUrl: "https://www.bank-now.ch/de",
-    heroNote:
-      "Gut zu wissen: BANK-now gehört heute zur UBS – bestehende Leasingverträge laufen normal bei BANK-now weiter.",
-    descriptionDetail: "Ablauf, Bonitätsprüfung und was die UBS-Übernahme bedeutet",
-    introNote: {
-      text:
-        "BANK-now ist eine hundertprozentige Tochtergesellschaft der UBS Switzerland AG. Das Porsche-Leasing-Neugeschäft wechselte im Juli 2025 zu Porsche Financial Services; bestehende BANK-now-Verträge laufen bei BANK-now weiter (Quelle: finews, Stand August 2026).",
-      sourceLinkText: "finews",
-      sourceUrl:
-        "https://www.finews.com/news/english-news/68246-porsche-switzerland-porsche-financial-services-bank-now-ubs-credit-suisse-leasing-business",
-    },
-    facts: {
-      transferFee: {
-        // Kein publizierter Tarif = Negativ-Befund aus der Recherche; die
-        // ursprünglich zitierte credit-now-FAQ behandelt die Verlängerung
-        // nach Ablauf, nicht die Übernahme, und trägt die Aussage darum
-        // nicht — Attribution entfernt, URL nur als Referenz:
-        // https://www.credit-now.ch/de/faq/faq-detail/15336-Kann_ich_einen_Leasingvertrag_nach_Ablauf_verlngern_lassen_
-        // ERFAHRUNGSWERT-VINCE: real verrechnete Gebühr bei BANK-now
+    notes: [
+      {
         text:
-          "BANK-now publiziert keinen Übernahme-Tarif – die Konditionen klärst du direkt mit BANK-now.",
+          "BANK-now ist eine hundertprozentige Tochtergesellschaft der UBS Switzerland AG. Das Porsche-Leasing-Neugeschäft " +
+          "wechselte im Juli 2025 zu Porsche Financial Services; bestehende BANK-now-Verträge laufen bei BANK-now weiter " +
+          `(Quelle: finews, ${FINEWS_BANK_NOW.stand}).`,
+        sourceLinkText: "finews",
+        source: FINEWS_BANK_NOW,
       },
-      // ERFAHRUNGSWERT-VINCE: typische Dauer einer BANK-now-Übertragung
-      typicalDuration: null,
-      documents: {
-        // ERFAHRUNGSWERT-VINCE: verbindliche Dokumentenliste von BANK-now ergänzen
-        text:
-          "Die Bonität der übernehmenden Person wird nach Konsumkreditgesetz geprüft – wie beim Neuvertrag inklusive Abfrage bei ZEK/IKO.",
-      },
-      transferProcess: {
-        // ERFAHRUNGSWERT-VINCE: konkreter Übertragungsweg bei BANK-now
-        // (Kundendienst? Formular?) — die Kundendienst-Angabe aus der
-        // Recherche hat keine öffentliche Quelle und bleibt deshalb draussen.
-        text:
-          "Die Übernahme-Anfrage richtest du direkt an BANK-now; die Konditionen werden im Einzelfall geklärt. Wie bei allen Leasinggesellschaften gilt: Code 178 im Fahrzeugausweis – die Umschreibung braucht die Freigabe der Bank.",
-      },
-    },
-    // Interne Notiz (NICHT publizieren, Quelle 2016 veraltet): Übernahmen
-    // grundsätzlich möglich, u.a. Mindest-Restlaufzeit 12 Monate —
-    // telefonisch verifizieren.
+    ],
+    fee: null,
+    checks: null,
+    process: null,
   },
 ];
 
-// Backlog-Notiz: Porsche Financial Services (Porsche-Leasing-Neugeschäft seit
-// Juli 2025) als Kandidat für eine fünfte Gesellschaftsseite vormerken.
+/** Every fact of a section in reading order. */
+export function lenderSectionFacts(section: LenderSection): SourcedFact[] {
+  return [...section.notes, section.fee, section.checks, section.process].filter(
+    (fact): fact is SourcedFact => fact !== null
+  );
+}
 
-// Build-time guard: a SourcedFact whose sourceLinkText is not a verbatim
-// substring of its text would silently lose its citation link at render time —
-// fail the build instead. Runs at module import, i.e. during next build.
-for (const company of LEASING_COMPANIES) {
-  const sourced: (SourcedFact | undefined | null)[] = [
-    company.introNote,
-    company.facts.transferFee,
-    company.facts.typicalDuration,
-    company.facts.documents,
-    company.facts.transferProcess,
-  ];
-  for (const fact of sourced) {
-    if (fact?.sourceLinkText && !fact.text.includes(fact.sourceLinkText)) {
-      throw new Error(
-        `leasingCompanies: sourceLinkText «${fact.sourceLinkText}» not found in fact text for ${company.slug}`
-      );
+/** All sources the lender sections cite, for the page's source list. */
+export const LENDER_SECTION_SOURCES: DatedSource[] = LENDER_SECTIONS.flatMap((section) =>
+  lenderSectionFacts(section).map((fact) => fact.source)
+);
+
+// Build-time guard: a fact whose link phrase or Stand is missing from its text
+// would print a number or claim without its visible citation. Runs at module
+// import, i.e. during next build.
+for (const section of LENDER_SECTIONS) {
+  for (const fact of lenderSectionFacts(section)) {
+    if (!fact.text.includes(fact.sourceLinkText)) {
+      throw new Error(`leasingCompanies: sourceLinkText «${fact.sourceLinkText}» not found in a fact of #${section.anchor}`);
+    }
+    if (!fact.source.stand || !fact.text.includes(fact.source.stand)) {
+      throw new Error(`leasingCompanies: Stand «${fact.source.stand}» not found in a fact of #${section.anchor}`);
     }
   }
-}
-
-export function otherLeasingCompanies(slug: string): LeasingCompany[] {
-  return LEASING_COMPANIES.filter((c) => c.slug !== slug);
-}
-
-/** Registry lookup for the page files — fails loudly at build time on a typo. */
-export function leasingCompanyBySlug(slug: string): LeasingCompany {
-  const company = LEASING_COMPANIES.find((c) => c.slug === slug);
-  if (!company) throw new Error(`Unknown leasing company slug: ${slug}`);
-  return company;
 }
