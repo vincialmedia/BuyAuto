@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Repeat } from "lucide-react";
+import { CANTONAL_FEES_HREF } from "@/lib/buyauto/facts";
 
 export function SeoCopyBlock() {
   const internalLinks = [
@@ -7,7 +8,6 @@ export function SeoCopyBlock() {
     { label: "Leasing abgeben in der Schweiz", href: "/leasing-abgeben-schweiz" },
     { label: "Was kostet eine Leasingübernahme?", href: "/leasinguebernahme-kosten" },
     { label: "Leasingvertrag übertragen", href: "/leasingvertrag-uebertragen" },
-    { label: "Aktuelle Leasingübernahme-Angebote", href: "/suche?dealType=lease_takeover" },
   ];
 
   return (
@@ -20,7 +20,7 @@ export function SeoCopyBlock() {
             Leasingübernahme Schweiz
           </span>
           <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
-            Leasingübernahme in der Schweiz – so funktioniert BuyAuto
+            Leasingübernahme in der Schweiz: was sie ist und was sie kostet
           </h2>
         </div>
 
@@ -31,23 +31,27 @@ export function SeoCopyBlock() {
             <Link href="/leasinguebernahme" className="text-red-600 font-semibold hover:underline">
               Leasingübernahme
             </Link>{" "}
-            bedeutet: Du übernimmst einen laufenden Leasingvertrag – inklusive Monatsrate, Restlaufzeit und Kilometerlimit – und die bisherige Leasingnehmerin oder der bisherige Leasingnehmer wird aus dem Vertrag entlassen.
+            bedeutet: Du übernimmst einen laufenden Leasingvertrag mit Monatsrate, Restlaufzeit und Kilometerlimit von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer.
           </p>
 
           <p>
-            Für Abgeber entfällt damit die{" "}
+            Für Abgeber ist die Übernahme eine Alternative zur{" "}
             <Link href="/leasing-abgeben-schweiz" className="text-red-600 font-semibold hover:underline">
-              teure vorzeitige Vertragsauflösung
+              vorzeitigen Vertragsauflösung
+            </Link>
+            . Dabei fallen die{" "}
+            <Link href="/leasinguebernahme-kosten#leasinggesellschaften" className="text-red-600 font-semibold hover:underline">
+              Gebühr der Leasinggesellschaft
             </Link>{" "}
-            – statt einer Auflösungsentschädigung fällt nur die{" "}
-            <Link href="/leasinguebernahme-kosten" className="text-red-600 font-semibold hover:underline">
-              Umschreibegebühr der Leasinggesellschaft
+            für die Übertragung und die{" "}
+            <Link href={CANTONAL_FEES_HREF} className="text-red-600 font-semibold hover:underline">
+              kantonale Gebühr für den neuen Fahrzeugausweis
             </Link>{" "}
-            an. Für Übernehmer heisst es: fahren ohne hohe Anzahlung und mit kurzer Restlaufzeit.
+            an.
           </p>
 
           <p>
-            BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. Die Inserate weisen Monatsrate und Restlaufzeit transparent aus, und du stehst direkt mit dem Anbieter in Kontakt. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum <strong>Direktkauf</strong>.
+            BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen. In den Inseraten stehen die Vertragsdaten, die der Abgeber angibt, und du nimmst direkt mit dem Anbieter Kontakt auf. Neben Leasingübernahmen findest du auf BuyAuto auch Fahrzeuge zum <strong>Direktkauf</strong>.
           </p>
         </div>
 

@@ -4,16 +4,19 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowRight, Car, ChevronRight, MessageCircle, Search, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Car, MessageCircle, Search, Zap } from "lucide-react";
 import { BuyerGarageSection } from "@/components/buyauto/BuyerGarageSection";
 import { FounderStory } from "@/components/buyauto/FounderStory";
 import PremiumListings from "@/components/buyauto/PremiumListings";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
+import { SourceCitation } from "@/components/buyauto/SourceCitation";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
+import { CEMBRA, FEE_SHORT } from "@/lib/buyauto/facts";
+import { countLabel, pluralize } from "@/lib/buyauto/format";
 import type { Listing } from "@/lib/buyauto/types";
-import { loadPremiumCarouselListings } from "@/services/listingsService";
+import { getLiveInventoryStats, loadPremiumCarouselListings } from "@/services/listingsService";
 
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"), {
   loading: () => <div className="h-96 bg-white animate-pulse" />,
@@ -26,10 +29,14 @@ type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
 
 interface HomePageProps {
   premiumListings: Listing[];
+  /** Live Leasingübernahmen right now (same rule as the hub); null when the read failed. */
+  liveTakeoverCount: number | null;
 }
 
-export default function HomePage({ premiumListings }: HomePageProps) {
+export default function HomePage({ premiumListings, liveTakeoverCount }: HomePageProps) {
   const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");
+  // No number without live data: a failed read (null) or an empty inventory hides the line.
+  const liveCount = liveTakeoverCount && liveTakeoverCount > 0 ? liveTakeoverCount : null;
 
   return (
     <div className="bg-[#fafafa] min-h-screen font-sans overflow-x-hidden">
@@ -124,7 +131,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/70 to-neutral-900/40" />
         </div>
 
-        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+        {/* pt-14 on phones keeps the live count and the fee line inside the
+            60vh hero, so the search bar stays where it was (y ≈ 540 at 390×844). */}
+        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-14 sm:pt-20 pb-16">
           <div className="text-center">
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
               Raus aus dem Leasing.
@@ -132,8 +141,25 @@ export default function HomePage({ premiumListings }: HomePageProps) {
               Ohne <span className="text-red-500">Verlust.</span>
             </h1>
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/90 font-medium max-w-2xl mx-auto drop-shadow-md">
-              Ein Schweizer Marktplatz für Leasingübernahmen – übernimm ein bestehendes Leasing oder gib deins ohne Verlust ab.
+              Ein Schweizer Marktplatz für Leasingübernahmen: Übernimm ein laufendes Leasing oder gib deins ab.
             </p>
+            {/* SourceLink hovers to neutral-900, unreadable on the dark hero; the arbitrary variant wins on specificity. */}
+            <div className="animate-fade-up-2 mt-5 sm:mt-6 max-w-xl mx-auto space-y-1 text-sm sm:text-base text-white/80 drop-shadow-md [&_a:hover]:text-white">
+              {liveCount !== null && (
+                <p className="text-white">
+                  <span aria-hidden="true" className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 align-middle" />
+                  Auf BuyAuto {pluralize(liveCount, "wartet", "warten")} gerade{" "}
+                  <strong className="font-bold">{countLabel(liveCount, "Leasingvertrag", "Leasingverträge")}</strong> auf eine
+                  Übernahme
+                </p>
+              )}
+              <p>
+                Übertragungsgebühr {FEE_SHORT}
+                <span className="block mt-0.5 text-xs text-white/60">
+                  <SourceCitation source={CEMBRA.source} />
+                </span>
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -187,7 +213,7 @@ export default function HomePage({ premiumListings }: HomePageProps) {
           <div className="text-center mb-14 md:mb-20">
             <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/10 text-red-700 text-sm font-bold uppercase tracking-wider mb-5 hover:bg-red-500/20 transition-colors cursor-default">
               <Zap className="w-4 h-4" />
-              So einfach geht&apos;s
+              Ablauf
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-neutral-900 tracking-tight">
               So funktioniert <span className="text-red-500">BuyAuto</span>
@@ -206,13 +232,13 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                 {
                   step: "02",
                   title: "Angebote vergleichen",
-                  desc: "Filtere nach Marke, Modell, Monatsrate und Restlaufzeit – jedes Übernahme-Inserat zeigt die Vertragsdaten transparent.",
+                  desc: "Filtere nach Marke, Modell, Monatsrate und Restlaufzeit. Die Übernahme-Inserate zeigen die Vertragsdaten.",
                   icon: Search,
                 },
                 {
                   step: "03",
                   title: "Kontakt aufnehmen",
-                  desc: "Tritt direkt mit dem Anbieter in Kontakt – die Übertragung läuft immer über die Leasinggesellschaft.",
+                  desc: "Tritt direkt mit dem Anbieter in Kontakt. Die Übertragung läuft über die Leasinggesellschaft.",
                   icon: MessageCircle,
                 },
               ].map((item, i) => (
@@ -244,62 +270,6 @@ export default function HomePage({ premiumListings }: HomePageProps) {
               ))}
             </div>
           </div>
-
-          <div className="mt-12 text-center">
-            <Link href="/suche">
-              <Button
-                size="lg"
-                className="bg-neutral-900 text-white hover:bg-neutral-800 font-bold rounded-2xl px-10 shadow-xl hover:shadow-2xl h-14 text-base group hover:scale-105 transition-all duration-300"
-              >
-                Jetzt Fahrzeuge entdecken
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-      </LazyHydrate>
-
-      <LazyHydrate>
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="relative bg-red-500 rounded-[2rem] p-10 md:p-14 overflow-hidden group hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-500">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-[100px] group-hover:scale-150 transition-transform duration-700" />
-            <div className="absolute bottom-0 left-0 w-60 h-60 bg-black/10 rounded-full blur-[80px] group-hover:scale-125 transition-transform duration-700" />
-
-            <div className="absolute inset-0 opacity-30">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_4s_ease-in-out_infinite]" />
-            </div>
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="text-center md:text-left">
-                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3">Bereit loszufahren?</h2>
-                <p className="text-white/90 text-lg md:text-xl max-w-lg">
-                  Gib dein Leasing zur Übernahme frei oder steig in einen laufenden Vertrag ein.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/inserat-erstellen">
-                  <Button
-                    size="lg"
-                    className="bg-white text-red-600 hover:bg-neutral-100 font-bold rounded-2xl px-8 shadow-2xl shadow-black/20 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 group/btn"
-                  >
-                    Inserat erstellen
-                    <Sparkles className="w-4 h-4 ml-2 group-hover/btn:rotate-12 transition-transform" />
-                  </Button>
-                </Link>
-                <Link href="/suche">
-                  <Button
-                    size="lg"
-                    className="bg-black/20 border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold rounded-2xl px-8 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                  >
-                    Alle Fahrzeuge
-                    <ChevronRight className="w-5 h-5 ml-1" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
       </LazyHydrate>
@@ -313,9 +283,9 @@ export default function HomePage({ premiumListings }: HomePageProps) {
       <LazyHydrate>
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-neutral-900">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Bereit, dein Leasing abzugeben?</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Dein Leasing zur Übernahme anbieten</h2>
           <p className="text-lg md:text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
-            Erstelle dein Inserat in wenigen Minuten – oder übernimm einen laufenden Vertrag aus den aktuellen Angeboten.
+            Erstelle ein Inserat für deinen Leasingvertrag. Interessenten melden sich über den Chat auf BuyAuto direkt bei dir.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/inserat-erstellen">
@@ -327,15 +297,6 @@ export default function HomePage({ premiumListings }: HomePageProps) {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
-            <Link href="/suche?dealType=lease_takeover">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-neutral-600 bg-white text-neutral-900 hover:bg-neutral-100 hover:text-neutral-900 font-bold rounded-xl px-10 h-14 w-full sm:w-auto hover:scale-105 transition-all duration-300"
-              >
-                Fahrzeuge ansehen
-              </Button>
-            </Link>
           </div>
         </div>
       </section>
@@ -344,13 +305,27 @@ export default function HomePage({ premiumListings }: HomePageProps) {
   );
 }
 
-// ISR: premium listings are part of the static HTML (no client fetch, no
-// layout shift) and refresh in the background every 5 minutes.
-export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
-  // A failed fetch throws, so ISR keeps the last good page instead of caching an
-  // empty carousel.
-  // Takeovers first, newest first — see orderPremiumListings.
-  const premiumListings = await loadPremiumCarouselListings();
+/** Number of live Leasingübernahmen, or null when the read fails (the hero then shows no count). */
+async function loadLiveTakeoverCount(): Promise<number | null> {
+  try {
+    const stats = await getLiveInventoryStats();
+    return stats.count;
+  } catch (error) {
+    console.error("Live takeover count failed:", error);
+    return null;
+  }
+}
 
-  return { props: { premiumListings }, revalidate: 300 };
+// ISR: premium listings and the live count are part of the static HTML (no
+// client fetch, no layout shift) and refresh in the background every 5 minutes.
+export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
+  // A failed premium fetch throws, so ISR keeps the last good page instead of
+  // caching an empty carousel. Takeovers first, newest first — see
+  // orderPremiumListings. The live count never throws (null on failure).
+  const [premiumListings, liveTakeoverCount] = await Promise.all([
+    loadPremiumCarouselListings(),
+    loadLiveTakeoverCount(),
+  ]);
+
+  return { props: { premiumListings, liveTakeoverCount }, revalidate: 300 };
 };
