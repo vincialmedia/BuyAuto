@@ -8,11 +8,8 @@ import {
   describeTakeover,
   ESTIMATE_LABEL,
   LENDER_OPTIONS,
-  PLAN_KEYS,
-  planOptionLabel,
   type ExitResultView,
 } from "@/lib/buyauto/exitCalculatorText";
-import type { Plan } from "@/lib/buyauto/stripe_config";
 import { SourceCitation } from "@/components/buyauto/SourceCitation";
 
 /**
@@ -110,7 +107,6 @@ function ResultCard({ title, view }: { title: string; view: ExitResultView }) {
 export function ExitCalculator({ footer }: { footer?: ReactNode }) {
   const baseId = useId();
   const [lender, setLender] = useState<ExitLenderKey | "">("");
-  const [plan, setPlan] = useState<Plan>("standard");
   const [termination, setTermination] = useState("");
   const [buyout, setBuyout] = useState("");
   const [vehicleValue, setVehicleValue] = useState("");
@@ -122,11 +118,11 @@ export function ExitCalculator({ footer }: { footer?: ReactNode }) {
     terminationPaymentChf: parseChfInput(termination),
     buyoutAmountChf: buyoutChf,
     vehicleValueChf,
-    plan,
+    // The listing fee of the Standard plan (the brief's inputs have no plan choice).
+    plan: "standard",
   });
 
   const lenderId = `${baseId}-lender`;
-  const planId = `${baseId}-plan`;
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
@@ -183,23 +179,6 @@ export function ExitCalculator({ footer }: { footer?: ReactNode }) {
             onChange={setVehicleValue}
           />
 
-          <div className="sm:col-span-2">
-            <label htmlFor={planId} className="block text-sm font-semibold text-neutral-800">
-              Paket für dein Inserat auf BuyAuto
-            </label>
-            <select
-              id={planId}
-              value={plan}
-              onChange={(e) => setPlan(e.target.value as Plan)}
-              className={`${FIELD_CLASS} mt-1.5 sm:max-w-sm`}
-            >
-              {PLAN_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {planOptionLabel(key)}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </form>
 

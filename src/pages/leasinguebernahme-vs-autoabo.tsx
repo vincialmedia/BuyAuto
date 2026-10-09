@@ -462,18 +462,18 @@ export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: Pag
               <div className="rounded-xl border border-neutral-200 p-4">
                 <h3 className="font-semibold text-neutral-900">Ein Auto-Abo passt eher, wenn …</h3>
                 <p className="mt-2 leading-relaxed text-neutral-700">
-                  du für eine feste Laufzeit ein Auto suchst und Versicherung, Verkehrssteuer, Reifen und Service
-                  mit einem Monatspreis bezahlen willst. Bei den Beispielen oben laufen die Abos {ABO_TERM_RANGE}.
-                  Dazu kommen einmalige Kosten und im Schadenfall der Selbstbehalt.
+                  du ein Auto nur für eine begrenzte Zeit brauchst und Versicherung, Verkehrssteuer, Reifen und
+                  Service mit einem Monatspreis bezahlen willst. Bei den Beispielen oben laufen die Abos{" "}
+                  {ABO_TERM_RANGE}. Dazu kommen einmalige Kosten und im Schadenfall der Selbstbehalt.
                 </p>
               </div>
               <div className="rounded-xl border border-neutral-200 p-4">
                 <h3 className="font-semibold text-neutral-900">Eine Leasingübernahme passt eher, wenn …</h3>
                 <p className="mt-2 leading-relaxed text-neutral-700">
-                  dir die Restlaufzeit eines laufenden Vertrags passt und du Versicherung, Verkehrssteuer und
-                  Service selbst organisierst. Ob die Übernahme günstiger ist, zeigt erst die Summe: Rate plus deine
-                  eigenen Kosten für Versicherung, Steuer und Service, verglichen mit dem Abo-Preis für ein
-                  ähnliches Auto.
+                  dir die Restlaufzeit eines laufenden Vertrags passt und die Rate samt deinen eigenen Kosten für
+                  Versicherung, Verkehrssteuer und Service unter dem Abo-Preis für ein ähnliches Auto liegt. Das
+                  zeigt erst die Summe: Rechne deine Versicherungsofferte und die Steuer deines Kantons zur Rate
+                  dazu und vergleiche mit den Abo-Preisen oben.
                 </p>
               </div>
             </div>

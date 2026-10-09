@@ -379,6 +379,8 @@ export interface CantonalFee {
   sourceUrl: string;
   /** Footnote shown under the table. */
   note?: string;
+  /** The fee the footnote names a possible extra charge for (it may push that fee above the printed amount). */
+  possibleExtraFor?: "fahrzeugausweis" | "kontrollschilder";
 }
 
 /** Jura publishes its tariff in points; CHF = points × the official point value. */
@@ -397,6 +399,7 @@ export const CANTONAL_FEES: readonly CantonalFee[] = [
     sourceUrl:
       "https://www.zh.ch/content/dam/zhweb/bilder-dokumente/organisation/sicherheitsdirektion/strassenverkehrsamt/organisation/ueber-uns-grundlagen/Geb%C3%BChrenverf%C3%BCgung,%20g%C3%BCltig%20ab%201.%20Januar%202026.pdf",
     note: "Der Tarif nennt zusätzlich eine «Kontrollschildereinlösung» von CHF 30.00. Ob sie bei neuen Kontrollschildern dazukommt, geht aus dem Tarif nicht eindeutig hervor.",
+    possibleExtraFor: "kontrollschilder",
   },
   {
     code: "BE",
@@ -462,6 +465,7 @@ export const CANTONAL_FEES: readonly CantonalFee[] = [
     stand: "Stand 1.1.2026",
     sourceUrl: "https://bgs.zg.ch/api/de/versions/2696/pdf_file_with_annexes",
     note: "Die Verordnung nennt zusätzlich eine Grundgebühr von CHF 30.00 für Gesuche um einen Fahrzeugausweis. Ob sie hier anfällt, geht aus der Verordnung nicht eindeutig hervor.",
+    possibleExtraFor: "fahrzeugausweis",
   },
   {
     code: "FR",
@@ -637,6 +641,18 @@ export const CANTONS_WITHOUT_FIXED_PLATE_FEE = CANTONAL_FEES.filter((c) => c.kon
   (c) => c.code
 );
 
+/** Cantons whose tariff names a possible extra charge on top of the printed fee (see their footnotes). */
+export const CANTONS_WITH_POSSIBLE_EXTRA_FEE = {
+  fahrzeugausweis: CANTONAL_FEES.filter((c) => c.possibleExtraFor === "fahrzeugausweis").map((c) => c.code),
+  kontrollschilder: CANTONAL_FEES.filter((c) => c.possibleExtraFor === "kontrollschilder").map((c) => c.code),
+} as const;
+
+/** "in ZH kann eine Zusatzgebühr dazukommen" ("" when no canton names one). */
+export function possibleExtraFeeClause(codes: readonly string[]): string {
+  if (codes.length === 0) return "";
+  return `in ${codes.join(" und ")} kann eine Zusatzgebühr dazukommen`;
+}
+
 /** "CHF 20.00 (AG)" */
 export function cantonalExtremeLabel(extreme: CantonalFeeExtreme): string {
   return `${formatChfRappen(extreme.chf)} (${extreme.codes.join(", ")})`;
@@ -650,13 +666,18 @@ export const CANTONAL_FAHRZEUGAUSWEIS_SUMMARY =
   `Der neue Fahrzeugausweis kostet je nach Kanton zwischen ${cantonalExtremeLabel(FAHRZEUGAUSWEIS_RANGE.min)} ` +
   `und ${cantonalExtremeLabel(FAHRZEUGAUSWEIS_RANGE.max)}.`;
 
-/** "Brauchst du neue Kontrollschilder, kommen CHF 20.00 (AG) bis CHF 63.00 (JU) dazu; SH publiziert keinen festen Betrag." */
+/** "Brauchst du neue Kontrollschilder, … kommen CHF 20.00 (AG) bis CHF 63.00 (JU) dazu; SH publiziert keinen festen Betrag, in ZH kann eine Zusatzgebühr dazukommen." */
 export const CANTONAL_KONTROLLSCHILDER_SUMMARY =
   `Brauchst du neue Kontrollschilder, weil du keine eigenen hast, kommen ${cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.min)} ` +
   `bis ${cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.max)} dazu` +
-  (CANTONS_WITHOUT_FIXED_PLATE_FEE.length
-    ? `; ${CANTONS_WITHOUT_FIXED_PLATE_FEE.join(", ")} publiziert keinen festen Betrag.`
-    : ".");
+  [
+    CANTONS_WITHOUT_FIXED_PLATE_FEE.length ? `${CANTONS_WITHOUT_FIXED_PLATE_FEE.join(", ")} publiziert keinen festen Betrag` : "",
+    possibleExtraFeeClause(CANTONS_WITH_POSSIBLE_EXTRA_FEE.kontrollschilder),
+  ]
+    .filter(Boolean)
+    .map((clause, i) => (i === 0 ? `; ${clause}` : `, ${clause}`))
+    .join("") +
+  ".";
 
 /** Short form for tables and FAQs: "CHF 20.00 (AG) bis CHF 74.55 (JU)". */
 export const CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL =

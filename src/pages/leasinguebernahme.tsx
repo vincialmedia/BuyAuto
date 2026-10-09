@@ -156,7 +156,7 @@ const STEPS: { role: string; text: ReactNode }[] = [
     role: "Leasinggesellschaft",
     text: (
       <>
-        Stimmt die Leasinggesellschaft zu, schreibt sie den Vertrag auf die neue Person um und verrechnet ihre Gebühr.
+        Stimmt die Leasinggesellschaft zu, schreibt sie den Vertrag auf die neue Person um. Eine allfällige Gebühr stellt sie in Rechnung.
         Die publizierten Beträge stehen weiter unten.
       </>
     ),
@@ -377,7 +377,7 @@ export default function LeasingUebernahmePage({ stats, availableBrands }: Leasin
                 .
               </li>
               <li>{kautionSentence(stats)}</li>
-              <li>Wer welche Kosten trägt, vereinbaren Abgeber und Übernehmer untereinander.</li>
+              <li>Wer welche Kosten trägt, klären Abgeber und Übernehmer untereinander, am besten schriftlich.</li>
             </ul>
             <SmallSources sources={[CEMBRA.source, CA_AUTO_FINANCE.source, ...CANTONAL_RANGE_SOURCES]} />
             <p className="mt-4">

@@ -1,6 +1,6 @@
 # BuyAuto
 
-> BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen. «Raus aus dem Leasing. Ohne Verlust.» Wer sein Leasing vorzeitig abgeben will, findet hier eine Nachfolgerin oder einen Nachfolger; wer ein Auto sucht, übernimmt einen laufenden Leasingvertrag ohne hohe Anzahlung und mit kurzer Restlaufzeit. Besonders stark für E-Autos und Leasingverträge mit hohem Restwert. Alle Preise in CHF, bei Leasingübernahmen als Monatsrate mit Restlaufzeit (z.B. CHF 557/Monat bei 30 Monaten Restlaufzeit); daneben gibt es Direktkauf-Inserate mit Kaufpreis.
+> BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen, für Privatpersonen und Garagen. Wer sein Leasing vorzeitig abgeben will, findet hier eine Nachfolgerin oder einen Nachfolger; wer ein Auto sucht, übernimmt einen laufenden Leasingvertrag für seine Restlaufzeit. Alle Preise in CHF, bei Leasingübernahmen als Monatsrate mit Restlaufzeit; daneben gibt es Direktkauf-Inserate mit Kaufpreis.
 
 ## Fahrzeuge
 
@@ -25,7 +25,7 @@
 ## Leasinggesellschaften
 
 - [Übernahmegebühren pro Leasinggesellschaft](https://www.buyauto.ch/leasinguebernahme-kosten#leasinggesellschaften): Cembra, CA Auto Finance, AMAG Leasing, BMW Finanzdienstleistungen, Porsche Financial Services, Mercedes-Benz Financial Services, Multilease und BANK-now, jeweils mit Quelle
-- [Gebühren der Strassenverkehrsämter nach Kanton](https://www.buyauto.ch/leasinguebernahme-kosten#kantone): neuer Fahrzeugausweis und Kontrollschilder in allen 26 Kantonen, mit Quelle und Stand
+- [Gebühren der Strassenverkehrsämter nach Kanton](https://www.buyauto.ch/leasinguebernahme-kosten#kantone): neuer Fahrzeugausweis in allen 26 Kantonen und neue Kontrollschilder, wo der Kanton einen Betrag publiziert, jeweils mit Quelle und Stand
 
 ## Für Garagen
 

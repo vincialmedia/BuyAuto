@@ -36,23 +36,12 @@ export interface BrandLender {
 const COST_PAGE = "/leasinguebernahme-kosten";
 
 const AMAG: BrandLender = { lender: "amag", basis: "amag-core-brand", costHref: `${COST_PAGE}#amag` };
-const CA_FIAT: BrandLender = {
-  lender: "ca-auto-finance",
-  basis: "fiat-partner",
-  costHref: `${COST_PAGE}#leasinggesellschaften`,
-};
-const CA_FAQ: BrandLender = {
-  lender: "ca-auto-finance",
-  basis: "ca-faq-brand",
-  costHref: `${COST_PAGE}#leasinggesellschaften`,
-};
-const BMW: BrandLender = { lender: "bmw", basis: "own-company", costHref: `${COST_PAGE}#leasinggesellschaften` };
-const PORSCHE: BrandLender = { lender: "porsche", basis: "own-company", costHref: `${COST_PAGE}#leasinggesellschaften` };
-const MERCEDES: BrandLender = {
-  lender: "mercedes-benz",
-  basis: "own-company",
-  costHref: `${COST_PAGE}#leasinggesellschaften`,
-};
+// The other lenders link their own row of the cost page's lender table.
+const CA_FIAT: BrandLender = { lender: "ca-auto-finance", basis: "fiat-partner", costHref: `${COST_PAGE}#ca-auto-finance` };
+const CA_FAQ: BrandLender = { lender: "ca-auto-finance", basis: "ca-faq-brand", costHref: `${COST_PAGE}#ca-auto-finance` };
+const BMW: BrandLender = { lender: "bmw", basis: "own-company", costHref: `${COST_PAGE}#bmw` };
+const PORSCHE: BrandLender = { lender: "porsche", basis: "own-company", costHref: `${COST_PAGE}#porsche` };
+const MERCEDES: BrandLender = { lender: "mercedes-benz", basis: "own-company", costHref: `${COST_PAGE}#mercedes-benz` };
 
 /** Keyed by brand slug. */
 export const BRAND_LENDERS: Readonly<Record<string, BrandLender>> = {

@@ -44,14 +44,14 @@ export default function HomePage({ premiumListings, liveTakeoverCount }: HomePag
         <title>Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto</title>
         <meta
           name="description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
+          content="Leasing übernehmen oder abgeben auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <link rel="canonical" href="https://www.buyauto.ch/" />
 
         <meta property="og:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           property="og:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
+          content="Leasing übernehmen oder abgeben auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.buyauto.ch/" />
@@ -67,7 +67,7 @@ export default function HomePage({ premiumListings, liveTakeoverCount }: HomePag
         <meta name="twitter:title" content="Leasingübernahme Schweiz: Leasing übernehmen & abgeben | BuyAuto" />
         <meta
           name="twitter:description"
-          content="Leasing übernehmen oder ohne Verlust abgeben – auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
+          content="Leasing übernehmen oder abgeben auf BuyAuto, einem Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen."
         />
         <meta name="twitter:image" content="https://www.buyauto.ch/share-logo.jpg" />
 
@@ -138,7 +138,7 @@ export default function HomePage({ premiumListings, liveTakeoverCount }: HomePag
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
               Raus aus dem Leasing.
               <br />
-              Ohne <span className="text-red-500">Verlust.</span>
+              Per <span className="text-red-500">Übernahme.</span>
             </h1>
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/90 font-medium max-w-2xl mx-auto drop-shadow-md">
               Ein Schweizer Marktplatz für Leasingübernahmen: Übernimm ein laufendes Leasing oder gib deins ab.

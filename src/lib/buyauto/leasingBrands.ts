@@ -80,8 +80,8 @@ export const LEASING_BRANDS: LeasingBrand[] = [
     intro: "Diese Seite zeigt jeden Toyota, bei dem du auf BuyAuto in einen laufenden Leasingvertrag einsteigen kannst.",
   },
   {
-    // Curated so the URL stays stable (AMAG brand; the hub and sitemap link it
-    // when indexable) — as a dynamic-only brand it would 404 whenever the last
+    // Curated so the URL stays stable (AMAG brand; the guide, the sitemap and the
+    // other AMAG brand pages link it when indexable) — as a dynamic-only brand it would 404 whenever the last
     // live Škoda listing expires.
     slug: "skoda",
     name: "Škoda",

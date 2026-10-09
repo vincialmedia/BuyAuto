@@ -15,7 +15,7 @@ import {
   type LenderTakeoverFee,
 } from "@/lib/buyauto/facts";
 import { formatChf, formatChfRappen } from "@/lib/buyauto/format";
-import { LENDER_SECTIONS } from "@/lib/buyauto/leasingCompanies";
+import { FINEWS_BANK_NOW, LENDER_SECTIONS, MULTILEASE_FAQ } from "@/lib/buyauto/leasingCompanies";
 import { SourceCitation } from "@/components/buyauto/SourceCitation";
 
 /**
@@ -91,8 +91,10 @@ const ROW_DETAILS: Record<LenderTakeoverFee["key"], RowDetail> = {
         Übertragung nur mit vorheriger schriftlicher Zustimmung der Leasinggeberin (
         {PORSCHE_FINANCIAL_SERVICES.transferClause}). «
         {PORSCHE_FINANCIAL_SERVICES.feeQuotes.provisorischeAufloesungsberechnung.quote}» (
-        {PORSCHE_FINANCIAL_SERVICES.feeQuotes.provisorischeAufloesungsberechnung.clause}). Bestehende Porsche-Verträge bei
-        BANK-now laufen dort weiter, siehe{" "}
+        {PORSCHE_FINANCIAL_SERVICES.feeQuotes.provisorischeAufloesungsberechnung.clause}). «
+        {PORSCHE_FINANCIAL_SERVICES.feeQuotes.schlussabrechnungAufloesungDurchLeasinggeberin.quote}» (
+        {PORSCHE_FINANCIAL_SERVICES.feeQuotes.schlussabrechnungAufloesungDurchLeasinggeberin.clause}). Bestehende
+        Porsche-Verträge bei BANK-now laufen dort weiter, siehe{" "}
         <a href="#bank-now" className="font-semibold text-red-600 hover:underline">
           BANK-now
         </a>
@@ -102,6 +104,7 @@ const ROW_DETAILS: Record<LenderTakeoverFee["key"], RowDetail> = {
     sources: [
       { source: PORSCHE_FINANCIAL_SERVICES.source },
       { source: PORSCHE_FINANCIAL_SERVICES.newsroomSource, prefix: "Gesellschaft:" },
+      { source: FINEWS_BANK_NOW, prefix: "BANK-now-Verträge:" },
     ],
   },
   "mercedes-benz": {
@@ -110,8 +113,9 @@ const ROW_DETAILS: Record<LenderTakeoverFee["key"], RowDetail> = {
     details: <>Zur Übernahme publiziert sie nichts; zur Kündigung schreibt sie: «{MERCEDES_BENZ_FINANCIAL_SERVICES.terminationQuote}»</>,
     sources: [{ source: MERCEDES_BENZ_FINANCIAL_SERVICES.source }],
   },
-  multilease: { unpublished: "kein Übernahme-Tarif publiziert", sources: [] },
-  "bank-now": { unpublished: "kein Übernahme-Tarif publiziert", sources: [] },
+  multilease: { unpublished: "kein Übernahme-Tarif publiziert", sources: [{ source: MULTILEASE_FAQ }] },
+  // A negative finding with no document to cite: the check date stands next to it.
+  "bank-now": { unpublished: `kein Übernahme-Tarif publiziert (geprüft am ${FACTS_CHECKED_ON})`, sources: [] },
 };
 
 const SECTION_ANCHORS = new Set<string>(LENDER_SECTIONS.map((s) => s.anchor));

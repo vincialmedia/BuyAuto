@@ -48,7 +48,7 @@ const organizationSchema = {
   url: "https://www.buyauto.ch",
   logo: "https://www.buyauto.ch/share-logo.jpg",
   description:
-    "Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen – Leasing übernehmen oder ohne Verlust abgeben.",
+    "Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen: Leasing übernehmen oder abgeben.",
   founder: { "@type": "Person", name: "Vincent Hänggi" },
   sameAs: [],
 };

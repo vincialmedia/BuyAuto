@@ -65,9 +65,13 @@ export function validAmount(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
-/** "12'500" / "12 500" / "12500.50" / "" -> number or null (Swiss input habits). */
+/** "12'500" / "12 500" / "12500.50" / "Fr. 20'000.–" / "" -> number or null (Swiss input habits). */
 export function parseChfInput(raw: string): number | null {
-  const cleaned = raw.replace(/[’'\s]/g, "").replace(/^CHF/i, "").replace(",", ".");
+  const cleaned = raw
+    .replace(/[’'\s]/g, "")
+    .replace(/^(CHF|Fr\.?)/i, "")
+    .replace(/\.[-–—]$/, "")
+    .replace(",", ".");
   if (cleaned === "") return null;
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
   return validAmount(Number(cleaned));
