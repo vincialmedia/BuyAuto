@@ -16,6 +16,30 @@ function escapeHtml(input: string): string {
     .replaceAll("'", "&#039;");
 }
 
+// Links point at their final URL, so a click lands without a redirect:
+// vercel.json 308s the apex to www, and trailingSlash is off.
+const SITE_URL = "https://www.buyauto.ch";
+
+// Port of slugifyListingPart / buildListingHref in src/lib/buyauto/listingUrl.ts
+// (the source of truth; keep in sync). /fahrzeug/<id> 308s to
+// /fahrzeug/<brand-model>-<id>, so the email links the slugged form.
+function slugifyListingPart(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+function buildListingUrl(input: { id: string; brand?: string | null; model?: string | null }): string {
+  const brand = typeof input.brand === "string" ? input.brand : "";
+  const model = typeof input.model === "string" ? input.model : "";
+  const prefix = slugifyListingPart([brand, model].filter(Boolean).join(" "));
+  return `${SITE_URL}/fahrzeug/${prefix ? `${prefix}-${input.id}` : input.id}`;
+}
+
 function json(status: number, payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -106,8 +130,8 @@ serve(async (req) => {
   }
 
   const listingTitle = formatListingTitle(record);
-  const listingUrl = `https://buyauto.ch/fahrzeug/${listingId}`;
-  const adminUrl = "https://buyauto.ch/admin";
+  const listingUrl = buildListingUrl({ id: listingId, brand: record.brand, model: record.model });
+  const adminUrl = `${SITE_URL}/admin`;
 
   const year = safeNumber(record.first_registration_year) ?? safeNumber(record.year);
   const pricePaid = safeNumber(record.price_paid_chf) ?? safeNumber(record.purchase_price_chf) ?? safeNumber(record.price);
@@ -135,7 +159,7 @@ serve(async (req) => {
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://buyauto.ch/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
+      <img src="${SITE_URL}/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
     </div>
 
     <div class="content">

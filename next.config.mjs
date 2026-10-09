@@ -25,6 +25,7 @@ const nextConfig = {
       { source: '/leasing-transfer', destination: '/leasinguebernahme', permanent: true },
       { source: '/fuer-haendler', destination: '/eintauschwert-rechner', permanent: true },
       { source: '/fuer-haendler/marktwert-rechner', destination: '/eintauschwert-rechner', permanent: true },
+      { source: '/leasing-concierge', destination: '/leasing-abgeben-schweiz', permanent: true },
     ];
   },
   async headers() {

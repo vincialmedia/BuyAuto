@@ -155,7 +155,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
             </div>
             <h2 className="text-2xl font-bold text-neutral-900 mb-3">Derzeit keine Premium-Angebote</h2>
             <p className="text-neutral-500 text-base max-w-lg mx-auto">
-              Schauen Sie bald wieder vorbei für exklusive Premium-Fahrzeuge.
+              Schau bald wieder vorbei.
             </p>
           </div>
         </div>

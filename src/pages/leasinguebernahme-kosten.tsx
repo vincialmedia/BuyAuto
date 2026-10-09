@@ -4,21 +4,32 @@ import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { LEASING_COMPANIES } from "@/lib/buyauto/leasingCompanies";
 import {
+  AMAG_LEASING,
+  CA_AUTO_FINANCE,
+  CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FEES,
+  CANTONAL_KONTROLLSCHILDER_SUMMARY,
+  CANTONS_WITHOUT_FIXED_PLATE_FEE,
+  CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
   CEMBRA_TRANSFER_EXCL_VAT_CHF,
-  FEE_SENTENCE,
+  FAHRZEUGAUSWEIS_RANGE,
   FEE_SHORT,
+  KONTROLLSCHILDER_RANGE,
+  cantonalExtremeLabel,
   kautionSentence,
   kautionTableCell,
   type InventoryStats,
 } from "@/lib/buyauto/facts";
-import { formatChf } from "@/lib/buyauto/format";
+import { formatChf, formatChfRappen } from "@/lib/buyauto/format";
+import { CantonalFeesTable } from "@/components/buyauto/CantonalFeesTable";
+import { SourceCitation } from "@/components/buyauto/SourceCitation";
 import { getLiveInventoryStats, getPremiumCarouselListings } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
-  Check, 
   ChevronRight, 
   AlertTriangle, 
   FileText, 
@@ -28,8 +39,6 @@ import {
   DollarSign, 
   Clock, 
   Zap, 
-  Users, 
-  BadgeCheck, 
   ArrowRight, 
   FileCheck, 
   Search, 
@@ -67,7 +76,23 @@ interface LeasinguebernahmeKostenPageProps {
 }
 
 // FAQ answers shared by the FAQPage JSON-LD and the visible accordion, so both always match.
-const FAQ_TOTAL_COST_ANSWER = `${FEE_SENTENCE} Monatlich kommen Leasingrate und Versicherung dazu.`;
+const TRANSFER_FEE_SENTENCE =
+  `Für die Übertragung verrechnet die Leasinggesellschaft eine Gebühr. ${CEMBRA.name} verlangt ` +
+  `${formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST (rund ${CEMBRA_TRANSFER_DISPLAY} inkl. MWST), ` +
+  `${CA_AUTO_FINANCE.name} ${formatChf(CA_AUTO_FINANCE.feesExclVatChf.vertragsumschreibung)} exkl. MWST ` +
+  `(${formatChfRappen(CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF)} inkl. MWST). ${AMAG_LEASING.name}, Multilease und BANK-now ` +
+  `publizieren keinen Übernahme-Tarif.`;
+
+const CANTONAL_SENTENCE =
+  `Dazu kommt die Gebühr des Strassenverkehrsamts für den neuen Fahrzeugausweis: ${CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}, ` +
+  `je nach Kanton.`;
+
+const FAQ_TOTAL_COST_ANSWER = `${TRANSFER_FEE_SENTENCE} ${CANTONAL_SENTENCE} Monatlich kommen Leasingrate und Versicherung dazu.`;
+
+const FAQ_REGISTRATION_ANSWER =
+  `Der neue Fahrzeugausweis kostet je nach Kanton ${CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}. ${CANTONAL_KONTROLLSCHILDER_SUMMARY} ` +
+  `In ZH und ZG können Zusatzgebühren dazukommen (siehe Fussnoten). Die Tarife aller Kantone mit Quelle stehen ` +
+  `in der Tabelle auf dieser Seite.`;
 
 function faqCheaperAnswer(stats: InventoryStats | null): string {
   return (
@@ -133,7 +158,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   name: "Wer zahlt die Transfergebühr?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Das ist frei verhandelbar. In den meisten Fällen übernimmt der Abgeber die Transfergebühr, um den Vertrag attraktiver zu machen. Manchmal teilen sich beide Parteien die Kosten.",
+                    text: "Das legt ihr selbst fest: Abgeber und Übernehmer können die Gebühr auch teilen. Kläre es, bevor ihr den Antrag bei der Leasinggesellschaft stellt.",
                   },
                 },
                 {
@@ -157,7 +182,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   name: "Wie viel kostet die Ummeldung?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Die Ummeldung beim Strassenverkehrsamt kostet je nach Kanton 50–150 CHF. Hinzu kommen eventuell Kosten für einen neuen Fahrzeugausweis (ca. 50 CHF).",
+                    text: FAQ_REGISTRATION_ANSWER,
                   },
                 },
                 {
@@ -165,7 +190,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   name: "Kann ich die Kosten mit dem Abgeber teilen?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja, absolut. Die Kostenaufteilung ist Verhandlungssache. Viele Abgeber sind bereit, Kosten zu übernehmen, um den Transfer zu beschleunigen.",
+                    text: "Ja. Wie ihr die einmaligen Kosten aufteilt, legt ihr zu zweit fest.",
                   },
                 },
               ],
@@ -276,7 +301,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                 Du zahlst die bestehende monatliche Leasingrate weiter. Einmalig fallen die <strong>Übertragungsgebühr der Leasinggesellschaft ({FEE_SHORT})</strong> und die kantonalen Gebühren für den neuen Fahrzeugausweis an.
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
-                Viele Abgeber übernehmen diese Kosten freiwillig, um den Transfer attraktiver zu gestalten.
+                Wer diese Kosten bezahlt, legen Abgeber und Übernehmer selbst fest.
               </p>
               
               <div className="mt-6 pt-6 border-t border-primary/20">
@@ -306,7 +331,8 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   { id: "uebersicht", label: "Kostenübersicht im Detail" },
                   { id: "transfergebuehr", label: "Transfergebühr" },
                   { id: "ummeldung", label: "Ummeldung & Fahrzeugausweis" },
-                  { id: "versicherung", label: "Versicherungskosten" },
+                  { id: "kantone", label: "Gebühren nach Kanton" },
+                  { id: "versicherung", label: "Versicherung" },
                   { id: "versteckte", label: "Versteckte Kosten" },
                   { id: "spartipps", label: "Spartipps" },
                   { id: "vergleich", label: "Kostenvergleich" },
@@ -348,40 +374,63 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr der Leasinggesellschaft</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">
-                      Cembra: {formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST; AMAG, Multilease, BANK-now: auf Anfrage
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">
+                        {CEMBRA.name}: {formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST (rund {CEMBRA_TRANSFER_DISPLAY} inkl.)
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={CEMBRA.source} />
+                      </span>
+                      <span className="block font-semibold mt-3">
+                        {CA_AUTO_FINANCE.name}: {formatChf(CA_AUTO_FINANCE.feesExclVatChf.vertragsumschreibung)} exkl. MWST (
+                        {formatChfRappen(CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF)} inkl.)
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={CA_AUTO_FINANCE.source} />
+                      </span>
+                      <span className="block mt-3">{AMAG_LEASING.name}, Multilease, BANK-now: kein Tarif publiziert</span>
                     </td>
-                    <td className="p-4 md:p-6 text-neutral-700">Verhandlungssache</td>
+                    <td className="p-4 md:p-6 text-neutral-700">nach Absprache zwischen Abgeber und Übernehmer</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Händler-/Wechselgebühr</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">100–250 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Optional (falls über Händler)</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung beim Strassenverkehrsamt</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Neuer Fahrzeugausweis (Strassenverkehrsamt)</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">
+                        {cantonalExtremeLabel(FAHRZEUGAUSWEIS_RANGE.min)} bis {cantonalExtremeLabel(FAHRZEUGAUSWEIS_RANGE.max)}
+                      </span>
+                      <a href="#kantone" className="block text-xs text-primary font-semibold hover:underline mt-1">
+                        Alle Kantone mit Quelle
+                      </a>
+                    </td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Neuer Fahrzeugausweis</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">ca. 50 CHF</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Neue Kontrollschilder, falls du keine eigenen hast</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">
+                        {cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.min)} bis {cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.max)}
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        {CANTONS_WITHOUT_FIXED_PLATE_FEE.length > 0
+                          ? `${CANTONS_WITHOUT_FIXED_PLATE_FEE.join(", ")} ohne festen Betrag; zu ZH siehe Fussnoten`
+                          : "Zu ZH siehe Fussnoten"}
+                      </span>
+                      <a href="#kantone" className="block text-xs text-primary font-semibold hover:underline mt-1">
+                        Alle Kantone mit Quelle
+                      </a>
+                    </td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung (pro Monat)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel (150–400 CHF/Monat)</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      Du versicherst das Auto selbst. AMAG Leasing verlangt für Neufahrzeuge eine Vollkasko, bei
+                      Occasionen ist nach Absprache eine Teilkasko möglich ({AMAG_LEASING.clauses.versicherung}).
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={AMAG_LEASING.source} />
+                      </span>
+                    </td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Eventuelle Reparaturen</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Nach Vereinbarung</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Administrationskosten (Bank)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">je nach Leasinggesellschaft</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Abgeber oder Übernehmer</td>
                   </tr>
                 </tbody>
               </table>
@@ -393,7 +442,8 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                 <div>
                   <p className="text-green-900 font-semibold mb-1">Spartipp</p>
                   <p className="text-green-800">
-                    Verhandle mit dem Abgeber! Viele sind bereit, die Transfergebühr zu übernehmen, um den Vertrag schneller loszuwerden.
+                    Wer die Übertragungsgebühr bezahlt, legt ihr selbst fest. Kläre das, bevor ihr den Antrag bei der
+                    Leasinggesellschaft stellt.
                   </p>
                 </div>
               </div>
@@ -417,37 +467,14 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   <h3 className="text-2xl font-bold text-neutral-900 mb-4">
                     Was ist die Transfergebühr?
                   </h3>
-                  <p className="text-neutral-700 leading-relaxed mb-4">
-                    Die <strong>Transfergebühr</strong> ist die Hauptgebühr bei einer Leasingübernahme. Sie wird von der Leasingbank erhoben und deckt die administrativen Kosten der Vertragsübertragung ab.
-                  </p>
                   <p className="text-neutral-700 leading-relaxed">
-                    {FEE_SENTENCE} Wie die Übertragung selbst Schritt für Schritt abläuft, zeigt unser Ratgeber{" "}
+                    {TRANSFER_FEE_SENTENCE} Wie die Übertragung selbst Schritt für Schritt abläuft, zeigt unser Ratgeber{" "}
                     <Link href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline">
                       Leasingvertrag übertragen – so funktioniert es
                     </Link>.
                   </p>
                 </CardContent>
               </Card>
-
-              <div className="bg-white p-6 rounded-xl border border-neutral-200">
-                <h3 className="text-xl font-bold text-neutral-900 mb-4">Faktoren, die die Höhe beeinflussen:</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { icon: BadgeCheck, text: "Leasingbank-Richtlinien" },
-                    { icon: DollarSign, text: "Restwert des Fahrzeugs" },
-                    { icon: Clock, text: "Restlaufzeit des Vertrags" },
-                    { icon: FileCheck, text: "Verwaltungsaufwand" }
-                  ].map((item, i) => {
-                    const IconComponent = item.icon;
-                    return (
-                      <div key={i} className="flex items-start gap-3 bg-neutral-50 border border-neutral-200 p-4 rounded-lg">
-                        <IconComponent className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-neutral-700 font-medium">{item.text}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -468,44 +495,29 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   <div>
                     <h3 className="text-xl font-bold text-neutral-900 mb-3">Was kostet die Ummeldung?</h3>
                     <p className="text-neutral-700 leading-relaxed">
-                      Nach der Vertragsübertragung muss das Fahrzeug beim <strong>Strassenverkehrsamt</strong> auf den neuen Halter umgemeldet werden. Die Kosten variieren je nach Kanton, liegen aber typischerweise bei <strong>50–150 CHF</strong>.
+                      Nach der Vertragsübertragung stellt dir das <strong>Strassenverkehrsamt</strong> einen neuen
+                      Fahrzeugausweis aus. Das kostet je nach Kanton {CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}. Die Tarife aller{" "}
+                      {CANTONAL_FEES.length} Kantone mit Quelle findest du in der{" "}
+                      <a href="#kantone" className="text-primary font-semibold hover:underline">Tabelle nach Kanton</a>.
                     </p>
                   </div>
 
-                  <div className="bg-primary/5 p-6 rounded-lg">
-                    <h4 className="font-bold text-neutral-900 mb-3">Benötigte Dokumente:</h4>
-                    <ul className="space-y-2">
-                      {[
-                        "Fahrzeugausweis (Original)",
-                        "Personalausweis oder Pass",
-                        "Versicherungsbestätigung",
-                        "Unterschriebener Kaufvertrag oder Übertragungsvereinbarung",
-                        "Kontrollschildnummern (falls nicht übernommen)"
-                      ].map((doc, i) => (
-                        <li key={i} className="flex items-start gap-2 text-neutral-700">
-                          <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                          <span>{doc}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-amber-900 font-semibold mb-1">Wichtig</p>
-                        <p className="text-amber-800">
-                          Die Ummeldung muss innerhalb von <strong>14 Tagen</strong> nach der Übernahme erfolgen, sonst drohen Bussen.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <p className="text-neutral-700 leading-relaxed">
+                    Welche Unterlagen nötig sind, sagen dir die Leasinggesellschaft und das Strassenverkehrsamt deines
+                    Kantons.
+                  </p>
                 </div>
               </CardContent>
             </Card>
           </div>
         </section>
+
+        {/* KANTONALE GEBÜHREN (#kantone) */}
+        <div className="py-16 px-4 bg-white">
+          <div className="max-w-4xl mx-auto">
+            <CantonalFeesTable />
+          </div>
+        </div>
 
         {/* INSURANCE COSTS */}
         <section id="versicherung" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
@@ -513,36 +525,20 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
             <div className="flex items-center gap-3 mb-8">
               <ShieldCheck className="w-8 h-8 text-primary" />
               <h2 className="text-3xl font-bold text-neutral-900">
-                Versicherungskosten
+                Versicherung
               </h2>
             </div>
             
             <div className="space-y-6">
               <Card className="border-2 border-primary/20">
                 <CardContent className="p-8">
-                  <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-                    Bei einer Leasingübernahme musst du eine <strong>eigene Vollkaskoversicherung</strong> abschliessen. Die Kosten hängen von mehreren Faktoren ab:
+                  <p className="text-lg text-neutral-700 leading-relaxed">
+                    Bei einer Leasingübernahme versicherst du das Auto selbst. Welche Deckung du brauchst, legt der
+                    Leasingvertrag fest: {AMAG_LEASING.name} verlangt für Neufahrzeuge eine Vollkasko, bei Occasionen ist
+                    nach Absprache eine Teilkasko möglich ({AMAG_LEASING.clauses.versicherung},{" "}
+                    <SourceCitation source={AMAG_LEASING.source} prefix="" />
+                    ).
                   </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { icon: DollarSign, title: "Fahrzeugwert", desc: "Höherer Wert = höhere Prämie" },
-                      { icon: Users, title: "Alter & Erfahrung", desc: "Junge Fahrer zahlen mehr" },
-                      { icon: BadgeCheck, title: "Unfallhistorie", desc: "Schadenfreie Jahre senken Kosten" },
-                      { icon: FileCheck, title: "Deckungsumfang", desc: "Vollkasko vs. Teilkasko" }
-                    ].map((item, i) => {
-                      const IconComponent = item.icon;
-                      return (
-                        <div key={i} className="bg-white border border-neutral-200 p-5 rounded-lg">
-                          <div className="flex items-center gap-3 mb-2">
-                            <IconComponent className="w-6 h-6 text-primary" />
-                            <h4 className="font-bold text-neutral-900">{item.title}</h4>
-                          </div>
-                          <p className="text-neutral-600 text-sm">{item.desc}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </CardContent>
               </Card>
 
@@ -552,7 +548,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   <div>
                     <p className="text-green-900 font-semibold mb-1">Spartipp</p>
                     <p className="text-green-800">
-                      Vergleiche mehrere Versicherungsangebote! Die Prämien können um <strong>20–40%</strong> variieren.
+                      Vergleiche mehrere Versicherungsangebote, bevor du den Vertrag übernimmst.
                     </p>
                   </div>
                 </div>
@@ -580,7 +576,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                 },
                 {
                   title: "Service & Wartung fällig",
-                  desc: "Wenn der nächste Service kurz bevorsteht, musst du ihn übernehmen (200–800 CHF)",
+                  desc: "Wenn der nächste Service kurz bevorsteht, kläre vor der Übernahme, wer ihn bezahlt",
                   icon: Clock
                 },
                 {
@@ -636,12 +632,12 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
               {[
                 {
                   title: "Verhandle die Transfergebühr",
-                  desc: "Viele Abgeber übernehmen die Gebühr freiwillig",
+                  desc: "Wer die Gebühr bezahlt, legt ihr zu zweit fest",
                   icon: DollarSign
                 },
                 {
                   title: "Vergleiche Versicherungen",
-                  desc: "20–40% Ersparnis durch Prämienvergleich",
+                  desc: "Prämien mehrerer Anbieter vor der Übernahme vergleichen",
                   icon: ShieldCheck
                 },
                 {
@@ -709,29 +705,24 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Anzahlung</td>
                     <td className="p-4 md:p-6 text-green-600 font-semibold">{kautionTableCell(stats)}</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">3'000–10'000 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">je nach Vertrag</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Transfergebühr</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">
-                      Cembra: rund {CEMBRA_TRANSFER_DISPLAY} inkl. MWST, andere auf Anfrage
+                      {CEMBRA.name} rund {CEMBRA_TRANSFER_DISPLAY} inkl. MWST, {CA_AUTO_FINANCE.name}{" "}
+                      {formatChfRappen(CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF)} inkl. MWST, andere nicht publiziert
                     </td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">—</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Ummeldung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung (Monat)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">150–400 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">150–400 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">keine</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Laufzeit</td>
-                    <td className="p-4 md:p-6 text-green-600 font-semibold">6–24 Monate (kürzer)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">36–48 Monate</td>
+                    <td className="p-4 md:p-6 text-green-600 font-semibold">
+                      {stats?.medianMonths != null
+                        ? `Restlaufzeit des bestehenden Vertrags (Median der aktuellen Angebote: ${stats.medianMonths} Monate)`
+                        : "Restlaufzeit des bestehenden Vertrags, siehe Inserat"}
+                    </td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">volle Laufzeit des neuen Vertrags</td>
                   </tr>
                 </tbody>
               </table>
@@ -743,7 +734,8 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                 <div>
                   <h3 className="text-xl font-bold mb-2">Fazit</h3>
                   <p className="leading-relaxed text-lg">
-                    Eine Leasingübernahme ist <strong>deutlich günstiger</strong> im Einstieg als ein neues Leasing. Du sparst die hohe Anzahlung und hast mehr Flexibilität durch kürzere Restlaufzeiten.
+                    Bei einer Leasingübernahme zahlst du keine Anzahlung für einen neuen Vertrag und bindest dich nur
+                    für die Restlaufzeit. Einmalig kommen die Übertragungsgebühr und die Gebühr des Strassenverkehrsamts dazu.
                   </p>
                 </div>
               </div>
@@ -829,7 +821,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   Wer zahlt die Transfergebühr?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Das ist frei verhandelbar. In den meisten Fällen übernimmt der <strong>Abgeber</strong> die Transfergebühr, um den Vertrag attraktiver zu machen. Manchmal teilen sich beide Parteien die Kosten.
+                  Das legt ihr selbst fest: Abgeber und Übernehmer können die Gebühr auch teilen. Kläre es, bevor ihr den Antrag bei der Leasinggesellschaft stellt.
                 </AccordionContent>
               </AccordionItem>
               
@@ -865,7 +857,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   Wie viel kostet die Ummeldung?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Die Ummeldung beim Strassenverkehrsamt kostet je nach Kanton <strong>50–150 CHF</strong>. Hinzu kommen eventuell Kosten für einen neuen Fahrzeugausweis (ca. 50 CHF).
+                  {FAQ_REGISTRATION_ANSWER}
                 </AccordionContent>
               </AccordionItem>
 
@@ -877,7 +869,7 @@ export default function LeasinguebernahmeKostenPage({ stats, premiumListings }: 
                   Kann ich die Kosten mit dem Abgeber teilen?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, absolut. Die Kostenaufteilung ist Verhandlungssache. Viele Abgeber sind bereit, Kosten zu übernehmen, um den Transfer zu beschleunigen.
+                  Ja. Wie ihr die einmaligen Kosten aufteilt, legt ihr zu zweit fest.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

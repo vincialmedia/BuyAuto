@@ -36,7 +36,8 @@ import { DECLINE_DELETE_AFTER_DAYS, DRAFT_ARCHIVE_AFTER_DAYS } from "@/lib/buyau
 import { setListingPremiumUsingCredit, ensureDealerPremiumCredits, getMyDealerPremiumCredits } from "@/services/dealerSubscriptionService";
 import { getMyGarage, type Garage } from "@/services/garageService";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
-import { kaufartOf } from "@/lib/buyauto/kaufart";
+import { kaufartOf, type KaufartSource } from "@/lib/buyauto/kaufart";
+import { showContractEndedBadge } from "@/lib/buyauto/contractEndDate";
 
 function getDealTypeLabel(listing: ListingDetail): string {
   // Same Kaufart rule as the public site (lib/buyauto/kaufart): the seller sees
@@ -774,6 +775,9 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
             const views = Number.isFinite(Number(listing.view_count)) ? Number(listing.view_count) : 0;
             const isPublicListing = ["published", "active", "sold"].includes(String(listing.status));
             const listingHref = buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model });
+            // A takeover whose contract_end_date has passed. The row is the
+            // raw listings row (select *), so contract_end_date is on it.
+            const contractEnded = showContractEndedBadge(listing as ListingDetail & KaufartSource);
 
             return (
               <Card
@@ -839,6 +843,11 @@ export default function ListingsSection({ view }: ListingsSectionProps) {
                               status={isDeclined ? "rejected" : listing.status}
                               expiresAt={listing.expires_at}
                             />
+                            {contractEnded && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors bg-amber-50 text-amber-700 border-amber-200">
+                                Vertrag abgelaufen – Inserat prüfen
+                              </span>
+                            )}
                             <Badge variant="secondary" className="rounded-full">
                               {getDealTypeLabel(listing)}
                             </Badge>

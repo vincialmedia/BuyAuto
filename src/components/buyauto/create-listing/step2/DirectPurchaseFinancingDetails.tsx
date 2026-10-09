@@ -19,6 +19,7 @@ import {
   type ListingUpdatePayload,
 } from "@/services/createListingService";
 import { updateListingDraft } from "@/services/listingDraftService";
+import { contractEndDateForListingWrite, normalizeContractEndDate } from "@/lib/buyauto/contractEndDate";
 
 import { LeaseTakeoverOfferSection, type LeaseTakeoverOfferFormValues } from "./LeaseTakeoverOfferSection";
 import { GarageLeasingOfferSection, type GarageLeasingOfferFormValues } from "./GarageLeasingOfferSection";
@@ -31,6 +32,8 @@ type DirectPurchaseFinancingForm = {
   lease_takeover_enabled: boolean;
   lease_takeover_price_per_month_chf?: number;
   lease_takeover_remaining_months?: number;
+  /** Vertragsende picked in the takeover offer, "yyyy-MM-dd" ("" = none). */
+  lease_takeover_contract_end_date?: string;
   lease_takeover_deposit_chf?: number;
   lease_takeover_remaining_km?: number;
   lease_takeover_pickup_canton_code?: string;
@@ -115,6 +118,7 @@ const directPurchaseFinancingSchema = z
     lease_takeover_enabled: z.boolean().default(false),
     lease_takeover_price_per_month_chf: z.number().optional(),
     lease_takeover_remaining_months: z.number().optional(),
+    lease_takeover_contract_end_date: z.string().optional(),
     lease_takeover_deposit_chf: z.number().optional(),
     lease_takeover_remaining_km: z.number().optional(),
     lease_takeover_pickup_canton_code: z.string().optional(),
@@ -294,6 +298,9 @@ export function DirectPurchaseFinancingDetails() {
       lease_takeover_enabled: existingTakeover?.enabled === true,
       lease_takeover_price_per_month_chf: toNumberOrUndefined(existingTakeover?.price_per_month_chf) ?? 0,
       lease_takeover_remaining_months: toNumberOrUndefined(existingTakeover?.remaining_months) ?? 0,
+      // Editing / resuming: show the stored contract end in the picker.
+      lease_takeover_contract_end_date:
+        existingTakeover?.enabled === true ? (normalizeContractEndDate(data.contract_end_date) ?? "") : "",
       lease_takeover_deposit_chf: toNumberOrUndefined(existingTakeover?.deposit_chf) ?? 0,
       lease_takeover_remaining_km: toNumberOrUndefined(existingTakeover?.remaining_km) ?? 0,
       // UI field removed; keep empty for backward compatibility, but we don't rely on it.
@@ -373,6 +380,9 @@ export function DirectPurchaseFinancingDetails() {
           financing_type: leasingEnabledNow ? "leasing" : "cash",
           leasing_offer: leasingOffer as any,
           purchase_price_chf: purchasePriceChfClean,
+          contract_end_date: leaseTakeoverEnabledNow
+            ? normalizeContractEndDate(values?.lease_takeover_contract_end_date)
+            : null,
         } as any);
       }, 250);
     });
@@ -439,6 +449,9 @@ export function DirectPurchaseFinancingDetails() {
         financing_type: leasingEnabledNow ? "leasing" : "cash",
         leasing_offer: leasingOffer,
         purchase_price_chf: purchasePriceChf,
+        contract_end_date: leaseTakeoverEnabledNow
+          ? normalizeContractEndDate(values.lease_takeover_contract_end_date)
+          : null,
       } as any;
     });
 
@@ -499,19 +512,23 @@ export function DirectPurchaseFinancingDetails() {
     setValue("lease_takeover_deposit_chf", 0, { shouldValidate: false });
     setValue("lease_takeover_remaining_km", 0, { shouldValidate: false });
     setValue("lease_takeover_pickup_canton_code", "", { shouldValidate: false });
+    if (getValues("lease_takeover_contract_end_date")) {
+      setValue("lease_takeover_contract_end_date", "", { shouldValidate: false });
+    }
 
     const currentOffer = (data as any)?.leasing_offer;
     if (currentOffer?.lease_takeover_offer) {
       const nextOffer = { ...currentOffer };
       delete nextOffer.lease_takeover_offer;
 
+      // The contract end date belongs to the takeover offer and goes with it.
       if (!leasingEnabled) {
-        updateData({ leasing_offer: null } as any);
+        updateData({ leasing_offer: null, contract_end_date: null });
       } else {
-        updateData({ leasing_offer: nextOffer } as any);
+        updateData({ leasing_offer: nextOffer, contract_end_date: null });
       }
     }
-  }, [clearErrors, data, leaseTakeoverEnabled, leasingEnabled, setValue, updateData]);
+  }, [clearErrors, data, getValues, leaseTakeoverEnabled, leasingEnabled, setValue, updateData]);
 
   useEffect(() => {
     if (leasingEnabled) return;
@@ -580,12 +597,20 @@ export function DirectPurchaseFinancingDetails() {
               }
             : null;
 
+      // Vertragsende of the takeover offer: kept in wizard state (guests and
+      // garages save it only at Step 5) and sent with this save.
+      const contractEndDate =
+        formData.lease_takeover_enabled === true
+          ? normalizeContractEndDate(formData.lease_takeover_contract_end_date)
+          : null;
+
       const financingPatch: Partial<typeof data> = {
         deal_type: "direct_purchase",
         financing_type: leasingEnabled ? "leasing" : "cash",
         leasing_offer: leasingOffer,
         purchase_price_chf: purchasePriceChfClean ?? undefined,
         price_per_month_chf: undefined,
+        contract_end_date: contractEndDate,
       };
 
       if (!user) {
@@ -650,6 +675,11 @@ export function DirectPurchaseFinancingDetails() {
 
         purchase_price_chf: purchasePriceChfClean,
         price_per_month_chf: null,
+        contract_end_date: contractEndDateForListingWrite({
+          deal_type: "direct_purchase",
+          leasing_offer: leasingOffer,
+          contract_end_date: contractEndDate,
+        }),
       };
 
       const saved = await createOrUpdateListing(payload, user);

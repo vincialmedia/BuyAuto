@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "next/router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
+import { contractEndDateForListingWrite } from "@/lib/buyauto/contractEndDate";
 import type { Tables } from "@/integrations/supabase/types";
 import {
   deleteListingDraft,
@@ -640,6 +641,16 @@ export default function Step5_PreviewAndPay() {
       payload.remaining_months = typeof remainingMonths === "number" ? Math.max(0, Math.floor(remainingMonths)) : undefined;
       payload.deposit_chf = typeof depositChf === "number" ? Math.round(depositChf) : null;
     }
+
+    // The contract end date the seller picked in Step 2 (takeovers only). Guests
+    // and garages reach the database only from here, and without the date the
+    // trigger would re-anchor the contract at this month + remaining months.
+    const contractEndDate = contractEndDateForListingWrite({
+      deal_type: resolvedDealType,
+      leasing_offer: payload.leasing_offer,
+      contract_end_date: anyData?.contract_end_date,
+    });
+    if (contractEndDate !== undefined) payload.contract_end_date = contractEndDate;
 
     return payload;
   }, [data, inferredDealType]);

@@ -148,6 +148,9 @@ export function vehicleCoreFieldsFromWizard(
  * in the columns, not wizard leftovers. Without a takeover offer the columns
  * are cleared: on a plain Direktkauf they otherwise keep the wizard defaults
  * (12 months / 0 deposit), which is exactly the stale data this prevents.
+ * contract_end_date goes with them: with a takeover offer the seller's date
+ * travels through untouched (the database keeps a date the client sends), and
+ * without one it is cleared so no stale contract end survives on a Direktkauf.
  * deal_type='lease_takeover' rows never pass through here — their columns are
  * the seller-entered source of truth.
  */
@@ -173,6 +176,7 @@ function mirrorTakeoverOfferIntoColumns(payload: ListingUpdatePayload): ListingU
     remaining_months: null,
     deposit_chf: null,
     remaining_km: null,
+    contract_end_date: null,
   };
 }
 
