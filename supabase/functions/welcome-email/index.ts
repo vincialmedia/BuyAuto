@@ -8,6 +8,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Links point at their final URL, so a click lands without a redirect:
+// vercel.json 308s the apex to www, and trailingSlash is off.
+const SITE_URL = "https://www.buyauto.ch";
+
 function json(status: number, payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -59,7 +63,7 @@ function buildUserEmail(params: { name: string }): { subject: string; html: stri
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://buyauto.ch/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
+      <img src="${SITE_URL}/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
     </div>
 
     <div class="content">
@@ -67,7 +71,7 @@ function buildUserEmail(params: { name: string }): { subject: string; html: stri
       <p>Hallo ${escapeHtml(params.name)},</p>
       <p>Deine E-Mail-Adresse wurde erfolgreich bestätigt und dein Account ist nun aktiv.</p>
       <div style="text-align: center; margin: 22px 0;">
-        <a href="https://buyauto.ch/auth" class="button">Jetzt einloggen</a>
+        <a href="${SITE_URL}/auth" class="button">Jetzt einloggen</a>
       </div>
       <p>Beste Grüsse<br>Dein BuyAuto Team</p>
     </div>
