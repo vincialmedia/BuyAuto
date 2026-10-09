@@ -1,14 +1,19 @@
 // Registry of brands with a Leasingübernahme landing page at /leasinguebernahme/<slug>.
-// Curated entries below carry hand-written intros; any OTHER brand that appears in the
-// DB with a live listing gets a page automatically via resolveBrandSlug/buildDynamicBrand
-// (generic intro, models taken from its real inventory) — no code change needed.
+// Curated entries below carry a short hand-written intro; any OTHER brand that appears in
+// the DB with a live listing gets a page automatically via resolveBrandSlug/buildDynamicBrand
+// (intro from its lender entry in brandLenders.ts, else a neutral one). Models and numbers
+// on the pages come from the live listings only, never from this file.
 //
 // Curated entries with no matching inventory render as an (honest) empty state and are
 // automatically noindex until inventory exists — so it is safe to list brands
 // speculatively. When a DB spelling differs from the display name, list every stored
 // variant in dbBrands.
+//
+// Intros: no claim without a source. They say what the page lists and, where
+// brandLenders.ts has an entry, which lender's published facts follow below.
 
 import { slugifyListingPart } from "@/lib/buyauto/listingUrl";
+import { brandLenderFor } from "@/lib/buyauto/brandLenders";
 
 export interface LeasingBrand {
   /** URL segment, e.g. "mercedes-benz" → /leasinguebernahme/mercedes-benz */
@@ -21,10 +26,8 @@ export interface LeasingBrand {
    * several spellings. Defaults to [name].
    */
   dbBrands?: string[];
-  /** Brand-specific intro paragraph shown under the H1. */
+  /** Brand-specific intro under the H1 (no numbers: those come from live data). */
   intro: string;
-  /** Popular models, woven into copy + FAQ for topical relevance. */
-  popularModels: string[];
 }
 
 export const LEASING_BRANDS: LeasingBrand[] = [
@@ -32,22 +35,19 @@ export const LEASING_BRANDS: LeasingBrand[] = [
     slug: "tesla",
     name: "Tesla",
     intro:
-      "Eine Leasingübernahme ist der schnellste Weg zu einem Tesla in der Schweiz – ohne hohe Anzahlung und mit kurzer Restlaufzeit. Übernimm einen laufenden Leasingvertrag für ein Model 3, Model Y oder Model S und fahre elektrisch, ohne dich für die volle Laufzeit eines Neuwagen-Leasings zu binden.",
-    popularModels: ["Model 3", "Model Y", "Model S", "Model X"],
+      "Auf dieser Seite erscheint jeder Tesla, dessen laufender Leasingvertrag auf BuyAuto zur Übernahme inseriert ist.",
   },
   {
     slug: "bmw",
     name: "BMW",
     intro:
-      "Übernimm einen bestehenden BMW-Leasingvertrag in der Schweiz – von der 3er-Reihe bis zum X5 oder vollelektrischen i4. Eine Leasingübernahme spart dir die Anzahlung und bindet dich nur für die verbleibende Laufzeit statt der vollen 36–48 Monate eines neuen Leasings.",
-    popularModels: ["3er", "5er", "X3", "X5", "i4"],
+      "BMW mit laufendem Leasingvertrag, inseriert auf BuyAuto. Unter den Inseraten: was die Leasinggesellschaft von BMW zur Übernahme publiziert und was der Gründer von BuyAuto bei der Abgabe seines eigenen BMW-Leasings bezahlt hat.",
   },
   {
     slug: "audi",
     name: "Audi",
     intro:
-      "Sichere dir einen Audi per Leasingübernahme in der Schweiz – ob A3, Q5 oder e-tron. Du steigst in einen laufenden Vertrag ein, profitierst von einer oft bereits geleisteten Anzahlung und sparst gegenüber einem brandneuen Leasing.",
-    popularModels: ["A3", "A4", "Q5", "Q7", "e-tron"],
+      "Audi-Leasingverträge, die gerade jemand auf BuyAuto abgibt. Darunter steht, was AMAG Leasing, die Audi als Kernmarke führt, in ihren Leasingbestimmungen zu Gebühren, Bonität und Versicherung festhält.",
   },
   {
     slug: "mercedes-benz",
@@ -55,47 +55,39 @@ export const LEASING_BRANDS: LeasingBrand[] = [
     // Live listings store the brand as "Mercedes"; the catalog's makes table does too.
     dbBrands: ["Mercedes", "Mercedes-Benz"],
     intro:
-      "Eine Leasingübernahme bringt dich günstig in einen Mercedes-Benz – von der C-Klasse bis zum GLC oder vollelektrischen EQ-Modell. Übernimm einen laufenden Leasingvertrag in der Schweiz, ohne hohe Anzahlung und mit planbarer Restlaufzeit.",
-    popularModels: ["A-Klasse", "C-Klasse", "GLC", "GLE", "EQC"],
+      "Jeder Mercedes, dessen Leasingvertrag auf BuyAuto zur Übernahme steht. Mercedes-Benz Financial Services publiziert zur Übernahme keine Angaben; ihre Aussage zur Kündigung zitieren wir weiter unten.",
   },
   {
     slug: "volkswagen",
     name: "Volkswagen",
     intro:
-      "Übernimm ein VW-Leasing in der Schweiz – vom Golf über den Tiguan bis zum vollelektrischen ID.4. Eine Leasingübernahme ist die flexible Alternative: keine grosse Anzahlung, kurze Restlaufzeit und sofort fahrbereit.",
-    popularModels: ["Golf", "Passat", "Tiguan", "T-Roc", "ID.4"],
+      "Hier stehen die Volkswagen, deren Leasingvertrag aktuell auf BuyAuto zur Übernahme ausgeschrieben ist. Nach den Inseraten folgen die Bestimmungen von AMAG Leasing, zu deren Kernmarken VW gehört.",
   },
   {
     slug: "porsche",
     name: "Porsche",
     intro:
-      "Fahre einen Porsche per Leasingübernahme – ob Macan, Cayenne oder der vollelektrische Taycan. In der Schweiz übernimmst du einen laufenden Leasingvertrag und sparst dir die hohe Anzahlung eines Neuwagen-Leasings.",
-    popularModels: ["Macan", "Cayenne", "Taycan", "911", "Panamera"],
+      "Porsche-Leasingverträge zur Übernahme auf BuyAuto. Porsche hat in der Schweiz eine eigene Leasinggesellschaft; ihre Klausel zur Übertragung eines Vertrags zitieren wir im Wortlaut.",
   },
   {
     slug: "volvo",
     name: "Volvo",
-    intro:
-      "Eine Leasingübernahme bringt dich sicher und günstig in einen Volvo – vom kompakten XC40 bis zum XC90. Übernimm einen laufenden Vertrag in der Schweiz, ohne Anzahlung und mit überschaubarer Restlaufzeit.",
-    popularModels: ["XC40", "XC60", "XC90", "V60", "S60"],
+    intro: "Volvo zur Leasingübernahme: Sobald jemand seinen Volvo-Vertrag auf BuyAuto inseriert, erscheint er hier.",
   },
   {
     slug: "toyota",
     name: "Toyota",
-    intro:
-      "Übernimm ein Toyota-Leasing in der Schweiz und profitiere von bewährter Hybrid-Effizienz – vom Yaris bis zum RAV4. Die Leasingübernahme ist die kostengünstige Alternative zum Neuleasing: keine hohe Anzahlung, kurze Restlaufzeit.",
-    popularModels: ["Yaris", "Corolla", "C-HR", "RAV4", "bZ4X"],
+    intro: "Diese Seite zeigt jeden Toyota, bei dem du auf BuyAuto in einen laufenden Leasingvertrag einsteigen kannst.",
   },
   {
-    // Curated so the AMAG-Leasing page can link /leasinguebernahme/skoda
-    // permanently — as a dynamic-only brand the URL would 404 whenever the
-    // last live Škoda listing expires.
+    // Curated so the URL stays stable (AMAG brand; the hub and sitemap link it
+    // when indexable) — as a dynamic-only brand it would 404 whenever the last
+    // live Škoda listing expires.
     slug: "skoda",
     name: "Škoda",
     dbBrands: ["Škoda", "Skoda"],
     intro:
-      "Übernimm einen laufenden Škoda-Leasingvertrag in der Schweiz – vom Octavia bis zum vollelektrischen Enyaq. Du steigst ohne hohe Anzahlung ein und bindest dich nur für die Restlaufzeit statt für die volle Laufzeit eines neuen Leasings.",
-    popularModels: ["Octavia", "Enyaq", "Kodiaq", "Fabia"],
+      "Škoda mit laufendem Leasing, auf BuyAuto zur Übernahme inseriert. Unter den Inseraten: die Gebühren und Prüfregeln von AMAG Leasing, die Škoda zu ihren Kernmarken zählt.",
   },
 ];
 
@@ -121,21 +113,32 @@ export function curatedBrandForDbBrand(dbBrand: string): LeasingBrand | null {
   return LEASING_BRANDS.find((b) => dbBrandsFor(b).includes(dbBrand)) ?? null;
 }
 
+/** Intro for a page without a curated entry: from its lender entry, else neutral. */
+function dynamicIntro(dbBrand: string): string {
+  const lender = brandLenderFor({ slug: slugifyBrandName(dbBrand), name: dbBrand });
+  switch (lender?.basis) {
+    case "fiat-partner":
+      return `${dbBrand}-Leasingverträge, die auf BuyAuto zur Übernahme inseriert sind. Weiter unten steht, was CA Auto Finance als Leasingpartner von Fiat für eine Vertragsumschreibung verrechnet.`;
+    case "ca-faq-brand":
+      return `${dbBrand}-Leasingverträge zur Übernahme auf BuyAuto. CA Auto Finance nennt ${dbBrand} unter den Marken, auf die sie spezialisiert ist; ihre Gebühr für die Umschreibung steht weiter unten.`;
+    case "amag-core-brand":
+      return `${dbBrand} zur Leasingübernahme auf BuyAuto. AMAG Leasing führt ${dbBrand} als Kernmarke; ihre Bestimmungen folgen nach den Inseraten.`;
+    default:
+      return `Auf BuyAuto inserierte Leasingübernahmen der Marke ${dbBrand}.`;
+  }
+}
+
 /**
- * Brand page for a DB brand that has inventory but no curated entry (e.g. Fiat, Škoda).
- * The intro states only how a lease takeover works — nothing brand-specific is invented;
- * popularModels must come from that brand's real listings.
+ * Brand page for a DB brand that has inventory but no curated entry (e.g. Fiat).
+ * Nothing brand-specific is invented: the intro comes from brandLenders.ts or is
+ * neutral, and the models on the page come from its live listings.
  */
-export function buildDynamicBrand(dbBrand: string, liveModels: string[]): LeasingBrand {
+export function buildDynamicBrand(dbBrand: string): LeasingBrand {
   return {
     slug: slugifyBrandName(dbBrand),
     name: dbBrand,
     dbBrands: [dbBrand],
-    intro:
-      `Übernimm einen laufenden ${dbBrand}-Leasingvertrag in der Schweiz: Du steigst zu den bestehenden ` +
-      `Konditionen ein, zahlst die vereinbarte Monatsrate weiter und bindest dich nur für die Restlaufzeit – ` +
-      `ohne die hohe Anzahlung eines neuen Leasings. Alle ${dbBrand}-Angebote unten sind aktuelle Inserate auf BuyAuto.`,
-    popularModels: liveModels,
+    intro: dynamicIntro(dbBrand),
   };
 }
 
@@ -158,21 +161,16 @@ export function resolveBrandSlug(
   if (curated) return { brand: curated };
 
   const normalized = slug.trim().toLowerCase();
-  const byBrand = new Map<string, string[]>();
+  const dbBrands = new Set<string>();
   for (const row of rows) {
-    if (typeof row.brand !== "string" || row.brand.trim() === "") continue;
-    const models = byBrand.get(row.brand) ?? [];
-    if (typeof row.model === "string" && row.model.trim() !== "" && !models.includes(row.model)) {
-      models.push(row.model);
-    }
-    byBrand.set(row.brand, models);
+    if (typeof row.brand === "string" && row.brand.trim() !== "") dbBrands.add(row.brand);
   }
 
-  for (const [dbBrand, models] of byBrand) {
+  for (const dbBrand of dbBrands) {
     if (slugifyBrandName(dbBrand) !== normalized) continue;
     const curatedCover = curatedBrandForDbBrand(dbBrand);
     if (curatedCover) return { redirectTo: curatedCover.slug };
-    return { brand: buildDynamicBrand(dbBrand, models.slice(0, 4)) };
+    return { brand: buildDynamicBrand(dbBrand) };
   }
 
   return null;
