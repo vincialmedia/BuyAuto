@@ -4,17 +4,32 @@ import {
   MessagesSquare,
   Wallet,
   CalendarClock,
-  TrendingDown,
+  ClipboardCheck,
   Sparkles,
   LucideIcon
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { SourceCitation } from "@/components/buyauto/SourceCitation";
+import {
+  AMAG_LEASING,
+  LENDER_TAKEOVER_FEES,
+  PORSCHE_FINANCIAL_SERVICES,
+  type FactSource,
+} from "@/lib/buyauto/facts";
 
 interface ValueCard {
   icon: LucideIcon;
   title: string;
-  description: string;
+  description: ReactNode;
+  /** Shown under the description when the card states a lender rule. */
+  source?: FactSource;
 }
+
+/** Lenders that publish a takeover fee ("Cembra und CA Auto Finance"), from the shared fee list. */
+const PUBLISHING_LENDERS = LENDER_TAKEOVER_FEES.filter((l) => l.feeExclVatChf !== null)
+  .map((l) => l.name)
+  .join(" und ");
 
 interface CardGroup {
   heading: string;
@@ -27,13 +42,26 @@ const cardGroups: CardGroup[] = [
     cards: [
       {
         icon: DoorOpen,
-        title: "Raus ohne Strafgebühren",
-        description: "Keine teure Vertragsauflösung. Jemand übernimmt dein Leasing, du bist raus."
+        title: "Jemand übernimmt deinen Vertrag",
+        description: `Eine andere Person übernimmt dein Leasing mit Rate und Restlaufzeit. Deine Leasinggesellschaft muss zustimmen, bei ${PORSCHE_FINANCIAL_SERVICES.name} zum Beispiel vorher und schriftlich (ALB ${PORSCHE_FINANCIAL_SERVICES.transferClause}).`,
+        source: PORSCHE_FINANCIAL_SERVICES.source
       },
       {
         icon: Landmark,
-        title: "Bank-konform abgewickelt",
-        description: "Wir führen dich durch die Übertragung, die deine Leasinggesellschaft akzeptiert."
+        title: "Gebühr der Leasinggesellschaft",
+        description: (
+          <>
+            Für die Übertragung kann die Leasinggesellschaft eine Gebühr verlangen. {PUBLISHING_LENDERS} publizieren ihren
+            Tarif. Die Beträge und Quellen stehen in der{" "}
+            <Link
+              href="/leasinguebernahme-kosten#leasinggesellschaften"
+              className="text-red-600 font-medium underline underline-offset-2 hover:text-red-700"
+            >
+              Übersicht der Leasinggesellschaften
+            </Link>
+            .
+          </>
+        )
       },
       {
         icon: MessagesSquare,
@@ -47,18 +75,19 @@ const cardGroups: CardGroup[] = [
     cards: [
       {
         icon: Wallet,
-        title: "Keine Anzahlung nötig",
-        description: "Steig in ein laufendes Leasing ein, ohne hohe Startkosten."
+        title: "Keine Anzahlung",
+        description: "Du steigst in einen laufenden Vertrag ein und zahlst keine Anzahlung für einen neuen. Ob der Abgeber eine Kaution verlangt, steht im Inserat."
       },
       {
         icon: CalendarClock,
         title: "Kürzere Bindung",
-        description: "Übernimm nur die Restlaufzeit statt 48 Monate neu zu unterschreiben."
+        description: "Du übernimmst den laufenden Vertrag nur für seine Restlaufzeit."
       },
       {
-        icon: TrendingDown,
-        title: "Oft günstiger als neu",
-        description: "Übernahmen haben häufig tiefere Raten als ein frischer Vertrag."
+        icon: ClipboardCheck,
+        title: "Bonitätsprüfung",
+        description: `Die Leasinggesellschaft prüft deine Bonität, bei ${AMAG_LEASING.name} zum Beispiel mit Auskünften bei der ZEK und der IKO (ALB ${AMAG_LEASING.clauses.bonitaetspruefung}).`,
+        source: AMAG_LEASING.source
       }
     ]
   }
@@ -115,7 +144,7 @@ export function WhyBuyAutoSection() {
           
           {/* Main Headline */}
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 mb-6 tracking-tight max-w-4xl mx-auto leading-tight">
-            Leasing übernehmen oder Leasing abgeben –{" "}
+            Leasing übernehmen oder Leasing abgeben:{" "}
             <span className="text-red-500">
               ein Marktplatz für beide Seiten
             </span>
@@ -123,8 +152,7 @@ export function WhyBuyAutoSection() {
 
           {/* Supporting Text */}
           <p className="text-neutral-500 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            BuyAuto verbindet Menschen, die aus ihrem laufenden Leasingvertrag rauswollen, mit Menschen, die genau so einen Vertrag übernehmen möchten – ohne hohe Anzahlung, ohne Neuwagen-Wartezeit.
-            <span className="text-neutral-700 font-medium"> Einfach, transparent und für die Schweiz gebaut.</span>
+            BuyAuto verbindet Menschen, die aus ihrem laufenden Leasingvertrag rauswollen, mit Menschen, die so einen Vertrag übernehmen möchten.
           </p>
         </div>
 
@@ -183,6 +211,11 @@ export function WhyBuyAutoSection() {
                         <p className="relative text-neutral-500 text-base leading-relaxed group-hover:text-neutral-600 transition-colors">
                           {card.description}
                         </p>
+                        {card.source && (
+                          <p className="relative mt-3 text-xs text-neutral-500">
+                            <SourceCitation source={card.source} />
+                          </p>
+                        )}
 
                         {/* Bottom Accent Line - Red */}
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left rounded-b-3xl" />

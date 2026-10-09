@@ -3,52 +3,70 @@
 import { useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Head from "next/head";
-import Link from "next/link";
-import { HelpCircle, ArrowRight, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { HelpCircle, Plus } from "lucide-react";
 import { pricingPlans } from "@/lib/buyauto/stripe_config";
 import { GARAGE_PLANS } from "@/lib/buyauto/garagePlans";
+import { SourceCitation } from "@/components/buyauto/SourceCitation";
+import {
+  AMAG_LEASING,
+  CA_AUTO_FINANCE,
+  KKG,
+  PORSCHE_FINANCIAL_SERVICES,
+  type FactSource,
+} from "@/lib/buyauto/facts";
 
-const faqs = [
+interface Faq {
+  id: string;
+  question: string;
+  /** Rendered in the accordion and used verbatim in the FAQPage JSON-LD. */
+  answer: string;
+  /** Sources of the lender clauses or laws the answer names, shown under the answer. */
+  sources?: FactSource[];
+}
+
+const faqs: Faq[] = [
   {
     id: "faq-1",
     question: "Was ist eine Leasingübernahme?",
-    answer: "Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag – inklusive Monatsrate, Restlaufzeit und Kilometerlimit. Die bisherige Leasingnehmerin oder der bisherige Leasingnehmer wird aus dem Vertrag entlassen, du fährst das Fahrzeug bis zum Vertragsende weiter."
+    answer: "Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer, mit Monatsrate, Restlaufzeit und Kilometerlimit. Du fährst das Auto bis zum Ende des Vertrags."
   },
   {
     id: "faq-2",
     question: "Wie funktioniert eine Leasingübernahme auf BuyAuto?",
-    answer: "Der Abgeber stellt seinen Leasingvertrag als Inserat ein – mit Monatsrate, Restlaufzeit und Kilometerstand. Interessenten melden sich direkt, und die eigentliche Übertragung läuft immer über die Leasinggesellschaft: Sie prüft den Übernehmer und schreibt den Vertrag um."
+    answer: `Der Abgeber erstellt ein Inserat mit den Vertragsdaten, etwa Monatsrate und Restlaufzeit. Interessenten melden sich über den Chat auf BuyAuto. Die Übertragung selbst macht die Leasinggesellschaft: Wenn sie zustimmt, schreibt sie den Vertrag auf die neue Person um. ${PORSCHE_FINANCIAL_SERVICES.name} zum Beispiel verlangt dafür eine vorherige schriftliche Zustimmung (ALB ${PORSCHE_FINANCIAL_SERVICES.transferClause}).`,
+    sources: [PORSCHE_FINANCIAL_SERVICES.source]
   },
   {
     id: "faq-3",
-    question: "Warum ein bestehendes Leasing übernehmen statt neu zu leasen?",
-    answer: "Du übernimmst nur die Restlaufzeit, statt einen neuen Vertrag über die volle Laufzeit zu unterschreiben – und eine hohe Anzahlung entfällt in der Regel. Zudem ist das Fahrzeug nach der Bewilligung schnell verfügbar, ohne Neuwagen-Wartezeit."
+    question: "Was unterscheidet eine Leasingübernahme von einem neuen Leasing?",
+    answer: "Du übernimmst einen bestehenden Vertrag für seine Restlaufzeit, mit der Monatsrate und dem Kilometerlimit, die darin stehen. Eine Anzahlung für einen neuen Vertrag zahlst du nicht. Ob der Abgeber eine Kaution verlangt, steht im Inserat."
   },
   {
     id: "faq-4",
     question: "Kann ich mein Leasing vorzeitig abgeben?",
-    answer: "Ja. Statt den Vertrag teuer vorzeitig aufzulösen, kannst du ihn an eine Nachfolgerin oder einen Nachfolger übertragen – mit Zustimmung deiner Leasinggesellschaft. Auf BuyAuto inserierst du deinen Vertrag und findest Menschen, die genau so ein Leasing übernehmen möchten."
+    answer: `Ja, auf zwei Wegen. Du überträgst den Vertrag mit Zustimmung deiner Leasinggesellschaft an eine Person, die ihn übernimmt. Dafür kannst du auf BuyAuto ein Inserat erstellen. Oder du kündigst einen privaten Leasingvertrag, der unter das Konsumkreditgesetz fällt, vorzeitig (${KKG.terminationArticle} KKG). Was du dann noch bezahlst, berechnet deine Leasinggesellschaft.`,
+    sources: [KKG.source]
   },
   {
     id: "faq-5",
     question: "Wer prüft die Bonität bei einer Leasingübernahme?",
-    answer: "Die Leasinggesellschaft – wie bei jedem neuen Leasingvertrag. Der Übernehmer durchläuft die übliche Bonitätsprüfung, und erst nach der Bewilligung wird der Vertrag umgeschrieben. BuyAuto ersetzt diese Prüfung nicht."
+    answer: `Die Leasinggesellschaft prüft die Bonität der Person, die den Vertrag übernehmen will. ${AMAG_LEASING.name} holt dafür unter anderem Auskünfte bei der ZEK und der IKO ein (ALB ${AMAG_LEASING.clauses.bonitaetspruefung}), ${CA_AUTO_FINANCE.name} ebenfalls bei IKO und ZEK (AVB ${CA_AUTO_FINANCE.clauses.bonitaetspruefung}). BuyAuto ersetzt diese Prüfung nicht.`,
+    sources: [AMAG_LEASING.source, CA_AUTO_FINANCE.source]
   },
   {
     id: "faq-6",
     question: "Kann ich auf BuyAuto Fahrzeuge von Garagen und Privatpersonen finden?",
-    answer: "Ja. Auf BuyAuto findest du Leasingübernahmen und Fahrzeuge von Garagen und Privatpersonen aus der ganzen Schweiz. Jedes Inserat weist die wichtigsten Vertragsdaten transparent aus."
+    answer: "Ja. Auf BuyAuto findest du Leasingübernahmen und Fahrzeuge von Garagen und Privatpersonen."
   },
   {
     id: "faq-7",
     question: "Gibt es auf BuyAuto auch Fahrzeuge zum Direktkauf?",
-    answer: "Ja. Neben Leasingübernahmen findest du auf BuyAuto auch ausgewählte Fahrzeuge zum Direktkauf – mit Kaufpreis in CHF. Der Fokus der Plattform liegt aber klar auf der Leasingübernahme."
+    answer: "Ja. Neben Leasingübernahmen findest du auf BuyAuto auch Fahrzeuge zum Direktkauf. Der Schwerpunkt der Plattform liegt auf der Leasingübernahme."
   },
   {
     id: "faq-8",
     question: "Wie funktioniert die Kontaktaufnahme mit Anbietern?",
-    answer: "Wenn dich ein Angebot interessiert, nimmst du direkt mit dem Anbieter oder der Garage Kontakt auf. So klärst du offene Fragen zum Vertrag, vereinbarst eine Besichtigung und startest die Übertragung ohne unnötige Umwege."
+    answer: "Wenn dich ein Angebot interessiert, nimmst du direkt mit dem Anbieter oder der Garage Kontakt auf. So klärst du offene Fragen zum Vertrag und vereinbarst eine Besichtigung."
   },
   {
     id: "faq-10",
@@ -124,33 +142,16 @@ export default function FAQSection() {
                   <Plus className="w-5 h-5 text-neutral-400 shrink-0 transition-transform duration-300" />
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-5 text-base">
-                  {faq.answer}
+                  <p>{faq.answer}</p>
+                  {faq.sources?.map((source) => (
+                    <p key={source.url} className="mt-2 text-xs text-neutral-500">
+                      <SourceCitation source={source} />
+                    </p>
+                  ))}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
-          
-          {/* Bottom helper text and CTAs */}
-          <div className="mt-12 text-center">
-            <p className="text-neutral-500 mb-6">
-              <span className="font-semibold text-neutral-700">Noch Fragen?</span>
-              <br />
-              Dann entdecke alle Fahrzeuge oder erstelle dein eigenes Inserat auf BuyAuto.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/suche">
-                <Button size="lg" className="bg-neutral-900 text-white hover:bg-neutral-800 font-bold rounded-xl px-8 h-12 w-full sm:w-auto hover:scale-105 transition-all duration-300">
-                  Alle Fahrzeuge ansehen
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-              <Link href="/inserat-erstellen">
-                <Button size="lg" variant="outline" className="border-2 border-neutral-300 text-neutral-700 hover:border-red-500 hover:text-red-600 font-bold rounded-xl px-8 h-12 w-full sm:w-auto hover:scale-105 transition-all duration-300">
-                  Inserat erstellen
-                </Button>
-              </Link>
-            </div>
-          </div>
         </div>
       </section>
     </>
