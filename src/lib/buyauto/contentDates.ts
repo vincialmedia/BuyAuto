@@ -21,6 +21,14 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/agb": "2026-07-30",
 };
 
+/**
+ * Last content edit of the brand page template (/leasinguebernahme/[marke]: lender
+ * section, intro, layout). Kept out of CONTENT_LAST_UPDATED, whose keys are static
+ * sitemap URLs. Shown in the brand pages' «Aktualisiert am»; their sitemap lastmod is
+ * the later of this date and the brand's newest listing change.
+ */
+export const BRAND_PAGES_CONTENT_UPDATED = "2026-10-09";
+
 export function contentLastUpdatedIso(path: string): string | null {
   return CONTENT_LAST_UPDATED[path] ?? null;
 }

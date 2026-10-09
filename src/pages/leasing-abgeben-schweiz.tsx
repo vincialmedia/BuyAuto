@@ -290,8 +290,9 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                     <div>
                       <dt className="font-semibold text-neutral-900">Rauskaufen und verkaufen</dt>
                       <dd>
-                        Ablösesumme minus Fahrzeugwert. Ein positiver Betrag fehlt dir nach dem Verkauf, ein negativer
-                        bleibt dir. Der Fahrzeugwert ist deine Schätzung, der Verkaufspreis kann davon abweichen.
+                        Ablösesumme minus Fahrzeugwert. Ist die Ablösesumme höher, zeigt der Rechner, was dir nach dem
+                        Verkauf fehlt; ist das Auto mehr wert, was dir bleibt. Der Fahrzeugwert ist deine Schätzung, der
+                        Verkaufspreis kann davon abweichen.
                       </dd>
                     </div>
                   </dl>

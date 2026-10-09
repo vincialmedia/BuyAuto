@@ -20,6 +20,7 @@ import {
   CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
   CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
   CANTONAL_FEES,
+  CANTONS_WITH_POSSIBLE_EXTRA_FEE,
   CANTONS_WITHOUT_FIXED_PLATE_FEE,
   CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
@@ -30,6 +31,7 @@ import {
   LENDER_TAKEOVER_FEES,
   PORSCHE_FINANCIAL_SERVICES,
   cantonalExtremeLabel,
+  possibleExtraFeeClause,
   kautionSentence,
   type FactSource,
   type InventoryStats,
@@ -46,8 +48,8 @@ const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED[PATH];
 const TITLE = "Leasingübernahme Kosten: Gebühren je Leasinggeber | BuyAuto";
 const H1 = "Was kostet eine Leasingübernahme?";
 const DESCRIPTION =
-  `Leasingübernahme Kosten in der Schweiz: die Gebühr von ${LENDER_TAKEOVER_FEES.length} Leasinggesellschaften ` +
-  `mit Quelle (${FEE_SHORT}) und die Tarife aller ${CANTONAL_FEES.length} Kantone.`;
+  `Leasingübernahme Kosten in der Schweiz: was ${LENDER_TAKEOVER_FEES.length} Leasinggesellschaften zur ` +
+  `Übernahmegebühr publizieren (${FEE_SHORT}) und die Tarife aller ${CANTONAL_FEES.length} Kantone, mit Quelle.`;
 
 const HUB_HREF = "/suche?dealType=lease_takeover";
 const LISTING_HREF = "/inserat-erstellen";
@@ -68,10 +70,16 @@ const PUBLISHING_LENDERS = LENDER_TAKEOVER_FEES.filter((l) => l.feeExclVatChf !=
   .map((l) => l.name)
   .join(" und ");
 
+/** "; in ZH kann eine Zusatzgebühr dazukommen (siehe Fussnote)" for a summary row, "" when none applies. */
+function extraFeeNote(codes: readonly string[]): string {
+  const clause = possibleExtraFeeClause(codes);
+  return clause ? `; ${clause} (siehe ${codes.length > 1 ? "Fussnoten" : "Fussnote"})` : "";
+}
+
 const PLATES_RANGE_LABEL =
   `${cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.min)} bis ${cantonalExtremeLabel(KONTROLLSCHILDER_RANGE.max)}` +
   (CANTONS_WITHOUT_FIXED_PLATE_FEE.length ? `; ${CANTONS_WITHOUT_FIXED_PLATE_FEE.join(", ")} ohne festen Betrag` : "") +
-  "; in ZH und ZG können Zusatzgebühren dazukommen (siehe Fussnoten)";
+  extraFeeNote(CANTONS_WITH_POSSIBLE_EXTRA_FEE.kontrollschilder);
 
 const STANDARD_PLAN = pricingPlans.standard;
 const STANDARD_PLAN_PRICE =
@@ -85,13 +93,13 @@ const FAQS: Faq[] = [
     a:
       `Einmalig zahlst du die Gebühr der Leasinggesellschaft und die Gebühr des Strassenverkehrsamts. ${PUBLISHED_FEE_SUMMARY}; ` +
       `die übrigen Leasinggesellschaften in der Tabelle publizieren keine Gebühr. Der neue Fahrzeugausweis kostet je ` +
-      `nach Kanton ${CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}. Monatlich zahlst du die bestehende Leasingrate weiter und ` +
-      `die Prämie deiner eigenen Versicherung.`,
+      `nach Kanton ${CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}. Monatlich zahlst du die bestehende Leasingrate weiter, ` +
+      `dazu kommen deine eigene Versicherung und die Verkehrssteuer.`,
   },
   {
     q: "Wer bezahlt die Übertragungsgebühr?",
     a:
-      `Das vereinbaren Abgeber und Übernehmer. ${FOUNDER_TAKEOVER.label}: ${FOUNDER_TAKEOVER.person} bezahlte ` +
+      `Kläre das mit der anderen Seite und halte es schriftlich fest. ${FOUNDER_TAKEOVER.label}: ${FOUNDER_TAKEOVER.person} bezahlte ` +
       `${FOUNDER_TAKEOVER.year} als bisheriger Leasingnehmer die volle Gebühr von ` +
       `${formatChf(FOUNDER_TAKEOVER.takeoverFeeChf)}, die die Leasinggesellschaft von BMW verlangte.`,
   },
@@ -270,7 +278,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
               Einmalig bezahlst du die Gebühr der Leasinggesellschaft für die Übertragung und die Gebühr des
               Strassenverkehrsamts für den neuen Fahrzeugausweis. Hast du keine eigenen Kontrollschilder, kommen neue
               dazu. Verlangt der Abgeber eine Kaution, kommt auch sie dazu. Monatlich zahlst du die bestehende
-              Leasingrate weiter und versicherst das Auto selbst.
+              Leasingrate weiter, versicherst das Auto selbst und bezahlst die Verkehrssteuer.
             </p>
 
             <dl className="mt-6 divide-y divide-neutral-200 rounded-2xl border border-neutral-200 px-4">
@@ -286,6 +294,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
                 <a href="#kantone" className={LINK_CLASS}>
                   Kanton
                 </a>
+                {extraFeeNote(CANTONS_WITH_POSSIBLE_EXTRA_FEE.fahrzeugausweis)}
               </SummaryRow>
               <SummaryRow label="Neue Kontrollschilder, falls du keine eigenen hast">{PLATES_RANGE_LABEL}</SummaryRow>
               <SummaryRow label="Kaution">
@@ -296,10 +305,11 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
                 )
               </SummaryRow>
               <SummaryRow label="Monatlich">
-                die bestehende Leasingrate und deine{" "}
+                die bestehende Leasingrate, deine{" "}
                 <a href="#laufende-kosten" className={LINK_CLASS}>
                   eigene Versicherung
-                </a>
+                </a>{" "}
+                und die Verkehrssteuer
               </SummaryRow>
             </dl>
 
@@ -321,8 +331,8 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
                 Die Leasinggesellschaft muss der Übertragung zustimmen (bei {PORSCHE_FINANCIAL_SERVICES.name} zum
                 Beispiel nur mit vorheriger schriftlicher Zustimmung, {PORSCHE_FINANCIAL_SERVICES.transferClause}) und
                 prüft die Bonität der übernehmenden Person (bei {AMAG_LEASING.name} unter anderem mit Auskünften der ZEK
-                und IKO, {AMAG_LEASING.clauses.bonitaetspruefung}). Für die Übertragung verlangt sie eine Gebühr. Einen
-                Tarif dafür publizieren {PUBLISHING_LENDERS}.
+                und IKO, {AMAG_LEASING.clauses.bonitaetspruefung}). Für die Übertragung kann sie eine Gebühr verlangen.
+                Einen Tarif dafür publizieren {PUBLISHING_LENDERS}.
               </p>
             </LenderFeeTable>
           </Section>
@@ -359,9 +369,10 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
                 <SourceCitation source={AMAG_LEASING.source} prefix="" />
                 ).
               </p>
+              <p>Die Verkehrssteuer bezahlst du selbst.</p>
               <p>
                 Service, Reifen und Unterhalt richten sich nach dem Vertrag. Sind solche Leistungen darin enthalten,
-                klärt mit der Leasinggesellschaft, ob sie mit dem Vertrag auf dich übergehen.
+                klär mit der Leasinggesellschaft, ob sie mit dem Vertrag auf dich übergehen.
               </p>
             </div>
 
@@ -369,7 +380,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
               Wer bezahlt die einmaligen Gebühren?
             </h3>
             <p className="mt-2 text-neutral-700 leading-relaxed">
-              Das vereinbaren Abgeber und Übernehmer. Haltet es schriftlich fest, bevor ihr die Übertragung bei der
+              Kläre das mit der anderen Seite und halte es schriftlich fest, bevor ihr die Übertragung bei der
               Leasinggesellschaft beantragt. Welche Schritte der Abgeber dafür geht, steht im Ratgeber{" "}
               <Link href="/leasingvertrag-uebertragen" className={LINK_CLASS}>
                 Leasingvertrag übertragen

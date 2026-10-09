@@ -9,9 +9,11 @@ import { AuthorBox } from "@/components/buyauto/AuthorBox";
 import { FounderTakeoverNote } from "@/components/buyauto/FounderTakeoverNote";
 import { SourceCitation } from "@/components/buyauto/SourceCitation";
 import { getPublicOfferIndex, liveTakeovers, searchListingsOrThrow } from "@/services/listingsService";
+import { BRAND_PAGES_CONTENT_UPDATED } from "@/lib/buyauto/contentDates";
 import type { Listing } from "@/lib/buyauto/types";
 import {
   dbBrandsFor,
+  indexableBrandPages,
   isIndexableBrandCount,
   LEASING_BRANDS,
   resolveBrandSlug,
@@ -45,8 +47,8 @@ type BrandPageProps = {
   total: number;
   /** Live stats over the brand's Leasingübernahmen; null when the read failed (numbers hidden). */
   stats: InventoryStats | null;
-  /** Newest change among the brand's live listings (YYYY-MM-DD, Europe/Zurich); null = no date shown. */
-  updatedIso: string | null;
+  /** Other indexable brand pages of the same leasing company (AMAG Kernmarken), for in-text links. */
+  siblingBrands: { slug: string; name: string }[];
 };
 
 // ── Small building blocks ──────────────────────────────────────────────────
@@ -93,8 +95,32 @@ const AMAG_C = AMAG.clauses;
  * pages state the same published facts, each in its own words, so they do not repeat
  * one block of text.
  */
-function AmagSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLender }) {
+function AmagSection({
+  brand,
+  lender,
+  siblingBrands,
+}: {
+  brand: LeasingBrand;
+  lender: BrandLender;
+  siblingBrands: { slug: string; name: string }[];
+}) {
   const statement = <Quote>{AMAG.brandStatement.quote}</Quote>;
+  // The other Kernmarken with an indexable page on BuyAuto (the links the old AMAG page carried).
+  const siblings =
+    siblingBrands.length > 0 ? (
+      <p>
+        Weitere Kernmarken mit Angeboten auf BuyAuto:{" "}
+        {siblingBrands.map((b, i) => (
+          <span key={b.slug}>
+            {i > 0 ? (i === siblingBrands.length - 1 ? " und " : ", ") : null}
+            <Link href={`/leasinguebernahme/${b.slug}`} className={linkClass}>
+              {b.name}
+            </Link>
+          </span>
+        ))}
+        .
+      </p>
+    ) : null;
 
   if (brand.slug === "volkswagen") {
     return (
@@ -106,6 +132,7 @@ function AmagSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLend
           </p>
           <Cite source={AMAG.brandStatement.source} />
         </div>
+        {siblings}
         <p>Ob ein inserierter VW tatsächlich über AMAG Leasing läuft, steht in seinem Leasingvertrag.</p>
         <div>
           <p>
@@ -113,8 +140,8 @@ function AmagSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLend
             Übernahme.
             Für die vorzeitige Auflösung nennt {AMAG_C.aufloesungsgebuehren} pauschal {AMAG_TERMINATION} und für die
             Berechnung der provisorischen Auflösungskosten {AMAG_PROVISIONAL}, beides exkl. MWST; die Raten werden
-            dann rückwirkend neu berechnet ({AMAG_C.rueckwirkendeNeuberechnung}). Bevor du einen Volkswagen
-            übernimmst, prüft AMAG Leasing deine Bonität und holt dazu Auskünfte bei ZEK und IKO ein (
+            dann rückwirkend neu berechnet ({AMAG_C.rueckwirkendeNeuberechnung}). Läuft der Volkswagen über AMAG
+            Leasing, prüft sie vor der Übernahme deine Bonität und holt dazu Auskünfte bei ZEK und IKO ein (
             {AMAG_C.bonitaetspruefung}). Für Neuwagen schreibt sie eine Vollkasko vor, für Occasionen kann eine
             Teilkasko vereinbart werden ({AMAG_C.versicherung}).
           </p>
@@ -142,6 +169,7 @@ function AmagSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLend
           <p>Audi steht im Geschäftsbericht 2025 von AMAG Leasing unter den Kernmarken: {statement}</p>
           <Cite source={AMAG.brandStatement.source} />
         </div>
+        {siblings}
         <div>
           <p>
             Welche Gesellschaft einen bestimmten Audi least, zeigt erst dessen Vertrag. Läuft er über AMAG Leasing,
@@ -150,8 +178,9 @@ function AmagSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLend
           <ul className="mt-2 list-disc pl-5 space-y-1">
             <li>Eine Übernahmegebühr ist darin nicht aufgeführt.</li>
             <li>
-              Löst du den Audi vorzeitig auf, kostet das {AMAG_TERMINATION} exkl. MWST, plus {AMAG_PROVISIONAL} exkl.
-              MWST für die provisorische Berechnung der Auflösungskosten ({AMAG_C.aufloesungsgebuehren}).
+              Für eine vorzeitige Auflösung verrechnet AMAG Leasing pauschal {AMAG_TERMINATION} exkl. MWST, plus{" "}
+              {AMAG_PROVISIONAL} exkl. MWST für die provisorische Berechnung der Auflösungskosten (
+              {AMAG_C.aufloesungsgebuehren}).
             </li>
             <li>
               Bei einer Auflösung rechnet AMAG Leasing die bisherigen Raten rückwirkend neu (
@@ -200,6 +229,7 @@ function AmagSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLend
           </p>
           <Cite source={AMAG.brandStatement.source} />
         </div>
+        {siblings}
         <div>
           <p>
             Für einen Škoda, der über AMAG Leasing läuft, regeln ihre ALB ({AMAG.edition}) Folgendes. Ob das bei einem
@@ -239,14 +269,16 @@ function AmagSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLend
         </p>
         <Cite source={AMAG.brandStatement.source} />
       </div>
+      {siblings}
       <div>
         <p>
-          In ihren ALB {AMAG.edition} fehlt eine Übernahmegebühr. Wer einen {brand.name} vorzeitig zurückgibt, zahlt
-          nach {AMAG_C.aufloesungsgebuehren} {AMAG_TERMINATION} und für die provisorische Berechnung {AMAG_PROVISIONAL}{" "}
-          (je exkl. MWST); die Raten werden rückwirkend neu berechnet ({AMAG_C.rueckwirkendeNeuberechnung}). Die
-          Bonität prüft AMAG Leasing mit Auskünften von ZEK und IKO ({AMAG_C.bonitaetspruefung}). Neuwagen sind
-          vollkasko zu versichern, Occasionen nach Absprache teilkasko ({AMAG_C.versicherung}). Ob ein Inserat über
-          AMAG Leasing läuft, steht im Vertrag.
+          Ob ein inseriertes Auto über AMAG Leasing läuft, steht im Vertrag. Falls ja, gilt nach ihren ALB{" "}
+          {AMAG.edition}: Eine Übernahmegebühr ist nicht aufgeführt. Für eine vorzeitige Rückgabe verrechnet sie nach{" "}
+          {AMAG_C.aufloesungsgebuehren} pauschal {AMAG_TERMINATION} und für die provisorische Berechnung{" "}
+          {AMAG_PROVISIONAL} (je exkl. MWST); die Raten werden rückwirkend neu berechnet (
+          {AMAG_C.rueckwirkendeNeuberechnung}). Die Bonität prüft sie mit Auskünften von ZEK und IKO (
+          {AMAG_C.bonitaetspruefung}). Neuwagen sind vollkasko zu versichern, Occasionen nach Absprache teilkasko (
+          {AMAG_C.versicherung}).
         </p>
         <Cite source={AMAG.source} />
       </div>
@@ -274,7 +306,8 @@ function BmwSection({ lender }: { lender: BrandLender }) {
         <Cite source={bmw.source} />
       </div>
       <p>
-        Eine Gebühr für die Übernahme oder Regeln zur Übertragung eines Vertrags publiziert sie nicht ({CHECKED}). Was
+        Für BMW publiziert sie weder eine Gebühr für die Übernahme noch Regeln zur Übertragung eines Vertrags (
+        {CHECKED}). Was
         die Übernahme eines bestimmten BMW kostet, erfährst du deshalb vom bisherigen Leasingnehmer oder direkt bei ihr.
         Ob ein inserierter BMW überhaupt über sie geleast ist, steht im Vertrag.
       </p>
@@ -410,10 +443,18 @@ function CaAutoFinanceSection({ brand, lender }: { brand: LeasingBrand; lender: 
   );
 }
 
-function LenderSection({ brand, lender }: { brand: LeasingBrand; lender: BrandLender }) {
+function LenderSection({
+  brand,
+  lender,
+  siblingBrands,
+}: {
+  brand: LeasingBrand;
+  lender: BrandLender;
+  siblingBrands: { slug: string; name: string }[];
+}) {
   switch (lender.lender) {
     case "amag":
-      return <AmagSection brand={brand} lender={lender} />;
+      return <AmagSection brand={brand} lender={lender} siblingBrands={siblingBrands} />;
     case "bmw":
       return <BmwSection lender={lender} />;
     case "mercedes-benz":
@@ -472,7 +513,7 @@ function LiveStats({ brand, total, stats, models }: { brand: LeasingBrand; total
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
-export default function LeasingBrandPage({ brand, listings, total, stats, updatedIso }: BrandPageProps) {
+export default function LeasingBrandPage({ brand, listings, total, stats, siblingBrands }: BrandPageProps) {
   const canonical = `${SITE_URL}/leasinguebernahme/${brand.slug}`;
   // /suche filters on ONE exact stored brand string (its URL parser has no multi-brand
   // param), which can differ from the display name (Mercedes-Benz page ↔ "Mercedes"
@@ -611,7 +652,7 @@ export default function LeasingBrandPage({ brand, listings, total, stats, update
               Leasingübernahme {brand.name} in der Schweiz
             </h1>
             <p className="mt-3 max-w-3xl text-lg text-neutral-600 leading-relaxed">{brand.intro}</p>
-            <AuthorBox updatedIso={updatedIso} className="mt-5 max-w-3xl" />
+            <AuthorBox updatedIso={BRAND_PAGES_CONTENT_UPDATED} className="mt-5 max-w-3xl" />
             <LiveStats brand={brand} total={total} stats={stats} models={models} />
           </header>
 
@@ -652,7 +693,7 @@ export default function LeasingBrandPage({ brand, listings, total, stats, update
           </section>
 
           {lender ? (
-            <LenderSection brand={brand} lender={lender} />
+            <LenderSection brand={brand} lender={lender} siblingBrands={siblingBrands} />
           ) : (
             <p className="mt-8 max-w-3xl text-neutral-700">
               Wie die Übernahme eines {brand.name}-Leasings abläuft, erklärt der{" "}
@@ -677,37 +718,32 @@ export const getStaticPaths: GetStaticPaths = async () => {
   };
 };
 
-/** "2026-10-09" in Swiss time, for the AuthorBox «Aktualisiert am». */
-function zurichIsoDate(timestamp: string | null): string | null {
-  const t = timestamp ? Date.parse(timestamp) : NaN;
-  if (Number.isNaN(t)) return null;
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Zurich",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(t));
-}
-
 /**
- * Median rate / months over the brand's live Leasingübernahmen and the newest
- * change among them. Null on a failed read: the page then shows no live numbers.
+ * Median rate / months over the brand's live Leasingübernahmen, and the other indexable
+ * brand pages of the same leasing company. On a failed read the page shows no live
+ * numbers and no sibling links.
  */
-async function loadBrandLiveFacts(dbBrands: string[]): Promise<{ stats: InventoryStats | null; updatedIso: string | null }> {
+async function loadBrandLiveFacts(
+  brand: LeasingBrand,
+  dbBrands: string[]
+): Promise<{ stats: InventoryStats | null; siblingBrands: { slug: string; name: string }[] }> {
   try {
-    const offers = liveTakeovers(await getPublicOfferIndex()).filter((o) => o.brand !== null && dbBrands.includes(o.brand));
-    const newest = offers
-      .map((o) => o.updated_at ?? o.created_at)
-      .filter((v): v is string => typeof v === "string")
-      .sort()
-      .pop();
+    const takeovers = liveTakeovers(await getPublicOfferIndex());
+    const offers = takeovers.filter((o) => o.brand !== null && dbBrands.includes(o.brand));
+    const lender = brandLenderFor(brand)?.lender ?? null;
+    const siblingBrands =
+      lender === "amag"
+        ? indexableBrandPages(takeovers)
+            .filter((b) => b.slug !== brand.slug && brandLenderFor(b)?.lender === "amag")
+            .map((b) => ({ slug: b.slug, name: b.name }))
+        : [];
     return {
       stats: offers.length > 0 ? computeInventoryStats(offers.map((o) => o.offer)) : null,
-      updatedIso: zurichIsoDate(newest ?? null),
+      siblingBrands,
     };
   } catch (error) {
     console.error("Brand page live stats failed:", { dbBrands, error });
-    return { stats: null, updatedIso: null };
+    return { stats: null, siblingBrands: [] };
   }
 }
 
@@ -748,12 +784,12 @@ export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) =>
       sort: "dateDesc",
       pageSize: BRAND_PAGE_MAX_LISTINGS,
     }),
-    loadBrandLiveFacts(dbBrandsFor(brand)),
+    loadBrandLiveFacts(brand, dbBrandsFor(brand)),
   ]);
   // Strip undefined fields so Next can serialize the props.
   const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
   return {
-    props: { brand, listings, total: results.total, stats: live.stats, updatedIso: live.updatedIso },
+    props: { brand, listings, total: results.total, stats: live.stats, siblingBrands: live.siblingBrands },
     revalidate: 300,
   };
 };

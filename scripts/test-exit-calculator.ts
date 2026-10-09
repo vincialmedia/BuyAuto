@@ -42,8 +42,6 @@ import {
   MISSING_LENDER,
   MISSING_TERMINATION,
   MISSING_VALUE,
-  PLAN_KEYS,
-  planOptionLabel,
   type ExitResultView,
 } from "../src/lib/buyauto/exitCalculatorText";
 
@@ -157,6 +155,11 @@ assert.equal(parseChfInput("432,40"), 432.4);
 assert.equal(parseChfInput(""), null);
 assert.equal(parseChfInput("abc"), null);
 assert.equal(parseChfInput("-500"), null);
+assert.equal(parseChfInput("20'000.–"), 20000);
+assert.equal(parseChfInput("20'000.-"), 20000);
+assert.equal(parseChfInput("Fr. 20'000"), 20000);
+assert.equal(parseChfInput("Fr 1'250.50"), 1250.5);
+assert.equal(parseChfInput("20'000.–.–"), null);
 
 // --- Wording shown by the calculator (exitCalculatorText.ts) ---------------------
 const viewText = (v: ExitResultView) => [v.caption ?? "", v.headline, ...v.lines.map((l) => l.text)].join(" | ");
@@ -180,15 +183,6 @@ LENDER_TAKEOVER_FEES.forEach((lender, i) => {
 });
 assert.deepEqual(LENDER_OPTIONS[LENDER_OPTIONS.length - 1], { value: "andere", label: LENDER_OTHER_LABEL });
 assert.equal(LENDER_OTHER_LABEL, "Andere / weiss ich nicht");
-
-// Plan select: names and prices from the pricing source of truth, Standard first.
-assert.deepEqual(PLAN_KEYS, Object.keys(pricingPlans));
-assert.equal(PLAN_KEYS[0], "standard");
-for (const key of PLAN_KEYS) {
-  const label = planOptionLabel(key);
-  assert.ok(label.startsWith(`${pricingPlans[key].name}: CHF ${pricingPlans[key].price}`), label);
-}
-assert.equal(planOptionLabel("standard"), `Standard: CHF 0, ${pricingPlans.standard.duration_days} Tage online`);
 
 // Input errors only for something typed that is not an amount; empty is "not entered".
 assert.equal(amountInputError(""), null);
@@ -288,7 +282,6 @@ assert.equal(describeBuyoutAndSell(computeBuyoutAndSell(30000, null), 30000, nul
     describeBuyoutAndSell(computeBuyoutAndSell(2000, 1000), 2000, 1000),
   ];
   for (const v of all) assert.ok(!/gratis|kostenlos/i.test(viewText(v)), viewText(v));
-  for (const key of PLAN_KEYS) assert.ok(!/gratis|kostenlos/i.test(planOptionLabel(key)));
 }
 
 console.log("exitCalculator: all checks passed");

@@ -18,10 +18,6 @@ export const FOUNDER_TAKEOVER_TEXT =
   `seiner offenen Schuld und dem Wert des Autos. Er gab den Vertrag per Leasingübernahme ab und bezahlte der ` +
   `Leasinggesellschaft von BMW als bisheriger Leasingnehmer die volle Gebühr von ${FEE}, bevor es BuyAuto gab.`;
 
-/** Lender-table cell for BMW: the fee he paid, clearly not a published tariff. */
-export const FOUNDER_TAKEOVER_FEE_CELL =
-  `${FEE} im Jahr ${F.year} (${F.label.charAt(0).toLowerCase()}${F.label.slice(1)}, kein publizierter Tarif)`;
-
 export function FounderTakeoverNote({
   variant = "inline",
   className = "",

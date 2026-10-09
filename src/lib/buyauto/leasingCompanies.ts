@@ -66,7 +66,7 @@ const AMAG_ABLAUF: DatedSource = {
   stand: LENDER_RESEARCH_STAND,
 };
 
-const MULTILEASE_FAQ: DatedSource = {
+export const MULTILEASE_FAQ: DatedSource = {
   title: "Multilease, FAQ",
   url: "https://www.multilease.ch/de/faq",
   stand: LENDER_RESEARCH_STAND,
@@ -78,7 +78,7 @@ const MULTILEASE_RATGEBER: DatedSource = {
   stand: LENDER_RESEARCH_STAND,
 };
 
-const FINEWS_BANK_NOW: DatedSource = {
+export const FINEWS_BANK_NOW: DatedSource = {
   title: "finews.com, Porsche Financial Services, BANK-now und UBS (englisch)",
   url: "https://www.finews.com/news/english-news/68246-porsche-switzerland-porsche-financial-services-bank-now-ubs-credit-suisse-leasing-business",
   stand: "Stand August 2026",

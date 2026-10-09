@@ -29,21 +29,13 @@ export const MISSING_BUYOUT_AND_VALUE = "Trag die Ablösesumme und den Fahrzeugw
 export const MISSING_BUYOUT = "Trag die Ablösesumme ein, die dir deine Leasinggesellschaft nennt.";
 export const MISSING_VALUE = "Trag den Fahrzeugwert deines Autos ein.";
 
-export const INVALID_AMOUNT = "Gib den Betrag in Franken ein, nur Ziffern.";
+export const INVALID_AMOUNT = "Gib den Betrag in Franken ein, zum Beispiel 12'500.";
 
 /** The lender select: every lender of the fee list by name, then "Andere / weiss ich nicht". */
 export const LENDER_OPTIONS: readonly { value: ExitLenderKey; label: string }[] = [
   ...LENDER_TAKEOVER_FEES.map((lender) => ({ value: lender.key, label: lender.name })),
   { value: "andere", label: LENDER_OTHER_LABEL },
 ];
-
-export const PLAN_KEYS = Object.keys(pricingPlans) as Plan[];
-
-/** "Standard: CHF 0, 60 Tage online" (from the pricing source of truth). */
-export function planOptionLabel(plan: Plan): string {
-  const { name, price, duration_days } = pricingPlans[plan];
-  return duration_days ? `${name}: ${formatChf(price)}, ${duration_days} Tage online` : `${name}: ${formatChf(price)}`;
-}
 
 /** Whole francs as "CHF 8'450", amounts with Rappen as "CHF 432.40". */
 export function formatExitAmount(value: number): string {
