@@ -5,6 +5,9 @@ import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
 import { CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
 import { getPublicOfferIndex, liveTakeovers, type PublicOffer } from "@/services/listingsService";
 
+/** Canonical Leasingübernahme hub (self-canonical category view of /suche). */
+const LEASE_TAKEOVER_HUB_PATH = "/suche?dealType=lease_takeover";
+
 type ListingSitemapRow = Pick<PublicOffer, "id" | "brand" | "model" | "updated_at" | "created_at">;
 
 function toSitemapLastmod(value: string | null | undefined): string | null {
@@ -92,12 +95,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
 
   const garageUrls = garages.map((g) => urlTag(`${baseUrl}/${g.slug}`, g.lastmod)).join("");
 
-  // NOTE: the indexable category views (/suche?dealType=lease_takeover &
-  // /suche?dealType=direct_purchase) are intentionally NOT submitted here. Parameterized
-  // URLs in a sitemap read as index-bloat; these pages stay self-canonical and are reached
-  // via strong internal links (header, footer, home, hub, brand pages), so Google still
-  // crawls and indexes them — without the faceted-URL signal.
-
   // Programmatic brand landing pages — only the INDEXABLE ones (enough live
   // Leasingübernahmen by the Kaufart rule; thinner pages render noindex and stay out
   // of the map). indexableBrandPages is alias-aware (Mercedes rows -> mercedes-benz).
@@ -117,9 +114,21 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     })
     .join("");
 
+  // The Leasingübernahme hub is the canonical takeover category page
+  // (/suche?dealType=lease_takeover is self-canonical), so it is submitted like
+  // any content page. Its body is the live takeover inventory, so lastmod is the
+  // newest takeover change. The "&" must be escaped in XML. An empty hub renders
+  // noindex (soft-404 guard in suche.tsx), so it is only listed with live takeovers.
+  const hubLastmod = takeoverRows.map(listingLastmod).filter(Boolean).sort().pop() ?? null;
+  const hubUrl =
+    takeoverRows.length > 0
+      ? urlTag(`${baseUrl}${LEASE_TAKEOVER_HUB_PATH.replace(/&/g, "&amp;")}`, hubLastmod)
+      : "";
+
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       ${staticUrls}
+      ${hubUrl}
       ${brandUrls}
       ${garageUrls}
       ${listingUrls}
