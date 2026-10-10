@@ -2,7 +2,7 @@ import type { GetServerSideProps } from "next";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
-import { CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
+import { BRAND_PAGES_CONTENT_UPDATED, CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
 import { getPublicOfferIndex, liveTakeovers, type PublicOffer } from "@/services/listingsService";
 
 /** Canonical Leasingübernahme hub (self-canonical category view of /suche). */
@@ -98,15 +98,19 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // Programmatic brand landing pages — only the INDEXABLE ones (enough live
   // Leasingübernahmen by the Kaufart rule; thinner pages render noindex and stay out
   // of the map). indexableBrandPages is alias-aware (Mercedes rows -> mercedes-benz).
-  // lastmod = that brand's newest takeover change, since the page body is its inventory.
+  // lastmod = the later of that brand's newest takeover change (the page body is its
+  // inventory) and the last edit of the brand page content (BRAND_PAGES_CONTENT_UPDATED).
   const takeoverRows = liveTakeovers(offers);
 
   const brandUrls = indexableBrandPages(takeoverRows)
     .map((b) => {
       const brandLastmod =
-        takeoverRows
-          .filter((l) => typeof l.brand === "string" && b.dbBrands.includes(l.brand))
-          .map(listingLastmod)
+        [
+          BRAND_PAGES_CONTENT_UPDATED,
+          ...takeoverRows
+            .filter((l) => typeof l.brand === "string" && b.dbBrands.includes(l.brand))
+            .map(listingLastmod),
+        ]
           .filter(Boolean)
           .sort()
           .pop() ?? null;

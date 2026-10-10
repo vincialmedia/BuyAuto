@@ -1,10 +1,7 @@
 import { 
   Search, 
   Building2, 
-  Check,
-  ArrowRight,
-  Car,
-  PenLine
+  Check
 } from "lucide-react";
 import Link from "next/link";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
@@ -25,7 +22,7 @@ export function BuyerGarageSection() {
             Fahrzeuge von Garagen und Privatpersonen
           </h2>
           <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto">
-            Jedes Übernahme-Inserat weist Monatsrate und Restlaufzeit transparent aus – und die Übertragung läuft immer über die Leasinggesellschaft.
+            Die Übernahme-Inserate zeigen die Vertragsdaten, die der Abgeber angibt, etwa Monatsrate und Restlaufzeit. Die Übertragung selbst läuft über die Leasinggesellschaft.
           </p>
         </div>
 
@@ -53,12 +50,12 @@ export function BuyerGarageSection() {
 
               {/* Description */}
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                Entdecke Leasingübernahmen von Schweizer Garagen und privaten Anbietern – jedes Angebot mit klarer Monatsrate und Restlaufzeit.
+                Entdecke Leasingübernahmen von Schweizer Garagen und privaten Anbietern.
               </p>
 
               {/* Bullet Points */}
-              <ul className="space-y-3 mb-8">
-                {["Monatsrate und Restlaufzeit in jedem Inserat", "Übertragung über die Leasinggesellschaft", "Direkter Kontakt zum Anbieter"].map((item, index) => (
+              <ul className="space-y-3">
+                {["Filter nach Monatsrate und Restlaufzeit", "Übertragung über die Leasinggesellschaft", "Direkter Kontakt zum Anbieter"].map((item, index) => (
                   <li key={index} className="flex items-center gap-3 group/item">
                     <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center group-hover/item:bg-red-500/20 transition-colors duration-300">
                       <Check className="w-3.5 h-3.5 text-red-500" />
@@ -67,16 +64,6 @@ export function BuyerGarageSection() {
                   </li>
                 ))}
               </ul>
-
-              {/* CTA Button */}
-              <Link 
-                href="/suche"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 text-white font-semibold rounded-xl hover:bg-neutral-800 transition-all duration-300 group/btn hover:shadow-lg hover:shadow-neutral-900/20"
-              >
-                <Car className="w-5 h-5" />
-                Fahrzeuge entdecken
-                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
-              </Link>
             </div>
           </div>
 
@@ -101,16 +88,16 @@ export function BuyerGarageSection() {
 
               {/* Description */}
               <p className="text-neutral-400 mb-6 leading-relaxed">
-                Präsentiere dein Leasing oder deine Fahrzeuge dort, wo Menschen gezielt nach Leasingübernahmen suchen.
+                Inseriere dein Leasing oder deine Fahrzeuge auf einem Marktplatz für Leasingübernahmen.
               </p>
 
               {/* Bullet Points */}
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-3">
                 <li className="flex items-center gap-3 group/item">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
                     <Check className="w-3.5 h-3.5 text-red-400" />
                   </span>
-                  <span className="text-neutral-300 font-medium">Qualifizierte Anfragen</span>
+                  <span className="text-neutral-300 font-medium">Monatsrate, Restlaufzeit und Kaution im Inserat</span>
                 </li>
                 
                 <li className="flex items-center gap-3 group/item">
@@ -139,19 +126,9 @@ export function BuyerGarageSection() {
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center group-hover/item:bg-red-500/30 transition-colors duration-300">
                     <Check className="w-3.5 h-3.5 text-red-400" />
                   </span>
-                  <span className="text-neutral-300 font-medium">Mehr Sichtbarkeit</span>
+                  <span className="text-neutral-300 font-medium">Premium-Platzierung als Option</span>
                 </li>
               </ul>
-
-              {/* CTA Button */}
-              <Link 
-                href="/inserat-erstellen"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-all duration-300 group/btn hover:shadow-lg hover:shadow-red-500/30"
-              >
-                <PenLine className="w-5 h-5" />
-                Jetzt Inserieren
-                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
-              </Link>
             </div>
           </div>
 

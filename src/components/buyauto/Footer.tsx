@@ -87,7 +87,7 @@ export function Footer() {
               BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen.
             </p>
             <p className="text-neutral-400 text-sm leading-relaxed max-w-sm mb-6">
-              Leasing übernehmen oder ohne Verlust abgeben – daneben ausgewählte Fahrzeuge zum Direktkauf.
+              Leasing übernehmen oder abgeben. Daneben ausgewählte Fahrzeuge zum Direktkauf.
             </p>
             
             {/* Contact info */}

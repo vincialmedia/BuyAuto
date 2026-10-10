@@ -1,107 +1,156 @@
 import type { GetStaticProps } from "next";
 import Head from "next/head";
-import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
-import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import {
-  Check,
-  AlertTriangle,
-  FileText,
-  ShieldCheck,
-  TrendingDown,
-  Clock,
-  Users,
-  BadgeCheck,
-  MapPin,
-  DollarSign,
-  Search,
-  ArrowRight,
-  UserCheck,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Phone,
-  X,
-} from "lucide-react";
+import type { ReactNode } from "react";
+import { ArrowDown, ArrowRight } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { AuthorBox } from "@/components/buyauto/AuthorBox";
+import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
+import { ExitCalculator } from "@/components/buyauto/ExitCalculator";
+import { FounderTakeoverNote } from "@/components/buyauto/FounderTakeoverNote";
+import { SourceCitation, SourcesList } from "@/components/buyauto/SourceCitation";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { searchListings } from "@/services/listingsService";
-import type { Listing } from "@/lib/buyauto/types";
-import { Card, CardContent } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
-import { AMAG_LEASING, CEMBRA, CEMBRA_TRANSFER_DISPLAY, FEE_SENTENCE, FEE_SHORT } from "@/lib/buyauto/facts";
-import { formatChf } from "@/lib/buyauto/format";
+import { CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  AMAG_LEASING,
+  CA_AUTO_FINANCE,
+  CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FEES,
+  CANTONAL_FEES_HREF,
+  CEMBRA,
+  CEMBRA_TRANSFER_DISPLAY,
+  FAHRZEUGAUSWEIS_RANGE,
+  FOUNDER_TAKEOVER,
+  KKG,
+  LENDER_TAKEOVER_FEES,
+  MERCEDES_BENZ_FINANCIAL_SERVICES,
+  PORSCHE_FINANCIAL_SERVICES,
+  type FactSource,
+} from "@/lib/buyauto/facts";
+import { formatChf, formatChfRappen } from "@/lib/buyauto/format";
+import { pricingPlans } from "@/lib/buyauto/stripe_config";
+import type { Listing } from "@/lib/buyauto/types";
+import { searchListingsOrThrow } from "@/services/listingsService";
 
 type LeasingAbgebenPageProps = {
+  /** Newest live Leasingübernahmen; empty when there are none or the read failed (block hidden). */
   takeoverListings: Listing[];
 };
 
-// Calculator comparison box (Übernahme vs. Kündigung). Every figure comes from
-// the facts module: Cembra's published transfer fee and AMAG Leasing's flat
-// early-termination fee (ALB Ziff. 18) plus the retroactive recalculation (Ziff. 14.1).
-const TAKEOVER_FEE_LABEL = `Übertragungsgebühr bei ${CEMBRA.name} inkl. MWST, andere auf Anfrage`;
-const CANCELLATION_FEE_VALUE = `${formatChf(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung)} + Neuberechnung`;
-const CANCELLATION_FEE_LABEL = `Beispiel ${AMAG_LEASING.name}: Pauschale exkl. MWST, alle Raten werden rückwirkend neu berechnet`;
+const PAGE_PATH = "/leasing-abgeben-schweiz";
+const PAGE_URL = `https://www.buyauto.ch${PAGE_PATH}`;
+const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED[PAGE_PATH];
 
-// Single source for the visible «Aktualisiert am» badge and the Article dateModified.
-const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasing-abgeben-schweiz"];
+const TITLE = "Leasing abgeben oder vorzeitig auflösen: Rechner | BuyAuto";
+const H1 = "Leasing vorzeitig beenden: abgeben, auflösen oder rauskaufen";
+const DESCRIPTION =
+  "Leasing abgeben, vorzeitig auflösen oder rauskaufen: Der Ausstiegsrechner vergleicht die drei Wege mit deinen Zahlen und den publizierten Gebühren.";
 
 const CTA_HREF = "/inserat-erstellen";
-const CTA_LABEL = "Gratis Inserat erstellen";
+const CTA_LABEL = "Inserat erstellen";
 
-// Single source of truth for the FAQ: feeds BOTH the visible accordion and the
-// FAQPage JSON-LD, so the structured data can never drift from the page text.
-// `linkText` must appear verbatim in `a` — it is what the answer is split on to
-// turn that phrase into an internal link without duplicating the copy.
-type Faq = { q: string; a: string; href?: string; linkText?: string };
+const LENDER_TABLE_HREF = "/leasinguebernahme-kosten#leasinggesellschaften";
 
-const FAQS: Faq[] = [
+// ── Figures, all from facts.ts / stripe_config.ts ─────────────────────────────
+
+const AMAG_TERMINATION_FEE = formatChf(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung); // CHF 900
+const AMAG_PROVISIONAL_FEE = formatChf(AMAG_LEASING.feesExclVatChf.provisorischeAufloesungskosten); // CHF 250
+const PORSCHE_PROVISIONAL = PORSCHE_FINANCIAL_SERVICES.feeQuotes.provisorischeAufloesungsberechnung; // 4.8 b, CHF 125
+const CA_TRANSFER_INCL = formatChfRappen(CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF); // CHF 432.40
+const CEMBRA_TRANSFER = `rund ${CEMBRA_TRANSFER_DISPLAY} inkl. MWST`; // (500 + 75) × 1.081, rounded
+const STANDARD_PLAN = pricingPlans.standard;
+
+/** Lenders without a published takeover fee, in the order of the fee list. */
+const UNPUBLISHED_LENDER_NAMES = (() => {
+  const names = LENDER_TAKEOVER_FEES.filter((l) => l.feeExclVatChf === null).map((l) => l.name);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} und ${names[names.length - 1]}` : names.join("");
+})();
+
+/** Official tariffs behind the cheapest and the dearest Fahrzeugausweis (the range printed on the page). */
+const CANTONAL_RANGE_SOURCES: FactSource[] = [
+  ...FAHRZEUGAUSWEIS_RANGE.min.codes,
+  ...FAHRZEUGAUSWEIS_RANGE.max.codes,
+].flatMap((code) => {
+  const canton = CANTONAL_FEES.find((c) => c.code === code);
+  return canton ? [{ title: `Tarif ${canton.name}`, url: canton.sourceUrl, stand: canton.stand }] : [];
+});
+
+const STANDARD_PLAN_SENTENCE =
+  STANDARD_PLAN.price === 0
+    ? `Das Standard-Inserat ist gratis und ${STANDARD_PLAN.duration_days} Tage online.`
+    : `Das Standard-Inserat kostet ${formatChf(STANDARD_PLAN.price)}.`;
+
+// ── FAQ: one string feeds the accordion and the FAQPage JSON-LD ───────────────
+
+const FAQS: { q: string; a: string }[] = [
   {
-    q: "Kann ich mein Leasing einfach zurückgeben?",
-    a: "Nein, ein Leasingvertrag ist bindend. Eine vorzeitige Rückgabe ist meist mit sehr hohen Kosten (Vorfälligkeitsentschädigung) verbunden. Die Leasingübernahme ist oft die einzige kostengünstige Alternative.",
-    href: "/leasinguebernahme",
-    linkText: "Leasingübernahme",
+    q: "Kann ich mein Leasing zurückgeben?",
+    a:
+      `Einen privaten Leasingvertrag, der unter das Konsumkreditgesetz fällt, kannst du vorzeitig kündigen ` +
+      `(${KKG.terminationArticle} KKG). Was du dann noch bezahlst, berechnet deine Leasinggesellschaft.`,
   },
   {
-    q: "Wie schnell kann ich mein Leasing abgeben?",
-    a: "Das hängt davon ab, wie schnell du einen Übernehmer findest. Mit einem attraktiven Inserat auf BuyAuto oft in wenigen Wochen. Die bankseitige Abwicklung dauert dann meist nur wenige Tage.",
+    q: "Was kostet es, das Leasing per Übernahme abzugeben?",
+    a:
+      `${CEMBRA.name} publiziert für die Übertragung ${CEMBRA_TRANSFER}, ${CA_AUTO_FINANCE.name} ` +
+      `${CA_TRANSFER_INCL} inkl. MWST für die Vertragsumschreibung. ${UNPUBLISHED_LENDER_NAMES} publizieren ` +
+      `keinen Tarif, dort fragst du nach. Das Standard-Inserat auf BuyAuto kostet ${formatChf(STANDARD_PLAN.price)}.`,
   },
   {
-    q: "Was kostet mich die Leasingübernahme?",
-    a: `${FEE_SENTENCE} Die verbleibenden Raten zahlt ab der Umschreibung dein Nachfolger. Das Inserat auf BuyAuto ist gratis.`,
-  },
-  {
-    q: "Was passiert, wenn ich nicht mehr zahlen kann?",
-    a: "Kontaktiere sofort deine Leasingbank. Eine Leasingübernahme kann helfen, aus den Zahlungsverpflichtungen herauszukommen, bevor Schulden entstehen.",
-    href: "/leasinguebernahme",
-    linkText: "Leasingübernahme",
-  },
-  {
-    q: "Wer trägt die Kosten bei einer Vertragsübernahme?",
-    a: "Das ist Verhandlungssache. Oft übernimmt der Abgeber die Umschreibegebühren, um das Angebot für den Übernehmer attraktiver zu machen.",
-  },
-  {
-    q: "Was prüft der Leasinggeber?",
-    a: "Vor allem die Bonität des neuen Leasingnehmers. Er muss die Raten genauso sicher zahlen können wie du.",
-  },
-  {
-    q: "Warum ist die Leasingübernahme günstiger als die Kündigung?",
-    a: "Bei einer Kündigung musst du die Bank für den Zinsausfall entschädigen. Bei einer Leasingübernahme läuft der Vertrag einfach weiter – die Bank verliert kein Geld, daher fallen kaum Strafgebühren an.",
+    q: "Wer muss einer Leasingübernahme zustimmen?",
+    a:
+      `Deine Leasinggesellschaft. Bei ${PORSCHE_FINANCIAL_SERVICES.name} steht das in den Leasingbestimmungen ` +
+      `(${PORSCHE_FINANCIAL_SERVICES.transferClause}). Vorher prüft die Leasinggesellschaft die Bonität der Person, ` +
+      `die den Vertrag übernimmt. ${AMAG_LEASING.name} holt dafür unter anderem Auskünfte bei der ZEK und der IKO ` +
+      `ein (ALB ${AMAG_LEASING.clauses.bonitaetspruefung}).`,
   },
 ];
 
+// Every source behind a figure or rule on this page, for the list at the end.
+const PAGE_SOURCES: FactSource[] = [
+  CEMBRA.source,
+  CA_AUTO_FINANCE.source,
+  AMAG_LEASING.source,
+  PORSCHE_FINANCIAL_SERVICES.source,
+  MERCEDES_BENZ_FINANCIAL_SERVICES.source,
+  KKG.source,
+  ...CANTONAL_RANGE_SOURCES,
+];
+
+const ARTICLE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: H1,
+  description: DESCRIPTION,
+  author: { "@type": "Person", name: FOUNDER_TAKEOVER.person, jobTitle: FOUNDER_TAKEOVER.role },
+  publisher: {
+    "@type": "Organization",
+    name: "BuyAuto",
+    logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
+  },
+  dateModified: LAST_UPDATED_ISO,
+  mainEntityOfPage: PAGE_URL,
+};
+
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((faq) => ({
+    "@type": "Question",
+    name: faq.q,
+    acceptedAnswer: { "@type": "Answer", text: faq.a },
+  })),
+};
+
+const LINK_CLASS = "font-semibold text-primary hover:underline";
+
 /**
  * Every conversion click on this page goes through here, so GA4/Ads can tell
- * which slot actually produced the listing (hero vs. calculator vs. sticky bar).
+ * which slot produced the listing (hero, calculator, final).
  */
 function CtaButton({
   location,
@@ -110,14 +159,11 @@ function CtaButton({
 }: {
   location: string;
   className?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <Button asChild size="lg" className={className}>
-      <Link
-        href={CTA_HREF}
-        onClick={() => track("cta_click", { cta_id: location, page_path: "/leasing-abgeben-schweiz" })}
-      >
+      <Link href={CTA_HREF} onClick={() => track("cta_click", { cta_id: location, page_path: PAGE_PATH })}>
         {children}
         <ArrowRight className="w-5 h-5 ml-2" />
       </Link>
@@ -125,602 +171,321 @@ function CtaButton({
   );
 }
 
+function Quote({ children, source }: { children: ReactNode; source: FactSource }) {
+  return (
+    <figure className="my-3 border-l-4 border-neutral-200 pl-4">
+      <blockquote className="text-neutral-700">{children}</blockquote>
+      <figcaption className="mt-1 text-xs text-neutral-500">
+        <SourceCitation source={source} />
+      </figcaption>
+    </figure>
+  );
+}
+
 export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgebenPageProps) {
-  const [months, setMonths] = useState(24);
-  const [monthlyRate, setMonthlyRate] = useState(450);
-  const [showStickyCTA, setShowStickyCTA] = useState(false);
-  const [stickyDismissed, setStickyDismissed] = useState(false);
-
-  // The one number the calculator can state honestly: a takeover moves exactly
-  // these rates to the successor. Cancellation costs vary by bank and contract,
-  // so they are itemised qualitatively instead of invented as a precise figure.
-  const remainingObligation = months * monthlyRate;
-
-  // The hero CTA is visible for roughly the first screen; the bar takes over
-  // just after it scrolls away rather than waiting a full hero-height.
-  useEffect(() => {
-    const handleScroll = () => setShowStickyCTA(window.scrollY > 320);
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <>
       <Head>
-        <title>Leasing abgeben Schweiz 2026: legal & ohne Verlust raus | BuyAuto</title>
-        <meta
-          name="description"
-          content="Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen – und warum die Leasingübernahme oft die günstigste Lösung ist."
-        />
-        <link rel="canonical" href="https://www.buyauto.ch/leasing-abgeben-schweiz" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Article",
-              headline: "Leasing abgeben ohne teure Kündigung.",
-              author: { "@type": "Person", name: "Vincent Hänggi" },
-              publisher: {
-                "@type": "Organization",
-                name: "BuyAuto",
-                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
-              },
-              dateModified: LAST_UPDATED_ISO,
-              mainEntityOfPage: "https://www.buyauto.ch/leasing-abgeben-schweiz",
-            }),
-          }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "FAQPage",
-              mainEntity: FAQS.map((faq) => ({
-                "@type": "Question",
-                name: faq.q,
-                acceptedAnswer: { "@type": "Answer", text: faq.a },
-              })),
-            }),
-          }}
-        />
+        <title>{TITLE}</title>
+        <meta name="description" content={DESCRIPTION} />
+        <link rel="canonical" href={PAGE_URL} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ARTICLE_JSON_LD) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />
 
         {/* Open Graph */}
-        <meta property="og:title" content="Leasing abgeben Schweiz 2026: legal & ohne Verlust raus" />
-        <meta property="og:description" content="Leasing abgeben in der Schweiz leicht gemacht: Erfahre, wie du legal aus dem Leasing aussteigst, welche Optionen du hast, welche Kosten entstehen." />
+        <meta property="og:title" content={H1} />
+        <meta property="og:description" content={DESCRIPTION} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://www.buyauto.ch/leasing-abgeben-schweiz" />
+        <meta property="og:url" content={PAGE_URL} />
       </Head>
 
       <div className="bg-white">
-        {/* STICKY CTA BAR */}
-        <div
-          className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
-            showStickyCTA && !stickyDismissed ? "translate-y-0" : "translate-y-full"
-          }`}
-        >
-          <div className="bg-neutral-900 border-t border-white/10 shadow-2xl">
-            <div className="max-w-6xl mx-auto px-4 py-3">
-              <div className="flex items-center justify-between gap-4">
-                <div className="hidden md:block">
-                  <p className="text-white font-bold">Bereit, dein Leasing abzugeben?</p>
-                  <p className="text-white/60 text-sm">Gratis inserieren · 60 Tage online</p>
-                </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                  <CtaButton
-                    location="sticky_bar"
-                    className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-white font-bold px-6 py-6 rounded-xl"
-                  />
-                  <button
-                    onClick={() => setStickyDismissed(true)}
-                    className="md:hidden p-2 text-white/70 hover:bg-white/10 rounded-lg transition-colors shrink-0"
-                    aria-label="Schliessen"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* BREADCRUMBS — kept for SEO, but as a thin bar so it costs the hero
-            almost no vertical space. */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3">
           <Breadcrumbs
             items={[
               { name: "Home", href: "/" },
               { name: "Leasingübernahme", href: "/leasinguebernahme" },
-              { name: "Leasing abgeben", href: "/leasing-abgeben-schweiz" },
+              { name: "Leasing abgeben", href: PAGE_PATH },
             ]}
           />
         </div>
 
-        {/* HERO — the whole offer (headline, promise, CTA, proof) plus the
-            calculator must land in the first screenful. Nothing decorative is
-            allowed to push the CTA below the fold. */}
-        <section className="relative overflow-hidden">
-          {/* Light, cheap background. The previous 2.5 MB handshake PNG was the
-              LCP element and sat under a near-opaque white gradient, so it cost
-              load time and read as empty space. */}
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-neutral-50 to-white" />
-          <div className="absolute top-0 right-0 -z-10 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
+        {/* 1. ANSWER FIRST */}
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-[1.75rem] xl:text-3xl font-black text-neutral-900 tracking-tight leading-tight">
+            {H1}
+          </h1>
+          <div className="mt-4 max-w-3xl">
+            <p className="text-lg text-neutral-700 leading-relaxed">
+              Aus einem laufenden Leasing kommst du auf drei Wegen raus: Jemand übernimmt deinen Vertrag per
+              Leasingübernahme, du löst ihn vorzeitig auf, oder du kaufst das Auto raus und verkaufst es. Was dich jeder
+              Weg kostet, hängt von deiner Leasinggesellschaft und deinem Vertrag ab. Der Ausstiegsrechner stellt die
+              drei Wege mit deinen Zahlen nebeneinander.
+            </p>
+            <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
+              <CtaButton
+                location="hero"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-bold px-6 rounded-xl"
+              />
+              <a
+                href="#rechner"
+                className="inline-flex items-center justify-center gap-1.5 px-2 py-2 text-sm font-semibold text-neutral-700 hover:text-neutral-900 hover:underline"
+              >
+                Zum Ausstiegsrechner
+                <ArrowDown className="w-4 h-4" />
+              </a>
+            </div>
+            <AuthorBox path={PAGE_PATH} className="mt-6" />
+          </div>
+        </section>
 
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 lg:pt-8 lg:pb-16">
-            <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-12 items-center">
-              {/* Left: offer */}
-              <div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-neutral-900 tracking-tight leading-[1.05] mb-5">
-                  Leasing abgeben –<br />
-                  <span className="text-primary">ohne teure Kündigung.</span>
-                </h1>
+        {/* 2. AUSSTIEGSRECHNER */}
+        <section id="rechner" aria-labelledby="rechner-heading" className="scroll-mt-20 bg-neutral-50 py-8 md:py-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 id="rechner-heading" className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
+              Ausstiegsrechner
+            </h2>
+            <p className="mt-2 max-w-3xl text-neutral-700 leading-relaxed">
+              Trag ein, was du von deiner Leasinggesellschaft schon weisst. Jeder Weg rechnet nur mit den Feldern, die
+              er braucht, und leere Felder füllt der Rechner nicht mit Annahmen.
+            </p>
 
-                <p className="text-lg md:text-xl text-neutral-600 leading-relaxed mb-7">
-                  Übergib deinen Leasingvertrag an eine Nachfolgerin oder einen Nachfolger: Sie übernehmen die
-                  Restraten. Einmalig fällt die Übertragungsgebühr deiner Leasinggesellschaft an – {FEE_SHORT}.
-                </p>
-
-                <CtaButton
-                  location="hero"
-                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 px-8 py-7 text-lg font-bold rounded-2xl"
-                />
-                <p className="mt-3 text-sm text-neutral-500">
-                  Gratis · 60 Tage online · Login erst beim Veröffentlichen
-                </p>
-
-                <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-neutral-700">
-                  {[
-                    "Keine Vorfälligkeitsentschädigung",
-                    "Bankseitige Abwicklung in wenigen Tagen",
-                    "100% legal – der Vertrag läuft weiter",
-                  ].map((item) => (
-                    <li key={item} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600 shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Right: the calculator, promoted out of the middle of the page.
-                  It is the one element that makes the offer personal ("these are
-                  YOUR CHF 10'800"), so it belongs next to the CTA, not 1000px
-                  below it. */}
-              <div id="calculator" className="scroll-mt-24">
-                <div className="bg-white rounded-3xl border border-neutral-200 shadow-xl shadow-neutral-900/5 p-6 md:p-8">
-                  <h2 className="text-xl font-black text-neutral-900 mb-1">Was kostet dich der Ausstieg?</h2>
-                  <p className="text-sm text-neutral-500 mb-6">
-                    Stell deinen Vertrag ein – transparent, ohne Schönrechnen.
-                  </p>
-
-                  <div className="space-y-5 mb-6">
-                    <div>
-                      <div className="flex items-baseline justify-between mb-2">
-                        <label className="text-sm font-semibold text-neutral-700">Restlaufzeit</label>
-                        <span className="text-lg font-black text-neutral-900">{months} Monate</span>
-                      </div>
-                      <Slider
-                        value={[months]}
-                        onValueChange={(value) => setMonths(value[0])}
-                        min={6}
-                        max={48}
-                        step={6}
-                        aria-label="Restlaufzeit in Monaten"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-baseline justify-between mb-2">
-                        <label className="text-sm font-semibold text-neutral-700">Monatsrate</label>
-                        <span className="text-lg font-black text-neutral-900">CHF {monthlyRate}</span>
-                      </div>
-                      <Slider
-                        value={[monthlyRate]}
-                        onValueChange={(value) => setMonthlyRate(value[0])}
-                        min={150}
-                        max={1500}
-                        step={50}
-                        aria-label="Monatsrate in Franken"
-                      />
-                    </div>
-                  </div>
-
-                  {/* The honest anchor both options are measured against */}
-                  <div className="rounded-2xl bg-neutral-900 p-5 text-center mb-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-1">
-                      Restraten, die dein Nachfolger übernimmt
-                    </p>
-                    <p className="text-3xl md:text-4xl font-black text-white">
-                      {/* Deterministic formatting: toLocaleString("de-CH") uses
-                          whichever apostrophe the runtime's ICU ships (' vs ’),
-                          and a server/browser mismatch threw hydration error
-                          #425 on this page. */}
-                      CHF {String(remainingObligation).replace(/\B(?=(\d{3})+(?!\d))/g, "'")}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="rounded-2xl border-2 border-green-300 bg-green-50 p-4">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-                        <span className="text-xs font-bold text-neutral-900">Übernahme</span>
-                      </div>
-                      <p className="text-xl font-black text-green-700">{CEMBRA_TRANSFER_DISPLAY}</p>
-                      <p className="text-xs text-neutral-600 mt-0.5">{TAKEOVER_FEE_LABEL}</p>
-                    </div>
-                    <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-4">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <XCircle className="w-4 h-4 text-red-600 shrink-0" />
-                        <span className="text-xs font-bold text-neutral-900">Kündigung</span>
-                      </div>
-                      <p className="text-xl font-black text-red-600">{CANCELLATION_FEE_VALUE}</p>
-                      <p className="text-xs text-neutral-600 mt-0.5">{CANCELLATION_FEE_LABEL}</p>
-                    </div>
-                  </div>
-
+            <div className="mt-5">
+              <ExitCalculator
+                footer={
                   <CtaButton
                     location="calculator"
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 rounded-2xl"
+                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-bold px-6 rounded-xl"
                   />
-                  <p className="mt-3 text-xs text-neutral-500 text-center">
-                    Richtwerte zur Orientierung. Massgebend sind dein Leasingvertrag und die Konditionen deiner
-                    Leasingbank.
+                }
+              />
+            </div>
+
+            <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_22rem]">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-900">So rechnet der Rechner</h3>
+                  <dl className="mt-3 space-y-3 text-sm text-neutral-700 leading-relaxed">
+                    <div>
+                      <dt className="font-semibold text-neutral-900">Leasingübernahme</dt>
+                      <dd>
+                        Die Gebühr, die deine Leasinggesellschaft für die Übertragung des Vertrags publiziert, inkl.
+                        MWST, plus der Preis deines Inserats auf BuyAuto. Die Gebühren stammen aus den Gebührenlisten
+                        und Leasingbestimmungen der Leasinggesellschaften (
+                        <Link href={LENDER_TABLE_HREF} className={LINK_CLASS}>
+                          Tabelle der Leasinggesellschaften
+                        </Link>
+                        ). Publiziert eine Leasinggesellschaft keine Gebühr, zeigt der Rechner keinen Betrag dafür.{" "}
+                        {STANDARD_PLAN_SENTENCE} Die kantonale Gebühr für den neuen Fahrzeugausweis der übernehmenden
+                        Person ist nicht eingerechnet.
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-neutral-900">Vorzeitige Auflösung</dt>
+                      <dd>
+                        Die Nachzahlung, die deine Leasinggesellschaft in der Auflösungsofferte nennt. Der Rechner
+                        übernimmt den Betrag so, wie du ihn eingibst.
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-neutral-900">Rauskaufen und verkaufen</dt>
+                      <dd>
+                        Ablösesumme minus Fahrzeugwert. Ist die Ablösesumme höher, zeigt der Rechner, was dir nach dem
+                        Verkauf fehlt; ist das Auto mehr wert, was dir bleibt. Der Fahrzeugwert ist deine Schätzung, der
+                        Verkaufspreis kann davon abweichen.
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-900">So kommst du zu den Zahlen</h3>
+                  <p className="mt-2 text-sm text-neutral-700 leading-relaxed">
+                    Die Nachzahlung und die Ablösesumme kennt nur deine Leasinggesellschaft. Verlang bei ihr eine
+                    Auflösungsofferte mit der Nachzahlung, und frag nach der Ablösesumme, wenn du das Auto rauskaufen
+                    willst. Die Berechnung kann etwas kosten:
+                  </p>
+                  <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-neutral-700 leading-relaxed">
+                    <li>
+                      {AMAG_LEASING.name} verrechnet für die Berechnung der provisorischen Auflösungskosten{" "}
+                      {AMAG_PROVISIONAL_FEE} exkl. MWST (ALB {AMAG_LEASING.clauses.aufloesungsgebuehren}).{" "}
+                      <SourceCitation source={AMAG_LEASING.source} className="text-xs text-neutral-500" />
+                    </li>
+                    <li>
+                      {PORSCHE_FINANCIAL_SERVICES.name}: «{PORSCHE_PROVISIONAL.quote}» (ALB {PORSCHE_PROVISIONAL.clause}
+                      ).{" "}
+                      <SourceCitation source={PORSCHE_FINANCIAL_SERVICES.source} className="text-xs text-neutral-500" />
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <FounderTakeoverNote variant="box" className="order-first self-start lg:order-none" />
+            </div>
+          </div>
+        </section>
+
+        {/* 3. THE THREE WAYS */}
+        <section aria-labelledby="wege-heading" className="py-8 md:py-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <h2 id="wege-heading" className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
+                Drei Wege aus dem Leasing
+              </h2>
+
+              <div id="leasinguebernahme" className="scroll-mt-20 mt-6">
+                <h3 className="text-xl font-bold text-neutral-900">Leasingübernahme</h3>
+                <div className="mt-2 space-y-3 text-neutral-700 leading-relaxed">
+                  <p>
+                    Eine andere Person übernimmt deinen Leasingvertrag. Deine Leasinggesellschaft muss zustimmen. Bei{" "}
+                    {PORSCHE_FINANCIAL_SERVICES.name} steht in den Leasingbestimmungen (
+                    {PORSCHE_FINANCIAL_SERVICES.transferClause}):
+                  </p>
+                  <Quote source={PORSCHE_FINANCIAL_SERVICES.source}>«{PORSCHE_FINANCIAL_SERVICES.transferQuote}»</Quote>
+                  <p>
+                    Vor der Zustimmung prüft die Leasinggesellschaft die Bonität der Person, die übernimmt.{" "}
+                    {AMAG_LEASING.name} holt dafür unter anderem Auskünfte bei der ZEK und der IKO ein (ALB{" "}
+                    {AMAG_LEASING.clauses.bonitaetspruefung}), {CA_AUTO_FINANCE.name} prüft bei IKO und ZEK (AVB{" "}
+                    {CA_AUTO_FINANCE.clauses.bonitaetspruefung}).{" "}
+                    <span className="text-xs text-neutral-500">
+                      <SourceCitation source={AMAG_LEASING.source} />;{" "}
+                      <SourceCitation source={CA_AUTO_FINANCE.source} prefix="" />
+                    </span>
+                  </p>
+                  <p>
+                    {CEMBRA.name} publiziert für die Übertragung {CEMBRA_TRANSFER}, {CA_AUTO_FINANCE.name} (der
+                    Leasingpartner von Fiat) {CA_TRANSFER_INCL} inkl. MWST für die Vertragsumschreibung.{" "}
+                    {UNPUBLISHED_LENDER_NAMES} publizieren keinen Tarif. Alle Gebühren mit Quellen stehen in der{" "}
+                    <Link href={LENDER_TABLE_HREF} className={LINK_CLASS}>
+                      Tabelle der Leasinggesellschaften
+                    </Link>
+                    . Für die übernehmende Person kommt der neue Fahrzeugausweis dazu: je nach Kanton{" "}
+                    {CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}, siehe{" "}
+                    <Link href={CANTONAL_FEES_HREF} className={LINK_CLASS}>
+                      Gebühren nach Kanton
+                    </Link>
+                    .{" "}
+                    <span className="text-xs text-neutral-500">
+                      <SourceCitation source={CEMBRA.source} />;{" "}
+                      <SourceCitation source={CA_AUTO_FINANCE.source} prefix="" />
+                    </span>
+                  </p>
+                  <p>
+                    Wie du als bisheriger Leasingnehmer vorgehst, steht in der Anleitung{" "}
+                    <Link href="/leasingvertrag-uebertragen" className={LINK_CLASS}>
+                      Leasingvertrag übertragen
+                    </Link>
+                    . Wie eine Übernahme für beide Seiten abläuft, erklärt der{" "}
+                    <Link href="/leasinguebernahme" className={LINK_CLASS}>
+                      Ratgeber zur Leasingübernahme
+                    </Link>
+                    .
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* OPTIONS COMPARISON — the decision the visitor came to make, so it is
-            the first thing under the hero. */}
-        <section className="py-16 px-4 bg-white">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12 max-w-3xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-4">
-                Deine 3 Optionen im Vergleich
-              </h2>
-              <p className="text-neutral-600 text-lg leading-relaxed">
-                Du hast drei Wege aus dem Leasing: die Übernahme durch eine Nachfolgerin oder einen Nachfolger, die
-                vorzeitige Kündigung (teuer) oder den Verkauf mit Ablösung. Am günstigsten ist meist die
-                Leasingübernahme.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Option 1: Cancellation */}
-              <Card className="border-2 border-red-100 rounded-3xl overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="bg-red-50 p-6">
-                    <div className="bg-red-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
-                      <XCircle className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Vorzeitige Kündigung</h3>
-                    <div className="text-xs font-bold text-red-600 bg-red-200 inline-block px-3 py-1 rounded-full">
-                      TEUERSTE OPTION
-                    </div>
-                  </div>
-                  <div className="p-6 bg-white">
-                    <ul className="space-y-3">
-                      {[
-                        "Restschuld für verbleibende Vertragsdauer",
-                        "Vorfälligkeitsentschädigung",
-                        "Rücknahmekosten",
-                        "Kosten bei Schäden",
-                      ].map((item) => (
-                        <li key={item} className="flex items-start gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0" />
-                          <span className="text-neutral-700 text-sm">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-sm text-neutral-500 italic mt-5">Fast immer die teuerste Lösung</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Option 2: Selling */}
-              <Card className="border-2 border-orange-100 rounded-3xl overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="bg-orange-50 p-6">
-                    <div className="bg-orange-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
-                      <AlertTriangle className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Auto verkaufen</h3>
-                    <div className="text-xs font-bold text-orange-600 bg-orange-200 inline-block px-3 py-1 rounded-full">
-                      UNSICHER
-                    </div>
-                  </div>
-                  <div className="p-6 bg-white">
-                    <ul className="space-y-3">
-                      {[
-                        "Niedriger Ankaufpreis",
-                        "Risiko eines Wertverlusts",
-                        "Weiterlaufende Raten",
-                        "Unerwartete Zusatzgebühren",
-                      ].map((item) => (
-                        <li key={item} className="flex items-start gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-2 shrink-0" />
-                          <span className="text-neutral-700 text-sm">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-sm text-neutral-500 italic mt-5">Nur bei hohem Marktwert sinnvoll</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Option 3: Transfer — the recommended path, visually dominant */}
-              <Card className="border-2 border-green-400 rounded-3xl overflow-hidden shadow-xl relative lg:-mt-3">
-                <div className="absolute top-4 right-4 z-10">
-                  <div className="bg-green-600 text-white text-xs font-black px-3 py-1.5 rounded-full">EMPFOHLEN</div>
+              <div id="vorzeitige-aufloesung" className="scroll-mt-20 mt-8">
+                <h3 className="text-xl font-bold text-neutral-900">Vorzeitige Auflösung</h3>
+                <div className="mt-2 space-y-3 text-neutral-700 leading-relaxed">
+                  <p>
+                    Einen privaten Leasingvertrag, der unter das Konsumkreditgesetz fällt, kannst du vorzeitig kündigen
+                    ({KKG.terminationArticle} KKG). Was du dann noch bezahlst, berechnet deine Leasinggesellschaft.{" "}
+                    <SourceCitation source={KKG.source} className="text-xs text-neutral-500" />
+                  </p>
+                  <p>
+                    {AMAG_LEASING.name} verrechnet bei einer vorzeitigen Vertragsauflösung pauschal{" "}
+                    {AMAG_TERMINATION_FEE} exkl. MWST (ALB {AMAG_LEASING.clauses.aufloesungsgebuehren}) und berechnet
+                    die Raten rückwirkend neu ({AMAG_LEASING.clauses.rueckwirkendeNeuberechnung}).{" "}
+                    <SourceCitation source={AMAG_LEASING.source} className="text-xs text-neutral-500" />
+                  </p>
+                  <p>{MERCEDES_BENZ_FINANCIAL_SERVICES.name} schreibt zu privaten Leasingverträgen:</p>
+                  <Quote source={MERCEDES_BENZ_FINANCIAL_SERVICES.source}>
+                    «{MERCEDES_BENZ_FINANCIAL_SERVICES.terminationQuote}»
+                  </Quote>
                 </div>
-                <CardContent className="p-0">
-                  <div className="bg-green-50 p-6">
-                    <div className="bg-green-600 text-white w-11 h-11 rounded-2xl flex items-center justify-center mb-4">
-                      <BadgeCheck className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-xl font-black text-neutral-900 mb-2">Leasingübernahme</h3>
-                    <div className="text-xs font-bold text-green-700 bg-green-200 inline-block px-3 py-1 rounded-full">
-                      BESTE LÖSUNG
-                    </div>
-                  </div>
-                  <div className="p-6 bg-white">
-                    <ul className="space-y-3 mb-6">
-                      {[
-                        "Schneller Ausstieg",
-                        "Keine Strafzahlungen",
-                        "Kein Verkauf nötig",
-                        "Win-Win für beide Seiten",
-                      ].map((item) => (
-                        <li key={item} className="flex items-start gap-3">
-                          <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                          <span className="text-neutral-700 text-sm font-medium">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <CtaButton
-                      location="options_compare"
-                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 rounded-2xl"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <p className="text-center text-neutral-600 mt-8">
-              Wie die Übernahme im Detail funktioniert, liest du unter{" "}
-              <Link href="/leasinguebernahme" className="text-primary font-semibold hover:underline">
-                Leasingübernahme
-              </Link>
-              .
-            </p>
-          </div>
-        </section>
-
-        {/* PROCESS — five steps in one horizontal band instead of five
-            full-width stacked cards. */}
-        <section id="ablauf" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-4">So funktioniert&apos;s</h2>
-              <p className="text-neutral-600 text-lg">
-                In 5 Schritten zum Ziel –{" "}
-                <Link href="/leasingvertrag-uebertragen" className="text-primary font-semibold hover:underline">
-                  so wird der Leasingvertrag übertragen
-                </Link>
-              </p>
-            </div>
-
-            <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-              {[
-                { step: 1, title: "Vertrag prüfen", desc: "Restwert, Laufzeit und Kilometerstand checken", icon: FileText },
-                { step: 2, title: "Bank kontaktieren", desc: "Konditionen für die Übernahme klären", icon: Phone },
-                { step: 3, title: "Inserat erstellen", desc: "Auf BuyAuto.ch veröffentlichen und Nachfolger finden", icon: Search },
-                { step: 4, title: "Bonitätsprüfung", desc: "Leasingbank prüft den Übernehmer", icon: ShieldCheck },
-                { step: 5, title: "Umschreibung", desc: "Vertrag umschreiben, Fahrzeug übergeben – fertig!", icon: CheckCircle },
-              ].map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <li
-                    key={item.step}
-                    className="bg-white rounded-2xl p-6 border border-neutral-200 hover:border-primary/40 hover:shadow-lg transition-all duration-300"
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-black shrink-0">
-                        {item.step}
-                      </span>
-                      <IconComponent className="w-5 h-5 text-primary" />
-                    </div>
-                    <h3 className="text-lg font-black text-neutral-900 mb-2">{item.title}</h3>
-                    <p className="text-neutral-600 text-sm leading-relaxed">{item.desc}</p>
-                  </li>
-                );
-              })}
-            </ol>
-
-            <div className="mt-10 text-center">
-              <CtaButton
-                location="process"
-                className="bg-primary hover:bg-primary/90 text-white font-bold px-10 py-7 text-lg rounded-2xl shadow-lg shadow-primary/25"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* LIVE TAKEOVER LISTINGS — real, current social proof. Deliberately no
-            link to /suche here: this page's job is to produce inserate. */}
-        {takeoverListings.length > 0 && (
-          <section className="py-16 px-4 bg-white">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-10">
-                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
-                  <Users className="w-4 h-4" />
-                  Live auf BuyAuto
-                </div>
-                <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-4">
-                  Diese Fahrer geben gerade ihr Leasing ab
-                </h2>
-                <p className="text-neutral-600 text-lg max-w-2xl mx-auto">
-                  Echte, aktuelle Inserate – so präsentiert sich dein Leasing möglichen Übernehmern.
-                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div id="rauskaufen" className="scroll-mt-20 mt-8">
+                <h3 className="text-xl font-bold text-neutral-900">Rauskaufen und verkaufen</h3>
+                <p className="mt-2 text-neutral-700 leading-relaxed">
+                  Du zahlst der Leasinggesellschaft die Ablösesumme und verkaufst das Auto danach selbst. Was dir am
+                  Ende fehlt oder bleibt, ist die Differenz zwischen Ablösesumme und Verkaufspreis. Die Ablösesumme
+                  nennt dir deine Leasinggesellschaft, den Wert deines Autos schätzt du mit dem{" "}
+                  <Link href="/eintauschwert-rechner" className={LINK_CLASS}>
+                    Eintauschwert-Rechner
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 4. LIVE LISTINGS: only with live data, no fallback, no CTA */}
+        {takeoverListings.length > 0 && (
+          <section aria-labelledby="live-heading" className="bg-neutral-50 py-8 md:py-10">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Live auf BuyAuto</p>
+              <h2 id="live-heading" className="mt-1 text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
+                Aktuelle Leasingübernahmen auf BuyAuto
+              </h2>
+              <p className="mt-2 max-w-3xl text-neutral-700">
+                Die neuesten Inserate für eine Leasingübernahme, so wie Interessierte sie auf BuyAuto sehen.
+              </p>
+              <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {takeoverListings.map((listing) => (
                   <ModernListingCard key={listing.id} listing={listing} />
                 ))}
-              </div>
-
-              <div className="mt-10 text-center">
-                <CtaButton
-                  location="live_listings"
-                  className="bg-primary hover:bg-primary/90 text-white font-bold px-10 py-7 text-lg rounded-2xl shadow-lg shadow-primary/25"
-                />
               </div>
             </div>
           </section>
         )}
 
-        {/* WHY — kept for topical coverage, compressed from six large cards to a
-            compact grid so it costs a fraction of the scroll depth. */}
-        <section id="warum" className="py-16 px-4 bg-neutral-50 scroll-mt-20">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-3">Warum Leasing abgeben?</h2>
-              <p className="text-neutral-600 text-lg">Die häufigsten Gründe in der Schweiz</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { icon: DollarSign, title: "Finanzielle Belastung", desc: "Raten werden zu hoch oder Budget ändert sich" },
-                { icon: UserCheck, title: "Lebenssituation", desc: "Baby, Umzug, neue Prioritäten" },
-                { icon: MapPin, title: "Kilometer überschritten", desc: "Höherer Verbrauch als geplant" },
-                { icon: FileText, title: "Versicherung zu teuer", desc: "Unerwartete Zusatzkosten" },
-                { icon: TrendingDown, title: "Auto nicht nötig", desc: "Homeoffice oder ÖV reicht" },
-                { icon: AlertCircle, title: "Vertrag läuft aus", desc: "Neue Modelle bevorzugt" },
-              ].map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <div key={item.title} className="flex items-start gap-3 bg-white rounded-2xl p-5 border border-neutral-200">
-                    <div className="bg-primary/10 w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
-                      <IconComponent className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-neutral-900 mb-1">{item.title}</h3>
-                      <p className="text-neutral-600 text-sm leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-8 bg-white border-l-4 border-primary p-6 rounded-2xl">
-              <div className="flex items-start gap-4">
-                <AlertTriangle className="w-6 h-6 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-black text-neutral-900 mb-1">Wichtig zu wissen:</p>
-                  <p className="text-neutral-700 leading-relaxed">
-                    Ein Leasingvertrag ist rechtlich bindend – einfach zurückgeben ist nicht möglich. Aber es gibt
-                    legale, kostengünstige Alternativen: Die wichtigste ist die Übertragung an eine Nachfolgerin
-                    oder einen Nachfolger – wie das geht, zeigt dieser Leitfaden Schritt für Schritt.
-                  </p>
-                </div>
-              </div>
+        {/* 5. FAQ (same strings as the FAQPage JSON-LD) */}
+        <section id="faq" aria-labelledby="faq-heading" className="scroll-mt-20 py-8 md:py-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <h2 id="faq-heading" className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
+                Häufige Fragen
+              </h2>
+              <Accordion type="single" collapsible className="mt-4 w-full space-y-2">
+                {FAQS.map((faq, i) => (
+                  <AccordionItem
+                    key={faq.q}
+                    value={`item-${i}`}
+                    className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 data-[state=open]:bg-white"
+                  >
+                    <AccordionTrigger className="text-left text-base font-bold text-neutral-900 hover:no-underline">
+                      {faq.q}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-base text-neutral-700 leading-relaxed">{faq.a}</AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           </div>
         </section>
 
-        {/* FAQ — the last objections before the closing CTA. */}
-        <section id="faq" className="py-16 px-4 bg-white scroll-mt-20">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 mb-3">Häufige Fragen</h2>
-              <p className="text-neutral-600 text-lg">Alles, was du wissen musst</p>
-            </div>
-
-            <Accordion type="single" collapsible className="w-full space-y-3">
-              {FAQS.map((faq, i) => (
-                <AccordionItem
-                  key={faq.q}
-                  value={`item-${i}`}
-                  className="bg-neutral-50 rounded-2xl border border-neutral-200 px-6 data-[state=open]:bg-white data-[state=open]:shadow-md transition-all"
-                >
-                  <AccordionTrigger className="text-left font-bold text-neutral-900 hover:no-underline py-5">
-                    {faq.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-neutral-600 leading-relaxed pb-5 text-base">
-                    {faq.href ? (
-                      <>
-                        {faq.a.split(faq.linkText)[0]}
-                        <Link href={faq.href} className="text-primary font-semibold hover:underline">
-                          {faq.linkText}
-                        </Link>
-                        {faq.a.split(faq.linkText)[1]}
-                      </>
-                    ) : (
-                      faq.a
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-
-            <p className="text-center text-sm text-neutral-400 mt-8">
-              Aktualisiert am {formatSwissDate(LAST_UPDATED_ISO)}
-            </p>
-          </div>
-        </section>
-
-        {/* FINAL CTA — one action, no competing button. */}
-        <section className="py-20 bg-neutral-900 px-4 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-0 w-96 h-96 bg-primary rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary rounded-full blur-3xl" />
-          </div>
-
-          <div className="max-w-3xl mx-auto text-center relative z-10">
-            <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-5">
-              Gib dein Leasing ab –<br />
-              <span className="text-primary">legal, schnell & günstig</span>
-            </h2>
-            <p className="text-neutral-300 text-lg leading-relaxed mb-8">
-              Die Leasingübernahme ist für die meisten Fahrer die beste Lösung. Keine versteckten Kosten, keine
-              Komplikationen.
-            </p>
-            <CtaButton
-              location="final"
-              className="w-full sm:w-auto h-16 px-10 text-xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/30"
-            />
-            <p className="mt-4 text-sm text-neutral-400">
-              Gratis · 60 Tage online ·{" "}
-              <Link href="/leasinguebernahme" className="text-neutral-300 underline hover:text-white">
-                Mehr über die Leasingübernahme
-              </Link>
-            </p>
-
-            <div className="pt-12 flex flex-wrap items-center justify-center gap-8 text-neutral-400 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <span>100% legal</span>
+        {/* 6. FINAL CTA + SOURCES */}
+        <section className="pb-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+                <h2 className="text-xl font-bold text-neutral-900">Leasing per Übernahme abgeben</h2>
+                <p className="mt-2 text-neutral-700 leading-relaxed">
+                  Für eine Leasingübernahme brauchst du jemanden, der deinen Vertrag übernehmen will. Auf BuyAuto
+                  erstellst du dafür ein Inserat mit Rate, Restlaufzeit und Fahrzeug.
+                </p>
+                <CtaButton
+                  location="final"
+                  className="mt-4 w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-bold px-6 rounded-xl"
+                />
               </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-green-400" />
-                <span>Sicher & geprüft</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-green-400" />
-                <span>In wenigen Tagen</span>
-              </div>
+
+              <SourcesList sources={PAGE_SOURCES} className="mt-8" />
             </div>
           </div>
         </section>
-
-        {/* The sticky bar overlaps the page bottom; keep the last section clear
-            of it so the footer links stay reachable on mobile. */}
-        <div className="h-20" aria-hidden />
       </div>
     </>
   );
@@ -728,12 +493,13 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
 
 export const getStaticProps: GetStaticProps<LeasingAbgebenPageProps> = async () => {
   try {
-    const results = await searchListings({ dealType: "lease_takeover", sort: "dateDesc" });
+    const results = await searchListingsOrThrow({ dealType: "lease_takeover", sort: "dateDesc" });
     // Newest three takeovers; strip undefined fields so Next can serialize.
     const takeoverListings = JSON.parse(JSON.stringify(results.items.slice(0, 3))) as Listing[];
-    return { props: { takeoverListings }, revalidate: 3600 };
+    return { props: { takeoverListings }, revalidate: 300 };
   } catch (error) {
-    console.error("Leasing abgeben landing: takeover fetch failed:", error);
-    return { props: { takeoverListings: [] }, revalidate: 3600 };
+    // No live data: the live block is hidden (no fallback values).
+    console.error("Leasing abgeben: live takeover read failed:", error);
+    return { props: { takeoverListings: [] }, revalidate: 300 };
   }
 };
