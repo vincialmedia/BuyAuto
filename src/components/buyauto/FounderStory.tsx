@@ -47,7 +47,6 @@ export function FounderStory() {
               {/* Floating badge */}
               <div className="absolute -bottom-2 -right-2 lg:bottom-6 lg:-left-4 bg-white rounded-xl shadow-lg px-3 py-1.5 transform group-hover:scale-110 group-hover:rotate-2 transition-all duration-300">
                 <p className="text-xs font-bold text-neutral-900">Gründer & CEO</p>
-                <p className="text-xs text-red-600">seit 2024</p>
               </div>
             </div>
           </div>
