@@ -1,5 +1,7 @@
 # Content Briefs — Ranking #1 for "Leasingübernahme" in Switzerland
 
+> **Superseded (October 2026).** Kept for history only. The rules for every page now live in `.claude/skills/seo-page/`. Several points below no longer apply: the head term moved to the home page, word-count targets and synonym sections are out, FAQ rich results ended in May 2026, and new pages need to pass the bar in `.claude/skills/seo-page/reference/page-map.md`.
+
 **Created:** 2026-06-09 · **Owner:** Vincent · **Domain:** https://www.buyauto.ch (de-CH)
 
 These briefs are the writing/build plan behind the SEO audit. They target the highest-opportunity keywords in the Leasingübernahme cluster, exploiting the one structural gap in the market: **no large real-listings marketplace owns this category** — it's held by small portals (LeasingPlatz, LeaseTransfer), bait-and-switch subscription content (Carvolution, Carify), and the German `leasingmarkt.de` (EUR, German law — not Swiss). BuyAuto has the content depth *and* real inventory to take both the informational and transactional layers.
