@@ -45,7 +45,9 @@ const PATH = "/leasinguebernahme-kosten";
 const PAGE_URL = `https://www.buyauto.ch${PATH}`;
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED[PATH];
 
-const TITLE = "Leasingübernahme Kosten: Gebühren je Leasinggeber | BuyAuto";
+/** The production title, kept on purpose: the page recovered in search with it. og:title is the same without the brand suffix. */
+const OG_TITLE = "Leasingübernahme Kosten Schweiz: Gebühren-Überblick";
+const TITLE = `${OG_TITLE} | BuyAuto`;
 const H1 = "Was kostet eine Leasingübernahme?";
 const DESCRIPTION =
   `Leasingübernahme Kosten: Gebühren aller ${CANTONAL_FEES.length} Kantone und was ` +
@@ -254,7 +256,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
             }),
           }}
         />
-        <meta property="og:title" content={H1} />
+        <meta property="og:title" content={OG_TITLE} />
         <meta property="og:description" content={DESCRIPTION} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={PAGE_URL} />
@@ -266,7 +268,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
             className="pt-6"
             items={[
               { name: "Home", href: "/" },
-              { name: "Leasingübernahme", href: "/leasinguebernahme" },
+              { name: "Ratgeber", href: "/leasinguebernahme" },
               { name: "Kosten", href: PATH },
             ]}
           />
@@ -314,9 +316,9 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
             </dl>
 
             <p className="mt-4 text-neutral-700">
-              Wie die Übernahme Schritt für Schritt abläuft, erklärt der Ratgeber zur{" "}
+              Wie die Übernahme Schritt für Schritt abläuft:{" "}
               <Link href="/leasinguebernahme" className={LINK_CLASS}>
-                Leasingübernahme
+                So funktioniert eine Leasingübernahme
               </Link>
               .
             </p>

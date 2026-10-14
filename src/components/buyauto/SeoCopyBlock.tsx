@@ -27,11 +27,7 @@ export function SeoCopyBlock() {
         {/* Body copy */}
         <div className="prose prose-lg max-w-none text-neutral-600 space-y-4">
           <p>
-            Eine{" "}
-            <Link href="/leasinguebernahme" className="text-red-600 font-semibold hover:underline">
-              Leasingübernahme
-            </Link>{" "}
-            bedeutet: Du übernimmst einen laufenden Leasingvertrag mit Monatsrate, Restlaufzeit und Kilometerlimit von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer.
+            Eine Leasingübernahme bedeutet: Du übernimmst einen laufenden Leasingvertrag mit Monatsrate, Restlaufzeit und Kilometerlimit von der bisherigen Leasingnehmerin oder dem bisherigen Leasingnehmer.
           </p>
 
           <p>

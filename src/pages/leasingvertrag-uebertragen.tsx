@@ -36,11 +36,15 @@ const PAGE_PATH = "/leasingvertrag-uebertragen";
 const CANONICAL_URL = `https://www.buyauto.ch${PAGE_PATH}`;
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED[PAGE_PATH];
 
-const TITLE = "Leasingvertrag übertragen: So gehst du vor | BuyAuto";
+/** The production title, kept on purpose: the page recovered in search with it. og:title is the same without the brand suffix. */
+const OG_TITLE = "Leasingvertrag übertragen Schweiz: Ablauf & Kosten";
+const TITLE = `${OG_TITLE} | BuyAuto`;
 const H1 = "Leasingvertrag übertragen: So gehst du vor";
+/** The question searchers ask, answered on the page as an H2 right below the H1. */
+const QUESTION = "Kann ich meinen Leasingvertrag auf eine andere Person übertragen?";
+/** Answers QUESTION (no numbers: the sourced figures stay on the page, next to their sources). */
 const META_DESCRIPTION =
-  "Deinen Leasingvertrag in der Schweiz an jemanden übertragen: Vertrag prüfen, Gebühr der Leasinggesellschaft klären, Inserat, Bonitätsprüfung, Übergabe.";
-const OG_TITLE = "Leasingvertrag übertragen: So gehst du als Abgeber vor";
+  "Ja, wenn deine Leasinggesellschaft zustimmt und die Bonität der neuen Person prüft. So läuft die Übertragung in der Schweiz ab und was sie kostet.";
 
 /** Cost page anchor of the lender table (owned by the cost page). */
 const LENDER_TABLE_HREF = "/leasinguebernahme-kosten#leasinggesellschaften";
@@ -148,7 +152,7 @@ export default function LeasingvertragUebertragenPage({ stats }: LeasingvertragU
           <Breadcrumbs
             items={[
               { name: "Home", href: "/" },
-              { name: "Leasingübernahme", href: "/leasinguebernahme" },
+              { name: "Ratgeber", href: "/leasinguebernahme" },
               { name: "Vertrag übertragen", href: PAGE_PATH },
             ]}
           />
@@ -156,19 +160,22 @@ export default function LeasingvertragUebertragenPage({ stats }: LeasingvertragU
           <article className="mt-6">
             <header className="max-w-3xl">
               <h1 className="text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">{H1}</h1>
-              <p className="mt-4 text-lg leading-relaxed text-neutral-700">
-                Du kannst deinen Leasingvertrag auf eine andere Person übertragen, wenn deine Leasinggesellschaft
-                zustimmt und die Bonität dieser Person prüft. {PORSCHE_FINANCIAL_SERVICES.name} verlangt dafür laut ALB{" "}
+              <h2 id="uebertragen-heading" className="mt-6 text-xl font-bold tracking-tight text-neutral-900 md:text-2xl">
+                {QUESTION}
+              </h2>
+              <p className="mt-3 text-lg leading-relaxed text-neutral-700">
+                Ja, wenn deine Leasinggesellschaft zustimmt und die Bonität der Person prüft, die übernimmt.{" "}
+                {PORSCHE_FINANCIAL_SERVICES.name} verlangt dafür laut ALB{" "}
                 {PORSCHE_FINANCIAL_SERVICES.transferClause} die vorherige schriftliche Zustimmung, {AMAG_LEASING.name}{" "}
                 holt laut ALB {AMAG_LEASING.clauses.bonitaetspruefung} Auskünfte bei ZEK und IKO ein. Bei {CEMBRA.name}{" "}
                 kostet die Übertragung rund {CEMBRA_TRANSFER_DISPLAY} inkl. MWST.
               </p>
               <Cite sources={[PORSCHE_FINANCIAL_SERVICES.source, AMAG_LEASING.source, CEMBRA.source]} />
               <p className="mt-4 leading-relaxed text-neutral-700">
-                Hier stehen die Schritte aus deiner Sicht als bisheriger Leasingnehmer. Wie eine Leasingübernahme
-                grundsätzlich funktioniert, erklärt der Ratgeber{" "}
+                Hier stehen die Schritte aus deiner Sicht als bisheriger Leasingnehmer. Den Ablauf für beide Seiten
+                erklärt der Ratgeber:{" "}
                 <Link href="/leasinguebernahme" className={linkClass}>
-                  Leasingübernahme
+                  So funktioniert eine Leasingübernahme
                 </Link>
                 .
               </p>

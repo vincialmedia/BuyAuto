@@ -40,6 +40,7 @@ import {
 const PAGE_PATH = "/leasinguebernahme";
 const PAGE_URL = `https://www.buyauto.ch${PAGE_PATH}`;
 const HUB_HREF = "/suche?dealType=lease_takeover";
+const AUTO_ABO_HREF = "/leasinguebernahme-vs-autoabo";
 
 const H1 = "So funktioniert eine Leasingübernahme";
 const TITLE = "So funktioniert eine Leasingübernahme: der Ablauf | BuyAuto";
@@ -139,8 +140,13 @@ const STEPS: { role: string; text: ReactNode }[] = [
     role: "Übernehmer",
     text: (
       <>
-        Du stellst einen Antrag. Die Leasinggesellschaft prüft deine Bonität und holt dafür Auskünfte bei der
-        ZEK und der IKO ein (
+        Brauchst du ein Auto nur für kurze Zeit, vergleiche{" "}
+        <Link href={AUTO_ABO_HREF} className="font-medium text-primary underline underline-offset-2">
+          Leasingübernahme und Auto-Abo
+        </Link>
+        . Was am Vertragsende für Mehrkilometer, Schäden und die Rückgabe gilt, steht im Leasingvertrag. Lass ihn
+        dir vor dem Antrag zeigen. Passt er dir, stellst du einen Antrag: Die Leasinggesellschaft prüft deine
+        Bonität und holt dafür Auskünfte bei der ZEK und der IKO ein (
         <Ref source={AMAG_LEASING.source}>
           {AMAG_LEASING.name}, ALB {AMAG_LEASING.clauses.bonitaetspruefung}
         </Ref>
@@ -270,7 +276,7 @@ export default function LeasingUebernahmePage({ stats, availableBrands }: Leasin
       <BreadcrumbJsonLd
         items={[
           { name: "Home", href: "/" },
-          { name: "Leasingübernahme", href: PAGE_PATH },
+          { name: "Ratgeber", href: PAGE_PATH },
         ]}
       />
 
@@ -279,10 +285,13 @@ export default function LeasingUebernahmePage({ stats, availableBrands }: Leasin
           {/* 1. Answer first */}
           <header>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900">{H1}</h1>
-            <p className="mt-4 text-lg">
-              Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag mit seiner Monatsrate und seiner
-              Restlaufzeit. Die Leasinggesellschaft muss der Übertragung zustimmen und prüft vorher die Bonität der
-              Person, die übernimmt. Einmalig kostet das eine Gebühr der Leasinggesellschaft, bei {CEMBRA.name} rund{" "}
+            <h2 id="bedeutung" className="mt-6 scroll-mt-24 text-2xl font-bold tracking-tight text-neutral-900">
+              Was bedeutet Leasingübernahme?
+            </h2>
+            <p className="mt-3 text-lg">
+              Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag mit der Monatsrate, der
+              Restlaufzeit und dem Kilometerlimit, die darin stehen. Die Leasinggesellschaft muss der Übertragung
+              zustimmen und prüft vorher die Bonität der Person, die übernimmt. Einmalig kostet das eine Gebühr der Leasinggesellschaft, bei {CEMBRA.name} rund{" "}
               {CEMBRA_TRANSFER_DISPLAY}, bei {CA_AUTO_FINANCE.name} {CA_TRANSFER_INCL} (jeweils inkl. MWST), und die
               Gebühr des Strassenverkehrsamts für den neuen Fahrzeugausweis.
             </p>
@@ -480,10 +489,17 @@ export default function LeasingUebernahmePage({ stats, availableBrands }: Leasin
             </Button>
           </section>
 
-          {/* 7. The founder's own takeover (F8) */}
-          <aside className="mt-10 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-            <FounderTakeoverNote variant="inline" />
-          </aside>
+          {/* 7. The founder's own takeover (F8): Vince's experience from before BuyAuto existed */}
+          <section
+            id="erfahrung"
+            aria-labelledby="erfahrung-heading"
+            className="mt-10 scroll-mt-24 rounded-2xl border border-neutral-200 bg-neutral-50 p-5"
+          >
+            <h2 id="erfahrung-heading" className="text-xl font-bold tracking-tight text-neutral-900">
+              Erfahrung: wie Vince sein Leasing abgegeben hat
+            </h2>
+            <FounderTakeoverNote variant="inline" className="mt-3" />
+          </section>
 
           {/* 9. Sources */}
           <div className="mt-10 border-t border-neutral-200 pt-8">

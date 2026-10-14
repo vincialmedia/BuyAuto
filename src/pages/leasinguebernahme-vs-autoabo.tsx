@@ -38,7 +38,7 @@ const PAGE_URL = `https://www.buyauto.ch${PAGE_PATH}`;
 // Single source for the AuthorBox «Aktualisiert am» and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED[PAGE_PATH];
 
-const H1 = "Auto-Abo oder Leasingübernahme? Kosten im Vergleich";
+const H1 = "Leasingübernahme oder Auto-Abo? Kosten im Vergleich";
 const META_TITLE = `${H1} | BuyAuto`;
 
 const HUB_HREF = "/suche?dealType=lease_takeover";
@@ -68,7 +68,7 @@ const ABO_TERM_RANGE =
   ABO_TERM_MIN === ABO_TERM_MAX ? `${ABO_TERM_MIN} Monate` : `${ABO_TERM_MIN} bis ${ABO_TERM_MAX} Monate`;
 
 const META_DESCRIPTION =
-  `Auto-Abo und Leasingübernahme im Vergleich: Abo-Preise von ${PROVIDER_NAMES}, was zur Leasingrate ` +
+  `Leasingübernahme und Auto-Abo im Vergleich: Abo-Preise von ${PROVIDER_NAMES}, was zur Leasingrate ` +
   "dazukommt und welche Gebühren anfallen.";
 const OG_DESCRIPTION =
   `Was ein Auto-Abo enthält und kostet (${ABO_STAND_LABEL}) und was bei einer Leasingübernahme zur Rate dazukommt.`;
@@ -331,7 +331,7 @@ export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: Pag
       <BreadcrumbJsonLd
         items={[
           { name: "Home", href: "/" },
-          { name: "Leasingübernahme", href: "/leasinguebernahme" },
+          { name: "Ratgeber", href: "/leasinguebernahme" },
           { name: "Übernahme vs. Auto-Abo", href: PAGE_PATH },
         ]}
       />

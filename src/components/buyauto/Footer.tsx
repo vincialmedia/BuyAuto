@@ -12,13 +12,13 @@ const footerSections = [
       { label: "Alle Fahrzeuge", href: "/suche" },
       { label: "Occasionen", href: "/suche?dealType=direct_purchase" },
       { label: "Leasing", href: "/suche?dealType=direct_purchase&financingType=leasing" },
-      { label: "Leasingübernahme", href: "/suche?dealType=lease_takeover" }
+      { label: "Leasingübernahme-Angebote", href: "/suche?dealType=lease_takeover" }
     ]
   },
   {
     title: "Leasingübernahme",
     links: [
-      { label: "Leasingübernahme – Ratgeber", href: "/leasinguebernahme" },
+      { label: "Ratgeber Leasingübernahme", href: "/leasinguebernahme" },
       { label: "Was kostet eine Übernahme?", href: "/leasinguebernahme-kosten" },
       { label: "Leasingvertrag übertragen", href: "/leasingvertrag-uebertragen" },
       { label: "Übernahme vs. Auto-Abo", href: "/leasinguebernahme-vs-autoabo" },

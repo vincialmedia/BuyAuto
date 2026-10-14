@@ -549,7 +549,7 @@ export default function LeasingBrandPage({ brand, listings, total, stats, siblin
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "Leasingübernahme", item: `${SITE_URL}/leasinguebernahme` },
+      { "@type": "ListItem", position: 2, name: "Ratgeber", item: `${SITE_URL}/leasinguebernahme` },
       { "@type": "ListItem", position: 3, name: brand.name, item: canonical },
     ],
   };
@@ -642,7 +642,7 @@ export default function LeasingBrandPage({ brand, listings, total, stats, siblin
           <nav className="flex items-center gap-1.5 text-sm text-neutral-500 mb-5" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-neutral-900">Home</Link>
             <ChevronRight className="w-4 h-4" />
-            <Link href="/leasinguebernahme" className="hover:text-neutral-900">Leasingübernahme</Link>
+            <Link href={GUIDE_HREF} className="hover:text-neutral-900">Ratgeber</Link>
             <ChevronRight className="w-4 h-4" />
             <span className="text-neutral-900 font-medium">{brand.name}</span>
           </nav>
