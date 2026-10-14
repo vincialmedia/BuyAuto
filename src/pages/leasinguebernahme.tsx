@@ -505,20 +505,19 @@ export default function LeasingUebernahmePage({ stats, availableBrands }: Leasin
 
 export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async () => {
   // One read feeds both the stats (same computation as getLiveInventoryStats) and the
-  // brand links. On failure the page hides every live number and shows no brand links:
-  // no fallback value is ever rendered.
-  let stats: InventoryStats | null = null;
-  let availableBrands: { slug: string; name: string }[] = [];
+  // brand links. A failed read throws: during ISR revalidation Next keeps serving the
+  // last good page, so the "Nach Marke" links (the brand pages' main in-content links)
+  // never drop out; a failed first build fails loudly. No fallback value is rendered.
+  let takeovers: ReturnType<typeof liveTakeovers>;
   try {
-    const takeovers = liveTakeovers(await getPublicOfferIndex());
-    stats = computeInventoryStats(takeovers.map((o) => o.offer));
-    // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
-    availableBrands = indexableBrandPages(takeovers).map((b) => ({ slug: b.slug, name: b.name }));
+    takeovers = liveTakeovers(await getPublicOfferIndex());
   } catch (error) {
     console.error("[leasinguebernahme] live inventory read failed", error);
-    stats = null;
-    availableBrands = [];
+    throw error;
   }
+  const stats: InventoryStats | null = computeInventoryStats(takeovers.map((o) => o.offer));
+  // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
+  const availableBrands = indexableBrandPages(takeovers).map((b) => ({ slug: b.slug, name: b.name }));
 
   return { props: { stats, availableBrands }, revalidate: 300 };
 };

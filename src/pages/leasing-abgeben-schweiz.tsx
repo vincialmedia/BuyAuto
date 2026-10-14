@@ -45,10 +45,10 @@ const PAGE_PATH = "/leasing-abgeben-schweiz";
 const PAGE_URL = `https://www.buyauto.ch${PAGE_PATH}`;
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED[PAGE_PATH];
 
-const TITLE = "Leasing abgeben oder vorzeitig auflösen: Rechner | BuyAuto";
+const TITLE = "Leasing abgeben oder Leasingauto verkaufen: Rechner | BuyAuto";
 const H1 = "Leasing vorzeitig beenden: abgeben, auflösen oder rauskaufen";
 const DESCRIPTION =
-  "Leasing abgeben, vorzeitig auflösen oder rauskaufen: Der Ausstiegsrechner vergleicht die drei Wege mit deinen Zahlen und den publizierten Gebühren.";
+  "Leasing in der Schweiz vorzeitig beenden: per Übernahme abgeben, auflösen oder rauskaufen und verkaufen. Der Rechner vergleicht die drei Wege.";
 
 const CTA_HREF = "/inserat-erstellen";
 const CTA_LABEL = "Inserat erstellen";
@@ -217,8 +217,9 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
           </h1>
           <div className="mt-4 max-w-3xl">
             <p className="text-lg text-neutral-700 leading-relaxed">
-              Aus einem laufenden Leasing kommst du auf drei Wegen raus: Jemand übernimmt deinen Vertrag per
-              Leasingübernahme, du löst ihn vorzeitig auf, oder du kaufst das Auto raus und verkaufst es. Was dich jeder
+              Für einen Leasing-Exit, also den vorzeitigen Ausstieg aus deinem laufenden Leasing, hast du drei Wege:
+              Jemand übernimmt deinen Vertrag per Leasingübernahme, du löst ihn vorzeitig auf, oder du kaufst das Auto
+              raus und verkaufst es. Was dich jeder
               Weg kostet, hängt von deiner Leasinggesellschaft und deinem Vertrag ab. Der Ausstiegsrechner stellt die
               drei Wege mit deinen Zahlen nebeneinander.
             </p>

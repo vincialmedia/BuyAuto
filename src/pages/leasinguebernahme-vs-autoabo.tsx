@@ -38,7 +38,7 @@ const PAGE_URL = `https://www.buyauto.ch${PAGE_PATH}`;
 // Single source for the AuthorBox «Aktualisiert am» and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED[PAGE_PATH];
 
-const H1 = "Leasingübernahme oder Auto-Abo: was kostet was?";
+const H1 = "Auto-Abo oder Leasingübernahme? Kosten im Vergleich";
 const META_TITLE = `${H1} | BuyAuto`;
 
 const HUB_HREF = "/suche?dealType=lease_takeover";
@@ -68,8 +68,8 @@ const ABO_TERM_RANGE =
   ABO_TERM_MIN === ABO_TERM_MAX ? `${ABO_TERM_MIN} Monate` : `${ABO_TERM_MIN} bis ${ABO_TERM_MAX} Monate`;
 
 const META_DESCRIPTION =
-  `Auto-Abo oder Leasingübernahme? Abo-Preise von ${PROVIDER_NAMES}, was zur Leasingrate dazukommt ` +
-  "und welche Gebühren anfallen.";
+  `Auto-Abo und Leasingübernahme im Vergleich: Abo-Preise von ${PROVIDER_NAMES}, was zur Leasingrate ` +
+  "dazukommt und welche Gebühren anfallen.";
 const OG_DESCRIPTION =
   `Was ein Auto-Abo enthält und kostet (${ABO_STAND_LABEL}) und was bei einer Leasingübernahme zur Rate dazukommt.`;
 
@@ -110,6 +110,14 @@ const TAKEOVER_EXTRA_COSTS =
 // ── FAQ: visible text and FAQPage JSON-LD come from these strings ─────────────
 
 const FAQ: { question: string; answer: string }[] = [
+  {
+    question: "Was ist der Unterschied zwischen Auto-Abo und Leasingübernahme?",
+    answer:
+      "Ein Auto-Abo bündelt Versicherung, Verkehrssteuer, Reifen und Service in einem Monatspreis für eine feste " +
+      "Laufzeit. Bei einer Leasingübernahme übernimmst du einen laufenden Leasingvertrag mit seiner Rate und " +
+      "Restlaufzeit und organisierst Versicherung und Service selbst. Der Übernahme muss die Leasinggesellschaft " +
+      "zustimmen, und sie prüft deine Bonität.",
+  },
   {
     question: "Wie lange läuft ein Auto-Abo?",
     answer:
@@ -345,7 +353,7 @@ export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: Pag
 
           {/* 2. Auto-Abo: what it includes and costs (F10) */}
           <section aria-labelledby="auto-abo" className="py-8 sm:py-10">
-            <SectionHeading id="auto-abo">Was ein Auto-Abo enthält und kostet</SectionHeading>
+            <SectionHeading id="auto-abo">Auto-Abo-Anbieter in der Schweiz im Vergleich</SectionHeading>
             <p className="mt-3 leading-relaxed text-neutral-700">
               {countLabel(ABO_OFFERS.length, "Angebot", "Angebote")} von {PROVIDER_NAMES},{" "}
               <strong className="font-semibold text-neutral-900">{ABO_STAND_LABEL}</strong>. Die Preise können sich

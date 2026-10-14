@@ -131,11 +131,14 @@ export default function HomePage({ premiumListings, liveTakeoverCount }: HomePag
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/70 to-neutral-900/40" />
         </div>
 
-        {/* pt-14 on phones keeps the live count and the fee line inside the
-            60vh hero, so the search bar stays where it was (y ≈ 540 at 390×844). */}
-        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-14 sm:pt-20 pb-16">
+        {/* pt-6 on phones keeps the head-term line, the live count and the fee line inside
+            the 60vh hero, so the search bar stays where it was (y ≈ 540 at 390×844). */}
+        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-6 sm:pt-20 pb-16">
           <div className="text-center">
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
+              <span className="block text-sm sm:text-base font-bold uppercase tracking-widest text-white/80 mb-3">
+                Leasingübernahme Schweiz
+              </span>
               Raus aus dem Leasing.
               <br />
               Per <span className="text-red-500">Übernahme.</span>

@@ -4,7 +4,7 @@ import { CANTONAL_FEES_HREF } from "@/lib/buyauto/facts";
 
 export function SeoCopyBlock() {
   const internalLinks = [
-    { label: "Leasingübernahme in der Schweiz", href: "/leasinguebernahme" },
+    { label: "So funktioniert eine Leasingübernahme", href: "/leasinguebernahme" },
     { label: "Leasing abgeben in der Schweiz", href: "/leasing-abgeben-schweiz" },
     { label: "Was kostet eine Leasingübernahme?", href: "/leasinguebernahme-kosten" },
     { label: "Leasingvertrag übertragen", href: "/leasingvertrag-uebertragen" },

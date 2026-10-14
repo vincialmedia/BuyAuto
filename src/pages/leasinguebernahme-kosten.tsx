@@ -48,8 +48,8 @@ const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED[PATH];
 const TITLE = "Leasingübernahme Kosten: Gebühren je Leasinggeber | BuyAuto";
 const H1 = "Was kostet eine Leasingübernahme?";
 const DESCRIPTION =
-  `Leasingübernahme Kosten in der Schweiz: was ${LENDER_TAKEOVER_FEES.length} Leasinggesellschaften zur ` +
-  `Übernahmegebühr publizieren (${FEE_SHORT}) und die Tarife aller ${CANTONAL_FEES.length} Kantone, mit Quelle.`;
+  `Leasingübernahme Kosten: Gebühren aller ${CANTONAL_FEES.length} Kantone und was ` +
+  `${LENDER_TAKEOVER_FEES.length} Leasinggesellschaften publizieren (${FEE_SHORT}), mit Quelle.`;
 
 const HUB_HREF = "/suche?dealType=lease_takeover";
 const LISTING_HREF = "/inserat-erstellen";

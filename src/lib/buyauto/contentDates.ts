@@ -5,7 +5,7 @@
 // honest). Seeded from each page's last real edit in git history.
 
 export const CONTENT_LAST_UPDATED: Record<string, string> = {
-  "/": "2026-10-09",
+  "/": "2026-10-14",
   "/suche": "2026-08-04",
   "/preise": "2026-08-14",
   "/updates": "2026-08-07",
@@ -14,7 +14,7 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/leasingvertrag-uebertragen": "2026-10-14",
   "/leasinguebernahme-vs-autoabo": "2026-10-14",
   "/eintauschwert-rechner": "2026-08-04",
-  "/leasing-abgeben-schweiz": "2026-10-09",
+  "/leasing-abgeben-schweiz": "2026-10-14",
   "/fuer-garagen": "2026-08-13",
   "/autoscout24-alternative-leasinguebernahme": "2026-10-08",
   "/datenschutz": "2026-07-31",
@@ -27,7 +27,7 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
  * sitemap URLs. Shown in the brand pages' «Aktualisiert am»; their sitemap lastmod is
  * the later of this date and the brand's newest listing change.
  */
-export const BRAND_PAGES_CONTENT_UPDATED = "2026-10-09";
+export const BRAND_PAGES_CONTENT_UPDATED = "2026-10-14";
 
 export function contentLastUpdatedIso(path: string): string | null {
   return CONTENT_LAST_UPDATED[path] ?? null;

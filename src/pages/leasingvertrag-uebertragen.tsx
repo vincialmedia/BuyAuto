@@ -157,10 +157,16 @@ export default function LeasingvertragUebertragenPage({ stats }: LeasingvertragU
             <header className="max-w-3xl">
               <h1 className="text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">{H1}</h1>
               <p className="mt-4 text-lg leading-relaxed text-neutral-700">
-                Du willst aus deinem Leasing aussteigen und den Vertrag an jemanden weitergeben, der ihn mit Rate und
-                Restlaufzeit übernimmt. Hier stehen die Schritte aus deiner Sicht als bisheriger Leasingnehmer, belegt
-                mit den Regeln und Gebühren, die die Leasinggesellschaften selbst publizieren. Wie eine
-                Leasingübernahme grundsätzlich funktioniert, erklärt der Ratgeber{" "}
+                Du kannst deinen Leasingvertrag auf eine andere Person übertragen, wenn deine Leasinggesellschaft
+                zustimmt und die Bonität dieser Person prüft. {PORSCHE_FINANCIAL_SERVICES.name} verlangt dafür laut ALB{" "}
+                {PORSCHE_FINANCIAL_SERVICES.transferClause} die vorherige schriftliche Zustimmung, {AMAG_LEASING.name}{" "}
+                holt laut ALB {AMAG_LEASING.clauses.bonitaetspruefung} Auskünfte bei ZEK und IKO ein. Bei {CEMBRA.name}{" "}
+                kostet die Übertragung rund {CEMBRA_TRANSFER_DISPLAY} inkl. MWST.
+              </p>
+              <Cite sources={[PORSCHE_FINANCIAL_SERVICES.source, AMAG_LEASING.source, CEMBRA.source]} />
+              <p className="mt-4 leading-relaxed text-neutral-700">
+                Hier stehen die Schritte aus deiner Sicht als bisheriger Leasingnehmer. Wie eine Leasingübernahme
+                grundsätzlich funktioniert, erklärt der Ratgeber{" "}
                 <Link href="/leasinguebernahme" className={linkClass}>
                   Leasingübernahme
                 </Link>
