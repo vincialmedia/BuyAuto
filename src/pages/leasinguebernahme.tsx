@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 import { AuthorBox } from "@/components/buyauto/AuthorBox";
-import { FounderTakeoverNote } from "@/components/buyauto/FounderTakeoverNote";
+import { FOUNDER_TAKEOVER_TEXT } from "@/components/buyauto/FounderTakeoverNote";
 import { SourceCitation, SourcesList } from "@/components/buyauto/SourceCitation";
 import { getPublicOfferIndex, liveTakeovers } from "@/services/listingsService";
 import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
@@ -27,6 +27,7 @@ import {
   CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
   CEMBRA_TRANSFER_EXCL_VAT_CHF,
+  FOUNDER_TAKEOVER,
   KKG,
   LENDER_TAKEOVER_FEES,
   MERCEDES_BENZ_FINANCIAL_SERVICES,
@@ -140,13 +141,10 @@ const STEPS: { role: string; text: ReactNode }[] = [
     role: "Übernehmer",
     text: (
       <>
-        Brauchst du ein Auto nur für kurze Zeit, vergleiche{" "}
-        <Link href={AUTO_ABO_HREF} className="font-medium text-primary underline underline-offset-2">
-          Leasingübernahme und Auto-Abo
-        </Link>
-        . Was am Vertragsende für Mehrkilometer, Schäden und die Rückgabe gilt, steht im Leasingvertrag. Lass ihn
-        dir vor dem Antrag zeigen. Passt er dir, stellst du einen Antrag: Die Leasinggesellschaft prüft deine
-        Bonität und holt dafür Auskünfte bei der ZEK und der IKO ein (
+        Was am Vertragsende für Mehrkilometer, Schäden und die Rückgabe gilt, steht im Leasingvertrag und in den
+        Allgemeinen Bedingungen deiner Leasinggesellschaft. Lass dir beides vor dem Antrag zeigen. Passt dir das,
+        stellst du einen Antrag: Die Leasinggesellschaft prüft deine Bonität und holt dafür Auskünfte bei der ZEK und
+        der IKO ein (
         <Ref source={AMAG_LEASING.source}>
           {AMAG_LEASING.name}, ALB {AMAG_LEASING.clauses.bonitaetspruefung}
         </Ref>
@@ -154,7 +152,11 @@ const STEPS: { role: string; text: ReactNode }[] = [
         <Ref source={CA_AUTO_FINANCE.source}>
           {CA_AUTO_FINANCE.name}, AVB {CA_AUTO_FINANCE.clauses.bonitaetspruefung}
         </Ref>
-        ).
+        ). Brauchst du ein Auto nur für eine begrenzte Zeit, vergleiche{" "}
+        <Link href={AUTO_ABO_HREF} className="font-medium text-primary underline underline-offset-2">
+          Leasingübernahme und Auto-Abo
+        </Link>
+        .
       </>
     ),
   },
@@ -489,16 +491,17 @@ export default function LeasingUebernahmePage({ stats, availableBrands }: Leasin
             </Button>
           </section>
 
-          {/* 7. The founder's own takeover (F8): Vince's experience from before BuyAuto existed */}
+          {/* 7. The founder's own takeover (F8), his experience from before BuyAuto existed. The approved label
+              is the heading; the text is the approved FOUNDER_TAKEOVER_TEXT (no new F8 wording). */}
           <section
             id="erfahrung"
             aria-labelledby="erfahrung-heading"
             className="mt-10 scroll-mt-24 rounded-2xl border border-neutral-200 bg-neutral-50 p-5"
           >
             <h2 id="erfahrung-heading" className="text-xl font-bold tracking-tight text-neutral-900">
-              Erfahrung: wie Vince sein Leasing abgegeben hat
+              {FOUNDER_TAKEOVER.label}
             </h2>
-            <FounderTakeoverNote variant="inline" className="mt-3" />
+            <p className="mt-3">{FOUNDER_TAKEOVER_TEXT}</p>
           </section>
 
           {/* 9. Sources */}

@@ -44,7 +44,7 @@ const H1 = "Leasingvertrag übertragen: So gehst du vor";
 const QUESTION = "Kann ich meinen Leasingvertrag auf eine andere Person übertragen?";
 /** Answers QUESTION (no numbers: the sourced figures stay on the page, next to their sources). */
 const META_DESCRIPTION =
-  "Ja, wenn deine Leasinggesellschaft zustimmt und die Bonität der neuen Person prüft. So läuft die Übertragung in der Schweiz ab und was sie kostet.";
+  "Leasingvertrag übertragen: Das geht, wenn deine Leasinggesellschaft zustimmt und die Bonität der neuen Person prüft. Ablauf und Kosten in der Schweiz.";
 
 /** Cost page anchor of the lender table (owned by the cost page). */
 const LENDER_TABLE_HREF = "/leasinguebernahme-kosten#leasinggesellschaften";

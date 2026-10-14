@@ -342,9 +342,9 @@ export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: Pag
           <header>
             <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">{H1}</h1>
             <p className="mt-4 text-lg leading-relaxed text-neutral-700">
-              Ein Auto-Abo bündelt Versicherung, Verkehrssteuer, Reifen und Service in einem Monatspreis für eine
-              feste Laufzeit. Bei einer Leasingübernahme zahlst du die bestehende Rate eines laufenden
-              Leasingvertrags für dessen Restlaufzeit weiter und organisierst Versicherung und Service selbst. Was
+              Bei einer Leasingübernahme zahlst du die bestehende Rate eines laufenden Leasingvertrags für dessen
+              Restlaufzeit weiter und organisierst Versicherung und Service selbst. Ein Auto-Abo bündelt
+              Versicherung, Verkehrssteuer, Reifen und Service in einem Monatspreis für eine feste Laufzeit. Was
               das in Franken heisst, zeigen unten die Abo-Preise von {PROVIDER_NAMES} und die Kosten einer
               Übernahme.
             </p>

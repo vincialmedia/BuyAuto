@@ -316,7 +316,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
             </dl>
 
             <p className="mt-4 text-neutral-700">
-              Wie die Übernahme Schritt für Schritt abläuft:{" "}
+              Den Ablauf Schritt für Schritt erklärt der Ratgeber:{" "}
               <Link href="/leasinguebernahme" className={LINK_CLASS}>
                 So funktioniert eine Leasingübernahme
               </Link>

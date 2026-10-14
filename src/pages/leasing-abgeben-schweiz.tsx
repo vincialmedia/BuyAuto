@@ -88,30 +88,35 @@ const STANDARD_PLAN_SENTENCE =
 // ── FAQ: one string feeds the accordion and the FAQPage JSON-LD ───────────────
 
 // The first four answer "vorzeitig beenden", "zurückgeben", "kündigen" and "auflösen"; each names the lender
-// whose published clause it cites (facts.ts), nothing beyond that.
-const FAQS: { q: string; a: string }[] = [
+// whose published clause it cites (facts.ts), nothing beyond that. `sources` is printed under the answer
+// (SourceCitation next to the number) and stays out of the string, so the JSON-LD keeps the plain answer.
+const FAQS: { q: string; a: string; sources: FactSource[] }[] = [
   {
     q: "Kann ich mein Leasing vorzeitig beenden?",
     a:
-      `Ja, auf drei Wegen: per Leasingübernahme, mit einer vorzeitigen Auflösung oder indem du das Auto rauskaufst ` +
-      `und verkaufst. Für die Auflösung und das Rauskaufen brauchst du die Zahlen deiner Leasinggesellschaft. Bei ` +
-      `${PORSCHE_FINANCIAL_SERVICES.name} kostet laut ALB ${PORSCHE_PROVISIONAL.clause} schon die provisorische ` +
-      `Berechnung einer vorzeitigen Vertragsauflösung ` +
+      `Bei einem privaten Leasingvertrag, der unter das Konsumkreditgesetz fällt, ja: Du kannst ihn vorzeitig ` +
+      `kündigen (${KKG.terminationArticle} KKG). Eine Leasingübernahme braucht die Zustimmung deiner ` +
+      `Leasinggesellschaft. Bei ${PORSCHE_FINANCIAL_SERVICES.name} kostet laut ALB ${PORSCHE_PROVISIONAL.clause} ` +
+      `die provisorische Berechnung einer vorzeitigen Vertragsauflösung ` +
       `${formatChf(PORSCHE_FINANCIAL_SERVICES.feesExclVatChf.provisorischeAufloesungsberechnung)} exkl. MWST.`,
+    sources: [KKG.source, PORSCHE_FINANCIAL_SERVICES.source],
   },
   {
     q: "Kann ich mein Leasing zurückgeben?",
     a:
       `Einen privaten Leasingvertrag, der unter das Konsumkreditgesetz fällt, kannst du vorzeitig kündigen ` +
       `(${KKG.terminationArticle} KKG). Was du dann noch bezahlst, berechnet deine Leasinggesellschaft.`,
+    sources: [KKG.source],
   },
   {
     q: "Was kostet es, das Leasing zu kündigen?",
     a:
-      `Was du nach einer Kündigung noch bezahlst, berechnet deine Leasinggesellschaft. Bei ${CEMBRA.name} kostet ` +
-      `laut Gebührenübersicht die Kündigungsabrechnung ${CEMBRA_TERMINATION_STATEMENT_FEE} exkl. MWST. Für eine ` +
-      `Kündigung bei ${MERCEDES_BENZ_FINANCIAL_SERVICES.name} sind laut ihrer Website die Amortisationstabelle, ` +
-      `die dem Vertrag beiliegt, und die allgemeinen Vertragsbedingungen massgebend.`,
+      `Bei ${CEMBRA.name} kostet laut Gebührenübersicht die Kündigungsabrechnung ` +
+      `${CEMBRA_TERMINATION_STATEMENT_FEE} exkl. MWST; die Nachzahlung selbst berechnet deine Leasinggesellschaft. ` +
+      `Bei ${MERCEDES_BENZ_FINANCIAL_SERVICES.name} ist eine Kündigung laut mercedes-benz.ch bei privaten ` +
+      `Leasingverträgen möglich; massgebend sind die Amortisationstabelle, die dem Vertrag beiliegt, und die ` +
+      `allgemeinen Vertragsbedingungen.`,
+    sources: [CEMBRA.source, MERCEDES_BENZ_FINANCIAL_SERVICES.source],
   },
   {
     q: "Wie löse ich meinen Leasingvertrag vorzeitig auf?",
@@ -119,7 +124,8 @@ const FAQS: { q: string; a: string }[] = [
       `Du verlangst bei deiner Leasinggesellschaft eine Auflösungsofferte mit der Nachzahlung. Bei ` +
       `${AMAG_LEASING.name} gilt laut ALB ${AMAG_LEASING.clauses.aufloesungsgebuehren} eine Pauschale von ` +
       `${AMAG_TERMINATION_FEE} exkl. MWST für die vorzeitige Vertragsauflösung, und die Raten werden rückwirkend ` +
-      `neu berechnet (${AMAG_LEASING.clauses.rueckwirkendeNeuberechnung}).`,
+      `neu berechnet (ALB ${AMAG_LEASING.clauses.rueckwirkendeNeuberechnung}).`,
+    sources: [AMAG_LEASING.source],
   },
   {
     q: "Was kostet es, das Leasing per Übernahme abzugeben?",
@@ -127,6 +133,7 @@ const FAQS: { q: string; a: string }[] = [
       `${CEMBRA.name} publiziert für die Übertragung ${CEMBRA_TRANSFER}, ${CA_AUTO_FINANCE.name} ` +
       `${CA_TRANSFER_INCL} inkl. MWST für die Vertragsumschreibung. ${UNPUBLISHED_LENDER_NAMES} publizieren ` +
       `keinen Tarif, dort fragst du nach. Das Standard-Inserat auf BuyAuto kostet ${formatChf(STANDARD_PLAN.price)}.`,
+    sources: [CEMBRA.source, CA_AUTO_FINANCE.source],
   },
   {
     q: "Wer muss einer Leasingübernahme zustimmen?",
@@ -135,6 +142,7 @@ const FAQS: { q: string; a: string }[] = [
       `(${PORSCHE_FINANCIAL_SERVICES.transferClause}). Vorher prüft die Leasinggesellschaft die Bonität der Person, ` +
       `die den Vertrag übernimmt. ${AMAG_LEASING.name} holt dafür unter anderem Auskünfte bei der ZEK und der IKO ` +
       `ein (ALB ${AMAG_LEASING.clauses.bonitaetspruefung}).`,
+    sources: [PORSCHE_FINANCIAL_SERVICES.source, AMAG_LEASING.source],
   },
 ];
 
@@ -450,18 +458,17 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
           </div>
         </section>
 
-        {/* 3b. "Leasingauto verkaufen": the three routes as one short answer */}
+        {/* 3b. "Leasingauto verkaufen": the short answer; the route itself is the H3 «Rauskaufen und verkaufen» above */}
         <section id="leasingauto-verkaufen" aria-labelledby="verkaufen-heading" className="scroll-mt-20 pb-8 md:pb-10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl">
               <h2 id="verkaufen-heading" className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
-                Leasingauto verkaufen: geht das?
+                Leasingauto verkaufen: Geht das?
               </h2>
               <p className="mt-3 text-neutral-700 leading-relaxed">
-                Ja, indem du es rauskaufst: Du zahlst deiner Leasinggesellschaft die Ablösesumme und verkaufst das
-                Auto danach selbst. Geht es dir vor allem darum, aus dem Vertrag zu kommen, hast du zwei weitere Wege:
-                Jemand übernimmt deinen Vertrag per Leasingübernahme, oder du löst ihn vorzeitig auf. Welcher der drei
-                Wege dich am wenigsten kostet, zeigt der Ausstiegsrechner mit deinen Zahlen.
+                Ja, wenn deine Leasinggesellschaft dir das Auto zur Ablösesumme überlässt. Dann kaufst du es raus und
+                verkaufst es selbst, das ist der dritte Weg oben. Die anderen zwei Wege, Leasingübernahme und
+                vorzeitige Auflösung, kommen ohne Verkauf aus.
               </p>
             </div>
           </div>
@@ -504,7 +511,14 @@ export default function LeasingAbgebenSchweiz({ takeoverListings }: LeasingAbgeb
                     <AccordionTrigger className="text-left text-base font-bold text-neutral-900 hover:no-underline">
                       {faq.q}
                     </AccordionTrigger>
-                    <AccordionContent className="text-base text-neutral-700 leading-relaxed">{faq.a}</AccordionContent>
+                    <AccordionContent className="text-base text-neutral-700 leading-relaxed">
+                      <p>{faq.a}</p>
+                      {faq.sources.map((source) => (
+                        <p key={source.url} className="mt-2 text-xs text-neutral-500">
+                          <SourceCitation source={source} />
+                        </p>
+                      ))}
+                    </AccordionContent>
                   </AccordionItem>
                 ))}
               </Accordion>
