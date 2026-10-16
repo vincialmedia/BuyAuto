@@ -9,11 +9,9 @@ import { BuyerGarageSection } from "@/components/buyauto/BuyerGarageSection";
 import { FounderStory } from "@/components/buyauto/FounderStory";
 import { HomeTakeoverOffers } from "@/components/buyauto/HomeTakeoverOffers";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
-import { SourceCitation } from "@/components/buyauto/SourceCitation";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
-import { CEMBRA, FEE_SHORT } from "@/lib/buyauto/facts";
 import { countLabel, pluralize } from "@/lib/buyauto/format";
 import type { SearchQuery } from "@/lib/buyauto/search";
 import type { Listing } from "@/lib/buyauto/types";
@@ -136,8 +134,8 @@ export default function HomePage({ takeoverListings, liveTakeoverCount }: HomePa
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/70 to-neutral-900/40" />
         </div>
 
-        {/* pt-6 on phones keeps the head-term line, the live count and the fee line inside
-            the 60vh hero, so the search bar stays where it was (y ≈ 540 at 390×844). */}
+        {/* pt-6 on phones keeps the head-term line and the live count inside the 60vh
+            hero, so the search bar stays where it was (y ≈ 540 at 390×844). */}
         <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-6 sm:pt-20 pb-16">
           <div className="text-center">
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
@@ -152,23 +150,16 @@ export default function HomePage({ takeoverListings, liveTakeoverCount }: HomePa
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/90 font-medium max-w-2xl mx-auto drop-shadow-md">
               Ein Schweizer Marktplatz für Leasingübernahmen: Übernimm ein laufendes Leasing oder gib deins ab.
             </p>
-            {/* SourceLink hovers to neutral-900, unreadable on the dark hero; the arbitrary variant wins on specificity. */}
-            <div className="animate-fade-up-2 mt-5 sm:mt-6 max-w-xl mx-auto space-y-1 text-sm sm:text-base text-white/80 drop-shadow-md [&_a:hover]:text-white">
-              {liveCount !== null && (
-                <p className="text-white">
-                  <span aria-hidden="true" className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 align-middle" />
-                  Auf BuyAuto {pluralize(liveCount, "wartet", "warten")} gerade{" "}
-                  <strong className="font-bold">{countLabel(liveCount, "Leasingvertrag", "Leasingverträge")}</strong> auf eine
-                  Übernahme
-                </p>
-              )}
-              <p>
-                Übertragungsgebühr {FEE_SHORT}
-                <span className="block mt-0.5 text-xs text-white/60">
-                  <SourceCitation source={CEMBRA.source} />
-                </span>
+            {/* Live count only: the hub's query, so this number and the hub's title agree.
+                The sourced fee line moved off the hero; the cost page carries the fees. */}
+            {liveCount !== null && (
+              <p className="animate-fade-up-2 mt-5 sm:mt-6 max-w-xl mx-auto text-sm sm:text-base text-white drop-shadow-md">
+                <span aria-hidden="true" className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 align-middle" />
+                Auf BuyAuto {pluralize(liveCount, "wartet", "warten")} gerade{" "}
+                <strong className="font-bold">{countLabel(liveCount, "Leasingvertrag", "Leasingverträge")}</strong> auf eine
+                Übernahme
               </p>
-            </div>
+            )}
           </div>
         </div>
       </section>
