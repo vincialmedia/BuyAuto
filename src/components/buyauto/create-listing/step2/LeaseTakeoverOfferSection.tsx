@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -11,11 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { parseContractEndDate } from "@/lib/buyauto/contractEndDate";
 
 export interface LeaseTakeoverOfferFormValues {
   lease_takeover_enabled: boolean;
   lease_takeover_price_per_month_chf?: number;
   lease_takeover_remaining_months?: number;
+  /** Vertragsende as picked, "yyyy-MM-dd" ("" = none); saved as listings.contract_end_date. */
+  lease_takeover_contract_end_date?: string;
   lease_takeover_deposit_chf?: number;
   lease_takeover_remaining_km?: number;
   lease_takeover_pickup_canton_code?: string;
@@ -53,13 +55,9 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
   const enabled = Boolean(watch("lease_takeover_enabled" as any));
   const remainingMonths = Number(watch("lease_takeover_remaining_months" as any) ?? 0) || 0;
 
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-
-  useEffect(() => {
-    if (!enabled) {
-      setEndDate(undefined);
-    }
-  }, [enabled]);
+  // The picked date lives in the form (not local state) so the parent can save
+  // it, hydrate it from an existing listing and clear it with the offer.
+  const endDate = parseContractEndDate(watch("lease_takeover_contract_end_date" as any));
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5 shadow-sm">
@@ -139,7 +137,11 @@ export function LeaseTakeoverOfferSection<T extends LeaseTakeoverOfferFormValues
                     mode="single"
                     selected={endDate}
                     onSelect={(date) => {
-                      setEndDate(date);
+                      setValue(
+                        "lease_takeover_contract_end_date" as any,
+                        (date ? format(date, "yyyy-MM-dd") : "") as any,
+                        { shouldValidate: false }
+                      );
                       if (date) {
                         const months = calculateRemainingMonths(date);
                         setValue("lease_takeover_remaining_months" as any, months as any, { shouldValidate: true });

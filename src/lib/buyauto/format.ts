@@ -17,6 +17,17 @@ export function formatChf(value: number): string {
   return `CHF ${formatSwissInt(value)}`;
 }
 
+/**
+ * Amount with Rappen, for tariff figures that are not whole francs:
+ * 432.4 -> "CHF 432.40", 74.55 -> "CHF 74.55", 42 -> "CHF 42.00".
+ */
+export function formatChfRappen(value: number): string {
+  const rappen = Math.round(value * 100);
+  const francs = Math.trunc(rappen / 100);
+  const cents = String(Math.abs(rappen % 100)).padStart(2, "0");
+  return `CHF ${formatSwissInt(francs)}.${cents}`;
+}
+
 /** 2000, 15000 -> "CHF 2'000–15'000"; equal bounds collapse to one amount. */
 export function formatChfRange(min: number, max: number): string {
   if (Math.round(min) === Math.round(max)) return formatChf(min);

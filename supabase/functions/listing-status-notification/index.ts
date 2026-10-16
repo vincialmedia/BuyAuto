@@ -12,6 +12,36 @@ type ListingStatus = "published" | "rejected" | "archived";
 type DealType = "lease_takeover" | "direct_purchase";
 type FinancingType = "cash" | "leasing";
 
+// Links point at their final URL, so a click lands without a redirect:
+// vercel.json 308s the apex to www, and trailingSlash is off.
+const SITE_URL = "https://www.buyauto.ch";
+
+// Port of slugifyListingPart / buildListingHref in src/lib/buyauto/listingUrl.ts
+// (the source of truth; keep in sync). /fahrzeug/<id> 308s to
+// /fahrzeug/<brand-model>-<id>, so the email links the slugged form.
+function slugifyListingPart(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+function buildListingUrl(input: { id: string; brand?: string | null; model?: string | null }): string {
+  const brand = typeof input.brand === "string" ? input.brand : "";
+  const model = typeof input.model === "string" ? input.model : "";
+  const prefix = slugifyListingPart([brand, model].filter(Boolean).join(" "));
+  return `${SITE_URL}/fahrzeug/${prefix ? `${prefix}-${input.id}` : input.id}`;
+}
+
+// /dashboard only forwards by role (src/pages/dashboard.tsx): garages to
+// /dashboard/garage, everyone else to /dashboard/private.
+function buildDashboardUrl(role: string | null | undefined): string {
+  return `${SITE_URL}/dashboard/${role === "garage" ? "garage" : "private"}`;
+}
+
 function escapeHtml(input: string): string {
   return input
     .replaceAll("&", "&amp;")
@@ -74,7 +104,7 @@ function templateShell(params: { heading: string; bodyHtml: string }): string {
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://buyauto.ch/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
+      <img src="${SITE_URL}/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
     </div>
 
     <div class="content">
@@ -291,7 +321,7 @@ serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("email, full_name")
+      .select("email, full_name, role")
       .eq("id", ownerId)
       .single();
 
@@ -304,8 +334,8 @@ serve(async (req) => {
     }
 
     const listingTitle = formatListingTitle(record);
-    const listingUrl = `https://buyauto.ch/fahrzeug/${record.id}`;
-    const dashboardUrl = "https://buyauto.ch/dashboard";
+    const listingUrl = buildListingUrl(record);
+    const dashboardUrl = buildDashboardUrl(profile.role);
 
     const moderationNoteRaw =
       typeof record?.moderation_note === "string" ? (record.moderation_note as string) : null;

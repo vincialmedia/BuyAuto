@@ -1,7 +1,30 @@
+import type { GetStaticProps } from "next";
 import Head from "next/head";
 import type { Listing } from "@/lib/buyauto/types";
-import { getPremiumCarouselListings } from "@/services/listingsService";
+import { getLiveInventoryStats, getPremiumCarouselListings } from "@/services/listingsService";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
+import {
+  AMAG_LEASING,
+  AUTO_ABO_PROVIDERS,
+  AUTO_ABO_STAND,
+  BANK_NOW,
+  CA_AUTO_FINANCE,
+  CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES,
+  CANTONAL_FEES_HREF,
+  CEMBRA,
+  CEMBRA_TRANSFER_DISPLAY,
+  CEMBRA_TRANSFER_EXCL_VAT_CHF,
+  MULTILEASE,
+  kautionSentence,
+  kautionTableCell,
+  type AutoAboOffer,
+  type AutoAboProvider,
+  type InventoryStats,
+} from "@/lib/buyauto/facts";
+import { formatChf, formatChfRappen } from "@/lib/buyauto/format";
+import { SourceCitation } from "@/components/buyauto/SourceCitation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import React from "react";
@@ -11,11 +34,9 @@ import {
   TrendingDown, 
   TrendingUp, 
   Info, 
-  Clock, 
   DollarSign, 
   Users, 
   ShieldCheck, 
-  AlertTriangle, 
   Calendar, 
   FileCheck, 
   Zap, 
@@ -45,8 +66,73 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme-vs-autoabo"];
 
-export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { premiumListings: Listing[] | null }) {
+interface LeasingubernahmeVsAutoAboPageProps {
+  /** Server-rendered premium carousel; null falls back to the client fetch. */
+  premiumListings: Listing[] | null;
+  /** Live Leasingübernahme stats; null when they could not be loaded (cells then show no number). */
+  stats: InventoryStats | null;
+}
+
+// Auto-Abo examples from the facts module: every offer with its provider, the cheapest and the
+// most expensive one, and the span of their terms. Computed from the data, never typed by hand.
+type AboExample = { provider: AutoAboProvider; offer: AutoAboOffer };
+const ABO_EXAMPLES: AboExample[] = AUTO_ABO_PROVIDERS.flatMap((provider) =>
+  provider.offers.map((offer) => ({ provider, offer }))
+);
+const ABO_CHEAPEST = ABO_EXAMPLES.reduce((a, b) => (b.offer.monthlyChf < a.offer.monthlyChf ? b : a));
+const ABO_PRICIEST = ABO_EXAMPLES.reduce((a, b) => (b.offer.monthlyChf > a.offer.monthlyChf ? b : a));
+const ABO_TERM_MIN = Math.min(...ABO_EXAMPLES.map(({ offer }) => offer.termMonths));
+const ABO_TERM_MAX = Math.max(...ABO_EXAMPLES.map(({ offer }) => offer.termMonths));
+/** "24 bis 48 Monate" */
+const ABO_TERM_LABEL =
+  ABO_TERM_MIN === ABO_TERM_MAX ? `${ABO_TERM_MIN} Monate` : `${ABO_TERM_MIN} bis ${ABO_TERM_MAX} Monate`;
+
+const EXTERNAL_LINK_CLASS = "underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900";
+
+/** Link to the provider's offer page: "Carvolution, Opel Corsa Hybrid Edition 110". */
+function AboOfferLink({ example }: { example: AboExample }) {
+  return (
+    <a href={example.offer.url} target="_blank" rel="noopener noreferrer nofollow" className={EXTERNAL_LINK_CLASS}>
+      {example.provider.name}, {example.offer.model}
+    </a>
+  );
+}
+
+// FAQ answers shared by the FAQPage JSON-LD and the visible accordion, so both always match.
+const FAQ_CHEAPER_ANSWER =
+  "Das hängt vom Auto und vom Angebot ab. Bei einer Leasingübernahme finanzierst du keine All-Inclusive-Services mit, " +
+  "dafür zahlst du Versicherung und Service separat. Beim Auto-Abo sind diese Leistungen in der Monatsrate enthalten, " +
+  "dazu kommen je nach Anbieter einmalige Kosten. Der Kostenvergleich auf dieser Seite zeigt aktuelle Monatsraten " +
+  "beider Modelle mit Quelle.";
+
+const FAQ_FLEXIBILITY_ANSWER =
+  "Eine Leasingübernahme bindet dich für die Restlaufzeit des bestehenden Vertrags. Beim Auto-Abo hängt die Laufzeit " +
+  `vom Anbieter und vom Angebot ab: Bei den Beispielen im Kostenvergleich (Stand ${AUTO_ABO_STAND}) sind es ${ABO_TERM_LABEL}.`;
+
+function faqDepositAnswer(stats: InventoryStats | null): string {
+  return (
+    "Das hängt vom Anbieter ab. Bei den Auto-Abo-Beispielen im Kostenvergleich kommen zur Monatsrate einmalige Kosten " +
+    "wie eine Pauschale, ein Depot oder eine Kaution dazu. Bei einer Leasingübernahme fällt keine Anzahlung für einen " +
+    `neuen Vertrag an. ${kautionSentence(stats)}`
+  );
+}
+
+const FAQ_EXTRA_COSTS_ANSWER =
+  "Bei der Leasingübernahme zahlst du Versicherung, Service und Steuern separat. Beim Auto-Abo sind sie in den " +
+  "Beispielen auf dieser Seite inbegriffen; dazu kommen je nach Anbieter einmalige Kosten und ein Selbstbehalt im " +
+  "Schadenfall. Bei beiden kosten Kilometer über dem vereinbarten Limit extra.";
+
+const FAQ_SWITCH_ANSWER =
+  "Das hängt vom Anbieter und seinen Vertragsbedingungen ab. Bei einer Leasingübernahme ist ein Wechsel nicht möglich: " +
+  "Du übernimmst den Vertrag für genau dieses Fahrzeug.";
+
+const FAQ_WHO_ANSWER =
+  "Wenn du dich nur für die Restlaufzeit eines bestehenden Vertrags binden willst und bereit bist, Versicherung und " +
+  "Service selbst zu organisieren.";
+
+export default function LeasingubernahmeVsAutoAboPage({ premiumListings, stats }: LeasingubernahmeVsAutoAboPageProps) {
   const [showStickyCTA, setShowStickyCTA] = React.useState(false);
+  const faqDeposit = faqDepositAnswer(stats);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -71,7 +157,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
         <title>Leasingübernahme vs. Auto-Abo – Der grosse Vergleich | BuyAuto</title>
         <meta
           name="description"
-          content="Leasingübernahme oder Auto-Abo? Vergleichen Sie Kosten, Flexibilität und Vorteile beider Modelle für Ihre ideale Mobilitätslösung."
+          content="Leasingübernahme oder Auto-Abo? Vergleiche Kosten, Laufzeit und Leistungen beider Modelle mit aktuellen Beispielen und Quellen."
         />
         <link rel="canonical" href="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
         <script
@@ -104,7 +190,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   name: "Was ist günstiger: Leasingübernahme oder Auto-Abo?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Eine Leasingübernahme ist in der Regel 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und oft von einer bereits geleisteten Anzahlung profitieren.",
+                    text: FAQ_CHEAPER_ANSWER,
                   },
                 },
                 {
@@ -112,7 +198,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   name: "Welche Option bietet mehr Flexibilität?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ein Auto-Abo bietet deutlich mehr Flexibilität mit monatlicher Kündigungsfrist. Eine Leasingübernahme bindet Sie für die Restlaufzeit (meist 6-24 Monate).",
+                    text: FAQ_FLEXIBILITY_ANSWER,
                   },
                 },
                 {
@@ -120,7 +206,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   name: "Brauche ich eine Anzahlung bei einem Auto-Abo?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Nein, Auto-Abos erfordern keine Anzahlung. Sie zahlen nur die monatliche All-Inclusive-Rate. Bei einer Leasingübernahme kann eine kleine Anzahlung (0-2'000 CHF) anfallen.",
+                    text: faqDeposit,
                   },
                 },
                 {
@@ -128,7 +214,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   name: "Welche versteckten Kosten gibt es?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Bei Leasingübernahme: Versicherung, Service, Steuern separat. Bei Auto-Abo: Alles inklusive, nur Tanken/Laden extra. Beide: Kilometerlimit-Überschreitungen kosten extra.",
+                    text: FAQ_EXTRA_COSTS_ANSWER,
                   },
                 },
                 {
@@ -136,7 +222,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   name: "Kann ich beim Auto-Abo das Fahrzeug wechseln?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ja, viele Auto-Abo-Anbieter erlauben nach einer Mindestlaufzeit (oft 6-12 Monate) einen Fahrzeugwechsel. Bei Leasingübernahme ist ein Wechsel nicht möglich.",
+                    text: FAQ_SWITCH_ANSWER,
                   },
                 },
                 {
@@ -144,7 +230,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   name: "Für wen ist eine Leasingübernahme die bessere Wahl?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Ideal für kostenbewusste Personen mit mittelfristigem Bedarf (6-24 Monate), die bereit sind, Versicherung und Service selbst zu organisieren und Wert auf Kostenersparnis legen.",
+                    text: FAQ_WHO_ANSWER,
                   },
                 },
               ],
@@ -154,7 +240,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
         
         {/* Open Graph */}
         <meta property="og:title" content="Leasingübernahme vs. Auto-Abo – Der grosse Vergleich" />
-        <meta property="og:description" content="Vergleichen Sie Leasingübernahme und Auto-Abo: Kosten, Flexibilität und beste Option für Sie." />
+        <meta property="og:description" content="Vergleiche Leasingübernahme und Auto-Abo: Kosten, Laufzeit und Leistungen mit aktuellen Beispielen." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://www.buyauto.ch/leasinguebernahme-vs-autoabo" />
       </Head>
@@ -181,10 +267,10 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
               <div className="flex items-center justify-between gap-4">
                 <div className="hidden md:block">
                   <p className="text-white font-bold text-lg">
-                    Finden Sie Ihre perfekte Leasingübernahme
+                    Finde deine Leasingübernahme
                   </p>
                   <p className="text-white/90 text-sm">
-                    Vergleichen und sparen Sie bis zu 30%
+                    Aktuelle Angebote vergleichen
                   </p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
@@ -250,10 +336,10 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   Welches Modell passt zu dir?
                 </p>
                 <p className="text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl">
-                  Die Leasingübernahme ist meist günstiger: Du übernimmst einen laufenden Vertrag für dessen
-                  Restlaufzeit und zahlst Versicherung und Service separat – auf 12 Monate rund 6'000–12'000 CHF
-                  Gesamtkosten. Das Auto-Abo kostet mit 7'200–14'400 CHF mehr, weil alles im Fixpreis steckt,
-                  ist dafür monatlich kündbar. Faustregel: Übernahme fürs Budget, Abo für maximale Flexibilität.
+                  Bei der Leasingübernahme übernimmst du einen laufenden Vertrag für dessen Restlaufzeit und zahlst
+                  Versicherung und Service separat. Beim Auto-Abo sind Versicherung, Service und Steuern in der
+                  Monatsrate enthalten, dazu kommen je nach Anbieter einmalige Kosten. Welche Variante günstiger ist,
+                  hängt vom Auto und vom Angebot ab: Der Kostenvergleich unten zeigt aktuelle Zahlen mit Quelle.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -296,11 +382,11 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
             
             <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/20 p-8 md:p-10 rounded-3xl shadow-lg text-left">
               <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                Bei einer <strong>Leasingübernahme</strong> übernehmen Sie einen bestehenden Vertrag mit fester Laufzeit und oft günstigen Konditionen. Ein <strong>Auto-Abo</strong> bietet maximale Flexibilität mit monatlicher Kündbarkeit und All-Inclusive-Service.
+                Bei einer <strong>Leasingübernahme</strong> übernimmst du einen bestehenden Vertrag für dessen Restlaufzeit. Ein <strong>Auto-Abo</strong> bündelt Auto, Versicherung und Service in einer Monatsrate, Laufzeit und Einmalkosten hängen vom Anbieter ab.
               </p>
               <p className="text-lg text-neutral-700 leading-relaxed">
-                <strong>Leasingübernahme:</strong> Kosteneffizient, mittelfristige Bindung<br/>
-                <strong>Auto-Abo:</strong> Maximale Flexibilität, höhere Kosten
+                <strong>Leasingübernahme:</strong> Bindung nur für die Restlaufzeit, Versicherung und Service separat<br/>
+                <strong>Auto-Abo:</strong> Versicherung und Service inklusive, Laufzeit je nach Anbieter
               </p>
             </div>
           </div>
@@ -362,11 +448,9 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                 <ul className="space-y-4">
                   {[
                     "Bestehender Vertrag mit Restlaufzeit",
-                    "Oft keine oder geringe Anzahlung",
+                    "Keine Anzahlung für einen neuen Vertrag",
                     "Fixe monatliche Rate",
-                    "Mittelfristige Bindung (6-24 Monate)",
-                    "Sofortige Verfügbarkeit",
-                    "Günstiger als Neuleasing"
+                    "Bindung nur für die Restlaufzeit"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -388,12 +472,9 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                 </div>
                 <ul className="space-y-4">
                   {[
-                    "Monatlich kündbar (oft 1-3 Monate)",
-                    "Keine Anzahlung nötig",
-                    "All-Inclusive Rate (Versicherung, Service)",
-                    "Maximale Flexibilität",
-                    "Fahrzeugwechsel möglich",
-                    "Höhere monatliche Kosten"
+                    "Laufzeit je nach Anbieter und Angebot",
+                    "Einmalkosten je nach Anbieter (z. B. Depot oder Kaution)",
+                    "All-Inclusive Rate (Versicherung, Service)"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
@@ -428,34 +509,114 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Anzahlung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">0–2'000 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">0 CHF</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Anzahlung und Kaution</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{kautionTableCell(stats)}</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">Einmalkosten in den Beispielen, Stand {AUTO_ABO_STAND}:</span>
+                      {AUTO_ABO_PROVIDERS.map((provider) => (
+                        <span key={provider.name} className="block mt-1">
+                          <a
+                            href={provider.conditionsUrl ?? provider.offers[0].url}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            className={EXTERNAL_LINK_CLASS}
+                          >
+                            {provider.name}
+                          </a>
+                          : {provider.oneOffCosts.join("; ")}
+                        </span>
+                      ))}
+                    </td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Monatliche Rate</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">400–800 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">600–1'200 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">
+                      {stats?.medianRate != null
+                        ? `Median der aktuellen Angebote auf BuyAuto: ${formatChf(stats.medianRate)} pro Monat`
+                        : "gemäss Inserat"}
+                    </td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">
+                        Beispiele, Stand {AUTO_ABO_STAND}: {formatChf(ABO_CHEAPEST.offer.monthlyChf)} (
+                        <AboOfferLink example={ABO_CHEAPEST} />, {ABO_CHEAPEST.offer.termMonths} Monate) bis{" "}
+                        {formatChf(ABO_PRICIEST.offer.monthlyChf)} (<AboOfferLink example={ABO_PRICIEST} />,{" "}
+                        {ABO_PRICIEST.offer.termMonths} Monate)
+                      </span>
+                      {[ABO_CHEAPEST, ABO_PRICIEST]
+                        .filter((example) => example.offer.detail)
+                        .map((example) => (
+                          <span key={example.offer.url} className="block text-xs text-neutral-500 mt-1">
+                            {example.provider.name}: {example.offer.detail}
+                          </span>
+                        ))}
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">
+                        {CEMBRA.name}: {formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST (rund {CEMBRA_TRANSFER_DISPLAY} inkl.)
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={CEMBRA.source} />
+                      </span>
+                      <span className="block font-semibold mt-3">
+                        {CA_AUTO_FINANCE.name}: {formatChf(CA_AUTO_FINANCE.feesExclVatChf.vertragsumschreibung)} exkl. MWST (
+                        {formatChfRappen(CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF)} inkl.)
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={CA_AUTO_FINANCE.source} />
+                      </span>
+                      <span className="block font-semibold mt-3">
+                        {AMAG_LEASING.name}, {MULTILEASE.name}, {BANK_NOW.name}: kein Tarif publiziert
+                      </span>
+                    </td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">entfällt</td>
+                  </tr>
+                  <tr className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Neuer Fahrzeugausweis</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">{CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}, je nach Kanton</span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.length === 1 ? "Quelle:" : "Quellen:"}{" "}
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.map((source, i) => (
+                          <span key={source.title}>
+                            {i > 0 ? "; " : null}
+                            <SourceCitation source={source} prefix="" />
+                          </span>
+                        ))}
+                      </span>
+                      <a href={CANTONAL_FEES_HREF} className="block text-xs text-primary font-semibold hover:underline mt-1">
+                        Alle Kantone mit Quelle
+                      </a>
+                    </td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">In den Beispielen inbegriffen (Immatrikulation)</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Separat (100-200 CHF)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Inklusive</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">Separat: Du versicherst das Auto selbst.</span> {AMAG_LEASING.name}{" "}
+                      verlangt für Neufahrzeuge eine Vollkasko, bei Occasionen ist nach Absprache eine Teilkasko möglich (
+                      {AMAG_LEASING.clauses.versicherung}).
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={AMAG_LEASING.source} />
+                      </span>
+                    </td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">In den Beispielen inklusive, mit Selbstbehalt</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Service/Wartung</td>
                     <td className="p-4 md:p-6 text-neutral-700 font-semibold">Selbst zahlen</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Inklusive</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">In den Beispielen inklusive</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Laufzeit</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">6–24 Monate fest</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">Monatlich kündbar</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Gesamtkosten (12 Mo.)</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">6'000–12'000 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">7'200–14'400 CHF</td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">
+                      {stats?.medianMonths != null
+                        ? `Restlaufzeit des bestehenden Vertrags (Median der aktuellen Angebote: ${stats.medianMonths} Monate)`
+                        : "Restlaufzeit des bestehenden Vertrags, gemäss Inserat"}
+                    </td>
+                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{ABO_TERM_LABEL} in den Beispielen</td>
                   </tr>
                 </tbody>
               </table>
@@ -467,7 +628,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                 <div>
                   <p className="text-green-900 font-semibold mb-1">Spartipp</p>
                   <p className="text-green-800">
-                    Eine Leasingübernahme ist oft günstiger als ein Auto-Abo, da du keine All-Inclusive-Services mitfinanzierst und von der bereits geleisteten Anzahlung profitierst. Eine detaillierte Übersicht über <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">alle Leasingübernahme-Kosten</Link> findest du in unserem separaten Ratgeber.
+                    Vergleiche nicht nur die Monatsrate: Bei der Leasingübernahme kommen Versicherung, Service und die einmaligen Gebühren dazu, beim Auto-Abo die Einmalkosten des Anbieters. Eine detaillierte Übersicht über <Link href="/leasinguebernahme-kosten" className="text-primary font-semibold hover:underline">alle Leasingübernahme-Kosten</Link> findest du in unserem separaten Ratgeber.
                   </p>
                 </div>
               </div>
@@ -488,7 +649,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   Leasingübernahmen Entdecken
                 </h2>
                 <p className="text-neutral-600 text-lg">
-                  Finden Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
+                  Finde eine Leasingübernahme oder erstelle dein eigenes Inserat.
                 </p>
               </div>
               <SearchForm />
@@ -516,23 +677,18 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 {
-                  title: "Niedrigere Kosten",
-                  desc: "Oft 20-30% günstiger als Auto-Abo",
-                  icon: DollarSign
-                },
-                {
                   title: "Sofort verfügbar",
-                  desc: "Fahrzeug kann innerhalb weniger Tage übernommen werden",
+                  desc: "Das Auto steht bereit, sobald die Leasinggesellschaft der Übernahme zustimmt",
                   icon: Zap
                 },
                 {
-                  title: "Keine hohe Anzahlung",
-                  desc: "Meist nur geringe oder keine Anzahlung nötig",
+                  title: "Keine Anzahlung",
+                  desc: `Für einen neuen Vertrag fällt keine Anzahlung an. ${kautionSentence(stats)}`,
                   icon: TrendingDown
                 },
                 {
-                  title: "Mittelfristige Planung",
-                  desc: "Ideal für 6-24 Monate kalkulierbare Bindung",
+                  title: "Kalkulierbare Bindung",
+                  desc: "Du bindest dich nur für die Restlaufzeit des Vertrags",
                   icon: Calendar
                 },
                 {
@@ -581,8 +737,8 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 {
-                  title: "Maximale Flexibilität",
-                  desc: "Monatlich kündbar, kein langfristiges Commitment",
+                  title: "Laufzeit nach Angebot",
+                  desc: "Die Laufzeit hängt vom Anbieter ab, Beispiele stehen im Kostenvergleich",
                   icon: Zap
                 },
                 {
@@ -591,23 +747,13 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   icon: ShieldCheck
                 },
                 {
-                  title: "Keine Anzahlung",
-                  desc: "Sofortiger Start ohne Startkapital",
+                  title: "Einmalkosten je nach Anbieter",
+                  desc: "Pauschale, Depot oder Kaution: Die Beispiele stehen im Kostenvergleich",
                   icon: DollarSign
                 },
                 {
-                  title: "Fahrzeugwechsel",
-                  desc: "Regelmässiger Wechsel zu neuen Modellen möglich",
-                  icon: TrendingUp
-                },
-                {
-                  title: "Keine versteckten Kosten",
-                  desc: "Transparente Preisgestaltung ohne Überraschungen",
-                  icon: Check
-                },
-                {
                   title: "Planungssicherheit",
-                  desc: "Fixe Rate deckt alle Kosten ab",
+                  desc: "Fixe Rate mit Versicherung, Service und Steuern",
                   icon: Calendar
                 }
               ].map((item, i) => {
@@ -638,7 +784,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                 Für wen eignet sich was?
               </h2>
               <p className="text-xl text-neutral-600">
-                Finden Sie die passende Mobilitätslösung für Ihre Situation
+                Finde die passende Mobilitätslösung für deine Situation
               </p>
             </div>
 
@@ -649,17 +795,14 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   <div className="flex items-center gap-3 mb-6">
                     <Users className="w-7 h-7 text-primary" />
                     <h3 className="text-2xl font-bold text-neutral-900">
-                      Leasingübernahme passt zu Ihnen, wenn...
+                      Leasingübernahme passt zu dir, wenn...
                     </h3>
                   </div>
                   <ul className="space-y-4">
                     {[
-                      "Sie Kosten sparen möchten",
-                      "Sie mittelfristig (6-24 Monate) planen",
-                      "Sie das Fahrzeug sofort benötigen",
-                      "Sie fixe monatliche Raten bevorzugen",
-                      "Sie bereit sind, Versicherung separat zu zahlen",
-                      "Sie ein gutes Preis-Leistungs-Verhältnis suchen"
+                      "du dich nur für die Restlaufzeit eines Vertrags binden willst",
+                      "du fixe monatliche Raten bevorzugst",
+                      "du bereit bist, die Versicherung separat zu zahlen"
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
                         <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -676,17 +819,13 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   <div className="flex items-center gap-3 mb-6">
                     <Users className="w-7 h-7 text-neutral-700" />
                     <h3 className="text-2xl font-bold text-neutral-900">
-                      Auto-Abo passt zu Ihnen, wenn...
+                      Auto-Abo passt zu dir, wenn...
                     </h3>
                   </div>
                   <ul className="space-y-4">
                     {[
-                      "Sie maximale Flexibilität wünschen",
-                      "Sie nicht langfristig binden möchten",
-                      "Sie All-Inclusive-Service schätzen",
-                      "Sie regelmässig Fahrzeuge wechseln wollen",
-                      "Sie keine separate Versicherung abschliessen möchten",
-                      "Sie bereit sind, mehr für Komfort zu zahlen"
+                      "du All-Inclusive-Service schätzt",
+                      "du keine separate Versicherung abschliessen möchtest"
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-neutral-700">
                         <Check className="w-5 h-5 text-neutral-600 shrink-0 mt-0.5" />
@@ -708,23 +847,20 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
               <span className="font-bold text-neutral-900">Entscheidungshilfe</span>
             </div>
             <h2 className="text-4xl font-bold text-neutral-900 mb-12 tracking-tight">
-              Entscheidungshilfe: Ihre Checkliste
+              Entscheidungshilfe: deine Checkliste
             </h2>
             
             <div className="bg-gradient-to-br from-neutral-50 to-white border-2 border-primary/20 rounded-3xl p-8 md:p-10 shadow-xl text-left">
               <p className="text-lg text-neutral-700 mb-6">
-                Beantworten Sie diese Fragen, um die richtige Wahl zu treffen:
+                Diese Fragen helfen dir bei der Wahl:
               </p>
               
               <div className="space-y-4">
                 {[
-                  "Wie wichtig ist Ihnen Flexibilität bei der Laufzeit?",
-                  "Möchten Sie eine All-Inclusive-Lösung oder lieber selbst verwalten?",
-                  "Wie lange planen Sie, das Fahrzeug zu nutzen?",
-                  "Ist Kostenersparnis oder Komfort wichtiger für Sie?",
-                  "Benötigen Sie das Fahrzeug sofort oder können Sie warten?",
-                  "Möchten Sie regelmässig verschiedene Fahrzeuge testen?",
-                  "Wie wichtig ist Ihnen Planungssicherheit?"
+                  "Wie wichtig ist dir Flexibilität bei der Laufzeit?",
+                  "Möchtest du eine All-Inclusive-Lösung oder lieber selbst verwalten?",
+                  "Wie lange planst du, das Fahrzeug zu nutzen?",
+                  "Wie wichtig ist dir Planungssicherheit?"
                 ].map((question, i) => (
                   <div key={i} className="bg-white border border-neutral-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
@@ -742,7 +878,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   💡 Unser Tipp:
                 </p>
                 <p className="text-neutral-700">
-                  Wenn Sie "Kostenersparnis", "Mittelfristig" und "Sofort" priorisieren, ist eine <strong>Leasingübernahme</strong> ideal – werfen Sie am besten gleich einen Blick auf die aktuell <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">verfügbaren Leasingübernahmen</Link>. Wenn Sie "Flexibilität", "All-Inclusive" und "Fahrzeugwechsel" bevorzugen, ist ein <strong>Auto-Abo</strong> besser geeignet.
+                  Willst du dich nur für die Restlaufzeit eines bestehenden Vertrags binden und Versicherung und Service selbst organisieren, passt eine <strong>Leasingübernahme</strong>: Wirf einen Blick auf die aktuell <Link href="/suche?dealType=lease_takeover" className="text-primary font-semibold hover:underline">verfügbaren Leasingübernahmen</Link>. Willst du Versicherung, Service und Steuern in einer Monatsrate, passt ein <strong>Auto-Abo</strong> besser.
                 </p>
               </div>
             </div>
@@ -774,7 +910,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   Was ist günstiger: Leasingübernahme oder Auto-Abo?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Eine Leasingübernahme ist in der Regel 20-30% günstiger als ein Auto-Abo, da Sie keine All-Inclusive-Services mitfinanzieren und oft von einer bereits geleisteten Anzahlung profitieren.
+                  {FAQ_CHEAPER_ANSWER}
                 </AccordionContent>
               </AccordionItem>
               
@@ -786,7 +922,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   Welche Option bietet mehr Flexibilität?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ein Auto-Abo bietet deutlich mehr Flexibilität mit monatlicher Kündigungsfrist. Eine Leasingübernahme bindet Sie für die Restlaufzeit (meist 6-24 Monate).
+                  {FAQ_FLEXIBILITY_ANSWER}
                 </AccordionContent>
               </AccordionItem>
               
@@ -798,7 +934,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   Brauche ich eine Anzahlung bei einem Auto-Abo?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Nein, Auto-Abos erfordern keine Anzahlung. Sie zahlen nur die monatliche All-Inclusive-Rate. Bei einer Leasingübernahme kann eine kleine Anzahlung (0-2'000 CHF) anfallen.
+                  {faqDeposit}
                 </AccordionContent>
               </AccordionItem>
               
@@ -810,7 +946,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   Welche versteckten Kosten gibt es?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Bei Leasingübernahme: Versicherung, Service, Steuern separat. Bei Auto-Abo: Alles inklusive, nur Tanken/Laden extra. Beide: Kilometerlimit-Überschreitungen kosten extra.
+                  {FAQ_EXTRA_COSTS_ANSWER}
                 </AccordionContent>
               </AccordionItem>
 
@@ -822,7 +958,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   Kann ich beim Auto-Abo das Fahrzeug wechseln?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ja, viele Auto-Abo-Anbieter erlauben nach einer Mindestlaufzeit (oft 6-12 Monate) einen Fahrzeugwechsel. Bei Leasingübernahme ist ein Wechsel nicht möglich.
+                  {FAQ_SWITCH_ANSWER}
                 </AccordionContent>
               </AccordionItem>
 
@@ -834,7 +970,7 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
                   Für wen ist eine Leasingübernahme die bessere Wahl?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Ideal für kostenbewusste Personen mit mittelfristigem Bedarf (6-24 Monate), die bereit sind, Versicherung und Service selbst zu organisieren und Wert auf Kostenersparnis legen.
+                  {FAQ_WHO_ANSWER}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -849,10 +985,10 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
               <span className="font-bold text-white">Bereit zum Start</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-              Bereit für Ihre Mobilitätslösung?
+              Bereit für deine Mobilitätslösung?
             </h2>
             <p className="text-neutral-300 max-w-2xl mx-auto text-xl leading-relaxed">
-              Entdecken Sie attraktive Leasingübernahmen oder erstellen Sie Ihr eigenes Inserat.
+              Entdecke aktuelle Leasingübernahmen oder erstelle dein eigenes Inserat.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-10 text-lg font-semibold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/30 transition-all hover:-translate-y-1">
@@ -880,6 +1016,14 @@ export default function LeasingubernahmeVsAutoAboPage({ premiumListings }: { pre
 }
 
 // ISR so the premium carousel is server-rendered (prices in the HTML, no client fetch).
-export const getStaticProps = async () => {
-  return { props: { premiumListings: await getPremiumCarouselListings() }, revalidate: 300 };
+// Live inventory stats (median rate, median Restlaufzeit, Kaution spread) refresh with it;
+// null stats render the no-number fallbacks.
+export const getStaticProps: GetStaticProps<LeasingubernahmeVsAutoAboPageProps> = async () => {
+  let stats: InventoryStats | null = null;
+  try {
+    stats = await getLiveInventoryStats();
+  } catch (error) {
+    console.error("Leasingübernahme vs. Auto-Abo: live inventory stats failed:", error);
+  }
+  return { props: { premiumListings: await getPremiumCarouselListings(), stats }, revalidate: 300 };
 };

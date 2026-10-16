@@ -5,16 +5,13 @@ import dynamic from "next/dynamic";
 import { 
   Check, 
   ChevronRight, 
-  AlertTriangle, 
   FileText, 
   Info, 
   ShieldCheck, 
   TrendingDown, 
-  Clock, 
   Zap, 
   Users, 
   BadgeCheck, 
-  MapPin, 
   Calendar, 
   DollarSign, 
   FileCheck, 
@@ -31,11 +28,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
-import { getPublicOfferIndex, liveTakeovers, loadPremiumCarouselListings, searchListingsOrThrow } from "@/services/listingsService";
+import { getPremiumCarouselListings, getPublicOfferIndex, liveTakeovers, searchListingsOrThrow } from "@/services/listingsService";
 import type { Listing } from "@/lib/buyauto/types";
 import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
-import { CEMBRA, CEMBRA_TRANSFER_EXCL_VAT_CHF, FEE_SHORT } from "@/lib/buyauto/facts";
-import { formatChf } from "@/lib/buyauto/format";
+import {
+  AMAG_LEASING,
+  BANK_NOW,
+  CA_AUTO_FINANCE,
+  CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES,
+  CANTONAL_FEES_HREF,
+  CEMBRA,
+  CEMBRA_TRANSFER_DISPLAY,
+  CEMBRA_TRANSFER_EXCL_VAT_CHF,
+  FEE_SHORT,
+  MULTILEASE,
+} from "@/lib/buyauto/facts";
+import { formatChf, formatChfRappen } from "@/lib/buyauto/format";
+import { SourceCitation } from "@/components/buyauto/SourceCitation";
 import {
   Accordion,
   AccordionContent,
@@ -57,17 +68,25 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 });
 
 type LeasingUebernahmePageProps = {
+  /** Newest live takeovers; empty when the live read failed (the «Live» section is then hidden). */
   takeoverListings: Listing[];
-  takeoverTotal: number;
+  /** Live takeover count; null when the live read failed. */
+  takeoverTotal: number | null;
   // Indexable brand landing pages (enough live Leasingübernahmen). Only these are
   // linked from the brand section — noindex brand pages stay unlinked.
   availableBrands: { slug: string; name: string }[];
-  /** Premium carousel, rendered server-side (prices in the HTML). */
-  premiumListings: Listing[];
+  /** Premium carousel, rendered server-side (prices in the HTML); null falls back to the client fetch. */
+  premiumListings: Listing[] | null;
 };
 
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasinguebernahme"];
+
+// FAQ answers shared by the FAQPage JSON-LD and the visible accordion, so both always match.
+const FAQ_DURATION_ANSWER =
+  "Das hängt vor allem von der Bonitätsprüfung und der Rückmeldung der Leasinggesellschaft ab.";
+const FAQ_FEES_ANSWER =
+  "Das wird frei vereinbart: Abgeber und Übernehmer einigen sich untereinander, wer die Übertragungsgebühr der Leasinggesellschaft bezahlt.";
 
 export default function LeasingUebernahmePage({
   takeoverListings,
@@ -76,7 +95,9 @@ export default function LeasingUebernahmePage({
   premiumListings,
 }: LeasingUebernahmePageProps) {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
-  const hasTakeoverListings = Array.isArray(takeoverListings) && takeoverListings.length > 0;
+  // The «Live auf BuyAuto» section and the ItemList JSON-LD render only with data from a successful live read.
+  const hasTakeoverListings =
+    takeoverTotal !== null && Array.isArray(takeoverListings) && takeoverListings.length > 0;
 
   // Handle sticky CTA visibility
   useEffect(() => {
@@ -143,7 +164,7 @@ export default function LeasingUebernahmePage({
                   name: "Wie lange dauert der Prozess?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Meist 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Leasingbank.",
+                    text: FAQ_DURATION_ANSWER,
                   },
                 },
                 {
@@ -151,7 +172,7 @@ export default function LeasingUebernahmePage({
                   name: "Wer übernimmt die Gebühren?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Das wird frei vereinbart. Oft übernimmt der Abgeber die Transferkosten, um den Transfer attraktiver zu machen.",
+                    text: FAQ_FEES_ANSWER,
                   },
                 },
                 {
@@ -408,7 +429,7 @@ export default function LeasingUebernahmePage({
                 <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
                   {takeoverTotal}{" "}
                   {takeoverTotal === 1 ? "laufender Leasingvertrag wartet" : "laufende Leasingverträge warten"} auf eine
-                  Übernahme – ohne hohe Anzahlung, mit kurzer Restlaufzeit.
+                  Übernahme auf BuyAuto.
                 </p>
               </div>
 
@@ -473,7 +494,10 @@ export default function LeasingUebernahmePage({
                   { id: "vorteile", label: "Vorteile für beide Seiten" },
                   { id: "rechtliches", label: "Rechtliche Hinweise" },
                   { id: "faq", label: "Häufige Fragen" },
-                ].map((item, i) => (
+                ]
+                  // «Aktuelle Angebote» only exists when the live read succeeded.
+                  .filter((item) => item.id !== "angebote" || hasTakeoverListings)
+                  .map((item, i) => (
                   <button 
                     key={i}
                     onClick={() => scrollToSection(item.id)}
@@ -812,30 +836,55 @@ export default function LeasingUebernahmePage({
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-6 font-semibold text-neutral-900">Übertragungsgebühr der Leasinggesellschaft</td>
-                    <td className="p-6 text-neutral-700 font-bold">
-                      {CEMBRA.name}: {formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST; AMAG, Multilease, BANK-now: auf Anfrage
+                    <td className="p-6 text-neutral-700">
+                      <span className="font-bold">
+                        {CEMBRA.name}: {formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST (rund {CEMBRA_TRANSFER_DISPLAY} inkl.)
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={CEMBRA.source} />
+                      </span>
+                      <span className="block font-bold mt-3">
+                        {CA_AUTO_FINANCE.name}: {formatChf(CA_AUTO_FINANCE.feesExclVatChf.vertragsumschreibung)} exkl. MWST (
+                        {formatChfRappen(CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF)} inkl.)
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={CA_AUTO_FINANCE.source} />
+                      </span>
+                      <span className="block font-bold mt-3">
+                        {AMAG_LEASING.name}, {MULTILEASE.name}, {BANK_NOW.name}: kein Tarif publiziert
+                      </span>
                     </td>
-                    <td className="p-6 text-neutral-700">Verhandlungssache</td>
+                    <td className="p-6 text-neutral-700">nach Absprache zwischen Abgeber und Übernehmer</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Händler-/Wechselgebühr</td>
-                    <td className="p-6 text-neutral-700 font-bold">100–250 CHF</td>
-                    <td className="p-6 text-neutral-700">Optional</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Ummeldung / Fahrzeugausweis</td>
-                    <td className="p-6 text-neutral-700 font-bold">50–150 CHF</td>
+                    <td className="p-6 font-semibold text-neutral-900">Ummeldung / Fahrzeugausweis (Strassenverkehrsamt)</td>
+                    <td className="p-6 text-neutral-700">
+                      <span className="font-bold">{CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}, je nach Kanton</span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.length === 1 ? "Quelle:" : "Quellen:"}{" "}
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.map((source, i) => (
+                          <span key={source.title}>
+                            {i > 0 ? "; " : null}
+                            <SourceCitation source={source} prefix="" />
+                          </span>
+                        ))}
+                      </span>
+                      <a href={CANTONAL_FEES_HREF} className="block text-xs text-primary font-semibold hover:underline mt-1">
+                        Alle Kantone mit Quelle
+                      </a>
+                    </td>
                     <td className="p-6 text-neutral-700">Übernehmer</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Versicherungskosten</td>
-                    <td className="p-6 text-neutral-700 font-bold">variabel</td>
+                    <td className="p-6 font-semibold text-neutral-900">Versicherung</td>
+                    <td className="p-6 text-neutral-700">
+                      Du versicherst das Auto selbst. {AMAG_LEASING.name} verlangt für Neufahrzeuge eine Vollkasko, bei
+                      Occasionen ist nach Absprache eine Teilkasko möglich ({AMAG_LEASING.clauses.versicherung}).
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={AMAG_LEASING.source} />
+                      </span>
+                    </td>
                     <td className="p-6 text-neutral-700">Übernehmer</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-6 font-semibold text-neutral-900">Administrationskosten</td>
-                    <td className="p-6 text-neutral-700 font-bold">je nach Bank</td>
-                    <td className="p-6 text-neutral-700">Abgeber oder Übernehmer</td>
                   </tr>
                 </tbody>
               </table>
@@ -847,7 +896,7 @@ export default function LeasingUebernahmePage({
                 <div>
                   <p className="text-green-900 font-black mb-2 text-lg">Hinweis</p>
                   <p className="text-green-800 text-lg">
-                    Viele Abgeber übernehmen die Gebühren, um den Transfer attraktiver zu machen. Eine
+                    Wer die Gebühren bezahlt, vereinbaren Abgeber und Übernehmer untereinander. Eine
                     detaillierte Aufschlüsselung aller Gebühren und Spartipps findest du im{" "}
                     <Link href="/leasinguebernahme-kosten" className="font-bold underline hover:text-green-700">
                       kompletten Kosten-Überblick zur Leasingübernahme
@@ -919,8 +968,7 @@ export default function LeasingUebernahmePage({
                   {[
                     "Vertrag schnell und günstig loswerden",
                     "Keine hohen Ausstiegskosten",
-                    "Entlastung bei geänderter Lebenssituation",
-                    "Vertragsübertragung meist in wenigen Tagen möglich"
+                    "Entlastung bei geänderter Lebenssituation"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <div className="bg-green-100 p-1 rounded-full mt-0.5">
@@ -1037,7 +1085,7 @@ export default function LeasingUebernahmePage({
                   Wie lange dauert der Prozess?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Meist 2–5 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Leasingbank.
+                  {FAQ_DURATION_ANSWER}
                 </AccordionContent>
               </AccordionItem>
               
@@ -1049,7 +1097,7 @@ export default function LeasingUebernahmePage({
                   Wer übernimmt die Gebühren?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6 text-base">
-                  Das wird frei vereinbart. Oft übernimmt der Abgeber die Transferkosten, um den Transfer attraktiver zu machen.
+                  {FAQ_FEES_ANSWER}
                 </AccordionContent>
               </AccordionItem>
               
@@ -1125,21 +1173,6 @@ export default function LeasingUebernahmePage({
               </Button>
             </div>
 
-            {/* Trust Indicators */}
-            <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-neutral-400 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <span>100% legal</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-green-400" />
-                <span>Sicher & geprüft</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-green-400" />
-                <span>In wenigen Tagen</span>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -1272,7 +1305,7 @@ export default function LeasingUebernahmePage({
         </section>
 
         {/* PREMIUM LISTINGS */}
-        <PremiumListings initialListings={premiumListings} />
+        <PremiumListings initialListings={premiumListings ?? undefined} />
         
       </main>
     </>
@@ -1280,19 +1313,34 @@ export default function LeasingUebernahmePage({
 }
 
 export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async () => {
-  // The count, the grid and the brand links must come from a successful query: a
-  // failure throws, so ISR keeps the last good page instead of caching "0 laufende
-  // Leasingverträge" (a failed first build fails loudly instead of shipping it).
-  const [results, offers, premiumListings] = await Promise.all([
-    searchListingsOrThrow({ dealType: "lease_takeover", sort: "dateDesc", pageSize: 6 }),
-    getPublicOfferIndex(),
-    loadPremiumCarouselListings(),
+  // Each read fails on its own: a failed live read renders the page without the «Live
+  // auf BuyAuto» section (never stale or fallback data labelled «Live»), a failed brand
+  // read drops the brand links, and a failed premium read lets the carousel fetch
+  // client-side. Revalidating every 5 minutes brings the live section back.
+  const [takeovers, availableBrands, premiumListings] = await Promise.all([
+    (async (): Promise<{ takeoverListings: Listing[]; takeoverTotal: number | null }> => {
+      try {
+        const results = await searchListingsOrThrow({ dealType: "lease_takeover", sort: "dateDesc", pageSize: 6 });
+        // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
+        const takeoverListings = JSON.parse(JSON.stringify(results.items)) as Listing[];
+        return { takeoverListings, takeoverTotal: results.total };
+      } catch (error) {
+        console.error("Leasingübernahme guide: live takeover read failed:", error);
+        return { takeoverListings: [], takeoverTotal: null };
+      }
+    })(),
+    (async (): Promise<{ slug: string; name: string }[]> => {
+      try {
+        // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
+        const offers = await getPublicOfferIndex();
+        return indexableBrandPages(liveTakeovers(offers)).map((b) => ({ slug: b.slug, name: b.name }));
+      } catch (error) {
+        console.error("Leasingübernahme guide: brand pages read failed:", error);
+        return [];
+      }
+    })(),
+    getPremiumCarouselListings(),
   ]);
 
-  // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
-  const availableBrands = indexableBrandPages(liveTakeovers(offers)).map((b) => ({ slug: b.slug, name: b.name }));
-
-  // 6 newest takeovers in the hub; strip undefined fields so Next can serialize.
-  const takeoverListings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-  return { props: { takeoverListings, takeoverTotal: results.total, availableBrands, premiumListings }, revalidate: 300 };
+  return { props: { ...takeovers, availableBrands, premiumListings }, revalidate: 300 };
 };

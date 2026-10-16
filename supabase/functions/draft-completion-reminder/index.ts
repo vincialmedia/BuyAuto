@@ -27,7 +27,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SITE_URL = "https://buyauto.ch";
+// Links point at their final URL, so a click lands without a redirect:
+// vercel.json 308s the apex to www, and trailingSlash is off.
+const SITE_URL = "https://www.buyauto.ch";
 const REMINDER_KIND = "draft_completion_reminder";
 const IDLE_STEP_DAYS = 5;
 const MAX_IDLE_STEP = 5; // steps 1-5 while active; step 6 is the archived mail
@@ -88,6 +90,12 @@ function financingTypeLabel(value: unknown): string | null {
   if (value === "leasing") return "Leasing";
   if (value === "cash") return "Barzahlung";
   return null;
+}
+
+// /dashboard only forwards by role (src/pages/dashboard.tsx): garages to
+// /dashboard/garage, everyone else to /dashboard/private.
+function buildDashboardUrl(role: string | null | undefined): string {
+  return `${SITE_URL}/dashboard/${role === "garage" ? "garage" : "private"}`;
 }
 
 function pluralDays(n: number): string {
@@ -258,15 +266,16 @@ function buildHtml(params: {
   greeting: string;
   drafts: DraftCandidate[];
   totalCount: number;
+  dashboardUrl: string;
 }): string {
-  const { copy, greeting, drafts, totalCount } = params;
+  const { copy, greeting, drafts, totalCount, dashboardUrl } = params;
   const hidden = totalCount - drafts.length;
 
   const moreRow =
     hidden > 0
       ? `<tr>
   <td style="padding: 14px 0;">
-    <a href="${SITE_URL}/dashboard" style="color: #2563eb; font-size: 14px;">und ${hidden} weitere ${
+    <a href="${dashboardUrl}" style="color: #2563eb; font-size: 14px;">und ${hidden} weitere ${
       hidden === 1 ? "Entwurf" : "Entwürfe"
     } …</a>
   </td>
@@ -275,7 +284,7 @@ function buildHtml(params: {
 
   // One draft => send them straight to it; several => the dashboard is the
   // only sensible single destination.
-  const ctaUrl = totalCount === 1 && drafts[0] ? drafts[0].resumeUrl : `${SITE_URL}/dashboard`;
+  const ctaUrl = totalCount === 1 && drafts[0] ? drafts[0].resumeUrl : dashboardUrl;
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -324,7 +333,7 @@ function buildHtml(params: {
 
     <div class="footer">
       <p>Sie erhalten diese E-Mail, weil in Ihrem BuyAuto-Konto unvollständige Entwürfe liegen.</p>
-      <p><a href="${SITE_URL}/dashboard">Entwürfe verwalten</a></p>
+      <p><a href="${dashboardUrl}">Entwürfe verwalten</a></p>
       <p>&copy; ${new Date().getFullYear()} BuyAuto</p>
     </div>
   </div>
@@ -340,7 +349,7 @@ function requireServiceAuthorization(req: Request): boolean {
   return Boolean(serviceKey) && auth === `Bearer ${serviceKey}`;
 }
 
-type ProfileRow = { id: string; email: string | null; full_name: string | null };
+type ProfileRow = { id: string; email: string | null; full_name: string | null; role: string | null };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -569,7 +578,7 @@ serve(async (req) => {
 
   if (ownerIds.length > 0) {
     const [profilesRes, logRes] = await Promise.all([
-      supabase.from("profiles").select("id,email,full_name").in("id", ownerIds),
+      supabase.from("profiles").select("id,email,full_name,role").in("id", ownerIds),
       supabase
         .from("email_notification_log")
         .select("entity_id,days_before,created_at,recipient_user_id")
@@ -705,6 +714,7 @@ serve(async (req) => {
         greeting: name ?? "Guten Tag",
         drafts: listed,
         totalCount: ownerDrafts.length,
+        dashboardUrl: buildDashboardUrl(profile?.role),
       }),
     });
 

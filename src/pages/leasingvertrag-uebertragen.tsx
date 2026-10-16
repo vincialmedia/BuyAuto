@@ -1,8 +1,22 @@
 import Head from "next/head";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 import { LEASING_COMPANIES } from "@/lib/buyauto/leasingCompanies";
-import { BANK_NOW, CEMBRA, CEMBRA_TRANSFER_EXCL_VAT_CHF, FEE_SHORT, MULTILEASE } from "@/lib/buyauto/facts";
-import { formatChf } from "@/lib/buyauto/format";
+import {
+  AMAG_LEASING,
+  BANK_NOW,
+  CA_AUTO_FINANCE,
+  CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL,
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES,
+  CANTONAL_FEES_HREF,
+  CEMBRA,
+  CEMBRA_TRANSFER_DISPLAY,
+  CEMBRA_TRANSFER_EXCL_VAT_CHF,
+  FEE_SHORT,
+  MULTILEASE,
+} from "@/lib/buyauto/facts";
+import { formatChf, formatChfRappen } from "@/lib/buyauto/format";
+import { SourceCitation } from "@/components/buyauto/SourceCitation";
 import type { Listing } from "@/lib/buyauto/types";
 import { getPremiumCarouselListings } from "@/services/listingsService";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
@@ -21,13 +35,11 @@ import {
   Users, 
   BadgeCheck, 
   MapPin, 
-  Calendar, 
   DollarSign, 
   FileCheck, 
   Search, 
   ArrowRight, 
   RefreshCw, 
-  UserCheck, 
   AlertCircle, 
   CheckCircle, 
   XCircle 
@@ -54,10 +66,11 @@ const PremiumListings = dynamic(() => import("@/components/buyauto/PremiumListin
 // Single source for the visible «Aktualisiert am» badge and the Article dateModified.
 const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/leasingvertrag-uebertragen"];
 
-// Cost-table cell built from the facts module: "Cembra: CHF 575 exkl. MWST; AMAG, Multilease, BANK-now: auf Anfrage".
-const TRANSFER_FEE_CELL =
-  `${CEMBRA.name}: ${formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST; ` +
-  `AMAG, ${MULTILEASE.name}, ${BANK_NOW.name}: auf Anfrage`;
+// FAQ answers shared by the FAQPage JSON-LD and the visible accordion, so both always match.
+const FAQ_DURATION_ANSWER =
+  "Das hängt vor allem von der Bonitätsprüfung und der Rückmeldung der Leasinggesellschaft ab.";
+const FAQ_FEES_ANSWER =
+  "Das wird frei vereinbart: Abgeber und Übernehmer einigen sich untereinander, wer die Übertragungsgebühr der Leasinggesellschaft bezahlt.";
 
 export default function LeasingvertragUebertragenPage({ premiumListings }: { premiumListings: Listing[] | null }) {
   const scrollToSection = (id: string) => {
@@ -106,7 +119,7 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                   name: "Wie lange dauert die Vertragsübertragung?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "In der Regel 5–10 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Bank.",
+                    text: FAQ_DURATION_ANSWER,
                   },
                 },
                 {
@@ -114,7 +127,7 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                   name: "Wer zahlt die Übertragungsgebühren?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Das wird zwischen den Parteien frei vereinbart. Oft übernimmt der Abgeber die Kosten, um die Übertragung attraktiver zu machen.",
+                    text: FAQ_FEES_ANSWER,
                   },
                 },
                 {
@@ -563,22 +576,54 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                 <tbody className="divide-y divide-neutral-200">
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Übertragungsgebühr der Leasinggesellschaft</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">{TRANSFER_FEE_CELL}</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Verhandlungssache</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">
+                        {CEMBRA.name}: {formatChf(CEMBRA_TRANSFER_EXCL_VAT_CHF)} exkl. MWST (rund {CEMBRA_TRANSFER_DISPLAY} inkl.)
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={CEMBRA.source} />
+                      </span>
+                      <span className="block font-semibold mt-3">
+                        {CA_AUTO_FINANCE.name}: {formatChf(CA_AUTO_FINANCE.feesExclVatChf.vertragsumschreibung)} exkl. MWST (
+                        {formatChfRappen(CA_AUTO_FINANCE_TRANSFER_INCL_VAT_CHF)} inkl.)
+                      </span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={CA_AUTO_FINANCE.source} />
+                      </span>
+                      <span className="block font-semibold mt-3">
+                        {AMAG_LEASING.name}, {MULTILEASE.name}, {BANK_NOW.name}: kein Tarif publiziert
+                      </span>
+                    </td>
+                    <td className="p-4 md:p-6 text-neutral-700">nach Absprache zwischen Abgeber und Übernehmer</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Administrationskosten</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–200 CHF</td>
-                    <td className="p-4 md:p-6 text-neutral-700">Meist Abgeber</td>
-                  </tr>
-                  <tr className="hover:bg-primary/5 transition-colors">
-                    <td className="p-4 md:p-6 font-medium text-neutral-900">Fahrzeugausweis / Ummeldung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">50–150 CHF</td>
+                    <td className="p-4 md:p-6 font-medium text-neutral-900">Fahrzeugausweis / Ummeldung (Strassenverkehrsamt)</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      <span className="font-semibold">{CANTONAL_FAHRZEUGAUSWEIS_RANGE_LABEL}, je nach Kanton</span>
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.length === 1 ? "Quelle:" : "Quellen:"}{" "}
+                        {CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.map((source, i) => (
+                          <span key={source.title}>
+                            {i > 0 ? "; " : null}
+                            <SourceCitation source={source} prefix="" />
+                          </span>
+                        ))}
+                      </span>
+                      <a href={CANTONAL_FEES_HREF} className="block text-xs text-primary font-semibold hover:underline mt-1">
+                        Alle Kantone mit Quelle
+                      </a>
+                    </td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
                   </tr>
                   <tr className="hover:bg-primary/5 transition-colors">
                     <td className="p-4 md:p-6 font-medium text-neutral-900">Versicherung</td>
-                    <td className="p-4 md:p-6 text-neutral-700 font-semibold">variabel</td>
+                    <td className="p-4 md:p-6 text-neutral-700">
+                      Der Übernehmer versichert das Auto selbst. {AMAG_LEASING.name} verlangt für Neufahrzeuge eine
+                      Vollkasko, bei Occasionen ist nach Absprache eine Teilkasko möglich ({AMAG_LEASING.clauses.versicherung}).
+                      <span className="block text-xs text-neutral-500 mt-1">
+                        <SourceCitation source={AMAG_LEASING.source} />
+                      </span>
+                    </td>
                     <td className="p-4 md:p-6 text-neutral-700">Übernehmer</td>
                   </tr>
                 </tbody>
@@ -591,7 +636,7 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                 <div>
                   <p className="text-green-900 font-semibold mb-1">Tipp</p>
                   <p className="text-green-800">
-                    Viele Abgeber übernehmen die Übertragungsgebühren, um den Vertrag schneller loszuwerden.
+                    Wer die Übertragungsgebühr bezahlt, vereinbaren Abgeber und Übernehmer untereinander. Kläre das früh.
                   </p>
                 </div>
               </div>
@@ -626,7 +671,6 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                   {[
                     "Oft günstigere Raten dank hoher Anzahlung",
                     "Keine oder geringe Einstiegskosten",
-                    "Sofortige Verfügbarkeit",
                     "Kürzere Restlaufzeit",
                     "Bestehende Konditionen bleiben"
                   ].map((item, i) => (
@@ -650,10 +694,9 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                 </div>
                 <ul className="space-y-4">
                   {[
-                    "Vertrag schnell loswerden",
+                    "Vertrag vor Ablauf abgeben",
                     "Keine hohen Ausstiegskosten",
-                    "Finanzielle Entlastung",
-                    "Schnelle Abwicklung möglich"
+                    "Finanzielle Entlastung"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-neutral-700">
                       <Check className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
@@ -758,7 +801,7 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                 },
                 {
                   title: "Zeitplanung",
-                  desc: "Rechne mit 1-2 Wochen Bearbeitungszeit",
+                  desc: "Plane Zeit für die Bonitätsprüfung und die Zustimmung der Leasinggesellschaft ein",
                   icon: Clock
                 },
                 {
@@ -830,7 +873,7 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                   Wie lange dauert die Vertragsübertragung?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  In der Regel 5–10 Werktage, abhängig von der Bonitätsprüfung und der Bearbeitungszeit der Bank.
+                  {FAQ_DURATION_ANSWER}
                 </AccordionContent>
               </AccordionItem>
               
@@ -842,7 +885,7 @@ export default function LeasingvertragUebertragenPage({ premiumListings }: { pre
                   Wer zahlt die Übertragungsgebühren?
                 </AccordionTrigger>
                 <AccordionContent className="text-neutral-600 leading-relaxed pb-6">
-                  Das wird zwischen den Parteien frei vereinbart. Oft übernimmt der Abgeber die Kosten, um die Übertragung attraktiver zu machen.
+                  {FAQ_FEES_ANSWER}
                 </AccordionContent>
               </AccordionItem>
               

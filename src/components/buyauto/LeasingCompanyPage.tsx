@@ -261,37 +261,37 @@ export function LeasingCompanyPage({
               </p>
             )}
 
-            {company.financedBrands && (
+            {company.brandStatement && (
               <p className="mt-3 text-base text-neutral-500 leading-relaxed max-w-3xl">
-                {company.financedBrands.lead}{" "}
-                {company.financedBrands.brands.map((brand, i, arr) => (
-                  <span key={brand.name}>
-                    {brand.href && indexableBrandHrefs?.includes(brand.href) ? (
-                      <Link href={brand.href} className="text-red-600 font-semibold hover:underline">
-                        {brand.name}
-                      </Link>
-                    ) : (
-                      brand.name
-                    )}
-                    {i < arr.length - 2 ? ", " : i === arr.length - 2 ? " und " : ""}
-                  </span>
-                ))}
-                {company.financedBrands.sourceUrl && company.financedBrands.sourceLabel ? (
-                  <>
-                    {" "}(
-                    <a
-                      href={company.financedBrands.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
-                    >
-                      {company.financedBrands.sourceLabel}
-                    </a>
-                    ).
-                  </>
-                ) : (
-                  "."
-                )}
+                {company.brandStatement.lead} «{company.brandStatement.quote}» (Quelle:{" "}
+                <a
+                  href={company.brandStatement.source.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900"
+                >
+                  {company.brandStatement.source.title}
+                </a>
+                ).
+                {(() => {
+                  const links = company.brandStatement.brandLinks.filter((brand) =>
+                    indexableBrandHrefs?.includes(brand.href)
+                  );
+                  if (links.length === 0) return null;
+                  return (
+                    <>
+                      {" "}Aktuelle Leasingübernahmen:{" "}
+                      {links.map((brand, i) => (
+                        <span key={brand.href}>
+                          <Link href={brand.href} className="text-red-600 font-semibold hover:underline">
+                            {brand.name}
+                          </Link>
+                          {i < links.length - 2 ? ", " : i === links.length - 2 ? " und " : "."}
+                        </span>
+                      ))}
+                    </>
+                  );
+                })()}
               </p>
             )}
 

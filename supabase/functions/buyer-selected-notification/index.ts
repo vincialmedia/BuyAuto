@@ -13,6 +13,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Links point at their final URL, so a click lands without a redirect:
+// vercel.json 308s the apex to www, and trailingSlash is off.
+const SITE_URL = "https://www.buyauto.ch";
+
 function escapeHtml(input: string): string {
   return input
     .replaceAll("&", "&amp;")
@@ -72,7 +76,7 @@ function templateShell(params: { heading: string; bodyHtml: string }): string {
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://buyauto.ch/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
+      <img src="${SITE_URL}/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
     </div>
 
     <div class="content">
@@ -296,7 +300,7 @@ serve(async (req) => {
   const monthly = formatChf(listing.price_per_month_chf);
   const purchase = formatChf(listing.purchase_price_chf);
   const priceLine = monthly ? `CHF ${monthly} / Monat` : purchase ? `Kaufpreis CHF ${purchase}` : null;
-  const conversationUrl = `https://buyauto.ch/dashboard/messages/${convo.id}`;
+  const conversationUrl = `${SITE_URL}/dashboard/messages/${convo.id}`;
 
   const results: Record<string, string> = {};
 

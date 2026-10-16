@@ -8,6 +8,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Links point at their final URL, so a click lands without a redirect:
+// vercel.json 308s the apex to www, and trailingSlash is off.
+const SITE_URL = "https://www.buyauto.ch";
+
 function escapeHtml(input: string): string {
   return input
     .replaceAll("&", "&amp;")
@@ -80,7 +84,7 @@ function buildEmail(params: {
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://buyauto.ch/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
+      <img src="${SITE_URL}/buyauto-logo-email.png" alt="BuyAuto" width="160" height="61" style="display: block; margin: 0 auto; border: 0; max-width: 100%;">
     </div>
 
     <div class="content">
@@ -285,7 +289,7 @@ serve(async (req) => {
   const senderName = senderProfile?.full_name?.trim() || "Ein Nutzer";
   const listingTitle = formatListingTitle(listing);
   const messagePreview = preview(msg.body || "Neue Nachricht");
-  const dashboardUrl = `https://buyauto.ch/dashboard/messages/${convo.id}`;
+  const dashboardUrl = `${SITE_URL}/dashboard/messages/${convo.id}`;
 
   const email = buildEmail({
     recipientName,

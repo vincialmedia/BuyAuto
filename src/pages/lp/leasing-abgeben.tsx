@@ -70,14 +70,6 @@ const PROCESS_STEPS = [
   { step: 5, title: "Umschreibung", desc: "Vertrag umschreiben, Fahrzeug übergeben – fertig!" },
 ];
 
-// Hero chips fall back to real historic listings when the live query returns
-// nothing, so the block never renders empty (values from the design handoff).
-const FALLBACK_CHIPS = [
-  { initials: "DT", label: "Fiat 600 · CHF 428 / Monat" },
-  { initials: "RC", label: "Porsche Cayenne · CHF 2’265 / Monat" },
-  { initials: "TB", label: "BMW 340i · CHF 906 / Monat" },
-];
-
 const initialsOf = (name?: string | null) =>
   (name ?? "")
     .split(/\s+/)
@@ -135,13 +127,14 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
   // cancellation-cost figure (see the UWG note at the Restraten box).
   const remainingObligation = months * monthlyRate;
 
-  const heroChips =
-    takeoverListings.length >= 3
-      ? takeoverListings.slice(0, 3).map((listing) => ({
-          initials: initialsOf(listing.seller_name),
-          label: `${listing.title?.trim() || `${listing.brand} ${listing.model}`} · ${fmtChf(listing.pricePerMonthCHF)} / Monat`,
-        }))
-      : FALLBACK_CHIPS;
+  // "Live" means live: the chips show only listings from the current read. With
+  // no live listings (or a failed read, which searchListings turns into []) the
+  // whole block is hidden; there are no fallback prices.
+  const heroChips = takeoverListings.slice(0, 3).map((listing) => ({
+    key: listing.id,
+    initials: initialsOf(listing.seller_name),
+    label: `${listing.title?.trim() || `${listing.brand} ${listing.model}`} · ${fmtChf(listing.pricePerMonthCHF)} / Monat`,
+  }));
 
   return (
     <>
@@ -250,6 +243,7 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
                 ))}
               </ul>
 
+              {heroChips.length > 0 && (
               <div className="mt-8">
                 <p className="mb-2.5 text-[11px] font-extrabold tracking-[0.08em] uppercase text-white/55">
                   Live auf BuyAuto · Diese Fahrer geben gerade ihr Leasing ab
@@ -257,7 +251,7 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
                 <div className="flex gap-2.5 flex-wrap">
                   {heroChips.map((chip) => (
                     <span
-                      key={chip.label}
+                      key={chip.key}
                       className="inline-flex items-center gap-2 py-[7px] pl-2 pr-3.5 rounded-full bg-white/10 backdrop-blur-md text-white text-[12.5px] font-semibold"
                     >
                       <span className="w-6 h-6 rounded-full bg-white/20 inline-flex items-center justify-center text-[9.5px] font-extrabold">
@@ -268,6 +262,7 @@ export default function LeasingAbgebenLp({ takeoverListings }: LeasingAbgebenPag
                   ))}
                 </div>
               </div>
+              )}
             </div>
 
             {/* Right: the calculator card — the conversion centerpiece */}

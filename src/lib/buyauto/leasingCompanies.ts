@@ -16,8 +16,8 @@
 //
 // Fee figures are built from the facts module (facts.ts), never typed here.
 
-import { AMAG_LEASING, CEMBRA } from "@/lib/buyauto/facts";
-import { formatChf } from "@/lib/buyauto/format";
+import { AMAG_LEASING, CEMBRA, type FactSource } from "@/lib/buyauto/facts";
+import { formatChf, formatSwissInt } from "@/lib/buyauto/format";
 
 /** formatChf plus ".–", e.g. 1234 -> "CHF 1'234.–" (Betragsschreibweise im Fliesstext). */
 const chfDash = (value: number) => `${formatChf(value)}.–`;
@@ -65,14 +65,15 @@ export interface LeasingCompany {
   descriptionDetail: string;
   /** Sourced company status/size fact rendered under the hero intro. */
   introNote?: SourcedFact;
-  /** Brands the company finances (AMAG only for now), with links to the
-   *  brand pages that exist. */
-  financedBrands?: {
+  /** What the company says about the brands it covers (AMAG only for now):
+   *  a verbatim quote with its source, plus links to our brand pages. */
+  brandStatement?: {
+    /** Copy before the quote, e.g. «Im Geschäftsbericht 2025 schreibt AMAG Leasing:». */
     lead: string;
-    brands: { name: string; href?: string }[];
-    /** Omitted while the list is not confirmed against the current source. */
-    sourceLabel?: string;
-    sourceUrl?: string;
+    quote: string;
+    source: FactSource;
+    /** Brand pages to link after the quote; only indexable ones render as links. */
+    brandLinks: { name: string; href: string }[];
   };
   facts: LeasingCompanyFacts;
 }
@@ -125,42 +126,36 @@ export const LEASING_COMPANIES: LeasingCompany[] = [
     descriptionDetail: "indirektes Leasing, Bonitätsprüfung und die Rolle der Liefergarage",
     introNote: {
       text:
-        "AMAG Leasing zählt nach eigenen Angaben über 160'000 Privat- und Firmenkunden (Quelle: AMAG Group, Stand August 2026).",
-      sourceLinkText: "AMAG Group",
-      sourceUrl: "https://www.amag-group.ch/de/ueber-uns/Geschaeftsfelder/leasing.html",
+        `AMAG Leasing zählt nach eigenen Angaben über ${formatSwissInt(AMAG_LEASING.customers.moreThan)} Privat- und Firmenkunden (Quelle: ${AMAG_LEASING.customers.source.title}, ${AMAG_LEASING.customers.source.stand}).`,
+      sourceLinkText: AMAG_LEASING.customers.source.title,
+      sourceUrl: AMAG_LEASING.customers.source.url,
     },
-    financedBrands: {
-      lead: "AMAG Leasing finanziert die Marken",
-      // Nur Marken mit existierender Brand-Page verlinken: volkswagen und audi
-      // sind kuratiert, skoda läuft als dynamische Seite mit Live-Inventar.
-      // Seat und Cupra haben noch keine Seiten — nur Nennung im Text.
-      // Markenliste (Porsche NICHT aufgeführt) zuletzt gegen die Vorgänger-
-      // ausgabe der ALB geprüft und gegen die aktuelle Ausgabe nicht nachgeprüft:
-      // deshalb ohne Quellenangabe, bis sie gegen die aktuelle Ausgabe bestätigt ist.
-      brands: [
+    brandStatement: {
+      lead: "Im Geschäftsbericht 2025 beschreibt AMAG Leasing ihr Angebot so:",
+      quote: AMAG_LEASING.brandStatement.quote,
+      source: AMAG_LEASING.brandStatement.source,
+      // Nur Marken mit existierender Brand-Page verlinken (volkswagen, audi, skoda).
+      brandLinks: [
         { name: "VW", href: "/leasinguebernahme/volkswagen" },
-        { name: "VW Nutzfahrzeuge" },
         { name: "Audi", href: "/leasinguebernahme/audi" },
-        { name: "SEAT" },
-        { name: "CUPRA" },
         { name: "Škoda", href: "/leasinguebernahme/skoda" },
       ],
     },
     facts: {
       transferFee: {
-        // ERFAHRUNGSWERT-VINCE: real verrechnete Übernahmegebühr bei AMAG Leasing
         text:
-          `AMAG Leasing publiziert keinen Tarif für die Vertragsübernahme – die Konditionen werden auf Anfrage festgelegt. Zum Vergleich: Die vorzeitige Vertragsauflösung kostet gemäss den Allgemeinen Leasingbestimmungen (${AMAG_LEASING.edition}, Ziff. 14.1 und 18) pauschal ${chfDash(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung)} exkl. MWST, zusätzlich werden die Leasingraten rückwirkend auf die effektive Laufzeit neu berechnet – die Übernahme kann deshalb deutlich günstiger sein.`,
+          `Die Allgemeinen Leasingbestimmungen von ${AMAG_LEASING.name} (${AMAG_LEASING.edition}) nennen keine Gebühr für eine Vertragsübernahme. Für die vorzeitige Vertragsauflösung nennen sie pauschal ${chfDash(AMAG_LEASING.feesExclVatChf.vorzeitigeVertragsaufloesung)} exkl. MWST und für die Berechnung der provisorischen Auflösungskosten ${chfDash(AMAG_LEASING.feesExclVatChf.provisorischeAufloesungskosten)} exkl. MWST (${AMAG_LEASING.clauses.aufloesungsgebuehren}). Bei einer vorzeitigen Auflösung werden die Leasingraten zudem rückwirkend neu berechnet (${AMAG_LEASING.clauses.rueckwirkendeNeuberechnung}).`,
         sourceLinkText: "Allgemeinen Leasingbestimmungen",
         sourceUrl: AMAG_LEASING.sourceUrl,
       },
       // ERFAHRUNGSWERT-VINCE: typische Dauer einer AMAG-Übertragung
       typicalDuration: null,
-      // Aus der Vorgängerausgabe der ALB; gegen die aktuelle Ausgabe nicht nachgeprüft,
-      // deshalb ohne Quellenangabe, bis bestätigt.
+      // ALB Ausgabe 01/26, Ziff. 19.1, 8.1 und 5.1 (geprüft am 9.10.2026).
       documents: {
         text:
-          "AMAG Leasing prüft Kreditfähigkeit und Kreditwürdigkeit der übernehmenden Person mit Abfrage bei ZEK/IKO. Das Fahrzeug muss grundsätzlich auf die Leasingnehmerin oder den Leasingnehmer immatrikuliert sein; bei Neufahrzeugen ist Vollkasko Pflicht.",
+          `Bei der Prüfung eines Leasingantrags holt AMAG Leasing unter anderem Auskünfte bei der ZEK und der IKO ein (${AMAG_LEASING.clauses.bonitaetspruefung}). Das Fahrzeug wird in der Regel auf die Leasingnehmerin oder den Leasingnehmer immatrikuliert; Ausnahmen gelten für eine Person im gleichen Haushalt und für Firmenwagen von Mitarbeitenden (${AMAG_LEASING.clauses.immatrikulation}). Für Neufahrzeuge verlangt AMAG Leasing eine Vollkaskoversicherung, bei Occasionen ist nach Absprache mit der Leasinggeberin eine Teilkasko möglich (${AMAG_LEASING.clauses.versicherung}). Quelle: Allgemeine Leasingbestimmungen Autos, ${AMAG_LEASING.edition}.`,
+        sourceLinkText: `Allgemeine Leasingbestimmungen Autos, ${AMAG_LEASING.edition}`,
+        sourceUrl: AMAG_LEASING.sourceUrl,
       },
       transferProcess: {
         text:
