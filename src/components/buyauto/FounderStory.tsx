@@ -1,4 +1,20 @@
 import Image from "next/image";
+import { FOUNDER_TAKEOVER } from "@/lib/buyauto/facts";
+import { formatChf } from "@/lib/buyauto/format";
+
+/**
+ * Vince's own Leasingübernahme (F8), told by him in the first person. Every
+ * figure comes from FOUNDER_TAKEOVER; how he found the taker, how long it took
+ * and which documents were needed are not known and are never stated.
+ */
+const F = FOUNDER_TAKEOVER;
+const FOUNDER_STORY =
+  `${F.year} hatte ich einen ${F.car} geleast, mit noch rund ${F.monthsLeftApprox} Monaten Restlaufzeit. ` +
+  `Das Leasing rauskaufen oder auflösen und das Auto verkaufen hätte mich rund ${formatChf(F.exitCostApproxChf)} ` +
+  `gekostet, so gross war die Lücke zwischen meiner offenen Schuld und seinem Wert. ` +
+  `Ich habe den Vertrag per Leasingübernahme abgegeben und der Leasinggesellschaft von BMW als bisheriger ` +
+  `Leasingnehmer die volle Gebühr von ${formatChf(F.takeoverFeeChf)} bezahlt. ` +
+  `Damit du diesen Weg auch gehen kannst, habe ich BuyAuto gebaut.`;
 
 export function FounderStory() {
   return (
@@ -31,7 +47,6 @@ export function FounderStory() {
               {/* Floating badge */}
               <div className="absolute -bottom-2 -right-2 lg:bottom-6 lg:-left-4 bg-white rounded-xl shadow-lg px-3 py-1.5 transform group-hover:scale-110 group-hover:rotate-2 transition-all duration-300">
                 <p className="text-xs font-bold text-neutral-900">Gründer & CEO</p>
-                <p className="text-xs text-red-600">seit 2024</p>
               </div>
             </div>
           </div>
@@ -49,37 +64,11 @@ export function FounderStory() {
             </div>
             
             <div className="space-y-4 text-neutral-600 leading-relaxed text-base">
-              <p>
-                BuyAuto ist entstanden, weil ich gemerkt habe, wie unnötig kompliziert es sein kann, <span className="font-semibold text-neutral-900">ein Auto in der Schweiz zu kaufen oder anzubieten</span>.
-              </p>
-              
-              <p>
-                Wer heute nach dem passenden Auto sucht, landet oft auf mehreren Plattformen gleichzeitig: eine für <span className="font-semibold text-neutral-900">Occasionen</span>, eine für <span className="font-semibold text-neutral-900">Neuwagen</span>, eine für <span className="font-semibold text-neutral-900">Leasing</span> und eine für <span className="font-semibold text-neutral-900">Leasingübernahmen</span>. Dazu kommen oft hohe Kosten, veraltete Nutzerführung und zu wenig Übersicht.
-              </p>
-
-              <p className="font-semibold text-neutral-900">
-                Genau das wollte ich besser lösen.
-              </p>
-
-              <p>
-                BuyAuto ist deshalb nicht einfach nur eine weitere Auto-Plattform. BuyAuto bringt die wichtigsten Wege zum Auto an einem Ort zusammen – klarer, moderner und fairer für Käufer, Verkäufer und Garagen in der Schweiz.
-              </p>
-
-              <p>
-                Egal ob <span className="font-semibold text-neutral-900">Kauf, Leasing oder Leasingübernahme</span>: BuyAuto soll den Prozess einfacher machen und die Plattform sein, auf der man nicht fünfmal neu anfangen muss.
-              </p>
-              
-              <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-200 hover:border-red-200 hover:shadow-lg hover:shadow-red-500/5 transition-all duration-300 group">
-                <p className="font-bold text-neutral-900 text-base mb-3 flex items-center gap-2">
-                  <span className="w-1.5 h-6 bg-red-500 rounded-full" />
-                  Kurz gesagt:
-                </p>
-                <div className="space-y-1 text-neutral-700 group-hover:text-neutral-800 transition-colors">
-                  <p>Eine Plattform statt fünf.</p>
-                  <p>Mehr Übersicht statt Umwege.</p>
-                  <p>Mehr Möglichkeiten statt altem Marktplatzdenken.</p>
-                </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-1">{F.label}</p>
+                <p>{FOUNDER_STORY}</p>
               </div>
+
             </div>
             
             <div className="pt-3 flex items-center gap-4 justify-center lg:justify-start">

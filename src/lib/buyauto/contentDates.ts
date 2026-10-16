@@ -5,25 +5,29 @@
 // honest). Seeded from each page's last real edit in git history.
 
 export const CONTENT_LAST_UPDATED: Record<string, string> = {
-  "/": "2026-08-14",
+  "/": "2026-10-16",
   "/suche": "2026-08-04",
   "/preise": "2026-08-14",
   "/updates": "2026-08-07",
-  "/leasinguebernahme": "2026-10-14",
-  "/leasinguebernahme-kosten": "2026-10-14",
-  "/leasingvertrag-uebertragen": "2026-10-14",
-  "/leasinguebernahme-vs-autoabo": "2026-10-14",
+  "/leasinguebernahme": "2026-10-16",
+  "/leasinguebernahme-kosten": "2026-10-16",
+  "/leasingvertrag-uebertragen": "2026-10-16",
+  "/leasinguebernahme-vs-autoabo": "2026-10-16",
   "/eintauschwert-rechner": "2026-08-04",
-  "/leasing-abgeben-schweiz": "2026-10-08",
+  "/leasing-abgeben-schweiz": "2026-10-16",
   "/fuer-garagen": "2026-08-13",
-  "/cembra-leasing-uebernehmen": "2026-08-14",
-  "/amag-leasing-uebernehmen": "2026-10-14",
-  "/multilease-leasing-uebernehmen": "2026-08-14",
-  "/bank-now-leasing-uebernehmen": "2026-08-14",
   "/autoscout24-alternative-leasinguebernahme": "2026-10-08",
   "/datenschutz": "2026-07-31",
   "/agb": "2026-07-30",
 };
+
+/**
+ * Last content edit of the brand page template (/leasinguebernahme/[marke]: lender
+ * section, intro, layout). Kept out of CONTENT_LAST_UPDATED, whose keys are static
+ * sitemap URLs. Shown in the brand pages' «Aktualisiert am»; their sitemap lastmod is
+ * the later of this date and the brand's newest listing change.
+ */
+export const BRAND_PAGES_CONTENT_UPDATED = "2026-10-16";
 
 export function contentLastUpdatedIso(path: string): string | null {
   return CONTENT_LAST_UPDATED[path] ?? null;

@@ -12,13 +12,13 @@ const footerSections = [
       { label: "Alle Fahrzeuge", href: "/suche" },
       { label: "Occasionen", href: "/suche?dealType=direct_purchase" },
       { label: "Leasing", href: "/suche?dealType=direct_purchase&financingType=leasing" },
-      { label: "Leasingübernahme", href: "/suche?dealType=lease_takeover" }
+      { label: "Leasingübernahme-Angebote", href: "/suche?dealType=lease_takeover" }
     ]
   },
   {
     title: "Leasingübernahme",
     links: [
-      { label: "Leasingübernahme – Ratgeber", href: "/leasinguebernahme" },
+      { label: "Ratgeber Leasingübernahme", href: "/leasinguebernahme" },
       { label: "Was kostet eine Übernahme?", href: "/leasinguebernahme-kosten" },
       { label: "Leasingvertrag übertragen", href: "/leasingvertrag-uebertragen" },
       { label: "Übernahme vs. Auto-Abo", href: "/leasinguebernahme-vs-autoabo" },
@@ -87,7 +87,7 @@ export function Footer() {
               BuyAuto ist ein Schweizer Marktplatz für Leasingübernahmen – für Privatpersonen und Garagen.
             </p>
             <p className="text-neutral-400 text-sm leading-relaxed max-w-sm mb-6">
-              Leasing übernehmen oder ohne Verlust abgeben – daneben ausgewählte Fahrzeuge zum Direktkauf.
+              Leasing übernehmen oder abgeben. Daneben ausgewählte Fahrzeuge zum Direktkauf.
             </p>
             
             {/* Contact info */}

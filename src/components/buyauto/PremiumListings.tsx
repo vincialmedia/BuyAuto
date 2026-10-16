@@ -236,7 +236,7 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
               {/* Empty tab: keep the section frame, explain instead of a blank grid */}
               {filteredListings.length === 0 && (
                 <p className="text-center text-neutral-500 py-10">
-                  In dieser Kategorie gibt es aktuell keine Premium-Angebote – schau dir alle Fahrzeuge in der
+                  In dieser Kategorie gibt es aktuell keine Premium-Angebote. Schau dir alle Fahrzeuge in der
                   Suche an.
                 </p>
               )}
