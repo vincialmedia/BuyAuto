@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
+import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { countLabel } from "@/lib/buyauto/format";
 import type { Listing } from "@/lib/buyauto/types";
 
@@ -48,11 +49,18 @@ export function HomeTakeoverOffers({ listings, totalCount }: HomeTakeoverOffersP
 
           {listings.length > 0 && (
             <>
-              {/* Phones: one swipeable row with the next card peeking in. sm and up: grid. */}
+              {/* Phones: one swipeable row with the next card peeking in. sm and up: grid.
+                  Every card is in the server HTML; each one hydrates only when it nears
+                  the viewport (LazyHydrate), so twelve cards don't quadruple the
+                  main-thread work at load the way the eager grid did (Lighthouse mobile
+                  TBT 2.5 s against 0.8 s with three cards). Plain links work before
+                  hydration. */}
               <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:p-0 lg:grid-cols-3">
                 {listings.map((listing) => (
                   <li key={listing.id} className="w-[85%] shrink-0 snap-start sm:w-auto">
-                    <ModernListingCard listing={listing} />
+                    <LazyHydrate rootMargin="200px">
+                      <ModernListingCard listing={listing} />
+                    </LazyHydrate>
                   </li>
                 ))}
               </ul>
