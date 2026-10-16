@@ -39,8 +39,12 @@ next-env.d.ts
 # firebase
 firebase-service-account.json
 
-# Claude Code local state
-.claude/
+# Claude Code local state. The shared page guidelines (skills), agents and hook
+# settings are committed; personal settings and worktrees stay local.
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/agents/
 
 # design-sync (claude.ai/design) — staged scripts, build output, machine state
 .ds-sync/
