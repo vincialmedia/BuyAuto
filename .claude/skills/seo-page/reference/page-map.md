@@ -6,7 +6,7 @@ State after SEO Phase 2 (PRs #81, #82 and #84). Until #81 and #82 are merged, th
 
 | URL | Owns | Notes |
 |---|---|---|
-| `/` | "Leasingübernahme Schweiz" (the head term) and the brand | Live offer count and `FEE_SHORT` above the fold; up to 12 live offers (the hub's first page) in the server HTML |
+| `/` | "Leasingübernahme Schweiz" (the head term) and the brand | Live offer count above the fold (the hub's count, so the two never disagree); up to 12 live offers (the hub's first page) in the server HTML. Fees live on the cost page, not in the hero |
 | `/suche?dealType=lease_takeover` | Browsing the Leasingübernahme offers | The canonical offer hub: self-canonical, in the sitemap, title carries the live count |
 | `/suche?dealType=direct_purchase` | Cars to buy outright (Direktkauf) | Indexable from 12 live offers (`DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS` in `suche.tsx`), then self-canonical; below that `noindex, follow`, out of the sitemap and llms.txt |
 | `/leasinguebernahme` | How a takeover works for both sides | Guide; leaves the head term to `/` |
