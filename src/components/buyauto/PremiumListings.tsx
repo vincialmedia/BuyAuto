@@ -53,15 +53,15 @@ export default function PremiumListings({ externalFilter, onFilterChange, initia
     const loadPremiumListings = async () => {
       setIsLoading(true);
       try {
-        // Dynamic import keeps the Supabase client out of the homepage's
-        // critical bundle — on the homepage this effect never runs anyway
-        // (initialListings comes from getStaticProps).
+        // Dynamic import keeps the Supabase client out of the page's critical
+        // bundle. Pages that pass initialListings from getStaticProps never
+        // run this effect; it is the fallback when that server read failed.
         const { searchListings } = await import("@/services/listingsService");
         const result = await searchListings(PREMIUM_LISTINGS_QUERY);
 
         if (cancelled) return;
 
-        // Same order as the homepage's getStaticProps: takeovers first, newest first.
+        // Same order as loadPremiumCarouselListings: takeovers first, newest first.
         setListings(orderPremiumListings(result.items));
         setCurrentIndex(0);
       } catch (error) {

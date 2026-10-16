@@ -23,19 +23,21 @@ export function hasEnabledTakeoverOffer(listing: Listing): boolean {
 }
 
 /**
- * Order for the homepage premium carousel: Leasingübernahmen first (both
- * shapes above), then plain Direktkauf, newest first within each group.
+ * Order for the premium carousel (PremiumListings, on the AutoScout24 comparison
+ * page; the home page shows the hub's first offers instead, see
+ * HomeTakeoverOffers): Leasingübernahmen first (both shapes above), then plain
+ * Direktkauf, newest first within each group.
  *
  * Ordering by date (not by stored deal_type) keeps a freshly published premium
  * Leasingübernahme from landing behind legacy rows from last winter, so paid
  * premium placement stays where the seller expects it.
  *
- * Product decision, deliberately kept from the Leasing-Fokus homepage: the
- * section is headed «Aktuelle Leasingübernahmen», so takeovers stay in
- * front and a premium plain Direktkauf follows them under «Alle» (it is
- * still newest-first under the Direktkauf tab). If the carousel should ever
- * become a general premium slot, drop the takeoverFirst tier and rename the
- * heading in the same change.
+ * Product decision, kept from the Leasing-Fokus homepage: the section is
+ * headed «Aktuelle Leasingübernahmen», so takeovers stay in front and a
+ * premium plain Direktkauf follows them under «Alle» (it is still
+ * newest-first under the Direktkauf tab). If the carousel should ever become
+ * a general premium slot, drop the takeoverFirst tier and rename the heading
+ * in the same change.
  */
 export function orderPremiumListings(items: Listing[]): Listing[] {
   const uniqueById = new Map<string, Listing>();

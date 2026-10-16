@@ -465,11 +465,13 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         />
       </Head>
 
-      {/* Schema-only: the detail layout has no room for a visible crumb bar. */}
+      {/* Schema-only: the detail layout has no room for a visible crumb bar. A
+          Leasingübernahme sits under the hub; the bare /suche is noindex, so a
+          Direktkauf goes straight from Home to the listing. */}
       <BreadcrumbJsonLd
         items={[
           { name: "Home", href: "/" },
-          { name: "Fahrzeugsuche", href: "/suche" },
+          ...(isDirectPurchase ? [] : [{ name: "Leasingübernahmen", href: "/suche?dealType=lease_takeover" }]),
           { name: seoName, href: buildListingHref({ id: listing.id, brand: listing.brand, model: listing.model }) },
         ]}
       />

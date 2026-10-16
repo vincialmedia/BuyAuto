@@ -4,9 +4,7 @@
 
 ## Fahrzeuge
 
-- [Fahrzeugsuche](https://www.buyauto.ch/suche): Alle aktuellen Inserate mit Preis, Restlaufzeit und Kilometerstand
 - [Leasingübernahmen](https://www.buyauto.ch/suche?dealType=lease_takeover): Laufende Leasingverträge zur Übernahme (Monatsrate + Restlaufzeit)
-- [Autos zum Direktkauf](https://www.buyauto.ch/suche?dealType=direct_purchase): Occasionen mit Kaufpreis in CHF
 
 ## Ratgeber
 
