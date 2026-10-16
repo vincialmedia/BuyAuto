@@ -5,11 +5,11 @@
 1. `<title>`: unique per page and describing the page, main query near the front, ` | BuyAuto` at the end, no repeated keywords, same language as the page, and no current year unless the page is a dated report. Aim for 60 characters at most; Google truncates by width and rewrites titles that are vague, boilerplate or don't match the main heading. Listing titles follow their own pattern (page-types.md, listing page).
 2. One H1, the most prominent text on the page, saying the same thing as the title.
 3. Meta description: unique and specific. One sourced fact or a live count helps. Aim for 155 characters at most; Google may show other text.
-4. Canonical: absolute `https://www.buyauto.ch/…` URL, self-referencing on every indexable page. Never a canonical together with `noindex`. On `/suche`, the bare page and the two single-deal-type views (`?dealType=lease_takeover`, `?dealType=direct_purchase`) are self-canonical; every other filter, sort, page or search renders `noindex, follow` without a canonical (`isIndexableSearchQuery` in `suche.tsx`).
+4. Canonical: absolute `https://www.buyauto.ch/…` URL, self-referencing on every indexable page. Never a canonical together with `noindex`. On `/suche`, the Leasingübernahme hub (`?dealType=lease_takeover`) is self-canonical while it has offers and the Direktkauf view (`?dealType=direct_purchase`) from `DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS` offers; the bare page and every other filter, sort, page or search render `noindex, follow` without a canonical (`isIndexedSearchView` in `suche.tsx`).
 5. Robots: `noindex, follow` for scaffolds, thin inventory pages and landing pages; on indexable pages either no robots tag or `index, follow`. Never use robots.txt to keep a page out of the index: a blocked URL can still be indexed, `noindex` is the tool for that.
 6. `og:title`, `og:description`, `og:url` and `og:image` match the page.
 7. `<html lang="de-CH">` is set in `_document.tsx`.
-8. Don't use `src/components/SEO.tsx` without `title`, `description` and `url`. Its fallbacks are a generic "Auto kaufen Schweiz…" title and a canonical pointing at the home page, which would push the page out of the index.
+8. `src/components/SEO.tsx` requires `title`, `description` and `url` (the types enforce it since PR #84). A blank `url` leaves the canonical out; never pass the home page as `url` for another page.
 
 ## Rendering
 
@@ -20,7 +20,7 @@
 
 ## Structured data
 
-1. `Organization` and `WebSite` are set site-wide in `_app.tsx`. No second top-level `Organization` on a page; the `publisher` inside an `Article` is fine. Known issue: `StructuredData` on garage pages still emits a second one with old copy.
+1. `Organization` and `WebSite` are set site-wide in `_app.tsx`. No second top-level `Organization` on a page; the `publisher` inside an `Article` is fine. `StructuredData` on garage pages emits only the `AutoDealer` (since PR #84).
 2. Editorial pages: `Article` (fields in page-types.md) and `BreadcrumbList` through `BreadcrumbJsonLd`. The `AuthorBox` adds the `Person`.
 3. Inventory pages: `ItemList` and `BreadcrumbList`. Listings: `Car` with an `Offer` that carries `leaseLength`.
 4. `FAQPage` is optional. Google stopped showing FAQ rich results on 7 May 2026, so it brings no visible feature there; other systems may still read it. Add it only when it mirrors a visible FAQ rendered from the same data array, never as a second copy of the text.

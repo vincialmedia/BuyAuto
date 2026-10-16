@@ -1,15 +1,14 @@
 # Page map: which URL owns which intent
 
-State after SEO Phase 2 (PRs #81 and #82). Until both are merged, the four lender pages and `/leasing-concierge` are still live; don't delete or redirect them outside those PRs. Update this file in the same PR whenever a page is added, merged, retitled, set to noindex or retired.
+State after SEO Phase 2 (PRs #81, #82 and #84). Until #81 and #82 are merged, the four lender pages and `/leasing-concierge` are still live; don't delete or redirect them outside those PRs. Update this file in the same PR whenever a page is added, merged, retitled, set to noindex or retired.
 
 ## Indexable pages
 
 | URL | Owns | Notes |
 |---|---|---|
-| `/` | "Leasingübernahme Schweiz" (the head term) and the brand | Live offer count and `FEE_SHORT` above the fold |
+| `/` | "Leasingübernahme Schweiz" (the head term) and the brand | Live offer count and `FEE_SHORT` above the fold; up to 12 live offers (the hub's first page) in the server HTML |
 | `/suche?dealType=lease_takeover` | Browsing the Leasingübernahme offers | The canonical offer hub: self-canonical, in the sitemap, title carries the live count |
-| `/suche` | All offers | Self-canonical |
-| `/suche?dealType=direct_purchase` | Cars to buy outright (Direktkauf) | Self-canonical |
+| `/suche?dealType=direct_purchase` | Cars to buy outright (Direktkauf) | Indexable from 12 live offers (`DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS` in `suche.tsx`), then self-canonical; below that `noindex, follow`, out of the sitemap and llms.txt |
 | `/leasinguebernahme` | How a takeover works for both sides | Guide; leaves the head term to `/` |
 | `/leasinguebernahme-kosten` | What a takeover costs: lender fees, cantonal fees (`#kantone`), Kaution | Holds the former lender pages as `#cembra`, `#amag`, `#multilease`, `#bank-now` |
 | `/leasing-abgeben-schweiz` | Getting out of a lease: abgeben, vorzeitig beenden, auflösen | Exit options with the Ausstiegsrechner |
@@ -24,7 +23,7 @@ State after SEO Phase 2 (PRs #81 and #82). Until both are merged, the four lende
 | `/[dealerSlug]` | A garage's microsite | The first page of the inventory is server-rendered |
 | `/updates`, `/agb`, `/datenschutz`, `/impressum` | Site news and legal | |
 
-Any other `/suche` view (extra filters, sort, pagination, free-text search) renders `noindex, follow` without a canonical.
+The bare `/suche` and any other `/suche` view (extra filters, sort, pagination, free-text search) render `noindex, follow` without a canonical.
 
 ## Not indexable on purpose
 
@@ -34,6 +33,7 @@ Any other `/suche` view (extra filters, sort, pagination, free-text search) rend
 | `/elektroauto-leasing-abgeben`, `/leasingausstieg-kosten-daten` | Scaffolds: noindex and out of the sitemap until they pass the bar below |
 | `/inserat-erstellen`, `/garage-plan`, dashboards, auth, embeds | App screens. Known issue: `/inserat-erstellen` sends noindex in the server HTML but renders `index, follow` after hydration; it belongs to the listing flow, so Vince decides when to fix it |
 | Brand pages with fewer than 2 live offers | `noindex, follow`, no canonical, out of the sitemap |
+| `/suche` (no filters) | Lists the hub's offers again plus Direktkauf, so it would compete with the hub. A search tool for visitors: server-rendered, `noindex, follow`, out of the sitemap and llms.txt (PR #84) |
 
 ## Retired URLs
 
