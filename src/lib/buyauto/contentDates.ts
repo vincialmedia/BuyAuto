@@ -6,7 +6,6 @@
 
 export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/": "2026-10-16",
-  "/suche": "2026-08-04",
   "/preise": "2026-08-14",
   "/updates": "2026-08-07",
   "/leasinguebernahme": "2026-10-16",

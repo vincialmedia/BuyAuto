@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import type { GetStaticProps } from "next";
 import Head from "next/head";
 import Image from "next/image";
@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { ArrowRight, Car, MessageCircle, Search, Zap } from "lucide-react";
 import { BuyerGarageSection } from "@/components/buyauto/BuyerGarageSection";
 import { FounderStory } from "@/components/buyauto/FounderStory";
-import PremiumListings from "@/components/buyauto/PremiumListings";
+import { HomeTakeoverOffers } from "@/components/buyauto/HomeTakeoverOffers";
 import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import { SourceCitation } from "@/components/buyauto/SourceCitation";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
@@ -15,8 +15,9 @@ import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
 import { CEMBRA, FEE_SHORT } from "@/lib/buyauto/facts";
 import { countLabel, pluralize } from "@/lib/buyauto/format";
+import type { SearchQuery } from "@/lib/buyauto/search";
 import type { Listing } from "@/lib/buyauto/types";
-import { getLiveInventoryStats, loadPremiumCarouselListings } from "@/services/listingsService";
+import { searchListingsOrThrow } from "@/services/listingsService";
 
 const FAQSection = dynamic(() => import("@/components/buyauto/FAQSection"), {
   loading: () => <div className="h-96 bg-white animate-pulse" />,
@@ -25,18 +26,22 @@ const SeoCopyBlock = dynamic(() => import("@/components/buyauto/SeoCopyBlock").t
   loading: () => <div className="h-64 bg-neutral-50 animate-pulse" />,
 });
 
-type FilterCategory = "all" | "direct_purchase" | "leasing" | "lease_takeover";
+/**
+ * The Leasingübernahme hub's first page: same filter and order (premium first, then
+ * newest), so the home shows the hub's top offers and the hub's count.
+ */
+const HOME_TAKEOVER_QUERY: SearchQuery = { dealType: "lease_takeover", page: 1, pageSize: 12 };
 
 interface HomePageProps {
-  premiumListings: Listing[];
-  /** Live Leasingübernahmen right now (same rule as the hub); null when the read failed. */
-  liveTakeoverCount: number | null;
+  /** Up to 12 live Leasingübernahmen, in the hub's order. */
+  takeoverListings: Listing[];
+  /** All live Leasingübernahmen right now (the hub's count). */
+  liveTakeoverCount: number;
 }
 
-export default function HomePage({ premiumListings, liveTakeoverCount }: HomePageProps) {
-  const [premiumFilter, setPremiumFilter] = useState<FilterCategory>("all");
-  // No number without live data: a failed read (null) or an empty inventory hides the line.
-  const liveCount = liveTakeoverCount && liveTakeoverCount > 0 ? liveTakeoverCount : null;
+export default function HomePage({ takeoverListings, liveTakeoverCount }: HomePageProps) {
+  // No number without live offers: an empty inventory hides the line.
+  const liveCount = liveTakeoverCount > 0 ? liveTakeoverCount : null;
 
   return (
     <div className="bg-[#fafafa] min-h-screen font-sans overflow-x-hidden">
@@ -138,8 +143,9 @@ export default function HomePage({ premiumListings, liveTakeoverCount }: HomePag
             <h1 className="animate-fade-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05] mb-4 max-w-4xl mx-auto">
               <span className="block text-sm sm:text-base font-bold uppercase tracking-widest text-white/80 mb-3">
                 Leasingübernahme Schweiz
-              </span>
-              Raus aus dem Leasing.
+              </span>{" "}
+              {/* The spaces keep the words apart in the HTML text, which has no line breaks. */}
+              Raus aus dem Leasing.{" "}
               <br />
               Per <span className="text-red-500">Übernahme.</span>
             </h1>
@@ -182,15 +188,9 @@ export default function HomePage({ premiumListings, liveTakeoverCount }: HomePag
         </div>
       </div>
 
-      <div className="scroll-mt-4">
-        <PremiumListings
-          initialListings={premiumListings}
-          externalFilter={premiumFilter}
-          onFilterChange={setPremiumFilter}
-        />
-      </div>
+      <HomeTakeoverOffers listings={takeoverListings} totalCount={liveTakeoverCount} />
 
-      {/* Everything below the premium carousel is out of the first viewport on
+      {/* Everything below the offers section is out of the first viewport on
           every device; LazyHydrate keeps it fully in the server HTML (SEO
           unchanged) but spares the load-time main thread its hydration. */}
       <LazyHydrate>
@@ -308,27 +308,19 @@ export default function HomePage({ premiumListings, liveTakeoverCount }: HomePag
   );
 }
 
-/** Number of live Leasingübernahmen, or null when the read fails (the hero then shows no count). */
-async function loadLiveTakeoverCount(): Promise<number | null> {
-  try {
-    const stats = await getLiveInventoryStats();
-    return stats.count;
-  } catch (error) {
-    console.error("Live takeover count failed:", error);
-    return null;
-  }
-}
-
-// ISR: premium listings and the live count are part of the static HTML (no
-// client fetch, no layout shift) and refresh in the background every 5 minutes.
+// ISR: the offers and the live count are part of the static HTML (no client
+// fetch, no layout shift) and refresh in the background every 5 minutes.
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
-  // A failed premium fetch throws, so ISR keeps the last good page instead of
-  // caching an empty carousel. Takeovers first, newest first — see
-  // orderPremiumListings. The live count never throws (null on failure).
-  const [premiumListings, liveTakeoverCount] = await Promise.all([
-    loadPremiumCarouselListings(),
-    loadLiveTakeoverCount(),
-  ]);
+  // One query for the grid and the count, so they can't disagree. A failed read
+  // throws, so ISR keeps the last good page instead of caching an empty grid.
+  const result = await searchListingsOrThrow(HOME_TAKEOVER_QUERY);
 
-  return { props: { premiumListings, liveTakeoverCount }, revalidate: 300 };
+  return {
+    props: {
+      // Strips undefined fields so Next can serialize the props.
+      takeoverListings: JSON.parse(JSON.stringify(result.items)) as Listing[],
+      liveTakeoverCount: result.total,
+    },
+    revalidate: 300,
+  };
 };

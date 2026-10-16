@@ -22,6 +22,14 @@ const DynamicFilterBar = dynamic(() => import("@/components/buyauto/search/Dynam
 
 const CANONICAL_SEARCH_URL = "https://www.buyauto.ch/suche";
 
+/**
+ * The Direktkauf view (?dealType=direct_purchase) is indexable from one full results
+ * page of live offers. Below that it is a thin car-buying page next to the
+ * Leasingübernahme focus, so it renders noindex, follow without a canonical, like a
+ * brand page under its threshold.
+ */
+const DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS = 12;
+
 type SearchPageProps = {
   initialResults: SearchResult | null;
   initialQuery: SearchQuery;
@@ -65,8 +73,8 @@ function parseSearchQueryFromParams(query: Record<string, string | string[] | un
   return newQuery;
 }
 
-// The bare /suche (page 1, no filters/sort/search term). This is the mixed-inventory
-// hub view with its own hub-specific title/H1/meta.
+// The bare /suche (page 1, no filters/sort/search term): every offer of both Kaufarten,
+// with its own title/H1/meta.
 function isDefaultSearchQuery(q: SearchQuery): boolean {
   if (q.page && q.page > 1) return false;
   if (q.sort) return false;
@@ -80,9 +88,7 @@ function isDefaultSearchQuery(q: SearchQuery): boolean {
 }
 
 // A single dealType filter (e.g. /suche?dealType=lease_takeover) with nothing else set.
-// These are the high-value category views — the Leasingübernahme listings grid is the
-// single most important commercial page for our ranking goal — so they are indexable
-// (with a self-canonical), not lumped in with thin filtered drill-downs.
+// These are the category views; the Leasingübernahme one is the offer hub.
 function isSingleDealTypeQuery(q: SearchQuery): boolean {
   if (q.dealType !== "lease_takeover" && q.dealType !== "direct_purchase") return false;
   if (q.financingType) return false;
@@ -96,17 +102,31 @@ function isSingleDealTypeQuery(q: SearchQuery): boolean {
   return true;
 }
 
-// Indexable views = the bare hub + the single dealType category views. They are SSR'd
-// (see getServerSideProps) and get a self-referencing canonical. Everything else
-// (extra filters, sort, pagination, free-text search) stays noindex,follow.
-function isIndexableSearchQuery(q: SearchQuery): boolean {
+// Views rendered on the server and cached at the CDN: the bare /suche and the single
+// dealType views. Everything else (extra filters, sort, pagination, free-text search)
+// loads in the browser.
+function isServerRenderedSearchQuery(q: SearchQuery): boolean {
   return isDefaultSearchQuery(q) || isSingleDealTypeQuery(q);
 }
 
-// Self-referencing canonical target for an indexable view.
+/**
+ * Whether a view may be indexed (self-canonical) or renders noindex, follow without a
+ * canonical. `total` is the live result count, null while unknown.
+ * - Leasingübernahme hub: indexable while it has offers (an empty hub is a soft 404).
+ * - Direktkauf view: indexable from DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS offers.
+ * - The bare /suche lists the hub's offers again plus Direktkauf, so it is a search
+ *   tool, not a landing page: noindex, follow like every filtered view.
+ */
+function isIndexedSearchView(q: SearchQuery, total: number | null): boolean {
+  if (!isSingleDealTypeQuery(q)) return false;
+  if (q.dealType === "direct_purchase") return total !== null && total >= DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS;
+  // Unknown total (the 503 path renders without results): no canonical on that HTML.
+  return total !== null && total > 0;
+}
+
+// Self-referencing canonical of an indexed view (only single dealType views are indexed).
 function canonicalUrlForQuery(q: SearchQuery): string {
-  if (isSingleDealTypeQuery(q)) return `${CANONICAL_SEARCH_URL}?dealType=${q.dealType}`;
-  return CANONICAL_SEARCH_URL;
+  return `${CANONICAL_SEARCH_URL}?dealType=${q.dealType}`;
 }
 
 function getSaleTypeLabel(query: SearchQuery): string {
@@ -248,38 +268,49 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
   const totalPages = Math.ceil(totalResults / (searchResults?.pageSize || 12));
 
   const isDefaultView = useMemo(() => isDefaultSearchQuery(searchQuery), [searchQuery]);
-  const isIndexable = useMemo(() => isIndexableSearchQuery(searchQuery), [searchQuery]);
-  // An indexable view that loaded and is empty would be a soft 404: noindex it until
-  // listings come back (same idea as the brand-page threshold).
-  const isIndexed = isIndexable && !(searchResults && totalResults === 0);
+  const isHubView = useMemo(
+    () => isSingleDealTypeQuery(searchQuery) && searchQuery.dealType === "lease_takeover",
+    [searchQuery]
+  );
+  const isIndexed = isIndexedSearchView(searchQuery, searchResults ? totalResults : null);
   const saleTypeLabel = useMemo(() => getSaleTypeLabel(searchQuery), [searchQuery]);
 
   const heading = useMemo(() => {
-    if (isDefaultView) return "Autos kaufen & Leasingübernahmen in der Schweiz";
+    if (isDefaultView) return "Alle Angebote: Leasingübernahmen und Direktkauf";
     if (saleTypeLabel === "Leasingübernahme") return "Leasingübernahme-Angebote in der Schweiz";
-    if (saleTypeLabel === "Direktkauf") return "Autos kaufen in der Schweiz";
+    if (saleTypeLabel === "Direktkauf") return "Autos zum Direktkauf";
     if (saleTypeLabel === "Leasing") return "Leasing-Angebote in der Schweiz";
     return "Fahrzeuge in der Schweiz";
   }, [isDefaultView, saleTypeLabel]);
 
   const pageTitle = isDefaultView
-    ? "Auto kaufen oder Leasing übernehmen in der Schweiz | BuyAuto"
+    ? "Alle Angebote: Leasingübernahmen und Direktkauf | BuyAuto"
     : saleTypeLabel === "Leasingübernahme"
       ? searchResults
         ? `Leasingübernahme-Angebote: ${totalResults} ${pluralize(totalResults, "Auto", "Autos")} zur Übernahme | BuyAuto`
         : "Leasingübernahme-Angebote in der Schweiz | BuyAuto"
-      : totalResults > 0
-        ? `${saleTypeLabel} – ${totalResults} ${pluralize(totalResults, "Fahrzeug", "Fahrzeuge")} gefunden | BuyAuto Schweiz`
-        : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
+      : saleTypeLabel === "Direktkauf"
+        ? totalResults > 0
+          ? `Autos zum Direktkauf: ${totalResults} ${pluralize(totalResults, "Angebot", "Angebote")} | BuyAuto`
+          : "Autos zum Direktkauf | BuyAuto"
+        : totalResults > 0
+          ? `${saleTypeLabel} – ${totalResults} ${pluralize(totalResults, "Fahrzeug", "Fahrzeuge")} gefunden | BuyAuto Schweiz`
+          : `${saleTypeLabel} – Fahrzeuge suchen | BuyAuto Schweiz`;
+
+  // Counts only from the live result; while it is unknown the sentence goes without one.
+  const takeoverOffersLabel =
+    searchResults && totalResults > 0
+      ? `${totalResults} ${pluralize(totalResults, "laufender Leasingvertrag", "laufende Leasingverträge")}`
+      : "Laufende Leasingverträge";
 
   const metaDescription = isDefaultView
-    ? "Entdecke aktuelle Fahrzeuge in der Schweiz – direkt kaufen oder einen laufenden Leasingvertrag übernehmen. Geprüfte Angebote von Privatpersonen und Garagen auf BuyAuto."
+    ? "Alle Inserate auf BuyAuto: laufende Leasingverträge zur Übernahme und Autos zum Direktkauf in der Schweiz."
     : saleTypeLabel === "Leasingübernahme"
-      ? "Leasingübernahme in der Schweiz leicht gemacht: Finde bestehende Leasingverträge, sichere dir starke Deals und wechsle dein Auto stressfrei mit BuyAuto."
+      ? `${takeoverOffersLabel} zur Übernahme in der Schweiz. Vergleiche Monatsrate und Restlaufzeit und melde dich direkt beim Anbieter.`
       : saleTypeLabel === "Leasing"
         ? "Leasing in der Schweiz: Entdecke Fahrzeuge mit aktivem Leasing-Angebot von privaten Anbietern und Garagen – transparent, schnell und direkt über BuyAuto."
         : saleTypeLabel === "Direktkauf"
-          ? "Direktkauf in der Schweiz: Finde Fahrzeuge von privaten Anbietern und Garagen – transparent, schnell und direkt über BuyAuto."
+          ? "Autos zum Direktkauf auf BuyAuto: Inserate mit Kaufpreis in CHF, Kontakt direkt mit dem Anbieter."
           : "Finde Fahrzeuge in der Schweiz: Leasingübernahme, Direktkauf und Leasing-Angebote – transparent, schnell und direkt über BuyAuto.";
 
   const generateJsonLd = () => {
@@ -404,10 +435,9 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
               onClearFilters={handleResetFilters}
             />
 
-            {/* SSR contextual links UP to the editorial hub. Only on the indexable
-                Leasingübernahme grid, so the high-priority category page passes an
-                on-page authority signal back to the page meant to own the term. */}
-            {isIndexable && saleTypeLabel === "Leasingübernahme" && (
+            {/* Server-rendered links on to the guides, on the hub only. The anchors name
+                each guide's own topic; the head term belongs to the home page. */}
+            {isHubView && (
               <section className="mt-12 border-t border-neutral-200 pt-8">
                 <h2 className="text-lg font-bold text-neutral-900 mb-3">
                   Mehr zur Leasingübernahme in der Schweiz
@@ -418,7 +448,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
                 </p>
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                   <Link href="/leasinguebernahme" className="font-semibold text-primary hover:underline">
-                    Leasingübernahme – kompletter Ratgeber
+                    So funktioniert eine Leasingübernahme
                   </Link>
                   <Link href="/leasinguebernahme-kosten" className="text-primary hover:underline">
                     Was kostet eine Leasingübernahme?
@@ -439,16 +469,16 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
 export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ query, res }) => {
   const initialQuery = parseSearchQueryFromParams(query as Record<string, string | string[] | undefined>);
 
-  // The indexable views (bare hub + single dealType category views, incl. the
-  // Leasingübernahme listings grid) are server-rendered so crawlers get the listings
-  // in the initial HTML. Filtered / paginated drill-downs stay client-fetched (noindex).
-  if (!isIndexableSearchQuery(initialQuery)) {
+  // The bare /suche and the single dealType views (incl. the Leasingübernahme hub) are
+  // server-rendered, so crawlers get the listings and the robots decision in the initial
+  // HTML. Filtered / paginated drill-downs stay client-fetched (noindex).
+  if (!isServerRenderedSearchQuery(initialQuery)) {
     return { props: { initialResults: null, initialQuery } };
   }
 
   try {
     const results = await searchListingsOrThrow(initialQuery);
-    // Indexable views are the same for every visitor — let the CDN serve them.
+    // These views are the same for every visitor — let the CDN serve them.
     res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
     // Strip any `undefined` fields so Next can serialize the props.
     const initialResults = JSON.parse(JSON.stringify(results)) as SearchResult;

@@ -70,17 +70,21 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
 
   const listingLastmod = (l: ListingSitemapRow) => toSitemapLastmod(l.updated_at ?? l.created_at);
 
-  // Home and /suche are inventory surfaces: their content moves with the newest listing,
-  // which is a more honest freshness signal than a hand-maintained date.
-  const newestListingLastmod = listingRows.map(listingLastmod).filter(Boolean).sort().pop() ?? null;
+  // Live Leasingübernahmen by the Kaufart rule: the body of the home page, the hub and
+  // the brand pages.
+  const takeoverRows = liveTakeovers(offers);
+  const newestTakeoverLastmod = takeoverRows.map(listingLastmod).filter(Boolean).sort().pop() ?? null;
 
   const staticPages = Object.keys(CONTENT_LAST_UPDATED);
 
+  // The home page shows the live Leasingübernahmen, so its lastmod is the later of its
+  // last content edit and the newest takeover change. (The bare /suche is noindex and
+  // not listed; the hub is added below.)
   const staticUrls = staticPages
     .map((page) => {
       const lastmod =
-        page === "/" || page === "/suche"
-          ? newestListingLastmod ?? CONTENT_LAST_UPDATED[page]
+        page === "/"
+          ? [CONTENT_LAST_UPDATED[page], newestTakeoverLastmod].filter(Boolean).sort().pop() ?? null
           : CONTENT_LAST_UPDATED[page];
       return urlTag(`${baseUrl}${page === "/" ? "" : page}`, lastmod);
     })
@@ -100,8 +104,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // of the map). indexableBrandPages is alias-aware (Mercedes rows -> mercedes-benz).
   // lastmod = the later of that brand's newest takeover change (the page body is its
   // inventory) and the last edit of the brand page content (BRAND_PAGES_CONTENT_UPDATED).
-  const takeoverRows = liveTakeovers(offers);
-
   const brandUrls = indexableBrandPages(takeoverRows)
     .map((b) => {
       const brandLastmod =
@@ -123,10 +125,11 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // any content page. Its body is the live takeover inventory, so lastmod is the
   // newest takeover change. The "&" must be escaped in XML. An empty hub renders
   // noindex (soft-404 guard in suche.tsx), so it is only listed with live takeovers.
-  const hubLastmod = takeoverRows.map(listingLastmod).filter(Boolean).sort().pop() ?? null;
+  // The Direktkauf view is indexable only from a full results page of offers
+  // (suche.tsx); it is not submitted here.
   const hubUrl =
     takeoverRows.length > 0
-      ? urlTag(`${baseUrl}${LEASE_TAKEOVER_HUB_PATH.replace(/&/g, "&amp;")}`, hubLastmod)
+      ? urlTag(`${baseUrl}${LEASE_TAKEOVER_HUB_PATH.replace(/&/g, "&amp;")}`, newestTakeoverLastmod)
       : "";
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

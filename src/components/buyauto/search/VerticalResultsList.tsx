@@ -49,8 +49,7 @@ export default function VerticalResultsList({
           Keine Fahrzeuge gefunden
         </h3>
         <p className="text-neutral-600 text-center max-w-md mb-8">
-          Leider gibt es keine Ergebnisse für Ihre aktuelle Filterauswahl. 
-          Versuchen Sie, einige Filter zu entfernen.
+          Zu deinen Filtern gibt es gerade kein Angebot. Entferne ein paar Filter, dann siehst du mehr.
         </p>
         {onClearFilters && (
           <Button
