@@ -120,7 +120,8 @@ function isServerRenderedSearchQuery(q: SearchQuery): boolean {
 function isIndexedSearchView(q: SearchQuery, total: number | null): boolean {
   if (!isSingleDealTypeQuery(q)) return false;
   if (q.dealType === "direct_purchase") return total !== null && total >= DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS;
-  return total !== 0;
+  // Unknown total (the 503 path renders without results): no canonical on that HTML.
+  return total !== null && total > 0;
 }
 
 // Self-referencing canonical of an indexed view (only single dealType views are indexed).

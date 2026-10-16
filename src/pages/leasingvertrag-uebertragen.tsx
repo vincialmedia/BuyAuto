@@ -294,9 +294,9 @@ export default function LeasingvertragUebertragenPage({ stats }: LeasingvertragU
                   </p>
                   <Cite sources={[AMAG_LEASING.source, ...CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES]} />
                   <p>
-                    Neue Kontrollschilder braucht die übernehmende Person nur, wenn sie keine eigenen hat. Deine
-                    Schilder zu übernehmen, ist in den meisten Kantonen eingeschränkt oder kostet extra. Die übernehmende Person
-                    braucht deshalb eigene oder neue Schilder.
+                    Neue Kontrollschilder braucht die übernehmende Person nur, wenn sie keine eigenen hat. Ob sie
+                    deine Schilder übernehmen kann, sagt das Strassenverkehrsamt; frag dort nach, bevor du die
+                    Schilder abgibst.
                   </p>
                 </Step>
 

@@ -664,7 +664,13 @@ export function cantonalExtremeLabel(extreme: CantonalFeeExtreme): string {
  */
 export const CANTONAL_FAHRZEUGAUSWEIS_SUMMARY =
   `Der neue Fahrzeugausweis kostet je nach Kanton zwischen ${cantonalExtremeLabel(FAHRZEUGAUSWEIS_RANGE.min)} ` +
-  `und ${cantonalExtremeLabel(FAHRZEUGAUSWEIS_RANGE.max)}.`;
+  `und ${cantonalExtremeLabel(FAHRZEUGAUSWEIS_RANGE.max)}` +
+  // Same caveat as the plate summary: a canton whose tariff names a possible extra charge.
+  [possibleExtraFeeClause(CANTONS_WITH_POSSIBLE_EXTRA_FEE.fahrzeugausweis)]
+    .filter(Boolean)
+    .map((clause) => `; ${clause}`)
+    .join("") +
+  ".";
 
 /** "Brauchst du neue Kontrollschilder, … kommen CHF 20.00 (AG) bis CHF 63.00 (JU) dazu; SH publiziert keinen festen Betrag, in ZH kann eine Zusatzgebühr dazukommen." */
 export const CANTONAL_KONTROLLSCHILDER_SUMMARY =

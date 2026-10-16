@@ -37,8 +37,8 @@ export function CantonalFeesTable({ headingLevel = "h2" }: { headingLevel?: "h2"
         {CANTONAL_FAHRZEUGAUSWEIS_SUMMARY} {CANTONAL_KONTROLLSCHILDER_SUMMARY}
       </p>
       <p className="text-sm text-neutral-500 mb-6">
-        Die Kontrollschilder deiner Vorgängerin oder deines Vorgängers zu übernehmen, ist in den meisten Kantonen
-        eingeschränkt oder kostet extra. Rechne deshalb mit eigenen oder neuen Schildern. Alle Tarife geprüft am{" "}
+        Neue Kontrollschilder brauchst du nur, wenn du keine eigenen hast. Ob du die Schilder deiner Vorgängerin
+        oder deines Vorgängers übernehmen kannst, sagt dir dein Strassenverkehrsamt. Alle Tarife geprüft am{" "}
         {FACTS_CHECKED_ON}.
       </p>
 
