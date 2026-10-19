@@ -13,7 +13,11 @@ export const LISTING_SUMMARY_PROPERTIES: Record<string, JsonSchema> = {
   remaining_months: { ...nullable("integer"), description: "Lease takeover: months left on the contract (as of today)." },
   deposit_chf: { ...nullable("number"), description: "Lease takeover: deposit (Kaution) in CHF; 0 = none." },
   remaining_km_allowance: { ...nullable("number"), description: "Lease takeover: kilometres left in the contract, if stated." },
-  purchase_price_chf: { ...nullable("number"), description: "Direct purchase: price in CHF; null = on request." },
+  purchase_price_chf: {
+    ...nullable("number"),
+    description:
+      "Price to buy the car in CHF (Kaufpreis). Direct purchase: the asking price, null = on request. Lease takeover: set when the seller also offers the car for sale.",
+  },
   new_leasing_offered: { type: "boolean", description: "Direct purchase: the seller also offers new leasing financing." },
   brand: { type: "string" },
   model: { type: "string" },
@@ -23,7 +27,10 @@ export const LISTING_SUMMARY_PROPERTIES: Record<string, JsonSchema> = {
   gearbox: nullable("string"),
   body: nullable("string"),
   power_hp: nullable("number"),
-  location: { ...nullable("string"), description: "Town and canton code where the car is." },
+  location: {
+    ...nullable("string"),
+    description: 'Town and canton code where the car is, or the canton alone ("Kanton Zürich") when the listing names no town.',
+  },
   canton_code: nullable("string"),
   seller_type: { type: "string", enum: ["private", "garage"] },
   garage_name: nullable("string"),
@@ -53,7 +60,7 @@ export const LISTING_DETAIL_SCHEMA: JsonSchema = {
     variant: nullable("string"),
     first_registration: { ...nullable("string"), description: "First registration date (YYYY-MM-DD)." },
     drivetrain: nullable("string"),
-    description: { ...nullable("string"), description: "Seller's description; contact details and links removed." },
+    description: { ...nullable("string"), description: "Seller's description; phone numbers, e-mail addresses and links filtered out." },
     images: { type: "array", items: { type: "string" } },
     garage_page_url: nullable("string"),
     contact: {

@@ -29,7 +29,7 @@ export function createBuyAutoTools(data: ListingDataSource): McpTool[] {
         name: "search_listings",
         title: "Search BuyAuto listings",
         description:
-          "Searches the live offers on BuyAuto (buyauto.ch), the Swiss marketplace for car lease takeovers (Leasingübernahmen). " +
+          "Searches the live offers on BuyAuto (buyauto.ch), a Swiss marketplace for car lease takeovers (Leasingübernahmen). " +
           "In a lease takeover the buyer continues someone's running leasing contract at its monthly rate for the remaining months; the leasing company must approve the new lessee. " +
           "Some listings are direct purchases with a price instead. Filters: brand, model, monthly rate, remaining months, deposit (Kaution), purchase price, mileage, year, fuel, gearbox, body type, canton. " +
           "Returns up to 20 listings per page with key facts (CHF) and the buyauto.ch link to each. Featured listings are a paid placement; they come first in the default sort and are flagged.",
@@ -44,7 +44,7 @@ export function createBuyAutoTools(data: ListingDataSource): McpTool[] {
         name: "get_listing",
         title: "Get a BuyAuto listing",
         description:
-          "Returns the full details of one live BuyAuto listing: monthly rate, remaining months, deposit and kilometres left (lease takeover) or price (direct purchase), vehicle data, the seller's description (contact details removed), photos and the buyauto.ch page where the buyer contacts the seller. " +
+          "Returns the full details of one live BuyAuto listing: monthly rate, remaining months, deposit and kilometres left (lease takeover), the purchase price where the seller states one, vehicle data, the seller's description (phone numbers, e-mail addresses and links filtered out), photos and the buyauto.ch page where the buyer contacts the seller. " +
           "Takes the id from search_listings or a buyauto.ch/fahrzeug/… link.",
         inputSchema: {
           type: "object",
@@ -81,8 +81,7 @@ export function createBuyAutoTools(data: ListingDataSource): McpTool[] {
         name: "get_handover_steps",
         title: "How to hand over a lease on BuyAuto",
         description:
-          "Returns the steps for someone who wants to pass their running car lease on to a new person in Switzerland (from checking the contract to the handover report), what the BuyAuto listing form asks for, and the links to create a listing, the guide, the prices and the page for garages. " +
-          "Use it when someone wants to get out of their lease or sell a leased car.",
+          "Returns the steps for passing a running car lease on to another person in Switzerland (from checking the contract to the handover report), what the BuyAuto listing form asks for, and the links to create a listing, the guide with sources, the other ways out of a lease and the prices.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
         outputSchema: HANDOVER_OUTPUT_SCHEMA,
         annotations: READ_ONLY,

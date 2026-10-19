@@ -3,9 +3,12 @@
  *
  * Built from the same Listing objects the site renders (services/listingsService
  * applies the Kaufart rule), and from an explicit allow-list of fields: no
- * seller names of private sellers, no user ids, no VIN, no payment or plan data.
- * Free-text descriptions lose e-mail addresses, phone numbers and links, so
- * contact keeps running through the listing page.
+ * seller names of private sellers, no user_id/created_by fields, no VIN, no
+ * payment or plan data. Photos are the same public storage URLs the listing
+ * page uses; their folder is the uploader's account id, as on the site.
+ * Free-text descriptions are filtered for e-mail addresses, phone numbers,
+ * links and handles (best effort), so contact keeps running through the
+ * listing page.
  */
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { listingFullName } from "@/lib/buyauto/listingSeo";
@@ -107,11 +110,24 @@ export function placeFor(location: string | null | undefined): string | null {
 // ── Description ─────────────────────────────────────────────────────────────
 
 const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+/** "max(at)gmail.com", "max [at] gmail [dot] com". */
+const OBFUSCATED_EMAIL_RE =
+  /[A-Z0-9._%+-]+\s*[([{]\s*(?:at|ät)\s*[)\]}]\s*[A-Z0-9-]+(?:(?:\s*[([{]\s*(?:dot|punkt)\s*[)\]}]\s*|\.)[A-Z0-9-]+)+/gi;
 const URL_RE = /\b(?:https?:\/\/|www\.)\S+/gi;
-/** Swiss numbers: +41 / 0041 / 0 followed by nine digits, any separators ("079 123 45 67", "+41 (0)44 …"). */
-const CH_PHONE_RE = /(?:(?:\+|\b00)41[\s./-]*(?:\(0\)[\s./-]*)?|\b0)(?:\d[\s./-]?){8}\d\b/g;
+/** Bare domains such as "garage-muster.ch" (common endings only, so "z.B." or "Inv.Setz." stay). */
+const DOMAIN_RE = /\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:ch|li|com|net|org|de|at|it|fr|info|swiss|io)\b(?:\/\S*)?/gi;
+/** Social handles: "@max_muster". */
+const HANDLE_RE = /(^|[\s(])@[A-Za-z0-9_.]{3,}/g;
+/** Up to three separator characters between digits: "079 - 123", "044/123'45'67", "(079) 123". */
+const PHONE_SEP = "[\\s./'’()\\-]{0,3}";
+/** Swiss numbers with country code: "+41 79 …", "0041 44 …", "41 79 …", "+41 (0)44 …". */
+const CH_INTL_PHONE_RE = new RegExp(`(?:(?:\\+|\\b00)\\s?41|\\b41)${PHONE_SEP}(?:\\(0\\)${PHONE_SEP})?\\d{2}(?:${PHONE_SEP}\\d){7}\\b`, "g");
+/** Swiss numbers in national form: an area code 0XX, then seven digits. */
+const CH_NATIONAL_PHONE_RE = new RegExp(`\\(?\\b0\\d{2}\\)?(?:${PHONE_SEP}\\d){7}\\b`, "g");
 /** Other international numbers written with + or 00. */
 const INTL_PHONE_RE = /(?:\+|\b00)[1-9]\d{0,2}(?:[\s./-]?\d){6,12}\b/g;
+/** Vehicle identification numbers typed into the text (17 characters, letters and digits, no I/O/Q). */
+const VIN_RE = /\b(?=[A-HJ-NPR-Z0-9]*\d)(?=[A-HJ-NPR-Z0-9]*[A-HJ-NPR-Z])[A-HJ-NPR-Z0-9]{17}\b/gi;
 
 export const DESCRIPTION_REMOVED = "[removed]";
 
@@ -119,15 +135,24 @@ export const DESCRIPTION_REMOVED = "[removed]";
 const DATE_START_RE = /^\d{1,2}\.\d{1,2}\.\d{2,4}/;
 const removeUnlessDate = (match: string) => (DATE_START_RE.test(match) ? match : DESCRIPTION_REMOVED);
 
-/** Seller text without contact details or links, collapsed whitespace, at most 2000 characters. */
+/**
+ * Seller text with recognisable contact details and links filtered out (best
+ * effort: free text can always spell a number in words), collapsed
+ * whitespace, at most 2000 characters.
+ */
 export function sanitizeDescription(text: string | null | undefined): string | null {
   if (typeof text !== "string") return null;
   const cleaned = text
     .replace(/<[^>]*>/g, " ")
     .replace(EMAIL_RE, DESCRIPTION_REMOVED)
+    .replace(OBFUSCATED_EMAIL_RE, DESCRIPTION_REMOVED)
     .replace(URL_RE, DESCRIPTION_REMOVED)
-    .replace(CH_PHONE_RE, removeUnlessDate)
+    .replace(DOMAIN_RE, DESCRIPTION_REMOVED)
+    .replace(HANDLE_RE, `$1${DESCRIPTION_REMOVED}`)
+    .replace(CH_INTL_PHONE_RE, removeUnlessDate)
+    .replace(CH_NATIONAL_PHONE_RE, removeUnlessDate)
     .replace(INTL_PHONE_RE, removeUnlessDate)
+    .replace(VIN_RE, DESCRIPTION_REMOVED)
     .replace(/[ \t]+/g, " ")
     .replace(/\s*\n\s*/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
@@ -155,10 +180,13 @@ function isoDate(value: string | null | undefined): string | null {
   return m ? m[1] : null;
 }
 
-/** Restkilometer: column first, then the takeover JSON offer (same order as the listing page). */
+/**
+ * Restkilometer exactly as the listing page reads them (ListingDetailV2): the
+ * column when it holds a number, else the takeover JSON offer; 0 means not stated.
+ */
 export function remainingKmFor(listing: Listing): number | null {
-  const column = positiveNumber(listing.remaining_km);
-  if (column !== null) return column;
+  const column = listing.remaining_km;
+  if (typeof column === "number" && Number.isFinite(column)) return column > 0 ? column : null;
   const offer = listing.leasing_offer as unknown as { lease_takeover_offer?: { remaining_km?: unknown } } | null;
   return positiveNumber(offer?.lease_takeover_offer?.remaining_km);
 }
@@ -201,14 +229,16 @@ export function listingTitle(listing: Listing): string {
 function locationLabel(place: string | null, canton: CantonCode | null): string | null {
   if (place && canton) return `${place}, ${canton}`;
   if (place) return place;
-  if (canton) return CANTON_LABELS[canton];
+  // Only a canton stored: "Kanton Zürich", so it doesn't read as the city.
+  if (canton) return `Kanton ${CANTON_LABELS[canton]}`;
   return null;
 }
 
-export function listingSummary(listing: Listing, cantonCode?: string | null): ListingSummaryOutput {
+/** canton_code: listings_public.canton_code where the caller has it (detail rows, live search items). */
+export function listingSummary(listing: Listing & { canton_code?: string | null }): ListingSummaryOutput {
   const kaufart = kaufartOf(listing);
   const isTakeover = kaufart === "lease_takeover";
-  const canton = cantonCodeFor(listing.location, cantonCode);
+  const canton = cantonCodeFor(listing.location, listing.canton_code);
   const sellerType = listing.seller_type === "garage" || listing.garage_id ? "garage" : "private";
 
   return {
@@ -222,7 +252,8 @@ export function listingSummary(listing: Listing, cantonCode?: string | null): Li
     remaining_months: !isTakeover ? null : listing.contractEnded ? 0 : positiveNumber(listing.remainingMonths),
     deposit_chf: isTakeover ? (typeof listing.depositCHF === "number" && listing.depositCHF > 0 ? listing.depositCHF : 0) : null,
     remaining_km_allowance: isTakeover ? remainingKmFor(listing) : null,
-    purchase_price_chf: isTakeover ? null : positiveNumber(listing.purchasePriceCHF),
+    // Direktkauf price, or on a takeover the Kaufpreis the listing also shows (the car is for sale too).
+    purchase_price_chf: positiveNumber(listing.purchasePriceCHF),
     new_leasing_offered: !isTakeover && hasNewLeasingFinancing(listing),
     brand: listing.brand || "",
     model: listing.model || "",
@@ -260,7 +291,7 @@ export function listingDetail(
   listing: ListingDetail,
   garage?: { name?: string | null; slug?: string | null } | null
 ): ListingDetailOutput {
-  const summary = listingSummary(listing, listing.canton_code);
+  const summary = listingSummary(listing);
   const images = (listing.image_urls?.length ? listing.image_urls : listing.images ?? [])
     .filter((src): src is string => typeof src === "string" && /^https:\/\//.test(src))
     .slice(0, 12);

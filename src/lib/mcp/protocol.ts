@@ -207,6 +207,10 @@ export async function handleMcpMessage(message: unknown, config: McpServerConfig
 
   const method = message.method as string;
 
+  // MCP requests carry a string or number id; JSON-RPC's null id is not allowed.
+  if ("id" in message && message.id === null) {
+    return errorResponse(null, JSONRPC_ERRORS.INVALID_REQUEST, "The id of an MCP request must be a string or a number, not null.");
+  }
   // Notifications (no id) never get a response: notifications/initialized, cancelled, progress, …
   if (!hasId) return null;
   if (!isValidId(message.id)) {
@@ -256,7 +260,7 @@ export interface McpHttpReply {
 }
 
 /** JSON-RPC batches (revision 2025-03-26 only) are capped so one request can't fan out into many database reads. */
-export const MAX_BATCH_SIZE = 20;
+export const MAX_BATCH_SIZE = 5;
 
 /** Handle a parsed POST body: one message or (older clients) a batch array. */
 export async function handleMcpBody(body: unknown, config: McpServerConfig): Promise<McpHttpReply> {

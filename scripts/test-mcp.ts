@@ -7,10 +7,14 @@
  * listing allow-list (no private seller names, descriptions without contact
  * details), location parsing, brand matching, each tool's output against its
  * declared outputSchema, and that every tool is annotated read-only.
+ * The HTTP layer (src/pages/api/mcp.ts: body limit, parse errors, the
+ * MCP-Protocol-Version header) is checked against a running server; see
+ * docs/mcp-connector.md.
  */
 import assert from "node:assert/strict";
 import {
   LATEST_PROTOCOL_VERSION,
+  MAX_BATCH_SIZE,
   handleMcpBody,
   handleMcpMessage,
   negotiateProtocolVersion,
@@ -22,6 +26,7 @@ import {
   listingDetail,
   listingSummary,
   placeFor,
+  remainingKmFor,
   sanitizeDescription,
   DESCRIPTION_REMOVED,
 } from "../src/lib/mcp/listingOutput";
@@ -34,6 +39,7 @@ import {
   searchPageUrl,
   type ListingDataSource,
 } from "../src/lib/mcp/tools";
+import { likeSafe } from "../src/lib/mcp/searchListings";
 import type { SearchQuery } from "../src/lib/buyauto/search";
 import type { Listing, ListingDetail } from "../src/lib/buyauto/types";
 
@@ -138,7 +144,7 @@ const GARAGE_TAKEOVER = listing({
   canton_code: "",
   premium: false,
   depositCHF: 2000,
-  remaining_km: 0,
+  remaining_km: null,
   leasing_offer: { enabled: false, lease_takeover_offer: { remaining_km: 30000 } } as any,
   fuel: "Hybrid",
 });
@@ -257,8 +263,20 @@ async function main() {
   assert.equal(batch.status, 200);
   assert.equal((batch.body as unknown[]).length, 1);
   assert.equal((await handleMcpBody([], config)).status, 400);
-  const tooMany = Array.from({ length: 21 }, (_, i) => ({ jsonrpc: "2.0", id: i + 1, method: "ping" }));
-  assert.equal((await handleMcpBody(tooMany, config)).status, 400, "batches are capped");
+  const pings = (n: number) => Array.from({ length: n }, (_, i) => ({ jsonrpc: "2.0", id: i + 1, method: "ping" }));
+  assert.equal(MAX_BATCH_SIZE, 5);
+  const fullBatch = await handleMcpBody(pings(MAX_BATCH_SIZE), config);
+  assert.equal(fullBatch.status, 200);
+  assert.equal((fullBatch.body as unknown[]).length, MAX_BATCH_SIZE);
+  const tooMany = await handleMcpBody(pings(MAX_BATCH_SIZE + 1), config);
+  assert.equal(tooMany.status, 400, "batches are capped");
+  assert.match((tooMany.body as any).error.message, /at most 5 messages/);
+
+  const nullId = (await handleMcpMessage({ jsonrpc: "2.0", id: null, method: "ping" }, config)) as any;
+  assert.equal(nullId.error.code, -32600, "null id is not a valid MCP request id");
+  assert.equal(nullId.id, null);
+  assert.match(nullId.error.message, /not null/);
+  assert.equal(((await handleMcpMessage({ jsonrpc: "2.0", id: "", method: "ping" }, config)) as any).error.code, -32600);
 
   const list = (await handleMcpMessage({ jsonrpc: "2.0", id: 6, method: "tools/list" }, config)) as any;
   const tools = list.result.tools as any[];
@@ -308,6 +326,13 @@ async function main() {
   assert.equal(nulls.query.model, undefined);
   assert.equal(nulls.page, 1);
 
+  // The model becomes a LIKE pattern: wildcards and PostgREST syntax characters are dropped.
+  assert.equal(likeSafe("%"), undefined);
+  assert.equal(likeSafe("X5_M%"), "X5 M");
+  assert.equal(likeSafe("Golf,(GTI)*\\"), "Golf GTI");
+  assert.equal(likeSafe("Model 3"), "Model 3");
+  assert.equal(parseSearchArgs({ model: "%%" }).query.model, undefined, "a bare wildcard matches nothing special");
+
   const url = searchPageUrl(inferred.query, { cantons: inferred.cantons });
   assert.match(url, /^https:\/\/www\.buyauto\.ch\/suche\?/);
   assert.match(url, /dealType=lease_takeover/);
@@ -331,6 +356,9 @@ async function main() {
   assert.equal(listingIdFromInput(`bmw-x3-${TAKEOVER.id}`), TAKEOVER.id);
   assert.equal(listingIdFromInput(`https://www.buyauto.ch/fahrzeug/bmw-x3-${TAKEOVER.id}?utm_source=x#top`), TAKEOVER.id);
   assert.equal(listingIdFromInput("not-an-id"), null);
+  assert.equal(listingIdFromInput("%E0%A4%A"), null, "malformed %-escape is not an id (and does not throw)");
+  assert.equal(listingIdFromInput("https://www.buyauto.ch/fahrzeug/%E0%A4%A"), null);
+  assert.equal(listingIdFromInput("http://[::1"), null, "unparseable URL");
 
   // ── Location ──
   assert.equal(cantonCodeFor("Schlieren, ZH"), "ZH");
@@ -359,6 +387,32 @@ async function main() {
   assert.equal(sanitizeDescription("Vertragsende 01.01.2028 12 Raten offen"), "Vertragsende 01.01.2028 12 Raten offen");
   assert.equal(sanitizeDescription("Anzahlung CHF 5'000.00 bis 01.02.2026"), "Anzahlung CHF 5'000.00 bis 01.02.2026");
   assert.equal(sanitizeDescription(null), null);
+
+  // Contact formats sellers actually type (review findings): all removed.
+  const contactCases: Array<[string, string]> = [
+    ["Tel 079 - 123 45 67 abends", "Tel [removed] abends"],
+    ["Ruf an: (079) 123 45 67", "Ruf an: [removed]"],
+    ["Büro 044/123'45'67", "Büro [removed]"],
+    ["WhatsApp 41 79 123 45 67", "WhatsApp [removed]"],
+    ["mail max(at)gmail.com bitte", "mail [removed] bitte"],
+    ["max [at] gmail [dot] com", "[removed]"],
+    ["siehe maxmuster.ch/auto", "siehe [removed]"],
+    ["insta @max_muster", "insta [removed]"],
+    ["FIN WBAJA7105YCG12345 im Ausweis", "FIN [removed] im Ausweis"],
+  ];
+  for (const [input, expected] of contactCases) assert.equal(sanitizeDescription(input), expected, `sanitize: ${input}`);
+  // Car facts that look a bit like numbers or domains: kept.
+  for (const kept of [
+    "Km-Stand 45 000 / 15 000 km pro Jahr",
+    "Kaufpreis CHF 122'146, Leasing 36 Mt.",
+    "Service 08:00-17:00, z.B. inkl. MwSt., Inv.Setz.: 11/2021",
+    "Garage in 8952 Schlieren",
+    "Leistung 299 PS, 0-100 in 5.8 s",
+    "Rate 1'250.- / Mt., Restwert 31'900",
+    "Ausstellung des neuen Fahrzeugausweises",
+  ]) {
+    assert.equal(sanitizeDescription(kept), kept, `kept: ${kept}`);
+  }
 
   // ── Listing allow-list ──
   const summary = listingSummary(TAKEOVER);
@@ -394,6 +448,21 @@ async function main() {
   const unknownMonths = listingSummary(listing({ remainingMonths: 0, contractEnded: false }));
   assert.equal(unknownMonths.remaining_months, null, "0 months on a live offer means unknown");
 
+  const takeoverForSale = listingSummary(listing({ purchasePriceCHF: 42000 }));
+  assert.equal(takeoverForSale.offer_type, "lease_takeover");
+  assert.equal(takeoverForSale.monthly_rate_chf, 590);
+  assert.equal(takeoverForSale.purchase_price_chf, 42000, "a takeover's Kaufpreis is passed on, as the listing page shows it");
+
+  assert.equal(listingSummary(listing({ location: "ZH", canton_code: "ZH" })).location, "Kanton Zürich", "a bare canton doesn't read as a town");
+  assert.equal(listingSummary(listing({ location: null as any, canton_code: "BE" })).location, "Kanton Bern");
+
+  // Restkilometer as the listing page reads them: the column when it is a number (0 = not stated), else the takeover offer.
+  const offerKm = { enabled: false, lease_takeover_offer: { remaining_km: 30000 } } as any;
+  assert.equal(remainingKmFor(listing({ remaining_km: 12000, leasing_offer: offerKm })), 12000);
+  assert.equal(remainingKmFor(listing({ remaining_km: 0, leasing_offer: offerKm })), null, "column 0 wins and means not stated");
+  assert.equal(remainingKmFor(listing({ remaining_km: null, leasing_offer: offerKm })), 30000);
+  assert.equal(remainingKmFor(listing({ remaining_km: null, leasing_offer: null })), null);
+
   // ── Tools end to end (fixtures) ──
   const all = await call(config, "search_listings", {});
   assertMatchesSchema(config, "search_listings", all);
@@ -424,6 +493,35 @@ async function main() {
   assert.equal((porsche.structuredContent as any).total, 0);
   assert.match((porsche.structuredContent as any).notes[0], /Brands with listings: BMW/);
 
+  // A "brand" that is really a trim line (AMG, GTI) is searched in model and trim instead.
+  const AMG = listing({
+    id: "55555555-5555-4555-8555-555555555555",
+    brand: "Mercedes-Benz",
+    model: "C 43",
+    variant: "AMG 4MATIC",
+    title: "Mercedes-Benz C 43 AMG 4MATIC",
+  });
+  const NO_CANTON = listing({ id: "66666666-6666-4666-8666-666666666666", location: "Winterthur", canton_code: null as any });
+  const STORED_CANTON = listing({ id: "77777777-7777-4777-8777-777777777777", location: "Winterthur", canton_code: "ZH" });
+  const extra = serverWith(fakeData([TAKEOVER, AMG, NO_CANTON, STORED_CANTON]));
+  const amg = await call(extra, "search_listings", { brand: "AMG" });
+  assertMatchesSchema(extra, "search_listings", amg);
+  assert.deepEqual((amg.structuredContent as any).results.map((r: any) => r.id), [AMG.id]);
+  assert.match((amg.structuredContent as any).notes[0], /"AMG" is not a brand with listings/);
+
+  const zhStored = await call(extra, "search_listings", { canton: ["ZH"] });
+  assertMatchesSchema(extra, "search_listings", zhStored);
+  const zhIds = (zhStored.structuredContent as any).results.map((r: any) => r.id);
+  assert.ok(zhIds.includes(STORED_CANTON.id), "stored canton_code counts when the location text has none");
+  assert.ok(!zhIds.includes(NO_CANTON.id));
+  assert.ok(
+    (zhStored.structuredContent as any).notes.some((n: string) => /^1 otherwise matching listing\(s\) state no canton/.test(n)),
+    "listings without any canton are reported"
+  );
+  const storedOut = (zhStored.structuredContent as any).results.find((r: any) => r.id === STORED_CANTON.id);
+  assert.equal(storedOut.canton_code, "ZH");
+  assert.equal(storedOut.location, "Winterthur, ZH");
+
   const bad = await call(config, "search_listings", { max_monthly_rate_chf: -5 });
   assert.equal(bad.isError, true);
   assert.match(bad.content[0].text, /between 0 and/);
@@ -439,6 +537,9 @@ async function main() {
   assert.match(missing.content[0].text, /No live listing/);
   assert.equal((await call(config, "get_listing", { id: "abc" })).isError, true);
   assert.equal((await call(config, "get_listing", {})).isError, true);
+  const malformed = await call(config, "get_listing", { id: "%E0%A4%A" });
+  assert.equal(malformed.isError, true);
+  assert.match(malformed.content[0].text, /is not a BuyAuto listing id/, "malformed id gets the actionable message, not the database one");
 
   const costs = await call(config, "get_takeover_costs", {});
   assertMatchesSchema(config, "get_takeover_costs", costs);
@@ -447,7 +548,19 @@ async function main() {
   const cembra = allLenders.find((l: any) => l.key === "cembra");
   assert.equal(cembra.fee_published, true);
   assert.ok(cembra.takeover_fee_excl_vat_chf > 0 && cembra.source.url.startsWith("https://"));
-  assert.ok((costs.structuredContent as any).cantonal_fee_ranges.vehicle_registration_chf.min.chf > 0);
+  const ranges = (costs.structuredContent as any).cantonal_fee_ranges;
+  assert.ok(ranges.vehicle_registration_chf.min.chf > 0);
+  for (const key of ["vehicle_registration_chf", "plates_chf"]) {
+    const range = ranges[key];
+    assert.ok(range.sources.length > 0, `${key}: sources for the extremes`);
+    for (const src of range.sources) assert.ok(src.url.startsWith("https://"), `${key}: source url`);
+    assert.ok(typeof range.summary_de === "string" && range.summary_de.includes("CHF"), `${key}: summary_de`);
+    assert.ok(Array.isArray(range.possible_extra_fee), `${key}: possible_extra_fee`);
+    for (const fee of range.possible_extra_fee) {
+      assert.equal(typeof fee.canton_code, "string");
+      assert.ok(range.summary_de.includes(fee.canton_code), `${key}: summary names the canton with a possible extra fee`);
+    }
+  }
 
   const vw = await call(config, "get_takeover_costs", { brand: "VW", canton: "zürich" });
   assertMatchesSchema(config, "get_takeover_costs", vw);
@@ -466,6 +579,7 @@ async function main() {
   assertMatchesSchema(config, "get_handover_steps", steps);
   assert.equal((steps.structuredContent as any).steps.length, 6);
   assert.match((steps.structuredContent as any).create_listing_url, /\/inserat-erstellen\?/);
+  assert.ok(!("garages_url" in (steps.structuredContent as any)), "garages_url is no longer part of the handover output");
   assert.equal((await call(config, "get_handover_steps", { x: 1 })).isError, true);
 
   // Database failure surfaces as an isError result, not a protocol error.

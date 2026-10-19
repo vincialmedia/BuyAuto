@@ -17,7 +17,13 @@ export function listingIdFromInput(input: string): string | null {
   }
   candidate = candidate.split(/[?#]/)[0].replace(/\/+$/, "");
   const lastSegment = candidate.split("/").pop() ?? "";
-  const id = extractListingIdFromParam(decodeURIComponent(lastSegment));
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(lastSegment);
+  } catch {
+    return null; // malformed %-escape: not a listing id
+  }
+  const id = extractListingIdFromParam(decoded);
   return UUID_RE.test(id) ? id.toLowerCase() : null;
 }
 

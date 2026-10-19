@@ -3,7 +3,12 @@
  * brandLenders.ts). Every amount comes with its source and Stand, never typed here.
  */
 import {
+  CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES,
+  CANTONAL_FAHRZEUGAUSWEIS_SUMMARY,
   CANTONAL_FEES,
+  CANTONAL_KONTROLLSCHILDER_RANGE_SOURCES,
+  CANTONAL_KONTROLLSCHILDER_SUMMARY,
+  CANTONS_WITH_POSSIBLE_EXTRA_FEE,
   CANTONS_WITHOUT_FIXED_PLATE_FEE,
   FACTS_CHECKED_ON,
   FAHRZEUGAUSWEIS_RANGE,
@@ -146,19 +151,29 @@ export async function runTakeoverCosts(args: Args) {
   );
 
   const cantonalFees = canton ? [cantonOut(canton)].filter(Boolean) : [];
+  // Same figures, caveats and sources as the cost page (facts.ts computes all of them).
+  const extraFee = (codes: readonly string[]) =>
+    codes.map((code) => ({ canton_code: code, note_de: CANTONAL_FEES.find((row) => row.code === code)?.note ?? null }));
   const ranges = canton
     ? null
     : {
         vehicle_registration_chf: {
           min: { chf: FAHRZEUGAUSWEIS_RANGE.min.chf, cantons: FAHRZEUGAUSWEIS_RANGE.min.codes },
           max: { chf: FAHRZEUGAUSWEIS_RANGE.max.chf, cantons: FAHRZEUGAUSWEIS_RANGE.max.codes },
+          possible_extra_fee: extraFee(CANTONS_WITH_POSSIBLE_EXTRA_FEE.fahrzeugausweis),
+          summary_de: CANTONAL_FAHRZEUGAUSWEIS_SUMMARY,
+          sources: CANTONAL_FAHRZEUGAUSWEIS_RANGE_SOURCES.map((src) => sourceOut(src)),
         },
         plates_chf: {
           min: { chf: KONTROLLSCHILDER_RANGE.min.chf, cantons: KONTROLLSCHILDER_RANGE.min.codes },
           max: { chf: KONTROLLSCHILDER_RANGE.max.chf, cantons: KONTROLLSCHILDER_RANGE.max.codes },
           cantons_without_fixed_amount: CANTONS_WITHOUT_FIXED_PLATE_FEE,
+          possible_extra_fee: extraFee(CANTONS_WITH_POSSIBLE_EXTRA_FEE.kontrollschilder),
+          summary_de: CANTONAL_KONTROLLSCHILDER_SUMMARY,
+          sources: CANTONAL_KONTROLLSCHILDER_RANGE_SOURCES.map((src) => sourceOut(src)),
         },
-        detail: "Pass canton for one canton's fees and source.",
+        detail:
+          "Printed tariffs; a canton listed under possible_extra_fee names a possible extra charge on top. Pass canton for one canton's fees and source.",
       };
 
   return toolResult({

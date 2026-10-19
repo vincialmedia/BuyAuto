@@ -5,7 +5,6 @@
  */
 import { BODY_TYPES, CANTON_CODES, FUEL_TYPES, GEARBOX_TYPES } from "@/lib/buyauto/listingContract";
 import type { SearchQuery } from "@/lib/buyauto/search";
-import type { Listing } from "@/lib/buyauto/types";
 import {
   BODY_ALIASES,
   CANTON_ALIASES,
@@ -21,7 +20,7 @@ import {
   type Args,
 } from "@/lib/mcp/args";
 import { matchBrands, matchesQuery } from "@/lib/mcp/brands";
-import type { ListingDataSource } from "@/lib/mcp/dataSource";
+import type { ListingDataSource, ListingWithCanton } from "@/lib/mcp/dataSource";
 import { cantonCodeFor, listingSummary, remainingKmFor, siteUrl, type ListingSummaryOutput } from "@/lib/mcp/listingOutput";
 import { ToolInputError, toolResult, type JsonSchema } from "@/lib/mcp/protocol";
 import { LISTING_SUMMARY_SCHEMA } from "@/lib/mcp/schemas";
@@ -160,6 +159,13 @@ export const SEARCH_OUTPUT_SCHEMA: JsonSchema = {
   required: ["total", "page", "page_size", "has_more", "results", "search_url", "applied_filters", "notes"],
 };
 
+/** The model filter becomes a SQL LIKE pattern: wildcards and PostgREST syntax characters are dropped. */
+export function likeSafe(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  const cleaned = value.replace(/[%_*,()\\]/g, " ").replace(/\s+/g, " ").trim();
+  return cleaned || undefined;
+}
+
 export interface ParsedSearch {
   query: SearchQuery;
   cantons?: string[];
@@ -182,7 +188,7 @@ export function parseSearchArgs(args: Args): ParsedSearch {
     both: "all", any: "all",
   });
   const brand = optString(args, "brand", 40);
-  const model = optString(args, "model", 60);
+  const model = likeSafe(optString(args, "model", 60));
   const freeText = optString(args, "query", 80);
   const minRate = optNumber(args, "min_monthly_rate_chf", { min: 0, max: 20000 });
   const maxRate = optNumber(args, "max_monthly_rate_chf", { min: 0, max: 20000 });
@@ -315,46 +321,48 @@ export function searchPageUrl(query: SearchQuery, extra: { cantons?: string[]; f
 
 export async function runSearch(args: Args, data: ListingDataSource) {
   const parsed = parseSearchArgs(args);
-  const { query, cantons, freeText, minRemainingKm, page, pageSize, applied, notes } = parsed;
+  const { query, cantons, minRemainingKm, page, pageSize, applied, notes } = parsed;
+  let freeText = parsed.freeText;
 
   if (parsed.brandInput) {
     const live = await data.liveBrands();
     const brands = matchBrands(parsed.brandInput, live);
     if (brands.length === 0) {
+      // Not a brand with listings ("AMG", "GTI"): look for it in model and trim instead.
+      freeText = [freeText, parsed.brandInput].filter(Boolean).join(" ");
       notes.push(
-        `No listings for the brand "${parsed.brandInput}" on BuyAuto right now. Brands with listings: ${live
+        `"${parsed.brandInput}" is not a brand with listings on BuyAuto right now, so it was searched as a word in model and trim. Brands with listings: ${live
           .slice()
           .sort((a, b) => a.localeCompare(b, "de-CH"))
           .join(", ")}.`
       );
-      return toolResult({
-        total: 0,
-        page,
-        page_size: pageSize,
-        has_more: false,
-        results: [],
-        search_url: searchPageUrl(query, { cantons, freeText }),
-        applied_filters: applied,
-        notes,
-      });
-    }
-    query.brands = brands;
-    if (brands.length > 1 || brands[0].toLowerCase() !== parsed.brandInput.toLowerCase()) {
-      notes.push(`Brand "${parsed.brandInput}" matched: ${brands.join(", ")}.`);
+    } else {
+      query.brands = brands;
+      if (brands.length > 1 || brands[0].toLowerCase() !== parsed.brandInput.toLowerCase()) {
+        notes.push(`Brand "${parsed.brandInput}" matched: ${brands.join(", ")}.`);
+      }
     }
   }
 
-  let items: Listing[];
+  let items: ListingWithCanton[];
   let total: number;
 
   if (cantons?.length || freeText || minRemainingKm !== undefined) {
     const all = await data.search({ ...query, page: 1, pageSize: POST_FILTER_LIMIT });
-    const filtered = all.items.filter(
+    const candidates = (all.items as ListingWithCanton[]).filter(
       (listing) =>
-        (!cantons?.length || cantons.includes(cantonCodeFor(listing.location) ?? "")) &&
         (!freeText || matchesQuery(listing, freeText)) &&
         (minRemainingKm === undefined || (remainingKmFor(listing) ?? -1) >= minRemainingKm)
     );
+    const filtered = cantons?.length
+      ? candidates.filter((listing) => cantons.includes(cantonCodeFor(listing.location, listing.canton_code) ?? ""))
+      : candidates;
+    if (cantons?.length) {
+      const withoutCanton = candidates.filter((listing) => !cantonCodeFor(listing.location, listing.canton_code)).length;
+      if (withoutCanton > 0) {
+        notes.push(`${withoutCanton} otherwise matching listing(s) state no canton and were left out by the canton filter.`);
+      }
+    }
     if (all.total > POST_FILTER_LIMIT) {
       notes.push(
         `Only the first ${POST_FILTER_LIMIT} of ${all.total} matches were checked for canton, keywords and kilometres left; add filters to narrow the search.`
@@ -365,7 +373,7 @@ export async function runSearch(args: Args, data: ListingDataSource) {
   } else {
     const result = await data.search({ ...query, page, pageSize });
     total = result.total;
-    items = result.items;
+    items = result.items as ListingWithCanton[];
   }
 
   const results: ListingSummaryOutput[] = items.map((listing) => listingSummary(listing));

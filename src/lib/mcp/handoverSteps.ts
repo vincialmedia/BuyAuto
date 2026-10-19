@@ -24,10 +24,9 @@ export const HANDOVER_OUTPUT_SCHEMA: JsonSchema = {
     guide_url: { type: "string" },
     other_exit_options_url: { type: "string" },
     prices_url: { type: "string" },
-    garages_url: { type: "string" },
     notes: { type: "array", items: { type: "string" } },
   },
-  required: ["steps", "listing_form", "create_listing_url", "guide_url", "other_exit_options_url", "prices_url", "garages_url", "notes"],
+  required: ["steps", "listing_form", "create_listing_url", "guide_url", "other_exit_options_url", "prices_url", "notes"],
 };
 
 export function runHandoverSteps(args: Args) {
@@ -82,13 +81,12 @@ export function runHandoverSteps(args: Args) {
       "Leasingdetails: monthly rate, contract end or remaining months, deposit (Kaution), kilometres left (optional)",
       "Plan (see prices_url)",
       "Photos",
-      "Preview and publish; visitors without an account sign in or register at this last step",
+      "Preview and publish; private sellers without an account sign in or register at this last step, garages list from a garage account",
     ],
     create_listing_url: siteUrl("/inserat-erstellen"),
     guide_url: siteUrl("/leasingvertrag-uebertragen"),
     other_exit_options_url: siteUrl("/leasing-abgeben-schweiz"),
     prices_url: siteUrl("/preise"),
-    garages_url: siteUrl("/fuer-garagen"),
     notes: [
       "This connector cannot create a listing: the seller fills in the form at create_listing_url.",
       "guide_url has these steps with their sources; other_exit_options_url covers early termination and buying out, with an exit calculator.",
