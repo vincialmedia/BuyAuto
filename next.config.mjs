@@ -34,6 +34,10 @@ const nextConfig = {
       { source: '/bank-now-leasing-uebernehmen', destination: '/leasinguebernahme-kosten#bank-now', permanent: true },
     ];
   },
+  // MCP connector for AI assistants: the public URL is /mcp, the handler lives in pages/api/mcp.ts.
+  async rewrites() {
+    return [{ source: '/mcp', destination: '/api/mcp' }];
+  },
   async headers() {
     return [
       {

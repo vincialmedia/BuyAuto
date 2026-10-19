@@ -415,10 +415,24 @@ function walk(dir, acc = []) {
   return acc;
 }
 
+/** Body of `async <name>() { … }` in a config file (brace-matched), or "" when absent. */
+function asyncMethodBody(src, name) {
+  const start = src.search(new RegExp(`async\\s+${name}\\s*\\(\\s*\\)\\s*\\{`));
+  if (start < 0) return "";
+  const open = src.indexOf("{", start);
+  let depth = 0;
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === "{") depth++;
+    else if (src[i] === "}" && --depth === 0) return src.slice(open, i + 1);
+  }
+  return src.slice(open);
+}
+
 function redirectSources(root) {
   const sources = new Set();
   try {
-    const next = fs.readFileSync(path.join(root, "next.config.mjs"), "utf8");
+    // Only redirects() retires a URL; rewrites() (e.g. /mcp → /api/mcp) serves one.
+    const next = asyncMethodBody(fs.readFileSync(path.join(root, "next.config.mjs"), "utf8"), "redirects");
     for (const m of next.matchAll(/source:\s*['"]([^'"]+)['"]/g)) sources.add(m[1]);
   } catch {}
   try {
