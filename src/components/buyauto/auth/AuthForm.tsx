@@ -180,7 +180,7 @@ export default function AuthForm({
       await authService.resetPassword(email);
       console.log("AuthForm: Password reset email sent");
       
-      toast.success("Wir haben dir einen Link zum Zurücksetzen deines Passworts geschickt.");
+      toast.success("Falls es zu dieser Adresse ein Konto gibt, haben wir dir einen Link zum Zurücksetzen geschickt.");
       setCurrentView("login");
       
     } catch (error: any) {

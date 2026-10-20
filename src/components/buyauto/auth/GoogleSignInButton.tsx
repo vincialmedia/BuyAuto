@@ -4,7 +4,12 @@ import { Loader2 } from "lucide-react";
 import type { Session, User } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
 import { queueLoginEvent, setUser, trackOnce } from "@/lib/analytics";
-import { canOfferGoogleSignIn, isFreshAccount } from "@/lib/buyauto/googleSignIn";
+import {
+  canOfferGoogleSignIn,
+  isFreshAccount,
+  isGoogleSignInConfigured,
+  markGoogleSignInUnavailable,
+} from "@/lib/buyauto/googleSignIn";
 import {
   prepareGoogleSignIn,
   registerCredentialHandler,
@@ -103,9 +108,10 @@ export default function GoogleSignInButton({
   termsLead = "Mit der Anmeldung über Google akzeptierst du",
   className,
 }: GoogleSignInButtonProps) {
-  // Decided after mount: the user agent is only known in the browser, and the
-  // server render must match the first client render.
-  const [available, setAvailable] = useState(false);
+  // Starts from the build-time config (same on server and client), so the
+  // placeholder holds the button's space from the first paint and nothing
+  // below it jumps; in-app browsers drop it after mount.
+  const [available, setAvailable] = useState(isGoogleSignInConfigured);
   // Google's script loads only once the button is on screen: listing pages
   // show it to every logged-out visitor, most of whom never scroll to it.
   const [inView, setInView] = useState(false);
@@ -128,7 +134,7 @@ export default function GoogleSignInButton({
   }, []);
 
   useEffect(() => {
-    setAvailable(canOfferGoogleSignIn());
+    if (!canOfferGoogleSignIn()) setAvailable(false);
   }, []);
 
   function showError(message: string) {
@@ -227,6 +233,7 @@ export default function GoogleSignInButton({
       .catch((err: unknown) => {
         // Blocked by an extension or offline: the e-mail form still works.
         console.warn("Google sign-in unavailable:", err);
+        markGoogleSignInUnavailable();
         if (!cancelled) setAvailable(false);
       });
 

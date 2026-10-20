@@ -41,9 +41,17 @@ export function isEmbeddedBrowser(userAgent: string | null | undefined): boolean
   return false;
 }
 
+// Set once Google's script failed to load (blocked or offline) on this page.
+let scriptUnavailable = false;
+
+/** Google's script couldn't load: no button, and no hints pointing to one. */
+export function markGoogleSignInUnavailable(): void {
+  scriptUnavailable = true;
+}
+
 /** Whether this browser gets the Google button. Browser only. */
 export function canOfferGoogleSignIn(): boolean {
-  if (!isGoogleSignInConfigured() || typeof navigator === "undefined") return false;
+  if (scriptUnavailable || !isGoogleSignInConfigured() || typeof navigator === "undefined") return false;
   return !isEmbeddedBrowser(navigator.userAgent);
 }
 
