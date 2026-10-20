@@ -21,6 +21,7 @@ import {
   type IndexNowEndedRow,
   type IndexNowOffer,
 } from "../src/lib/buyauto/indexNow";
+import type { EndedTakeover } from "../src/lib/buyauto/leasingBrands";
 
 const NOW = new Date("2026-10-20T05:00:00Z");
 const HOUR_MS = 60 * 60 * 1000;
@@ -67,20 +68,31 @@ function ended(n: number, brand: string, model: string, fields: Partial<IndexNow
   };
 }
 
-function source(live: IndexNowOffer[] | Error, endedRows: IndexNowEndedRow[] | null | Error): IndexNowDataSource & { sinceSeen: Date[] } {
+function source(
+  live: IndexNowOffer[] | Error,
+  endedRows: IndexNowEndedRow[] | null | Error,
+  grace: EndedTakeover[] | Error = []
+): IndexNowDataSource & { sinceSeen: Date[]; graceReads: number } {
   const sinceSeen: Date[] = [];
-  return {
+  const src = {
     sinceSeen,
+    graceReads: 0,
     liveOffers: async () => {
       if (live instanceof Error) throw live;
       return live;
     },
-    endedRows: async (since) => {
+    endedRows: async (since: Date) => {
       sinceSeen.push(since);
       if (endedRows instanceof Error) throw endedRows;
       return endedRows;
     },
+    endedTakeovers: async () => {
+      src.graceReads += 1;
+      if (grace instanceof Error) throw grace;
+      return grace;
+    },
   };
+  return src;
 }
 
 async function main() {
@@ -113,7 +125,10 @@ async function main() {
     ended(17, "Kia", "EV6", { status: "sold", sold_at: hoursAgo(8), remaining_months: 0 }), // contract had run out: not on the hub
   ];
 
-  const src = source(live, endedRows);
+  // Brand grace history (30 days): a Mercedes takeover ended 10 days ago, so the
+  // Mercedes-Benz page (1 live) is indexable; Volvo, Audi and Tesla (1 live each) are not.
+  const grace: EndedTakeover[] = [{ brand: "Mercedes-Benz", endedAt: hoursAgo(24 * 10) }];
+  const src = source(live, endedRows, grace);
   const result = await collectIndexNowUrls(src, NOW);
   assert.deepEqual(result.errors, []);
   assert.equal(src.sinceSeen.length, 1);
@@ -129,7 +144,6 @@ async function main() {
     `${SITE}/leasinguebernahme/porsche`,
     `${SITE}/leasinguebernahme/skoda`,
     `${SITE}/leasinguebernahme/volkswagen`,
-    `${SITE}/leasinguebernahme/volvo`,
     // listings, newest change first
     `${SITE}/fahrzeug/fiat-500-${id(5)}`,
     `${SITE}/fahrzeug/bmw-x3-${id(1)}`,
@@ -143,12 +157,36 @@ async function main() {
     `${SITE}/fahrzeug/volvo-xc60-${id(4)}`,
   ];
   assert.deepEqual(result.urls, expected);
+  assert.equal(src.graceReads, 1, "the grace history is read when a brand sits at one live offer");
+  assert.ok(!result.urls.includes(`${SITE}/leasinguebernahme/volvo`), "a brand page that stays noindex is not submitted");
+  // bmw: 2 live; mercedes-benz: 1 live + grace; porsche, skoda, volkswagen: their last
+  // live takeover ended in the window (the page just went noindex).
   assert.ok(!result.urls.some((u) => u.includes("/leasinguebernahme/fiat")), "a Direktkauf adds no brand page");
   assert.ok(!result.urls.some((u) => u.includes("/leasinguebernahme/dacia")), "an ended Direktkauf adds no brand page");
   assert.ok(!result.urls.some((u) => u.includes("/leasinguebernahme/kia")), "a takeover whose contract had run out was off the hub");
   assert.ok(!result.urls.some((u) => /audi|tesla|toyota|polo|renault/.test(u)), "out-of-window and unpublished rows are left out");
   assert.equal(new Set(result.urls).size, result.urls.length, "no duplicates");
   assert.ok(result.urls.every((u) => u.startsWith(`${SITE}/`)), "only www.buyauto.ch URLs");
+
+  // Without the grace history, the Mercedes-Benz page (1 live) is noindex: not submitted.
+  const noGrace = await collectIndexNowUrls(source(live, endedRows, []), NOW);
+  assert.ok(!noGrace.urls.includes(`${SITE}/leasinguebernahme/mercedes-benz`));
+  assert.ok(noGrace.urls.includes(`${SITE}/fahrzeug/mercedes-eqe-${id(2)}`), "the listing itself still is");
+  // A failed grace read is reported and falls back on the rule without it.
+  const graceFails = await collectIndexNowUrls(source(live, endedRows, new Error("timeout")), NOW);
+  assert.deepEqual(graceFails.errors, ["brand grace history: timeout"]);
+  assert.ok(!graceFails.urls.includes(`${SITE}/leasinguebernahme/mercedes-benz`));
+  assert.ok(graceFails.urls.includes(`${SITE}/leasinguebernahme/bmw`));
+  // An ended takeover whose brand keeps one live offer without grace: no brand page.
+  const stillOne = await collectIndexNowUrls(
+    source([offer(30, "Volvo", "XC40", {})], [ended(31, "Volvo", "XC60", { status: "sold", sold_at: hoursAgo(2) })]),
+    NOW
+  );
+  assert.deepEqual(stillOne.urls, [HUB, `${SITE}/fahrzeug/volvo-xc60-${id(31)}`]);
+  // No brand at one live offer: the grace history is not read.
+  const twoBmw = source([offer(1, "BMW", "X3", { updated: hoursAgo(2) }), offer(7, "BMW", "i4", {})], []);
+  assert.deepEqual((await collectIndexNowUrls(twoBmw, NOW)).urls, [HUB, `${SITE}/leasinguebernahme/bmw`, `${SITE}/fahrzeug/bmw-x3-${id(1)}`]);
+  assert.equal(twoBmw.graceReads, 0);
 
   // Only a Direktkauf changed: no hub, no brand page.
   const onlyDirect = await collectIndexNowUrls(source([live[4]], []), NOW);
@@ -168,14 +206,19 @@ async function main() {
   const liveFails = await collectIndexNowUrls(source(new Error("offer index down"), endedRows), NOW);
   assert.deepEqual(liveFails.errors, ["live listings: offer index down"]);
   assert.ok(liveFails.urls.includes(`${SITE}/fahrzeug/porsche-macan-${id(10)}`), "ended rows still collected");
-  const endedFails = await collectIndexNowUrls(source(live, new Error("permission denied")), NOW);
+  assert.ok(liveFails.urls.includes(`${SITE}/leasinguebernahme/porsche`), "without live offers the brand rule is unknown: submitted");
+  const endedFails = await collectIndexNowUrls(source(live, new Error("permission denied"), grace), NOW);
   assert.deepEqual(endedFails.errors, ["ended listings: permission denied"]);
   assert.equal(endedFails.endedListings, null);
   assert.ok(endedFails.urls.includes(HUB));
 
   // Dedupe across live and ended (same id in both) and the 500 cap.
   const dup = await collectIndexNowUrls(
-    source([offer(1, "BMW", "X3", { updated: hoursAgo(2) })], [ended(1, "BMW", "X3", { status: "sold", sold_at: hoursAgo(1) })]),
+    source(
+      [offer(1, "BMW", "X3", { updated: hoursAgo(2) })],
+      [ended(1, "BMW", "X3", { status: "sold", sold_at: hoursAgo(1) })],
+      [{ brand: "BMW", endedAt: hoursAgo(1) }]
+    ),
     NOW
   );
   assert.deepEqual(dup.urls, [HUB, `${SITE}/leasinguebernahme/bmw`, `${SITE}/fahrzeug/bmw-x3-${id(1)}`]);
@@ -234,20 +277,20 @@ async function main() {
 
   // --- The whole run ----------------------------------------------------------------
   calls.length = 0;
-  const run = await runIndexNow({ source: source(live, endedRows), fetchImpl: fetchWith(200), now: NOW, dryRun: false });
+  const run = await runIndexNow({ source: source(live, endedRows, grace), fetchImpl: fetchWith(200), now: NOW, dryRun: false });
   assert.equal(run.ok, true);
   assert.equal(run.urlCount, expected.length);
   assert.deepEqual(run.submission, { ok: true, status: 200 });
   assert.equal(calls.length, 1);
 
   calls.length = 0;
-  const dry = await runIndexNow({ source: source(live, endedRows), fetchImpl: fetchWith(200), now: NOW, dryRun: true });
+  const dry = await runIndexNow({ source: source(live, endedRows, grace), fetchImpl: fetchWith(200), now: NOW, dryRun: true });
   assert.equal(dry.dryRun, true);
   assert.equal(dry.submission, null);
   assert.deepEqual(dry.urls, expected);
   assert.equal(calls.length, 0, "a dry run sends nothing");
 
-  const failedRun = await runIndexNow({ source: source(live, endedRows), fetchImpl: fetchWith(500), now: NOW, dryRun: false });
+  const failedRun = await runIndexNow({ source: source(live, endedRows, grace), fetchImpl: fetchWith(500), now: NOW, dryRun: false });
   assert.equal(failedRun.ok, false, "an IndexNow error marks the run, without throwing");
   assert.equal(failedRun.submission?.status, 500);
 

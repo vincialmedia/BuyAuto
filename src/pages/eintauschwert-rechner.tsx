@@ -68,7 +68,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Wie viel liegt der Eintauschwert unter dem Marktwert?",
-    a: "Um die Summe deiner Abzüge: Aufbereitung, Garantie-Rückstellung, Standzeit und Marge. Wie gross sie ist, hängt vom Fahrzeug und von deiner Kalkulation ab. Bei hohem Aufbereitungsbedarf, langer erwarteter Standzeit oder schwacher Nachfrage ist der Abschlag grösser. Der Rechner zeigt dir den Eintauschwert in Franken und, bei genügend Vergleichsinseraten, auch in Prozent vom Marktwert.",
+    a: "Um die Summe deiner Abzüge: Aufbereitung, Garantie-Rückstellung, Standzeit und Marge. Wie gross sie ist, hängt vom Fahrzeug und von deiner Kalkulation ab. Bei hohem Aufbereitungsbedarf, langer erwarteter Standzeit oder schwacher Nachfrage ist der Abschlag grösser. Der Rechner zeigt dir den Eintauschwert in Franken und, wenn er einen einzelnen Wert zeigt (ab 3 Vergleichsinseraten ohne stark streuende Preise), auch in Prozent vom Marktwert.",
   },
   {
     q: "Ist die Eintauschwert-Berechnung kostenlos?",
@@ -182,7 +182,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
 
         {/* Open Graph */}
         <meta property="og:title" content="Eintauschwert berechnen (Schweiz): Ankaufsrechner für Garagen" />
-        <meta property="og:description" content="Marktwert aus echten Schweizer Vergleichsinseraten, minus Aufbereitung, Garantie, Standzeit & Marge. Gratis für Garagen & Händler." />
+        <meta property="og:description" content="Eintauschwert und Ankaufspreis berechnen: Marktwert aus echten Schweizer Vergleichsinseraten, minus Aufbereitung, Garantie, Standzeit und Marge." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonical} />
         <meta property="og:site_name" content="BuyAuto" />
@@ -333,7 +333,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                   </li>
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700">Passt zu teureren Fahrzeugen: Die Marge wächst mit dem Wert und damit mit Risiko und Aufwand.</span>
+                    <span className="text-neutral-700">Passt zu teureren Fahrzeugen: Die Marge in Franken wächst mit dem Fahrzeugwert.</span>
                   </li>
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />

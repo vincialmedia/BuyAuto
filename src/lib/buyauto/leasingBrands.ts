@@ -357,6 +357,57 @@ export function endedTakeoversFromRows(rows: ListingHistoryRow[], now: Date = ne
   return out;
 }
 
+/** The grace history as brandIndexingService hands it out. */
+export interface GraceHistory {
+  ended: EndedTakeover[];
+  /**
+   * True when the read failed (network, timeout, 5xx) and no earlier result exists, so
+   * the grace period is unknown. False when the history was read, or is unavailable
+   * by configuration (no service-role key, request refused): then the rule without the
+   * grace period applies, as documented.
+   */
+  failed: boolean;
+}
+
+/**
+ * Caches the grace history read for brandIndexingService (pure, so the failure
+ * handling is unit-tested). `read` returns the rows, null when the history is
+ * unavailable by configuration, and throws on a transient failure. A good read is
+ * reused for `ttlMs`; after a read without rows the next attempt waits `retryMs`, so a
+ * refused key or a stalled database costs one round trip per `retryMs`, not one per
+ * render. A failed read falls back on the last good rows, whatever their age.
+ */
+export function createGraceHistoryCache(
+  read: (now: Date) => Promise<ListingHistoryRow[] | null>,
+  { ttlMs, retryMs, onError }: { ttlMs: number; retryMs: number; onError?: (error: unknown) => void }
+): (now?: Date) => Promise<GraceHistory> {
+  let good: { readAt: number; rows: ListingHistoryRow[] } | null = null;
+  let miss: { at: number; failed: boolean } | null = null;
+
+  return async (now: Date = new Date()) => {
+    const nowMs = now.getTime();
+    const fallback = (failed: boolean): GraceHistory =>
+      good ? { ended: endedTakeoversFromRows(good.rows, now), failed: false } : { ended: [], failed };
+
+    if (good && nowMs - good.readAt < ttlMs) return fallback(false);
+    if (miss && nowMs - miss.at < retryMs) return fallback(miss.failed);
+    try {
+      const rows = await read(now);
+      if (rows === null) {
+        miss = { at: nowMs, failed: false };
+        return fallback(false);
+      }
+      good = { readAt: nowMs, rows };
+      miss = null;
+      return fallback(false);
+    } catch (error) {
+      onError?.(error);
+      miss = { at: nowMs, failed: true };
+      return fallback(true);
+    }
+  };
+}
+
 /** True when some brand page has exactly the live count where the grace period decides. */
 export function graceHistoryMatters(liveTakeoverRows: { brand: string | null }[]): boolean {
   return brandPageCounts(liveTakeoverRows).some(

@@ -24,6 +24,8 @@ export function ListingNeighbourLinks({
     [n.brand, n.model].filter(Boolean).join(" ") + (typeof n.year === "number" && n.year > 0 ? ` (${n.year})` : "");
   const href = (n: ListingNeighbour) => buildListingHref({ id: n.id, brand: n.brand, model: n.model });
 
+  // The {" "} between label and name keeps the anchor text apart for text-only parsers
+  // («Nächste Leasingübernahme Fiat 600»); between block spans it renders nothing.
   return (
     <nav
       aria-label={isTakeover ? "Weitere Leasingübernahmen" : "Weitere Angebote"}
@@ -38,7 +40,7 @@ export function ListingNeighbourLinks({
           <span className="min-w-0">
             <span className="block text-neutral-500">
               {isTakeover ? "Vorherige Leasingübernahme" : "Vorheriges Angebot"}
-            </span>
+            </span>{" "}
             <span className="block truncate font-semibold text-neutral-900">{name(previous)}</span>
           </span>
         </Link>
@@ -51,7 +53,7 @@ export function ListingNeighbourLinks({
           className="flex min-w-0 items-center justify-end gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-right hover:border-red-300"
         >
           <span className="min-w-0">
-            <span className="block text-neutral-500">{isTakeover ? "Nächste Leasingübernahme" : "Nächstes Angebot"}</span>
+            <span className="block text-neutral-500">{isTakeover ? "Nächste Leasingübernahme" : "Nächstes Angebot"}</span>{" "}
             <span className="block truncate font-semibold text-neutral-900">{name(next)}</span>
           </span>
           <ChevronRight className="h-4 w-4 flex-shrink-0 text-neutral-400" aria-hidden="true" />

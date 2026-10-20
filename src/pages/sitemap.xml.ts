@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { BRAND_PAGES_CONTENT_UPDATED, CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
 import { isIndexableGarage } from "@/lib/buyauto/garageIndexing";
+import type { BrandPageSummary } from "@/lib/buyauto/leasingBrands";
 import { getPublicOfferIndex, liveTakeovers, type PublicOffer } from "@/services/listingsService";
 import { indexableBrandPagesFor } from "@/services/brandIndexingService";
 
@@ -140,7 +141,19 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // rows -> mercedes-benz) and the same as the brand page's robots tag.
   // lastmod = the later of that brand's newest takeover change (the page body is its
   // inventory) and the last edit of the brand page content (BRAND_PAGES_CONTENT_UPDATED).
-  const brandUrls = (await indexableBrandPagesFor(offers))
+  let brandPages: BrandPageSummary[];
+  try {
+    brandPages = await indexableBrandPagesFor(offers, { requireHistory: true });
+  } catch (historyError) {
+    // A brand in its grace period would drop out of the map: same rule as above.
+    console.error("Sitemap: brand grace history unavailable", historyError);
+    res.statusCode = 503;
+    res.setHeader("Retry-After", "300");
+    res.setHeader("Cache-Control", "no-store");
+    res.end();
+    return { props: {} };
+  }
+  const brandUrls = brandPages
     .map((b) => {
       const brandLastmod =
         [

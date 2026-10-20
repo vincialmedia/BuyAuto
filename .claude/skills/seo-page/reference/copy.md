@@ -45,7 +45,7 @@ German for Swiss readers, written by BuyAuto, about money. Accuracy first, then 
 
 ## Claims
 
-1. No absolute promises: "ohne Verlust", "garantiert", "risikolos", or "sofort" when it promises an outcome such as finding a new lessee. A takeover still costs the lender's transfer fee and BuyAuto's own fee, so "without loss" can't be promised to every reader. The remaining uses are the `/lp/leasing-abgeben` title (Ads landing page) and the noindex E-Auto scaffold. Don't add new ones; Vince decides about those two.
+1. No absolute promises: "ohne Verlust", "garantiert", "risikolos", or "sofort" when it promises an outcome such as finding a new lessee. A takeover still costs the lender's transfer fee and BuyAuto's own fee, so "without loss" can't be promised to every reader. The remaining uses are the `/lp/leasing-abgeben` title (Ads landing page) and the E-Auto scaffold (404 until `CONTENT_READY`). Don't add new ones; Vince decides about those two.
 2. "gratis" or "kostenlos" at most once per page and only for something that is free for everyone reading it. Never for garage packages: they are paid monthly plans (`GARAGE_PLANS`). Mention a garage discount or trial only when it is in the pricing config and Vince confirms it.
 3. Superlatives and comparisons about BuyAuto ("die grösste", "die einzige", "günstiger als") only with a source. Swiss unfair competition law (UWG Art. 3 Abs. 1) covers incorrect or misleading statements about your own business, offers and prices (lit. b), comparisons with others that are incorrect, misleading, needlessly disparaging or that lean on their reputation (lit. e), and disparaging others (lit. a).
 4. Figures BuyAuto has given to the press must match what the site says.

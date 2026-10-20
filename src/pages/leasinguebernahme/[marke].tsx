@@ -790,8 +790,15 @@ export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) =>
   ]);
   // Strip undefined fields so Next can serialize the props.
   const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
-  // The same rule as the sitemap and every brand link (brandIndexingService).
-  const indexable = await isBrandPageIndexable(results.total, dbBrandsFor(brand));
+  // The same rule as the sitemap and every brand link (brandIndexingService). When the
+  // grace history decides and its read failed, this throws like the reads above, so ISR
+  // keeps the last good page instead of caching a noindex one for a brand in its grace
+  // period (a first render without one answers 500, as for a failed inventory read). At
+  // build time the rule without the grace period applies instead, so a failing history
+  // read never fails a deploy.
+  const indexable = await isBrandPageIndexable(results.total, dbBrandsFor(brand), {
+    requireHistory: context.revalidateReason !== "build",
+  });
   return {
     props: { brand, listings, total: results.total, stats: live.stats, siblingBrands: live.siblingBrands, indexable },
     revalidate: 300,

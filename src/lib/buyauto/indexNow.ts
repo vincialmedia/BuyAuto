@@ -6,16 +6,29 @@
  * The daily cron (vercel.json → /api/indexnow) collects the listings that were
  * published, updated, expired, sold or archived within the last INDEXNOW_WINDOW_HOURS
  * and submits their /fahrzeug/ URLs, plus the Leasingübernahme hub and the brand pages
- * of the brands whose takeovers changed. Pure logic: the data source and fetch are
- * passed in, so `npx tsx scripts/test-indexnow.ts` runs it with mocks. Server-only
- * (API route and tests); never import it from a page component.
+ * of the brands whose takeovers changed. A brand page is submitted while it is
+ * indexable (the rule of the sitemap and the brand links, grace period included), or
+ * when its brand's last live Leasingübernahme ended in the window: the page has just
+ * gone noindex or away, and the engines should see that.
+ *
+ * Pure logic: the data source and fetch are passed in, so
+ * `npx tsx scripts/test-indexnow.ts` runs it with mocks. Server-only (API route and
+ * tests); never import it from a page component. Listings deleted outright leave no
+ * row and are not submitted (see brandIndexingService).
  *
  * The key is public by design: IndexNow verifies ownership by fetching
  * INDEXNOW_KEY_LOCATION, the file public/<key>.txt that holds the key.
  */
 import { timingSafeEqual } from "node:crypto";
 import { resolveListingOffer, type Kaufart } from "@/lib/buyauto/kaufart";
-import { brandPageForDbBrand, listingEndedAt, type ListingHistoryRow } from "@/lib/buyauto/leasingBrands";
+import {
+  brandPageForDbBrand,
+  graceHistoryMatters,
+  indexableBrandPages,
+  listingEndedAt,
+  type EndedTakeover,
+  type ListingHistoryRow,
+} from "@/lib/buyauto/leasingBrands";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 
 export const INDEXNOW_KEY = "50ebc8faf6aca0fd48bc68fc8bfaa822";
@@ -61,6 +74,11 @@ export interface IndexNowDataSource {
    * past its expiry. null when the rows cannot be read (no service-role key).
    */
   endedRows(since: Date): Promise<IndexNowEndedRow[] | null>;
+  /**
+   * The Leasingübernahmen that ended within the brand grace period (getEndedTakeovers),
+   * for the brand page rule. Read only when a brand sits at exactly one live offer.
+   */
+  endedTakeovers(now: Date): Promise<EndedTakeover[]>;
 }
 
 export interface IndexNowCollection {
@@ -102,8 +120,9 @@ export function indexNowSince(now: Date): Date {
  *
  * A listing counts when it was created or updated in the window (live) or ended in the
  * window (expired, sold, archived, or published past its expiry; its URL now redirects).
- * For a Leasingübernahme the hub and its brand page change too, so both are added; a
- * Direktkauf adds only its own URL.
+ * For a Leasingübernahme the hub and its brand page change too, so the hub is added
+ * and the brand page under the rule in the module comment; a Direktkauf adds only its
+ * own URL.
  */
 export async function collectIndexNowUrls(source: IndexNowDataSource, now: Date = new Date()): Promise<IndexNowCollection> {
   const nowMs = now.getTime();
@@ -111,12 +130,14 @@ export async function collectIndexNowUrls(source: IndexNowDataSource, now: Date 
   const sinceMs = since.getTime();
   const errors: string[] = [];
 
-  type Change = { href: string; brand: string | null; takeover: boolean; at: number };
+  type Change = { href: string; brand: string | null; takeover: boolean; ended: boolean; at: number };
   const changes: Change[] = [];
 
+  let liveRows: IndexNowOffer[] | null = null;
   let changedListings = 0;
   try {
-    for (const row of await source.liveOffers()) {
+    liveRows = await source.liveOffers();
+    for (const row of liveRows) {
       const at = Math.max(timeMs(row.updated_at) ?? -Infinity, timeMs(row.created_at) ?? -Infinity);
       if (!inWindow(Number.isFinite(at) ? at : null, sinceMs, nowMs)) continue;
       changedListings += 1;
@@ -124,6 +145,7 @@ export async function collectIndexNowUrls(source: IndexNowDataSource, now: Date 
         href: buildListingHref({ id: row.id, brand: row.brand, model: row.model }),
         brand: row.brand,
         takeover: row.offer.kaufart === "lease_takeover",
+        ended: false,
         at,
       });
     }
@@ -148,6 +170,7 @@ export async function collectIndexNowUrls(source: IndexNowDataSource, now: Date 
           href: buildListingHref({ id: row.id, brand: row.brand, model: row.model }),
           brand: row.brand,
           takeover: offer.kaufart === "lease_takeover" && offer.isLiveOffer,
+          ended: true,
           at: at as number,
         });
       }
@@ -159,11 +182,36 @@ export async function collectIndexNowUrls(source: IndexNowDataSource, now: Date 
   // Newest change first, so a truncated list keeps the latest listings.
   changes.sort((a, b) => b.at - a.at || a.href.localeCompare(b.href));
 
+  // Brand pages: indexable ones, and those whose last live takeover ended (see the
+  // module comment). Without the live offers neither is known, so every brand page of a
+  // changed takeover is submitted.
+  let indexableSlugs: Set<string> | null = null;
+  const liveTakeoverSlugs = new Set<string>();
+  if (liveRows) {
+    const liveTakeoverRows = liveRows.filter((r) => r.offer.kaufart === "lease_takeover" && r.offer.isLiveOffer);
+    for (const row of liveTakeoverRows) {
+      const page = typeof row.brand === "string" ? brandPageForDbBrand(row.brand) : null;
+      if (page) liveTakeoverSlugs.add(page.slug);
+    }
+    let endedTakeovers: EndedTakeover[] = [];
+    if (graceHistoryMatters(liveTakeoverRows)) {
+      try {
+        endedTakeovers = await source.endedTakeovers(now);
+      } catch (error) {
+        errors.push(`brand grace history: ${errorText(error)}`);
+      }
+    }
+    indexableSlugs = new Set(indexableBrandPages(liveTakeoverRows, endedTakeovers, now).map((b) => b.slug));
+  }
+
   const takeoverChanges = changes.filter((c) => c.takeover);
   const brandPaths = new Set<string>();
   for (const change of takeoverChanges) {
     const page = typeof change.brand === "string" ? brandPageForDbBrand(change.brand) : null;
-    if (page) brandPaths.add(`/leasinguebernahme/${page.slug}`);
+    if (!page) continue;
+    const submit =
+      indexableSlugs === null || indexableSlugs.has(page.slug) || (change.ended && !liveTakeoverSlugs.has(page.slug));
+    if (submit) brandPaths.add(`/leasinguebernahme/${page.slug}`);
   }
 
   const paths = [

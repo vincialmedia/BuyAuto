@@ -62,7 +62,11 @@ function parseSearchQueryFromParams(query: Record<string, string | string[] | un
   if (query.monthsMin) newQuery.monthsMin = parseInt(query.monthsMin as string, 10);
   if (query.monthsMax) newQuery.monthsMax = parseInt(query.monthsMax as string, 10);
   if (query.kmMax) newQuery.kmMax = parseInt(query.kmMax as string, 10);
-  if (query.page) newQuery.page = parseInt(query.page as string, 10);
+  if (query.page) {
+    // Only a real page number: ?page=-1 or ?page=abc is page 1.
+    const page = parseInt(query.page as string, 10);
+    if (Number.isFinite(page) && page >= 1) newQuery.page = page;
+  }
   if (query.sort) newQuery.sort = query.sort as SearchQuery["sort"];
   if (query.body) newQuery.body = Array.isArray(query.body) ? query.body : [query.body];
   if (query.fuel) newQuery.fuel = Array.isArray(query.fuel) ? query.fuel : [query.fuel];

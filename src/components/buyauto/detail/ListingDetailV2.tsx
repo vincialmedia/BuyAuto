@@ -547,7 +547,10 @@ export function ListingDetailV2({
                     </div>
 
                     <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50">
+                      {/* Keyed by its URL: a new iframe per location instead of a changed src,
+                          which would add a browser history entry on listing-to-listing moves. */}
                       <iframe
+                        key={embedUrl}
                         title={`Karte Standort ${loc}`}
                         src={embedUrl}
                         className="h-64 w-full"

@@ -7,6 +7,7 @@ import {
   BRAND_PAGE_GRACE_DAYS,
   BRAND_PAGE_MIN_INDEXABLE_LISTINGS,
   brandPageCounts,
+  createGraceHistoryCache,
   endedTakeoversFromRows,
   endedWithinGrace,
   graceHistoryMatters,
@@ -139,4 +140,61 @@ assert.deepEqual(
   ["porsche"]
 );
 
-console.log("brand grace: all checks passed");
+// --- The history cache (brandIndexingService): TTL, failures, refused reads -------
+async function cacheChecks() {
+  const MIN = 60 * 1000;
+  const at = (minutes: number) => new Date(NOW.getTime() + minutes * MIN);
+  const sold = [row({ brand: "Porsche", status: "sold", sold_at: daysAgo(4) })];
+  const porsche = [{ brand: "Porsche", endedAt: daysAgo(4) }];
+  type Step = ListingHistoryRow[] | null | Error;
+  const cacheWith = (steps: Step[]) => {
+    const log = { reads: 0, errors: 0 };
+    const get = createGraceHistoryCache(
+      async () => {
+        const step = steps[Math.min(log.reads, steps.length - 1)];
+        log.reads += 1;
+        if (step instanceof Error) throw step;
+        return step;
+      },
+      { ttlMs: 5 * MIN, retryMs: 1 * MIN, onError: () => (log.errors += 1) }
+    );
+    return { get, log };
+  };
+
+  // A good read is reused within the TTL, read again after it.
+  let c = cacheWith([sold]);
+  assert.deepEqual(await c.get(at(0)), { ended: porsche, failed: false });
+  assert.deepEqual(await c.get(at(4)), { ended: porsche, failed: false });
+  assert.equal(c.log.reads, 1, "cached for the TTL");
+  await c.get(at(6));
+  assert.equal(c.log.reads, 2, "read again after the TTL");
+
+  // A failed read on a cold cache: failed, and no new attempt before the retry delay.
+  c = cacheWith([new Error("fetch failed"), sold]);
+  assert.deepEqual(await c.get(at(0)), { ended: [], failed: true });
+  assert.deepEqual(await c.get(at(0.5)), { ended: [], failed: true }, "still failed, from the negative cache");
+  assert.equal(c.log.reads, 1, "no round trip per render after a failure");
+  assert.equal(c.log.errors, 1);
+  assert.deepEqual(await c.get(at(1.5)), { ended: porsche, failed: false }, "retried after the delay");
+
+  // A failed read after a good one falls back on the good rows.
+  c = cacheWith([sold, new Error("timeout")]);
+  await c.get(at(0));
+  assert.deepEqual(await c.get(at(6)), { ended: porsche, failed: false });
+  assert.equal(c.log.errors, 1);
+
+  // Unavailable by configuration (no key, refused): the rule without the grace period,
+  // not a failure, also negatively cached.
+  c = cacheWith([null]);
+  assert.deepEqual(await c.get(at(0)), { ended: [], failed: false });
+  assert.deepEqual(await c.get(at(0.5)), { ended: [], failed: false });
+  assert.equal(c.log.reads, 1);
+  assert.equal(c.log.errors, 0);
+}
+
+cacheChecks()
+  .then(() => console.log("brand grace: all checks passed"))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

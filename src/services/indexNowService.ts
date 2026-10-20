@@ -6,10 +6,12 @@
  * public.listings only see published rows (RLS), so those are read with the service-role
  * key, the same way brandIndexingService and listingLifecycleService do: read-only
  * SELECTs of id, brand, model, status, the end dates and the Kaufart columns. Only ever
- * import this module from API routes.
+ * import this module from API routes. Listings deleted outright leave no row, so they
+ * are not submitted (a DELETE trigger writing listing_tombstones would close that).
  */
 import { createClient } from "@supabase/supabase-js";
 import type { IndexNowDataSource, IndexNowEndedRow } from "@/lib/buyauto/indexNow";
+import { getEndedTakeovers } from "@/services/brandIndexingService";
 import { getPublicOfferIndex } from "@/services/listingsService";
 
 const ENDED_COLUMNS =
@@ -21,6 +23,8 @@ const ENDED_STATUSES = ["expired", "sold", "archived"] as const;
 
 /** Far above the listings that end within a day. */
 const ENDED_ROW_LIMIT = 1000;
+/** A stalled read ends the run with an error in its summary instead of holding the function. */
+const ENDED_READ_TIMEOUT_MS = 5000;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -38,6 +42,7 @@ async function readEndedRows(since: Date): Promise<IndexNowEndedRow[] | null> {
   const tomorrow = new Date(Date.now() + DAY_MS).toISOString().slice(0, 10);
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const signal = AbortSignal.timeout(ENDED_READ_TIMEOUT_MS);
   const endedQuery = () => admin.from("listings").select(ENDED_COLUMNS).not("published_at", "is", null);
   // Two reads, so the live listings (published, expiry in the future) never fill the
   // row limit: the ended statuses by their end dates, and the rows still "published"
@@ -47,13 +52,15 @@ async function readEndedRows(since: Date): Promise<IndexNowEndedRow[] | null> {
       .in("status", [...ENDED_STATUSES])
       .or(`sold_at.gte.${sinceDate},archived_at.gte.${sinceDate},expires_at.gte.${sinceDate}`)
       .order("id")
-      .limit(ENDED_ROW_LIMIT),
+      .limit(ENDED_ROW_LIMIT)
+      .abortSignal(signal),
     endedQuery()
       .eq("status", "published")
       .gte("expires_at", sinceDate)
       .lt("expires_at", tomorrow)
       .order("id")
-      .limit(ENDED_ROW_LIMIT),
+      .limit(ENDED_ROW_LIMIT)
+      .abortSignal(signal),
   ]);
   if (ended.error) throw ended.error;
   if (pastExpiry.error) throw pastExpiry.error;
@@ -70,5 +77,6 @@ export function createIndexNowDataSource(): IndexNowDataSource {
   return {
     liveOffers: () => getPublicOfferIndex(),
     endedRows: readEndedRows,
+    endedTakeovers: (now) => getEndedTakeovers(now),
   };
 }
