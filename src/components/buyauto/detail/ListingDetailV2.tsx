@@ -95,6 +95,7 @@ export function ListingDetailV2({
   garage,
   teaserMonthlyLabel,
   purchasePriceChf,
+  brandPage = null,
   childrenBelowFold,
   bottomContent,
 }: {
@@ -104,6 +105,8 @@ export function ListingDetailV2({
   garage: GaragePublicInfo | null;
   teaserMonthlyLabel: string | null;
   purchasePriceChf: number | null;
+  /** Indexable brand page of a Leasingübernahme; the link is server-rendered. */
+  brandPage?: { slug: string; name: string } | null;
   childrenBelowFold?: React.ReactNode;
   bottomContent?: React.ReactNode;
 }) {
@@ -315,6 +318,17 @@ export function ListingDetailV2({
                     </span>
                   )}
                 </div>
+
+                {isTakeover && brandPage && (
+                  <p className="text-sm">
+                    <Link
+                      href={`/leasinguebernahme/${brandPage.slug}`}
+                      className="font-semibold text-red-600 hover:underline underline-offset-4"
+                    >
+                      Alle Leasingübernahmen von {brandPage.name}
+                    </Link>
+                  </p>
+                )}
 
                 <FactGrid items={vehicleFacts} />
               </div>

@@ -10,6 +10,8 @@ interface VerticalResultsListProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  /** URL of a results page, so the pagination renders crawlable <a href> links. */
+  hrefForPage?: (page: number) => string;
   isLoading?: boolean;
   totalResults?: number;
   onClearFilters?: () => void;
@@ -20,6 +22,7 @@ export default function VerticalResultsList({
   currentPage,
   totalPages,
   onPageChange,
+  hrefForPage,
   isLoading = false,
   totalResults = 0,
   onClearFilters
@@ -94,6 +97,7 @@ export default function VerticalResultsList({
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            hrefForPage={hrefForPage}
           />
         </div>
       )}

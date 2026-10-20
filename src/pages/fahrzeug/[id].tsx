@@ -7,11 +7,15 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Listing, ListingDetail } from "@/lib/buyauto/types";
 import {
+  getPublicOfferIndex,
   getPublishedListingById,
   getSimilarListings,
   getUserListingById,
+  indexableBrandPagesOf,
   transformPublicRowToListingDetail,
+  type PublicOffer,
 } from "@/services/listingsService";
+import { brandPageForDbBrand } from "@/lib/buyauto/leasingBrands";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
@@ -52,6 +56,22 @@ interface ListingDetailPageProps {
   gone?: boolean;
   // Server-rendered «Ähnliche Fahrzeuge»; absent on client-loaded previews (fetched there).
   similarListings?: Listing[];
+  // Indexable brand page of a Leasingübernahme (server-rendered link); null otherwise.
+  brandPage?: ListingBrandPage | null;
+}
+
+type ListingBrandPage = { slug: string; name: string };
+
+/**
+ * The brand page a Leasingübernahme links to, only while that page is indexable
+ * (a noindex brand page is never linked). Direktkauf listings get none.
+ */
+function listingBrandPage(listing: ListingDetail, offers: PublicOffer[]): ListingBrandPage | null {
+  if (kaufartOf(listing) !== "lease_takeover") return null;
+  const page = brandPageForDbBrand(listing.brand ?? "");
+  if (!page) return null;
+  const indexable = indexableBrandPagesOf(offers).find((b) => b.slug === page.slug);
+  return indexable ? { slug: indexable.slug, name: indexable.name } : null;
 }
 
 function serializeListing(listing: ListingDetail | null): ListingDetail | null {
@@ -74,7 +94,13 @@ function serializeListing(listing: ListingDetail | null): ListingDetail | null {
   };
 }
 
-export default function ListingDetailPage({ listing: initialListing, notFound, gone, similarListings }: ListingDetailPageProps) {
+export default function ListingDetailPage({
+  listing: initialListing,
+  notFound,
+  gone,
+  similarListings,
+  brandPage,
+}: ListingDetailPageProps) {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
@@ -342,8 +368,9 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
   const pageTitle = listingSeoTitle(listing);
   const metaDescription = listingMetaDescription(listing);
 
-  // Per-Kaufart Offer: a one-time sale price for Direktkauf, a monthly rate for
-  // Leasingübernahme (never a monthly unit on a purchase price).
+  // Per-Kaufart Offer: a one-time sale price (Offer.price) for Direktkauf; for a
+  // Leasingübernahme the monthly rate goes only into priceSpecification (unitCode MON),
+  // never Offer.price, which reads as the price of the car.
   const offerPrice = isDirectPurchase
     ? purchasePriceChf
     : typeof listing.pricePerMonthCHF === "number" && listing.pricePerMonthCHF > 0
@@ -361,7 +388,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
     !contractEnded && typeof offerPrice === "number" && offerPrice > 0
       ? {
           "@type": "Offer",
-          price: offerPrice,
+          ...(isDirectPurchase ? { price: offerPrice } : {}),
           priceCurrency: "CHF",
           availability: "https://schema.org/InStock",
           itemCondition: "https://schema.org/UsedCondition",
@@ -496,6 +523,7 @@ export default function ListingDetailPage({ listing: initialListing, notFound, g
         garage={garage}
         teaserMonthlyLabel={teaserMonthlyLabel}
         purchasePriceChf={purchasePriceChf}
+        brandPage={listing.id === initialListing?.id ? brandPage ?? null : null}
         childrenBelowFold={undefined}
         bottomContent={
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
@@ -650,14 +678,23 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     }
 
     const serializedListing = serializeListing(listing);
+    // One read of the live offer index for the similar cards and the brand link. On a
+    // failed read the page renders without the brand link (getSimilarListings retries).
+    let offerIndex: PublicOffer[] | undefined;
+    try {
+      offerIndex = await getPublicOfferIndex();
+    } catch (error) {
+      console.error("Listing page offer index failed:", { listingId, error });
+    }
     // Similar cards (prices, links) are part of the server HTML, not a client fetch.
-    const similarListings = JSON.parse(JSON.stringify(await getSimilarListings(listing, 6))) as Listing[];
+    const similarListings = JSON.parse(JSON.stringify(await getSimilarListings(listing, 6, offerIndex))) as Listing[];
+    const brandPage = offerIndex ? listingBrandPage(listing, offerIndex) : null;
 
     if (context.res) {
       context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     }
 
-    return { props: { listing: serializedListing, similarListings } };
+    return { props: { listing: serializedListing, similarListings, brandPage } };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
     // Transient backend failure: signal 503 (retry later) instead of a 200 skeleton that

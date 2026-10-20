@@ -51,9 +51,10 @@
 ## Internal links
 
 1. Every new page gets at least one link from its parent page's body copy (guide, cost page, hub or brand page), with anchor text that says where it goes. Header and footer links don't count.
-2. Every page links on to the next step the reader needs: guide → cost page → offers or "Inserat erstellen"; brand page → the cost page section for its leasing company.
-3. No link blocks or lists of keyword links.
-4. No orphan pages. If nothing should link to a page, it shouldn't be indexable.
+2. Every page links on to the next step the reader needs: guide → cost page → offers or "Inserat erstellen"; brand page → the cost page section for its leasing company, and back: the cost page's lender rows and sections and the hub link the indexable brand pages with the brand name as the anchor, and each takeover listing links its own («Alle Leasingübernahmen von {Marke}»).
+3. Links to brand pages are gated on `indexableBrandPages` at build or request time (`getIndexableBrandPages` / `indexableBrandPagesOf` in `listingsService.ts`), so a noindex brand page is never linked.
+4. No link blocks or lists of keyword links.
+5. No orphan pages. If nothing should link to a page, it shouldn't be indexable.
 
 ## Performance
 
