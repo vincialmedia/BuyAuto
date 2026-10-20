@@ -9,7 +9,7 @@ import { AuthorBox } from "@/components/buyauto/AuthorBox";
 import { FOUNDER_TAKEOVER_TEXT } from "@/components/buyauto/FounderTakeoverNote";
 import { SourceCitation, SourcesList } from "@/components/buyauto/SourceCitation";
 import { getPublicOfferIndex, liveTakeovers } from "@/services/listingsService";
-import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
+import { indexableBrandPagesFor } from "@/services/brandIndexingService";
 import { CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
 import { pricingPlans } from "@/lib/buyauto/stripe_config";
 import { countLabel, formatChf, formatChfRappen } from "@/lib/buyauto/format";
@@ -527,16 +527,17 @@ export const getStaticProps: GetStaticProps<LeasingUebernahmePageProps> = async 
   // brand links. A failed read throws: during ISR revalidation Next keeps serving the
   // last good page, so the "Nach Marke" links (the brand pages' main in-content links)
   // never drop out; a failed first build fails loudly. No fallback value is rendered.
-  let takeovers: ReturnType<typeof liveTakeovers>;
+  let offerIndex: Awaited<ReturnType<typeof getPublicOfferIndex>>;
   try {
-    takeovers = liveTakeovers(await getPublicOfferIndex());
+    offerIndex = await getPublicOfferIndex();
   } catch (error) {
     console.error("[leasinguebernahme] live inventory read failed", error);
     throw error;
   }
+  const takeovers = liveTakeovers(offerIndex);
   const stats: InventoryStats | null = computeInventoryStats(takeovers.map((o) => o.offer));
-  // Only indexable brand pages (Kaufart rule, live Leasingübernahmen) are linked.
-  const availableBrands = indexableBrandPages(takeovers).map((b) => ({ slug: b.slug, name: b.name }));
+  // Only indexable brand pages (Kaufart rule, live Leasingübernahmen, grace period) are linked.
+  const availableBrands = (await indexableBrandPagesFor(offerIndex)).map((b) => ({ slug: b.slug, name: b.name }));
 
   return { props: { stats, availableBrands }, revalidate: 300 };
 };

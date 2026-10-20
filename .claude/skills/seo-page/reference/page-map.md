@@ -14,14 +14,13 @@ State after SEO Phase 2 (PRs #81, #82 and #84). Until #81 and #82 are merged, th
 | `/leasing-abgeben-schweiz` | Getting out of a lease: abgeben, vorzeitig beenden, auflösen | Exit options with the Ausstiegsrechner |
 | `/leasingvertrag-uebertragen` | The seller's step-by-step for transferring a contract | Links to the guide instead of repeating it |
 | `/leasinguebernahme-vs-autoabo` | Leasingübernahme compared with an Auto-Abo | The only Auto-Abo page on the site |
-| `/leasinguebernahme/[marke]` | "[Marke] Leasingübernahme" and that brand's leasing company | Indexable from 2 live takeover offers (`BRAND_PAGE_MIN_INDEXABLE_LISTINGS` in `leasingBrands.ts`) |
-| `/autoscout24-alternative-leasinguebernahme` | AutoScout24 compared with BuyAuto for leasing | |
+| `/leasinguebernahme/[marke]` | "[Marke] Leasingübernahme" and that brand's leasing company | Indexable from 2 live takeover offers (`BRAND_PAGE_MIN_INDEXABLE_LISTINGS` in `leasingBrands.ts`), or from 1 while the brand had 2 takeovers live within the last 30 days (`BRAND_PAGE_GRACE_DAYS`: the live ones plus those that expired, sold or were archived in that window). The grace period keeps a page from dropping out of the index and coming back each time one offer ends before the next arrives. At 0 live offers: noindex at once (PR C) |
 | `/eintauschwert-rechner` | Trade-in value / car valuation (tool) | |
 | `/fuer-garagen` | BuyAuto for garages | |
 | `/preise` | BuyAuto's own prices | |
 | `/fahrzeug/[id]` | One offer | See page-types.md for retired and ended listings |
-| `/[dealerSlug]` | A garage's microsite | The first page of the inventory is server-rendered |
-| `/updates`, `/agb`, `/datenschutz`, `/impressum` | Site news and legal | |
+| `/[dealerSlug]` | A garage's microsite | The first page of the inventory is server-rendered. Indexable and in the sitemap only with a description, at least 1 live listing and a real slug (`isIndexableGarage` in `garageIndexing.ts`); otherwise `noindex, follow` without a canonical (PR C) |
+| `/agb`, `/datenschutz`, `/impressum` | Legal | |
 
 The bare `/suche` and any other `/suche` view (extra filters, sort, pagination, free-text search) render `noindex, follow` without a canonical.
 
@@ -30,9 +29,12 @@ The bare `/suche` and any other `/suche` view (extra filters, sort, pagination, 
 | URL | Why |
 |---|---|
 | `/lp/leasing-abgeben` | Google Ads landing page: noindex, never linked from content pages, changed only together with the ads |
-| `/elektroauto-leasing-abgeben`, `/leasingausstieg-kosten-daten` | Scaffolds: noindex and out of the sitemap until they pass the bar below |
-| `/inserat-erstellen`, `/garage-plan`, dashboards, auth, embeds | App screens. Known issue: `/inserat-erstellen` sends noindex in the server HTML but renders `index, follow` after hydration; it belongs to the listing flow, so Vince decides when to fix it |
-| Brand pages with fewer than 2 live offers | `noindex, follow`, no canonical, out of the sitemap |
+| `/elektroauto-leasing-abgeben`, `/leasingausstieg-kosten-daten` | Scaffolds of [TODO] placeholders: they answer 404 (`notFound` in `getStaticProps`) while `CONTENT_READY` is false, so nothing can crawl, link or list them; the scaffold code stays as the draft until they pass the bar below (PR C) |
+| `/updates` | Site news for visitors, not a search intent: `noindex, follow`, no canonical, out of the sitemap, llms.txt and `CONTENT_LAST_UPDATED` (PR C) |
+| `/auth` | Login and registration: `noindex, follow` (PR C) |
+| `/inserat-erstellen`, `/garage-plan`, dashboards, embeds | App screens, noindex. `/dashboard*` and `/admin` are also disallowed in robots.txt. `/inserat-erstellen` now stays noindex after hydration too (it used to switch to `index, follow`; PR C changed only that meta tag, not the listing flow) |
+| Brand pages with 0 live offers, or 1 without a second takeover live in the last 30 days | `noindex, follow`, no canonical, out of the sitemap, never linked |
+| Garage microsites without a description, without a live listing, or with a test slug | `noindex, follow`, no canonical, out of the sitemap (`garageIndexing.ts`: a denylist plus test/demo slugs and slugs with fewer than 3 letters) |
 | `/suche` (no filters) | Lists the hub's offers again plus Direktkauf, so it would compete with the hub. A search tool for visitors: server-rendered, `noindex, follow`, out of the sitemap and llms.txt (PR #84) |
 
 ## Retired URLs
@@ -46,6 +48,7 @@ Never create a page at these paths again. Each one 308s in a single hop on www.b
 | `/fuer-haendler`, `/fuer-haendler/marktwert-rechner` | `/eintauschwert-rechner` |
 | `/leasing-concierge` | `/leasing-abgeben-schweiz` (BuyAuto offers no concierge service) |
 | `/cembra-leasing-uebernehmen`, `/amag-leasing-uebernehmen`, `/multilease-leasing-uebernehmen`, `/bank-now-leasing-uebernehmen` | `/leasinguebernahme-kosten#cembra`, `#amag`, `#multilease`, `#bank-now` |
+| `/autoscout24-alternative-leasinguebernahme` | `/` (PR C, Vince's decision). A page built on a competitor's brand name (see Don't build) with no unique asset of its own; the head term and the live offers are on the home page |
 
 ## The bar for a new indexable URL
 

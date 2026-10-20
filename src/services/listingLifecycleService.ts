@@ -9,12 +9,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import type { GetServerSidePropsContext } from "next";
-import {
-  brandPageForDbBrand,
-  brandPageForListingSlug,
-  isIndexableBrandCount,
-} from "@/lib/buyauto/leasingBrands";
+import { brandPageForDbBrand, brandPageForListingSlug } from "@/lib/buyauto/leasingBrands";
 import { getPublicOfferIndex, liveTakeovers } from "@/services/listingsService";
+import { isBrandPageIndexable } from "@/services/brandIndexingService";
 
 /** Statuses whose URL is retired: anonymous and non-owner visitors are redirected (308). */
 const ENDED_STATUSES = new Set(["sold", "archived", "expired", "rejected"]);
@@ -95,8 +92,9 @@ export async function isOwnerOrAdmin(context: GetServerSidePropsContext, ownerId
 }
 
 /**
- * Where a retired listing URL points: the brand page when it is indexable,
- * otherwise the Leasingübernahme hub. Without a row the brand comes from the
+ * Where a retired listing URL points: the brand page when it is indexable (grace
+ * period included, the same rule as the page's robots tag), otherwise the
+ * Leasingübernahme hub. Without a row the brand comes from the
  * URL segment ("porsche-cayenne-<id>").
  */
 export async function retiredListingDestination(brand: string | null, slugPrefix: string): Promise<string> {
@@ -111,7 +109,7 @@ export async function retiredListingDestination(brand: string | null, slugPrefix
     if (!page) return LEASE_TAKEOVER_HUB;
 
     const count = liveTakeovers(offers).filter((o) => typeof o.brand === "string" && page.dbBrands.includes(o.brand)).length;
-    return isIndexableBrandCount(count) ? `/leasinguebernahme/${page.slug}` : LEASE_TAKEOVER_HUB;
+    return (await isBrandPageIndexable(count, page.dbBrands)) ? `/leasinguebernahme/${page.slug}` : LEASE_TAKEOVER_HUB;
   } catch (error) {
     console.error("Retired listing destination failed:", { brand, slugPrefix, error });
     return LEASE_TAKEOVER_HUB;

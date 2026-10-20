@@ -41,7 +41,8 @@ import { LENDER_SECTION_SOURCES } from "@/lib/buyauto/leasingCompanies";
 import { pricingPlans } from "@/lib/buyauto/stripe_config";
 import { brandPagesByLender, type BrandLenderKey } from "@/lib/buyauto/brandLenders";
 import type { BrandPageLink } from "@/components/buyauto/BrandPageLinks";
-import { getIndexableBrandPages, getLiveInventoryStats } from "@/services/listingsService";
+import { getLiveInventoryStats } from "@/services/listingsService";
+import { getIndexableBrandPages } from "@/services/brandIndexingService";
 
 const PATH = "/leasinguebernahme-kosten";
 const PAGE_URL = `https://www.buyauto.ch${PATH}`;

@@ -8,7 +8,6 @@ import { publicSellerName } from "@/lib/buyauto/sellerName";
 import { displayLocation } from "@/lib/buyauto/location";
 import { computeInventoryStats, type InventoryStats } from "@/lib/buyauto/facts";
 import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
-import { indexableBrandPages, type BrandPageSummary } from "@/lib/buyauto/leasingBrands";
 import { rankSimilar } from "@/lib/buyauto/similarListings";
 
 type PublicListingRow = Database["public"]["Views"]["listings_public"]["Row"];
@@ -851,19 +850,9 @@ export function liveTakeovers(offers: PublicOffer[]): PublicOffer[] {
   return offers.filter((o) => o.offer.kaufart === "lease_takeover" && o.offer.isLiveOffer);
 }
 
-/**
- * The brand pages that are indexable for this offer index: the gate for every
- * link to a brand page (listing pages, the hub, the cost page). A noindex brand
- * page is never linked.
- */
-export function indexableBrandPagesOf(offers: PublicOffer[]): BrandPageSummary[] {
-  return indexableBrandPages(liveTakeovers(offers));
-}
-
-/** Like indexableBrandPagesOf, reading the live offer index. Throws on a failed read. */
-export async function getIndexableBrandPages(): Promise<BrandPageSummary[]> {
-  return indexableBrandPagesOf(await getPublicOfferIndex());
-}
+// Which brand pages are indexable (and may be linked) is decided server-side in
+// services/brandIndexingService.ts: the rule includes a grace period that reads
+// ended listings with the service-role key, which never belongs in this module.
 
 // Brands are static-ish data fetched on every mount of SearchBarV2/SearchForm/DynamicFilterBar.
 // Cache in module scope (with inflight dedup) so repeat calls within a session don't refetch.

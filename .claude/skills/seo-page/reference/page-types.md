@@ -68,14 +68,14 @@ Examples: the hub `/suche?dealType=lease_takeover` and `/leasinguebernahme/[mark
 1. Live numbers go where the code already puts them: the hub's title carries the live offer count ("Leasingübernahme-Angebote: 37 Autos zur Übernahme | BuyAuto"); brand page titles and H1s are fixed text, and their counts sit in the meta description, the stats and the section headings. Every number comes from the live query.
 2. Listing cards are in the server HTML. The hub's first page holds every live Leasingübernahme up to `HUB_PAGE_SIZE` (60); further pages and every other `/suche` view hold 12. The pagination is real `<a href>` links, and the unfiltered views (bare `/suche`, a single dealType) are server-rendered on every page. Stats (count, median rate, median months left, Kaution) show their sample size.
 3. Brand pages carry a section on the brand's leasing company with its sourced facts (`brandLenders.ts`, `facts.ts`), which is most of what makes each brand page different.
-4. Indexing follows the threshold: from `BRAND_PAGE_MIN_INDEXABLE_LISTINGS` live offers the page is indexable and in the sitemap, below it `noindex, follow` without a canonical (pattern in `[marke].tsx`, which never sends canonical and noindex together).
+4. Indexing follows the threshold: from `BRAND_PAGE_MIN_INDEXABLE_LISTINGS` live offers the page is indexable and in the sitemap, below it `noindex, follow` without a canonical (pattern in `[marke].tsx`, which never sends canonical and noindex together). Brand pages have a grace period: with 1 live offer the page stays indexable while the brand had 2 takeovers live within `BRAND_PAGE_GRACE_DAYS` (30), counting the live ones and those that expired, sold or were archived in that window; at 0 it is noindex at once. The rule (`isIndexableBrand` in `leasingBrands.ts`) is applied server-side by `src/services/brandIndexingService.ts`, which reads the ended listings with the service-role key; without the key the grace period cannot apply and 2 live offers are needed. The robots tag, the sitemap, every brand link and the redirect of a retired listing use the same function.
 5. Sitemap `lastmod` is the newest listing change for that page, so it stays honest without hand edits.
 6. Structured data: `ItemList` of the offers and `BreadcrumbList`.
 7. Shared template text stays short. Measure pairwise 7-gram overlap with `scripts/seo-ngram-overlap.mjs` whenever the template changes; it must stay well under 30 %.
 
 ## 5. Comparison page
 
-Examples: `/leasinguebernahme-vs-autoabo`, `/autoscout24-alternative-leasinguebernahme`.
+Example: `/leasinguebernahme-vs-autoabo`. (`/autoscout24-alternative-leasinguebernahme` was retired in PR C; see page-map.md.)
 
 1. Both sides are priced from sources with a Stand and a link (Auto-Abo offers from `AUTO_ABO_PROVIDERS`). Prices change often, so the Stand is shown next to them.
 2. Say plainly when the other option fits better (for example a short or flexible need for an Auto-Abo).
@@ -90,7 +90,7 @@ Examples: `/leasinguebernahme-vs-autoabo`, `/autoscout24-alternative-leasinguebe
 2. Structured data: `Car` with an `Offer`. Direktkauf: `Offer.price` is the purchase price. Takeover: no `Offer.price` (the monthly rate would read as the price of the car); the rate sits in `priceSpecification` (`UnitPriceSpecification`, `unitCode` MON) next to `leaseLength` (`P{n}M`). The `ItemList` items on the hub and the brand pages carry no `Offer.price` for takeovers either. `scripts/check-geo.sh` checks for `leaseLength` after deploys. Google phased out the vehicle listing rich result after June 2025; the markup stays because other search engines and AI systems read it.
 3. Seller names appear as first name and initial only. No seller contact data in the schema.
 4. Sold, archived, expired or rejected listings 308 to their brand page when it is indexable, otherwise to the Leasingübernahme hub, and keep gclid/utm. Owners and admins still see the page. Paused, draft and pending listings answer 404 with noindex. A takeover whose contract has ended stays reachable with noindex and no Offer in the schema.
-5. A takeover links its brand page («Alle Leasingübernahmen von {Marke}») in the server HTML while that brand page is indexable (`indexableBrandPagesOf`); never a noindex one.
+5. A takeover links its brand page («Alle Leasingübernahmen von {Marke}») in the server HTML while that brand page is indexable (`indexableBrandPagesFor` in `brandIndexingService.ts`, grace period included); never a noindex one.
 6. «Ähnliche Fahrzeuge» (6, same Kaufart, server-rendered) ranks the same brand first, then the same body type, then a price within 30 % of the listing's (`SIMILAR_PRICE_TOLERANCE` in `similarListings.ts`), then the hub's relevance order.
 
 ## 7. Ads landing page

@@ -13,14 +13,13 @@ import { BRAND_PAGES_CONTENT_UPDATED } from "@/lib/buyauto/contentDates";
 import type { Listing } from "@/lib/buyauto/types";
 import {
   dbBrandsFor,
-  indexableBrandPages,
-  isIndexableBrandCount,
   LEASING_BRANDS,
   resolveBrandSlug,
   type BrandInventoryRow,
   type LeasingBrand,
 } from "@/lib/buyauto/leasingBrands";
 import { brandLenderFor, type BrandLender } from "@/lib/buyauto/brandLenders";
+import { indexableBrandPagesFor, isBrandPageIndexable } from "@/services/brandIndexingService";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AMAG_LEASING,
@@ -49,6 +48,8 @@ type BrandPageProps = {
   stats: InventoryStats | null;
   /** Other indexable brand pages of the same leasing company (AMAG Kernmarken), for in-text links. */
   siblingBrands: { slug: string; name: string }[];
+  /** isBrandPageIndexable: 2+ live Leasingübernahmen, or 1 within the 30-day grace period. */
+  indexable: boolean;
 };
 
 // ── Small building blocks ──────────────────────────────────────────────────
@@ -513,16 +514,16 @@ function LiveStats({ brand, total, stats, models }: { brand: LeasingBrand; total
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
-export default function LeasingBrandPage({ brand, listings, total, stats, siblingBrands }: BrandPageProps) {
+export default function LeasingBrandPage({ brand, listings, total, stats, siblingBrands, indexable }: BrandPageProps) {
   const canonical = `${SITE_URL}/leasinguebernahme/${brand.slug}`;
   // /suche filters on ONE exact stored brand string (its URL parser has no multi-brand
   // param), which can differ from the display name (Mercedes-Benz page ↔ "Mercedes"
   // rows) — link with the primary DB spelling.
   const searchHref = `/suche?dealType=lease_takeover&brand=${encodeURIComponent(dbBrandsFor(brand)[0])}`;
   const hasListings = total > 0;
-  // Indexed from BRAND_PAGE_MIN_INDEXABLE_LISTINGS live Leasingübernahmen on;
+  // `indexable` (getStaticProps): from BRAND_PAGE_MIN_INDEXABLE_LISTINGS live
+  // Leasingübernahmen on, or from one within the grace period (leasingBrands.ts);
   // thinner pages stay reachable but "noindex, follow".
-  const indexable = isIndexableBrandCount(total);
   const lender = brandLenderFor(brand);
   const models = liveModels(listings);
 
@@ -610,10 +611,10 @@ export default function LeasingBrandPage({ brand, listings, total, stats, siblin
             <link rel="canonical" href={canonical} />
           </>
         ) : (
-          /* Thin brand views (fewer than BRAND_PAGE_MIN_INDEXABLE_LISTINGS live
-             Leasingübernahmen): noindex, follow (crawlable, out of the index) and NO
-             self-canonical — so we never send canonical + noindex together. They flip
-             to indexable automatically once enough inventory is published. */
+          /* Thin brand views (no live Leasingübernahme, or one without a second in the
+             last BRAND_PAGE_GRACE_DAYS days): noindex, follow (crawlable, out of the
+             index) and NO self-canonical, so canonical and noindex never go together.
+             They flip to indexable automatically once enough inventory is published. */
           <meta name="robots" content="noindex, follow" />
         )}
 
@@ -728,12 +729,13 @@ async function loadBrandLiveFacts(
   dbBrands: string[]
 ): Promise<{ stats: InventoryStats | null; siblingBrands: { slug: string; name: string }[] }> {
   try {
-    const takeovers = liveTakeovers(await getPublicOfferIndex());
+    const offerIndex = await getPublicOfferIndex();
+    const takeovers = liveTakeovers(offerIndex);
     const offers = takeovers.filter((o) => o.brand !== null && dbBrands.includes(o.brand));
     const lender = brandLenderFor(brand)?.lender ?? null;
     const siblingBrands =
       lender === "amag"
-        ? indexableBrandPages(takeovers)
+        ? (await indexableBrandPagesFor(offerIndex))
             .filter((b) => b.slug !== brand.slug && brandLenderFor(b)?.lender === "amag")
             .map((b) => ({ slug: b.slug, name: b.name }))
         : [];
@@ -788,8 +790,10 @@ export const getStaticProps: GetStaticProps<BrandPageProps> = async (context) =>
   ]);
   // Strip undefined fields so Next can serialize the props.
   const listings = JSON.parse(JSON.stringify(results.items)) as Listing[];
+  // The same rule as the sitemap and every brand link (brandIndexingService).
+  const indexable = await isBrandPageIndexable(results.total, dbBrandsFor(brand));
   return {
-    props: { brand, listings, total: results.total, stats: live.stats, siblingBrands: live.siblingBrands },
+    props: { brand, listings, total: results.total, stats: live.stats, siblingBrands: live.siblingBrands, indexable },
     revalidate: 300,
   };
 };

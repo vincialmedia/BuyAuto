@@ -11,11 +11,11 @@ import {
   getPublishedListingById,
   getSimilarListings,
   getUserListingById,
-  indexableBrandPagesOf,
   transformPublicRowToListingDetail,
   type PublicOffer,
 } from "@/services/listingsService";
 import { brandPageForDbBrand } from "@/lib/buyauto/leasingBrands";
+import { indexableBrandPagesFor } from "@/services/brandIndexingService";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
 import { getGaragePublicById } from "@/services/garageService";
@@ -64,13 +64,14 @@ type ListingBrandPage = { slug: string; name: string };
 
 /**
  * The brand page a Leasingübernahme links to, only while that page is indexable
- * (a noindex brand page is never linked). Direktkauf listings get none.
+ * (a noindex brand page is never linked; the grace period included). Direktkauf
+ * listings get none.
  */
-function listingBrandPage(listing: ListingDetail, offers: PublicOffer[]): ListingBrandPage | null {
+async function listingBrandPage(listing: ListingDetail, offers: PublicOffer[]): Promise<ListingBrandPage | null> {
   if (kaufartOf(listing) !== "lease_takeover") return null;
   const page = brandPageForDbBrand(listing.brand ?? "");
   if (!page) return null;
-  const indexable = indexableBrandPagesOf(offers).find((b) => b.slug === page.slug);
+  const indexable = (await indexableBrandPagesFor(offers)).find((b) => b.slug === page.slug);
   return indexable ? { slug: indexable.slug, name: indexable.name } : null;
 }
 
@@ -688,7 +689,7 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     }
     // Similar cards (prices, links) are part of the server HTML, not a client fetch.
     const similarListings = JSON.parse(JSON.stringify(await getSimilarListings(listing, 6, offerIndex))) as Listing[];
-    const brandPage = offerIndex ? listingBrandPage(listing, offerIndex) : null;
+    const brandPage = offerIndex ? await listingBrandPage(listing, offerIndex) : null;
 
     if (context.res) {
       context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");

@@ -6,7 +6,7 @@
 2. One H1, the most prominent text on the page, saying the same thing as the title.
 3. Meta description: unique and specific. One sourced fact or a live count helps. Aim for 155 characters at most; Google may show other text.
 4. Canonical: absolute `https://www.buyauto.ch/…` URL, self-referencing on every indexable page. Never a canonical together with `noindex`. On `/suche`, the Leasingübernahme hub (`?dealType=lease_takeover`) is self-canonical while it has offers and the Direktkauf view (`?dealType=direct_purchase`) from `DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS` offers; the bare page and every other filter, sort, page or search render `noindex, follow` without a canonical (`isIndexedSearchView` in `suche.tsx`).
-5. Robots: `noindex, follow` for scaffolds, thin inventory pages and landing pages; on indexable pages either no robots tag or `index, follow`. Never use robots.txt to keep a page out of the index: a blocked URL can still be indexed, `noindex` is the tool for that.
+5. Robots: `noindex, follow` for thin inventory pages (brand pages below the threshold, garage microsites without a description or a live listing), landing pages and app screens (`/auth`, `/updates`); on indexable pages either no robots tag or `index, follow`. A scaffold of placeholder copy answers 404 (`notFound`) until it is ready, so it can't be crawled at all (PR C). Never use robots.txt to keep a page out of the index: a blocked URL can still be indexed, `noindex` is the tool for that.
 6. `og:title`, `og:description`, `og:url` and `og:image` match the page.
 7. `<html lang="de-CH">` is set in `_document.tsx`.
 8. `src/components/SEO.tsx` requires `title`, `description` and `url` (the types enforce it since PR #84). A blank `url` leaves the canonical out; never pass the home page as `url` for another page.
@@ -31,7 +31,7 @@
 ## Sitemap, dates and llms.txt
 
 1. A static content page that is indexable gets an entry in `CONTENT_LAST_UPDATED` (`src/lib/buyauto/contentDates.ts`) with the date of its last real content change. That one entry feeds the sitemap `lastmod`, the visible «Aktualisiert am» in the `AuthorBox` and the `Article` `dateModified`. Legal pages keep their current entries.
-2. Brand pages are listed automatically (`indexableBrandPages`; `BRAND_PAGES_CONTENT_UPDATED` for template changes). Listings and garage pages come from the database.
+2. Brand pages are listed automatically while indexable (`indexableBrandPagesFor`, grace period included; `BRAND_PAGES_CONTENT_UPDATED` for template changes). Listings and garage pages come from the database; a garage page only when `isIndexableGarage` (description, at least 1 live listing, real slug) holds, the same rule as its robots tag.
 3. Remove the entry when a page is deleted, redirected or set to noindex.
 4. `public/llms.txt`: one line per indexable content or offer page (brand, listing, garage and legal pages stay out), with a factual description and no live numbers, prices or promises. Update it with every added, moved or deleted page. Google's AI features need no special files, so this is for other assistants; it must never contradict the site.
 
@@ -52,7 +52,7 @@
 
 1. Every new page gets at least one link from its parent page's body copy (guide, cost page, hub or brand page), with anchor text that says where it goes. Header and footer links don't count.
 2. Every page links on to the next step the reader needs: guide → cost page → offers or "Inserat erstellen"; brand page → the cost page section for its leasing company, and back: the cost page's lender rows and sections and the hub link the indexable brand pages with the brand name as the anchor, and each takeover listing links its own («Alle Leasingübernahmen von {Marke}»).
-3. Links to brand pages are gated on `indexableBrandPages` at build or request time (`getIndexableBrandPages` / `indexableBrandPagesOf` in `listingsService.ts`), so a noindex brand page is never linked.
+3. Links to brand pages are gated on the brand indexing rule at build or request time (`getIndexableBrandPages` / `indexableBrandPagesFor` in `src/services/brandIndexingService.ts`, server-only because the 30-day grace period reads ended listings with the service-role key), so a noindex brand page is never linked.
 4. No link blocks or lists of keyword links.
 5. No orphan pages. If nothing should link to a page, it shouldn't be indexable.
 

@@ -76,7 +76,7 @@ None unless they are real, attributable, given with the person's written permiss
 1. New images: real photos (listings, Vince), screenshots of BuyAuto or simple diagrams. No AI-generated people presented as customers, sellers or authors; Google names AI-generated author headshots as deceptive authorship.
 2. Alt text in German describing what the image shows. Alt text counts as content for the fact-check.
 3. `next/image` with width and height so nothing shifts while loading.
-4. Known exceptions, left as they are until Vince replaces them: the AI-generated hero image on the home page (with English alt text) and the AI-generated handshake image on the AutoScout24 comparison page. Don't swap or delete them in passing.
+4. Known exception, left as it is until Vince replaces it: the AI-generated hero image on the home page (with English alt text). Don't swap or delete it in passing. (The AI-generated handshake image went with the retired AutoScout24 comparison page in PR C.)
 
 ## Known copy exceptions
 
