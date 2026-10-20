@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queueLoginEvent, setUser, track } from "@/lib/analytics";
 import authService from "@/services/authService";
 import GoogleSignInButton from "@/components/buyauto/auth/GoogleSignInButton";
+import { canOfferGoogleSignIn } from "@/lib/buyauto/googleSignIn";
 
 /**
  * Shown at the final step when a guest (not logged in) wants to publish. They
@@ -84,7 +85,9 @@ export default function GuestAuthGate() {
       const raw = String(err?.message ?? "");
       const emailAlreadyExists = err?.code === "email_exists" || /already registered|user already/i.test(raw);
       const msg = /invalid login credentials/i.test(raw)
-        ? "E-Mail oder Passwort ist falsch."
+        ? canOfferGoogleSignIn()
+          ? "E-Mail oder Passwort ist falsch. Konto mit Google erstellt? Dann melde dich oben mit Google an."
+          : "E-Mail oder Passwort ist falsch."
         : emailAlreadyExists
           ? "Diese E-Mail existiert bereits, bitte logge dich ein."
           : raw || "Etwas ist schiefgelaufen. Bitte versuche es erneut.";

@@ -48,13 +48,20 @@ export function canOfferGoogleSignIn(): boolean {
 }
 
 /** How close account creation and this sign-in must be to count as a sign-up. */
-export const FRESH_ACCOUNT_WINDOW_MS = 60 * 1000;
+export const FRESH_ACCOUNT_WINDOW_MS = 10 * 1000;
+/** A Google identity created this close to its account came with it (same sign-up). */
+export const SAME_SIGNUP_GAP_MS = 5 * 1000;
 
-type AccountTimes = { created_at?: string | null; last_sign_in_at?: string | null };
+type AccountTimes = {
+  created_at?: string | null;
+  last_sign_in_at?: string | null;
+  identities?: Array<{ provider?: string | null; created_at?: string | null }> | null;
+};
 
 /**
  * A Google sign-in that created the account is a sign-up (GA4 `sign_up`),
- * anything else a login. Compares two server timestamps, so a wrong clock on
+ * anything else a login, including Google being linked to an account made
+ * minutes earlier with e-mail. Compares server timestamps, so a wrong clock on
  * the visitor's device can't flip it; without `last_sign_in_at` it falls back
  * to the device clock.
  */
@@ -63,7 +70,12 @@ export function isFreshAccount(user: AccountTimes | null | undefined, now: numbe
   if (!Number.isFinite(created)) return false;
   const lastSignIn = Date.parse(user?.last_sign_in_at ?? "");
   const reference = Number.isFinite(lastSignIn) ? lastSignIn : now;
-  return Math.abs(reference - created) < FRESH_ACCOUNT_WINDOW_MS;
+  if (Math.abs(reference - created) >= FRESH_ACCOUNT_WINDOW_MS) return false;
+
+  const google = user?.identities?.find((identity) => identity.provider === "google");
+  const googleCreated = Date.parse(google?.created_at ?? "");
+  if (Number.isFinite(googleCreated) && Math.abs(googleCreated - created) >= SAME_SIGNUP_GAP_MS) return false;
+  return true;
 }
 
 const NAME_MAX = 80;

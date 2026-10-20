@@ -32,6 +32,9 @@ export default function AuthForm({
   returnPath,
 }: AuthFormProps = {}) {
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
+  // Opened for a garage (?type=garage): a Google sign-up would create a private
+  // account, so the login tab leaves Google out there.
+  const offerGoogleOnLogin = initialAccountType !== "garage";
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +67,7 @@ export default function AuthForm({
       
       if (error?.message?.includes("Invalid login credentials")) {
         // An account created with Google has no password until one is set.
-        errorMessage = canOfferGoogleSignIn()
+        errorMessage = offerGoogleOnLogin && canOfferGoogleSignIn()
           ? "E-Mail oder Passwort ist falsch. Hast du dein Konto mit Google erstellt? Dann melde dich mit Google an."
           : "E-Mail oder Passwort ist falsch.";
       } else if (error?.message?.includes("Email not confirmed")) {
@@ -304,7 +307,7 @@ export default function AuthForm({
           </TabsList>
 
           <TabsContent value="login" className="space-y-4 mt-0">
-            {googleButton}
+            {offerGoogleOnLogin ? googleButton : null}
             <LoginForm
               onLogin={handleLogin}
               onShowRegister={() => setCurrentView("register")}

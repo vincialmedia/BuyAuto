@@ -83,7 +83,7 @@ export default function Datenschutz() {
                 Wählen Sie die Anmeldung mit Google und bestätigen Sie sie bei Google, übermittelt Google uns Ihren Namen, Ihre E-Mail-Adresse und ob Google diese bestätigt hat, einen Link zu Ihrem Google-Profilbild, eine Kennung Ihres Google-Kontos sowie bei Konten einer Organisation deren Domain. Damit legen wir Ihr BuyAuto-Konto an oder melden Sie an. Gibt es bereits ein BuyAuto-Konto mit derselben E-Mail-Adresse, verknüpfen wir Ihr Google-Konto damit. Auf weitere Daten in Ihrem Google-Konto, etwa E-Mails, Kontakte oder Dateien, erhalten wir keinen Zugriff. Google kann die Daten auch in den USA bearbeiten.
               </p>
               <p className="mb-4">
-                Rechtsgrundlage ist die Durchführung des Nutzungsvertrags, den Sie mit der Registrierung abschliessen (Art. 6 Abs. 1 lit. b DSGVO bzw. Art. 31 Abs. 2 lit. a DSG). Die Verbindung zwischen Ihrem Google-Konto und BuyAuto können Sie jederzeit in den Einstellungen Ihres Google-Kontos entfernen; Ihr BuyAuto-Konto bleibt dabei bestehen. Die Löschung der Daten, die wir bereits erhalten haben, können Sie bei <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a> verlangen. Weitere Informationen finden Sie in der{" "}
+                Das Laden der Schaltfläche beruht auf unserem berechtigten Interesse, Ihnen eine einfache Anmeldung anzubieten (Art. 6 Abs. 1 lit. f DSGVO bzw. Art. 31 Abs. 1 DSG). Rechtsgrundlage der Anmeldung selbst ist die Durchführung des Nutzungsvertrags, den Sie mit der Registrierung abschliessen (Art. 6 Abs. 1 lit. b DSGVO bzw. Art. 31 Abs. 2 lit. a DSG). Die Verbindung zwischen Ihrem Google-Konto und BuyAuto können Sie jederzeit in den Einstellungen Ihres Google-Kontos entfernen; Ihr BuyAuto-Konto bleibt dabei bestehen. Die Löschung der Daten, die wir bereits erhalten haben, können Sie bei <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a> verlangen. Weitere Informationen finden Sie in der{" "}
                 <a
                   href="https://policies.google.com/privacy"
                   target="_blank"
@@ -203,7 +203,7 @@ export default function Datenschutz() {
                   <strong>Vercel:</strong> Für das Hosting der Website und die Auslieferung von Inhalten.
                 </li>
                 <li>
-                  <strong>Google:</strong> Für die Anmeldung mit Google, wenn Sie diese wählen (siehe{" "}
+                  <strong>Google:</strong> Für die Anmeldung mit Google (siehe{" "}
                   <a href="#anmeldung-mit-google" className="text-red-600 hover:underline">
                     Anmeldung mit Google
                   </a>

@@ -210,7 +210,7 @@ export function GuestMessageForm({ listingId, dealType, onExistingAccount, onGoo
         <GoogleSignInButton
           divider="below"
           showTerms
-          termsLead="Meldest du dich mit Google an, geht deine Nachricht sofort an den Anbieter, und du akzeptierst"
+          termsLead="Mit der Anmeldung über Google gehen dein Name und deine Nachricht sofort an den Anbieter, und du akzeptierst"
           disabled={busy}
           onSession={({ isNewAccount }) => onGoogleSignIn(message, isNewAccount)}
         />

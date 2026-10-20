@@ -45,8 +45,42 @@ assert.equal(isEmbeddedBrowser(null), false);
 // --- A Google sign-in that created the account counts as a sign-up ----------
 const created = "2026-10-21T08:00:00.000Z";
 const createdMs = Date.parse(created);
-assert.equal(isFreshAccount({ created_at: created, last_sign_in_at: "2026-10-21T08:00:00.400Z" }), true);
-assert.equal(isFreshAccount({ created_at: created, last_sign_in_at: "2026-10-21T09:00:00.000Z" }), false);
+const googleIdentity = (at: string) => [{ provider: "google", created_at: at }];
+// New Google account: user, identity and sign-in within milliseconds.
+assert.equal(
+  isFreshAccount({
+    created_at: created,
+    last_sign_in_at: "2026-10-21T08:00:00.400Z",
+    identities: googleIdentity("2026-10-21T08:00:00.020Z"),
+  }),
+  true
+);
+// Returning Google user an hour later: login.
+assert.equal(
+  isFreshAccount({ created_at: created, last_sign_in_at: "2026-10-21T09:00:00.000Z", identities: googleIdentity(created) }),
+  false
+);
+// Registered with e-mail 30 s ago, then linked Google: login, not a second sign-up.
+assert.equal(
+  isFreshAccount({
+    created_at: created,
+    last_sign_in_at: "2026-10-21T08:00:30.000Z",
+    identities: [
+      { provider: "email", created_at: created },
+      { provider: "google", created_at: "2026-10-21T08:00:30.000Z" },
+    ],
+  }),
+  false
+);
+// ... also when the link happens inside the sign-up window.
+assert.equal(
+  isFreshAccount({
+    created_at: created,
+    last_sign_in_at: "2026-10-21T08:00:08.000Z",
+    identities: googleIdentity("2026-10-21T08:00:08.000Z"),
+  }),
+  false
+);
 // Server timestamps decide; the device clock doesn't matter when both exist.
 assert.equal(
   isFreshAccount({ created_at: created, last_sign_in_at: "2026-10-21T08:00:01.000Z" }, createdMs + 10 * 24 * 3600 * 1000),

@@ -105,11 +105,18 @@ async function createNonce(): Promise<{ raw: string; hashed: string }> {
 
 function dispatch(response: GoogleCredentialResponse) {
   if (!rawNonce) return;
-  // The clicked button's own handler; the newest mounted one as a fallback.
-  const target =
-    (response.state ? handlers.find((entry) => entry.state === response.state) : undefined) ??
-    handlers[handlers.length - 1];
-  target?.handler.current(response, rawNonce);
+  // Only the clicked button may act on its credential: a popup finished after
+  // the person navigated on must not trigger another page's button (which
+  // could e.g. send that listing's prefilled message). A credential without
+  // a state (not expected, every button sets one) goes to the newest button.
+  const target = response.state
+    ? handlers.find((entry) => entry.state === response.state)
+    : handlers[handlers.length - 1];
+  if (!target) {
+    console.info("Google sign-in: the button for this credential is gone, ignoring it.");
+    return;
+  }
+  target.handler.current(response, rawNonce);
 }
 
 /**

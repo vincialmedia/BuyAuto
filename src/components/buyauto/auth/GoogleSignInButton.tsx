@@ -36,7 +36,7 @@ export interface GoogleSignInButtonProps {
   divider?: "below" | "above";
   /** Shows the AGB/Datenschutz note under the button. */
   showTerms?: boolean;
-  /** Start of that note, up to "… die AGB und die Datenschutzerklärung." */
+  /** Start of that note, up to "… die AGB." (the Datenschutz link follows). */
   termsLead?: string;
   className?: string;
 }
@@ -55,7 +55,7 @@ function messageFor(error: unknown): string {
     return "Neue Konten können gerade nicht erstellt werden. Bitte versuch es später nochmals.";
   }
   if (code === "provider_email_needs_verification" || /unverified email/i.test(text)) {
-    return "Deine E-Mail-Adresse ist bei Google nicht bestätigt. Melde dich bitte mit E-Mail und Passwort an.";
+    return "Deine E-Mail-Adresse ist noch nicht bestätigt. Bestätige sie über den Link in deinem Postfach, danach klappt die Anmeldung mit Google.";
   }
   if (code === "provider_disabled" || /is not enabled|unsupported provider/i.test(text)) {
     return "Die Anmeldung mit Google ist gerade nicht verfügbar. Melde dich bitte mit E-Mail und Passwort an.";
@@ -115,6 +115,8 @@ export default function GoogleSignInButton({
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const busyRef = useRef(false);
+  const disabledRef = useRef(disabled);
+  disabledRef.current = disabled;
   const mountedRef = useRef(true);
   const state = `ba-google-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
@@ -135,7 +137,8 @@ export default function GoogleSignInButton({
   }
 
   async function handleCredential(idToken: string | undefined, rawNonce: string) {
-    if (busyRef.current) return;
+    // Busy with a sign-in already, or the e-mail form next to it is submitting.
+    if (busyRef.current || disabledRef.current) return;
     if (!idToken) {
       showError(GENERIC_ERROR);
       return;
@@ -233,6 +236,17 @@ export default function GoogleSignInButton({
     };
   }, [available, inView, state]);
 
+  // The overlay only stops the mouse; inert also takes Google's button out of
+  // the tab order while busy. Set on the element because React 18 renders the
+  // attribute only as a string, which its types don't accept.
+  const blocked = busy || disabled;
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    if (blocked) container.setAttribute("inert", "");
+    else container.removeAttribute("inert");
+  }, [blocked, available]);
+
   if (!available) return null;
 
   return (
@@ -247,7 +261,7 @@ export default function GoogleSignInButton({
               className="absolute inset-0 rounded-md border border-neutral-200 bg-neutral-50 animate-pulse"
             />
           ) : null}
-          {busy || disabled ? (
+          {blocked ? (
             <div
               className="absolute inset-0 flex items-center justify-center gap-2 rounded-md bg-white/85 text-sm text-neutral-700"
               role={busy ? "status" : undefined}
@@ -271,8 +285,8 @@ export default function GoogleSignInButton({
             {termsLead} die{" "}
             <Link href="/agb" className="underline underline-offset-2 hover:text-neutral-700">
               AGB
-            </Link>{" "}
-            und die{" "}
+            </Link>
+            . Wie wir deine Daten bearbeiten, steht in der{" "}
             <Link href="/datenschutz" className="underline underline-offset-2 hover:text-neutral-700">
               Datenschutzerklärung
             </Link>
