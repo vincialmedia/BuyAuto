@@ -45,7 +45,7 @@ German for Swiss readers, written by BuyAuto, about money. Accuracy first, then 
 
 ## Claims
 
-1. No absolute promises: "ohne Verlust", "garantiert", "risikolos", or "sofort" when it promises an outcome such as finding a new lessee. A takeover still costs the lender's transfer fee and BuyAuto's own fee, so "without loss" can't be promised to every reader. The remaining uses are the `/lp/leasing-abgeben` title (Ads landing page) and the noindex E-Auto scaffold. Don't add new ones; Vince decides about those two.
+1. No absolute promises: "ohne Verlust", "garantiert", "risikolos", or "sofort" when it promises an outcome such as finding a new lessee. A takeover still costs the lender's transfer fee and BuyAuto's own fee, so "without loss" can't be promised to every reader. The remaining uses are the `/lp/leasing-abgeben` title (Ads landing page) and the E-Auto scaffold (404 until `CONTENT_READY`). Don't add new ones; Vince decides about those two.
 2. "gratis" or "kostenlos" at most once per page and only for something that is free for everyone reading it. Never for garage packages: they are paid monthly plans (`GARAGE_PLANS`). Mention a garage discount or trial only when it is in the pricing config and Vince confirms it.
 3. Superlatives and comparisons about BuyAuto ("die grösste", "die einzige", "günstiger als") only with a source. Swiss unfair competition law (UWG Art. 3 Abs. 1) covers incorrect or misleading statements about your own business, offers and prices (lit. b), comparisons with others that are incorrect, misleading, needlessly disparaging or that lean on their reputation (lit. e), and disparaging others (lit. a).
 4. Figures BuyAuto has given to the press must match what the site says.
@@ -76,8 +76,10 @@ None unless they are real, attributable, given with the person's written permiss
 1. New images: real photos (listings, Vince), screenshots of BuyAuto or simple diagrams. No AI-generated people presented as customers, sellers or authors; Google names AI-generated author headshots as deceptive authorship.
 2. Alt text in German describing what the image shows. Alt text counts as content for the fact-check.
 3. `next/image` with width and height so nothing shifts while loading.
-4. Known exceptions, left as they are until Vince replaces them: the AI-generated hero image on the home page (with English alt text) and the AI-generated handshake image on the AutoScout24 comparison page. Don't swap or delete them in passing.
+4. Known exception, left as it is until Vince replaces it: the AI-generated hero image on the home page (with English alt text). Don't swap or delete it in passing. (The AI-generated handshake image went with the retired AutoScout24 comparison page in PR C.)
 
 ## Known copy exceptions
 
-The Eintauschwert-Rechner (`src/pages/eintauschwert-rechner.tsx`, `EintauschwertRechner.tsx`) explains its method with dealer rules of thumb (typical margins, preparation and warranty costs, "Faustregel" percentages) that have no source. They break the sourcing rule, and Vince decides whether to source them or drop them. Until then, leave them as they are when working on other parts of those files.
+No unsourced claims open. The Eintauschwert-Rechner (`src/pages/eintauschwert-rechner.tsx`, `EintauschwertRechner.tsx`) used to explain its method with dealer rules of thumb (typical margins, preparation and warranty costs, «Faustregel» percentages) that had no source; PR C dropped them from the copy, the FAQ and the tooltips, together with an «in 2 Minuten» speed claim, a «reichen in der Praxis» rule for the number of comparables and a sentence on what «viele Händler» do. The FAQ now describes what the tool does (the median of the comparables; a range with fewer than 3 of them or widely spread prices). The calculator's prefilled inputs stay as starting values to overwrite and are never called typical or branchenüblich.
+
+Older checker findings on that page are left for a copy PR of their own: «gratis»/«kostenlos» more than once, the title length (title and H1 stayed as they were in PR C), and the km example in the method section, which types the tool's own adjustment (`KM_ADJUST_PCT_PER_10K`) and a CHF example instead of printing them from the constant.

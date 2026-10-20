@@ -7,8 +7,8 @@ import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 // differentiation vs. dissolution services). Every [TODO] below is placeholder copy
 // for Vince to replace with real text and real numbers. Flip CONTENT_READY to true
 // once done: it switches the page to index,follow and emits the FAQPage schema.
-// Until then the page is noindex and deliberately absent from the sitemap
-// (contentDates.ts has no entry for it).
+// Until then the URL answers 404 (getStaticProps below) and stays out of the sitemap
+// (contentDates.ts has no entry for it) and out of every link.
 const CONTENT_READY = false;
 
 // FAQ scaffold: questions are final, answers are [TODO]. The schema is only emitted
@@ -121,3 +121,10 @@ export default function ElektroautoLeasingAbgebenPage() {
     </>
   );
 }
+
+// While CONTENT_READY is false the URL answers 404: a page of [TODO] placeholders
+// must never be crawled, linked or listed. The scaffold above stays as the draft.
+export const getStaticProps = async () => {
+  if (!CONTENT_READY) return { notFound: true as const };
+  return { props: {} };
+};

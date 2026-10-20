@@ -8,6 +8,8 @@ import {
   isSameBrand,
   matchSameModel,
   modelMatches,
+  SHORT_TAKEOVER_MAX_MONTHS,
+  shortRemainingTakeovers,
   takeoverTitle,
   type TakeoverCandidate,
 } from "../src/lib/buyauto/autoAboMatch";
@@ -68,6 +70,10 @@ assert.equal(takeoverTitle({ brand: "BMW", model: "X3", variant: "xDrive20d" }),
 assert.equal(takeoverTitle({ brand: "BMW", model: "X3", variant: "X3 20d xDrive" }), "BMW X3 20d xDrive");
 assert.equal(takeoverTitle({ brand: "BMW", model: "X3", variant: null }), "BMW X3");
 assert.equal(takeoverTitle({ brand: "BMW", model: "M135i", variant: "M135i" }), "BMW M135i");
+assert.equal(takeoverTitle({ brand: "Mercedes", model: "AMG GLB 35", variant: "GLB 35 4MATIC" }), "Mercedes AMG GLB 35 4MATIC");
+assert.equal(takeoverTitle({ brand: "Mercedes", model: "C-Class", variant: "C 200 d" }), "Mercedes C-Class C 200 d");
+assert.equal(takeoverTitle({ brand: "Mercedes", model: "AMG GLB 35", variant: "GLB 35" }), "Mercedes AMG GLB 35", "a variant that only repeats the model adds nothing");
+assert.equal(takeoverTitle({ brand: "VW", model: "Golf", variant: "GTI" }), "VW Golf GTI");
 
 // --- matchSameModel ----------------------------------------------------------
 const x3 = AUTO_ABO_PROVIDERS.flatMap((p) => p.offers).find((o) => o.listingModel === "X3");
@@ -134,6 +140,37 @@ const pool: TakeoverCandidate[] = [
   const m = matchSameModel(corsa, pool);
   assert.equal(m.total, 0);
   assert.deepEqual(m.listings, []);
+}
+
+{
+  // Short remaining term (Auto-Abo page section): 1..24 months, shortest first, then the lower rate.
+  assert.equal(SHORT_TAKEOVER_MAX_MONTHS, 24);
+  const short = shortRemainingTakeovers([
+    candidate({ id: "s1", brand: "BMW", model: "X3", months: 24, rateChf: 700 }),
+    candidate({ id: "s2", brand: "Audi", model: "A3", months: 25, rateChf: 300 }), // too long
+    candidate({ id: "s3", brand: "Mercedes", model: "GLC", months: 11, rateChf: 900 }),
+    candidate({ id: "s4", brand: "Fiat", model: "600", months: 11, rateChf: 420 }),
+    candidate({ id: "s5", brand: "VW", model: "Golf", months: null, rateChf: 400 }), // months unknown
+    candidate({ id: "s6", brand: "VW", model: "Polo", months: 0, rateChf: 250 }), // contract ended
+    candidate({ id: "s7", brand: "Škoda", model: "Enyaq", months: 18, rateChf: null }), // no rate
+    candidate({ id: "s8", brand: "Škoda", model: "Karoq", variant: "Karoq 2.0 TDI", months: 18, rateChf: 499, year: 2022, kautionChf: 2000 }),
+  ]);
+  assert.deepEqual(
+    short.map((l) => l.id),
+    ["s4", "s3", "s8", "s1"]
+  );
+  const karoq = short.find((l) => l.id === "s8");
+  assert.equal(karoq?.href, "/fahrzeug/skoda-karoq-s8");
+  assert.equal(karoq?.title, "Škoda Karoq 2.0 TDI");
+  assert.equal(karoq?.months, 18);
+  assert.equal(karoq?.kautionChf, 2000);
+  assert.equal(karoq?.year, 2022);
+  assert.deepEqual(shortRemainingTakeovers([candidate({ id: "x", months: 30 })]), [], "none: the section is hidden");
+  assert.deepEqual(
+    shortRemainingTakeovers([candidate({ id: "a", months: 12 }), candidate({ id: "b", months: 13 })], 12).map((l) => l.id),
+    ["a"]
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(short)), short, "serializable for getStaticProps");
 }
 
 console.log("test-autoabo-match: all assertions passed");

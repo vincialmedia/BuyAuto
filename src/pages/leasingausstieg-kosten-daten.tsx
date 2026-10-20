@@ -5,7 +5,8 @@ import { BreadcrumbJsonLd } from "@/components/buyauto/Breadcrumbs";
 // structure is ready for REAL BuyAuto data (anonymised aggregates from completed
 // transfers); every cell is deliberately [TODO] — no invented numbers, ever. Flip
 // CONTENT_READY once the data is in: it switches the page to index,follow. Until
-// then the page is noindex and absent from the sitemap (no contentDates.ts entry).
+// then the URL answers 404 (getStaticProps below) and stays out of the sitemap (no
+// contentDates.ts entry) and out of every link.
 const CONTENT_READY = false;
 
 // Row skeleton: one row per exit path, filled from real BuyAuto/market data.
@@ -110,3 +111,10 @@ export default function LeasingausstiegKostenDatenPage() {
     </>
   );
 }
+
+// While CONTENT_READY is false the URL answers 404: a page of [TODO] placeholders
+// must never be crawled, linked or listed. The scaffold above stays as the draft.
+export const getStaticProps = async () => {
+  if (!CONTENT_READY) return { notFound: true as const };
+  return { props: {} };
+};

@@ -8,6 +8,7 @@ import { publicSellerName } from "@/lib/buyauto/sellerName";
 import { displayLocation } from "@/lib/buyauto/location";
 import { computeInventoryStats, type InventoryStats } from "@/lib/buyauto/facts";
 import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
+import { neighboursInOrder, rankSimilar } from "@/lib/buyauto/similarListings";
 
 type PublicListingRow = Database["public"]["Views"]["listings_public"]["Row"];
 type ListingsTableRow = Database["public"]["Tables"]["listings"]["Row"];
@@ -433,7 +434,7 @@ function transformListingsTableRowToListingDetail(row: ListingsTableRow): Listin
 
 const OFFER_COLUMNS =
   "id, brand, model, variant, year, price_per_month_chf, purchase_price_chf, remaining_months, deposit_chf, " +
-  "leasing_offer, deal_type, financing_type, mileage_km, premium, created_at, updated_at, garage_id";
+  "leasing_offer, deal_type, financing_type, mileage_km, body, premium, created_at, updated_at, garage_id";
 
 type OfferRow = {
   id: string;
@@ -449,6 +450,7 @@ type OfferRow = {
   deal_type: string | null;
   financing_type: string | null;
   mileage_km: number | null;
+  body: string | null;
   premium: boolean | null;
   created_at: string | null;
   updated_at: string | null;
@@ -848,6 +850,10 @@ export function liveTakeovers(offers: PublicOffer[]): PublicOffer[] {
   return offers.filter((o) => o.offer.kaufart === "lease_takeover" && o.offer.isLiveOffer);
 }
 
+// Which brand pages are indexable (and may be linked) is decided server-side in
+// services/brandIndexingService.ts: the rule includes a grace period that reads
+// ended listings with the service-role key, which never belongs in this module.
+
 // Brands are static-ish data fetched on every mount of SearchBarV2/SearchForm/DynamicFilterBar.
 // Cache in module scope (with inflight dedup) so repeat calls within a session don't refetch.
 let cachedBrands: string[] | null = null;
@@ -949,21 +955,59 @@ export async function getVariantsForBrandModel(brand: string, model: string): Pr
   }
 }
 
-export async function getSimilarListings(listing: ListingDetail, limit: number = 6): Promise<Listing[]> {
+/**
+ * «Ähnliche Fahrzeuge»: live offers of the same Kaufart, ranked by brand, body type,
+ * price within the tolerance and then relevance (lib/buyauto/similarListings).
+ * Pass `offerIndex` when the caller already read it, to save the second read.
+ */
+export async function getSimilarListings(
+  listing: ListingDetail,
+  limit: number = 6,
+  offerIndex?: PublicOffer[]
+): Promise<Listing[]> {
   try {
     const now = new Date();
     const kaufart = kaufartOf(listing);
-    const offers = await getPublicOfferIndex(now);
-    const ids = offers
-      .filter((o) => o.id !== listing.id && o.offer.isLiveOffer && o.offer.kaufart === kaufart)
-      .sort(compareOffers("relevance", { bucket: "all", priceMode: "none" }))
-      .slice(0, limit)
-      .map((o) => o.id);
+    const offers = offerIndex ?? (await getPublicOfferIndex(now));
+    const priceMode = kaufart === "lease_takeover" ? "monthly" : "purchase";
+    const listingPrice = kaufart === "lease_takeover" ? listing.pricePerMonthCHF : listing.purchasePriceCHF;
+    const candidates = offers.filter((o) => o.id !== listing.id && o.offer.isLiveOffer && o.offer.kaufart === kaufart);
+    const ids = rankSimilar(
+      { brand: listing.brand, body: listing.body ?? null, price: typeof listingPrice === "number" ? listingPrice : null },
+      candidates,
+      (o) => ({ brand: o.brand, body: o.body, price: priceOf(o, priceMode) }),
+      compareOffers("relevance", { bucket: "all", priceMode: "none" }),
+      limit
+    ).map((o) => o.id);
     return await loadListingsByIds(ids, now);
   } catch (error) {
     console.error("Get similar listings error:", error);
     return [];
   }
+}
+
+/** What a previous / next link on a listing page needs. */
+export type ListingNeighbour = { id: string; brand: string | null; model: string | null; year: number | null };
+
+/**
+ * The live offers before and after this listing in its view's order: the hub's for a
+ * Leasingübernahme (/suche?dealType=lease_takeover), the Direktkauf view's for a
+ * Direktkauf (same filter and relevance sort as runOfferSearch), wrapping around.
+ * Pure over an offer index the caller already read.
+ */
+export function getListingNeighbours(
+  listing: ListingDetail,
+  offers: PublicOffer[]
+): { previous: ListingNeighbour | null; next: ListingNeighbour | null } {
+  const scope: KaufartScope =
+    kaufartOf(listing) === "lease_takeover"
+      ? { bucket: "lease_takeover", priceMode: "monthly" }
+      : { bucket: "direct_purchase", priceMode: "purchase" };
+  const ordered = offers.filter((o) => inKaufartScope(o, scope)).sort(compareOffers("relevance", scope));
+  const { previous, next } = neighboursInOrder(ordered, (o) => o.id, listing.id);
+  const link = (o: PublicOffer | null): ListingNeighbour | null =>
+    o ? { id: o.id, brand: o.brand ?? null, model: o.model ?? null, year: o.year ?? null } : null;
+  return { previous: link(previous), next: link(next) };
 }
 
 export async function getUserListingById(id: string): Promise<ListingDetail | null> {

@@ -25,6 +25,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import dynamic from "next/dynamic";
+import { FOUNDER_REF, ORGANIZATION_REF } from "@/lib/buyauto/entities";
 
 // Mirrors CalculatorSkeleton in EintauschwertRechner.tsx (duplicated here so the
 // calculator chunk stays code-split); the calculator renders the same skeleton until
@@ -67,7 +68,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Wie viel liegt der Eintauschwert unter dem Marktwert?",
-    a: "Als Faustregel liegt der Eintauschwert bei 80–90% des Marktwerts, also 10–20% darunter. Bei Fahrzeugen mit hohem Aufbereitungsbedarf, langer erwarteter Standzeit oder schwacher Nachfrage kann der Abschlag auch grösser sein.",
+    a: "Um die Summe deiner Abzüge: Aufbereitung, Garantie-Rückstellung, Standzeit und Marge. Wie gross sie ist, hängt vom Fahrzeug und von deiner Kalkulation ab. Bei hohem Aufbereitungsbedarf, langer erwarteter Standzeit oder schwacher Nachfrage ist der Abschlag grösser. Der Rechner zeigt dir den Eintauschwert in Franken und, wenn er einen einzelnen Wert zeigt (ab 3 Vergleichsinseraten ohne stark streuende Preise), auch in Prozent vom Marktwert.",
   },
   {
     q: "Ist die Eintauschwert-Berechnung kostenlos?",
@@ -81,15 +82,15 @@ const FAQ_ITEMS = [
   },
   {
     q: "Soll ich die Marge in Prozent oder als Fixbetrag rechnen?",
-    a: "Beides ist verbreitet – darum kann der Rechner beides. Eine prozentuale Marge (üblich: 10–20% vom Marktwert) skaliert automatisch mit dem Fahrzeugwert. Ein Fixbetrag (z.B. 1'500 CHF pro Fahrzeug) eignet sich für günstige Occasionen, bei denen eine Prozent-Marge zu wenig Deckungsbeitrag ergibt. Kosten wie Aufbereitung, Garantie-Rückstellung und Standzeit rechnest du dagegen immer als Fixbeträge, weil sie kaum vom Fahrzeugwert abhängen.",
+    a: "Der Rechner kann beides. Eine prozentuale Marge skaliert automatisch mit dem Fahrzeugwert. Ein Fixbetrag pro Fahrzeug eignet sich für günstige Occasionen, bei denen eine Prozent-Marge zu wenig Deckungsbeitrag ergibt. Kosten wie Aufbereitung, Garantie-Rückstellung und Standzeit rechnest du dagegen immer als Fixbeträge, weil sie kaum vom Fahrzeugwert abhängen.",
   },
   {
     q: "Wie viele Vergleichsfahrzeuge brauche ich für eine belastbare Occasionsbewertung?",
-    a: "3–5 vergleichbare Inserate (gleiches Modell, ähnliches Alter, ähnliche Ausstattung) reichen in der Praxis. Der Rechner nutzt den Median der Preise (km-bereinigt, wenn du den Kilometerstand angibst) – so verzerrt ein einzelnes überteuertes oder verschleudertes Inserat das Ergebnis nicht.",
+    a: "Ab 3 vergleichbaren Inseraten (gleiches Modell, ähnliches Alter, ähnliche Ausstattung) zeigt der Rechner einen einzelnen Wert. Bei weniger Inseraten oder stark streuenden Preisen zeigt er eine Spanne. Er nutzt den Median der Preise (km-bereinigt, wenn du den Kilometerstand angibst), so verzerrt ein einzelnes überteuertes oder verschleudertes Inserat das Ergebnis nicht.",
   },
   {
     q: "Ersetzt der Rechner eine Eurotax-Bewertung?",
-    a: "Nein, er ergänzt sie. Eurotax liefert einen katalogbasierten Richtwert (kostenpflichtig), unser Rechner arbeitet mit echten, aktuellen Inseratspreisen aus deiner Region. Viele Händler nutzen bewusst beide Quellen: Katalogwert als Anker, Marktpreise als Realitätscheck.",
+    a: "Nein, er ergänzt sie. Eurotax liefert einen katalogbasierten Richtwert (kostenpflichtig), unser Rechner arbeitet mit echten, aktuellen Inseratspreisen von Schweizer Occasions-Portalen. Du kannst beide nutzen: den Katalogwert als Anker, die Marktpreise als Realitätscheck.",
   },
   {
     q: "Was ist der Unterschied zwischen Eintausch und Inzahlungnahme?",
@@ -160,7 +161,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
         <title>Eintauschwert berechnen (Schweiz): Ankaufsrechner für Garagen | BuyAuto</title>
         <meta
           name="description"
-          content="Eintauschwert & Ankaufspreis in 2 Minuten berechnen: Marktwert aus echten Schweizer Vergleichsinseraten, minus Aufbereitung, Garantie, Standzeit & Marge. Gratis für Garagen & Händler."
+          content="Eintauschwert und Ankaufspreis berechnen: Marktwert aus echten Schweizer Vergleichsinseraten, minus Aufbereitung, Garantie, Standzeit und Marge."
         />
         <link rel="canonical" href={canonical} />
         <script
@@ -170,12 +171,9 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
               "@context": "https://schema.org",
               "@type": "Article",
               headline: "Eintauschwert berechnen: der Ankaufsrechner für Garagen in der Schweiz",
-              author: { "@type": "Person", name: "Vincent Hänggi" },
-              publisher: {
-                "@type": "Organization",
-                name: "BuyAuto",
-                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
-              },
+              // References to the site-wide nodes (src/lib/buyauto/entities.ts).
+              author: FOUNDER_REF,
+              publisher: ORGANIZATION_REF,
               dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: canonical,
             }),
@@ -184,7 +182,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
 
         {/* Open Graph */}
         <meta property="og:title" content="Eintauschwert berechnen (Schweiz): Ankaufsrechner für Garagen" />
-        <meta property="og:description" content="Marktwert aus echten Schweizer Vergleichsinseraten, minus Aufbereitung, Garantie, Standzeit & Marge. Gratis für Garagen & Händler." />
+        <meta property="og:description" content="Eintauschwert und Ankaufspreis berechnen: Marktwert aus echten Schweizer Vergleichsinseraten, minus Aufbereitung, Garantie, Standzeit und Marge." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonical} />
         <meta property="og:site_name" content="BuyAuto" />
@@ -217,9 +215,8 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             </h1>
             <p className="text-lg md:text-xl text-neutral-300 leading-relaxed mb-6 max-w-2xl mx-auto">
               Der Eintauschwert ist der Preis, den die Garage beim Eintausch zahlt: Marktwert minus
-              Aufbereitung, Garantie-Rückstellung, Standzeit und Marge – als Faustregel 80–90% des
-              Marktwerts. Gib Marke, Modell und Jahrgang ein – Ausführung (z.B. Golf R) und
-              Kilometerstand sind optional, machen den Wert aber präziser. Der Rechner zieht echte Vergleichsinserate bei und liefert in 2 Minuten den Ankaufspreis samt Rechenweg fürs
+              Aufbereitung, Garantie-Rückstellung, Standzeit und Marge. Gib Marke, Modell und
+              Jahrgang ein – Ausführung (z.B. Golf R) und Kilometerstand sind optional, machen den Wert aber präziser. Der Rechner zieht echte Vergleichsinserate bei und liefert den Ankaufspreis samt Rechenweg fürs
               Kundengespräch.
             </p>
 
@@ -276,7 +273,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             </div>
             <div className="prose prose-lg text-neutral-700 max-w-none">
               <p>
-                Der <strong>Marktwert</strong> ist der Median von 3–5 vergleichbaren Inseraten – je
+                Der <strong>Marktwert</strong> ist der Median deiner Vergleichsinserate – je
                 genauer Ausführung, Getriebe und Antrieb angegeben sind, desto passender die
                 Vergleichsbasis. Gibst du den Kilometerstand an und hat ein Vergleichsauto mehr oder
                 weniger Kilometer als deins, wird sein Preis automatisch angeglichen – rund 5% des
@@ -287,9 +284,10 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                 statt eines einzelnen Werts.
               </p>
               <p>
-                Davon ziehst du deine <strong>echten Kosten</strong> ab (Aufbereitung 300–1'500 CHF,
-                Garantie-Rückstellung 300–800 CHF, Standzeit & Kapitalbindung) sowie deine{" "}
-                <strong>Marge</strong> (branchenüblich 10–20% vom Marktwert oder ein fixes Ertragsziel).
+                Davon ziehst du deine <strong>echten Kosten</strong> ab (Aufbereitung,
+                Garantie-Rückstellung, Standzeit & Kapitalbindung) sowie deine{" "}
+                <strong>Marge</strong>, als Prozent vom Marktwert oder als fixes Ertragsziel. Die
+                vorausgefüllten Beträge im Rechner sind Startwerte: Ersetz sie durch deine eigenen.
                 Übrig bleibt ein fairer, verteidigbarer Ankaufspreis – den Rechenweg kannst du dem
                 Kunden offen zeigen.
               </p>
@@ -331,15 +329,15 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                 <ul className="space-y-3">
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700"><strong>Branchenüblich: 10–20%.</strong> Skaliert automatisch mit dem Fahrzeugwert.</span>
+                    <span className="text-neutral-700">Skaliert automatisch mit dem Fahrzeugwert.</span>
                   </li>
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700">Sinnvoll ab ca. 10'000 CHF Fahrzeugwert – die Marge deckt Risiko und Aufwand proportional.</span>
+                    <span className="text-neutral-700">Passt zu teureren Fahrzeugen: Die Marge in Franken wächst mit dem Fahrzeugwert.</span>
                   </li>
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700">Vorsicht bei teuren Fahrzeugen: 15% von 60'000 CHF sind 9'000 CHF – das Angebot wird schnell unattraktiv.</span>
+                    <span className="text-neutral-700">Vorsicht bei sehr teuren Fahrzeugen: Derselbe Prozentsatz ergibt dort einen hohen Frankenbetrag, und das Angebot wird schnell unattraktiv.</span>
                   </li>
                 </ul>
               </div>
@@ -352,11 +350,11 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                 <ul className="space-y-3">
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700"><strong>Ertragsziel pro Auto</strong> (z.B. 1'500–2'500 CHF) – einfach zu kalkulieren und zu kontrollieren.</span>
+                    <span className="text-neutral-700">Ein fixes Ertragsziel pro Auto ist einfach zu kalkulieren und zu kontrollieren.</span>
                   </li>
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700">Besser bei günstigen Occasionen: 12% von 8'000 CHF wären nur 960 CHF – zu wenig für den gleichen Aufwand.</span>
+                    <span className="text-neutral-700">Besser bei günstigen Occasionen: Dort ergibt ein Prozentsatz wenig Franken für den gleichen Aufwand.</span>
                   </li>
                   <li className="flex gap-3">
                     <Check className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
@@ -379,8 +377,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
                 Der <strong>Verkaufswert</strong> (Marktwert) ist der Preis, zu dem das Fahrzeug am
                 Markt inseriert wird. Der <strong>Eintauschwert</strong> ist der Betrag, den du als
                 Garage dafür bezahlst – die Differenz ist genau die Summe aus Aufbereitung, Garantie,
-                Standzeit und Marge. Diese Spanne (typisch 10–20%) ist keine Willkür, sondern deine
-                Kalkulation. Wer sie dem Kunden transparent zeigt, verhandelt souveräner als mit einer
+                Standzeit und Marge. Diese Spanne ergibt sich aus deiner Kalkulation. Wer sie dem Kunden transparent zeigt, verhandelt souveräner als mit einer
                 Zahl aus dem Bauch.
               </p>
             </div>

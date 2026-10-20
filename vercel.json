@@ -10,6 +10,12 @@
       ]
     }
   ],
+  "crons": [
+    {
+      "path": "/api/indexnow",
+      "schedule": "0 5 * * *"
+    }
+  ],
   "redirects": [
     {
       "source": "/auto-abos-im-vergleich",

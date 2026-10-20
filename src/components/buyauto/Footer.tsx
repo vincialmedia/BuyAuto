@@ -22,7 +22,6 @@ const footerSections = [
       { label: "Was kostet eine Übernahme?", href: "/leasinguebernahme-kosten" },
       { label: "Leasingvertrag übertragen", href: "/leasingvertrag-uebertragen" },
       { label: "Übernahme vs. Auto-Abo", href: "/leasinguebernahme-vs-autoabo" },
-      { label: "AutoScout24-Alternative", href: "/autoscout24-alternative-leasinguebernahme" },
       { label: "Leasing abgeben", href: "/leasing-abgeben-schweiz" }
     ]
   },

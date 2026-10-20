@@ -1,8 +1,9 @@
 /**
- * Finds live BuyAuto Leasingübernahmen of the same model as an Auto-Abo example
- * (AUTO_ABO_PROVIDERS in facts.ts), for the "same model, both ways" block on
- * /leasinguebernahme-vs-autoabo. Pure functions: the page feeds them the live
- * offer index in getStaticProps. Tests: `npx tsx scripts/test-autoabo-match.ts`.
+ * Finds live BuyAuto Leasingübernahmen for /leasinguebernahme-vs-autoabo: those of
+ * the same model as an Auto-Abo example (AUTO_ABO_PROVIDERS in facts.ts) for the
+ * "same model, both ways" block, and those with a short remaining term for the
+ * section next to it. Pure functions: the page feeds them the live offer index in
+ * getStaticProps. Tests: `npx tsx scripts/test-autoabo-match.ts`.
  */
 import type { AutoAboOffer } from "@/lib/buyauto/facts";
 import { LEASING_BRANDS, dbBrandsFor } from "@/lib/buyauto/leasingBrands";
@@ -89,12 +90,29 @@ export function modelMatches(listingModel: string | null, offerListingModel: str
   return pattern.test(normalizeVehicleText(listingModel));
 }
 
-/** "BMW X3 xDrive20d"; a variant that already names the model replaces it ("BMW X3 20d xDrive"). */
+/**
+ * "BMW X3 xDrive20d"; a variant that already names the model replaces it ("BMW X3 20d
+ * xDrive"), and a variant that repeats the end of the model drops the repeat
+ * ("AMG GLB 35" + "GLB 35 4MATIC" -> "Mercedes AMG GLB 35 4MATIC"; "GLB 35" alone adds
+ * nothing).
+ */
 export function takeoverTitle(c: Pick<TakeoverCandidate, "brand" | "model" | "variant">): string {
   const brand = c.brand?.trim() ?? "";
   const model = c.model?.trim() ?? "";
-  const variant = c.variant?.trim() ?? "";
+  let variant = c.variant?.trim() ?? "";
   const variantNamesModel = model !== "" && variant !== "" && normalizeVehicleText(variant).includes(normalizeVehicleText(model));
+  if (!variantNamesModel && model !== "" && variant !== "") {
+    const modelTokens = model.split(/\s+/);
+    const variantTokens = variant.split(/\s+/);
+    const same = (a: string, b: string) => normalizeVehicleText(a) === normalizeVehicleText(b);
+    for (let n = Math.min(modelTokens.length, variantTokens.length); n > 0; n--) {
+      const tail = modelTokens.slice(-n);
+      if (tail.every((t, i) => same(t, variantTokens[i]))) {
+        variant = variantTokens.slice(n).join(" ");
+        break;
+      }
+    }
+  }
   const parts = variantNamesModel ? [brand, variant] : [brand, model, variant];
   return parts.filter((p) => p !== "").join(" ");
 }
@@ -123,14 +141,48 @@ export function matchSameModel(
 
   return {
     total: matches.length,
-    listings: matches.slice(0, Math.max(0, limit)).map((c) => ({
-      id: c.id,
-      href: buildListingHref({ id: c.id, brand: c.brand, model: c.model }),
-      title: takeoverTitle(c),
-      year: typeof c.year === "number" ? c.year : null,
-      rateChf: c.rateChf as number,
-      months: typeof c.months === "number" ? c.months : null,
-      kautionChf: typeof c.kautionChf === "number" ? c.kautionChf : null,
-    })),
+    listings: matches.slice(0, Math.max(0, limit)).map(toMatchedTakeover),
   };
+}
+
+/** A candidate with a rate, as the page renders it (JSON-serializable). */
+function toMatchedTakeover(c: TakeoverCandidate): MatchedTakeover {
+  return {
+    id: c.id,
+    href: buildListingHref({ id: c.id, brand: c.brand, model: c.model }),
+    title: takeoverTitle(c),
+    year: typeof c.year === "number" ? c.year : null,
+    rateChf: c.rateChf as number,
+    months: typeof c.months === "number" ? c.months : null,
+    kautionChf: typeof c.kautionChf === "number" ? c.kautionChf : null,
+  };
+}
+
+/** The remaining term the "short takeovers" section on the Auto-Abo page lists up to. */
+export const SHORT_TAKEOVER_MAX_MONTHS = 24;
+
+/**
+ * Live Leasingübernahmen whose contract runs at most `maxMonths` more months (as of
+ * today, offer.months), with a monthly rate > 0: the shortest remaining term first,
+ * then the lower rate. Listings without known months are left out. Pass only live
+ * takeovers (liveTakeovers()).
+ */
+export function shortRemainingTakeovers(
+  candidates: TakeoverCandidate[],
+  maxMonths: number = SHORT_TAKEOVER_MAX_MONTHS
+): MatchedTakeover[] {
+  return candidates
+    .filter(
+      (c) =>
+        typeof c.rateChf === "number" &&
+        c.rateChf > 0 &&
+        typeof c.months === "number" &&
+        c.months > 0 &&
+        c.months <= maxMonths
+    )
+    .sort(
+      (a, b) =>
+        (a.months as number) - (b.months as number) || (a.rateChf as number) - (b.rateChf as number) || a.id.localeCompare(b.id)
+    )
+    .map(toMatchedTakeover);
 }

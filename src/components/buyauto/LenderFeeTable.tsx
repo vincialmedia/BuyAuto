@@ -17,6 +17,8 @@ import {
 import { formatChf, formatChfRappen } from "@/lib/buyauto/format";
 import { FINEWS_BANK_NOW, LENDER_SECTIONS, MULTILEASE_FAQ } from "@/lib/buyauto/leasingCompanies";
 import { SourceCitation } from "@/components/buyauto/SourceCitation";
+import { BrandPageLinks, type BrandPageLink } from "@/components/buyauto/BrandPageLinks";
+import type { BrandLenderKey } from "@/lib/buyauto/brandLenders";
 
 /**
  * The lender table of the cost page (#leasinggesellschaften): one row per
@@ -25,6 +27,7 @@ import { SourceCitation } from "@/components/buyauto/SourceCitation";
  * further down carry the anchors #ca-auto-finance, #bmw, #porsche and
  * #mercedes-benz; the other four link to their sections (#cembra, #amag,
  * #multilease, #bank-now). Stacks on phones, two columns from sm upwards.
+ * A lender with indexable brand pages (brandPagesByLender) links them by name.
  */
 
 type CitedSource = { source: FactSource; prefix?: string };
@@ -131,7 +134,14 @@ export const LENDER_FEE_TABLE_SOURCES: FactSource[] = LENDER_TAKEOVER_FEES.flatM
   ROW_DETAILS[lender.key].sources.map((s) => s.source)
 );
 
-export function LenderFeeTable({ children }: { children?: ReactNode }) {
+export function LenderFeeTable({
+  children,
+  brandLinks = {},
+}: {
+  children?: ReactNode;
+  /** Indexable brand pages per lender (brandPagesByLender); rows without an entry link none. */
+  brandLinks?: Partial<Record<BrandLenderKey, BrandPageLink[]>>;
+}) {
   return (
     <section id="leasinggesellschaften" className="scroll-mt-24" aria-labelledby="leasinggesellschaften-heading">
       <h2
@@ -161,6 +171,7 @@ export function LenderFeeTable({ children }: { children?: ReactNode }) {
             {LENDER_TAKEOVER_FEES.map((lender) => {
               const detail = ROW_DETAILS[lender.key];
               const hasSection = SECTION_ANCHORS.has(lender.key);
+              const brands = (brandLinks as Partial<Record<string, BrandPageLink[]>>)[lender.key] ?? [];
               return (
                 <tr
                   key={lender.key}
@@ -179,6 +190,12 @@ export function LenderFeeTable({ children }: { children?: ReactNode }) {
                       >
                         Details zu {lender.name}
                       </a>
+                    ) : null}
+                    {brands.length > 0 ? (
+                      <span className="mt-1 block text-xs text-neutral-600">
+                        Leasingübernahmen auf BuyAuto:{" "}
+                        <BrandPageLinks brands={brands} linkClassName="font-semibold text-red-600 hover:underline" />
+                      </span>
                     ) : null}
                   </th>
                   <td className="block sm:table-cell px-3 pb-3 sm:pt-3 align-top text-neutral-700">

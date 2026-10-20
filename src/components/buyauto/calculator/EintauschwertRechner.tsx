@@ -2053,20 +2053,20 @@ export function EintauschwertRechner() {
                 label="Aufbereitung & Reparaturen"
                 value={state.reconCost}
                 onChange={(v) => updateState('reconCost', v)}
-                tooltip="Reinigung, Politur, kleine Instandstellungen, MFK falls nötig. Üblich: 300–1'500 CHF."
+                tooltip="Reinigung, Politur, kleine Instandstellungen, MFK falls nötig. Trag deine eigenen Kosten ein."
               />
               <MoneyInput
                 label="Garantie-Rückstellung"
                 value={state.warrantyCost}
                 onChange={(v) => updateState('warrantyCost', v)}
-                tooltip="Rückstellung für die gesetzliche Gewährleistung beim Weiterverkauf. Üblich: 300–800 CHF."
+                tooltip="Rückstellung für die gesetzliche Gewährleistung beim Weiterverkauf. Trag deinen eigenen Betrag ein."
               />
               <div className="sm:col-span-2">
                 <MoneyInput
                   label="Standzeit & Kapitalbindung"
                   value={state.standingCost}
                   onChange={(v) => updateState('standingCost', v)}
-                  tooltip="Platzkosten, Inserate und gebundenes Kapital bis zum Weiterverkauf. Faustregel: ca. 10–30 CHF pro Standtag."
+                  tooltip="Platzkosten, Inserate und gebundenes Kapital bis zum Weiterverkauf. Rechne mit deinen eigenen Kosten pro Standtag."
                 />
               </div>
             </div>
@@ -2084,9 +2084,9 @@ export function EintauschwertRechner() {
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs bg-neutral-900 text-white border-neutral-800">
                         <p className="text-xs">
-                          Branchenüblich sind 10–20% vom Marktwert – oder ein fixes Ertragsziel
-                          pro Fahrzeug (z.B. 1'500 CHF). Prozent skaliert mit dem Fahrzeugwert,
-                          Fixbetrag eignet sich für günstige Fahrzeuge.
+                          Als Prozent vom Marktwert oder als fixes Ertragsziel pro Fahrzeug.
+                          Prozent skaliert mit dem Fahrzeugwert, ein Fixbetrag eignet sich für
+                          günstige Fahrzeuge.
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -2133,9 +2133,8 @@ export function EintauschwertRechner() {
 
             <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
               <p className="text-xs text-neutral-500 leading-relaxed">
-                <strong className="text-neutral-700">Faustregel:</strong> Der Eintauschwert liegt
-                am Ende meist bei <strong className="text-neutral-700">80–90% des Marktwerts</strong>.
-                Liegt dein Ergebnis deutlich darunter oder darüber, prüfe Abzüge und Vergleichspreise.
+                Die vorausgefüllten Beträge sind Startwerte: Ersetz sie durch deine eigenen Kosten und
+                deine Marge. Wirkt das Ergebnis unplausibel, prüf Abzüge und Vergleichspreise.
               </p>
             </div>
           </CardContent>

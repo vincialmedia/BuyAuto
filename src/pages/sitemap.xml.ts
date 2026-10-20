@@ -1,9 +1,11 @@
 import type { GetServerSideProps } from "next";
 import { supabase } from "@/integrations/supabase/client";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
-import { indexableBrandPages } from "@/lib/buyauto/leasingBrands";
 import { BRAND_PAGES_CONTENT_UPDATED, CONTENT_LAST_UPDATED } from "@/lib/buyauto/contentDates";
+import { isIndexableGarage } from "@/lib/buyauto/garageIndexing";
+import type { BrandPageSummary } from "@/lib/buyauto/leasingBrands";
 import { getPublicOfferIndex, liveTakeovers, type PublicOffer } from "@/services/listingsService";
+import { indexableBrandPagesFor } from "@/services/brandIndexingService";
 
 /** Canonical Leasingübernahme hub (self-canonical category view of /suche). */
 const LEASE_TAKEOVER_HUB_PATH = "/suche?dealType=lease_takeover";
@@ -59,12 +61,46 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     return { props: {} };
   }
 
+  // Garage microsites are listed only when indexable (garageIndexing.ts, the same rule
+  // as the page's robots tag): a description, at least one live listing and a real
+  // slug. Descriptions come from the public garage RPC for the garages that have live
+  // listings; garages without one never qualify, so they need no lookup.
+  const liveListingsByGarage = new Map<string, number>();
+  for (const o of listings) {
+    if (o.garage_id) liveListingsByGarage.set(o.garage_id, (liveListingsByGarage.get(o.garage_id) ?? 0) + 1);
+  }
+  let indexableGarageSlugs = new Set<string>();
+  if (liveListingsByGarage.size > 0) {
+    const { data: garageInfoRows, error: garageInfoError } = await supabase.rpc("get_public_garages", {
+      p_garage_ids: Array.from(liveListingsByGarage.keys()),
+    });
+    if (garageInfoError) {
+      console.error("Sitemap: failed to load garage descriptions", garageInfoError);
+      res.statusCode = 503;
+      res.setHeader("Retry-After", "300");
+      res.setHeader("Cache-Control", "no-store");
+      res.end();
+      return { props: {} };
+    }
+    indexableGarageSlugs = new Set(
+      (garageInfoRows || [])
+        .filter((g) =>
+          isIndexableGarage({
+            slug: g?.slug,
+            description: g?.description,
+            liveListingCount: liveListingsByGarage.get(g?.id) ?? 0,
+          })
+        )
+        .map((g) => g.slug.trim())
+    );
+  }
+
   const garages = (garageRows || [])
     .map((g) => ({
       slug: typeof g?.slug === "string" ? g.slug.trim() : "",
       lastmod: toSitemapLastmod(g?.updated_at ?? null),
     }))
-    .filter((g) => g.slug.length > 0);
+    .filter((g) => g.slug.length > 0 && indexableGarageSlugs.has(g.slug));
 
   const listingRows: ListingSitemapRow[] = listings;
 
@@ -99,12 +135,25 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
 
   const garageUrls = garages.map((g) => urlTag(`${baseUrl}/${g.slug}`, g.lastmod)).join("");
 
-  // Programmatic brand landing pages — only the INDEXABLE ones (enough live
-  // Leasingübernahmen by the Kaufart rule; thinner pages render noindex and stay out
-  // of the map). indexableBrandPages is alias-aware (Mercedes rows -> mercedes-benz).
+  // Programmatic brand landing pages — only the INDEXABLE ones (2+ live
+  // Leasingübernahmen by the Kaufart rule, or 1 within the 30-day grace period; thinner
+  // pages render noindex and stay out of the map). The rule is alias-aware (Mercedes
+  // rows -> mercedes-benz) and the same as the brand page's robots tag.
   // lastmod = the later of that brand's newest takeover change (the page body is its
   // inventory) and the last edit of the brand page content (BRAND_PAGES_CONTENT_UPDATED).
-  const brandUrls = indexableBrandPages(takeoverRows)
+  let brandPages: BrandPageSummary[];
+  try {
+    brandPages = await indexableBrandPagesFor(offers, { requireHistory: true });
+  } catch (historyError) {
+    // A brand in its grace period would drop out of the map: same rule as above.
+    console.error("Sitemap: brand grace history unavailable", historyError);
+    res.statusCode = 503;
+    res.setHeader("Retry-After", "300");
+    res.setHeader("Cache-Control", "no-store");
+    res.end();
+    return { props: {} };
+  }
+  const brandUrls = brandPages
     .map((b) => {
       const brandLastmod =
         [

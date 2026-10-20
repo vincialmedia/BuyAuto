@@ -14,6 +14,7 @@
 
 import { slugifyListingPart } from "@/lib/buyauto/listingUrl";
 import { brandLenderFor } from "@/lib/buyauto/brandLenders";
+import { resolveListingOffer } from "@/lib/buyauto/kaufart";
 
 export interface LeasingBrand {
   /** URL segment, e.g. "mercedes-benz" → /leasinguebernahme/mercedes-benz */
@@ -207,11 +208,46 @@ export function brandPagesForInventory(rows: BrandInventoryRow[]): { slug: strin
 // Indexing and redirect targets
 // ---------------------------------------------------------------------------
 
-/** A brand page is indexed ("index, follow") from this many live Leasingübernahmen on. */
+/**
+ * A brand page is indexed ("index, follow") from this many live Leasingübernahmen on,
+ * or from one live Leasingübernahme within the grace period below.
+ */
 export const BRAND_PAGE_MIN_INDEXABLE_LISTINGS = 2;
 
-export function isIndexableBrandCount(count: number): boolean {
-  return count >= BRAND_PAGE_MIN_INDEXABLE_LISTINGS;
+/**
+ * Grace period: a page whose live count drops to 1 stays indexable while the brand
+ * had BRAND_PAGE_MIN_INDEXABLE_LISTINGS Leasingübernahmen live within this many days
+ * (the live ones plus those that ended: expired, sold or archived). It keeps a page
+ * from leaving and re-entering the index each time one offer ends and the next one
+ * arrives. At 0 live offers the page is noindex at once.
+ */
+export const BRAND_PAGE_GRACE_DAYS = 30;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A Leasingübernahme that was live and ended (expired, sold or archived) at `endedAt`. */
+export interface EndedTakeover {
+  brand: string | null;
+  /** ISO timestamp: expires_at, sold_at or archived_at, by status. */
+  endedAt: string;
+}
+
+/** True when the takeover ended within the grace period before `now` (never in the future). */
+export function endedWithinGrace(endedAt: string, now: Date = new Date()): boolean {
+  const ended = Date.parse(endedAt);
+  if (Number.isNaN(ended)) return false;
+  const nowMs = now.getTime();
+  return ended <= nowMs && ended >= nowMs - BRAND_PAGE_GRACE_DAYS * DAY_MS;
+}
+
+/**
+ * The indexing rule for a brand page. `liveCount`: its live Leasingübernahmen;
+ * `endedInGraceCount`: its Leasingübernahmen that ended within the grace period.
+ */
+export function isIndexableBrand(liveCount: number, endedInGraceCount = 0): boolean {
+  if (liveCount >= BRAND_PAGE_MIN_INDEXABLE_LISTINGS) return true;
+  if (liveCount < 1) return false;
+  return liveCount + Math.max(0, endedInGraceCount) >= BRAND_PAGE_MIN_INDEXABLE_LISTINGS;
 }
 
 export interface BrandPageSummary {
@@ -220,25 +256,163 @@ export interface BrandPageSummary {
   dbBrands: string[];
   /** Live Leasingübernahme listings on the page. */
   count: number;
+  /** Leasingübernahmen of the brand that ended within BRAND_PAGE_GRACE_DAYS. */
+  endedInGrace: number;
+}
+
+function trimmedBrand(row: { brand: string | null }): string {
+  return typeof row.brand === "string" ? row.brand.trim() : "";
 }
 
 /**
- * Brand pages with their live Leasingübernahme count. Pass ONLY live
- * Leasingübernahme rows (Kaufart rule, see lib/buyauto/kaufart).
+ * Brand pages with their live Leasingübernahme count and the takeovers that ended
+ * within the grace period. Pass ONLY live Leasingübernahme rows (Kaufart rule, see
+ * lib/buyauto/kaufart) and ended Leasingübernahmen (EndedTakeover); ended rows of
+ * other dates are ignored. Only brands with live inventory get a page.
  */
-export function brandPageCounts(liveTakeoverRows: { brand: string | null }[]): BrandPageSummary[] {
-  const rows = liveTakeoverRows
-    .map((r) => (typeof r.brand === "string" ? r.brand.trim() : ""))
+export function brandPageCounts(
+  liveTakeoverRows: { brand: string | null }[],
+  endedTakeovers: EndedTakeover[] = [],
+  now: Date = new Date()
+): BrandPageSummary[] {
+  const rows = liveTakeoverRows.map(trimmedBrand).filter((b) => b !== "");
+  const endedRows = endedTakeovers
+    .filter((r) => endedWithinGrace(r.endedAt, now))
+    .map(trimmedBrand)
     .filter((b) => b !== "");
   return brandPagesForInventory(rows.map((brand) => ({ brand, model: null, deal_type: null }))).map((page) => ({
     ...page,
     count: rows.filter((b) => page.dbBrands.includes(b)).length,
+    endedInGrace: endedRows.filter((b) => page.dbBrands.includes(b)).length,
   }));
 }
 
-/** The brand pages that are indexable — the only ones the sitemap and brand link blocks list. */
-export function indexableBrandPages(liveTakeoverRows: { brand: string | null }[]): BrandPageSummary[] {
-  return brandPageCounts(liveTakeoverRows).filter((b) => isIndexableBrandCount(b.count));
+/**
+ * The brand pages that are indexable, the only ones the sitemap and the brand links
+ * list. Without `endedTakeovers` (history not read) the grace period cannot apply and
+ * a page needs BRAND_PAGE_MIN_INDEXABLE_LISTINGS live offers.
+ */
+export function indexableBrandPages(
+  liveTakeoverRows: { brand: string | null }[],
+  endedTakeovers: EndedTakeover[] = [],
+  now: Date = new Date()
+): BrandPageSummary[] {
+  return brandPageCounts(liveTakeoverRows, endedTakeovers, now).filter((b) => isIndexableBrand(b.count, b.endedInGrace));
+}
+
+/**
+ * A listings row as the grace history reads it (server-only, service role): status,
+ * the three end dates, the first publish date and the Kaufart columns.
+ */
+export interface ListingHistoryRow {
+  brand: string | null;
+  status: string | null;
+  expires_at: string | null;
+  sold_at: string | null;
+  archived_at: string | null;
+  published_at: string | null;
+  deal_type?: string | null;
+  financing_type?: string | null;
+  price_per_month_chf?: number | string | null;
+  leasing_offer?: unknown;
+  contract_end_date?: string | null;
+}
+
+/** When a row stopped being live, by its status; null while it is live or without a date. */
+export function listingEndedAt(row: ListingHistoryRow, now: Date = new Date()): string | null {
+  switch (row.status) {
+    case "sold":
+      return row.sold_at;
+    case "archived":
+      return row.archived_at;
+    case "expired":
+      return row.expires_at;
+    case "published": {
+      // Past its expiry but not yet flipped to "expired" by the status job.
+      const expires = row.expires_at ? Date.parse(row.expires_at) : NaN;
+      return !Number.isNaN(expires) && expires <= now.getTime() ? row.expires_at : null;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * The Leasingübernahmen among history rows that ended within the grace period. A row
+ * counts when it was published at some point (published_at set, never for a declined
+ * or draft row), ended by status within BRAND_PAGE_GRACE_DAYS and was a live
+ * Leasingübernahme (Kaufart rule) at the moment it ended. Takeovers whose contract had
+ * already run out before that moment had left every list earlier and don't count.
+ */
+export function endedTakeoversFromRows(rows: ListingHistoryRow[], now: Date = new Date()): EndedTakeover[] {
+  const out: EndedTakeover[] = [];
+  for (const row of rows) {
+    if (!row.published_at) continue;
+    const endedAt = listingEndedAt(row, now);
+    if (!endedAt || !endedWithinGrace(endedAt, now)) continue;
+    const offer = resolveListingOffer(row, new Date(endedAt));
+    if (offer.kaufart !== "lease_takeover" || !offer.isLiveOffer) continue;
+    out.push({ brand: row.brand, endedAt });
+  }
+  return out;
+}
+
+/** The grace history as brandIndexingService hands it out. */
+export interface GraceHistory {
+  ended: EndedTakeover[];
+  /**
+   * True when the read failed (network, timeout, 5xx) and no earlier result exists, so
+   * the grace period is unknown. False when the history was read, or is unavailable
+   * by configuration (no service-role key, request refused): then the rule without the
+   * grace period applies, as documented.
+   */
+  failed: boolean;
+}
+
+/**
+ * Caches the grace history read for brandIndexingService (pure, so the failure
+ * handling is unit-tested). `read` returns the rows, null when the history is
+ * unavailable by configuration, and throws on a transient failure. A good read is
+ * reused for `ttlMs`; after a read without rows the next attempt waits `retryMs`, so a
+ * refused key or a stalled database costs one round trip per `retryMs`, not one per
+ * render. A failed read falls back on the last good rows, whatever their age.
+ */
+export function createGraceHistoryCache(
+  read: (now: Date) => Promise<ListingHistoryRow[] | null>,
+  { ttlMs, retryMs, onError }: { ttlMs: number; retryMs: number; onError?: (error: unknown) => void }
+): (now?: Date) => Promise<GraceHistory> {
+  let good: { readAt: number; rows: ListingHistoryRow[] } | null = null;
+  let miss: { at: number; failed: boolean } | null = null;
+
+  return async (now: Date = new Date()) => {
+    const nowMs = now.getTime();
+    const fallback = (failed: boolean): GraceHistory =>
+      good ? { ended: endedTakeoversFromRows(good.rows, now), failed: false } : { ended: [], failed };
+
+    if (good && nowMs - good.readAt < ttlMs) return fallback(false);
+    if (miss && nowMs - miss.at < retryMs) return fallback(miss.failed);
+    try {
+      const rows = await read(now);
+      if (rows === null) {
+        miss = { at: nowMs, failed: false };
+        return fallback(false);
+      }
+      good = { readAt: nowMs, rows };
+      miss = null;
+      return fallback(false);
+    } catch (error) {
+      onError?.(error);
+      miss = { at: nowMs, failed: true };
+      return fallback(true);
+    }
+  };
+}
+
+/** True when some brand page has exactly the live count where the grace period decides. */
+export function graceHistoryMatters(liveTakeoverRows: { brand: string | null }[]): boolean {
+  return brandPageCounts(liveTakeoverRows).some(
+    (b) => b.count >= 1 && b.count < BRAND_PAGE_MIN_INDEXABLE_LISTINGS
+  );
 }
 
 /** The brand page that covers a raw listings.brand value ("Mercedes" -> mercedes-benz). */

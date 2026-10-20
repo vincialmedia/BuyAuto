@@ -95,6 +95,7 @@ export function ListingDetailV2({
   garage,
   teaserMonthlyLabel,
   purchasePriceChf,
+  brandPage = null,
   childrenBelowFold,
   bottomContent,
 }: {
@@ -104,6 +105,8 @@ export function ListingDetailV2({
   garage: GaragePublicInfo | null;
   teaserMonthlyLabel: string | null;
   purchasePriceChf: number | null;
+  /** Indexable brand page of a Leasingübernahme; the link is server-rendered. */
+  brandPage?: { slug: string; name: string } | null;
   childrenBelowFold?: React.ReactNode;
   bottomContent?: React.ReactNode;
 }) {
@@ -315,6 +318,17 @@ export function ListingDetailV2({
                     </span>
                   )}
                 </div>
+
+                {isTakeover && brandPage && (
+                  <p className="text-sm">
+                    <Link
+                      href={`/leasinguebernahme/${brandPage.slug}`}
+                      className="font-semibold text-red-600 hover:underline underline-offset-4"
+                    >
+                      Alle Leasingübernahmen von {brandPage.name}
+                    </Link>
+                  </p>
+                )}
 
                 <FactGrid items={vehicleFacts} />
               </div>
@@ -533,7 +547,10 @@ export function ListingDetailV2({
                     </div>
 
                     <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50">
+                      {/* Keyed by its URL: a new iframe per location instead of a changed src,
+                          which would add a browser history entry on listing-to-listing moves. */}
                       <iframe
+                        key={embedUrl}
                         title={`Karte Standort ${loc}`}
                         src={embedUrl}
                         className="h-64 w-full"
