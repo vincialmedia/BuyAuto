@@ -65,7 +65,7 @@ export default function AuthForm({
       if (error?.message?.includes("Invalid login credentials")) {
         // An account created with Google has no password until one is set.
         errorMessage = canOfferGoogleSignIn()
-          ? "E-Mail oder Passwort ist falsch. Hast du dein Konto mit Google erstellt? Dann nutze «Weiter mit Google»."
+          ? "E-Mail oder Passwort ist falsch. Hast du dein Konto mit Google erstellt? Dann melde dich mit Google an."
           : "E-Mail oder Passwort ist falsch.";
       } else if (error?.message?.includes("Email not confirmed")) {
         errorMessage = "Bitte bestätige zuerst deine E-Mail-Adresse. Den Link findest du in unserer E-Mail.";

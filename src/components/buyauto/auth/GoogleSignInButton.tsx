@@ -100,7 +100,7 @@ export default function GoogleSignInButton({
   disabled = false,
   divider,
   showTerms = false,
-  termsLead = "Mit «Weiter mit Google» akzeptierst du",
+  termsLead = "Mit der Anmeldung über Google akzeptierst du",
   className,
 }: GoogleSignInButtonProps) {
   // Decided after mount: the user agent is only known in the browser, and the

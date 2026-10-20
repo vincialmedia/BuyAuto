@@ -84,7 +84,7 @@ export function GuestMessageForm({ listingId, dealType, onExistingAccount, onGoo
       setFormError({
         // An account created with Google has no password until one is set.
         text: onGoogleSignIn && canOfferGoogleSignIn()
-          ? "Konto mit Google erstellt? Dann nutze oben «Weiter mit Google». Passwort vergessen? Auf der Login-Seite kannst du es zurücksetzen."
+          ? "Konto mit Google erstellt? Dann melde dich oben mit Google an. Passwort vergessen? Auf der Login-Seite kannst du es zurücksetzen."
           : "Passwort vergessen? Auf der Login-Seite kannst du es zurücksetzen.",
         showPasswordReset: true,
       });
@@ -210,7 +210,7 @@ export function GuestMessageForm({ listingId, dealType, onExistingAccount, onGoo
         <GoogleSignInButton
           divider="below"
           showTerms
-          termsLead="Mit «Weiter mit Google» geht deine Nachricht sofort an den Anbieter, und du akzeptierst"
+          termsLead="Meldest du dich mit Google an, geht deine Nachricht sofort an den Anbieter, und du akzeptierst"
           disabled={busy}
           onSession={({ isNewAccount }) => onGoogleSignIn(message, isNewAccount)}
         />
