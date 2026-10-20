@@ -1,7 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/buyauto/Breadcrumbs";
-import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
+import { formatSwissDate } from "@/lib/buyauto/contentDates";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -17,8 +17,9 @@ import {
   UserRound,
 } from "lucide-react";
 
-// Single source for the visible «Aktualisiert am» badge and the sitemap <lastmod>.
-const LAST_UPDATED_ISO = CONTENT_LAST_UPDATED["/updates"];
+// Site news for visitors, not a search landing page: "noindex, follow", out of the
+// sitemap, llms.txt and CONTENT_LAST_UPDATED (SEO PR C). The visible date stays here.
+const LAST_UPDATED_ISO = "2026-08-07";
 
 type Update = {
   icon: typeof Calculator;
@@ -106,7 +107,7 @@ export default function UpdatesPage() {
           name="description"
           content="Alle Neuerungen auf BuyAuto auf einen Blick: Eintauschwert-Rechner für Garagen, VIN-Decode ohne Konto, Käuferauswahl beim Verkauf, Message Center und mehr."
         />
-        <link rel="canonical" href="https://www.buyauto.ch/updates" />
+        <meta name="robots" content="noindex, follow" />
         <meta property="og:title" content="Was ist neu bei BuyAuto – Updates & neue Funktionen" />
         <meta
           property="og:description"

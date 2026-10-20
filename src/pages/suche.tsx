@@ -5,10 +5,12 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { searchListings, searchListingsOrThrow } from "@/services/listingsService";
+import { getIndexableBrandPages } from "@/services/brandIndexingService";
 import { type SearchQuery, type SearchResult } from "@/lib/buyauto/search";
 import { buildListingHref } from "@/lib/buyauto/listingUrl";
 import { debounce } from "@/lib/utils";
 import VerticalResultsList from "@/components/buyauto/search/VerticalResultsList";
+import { BrandPageLinks, type BrandPageLink } from "@/components/buyauto/BrandPageLinks";
 import { safeFreeText, track } from "@/lib/analytics";
 import { kaufartOf } from "@/lib/buyauto/kaufart";
 import { pluralize } from "@/lib/buyauto/format";
@@ -30,9 +32,19 @@ const CANONICAL_SEARCH_URL = "https://www.buyauto.ch/suche";
  */
 const DIRECT_PURCHASE_MIN_INDEXABLE_LISTINGS = 12;
 
+/**
+ * The Leasingübernahme hub (?dealType=lease_takeover, also its further pages) shows
+ * this many offers per page, so its first page carries every live Leasingübernahme
+ * in the server HTML for crawlers. Every other view keeps DEFAULT_PAGE_SIZE.
+ */
+const HUB_PAGE_SIZE = 60;
+const DEFAULT_PAGE_SIZE = 12;
+
 type SearchPageProps = {
   initialResults: SearchResult | null;
   initialQuery: SearchQuery;
+  /** Indexable brand pages for the hub's link block; empty on every other view. */
+  brandPages: BrandPageLink[];
 };
 
 // Shared, pure parser used by BOTH getServerSideProps (SSR) and the client so the
@@ -50,7 +62,11 @@ function parseSearchQueryFromParams(query: Record<string, string | string[] | un
   if (query.monthsMin) newQuery.monthsMin = parseInt(query.monthsMin as string, 10);
   if (query.monthsMax) newQuery.monthsMax = parseInt(query.monthsMax as string, 10);
   if (query.kmMax) newQuery.kmMax = parseInt(query.kmMax as string, 10);
-  if (query.page) newQuery.page = parseInt(query.page as string, 10);
+  if (query.page) {
+    // Only a real page number: ?page=-1 or ?page=abc is page 1.
+    const page = parseInt(query.page as string, 10);
+    if (Number.isFinite(page) && page >= 1) newQuery.page = page;
+  }
   if (query.sort) newQuery.sort = query.sort as SearchQuery["sort"];
   if (query.body) newQuery.body = Array.isArray(query.body) ? query.body : [query.body];
   if (query.fuel) newQuery.fuel = Array.isArray(query.fuel) ? query.fuel : [query.fuel];
@@ -87,12 +103,10 @@ function isDefaultSearchQuery(q: SearchQuery): boolean {
   return true;
 }
 
-// A single dealType filter (e.g. /suche?dealType=lease_takeover) with nothing else set.
-// These are the category views; the Leasingübernahme one is the offer hub.
-function isSingleDealTypeQuery(q: SearchQuery): boolean {
+// A single dealType filter with nothing else set, on any results page.
+function isDealTypeOnlyQuery(q: SearchQuery): boolean {
   if (q.dealType !== "lease_takeover" && q.dealType !== "direct_purchase") return false;
   if (q.financingType) return false;
-  if (q.page && q.page > 1) return false;
   if (q.sort) return false;
   if (q.query && q.query.trim() !== "") return false;
   if (q.brand || q.model || q.variant) return false;
@@ -102,11 +116,41 @@ function isSingleDealTypeQuery(q: SearchQuery): boolean {
   return true;
 }
 
+// A single dealType filter (e.g. /suche?dealType=lease_takeover) with nothing else set,
+// first page. These are the category views; the Leasingübernahme one is the offer hub.
+function isSingleDealTypeQuery(q: SearchQuery): boolean {
+  if (q.page && q.page > 1) return false;
+  return isDealTypeOnlyQuery(q);
+}
+
+// The bare /suche on a later results page (?page=2, nothing else).
+function isDefaultQueryOnAnyPage(q: SearchQuery): boolean {
+  return isDefaultSearchQuery({ ...q, page: undefined });
+}
+
 // Views rendered on the server and cached at the CDN: the bare /suche and the single
-// dealType views. Everything else (extra filters, sort, pagination, free-text search)
-// loads in the browser.
+// dealType views, each on every results page, so the pagination links crawlers follow
+// lead to server-rendered offers. Everything else (extra filters, sort, free-text
+// search) loads in the browser.
 function isServerRenderedSearchQuery(q: SearchQuery): boolean {
-  return isDefaultSearchQuery(q) || isSingleDealTypeQuery(q);
+  return isDefaultQueryOnAnyPage(q) || isDealTypeOnlyQuery(q);
+}
+
+/** Results per page: HUB_PAGE_SIZE on the Leasingübernahme hub and its further pages. */
+function pageSizeForQuery(q: SearchQuery): number {
+  return isDealTypeOnlyQuery(q) && q.dealType === "lease_takeover" ? HUB_PAGE_SIZE : DEFAULT_PAGE_SIZE;
+}
+
+/** /suche URL of a query as built by buildUrlQuery; dealType first, page last. */
+function searchHref(urlQuery: Record<string, unknown>): string {
+  const rank = (key: string) => (key === "dealType" ? 0 : key === "page" ? 2 : 1);
+  const params = new URLSearchParams();
+  for (const key of Object.keys(urlQuery).sort((a, b) => rank(a) - rank(b))) {
+    const value = urlQuery[key];
+    for (const item of Array.isArray(value) ? value : [value]) params.append(key, String(item));
+  }
+  const qs = params.toString();
+  return qs ? `/suche?${qs}` : "/suche";
 }
 
 /**
@@ -136,7 +180,7 @@ function getSaleTypeLabel(query: SearchQuery): string {
   return "Direktkauf";
 }
 
-export default function SearchPage({ initialResults, initialQuery }: SearchPageProps) {
+export default function SearchPage({ initialResults, initialQuery, brandPages = [] }: SearchPageProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery ?? {});
   const [searchResults, setSearchResults] = useState<SearchResult | null>(initialResults);
@@ -211,6 +255,12 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
     });
   }, [searchQuery, router, buildUrlQuery]);
 
+  // Real hrefs for the pagination (crawlable); page 1 is the URL without ?page.
+  const hrefForPage = useCallback(
+    (page: number) => searchHref(buildUrlQuery({ ...searchQuery, page: page > 1 ? page : undefined })),
+    [searchQuery, buildUrlQuery]
+  );
+
   const handleResetFilters = useCallback(() => {
     const resetQuery: SearchQuery = {};
     setSearchQuery(resetQuery);
@@ -240,12 +290,12 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
     const performSearch = async () => {
       setIsLoading(true);
       try {
-        const results = await searchListings(searchQuery);
+        const results = await searchListings({ ...searchQuery, pageSize: pageSizeForQuery(searchQuery) });
         setSearchResults(results);
         reportSearch(searchQuery, results);
       } catch (error) {
         console.error("Search failed:", error);
-        setSearchResults({ items: [], total: 0, page: searchQuery.page || 1, pageSize: 12 });
+        setSearchResults({ items: [], total: 0, page: searchQuery.page || 1, pageSize: pageSizeForQuery(searchQuery) });
       } finally {
         setIsLoading(false);
       }
@@ -265,7 +315,8 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
 
   const totalResults = searchResults?.total || 0;
   const currentPage = searchResults?.page || 1;
-  const totalPages = Math.ceil(totalResults / (searchResults?.pageSize || 12));
+  const pageSize = searchResults?.pageSize || DEFAULT_PAGE_SIZE;
+  const totalPages = Math.ceil(totalResults / pageSize);
 
   const isDefaultView = useMemo(() => isDefaultSearchQuery(searchQuery), [searchQuery]);
   const isHubView = useMemo(
@@ -347,6 +398,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
                   "@type": "UnitPriceSpecification",
                   "price": price,
                   "priceCurrency": "CHF",
+                  "unitCode": "MON",
                   "unitText": "MONTH",
                 },
               }
@@ -356,7 +408,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
 
         return {
           "@type": "ListItem",
-          "position": (currentPage - 1) * 12 + index + 1,
+          "position": (currentPage - 1) * pageSize + index + 1,
           "item": {
             "@type": "Car",
             "name": `${listing.brand} ${listing.model}`,
@@ -430,6 +482,7 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
+              hrefForPage={hrefForPage}
               isLoading={isLoading}
               totalResults={totalResults}
               onClearFilters={handleResetFilters}
@@ -457,6 +510,13 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
                     Leasingvertrag übertragen (für Abgeber)
                   </Link>
                 </div>
+                {/* Indexable brand pages only (getIndexableBrandPages); the anchor is the brand. */}
+                {brandPages.length > 0 && (
+                  <p className="mt-4 text-sm text-neutral-600">
+                    Leasingübernahmen nach Marke:{" "}
+                    <BrandPageLinks brands={brandPages} linkClassName="text-primary hover:underline" />
+                  </p>
+                )}
               </section>
             )}
           </div>
@@ -466,29 +526,63 @@ export default function SearchPage({ initialResults, initialQuery }: SearchPageP
   );
 }
 
+/** Indexable brand pages for the hub's link block; none (no block) when the read fails. */
+async function loadHubBrandPages(): Promise<BrandPageLink[]> {
+  try {
+    return (await getIndexableBrandPages()).map(({ slug, name }) => ({ slug, name }));
+  } catch (error) {
+    console.error("SSR /suche brand pages failed:", error);
+    return [];
+  }
+}
+
 export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ query, res }) => {
   const initialQuery = parseSearchQueryFromParams(query as Record<string, string | string[] | undefined>);
 
-  // The bare /suche and the single dealType views (incl. the Leasingübernahme hub) are
-  // server-rendered, so crawlers get the listings and the robots decision in the initial
-  // HTML. Filtered / paginated drill-downs stay client-fetched (noindex).
+  // The bare /suche and the single dealType views (incl. the Leasingübernahme hub), on
+  // every results page, are server-rendered, so crawlers get the listings and the robots
+  // decision in the initial HTML. Filtered drill-downs stay client-fetched (noindex).
   if (!isServerRenderedSearchQuery(initialQuery)) {
-    return { props: { initialResults: null, initialQuery } };
+    return { props: { initialResults: null, initialQuery, brandPages: [] } };
   }
 
+  const isHub = isSingleDealTypeQuery(initialQuery) && initialQuery.dealType === "lease_takeover";
+
   try {
-    const results = await searchListingsOrThrow(initialQuery);
+    const [results, brandPages] = await Promise.all([
+      searchListingsOrThrow({ ...initialQuery, pageSize: pageSizeForQuery(initialQuery) }),
+      isHub ? loadHubBrandPages() : Promise.resolve([]),
+    ]);
+    // A results page past the end (an old ?page=2 of the hub from when it showed 12 per
+    // page, or a shrunken inventory): back to the first page, temporarily, since the
+    // page can come back. Every other parameter (gclid, utm_*) is kept.
+    if ((initialQuery.page ?? 1) > 1 && results.items.length === 0 && results.total > 0) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(query)) {
+        if (key === "page") continue;
+        for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) params.append(key, item);
+      }
+      const qs = params.toString();
+      return { redirect: { destination: qs ? `/suche?${qs}` : "/suche", permanent: false } };
+    }
     // These views are the same for every visitor — let the CDN serve them.
     res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
-    // Strip any `undefined` fields so Next can serialize the props.
-    const initialResults = JSON.parse(JSON.stringify(results)) as SearchResult;
-    return { props: { initialResults, initialQuery } };
+    // Strip any `undefined` fields so Next can serialize the props. The result cards and
+    // the ItemList never read the description or the image gallery (a card shows
+    // imageUrl), so they stay out of the page data: with up to HUB_PAGE_SIZE cards they
+    // were most of it. A client-side search still loads full rows.
+    const cards: SearchResult = {
+      ...results,
+      items: results.items.map((item) => ({ ...item, description: undefined, images: [] })),
+    };
+    const initialResults = JSON.parse(JSON.stringify(cards)) as SearchResult;
+    return { props: { initialResults, initialQuery, brandPages } };
   } catch (error) {
     // Transient backend failure: 503 (retry later), never a cached "0 Autos" page.
     console.error("SSR /suche search failed:", error);
     res.statusCode = 503;
     res.setHeader("Retry-After", "120");
     res.setHeader("Cache-Control", "no-store");
-    return { props: { initialResults: null, initialQuery } };
+    return { props: { initialResults: null, initialQuery, brandPages: [] } };
   }
 };

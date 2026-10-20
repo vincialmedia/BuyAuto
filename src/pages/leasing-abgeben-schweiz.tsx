@@ -24,7 +24,6 @@ import {
   CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
   FAHRZEUGAUSWEIS_RANGE,
-  FOUNDER_TAKEOVER,
   KKG,
   LENDER_TAKEOVER_FEES,
   MERCEDES_BENZ_FINANCIAL_SERVICES,
@@ -35,6 +34,7 @@ import { formatChf, formatChfRappen } from "@/lib/buyauto/format";
 import { pricingPlans } from "@/lib/buyauto/stripe_config";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListingsOrThrow } from "@/services/listingsService";
+import { FOUNDER_REF, ORGANIZATION_REF } from "@/lib/buyauto/entities";
 
 type LeasingAbgebenPageProps = {
   /** Newest live Leasingübernahmen; empty when there are none or the read failed (block hidden). */
@@ -162,12 +162,9 @@ const ARTICLE_JSON_LD = {
   "@type": "Article",
   headline: H1,
   description: DESCRIPTION,
-  author: { "@type": "Person", name: FOUNDER_TAKEOVER.person, jobTitle: FOUNDER_TAKEOVER.role },
-  publisher: {
-    "@type": "Organization",
-    name: "BuyAuto",
-    logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
-  },
+  // References to the site-wide nodes (src/lib/buyauto/entities.ts).
+  author: FOUNDER_REF,
+  publisher: ORGANIZATION_REF,
   dateModified: LAST_UPDATED_ISO,
   mainEntityOfPage: PAGE_URL,
 };

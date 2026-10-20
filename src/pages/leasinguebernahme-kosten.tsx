@@ -39,7 +39,11 @@ import {
 import { countLabel, formatChf, formatChfRappen } from "@/lib/buyauto/format";
 import { LENDER_SECTION_SOURCES } from "@/lib/buyauto/leasingCompanies";
 import { pricingPlans } from "@/lib/buyauto/stripe_config";
+import { brandPagesByLender, type BrandLenderKey } from "@/lib/buyauto/brandLenders";
+import type { BrandPageLink } from "@/components/buyauto/BrandPageLinks";
 import { getLiveInventoryStats } from "@/services/listingsService";
+import { getIndexableBrandPages } from "@/services/brandIndexingService";
+import { FOUNDER_REF, ORGANIZATION_REF } from "@/lib/buyauto/entities";
 
 const PATH = "/leasinguebernahme-kosten";
 const PAGE_URL = `https://www.buyauto.ch${PATH}`;
@@ -212,9 +216,11 @@ function H2({ id, children }: { id?: string; children: ReactNode }) {
 interface LeasinguebernahmeKostenPageProps {
   /** Live Leasingübernahme stats; null when the query failed (no numbers are shown then). */
   stats: InventoryStats | null;
+  /** Indexable brand pages per lender, linked from the lender rows and sections; empty when the read failed. */
+  brandLinks: Partial<Record<BrandLenderKey, BrandPageLink[]>>;
 }
 
-export default function LeasinguebernahmeKostenPage({ stats }: LeasinguebernahmeKostenPageProps) {
+export default function LeasinguebernahmeKostenPage({ stats, brandLinks }: LeasinguebernahmeKostenPageProps) {
   const rateSentence = liveRateSentence(stats);
 
   return (
@@ -231,12 +237,9 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
               "@type": "Article",
               headline: H1,
               description: DESCRIPTION,
-              author: { "@type": "Person", name: FOUNDER_TAKEOVER.person, jobTitle: FOUNDER_TAKEOVER.role },
-              publisher: {
-                "@type": "Organization",
-                name: "BuyAuto",
-                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
-              },
+              // References to the site-wide nodes (src/lib/buyauto/entities.ts).
+              author: FOUNDER_REF,
+              publisher: ORGANIZATION_REF,
               dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: PAGE_URL,
             }),
@@ -328,7 +331,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
 
           {/* 2. Lender table (#leasinggesellschaften) */}
           <Section wrapper>
-            <LenderFeeTable>
+            <LenderFeeTable brandLinks={brandLinks}>
               <p className="text-neutral-700 leading-relaxed mb-6">
                 Die Leasinggesellschaft muss der Übertragung zustimmen (bei {PORSCHE_FINANCIAL_SERVICES.name} zum
                 Beispiel nur mit vorheriger schriftlicher Zustimmung, {PORSCHE_FINANCIAL_SERVICES.transferClause}) und
@@ -427,7 +430,7 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
 
           {/* 6. Lender sections (#cembra, #amag, #multilease, #bank-now) */}
           <Section wrapper>
-            <LenderSections />
+            <LenderSections brandLinks={brandLinks} />
           </Section>
 
           {/* 7. FAQ */}
@@ -462,14 +465,27 @@ export default function LeasinguebernahmeKostenPage({ stats }: Leasinguebernahme
   );
 }
 
-// ISR: the live Kaution and rate figures refresh every 5 minutes. A failed query
-// renders the page without live numbers (stats = null), never with a fallback value.
+// ISR: the live Kaution and rate figures and the brand links refresh every 5 minutes.
+// A failed query renders the page without live numbers (stats = null), never with a
+// fallback value, and without brand links (a noindex brand page is never linked).
 export const getStaticProps: GetStaticProps<LeasinguebernahmeKostenPageProps> = async () => {
-  let stats: InventoryStats | null = null;
-  try {
-    stats = await getLiveInventoryStats();
-  } catch (error) {
-    console.error("Leasingübernahme Kosten: live inventory stats failed:", error);
-  }
-  return { props: { stats }, revalidate: 300 };
+  const [stats, brandLinks] = await Promise.all([
+    getLiveInventoryStats().catch((error) => {
+      console.error("Leasingübernahme Kosten: live inventory stats failed:", error);
+      return null;
+    }),
+    getIndexableBrandPages()
+      .then((pages) => {
+        const links: Partial<Record<BrandLenderKey, BrandPageLink[]>> = {};
+        for (const [lender, lenderPages] of Object.entries(brandPagesByLender(pages))) {
+          links[lender as BrandLenderKey] = (lenderPages ?? []).map(({ slug, name }) => ({ slug, name }));
+        }
+        return links;
+      })
+      .catch((error) => {
+        console.error("Leasingübernahme Kosten: brand pages failed:", error);
+        return {};
+      }),
+  ]);
+  return { props: { stats, brandLinks }, revalidate: 300 };
 };

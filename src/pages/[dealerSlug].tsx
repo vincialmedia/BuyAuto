@@ -9,6 +9,10 @@ import { DealerHeroHeader } from "@/components/buyauto/dealer/DealerHeroHeader";
 import { DealerAboutAndMap } from "@/components/buyauto/dealer/DealerAboutAndMap";
 import { DealerTeamAndHours } from "@/components/buyauto/dealer/DealerTeamAndHours";
 import { StructuredData } from "@/components/buyauto/StructuredData";
+import { isIndexableGarage, isRejectedOnlyByTestSlugPart } from "@/lib/buyauto/garageIndexing";
+
+// Slugs already logged by this server instance (see the test-slug warning below).
+const loggedTestSlugs = new Set<string>();
 
 type PublicGarage = NonNullable<Awaited<ReturnType<typeof getPublicGarageBySlug>>>;
 
@@ -20,6 +24,8 @@ type PageProps =
       absoluteUrl: string;
       /** First inventory page, server-rendered (same query as the component's default). */
       initialResults: SearchResult;
+      /** Description, at least one live listing and a real slug (garageIndexing.ts); else noindex. */
+      indexable: boolean;
     }
   | {
       ok: false;
@@ -57,6 +63,15 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
     const initialResults = JSON.parse(
       JSON.stringify(await searchDealerListingsOrThrow(garage.id, { page: 1, sort: "dateDesc" }))
     ) as SearchResult;
+    // The same rule decides the sitemap entry (sitemap.xml.ts).
+    const indexingInput = { slug: garage.slug, description: garage.description, liveListingCount: initialResults.total };
+    const indexable = isIndexableGarage(indexingInput);
+    // A garage with text and listings that only a "test"/"demo" slug part keeps out of the
+    // index might be a real one: say so once, so a false positive does not stay invisible.
+    if (isRejectedOnlyByTestSlugPart(indexingInput) && !loggedTestSlugs.has(garage.slug)) {
+      loggedTestSlugs.add(garage.slug);
+      console.warn("Garage microsite kept noindex by a test slug part only:", { slug: garage.slug });
+    }
 
     return {
       props: {
@@ -65,6 +80,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
         logoUrl,
         absoluteUrl,
         initialResults,
+        indexable,
       },
     };
   } catch {
@@ -97,7 +113,7 @@ export default function DealerMicrositePage(props: PageProps) {
     );
   }
 
-  const { garage, logoUrl, absoluteUrl } = props;
+  const { garage, logoUrl, absoluteUrl, indexable } = props;
 
   const title = `${garage.garage_name} – Fahrzeuge & Angebote | BuyAuto`;
   const description = getSafeDescription(garage.description);
@@ -108,7 +124,14 @@ export default function DealerMicrositePage(props: PageProps) {
 
   return (
     <>
-      <SEO title={title} description={description} image={image} url={absoluteUrl} />
+      {/* Without a description or a live listing the microsite is "noindex, follow" and
+          sends no canonical (never canonical and noindex together). */}
+      <SEO title={title} description={description} image={image} url={indexable ? absoluteUrl : ""} />
+      {!indexable && (
+        <Head>
+          <meta name="robots" content="noindex, follow" />
+        </Head>
+      )}
       <StructuredData
         type="dealer"
         dealerData={{

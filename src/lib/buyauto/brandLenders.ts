@@ -81,3 +81,20 @@ export function brandLenderFor(brand: { slug: string; name?: string; dbBrands?: 
   }
   return null;
 }
+
+/**
+ * Brand pages grouped by the leasing company that brandLenderFor gives them, for the
+ * links from the cost page's lender rows and sections. Pass indexable pages only; the
+ * order of `pages` is kept.
+ */
+export function brandPagesByLender<T extends { slug: string; name: string; dbBrands?: string[] }>(
+  pages: readonly T[]
+): Partial<Record<BrandLenderKey, T[]>> {
+  const byLender: Partial<Record<BrandLenderKey, T[]>> = {};
+  for (const page of pages) {
+    const lender = brandLenderFor(page)?.lender;
+    if (!lender) continue;
+    (byLender[lender] ??= []).push(page);
+  }
+  return byLender;
+}

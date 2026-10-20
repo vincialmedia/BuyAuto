@@ -16,7 +16,6 @@ import {
   CEMBRA,
   CEMBRA_TRANSFER_DISPLAY,
   CEMBRA_TRANSFER_EXCL_VAT_CHF,
-  FOUNDER_TAKEOVER,
   LENDER_TAKEOVER_FEES,
   PORSCHE_FINANCIAL_SERVICES,
   kautionSentence,
@@ -31,6 +30,7 @@ import { AuthorBox } from "@/components/buyauto/AuthorBox";
 import { FounderTakeoverNote } from "@/components/buyauto/FounderTakeoverNote";
 import { SourceCitation, SourcesList } from "@/components/buyauto/SourceCitation";
 import { Button } from "@/components/ui/button";
+import { FOUNDER_REF, ORGANIZATION_REF } from "@/lib/buyauto/entities";
 
 const PAGE_PATH = "/leasingvertrag-uebertragen";
 const CANONICAL_URL = `https://www.buyauto.ch${PAGE_PATH}`;
@@ -82,12 +82,9 @@ const ARTICLE_JSON_LD = {
   "@type": "Article",
   headline: H1,
   description: META_DESCRIPTION,
-  author: { "@type": "Person", name: FOUNDER_TAKEOVER.person, jobTitle: FOUNDER_TAKEOVER.role },
-  publisher: {
-    "@type": "Organization",
-    name: "BuyAuto",
-    logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
-  },
+  // References to the site-wide nodes (src/lib/buyauto/entities.ts).
+  author: FOUNDER_REF,
+  publisher: ORGANIZATION_REF,
   dateModified: LAST_UPDATED_ISO,
   mainEntityOfPage: CANONICAL_URL,
 };

@@ -144,7 +144,9 @@ export default function CreateListingPage() {
           name="description"
           content="Erstelle dein Auto-Leasing-Inserat auf BuyAuto. Gratis oder Premium, 60 Tage, 90 Tage oder Unlimitiert."
         />
-        <meta name="robots" content="index, follow" />
+        {/* An app screen, never indexed: the same verdict as the server HTML above, so
+            hydration no longer flips it to "index, follow" (SEO PR C). */}
+        <meta name="robots" content="noindex, follow" />
       </Head>
 
       <ListingWizard />

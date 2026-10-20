@@ -18,7 +18,8 @@ export default function AuthLayout({
       <Head>
         <title>{title}</title>
         <meta name="description" content={description} />
-        <meta name="robots" content="noindex, nofollow" />
+        {/* Never indexed; crawlers may still follow the links back into the site. */}
+        <meta name="robots" content="noindex, follow" />
       </Head>
 
       <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">

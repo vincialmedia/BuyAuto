@@ -32,6 +32,9 @@ const nextConfig = {
       { source: '/amag-leasing-uebernehmen', destination: '/leasinguebernahme-kosten#amag', permanent: true },
       { source: '/multilease-leasing-uebernehmen', destination: '/leasinguebernahme-kosten#multilease', permanent: true },
       { source: '/bank-now-leasing-uebernehmen', destination: '/leasinguebernahme-kosten#bank-now', permanent: true },
+      // Retired 2026-10 (SEO PR C): a page built on a competitor's brand name, with no
+      // asset of its own; the head term and the offers live on the home page.
+      { source: '/autoscout24-alternative-leasinguebernahme', destination: '/', permanent: true },
     ];
   },
   async headers() {

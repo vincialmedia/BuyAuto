@@ -40,7 +40,7 @@ Tell Vince these steps; Claude Code has no access to Search Console or Bing Webm
 
 1. `./scripts/check-geo.sh` against production.
 2. Search Console: URL Inspection, then Request indexing for every new or changed URL; resubmit the sitemap when URLs were added or removed.
-3. Bing Webmaster Tools: submit the same URLs (until IndexNow exists).
+3. Bing Webmaster Tools: listings and their hub and brand pages reach Bing through the daily IndexNow run (technical.md, Bing section). Submit new or changed content pages there by hand, and check the IndexNow report in Bing Webmaster Tools after the first runs.
 4. Two to four weeks later: impressions, clicks and position for the page and its queries, compared with the baseline Vince keeps outside the repo. Don't judge a change while a core update is rolling out; Google suggests waiting at least a full week after an update completes before reading the data.
 
 ## Every quarter, with Vince

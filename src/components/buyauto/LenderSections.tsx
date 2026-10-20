@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
 import { FACTS_CHECKED_ON, lenderTakeoverFee } from "@/lib/buyauto/facts";
 import { LENDER_SECTIONS, type SourcedFact } from "@/lib/buyauto/leasingCompanies";
+import { BrandPageLinks, type BrandPageLink } from "@/components/buyauto/BrandPageLinks";
+import type { BrandLenderKey } from "@/lib/buyauto/brandLenders";
 
 /**
  * What Cembra, AMAG Leasing, Multilease and BANK-now say about a transfer, one
  * section each (#cembra, #amag, #multilease, #bank-now: the former lender
  * pages 308 here). Every paragraph links its source inside the text and names
- * its Stand (guarded in leasingCompanies.ts).
+ * its Stand (guarded in leasingCompanies.ts). A lender with indexable brand pages
+ * (AMAG Leasing: its Kernmarken) links them by name.
  */
 
 /** "Cembra, AMAG Leasing, Multilease und BANK-now" */
@@ -46,7 +49,12 @@ function Labelled({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-export function LenderSections() {
+export function LenderSections({
+  brandLinks = {},
+}: {
+  /** Indexable brand pages per lender (brandPagesByLender). */
+  brandLinks?: Partial<Record<BrandLenderKey, BrandPageLink[]>>;
+}) {
   return (
     <section aria-labelledby="leasinggesellschaften-details-heading">
       <h2
@@ -58,6 +66,7 @@ export function LenderSections() {
       <div className="space-y-8">
         {LENDER_SECTIONS.map((section) => {
           const feeUnpublished = lenderTakeoverFee(section.anchor).feeExclVatChf === null;
+          const brands = (brandLinks as Partial<Record<string, BrandPageLink[]>>)[section.anchor] ?? [];
           return (
             <section
               key={section.anchor}
@@ -93,6 +102,12 @@ export function LenderSections() {
                   <Labelled label="Ablauf">
                     <SourcedText fact={section.process} />
                   </Labelled>
+                ) : null}
+                {brands.length > 0 ? (
+                  <p className="text-neutral-700 leading-relaxed">
+                    Leasingübernahmen auf BuyAuto:{" "}
+                    <BrandPageLinks brands={brands} linkClassName="font-semibold text-red-600 hover:underline" />
+                  </p>
                 ) : null}
               </div>
             </section>

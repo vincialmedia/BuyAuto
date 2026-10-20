@@ -9,6 +9,7 @@ import AuthProvider from "@/contexts/AuthContext";
 import "@/styles/globals.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { ORGANIZATION_JSON_LD, ORGANIZATION_REF } from "@/lib/buyauto/entities";
 
 // Both toast systems stay mounted (11 files — the whole create-listing wizard
 // among them — fire through @/hooks/use-toast and the rest through sonner),
@@ -41,17 +42,8 @@ const caveat = Caveat({
   preload: false,
 });
 
-const organizationSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "BuyAuto",
-  url: "https://www.buyauto.ch",
-  logo: "https://www.buyauto.ch/share-logo.jpg",
-  description:
-    "Schweizer Marktplatz für Leasingübernahmen von Privatpersonen und Garagen: Leasing übernehmen oder abgeben.",
-  founder: { "@type": "Person", name: "Vincent Hänggi" },
-  sameAs: [],
-};
+// The one Organization node of the site, with its @id (src/lib/buyauto/entities.ts).
+const organizationSchema = ORGANIZATION_JSON_LD;
 
 // WebSite + SearchAction makes BuyAuto eligible for the Google Sitelinks Searchbox. Shipped
 // site-wide here (it was previously dead code gated on a page type that never rendered).
@@ -60,6 +52,7 @@ const websiteSchema = {
   "@type": "WebSite",
   name: "BuyAuto",
   url: "https://www.buyauto.ch",
+  publisher: ORGANIZATION_REF,
   potentialAction: {
     "@type": "SearchAction",
     target: {
