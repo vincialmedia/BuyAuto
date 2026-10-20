@@ -80,4 +80,4 @@ None unless they are real, attributable, given with the person's written permiss
 
 ## Known copy exceptions
 
-The Eintauschwert-Rechner (`src/pages/eintauschwert-rechner.tsx`, `EintauschwertRechner.tsx`) explains its method with dealer rules of thumb (typical margins, preparation and warranty costs, "Faustregel" percentages) that have no source. They break the sourcing rule, and Vince decides whether to source them or drop them. Until then, leave them as they are when working on other parts of those files.
+None open. The Eintauschwert-Rechner (`src/pages/eintauschwert-rechner.tsx`, `EintauschwertRechner.tsx`) used to explain its method with dealer rules of thumb (typical margins, preparation and warranty costs, «Faustregel» percentages) that had no source; PR C dropped them from the copy, the FAQ and the tooltips. The calculator's prefilled inputs stay as starting values to overwrite and are never called typical or branchenüblich.

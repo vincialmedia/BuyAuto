@@ -20,8 +20,8 @@
 
 ## Structured data
 
-1. `Organization` and `WebSite` are set site-wide in `_app.tsx`. No second top-level `Organization` on a page; the `publisher` inside an `Article` is fine. `StructuredData` on garage pages emits only the `AutoDealer` (since PR #84).
-2. Editorial pages: `Article` (fields in page-types.md) and `BreadcrumbList` through `BreadcrumbJsonLd`. The `AuthorBox` adds the `Person`.
+1. `Organization` and `WebSite` are set site-wide in `_app.tsx`. The Organization is the site's one node with `@id` `https://www.buyauto.ch/#organization` (`ORGANIZATION_JSON_LD` in `src/lib/buyauto/entities.ts`): name, url, logo, and the e-mail and address exactly as on `/impressum`, nothing that page doesn't say, and no `sameAs` until there is a real profile to list (never an empty one). No second `Organization` on a page: an `Article`'s `publisher` and the `WebSite`'s `publisher` are the reference `ORGANIZATION_REF`. `StructuredData` on garage pages emits only the `AutoDealer` (since PR #84).
+2. Editorial pages: `Article` (fields in page-types.md) and `BreadcrumbList` through `BreadcrumbJsonLd`. The `AuthorBox` adds the site's one `Person` node, `@id` `https://www.buyauto.ch/#vincent-haenggi` (jobTitle «Gründer», `worksFor` the Organization's `@id`), and every `Article` names it as `author` by that `@id` (`FOUNDER_REF`); the Organization's `founder` carries the same `@id`, so the reference resolves on every page (PR C). Never invent profiles or `sameAs` links for him.
 3. Inventory pages: `ItemList` and `BreadcrumbList`. Listings: `Car` with an `Offer` that carries `leaseLength`.
 4. `FAQPage` is optional. Google stopped showing FAQ rich results on 7 May 2026, so it brings no visible feature there; other systems may still read it. Add it only when it mirrors a visible FAQ rendered from the same data array, never as a second copy of the text.
 5. Never `Review`, `AggregateRating` or `HowTo`, and no invented ratings.
@@ -67,7 +67,7 @@
 1. `public/robots.txt` welcomes the AI search crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot and others). OpenAI says sites that opt out of OAI-SearchBot aren't shown in ChatGPT search answers, apart from navigational links. Which bots are allowed is Vince's call.
 2. Bing's 2026 guidelines ask for facts stated directly, consistent names, one topic per URL and key information near the top. This skill's rules already produce that.
 3. AI referral traffic is tracked (`docs/ai-traffic-tracking.md`). `scripts/check-geo.sh` checks crawler access and listing schema after deploys.
-4. Not built yet and worth doing once: IndexNow, which tells Bing and other participating engines about new and changed URLs on publish. Google doesn't use it.
+4. IndexNow tells Bing and the other participating engines about new and changed URLs; Google doesn't use it. A daily Vercel Cron (`vercel.json` `crons`, 05:00 UTC) calls `/api/indexnow`, which submits the listings published, updated, expired, sold or archived in the last 26 hours, plus the hub and the brand pages of the brands whose Leasingübernahmen changed (`src/lib/buyauto/indexNow.ts`, at most 500 URLs, tests in `scripts/test-indexnow.ts`). The key file is `public/<INDEXNOW_KEY>.txt`; changing the key means replacing that file in the same commit. Only production submits (`VERCEL_ENV`), previews and `?dryRun=1` return the list without sending it. With `CRON_SECRET` set in Vercel the route accepts only Vercel Cron's bearer token; without it, only the `vercel-cron/` user agent (PR C).
 
 ## Languages
 

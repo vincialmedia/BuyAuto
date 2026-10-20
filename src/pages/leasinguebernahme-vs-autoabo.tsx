@@ -30,8 +30,15 @@ import {
   type InventoryStats,
 } from "@/lib/buyauto/facts";
 import { countLabel, formatChf, formatChfRappen, formatSwissInt } from "@/lib/buyauto/format";
-import { matchSameModel, type MatchedTakeover, type TakeoverCandidate } from "@/lib/buyauto/autoAboMatch";
+import {
+  SHORT_TAKEOVER_MAX_MONTHS,
+  matchSameModel,
+  shortRemainingTakeovers,
+  type MatchedTakeover,
+  type TakeoverCandidate,
+} from "@/lib/buyauto/autoAboMatch";
 import { getPublicOfferIndex, liveTakeovers } from "@/services/listingsService";
+import { FOUNDER_REF, ORGANIZATION_REF } from "@/lib/buyauto/entities";
 
 const PAGE_PATH = "/leasinguebernahme-vs-autoabo";
 const PAGE_URL = `https://www.buyauto.ch${PAGE_PATH}`;
@@ -161,6 +168,8 @@ interface PageProps {
   stats: InventoryStats | null;
   /** Abo examples with at least one live takeover of the same model; null when the read failed. */
   sameModel: SameModelRow[] | null;
+  /** Live takeovers with at most SHORT_TAKEOVER_MAX_MONTHS months left; null when the read failed. */
+  shortTakeovers: MatchedTakeover[] | null;
 }
 
 function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
@@ -220,6 +229,23 @@ function AboProviderCard({ provider }: { provider: AutoAboProvider }) {
   );
 }
 
+/** One live takeover: linked title, model year, rate, months left and Kaution. */
+function TakeoverLine({ listing }: { listing: MatchedTakeover }) {
+  return (
+    <>
+      <Link href={listing.href} className="font-medium text-neutral-900 underline underline-offset-2">
+        {listing.title}
+      </Link>
+      {listing.year !== null ? <span className="text-neutral-600">, Jahrgang {listing.year}</span> : null}{" "}
+      <span className="block text-sm text-neutral-800">
+        <span className="font-bold">{formatChf(listing.rateChf)}</span> pro Monat
+        {listing.months !== null ? `, noch ${countLabel(listing.months, "Monat", "Monate")}` : ""}
+        {listing.kautionChf !== null && listing.kautionChf > 0 ? `, Kaution ${formatChf(listing.kautionChf)}` : ""}
+      </span>
+    </>
+  );
+}
+
 function SameModelCard({ row }: { row: SameModelRow }) {
   const entry = ABO_OFFERS.find(({ offer }) => offer.url === row.offerUrl);
   if (!entry || row.listings.length === 0) return null;
@@ -250,17 +276,7 @@ function SameModelCard({ row }: { row: SameModelRow }) {
           <ul className="mt-1 divide-y divide-neutral-100">
             {row.listings.map((listing) => (
               <li key={listing.id} className="py-2">
-                <Link href={listing.href} className="font-medium text-neutral-900 underline underline-offset-2">
-                  {listing.title}
-                </Link>
-                {listing.year !== null ? <span className="text-neutral-600">, Jahrgang {listing.year}</span> : null}{" "}
-                <span className="block text-sm text-neutral-800">
-                  <span className="font-bold">{formatChf(listing.rateChf)}</span> pro Monat
-                  {listing.months !== null ? `, noch ${countLabel(listing.months, "Monat", "Monate")}` : ""}
-                  {listing.kautionChf !== null && listing.kautionChf > 0
-                    ? `, Kaution ${formatChf(listing.kautionChf)}`
-                    : ""}
-                </span>
+                <TakeoverLine listing={listing} />
               </li>
             ))}
           </ul>
@@ -278,9 +294,11 @@ function SameModelCard({ row }: { row: SameModelRow }) {
   );
 }
 
-export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: PageProps) {
+export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel, shortTakeovers }: PageProps) {
   const liveStats = stats && stats.count > 0 && stats.medianRate !== null ? stats : null;
   const sameModelRows = (sameModel ?? []).filter((row) => row.listings.length > 0);
+  // Sample size next to the list: the live takeovers the short ones were picked from.
+  const shortList = stats && stats.count > 0 ? shortTakeovers ?? [] : [];
 
   return (
     <>
@@ -295,12 +313,9 @@ export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: Pag
               "@context": "https://schema.org",
               "@type": "Article",
               headline: H1,
-              author: { "@type": "Person", name: "Vincent Hänggi", jobTitle: "Gründer von BuyAuto" },
-              publisher: {
-                "@type": "Organization",
-                name: "BuyAuto",
-                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
-              },
+              // References to the site-wide nodes (src/lib/buyauto/entities.ts).
+              author: FOUNDER_REF,
+              publisher: ORGANIZATION_REF,
               dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: PAGE_URL,
             }),
@@ -463,7 +478,33 @@ export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: Pag
             </section>
           ) : null}
 
-          {/* 5. When each fits */}
+          {/* 5. Short remaining terms (live; hidden without one) */}
+          {shortList.length > 0 ? (
+            <section aria-labelledby="kurze-restlaufzeit" className="border-t border-neutral-200 py-8 sm:py-10">
+              <SectionHeading id="kurze-restlaufzeit">
+                Leasingübernahmen mit höchstens {SHORT_TAKEOVER_MAX_MONTHS} Monaten Restlaufzeit
+              </SectionHeading>
+              <p className="mt-3 leading-relaxed text-neutral-700">
+                Brauchst du ein Auto nur für eine begrenzte Zeit, kommt auch eine Leasingübernahme mit kurzer
+                Restlaufzeit in Frage: Du übernimmst den Vertrag bis zu seinem Ende. Bei {shortList.length} von{" "}
+                {countLabel(stats?.count ?? 0, "aktuellen Leasingübernahme", "aktuellen Leasingübernahmen")} auf
+                BuyAuto läuft der Vertrag noch höchstens {SHORT_TAKEOVER_MAX_MONTHS} Monate. Die kürzeste
+                Restlaufzeit steht zuerst.
+              </p>
+              <ul className="mt-4 divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white px-4">
+                {shortList.map((listing) => (
+                  <li key={listing.id} className="py-3">
+                    <TakeoverLine listing={listing} />
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-sm text-neutral-600">
+                Raten ohne Versicherung und Verkehrssteuer; Reifen und Service je nach Vertrag.
+              </p>
+            </section>
+          ) : null}
+
+          {/* 6. When each fits */}
           <section aria-labelledby="wann-was-passt" className="border-t border-neutral-200 py-8 sm:py-10">
             <SectionHeading id="wann-was-passt">Wann was passt</SectionHeading>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -533,7 +574,7 @@ export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: Pag
             </div>
           </section>
 
-          {/* 6. Sources */}
+          {/* 7. Sources */}
           <SourcesList sources={PAGE_SOURCES} className="border-t border-neutral-200 pt-8" />
         </div>
       </main>
@@ -544,6 +585,7 @@ export default function LeasinguebernahmeVsAutoAboPage({ stats, sameModel }: Pag
 export const getStaticProps: GetStaticProps<PageProps> = async () => {
   let stats: InventoryStats | null = null;
   let sameModel: SameModelRow[] | null = null;
+  let shortTakeovers: MatchedTakeover[] | null = null;
 
   try {
     // One read of the live index for both: the stats are getLiveInventoryStats()'s computation.
@@ -563,11 +605,13 @@ export const getStaticProps: GetStaticProps<PageProps> = async () => {
     sameModel = ABO_OFFERS.map(({ offer }) => ({ offerUrl: offer.url, ...matchSameModel(offer, candidates) })).filter(
       (row) => row.total > 0
     );
+    shortTakeovers = shortRemainingTakeovers(candidates, SHORT_TAKEOVER_MAX_MONTHS);
   } catch (error) {
     console.error("Auto-Abo page: live inventory read failed:", error);
     stats = null;
     sameModel = null;
+    shortTakeovers = null;
   }
 
-  return { props: { stats, sameModel }, revalidate: 300 };
+  return { props: { stats, sameModel, shortTakeovers }, revalidate: 300 };
 };

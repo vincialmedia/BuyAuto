@@ -43,6 +43,7 @@ import { brandPagesByLender, type BrandLenderKey } from "@/lib/buyauto/brandLend
 import type { BrandPageLink } from "@/components/buyauto/BrandPageLinks";
 import { getLiveInventoryStats } from "@/services/listingsService";
 import { getIndexableBrandPages } from "@/services/brandIndexingService";
+import { FOUNDER_REF, ORGANIZATION_REF } from "@/lib/buyauto/entities";
 
 const PATH = "/leasinguebernahme-kosten";
 const PAGE_URL = `https://www.buyauto.ch${PATH}`;
@@ -236,12 +237,9 @@ export default function LeasinguebernahmeKostenPage({ stats, brandLinks }: Leasi
               "@type": "Article",
               headline: H1,
               description: DESCRIPTION,
-              author: { "@type": "Person", name: FOUNDER_TAKEOVER.person, jobTitle: FOUNDER_TAKEOVER.role },
-              publisher: {
-                "@type": "Organization",
-                name: "BuyAuto",
-                logo: { "@type": "ImageObject", url: "https://www.buyauto.ch/share-logo.jpg" },
-              },
+              // References to the site-wide nodes (src/lib/buyauto/entities.ts).
+              author: FOUNDER_REF,
+              publisher: ORGANIZATION_REF,
               dateModified: LAST_UPDATED_ISO,
               mainEntityOfPage: PAGE_URL,
             }),

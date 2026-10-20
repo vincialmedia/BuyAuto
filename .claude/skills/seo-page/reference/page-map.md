@@ -13,7 +13,7 @@ State after SEO Phase 2 (PRs #81, #82 and #84). Until #81 and #82 are merged, th
 | `/leasinguebernahme-kosten` | What a takeover costs: lender fees, cantonal fees (`#kantone`), Kaution | Holds the former lender pages as `#cembra`, `#amag`, `#multilease`, `#bank-now` |
 | `/leasing-abgeben-schweiz` | Getting out of a lease: abgeben, vorzeitig beenden, auflösen | Exit options with the Ausstiegsrechner |
 | `/leasingvertrag-uebertragen` | The seller's step-by-step for transferring a contract | Links to the guide instead of repeating it |
-| `/leasinguebernahme-vs-autoabo` | Leasingübernahme compared with an Auto-Abo | The only Auto-Abo page on the site |
+| `/leasinguebernahme-vs-autoabo` | Leasingübernahme compared with an Auto-Abo | The only Auto-Abo page on the site. Lists the live Leasingübernahmen with at most 24 months left (the short-need answer), hidden when there are none (PR C) |
 | `/leasinguebernahme/[marke]` | "[Marke] Leasingübernahme" and that brand's leasing company | Indexable from 2 live takeover offers (`BRAND_PAGE_MIN_INDEXABLE_LISTINGS` in `leasingBrands.ts`), or from 1 while the brand had 2 takeovers live within the last 30 days (`BRAND_PAGE_GRACE_DAYS`: the live ones plus those that expired, sold or were archived in that window). The grace period keeps a page from dropping out of the index and coming back each time one offer ends before the next arrives. At 0 live offers: noindex at once (PR C) |
 | `/eintauschwert-rechner` | Trade-in value / car valuation (tool) | |
 | `/fuer-garagen` | BuyAuto for garages | |

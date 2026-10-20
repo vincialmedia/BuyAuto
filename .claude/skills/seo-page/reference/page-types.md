@@ -13,7 +13,7 @@ Examples: `/leasinguebernahme`, `/leasingvertrag-uebertragen`. Reference impleme
 5. The founder example once, through `FounderTakeoverNote`, where it shows the point being made.
 6. `SourcesList` at the end with every source the page cites.
 7. Length is whatever the intent needs. Google has no preferred word count. As a working limit, a guide stays within about 10–12 phone screens at 390×844. No synonym sections, repeated definitions or mid-page search forms.
-8. Structured data: `Article` (headline = H1, description, author Vincent Hänggi with jobTitle "Gründer von BuyAuto", publisher BuyAuto, `dateModified` from `CONTENT_LAST_UPDATED`, `mainEntityOfPage`), plus `BreadcrumbJsonLd`. `datePublished` only if the real date is known.
+8. Structured data: `Article` (headline = H1, description, `author: FOUNDER_REF` and `publisher: ORGANIZATION_REF` from `entities.ts`, which point at the site's one Person and Organization nodes by `@id`, `dateModified` from `CONTENT_LAST_UPDATED`, `mainEntityOfPage`), plus `BreadcrumbJsonLd`. `datePublished` only if the real date is known.
 
 Skeleton, following the reference implementation:
 
@@ -78,7 +78,7 @@ Examples: the hub `/suche?dealType=lease_takeover` and `/leasinguebernahme/[mark
 Example: `/leasinguebernahme-vs-autoabo`. (`/autoscout24-alternative-leasinguebernahme` was retired in PR C; see page-map.md.)
 
 1. Both sides are priced from sources with a Stand and a link (Auto-Abo offers from `AUTO_ABO_PROVIDERS`). Prices change often, so the Stand is shown next to them.
-2. Say plainly when the other option fits better (for example a short or flexible need for an Auto-Abo).
+2. Say plainly when the other option fits better (for example a short or flexible need for an Auto-Abo). Where BuyAuto has a live answer for that need, show it: the Auto-Abo page lists the live Leasingübernahmen with at most `SHORT_TAKEOVER_MAX_MONTHS` (24) months left, each linked, with the count they come from, and hides the section when there are none (PR C).
 3. Where BuyAuto has a live offer of the same model, show it next to the compared price.
 4. No unsourced percentages or savings claims. Competitors are named only to compare facts, never to suggest a partnership, and never disparaged.
 
